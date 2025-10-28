@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-// We are still importing the 'Cinzel' font from Google Fonts
+// Import the 'Cinzel' font from Google Fonts, which gives us the ancient look.
 import { Cinzel } from "next/font/google";
 import "./globals.css";
 
@@ -18,8 +18,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      {/* The body tag still has the custom font applied. */}
-      {/* The video/image overlay code has been completely removed. */}
+      {/* 
+        This is the most important line. 
+        We apply the font's generated class name to the body tag,
+        making it the default font for the entire site.
+      */}
       <body className={cinzel.className}>{children}</body>
     </html>
   );
