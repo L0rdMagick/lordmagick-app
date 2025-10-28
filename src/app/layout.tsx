@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Cinzel } from "next/font/google";
 import "./globals.css";
 
-// Configure the Cinzel font
 const cinzel = Cinzel({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
@@ -17,7 +16,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      {/* Applying the font's class name to the body makes it the default for the entire site */}
+      {/* This line applies the ancient font to your entire website */}
       <body className={cinzel.className}>{children}</body>
     </html>
   );

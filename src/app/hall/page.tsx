@@ -30,24 +30,21 @@ const portals = [
 
 export default function HallPage() {
   return (
-    // 'min-h-screen' ensures the container is at least the height of the screen.
-    // 'bg-black' provides a fallback color while the image loads.
-    <main className="relative min-h-screen w-screen overflow-y-auto bg-black">
+    <main className="relative min-h-screen w-full bg-black">
       {/* Background Image Layer */}
-      {/* This is the definitive fix for the missing background. It's a fixed layer that covers everything. */}
       <div className="fixed inset-0 z-0">
         <Image
           src="/images/grand-hall-bg.png"
           alt="The Grand Hall of LordMagick.com"
           fill
           style={{ objectFit: 'cover' }}
+          quality={100} // Ensure high quality image
         />
         {/* Semi-transparent overlay to help text and portals stand out */}
         <div className="absolute inset-0 bg-black/40" />
       </div>
 
       {/* Content Layer */}
-      {/* This container allows scrolling and has padding. */}
       <div className="relative z-20 flex flex-col items-center w-full px-4 py-16 sm:px-8 sm:py-24">
         <header className="text-center mb-12 text-white">
           <div className="relative w-full max-w-sm md:max-w-md lg:max-w-lg mx-auto mb-4" style={{ filter: 'drop-shadow(2px 2px 8px rgba(0,0,0,0.8))' }}>
@@ -66,8 +63,8 @@ export default function HallPage() {
         </header>
 
         {/* Responsive Portal Grid */}
-        {/* FIXED: The layout is now grid-cols-2 by default (mobile) and lg:grid-cols-4 for large screens (desktop). */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-8 w-full max-w-7xl">
+        {/* FIXED: Reverted to 'md:grid-cols-4' for a better PC layout experience on more screen sizes. */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-8 w-full max-w-7xl">
           {portals.map((portal) => (
             <Link
               key={portal.title}
@@ -84,7 +81,7 @@ export default function HallPage() {
                   className="transition-transform duration-300 group-hover:scale-110"
                 />
               </div>
-              {/* Portal titles will now correctly inherit the Cinzel font from the layout file. */}
+              {/* This will now correctly inherit the Cinzel font */}
               <span className="mt-2 sm:mt-4 text-center font-semibold text-white text-md sm:text-lg" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.9)' }}>
                 {portal.title}
               </span>

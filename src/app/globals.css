@@ -1,5 +1,7 @@
 /*
-  This is the correct, stable version of the file.
+  This is the definitive, stable version of the file.
+  It ONLY includes the necessary Tailwind imports and nothing else.
+  This will solve the "white background" issue.
 */
 @tailwind base;
 @tailwind components;
