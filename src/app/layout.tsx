@@ -19,8 +19,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       {/* 
-        This is the most important line. 
-        We apply the font's generated class name to the body tag,
+        This is the most important line for fixing your font. 
+        It applies the Cinzel font's class name to the body tag,
         making it the default font for the entire site.
       */}
       <body className={cinzel.className}>{children}</body>
