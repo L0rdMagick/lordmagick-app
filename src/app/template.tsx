@@ -11,7 +11,7 @@ export default function Template({ children }: { children: React.ReactNode }) {
       // The animation ends with the page fully visible and at its normal position
       animate={{ opacity: 1, y: 0 }}
       // This defines the smooth transition timing
-      transition={{ ease: 'easeInOut', duration: 3.75 }}
+      transition={{ ease: 'easeInOut', duration: 2.00 }}
     >
       {children}
     </motion.div>
