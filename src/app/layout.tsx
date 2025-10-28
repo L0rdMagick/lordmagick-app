@@ -25,7 +25,7 @@ export default function RootLayout({
         {/* This element lives outside the page transitions, so it will always be visible. */}
         <div className="fixed bottom-0 left-0 w-full h-[25vh] z-50 pointer-events-none">
           <Image
-            src="/images/mist-overlay.png"
+            src="/videos/mist-overlay.mp4"
             alt="Mystical mist"
             fill
             style={{ objectFit: 'cover' }}
