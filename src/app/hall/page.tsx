@@ -6,7 +6,6 @@ const portals = [
     title: "Spell Room",
     href: "/spell-room",
     imageSrc: "/images/portal-spell.png",
-    // UPDATED: Added active state to the glow for mobile touch feedback
     interactiveGlow: "group-hover:[--glow-color:theme(colors.purple.500)] active:[--glow-color:theme(colors.purple.500)]",
   },
   {
@@ -32,6 +31,7 @@ const portals = [
 export default function HallPage() {
   return (
     <main className="relative h-screen w-screen overflow-y-auto">
+      {/* The code here is correct. The problem was asset caching. */}
       <Image
         src="/images/grand-hall-bg.png"
         alt="The Grand Hall of LordMagick.com"
@@ -41,9 +41,7 @@ export default function HallPage() {
       />
       <div className="absolute inset-0 bg-black/30 z-10" />
 
-      {/* Content Layer */}
-      {/* UPDATED: Changed justify-center to justify-start and added padding-top (pt-16) */}
-      {/* This anchors the content to the top, ensuring the bottom is not cut off on wide screens. */}
+      {/* This layout ensures the content starts from the top, preventing the bottom from being cut off. */}
       <div className="relative z-20 flex flex-col items-center justify-start min-h-screen p-2 pt-16 sm:p-8 sm:pt-24">
         <header className="text-center mb-8 text-white">
           <div className="relative w-full max-w-sm md:max-w-md lg:max-w-lg mx-auto mb-4" style={{ filter: 'drop-shadow(2px 2px 8px rgba(0,0,0,0.8))' }}>

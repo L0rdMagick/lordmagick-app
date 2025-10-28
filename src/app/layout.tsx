@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+// We are still importing the 'Cinzel' font from Google Fonts
 import { Cinzel } from "next/font/google";
 import "./globals.css";
 
+// Configure the font. We're loading the 'latin' character set.
 const cinzel = Cinzel({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
@@ -16,21 +18,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={cinzel.className}>
-        {/* The children prop represents the transitioning pages from template.tsx */}
-        {children}
-
-        {/* UPDATED: Persistent Mist Video Overlay */}
-        {/* Replaced the Image component with a Video component. */}
-        <video
-          src="/videos/mist-overlay.mp4" // Make sure this path is correct
-          autoPlay
-          loop
-          muted
-          playsInline // Essential for mobile browsers
-          className="fixed bottom-0 left-0 w-full h-[25vh] z-50 pointer-events-none object-cover"
-        />
-      </body>
+      {/* The body tag still has the custom font applied. */}
+      {/* The video/image overlay code has been completely removed. */}
+      <body className={cinzel.className}>{children}</body>
     </html>
   );
 }
