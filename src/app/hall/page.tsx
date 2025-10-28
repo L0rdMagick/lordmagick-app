@@ -30,10 +30,11 @@ const portals = [
 
 export default function HallPage() {
   return (
-    // UPDATED: 'h-screen' is removed to allow scrolling on tall content.
-    // 'overflow-y-auto' ensures a scrollbar appears ONLY if needed.
-    <main className="relative w-screen overflow-y-auto">
-      {/* Background Image is now a fixed layer, so it stays put while you scroll. */}
+    // 'min-h-screen' ensures the container is at least the height of the screen.
+    // 'bg-black' provides a fallback color while the image loads.
+    <main className="relative min-h-screen w-screen overflow-y-auto bg-black">
+      {/* Background Image Layer */}
+      {/* This is the definitive fix for the missing background. It's a fixed layer that covers everything. */}
       <div className="fixed inset-0 z-0">
         <Image
           src="/images/grand-hall-bg.png"
@@ -41,12 +42,12 @@ export default function HallPage() {
           fill
           style={{ objectFit: 'cover' }}
         />
+        {/* Semi-transparent overlay to help text and portals stand out */}
         <div className="absolute inset-0 bg-black/40" />
       </div>
 
       {/* Content Layer */}
-      {/* UPDATED: Removed min-h-screen. We now use padding to create space. */}
-      {/* This allows the content to define its own height and lets the page scroll. */}
+      {/* This container allows scrolling and has padding. */}
       <div className="relative z-20 flex flex-col items-center w-full px-4 py-16 sm:px-8 sm:py-24">
         <header className="text-center mb-12 text-white">
           <div className="relative w-full max-w-sm md:max-w-md lg:max-w-lg mx-auto mb-4" style={{ filter: 'drop-shadow(2px 2px 8px rgba(0,0,0,0.8))' }}>
@@ -55,7 +56,7 @@ export default function HallPage() {
               alt="LordMagick.com Logo"
               width={600}
               height={200}
-              priority // Prioritize loading the logo
+              priority
               style={{ width: '100%', height: 'auto' }}
             />
           </div>
@@ -65,8 +66,8 @@ export default function HallPage() {
         </header>
 
         {/* Responsive Portal Grid */}
-        {/* UPDATED: Added max-w-none on mobile and a larger max-width on desktop to fix sizing. */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-8 w-full max-w-none md:max-w-7xl">
+        {/* FIXED: The layout is now grid-cols-2 by default (mobile) and lg:grid-cols-4 for large screens (desktop). */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-8 w-full max-w-7xl">
           {portals.map((portal) => (
             <Link
               key={portal.title}
@@ -83,6 +84,7 @@ export default function HallPage() {
                   className="transition-transform duration-300 group-hover:scale-110"
                 />
               </div>
+              {/* Portal titles will now correctly inherit the Cinzel font from the layout file. */}
               <span className="mt-2 sm:mt-4 text-center font-semibold text-white text-md sm:text-lg" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.9)' }}>
                 {portal.title}
               </span>

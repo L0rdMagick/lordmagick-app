@@ -1,7 +1,5 @@
 /*
   This is the correct, stable version of the file.
-  It removes all default background styling, which fixes the "black bar" issue.
-  Any font definitions will be handled in layout.tsx.
 */
 @tailwind base;
 @tailwind components;

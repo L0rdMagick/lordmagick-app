@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
-// Import the 'Cinzel' font from Google Fonts, which gives us the ancient look.
 import { Cinzel } from "next/font/google";
 import "./globals.css";
 
-// Configure the font. We're loading the 'latin' character set.
+// Configure the Cinzel font
 const cinzel = Cinzel({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
@@ -18,11 +17,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      {/* 
-        This is the most important line for fixing your font. 
-        It applies the Cinzel font's class name to the body tag,
-        making it the default font for the entire site.
-      */}
+      {/* Applying the font's class name to the body makes it the default for the entire site */}
       <body className={cinzel.className}>{children}</body>
     </html>
   );
