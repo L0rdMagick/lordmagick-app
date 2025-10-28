@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
-// Import the 'Cinzel' font from Google Fonts
 import { Cinzel } from "next/font/google";
 import "./globals.css";
+import Image from "next/image"; // Import the Image component
 
-// Configure the font. We're loading the 'latin' character set.
 const cinzel = Cinzel({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
@@ -18,8 +17,21 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      {/* Apply the font's class name to the body tag */}
-      <body className={cinzel.className}>{children}</body>
+      <body className={cinzel.className}>
+        {/* The children prop now represents the transitioning pages from template.tsx */}
+        {children}
+
+        {/* UPDATED: Persistent Mist Overlay */}
+        {/* This element lives outside the page transitions, so it will always be visible. */}
+        <div className="fixed bottom-0 left-0 w-full h-[25vh] z-50 pointer-events-none">
+          <Image
+            src="/images/mist-overlay.png"
+            alt="Mystical mist"
+            fill
+            style={{ objectFit: 'cover' }}
+          />
+        </div>
+      </body>
     </html>
   );
 }

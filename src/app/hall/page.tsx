@@ -6,45 +6,45 @@ const portals = [
     title: "Spell Room",
     href: "/spell-room",
     imageSrc: "/images/portal-spell.png",
-    hoverGlow: "group-hover:[--glow-color:theme(colors.purple.500)]",
+    // UPDATED: Added active state to the glow for mobile touch feedback
+    interactiveGlow: "group-hover:[--glow-color:theme(colors.purple.500)] active:[--glow-color:theme(colors.purple.500)]",
   },
   {
     title: "Oracle Room",
     href: "/oracle-room",
     imageSrc: "/images/portal-oracle.png",
-    hoverGlow: "group-hover:[--glow-color:theme(colors.cyan.500)]",
+    interactiveGlow: "group-hover:[--glow-color:theme(colors.cyan.500)] active:[--glow-color:theme(colors.cyan.500)]",
   },
   {
     title: "The Library",
     href: "/library",
     imageSrc: "/images/portal-library.png",
-    hoverGlow: "group-hover:[--glow-color:theme(colors.orange.500)]",
+    interactiveGlow: "group-hover:[--glow-color:theme(colors.orange.500)] active:[--glow-color:theme(colors.orange.500)]",
   },
   {
     title: "Marketplace",
     href: "/marketplace",
     imageSrc: "/images/portal-marketplace.png",
-    hoverGlow: "group-hover:[--glow-color:theme(colors.green.500)]",
+    interactiveGlow: "group-hover:[--glow-color:theme(colors.green.500)] active:[--glow-color:theme(colors.green.500)]",
   },
 ];
 
 export default function HallPage() {
   return (
     <main className="relative h-screen w-screen overflow-y-auto">
-      {/* Background Image Layer */}
       <Image
         src="/images/grand-hall-bg.png"
         alt="The Grand Hall of LordMagick.com"
         fill
-        // UPDATED: Added objectPosition: 'bottom'. This ensures the bottom of the image is never cut off.
         style={{ objectFit: 'cover', objectPosition: 'bottom' }}
         className="z-0"
       />
       <div className="absolute inset-0 bg-black/30 z-10" />
 
       {/* Content Layer */}
-      {/* UPDATED: Changed padding from p-4 to p-2 on mobile for more space. */}
-      <div className="relative z-20 flex flex-col items-center justify-center min-h-screen p-2 sm:p-8">
+      {/* UPDATED: Changed justify-center to justify-start and added padding-top (pt-16) */}
+      {/* This anchors the content to the top, ensuring the bottom is not cut off on wide screens. */}
+      <div className="relative z-20 flex flex-col items-center justify-start min-h-screen p-2 pt-16 sm:p-8 sm:pt-24">
         <header className="text-center mb-8 text-white">
           <div className="relative w-full max-w-sm md:max-w-md lg:max-w-lg mx-auto mb-4" style={{ filter: 'drop-shadow(2px 2px 8px rgba(0,0,0,0.8))' }}>
             <Image
@@ -65,8 +65,7 @@ export default function HallPage() {
             <Link
               key={portal.title}
               href={portal.href}
-              // UPDATED: Added 'active:scale-100' for a tactile "press down" effect on mobile.
-              className={`group flex flex-col items-center transition-all duration-300 hover:scale-105 active:scale-100 ${portal.hoverGlow}`}
+              className={`group flex flex-col items-center transition-all duration-300 hover:scale-105 active:scale-100 ${portal.interactiveGlow}`}
               style={{ '--glow-color': 'transparent', filter: 'drop-shadow(0 0 15px var(--glow-color))' } as React.CSSProperties}
             >
               <div className="relative w-full aspect-3/4">
