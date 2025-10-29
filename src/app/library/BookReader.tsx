@@ -7,12 +7,11 @@ import { Book } from './content';
 // --- Helper Components for different page types ---
 
 // A single styled page component
-const Page = React.forwardRef<HTMLDivElement, { children: React.Node }>(({ children }, ref) => {
+// THE FIX: Changed the type for children from `React.Node` to `React.ReactNode`
+const Page = React.forwardRef<HTMLDivElement, { children: React.ReactNode }>(({ children }, ref) => {
   return (
     <div 
       ref={ref} 
-      // THE FIX: Added a solid background color (`bg-[#fdf9e8]`) behind the image.
-      // This will prevent any see-through effect.
       className="flex items-center justify-center p-8 md:p-12 bg-[#fdf9e8] bg-[url('/images/books/parchment-bg.png')] bg-cover bg-center shadow-inner shadow-black/30"
     >
       <div className="text-gray-800 text-lg leading-relaxed">{children}</div>
