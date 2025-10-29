@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Cinzel } from "next/font/google";
 import "./globals.css";
+import BackgroundAudio from "./components/BackgroundAudio"; // NEW: Import the audio component
 
 const cinzel = Cinzel({
   subsets: ["latin"],
@@ -20,28 +21,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${cinzel.className} bg-black text-white antialiased`}>
+        <BackgroundAudio /> {/* NEW: The drone sound now lives here, globally */}
         {children}
-
-        {/* 
-          THE OPACITY FIX: Changed from opacity-40 to a more precise opacity-[.35]
-          for a ~10% reduction in visibility.
-        */}
-
-        {/* Bottom Layer (Always Visible) */}
-        <div
-          className="mist-overlay fixed bottom-0 left-0 w-full h-2/5 
-                     bg-[url('/images/mist-overlay.png')] bg-repeat-x 
-                     z-30 pointer-events-none opacity-[.10] 
-                     animate-[flow-mist_45s_linear_infinite]"
-        />
         
-        {/* Top Layer (Crossfades to hide the loop) */}
-        <div
-          className="mist-overlay fixed bottom-0 left-0 w-full h-2/5 
-                     bg-[url('/images/mist-overlay.png')] bg-repeat-x 
-                     z-30 pointer-events-none opacity-[.10] 
-                     animate-[flow-mist-crossfade_45s_linear_infinite]"
-        />
+        {/* The mist overlay remains here */}
+        <div className="mist-overlay fixed bottom-0 left-0 w-full h-2/5 bg-[url('/images/mist-overlay.png')] bg-repeat-x z-30 pointer-events-none opacity-[.10] animate-[flow-mist_45s_linear_infinite]" />
+        <div className="mist-overlay fixed bottom-0 left-0 w-full h-2/5 bg-[url('/images/mist-overlay.png')] bg-repeat-x z-30 pointer-events-none opacity-[.10] animate-[flow-mist-crossfade_45s_linear_infinite]" />
       </body>
     </html>
   );
