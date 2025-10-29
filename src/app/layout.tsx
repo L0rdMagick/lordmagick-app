@@ -23,14 +23,23 @@ export default function RootLayout({
         {children}
 
         {/* 
-          NEW: Mystical Mist Overlay 
-          This div creates the entire effect.
+          UPDATED: Mystical Mist Overlay (Now with two layers for crossfading)
         */}
+
+        {/* Bottom Layer (Always Visible) */}
         <div
           className="mist-overlay fixed bottom-0 left-0 w-full h-2/5 
                      bg-[url('/images/mist-overlay.png')] bg-repeat-x 
                      z-30 pointer-events-none opacity-50 
                      animate-[flow-mist_45s_linear_infinite]"
+        />
+        
+        {/* Top Layer (Crossfades to hide the loop) */}
+        <div
+          className="mist-overlay fixed bottom-0 left-0 w-full h-2/5 
+                     bg-[url('/images/mist-overlay.png')] bg-repeat-x 
+                     z-30 pointer-events-none opacity-50 
+                     animate-[flow-mist-crossfade_45s_linear_infinite]"
         />
       </body>
     </html>

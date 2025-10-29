@@ -1,10 +1,8 @@
 @import "tailwindcss";
 
 /*
-  ADD THIS ANIMATION:
-  This creates a slow, infinitely looping horizontal scroll.
-  We move the background position to 200% to ensure a smooth loop
-  with seamless textures.
+  ANIMATION 1: The original, simple scroll for the bottom layer.
+  This layer is always visible and provides the base motion.
 */
 @keyframes flow-mist {
   0% {
@@ -16,10 +14,27 @@
 }
 
 /*
-  ADD THIS HELPER CLASS:
-  This applies a gradient mask to the mist, making its top edge
-  fade softly into the background instead of having a hard line.
+  NEW ANIMATION 2: The crossfade scroll for the top layer.
+  This layer scrolls identically but fades out at the very end of its loop,
+  revealing the bottom layer before it resets.
 */
+@keyframes flow-mist-crossfade {
+  0% {
+    background-position: 0% 50%;
+    opacity: 1;
+  }
+  /* For most of the animation, it's fully visible */
+  90% {
+    opacity: 1;
+  }
+  /* In the last 10% of the animation, it fades out completely */
+  100% {
+    background-position: 200% 50%;
+    opacity: 0;
+  }
+}
+
+/* Helper class for the soft top edge (no changes here) */
 .mist-overlay {
   mask-image: linear-gradient(to top, black 60%, transparent 100%);
   -webkit-mask-image: linear-gradient(to top, black 60%, transparent 100%);
