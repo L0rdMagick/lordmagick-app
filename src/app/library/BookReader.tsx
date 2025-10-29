@@ -7,13 +7,13 @@ import { Book } from './content';
 // --- Helper Components for different page types ---
 
 // A single styled page component
-const Page = React.forwardRef<HTMLDivElement, { children: React.ReactNode }>(({ children }, ref) => {
+const Page = React.forwardRef<HTMLDivElement, { children: React.Node }>(({ children }, ref) => {
   return (
     <div 
       ref={ref} 
-      className="flex items-center justify-center p-8 md:p-12 bg-cover bg-center shadow-inner shadow-black/30"
-      // THE FIX: Updated the path to your parchment background image
-      style={{ backgroundImage: "url('/images/books/parchment-bg.png')" }}
+      // THE FIX: Added a solid background color (`bg-[#fdf9e8]`) behind the image.
+      // This will prevent any see-through effect.
+      className="flex items-center justify-center p-8 md:p-12 bg-[#fdf9e8] bg-[url('/images/books/parchment-bg.png')] bg-cover bg-center shadow-inner shadow-black/30"
     >
       <div className="text-gray-800 text-lg leading-relaxed">{children}</div>
     </div>
@@ -41,7 +41,7 @@ const TableOfContents = React.forwardRef<HTMLDivElement, { book: Book, onChapter
           {book.chapters.map((chapter, index) => (
             <li key={index}>
               <button
-                onClick={() => onChapterClick(index + 2)} // +2 to account for cover and ToC pages
+                onClick={() => onChapterClick(index + 2)}
                 className="hover:text-amber-800 hover:underline transition-colors duration-300 text-left"
               >
                 {chapter.title}
@@ -57,11 +57,9 @@ TableOfContents.displayName = 'TableOfContents';
 
 
 // --- The Main Book Reader Component ---
-
 interface BookReaderProps {
   book: Book;
 }
-
 export default function BookReader({ book }: BookReaderProps) {
   const flipBookRef = useRef<any>(null);
 
