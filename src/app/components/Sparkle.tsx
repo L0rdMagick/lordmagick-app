@@ -10,7 +10,8 @@ const Sparkle = ({ onAnimationComplete }: { onAnimationComplete: () => void }) =
       {Array.from({ length: PARTICLE_COUNT }).map((_, i) => (
         <motion.div
           key={i}
-          className="absolute w-1 h-20 bg-gradient-to-b from-amber-200 to-transparent"
+          // THE FIX: Changed `bg-gradient-to-b` to the new `bg-linear-to-b`.
+          className="absolute w-1 h-20 bg-linear-to-b from-amber-200 to-transparent"
           style={{
             originY: '0%', // Animate out from the center
             rotate: i * (360 / PARTICLE_COUNT),
@@ -22,6 +23,7 @@ const Sparkle = ({ onAnimationComplete }: { onAnimationComplete: () => void }) =
             ease: "easeOut",
             delay: 0.1,
           }}
+          // Only attach the callback to one particle to prevent it from firing multiple times
           onAnimationComplete={i === 0 ? onAnimationComplete : undefined}
         />
       ))}
