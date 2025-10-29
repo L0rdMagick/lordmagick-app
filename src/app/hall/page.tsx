@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useState, useRef, MouseEvent } from 'react';
-import Sparkle from '../components/Sparkle'; // NEW: Import the Sparkle component
+import Sparkle from '../components/Sparkle';
 
 interface SparkleState {
   key: number;
@@ -46,15 +46,16 @@ const portals = [
 export default function HallPage() {
   const router = useRouter();
   const [sparkle, setSparkle] = useState<SparkleState | null>(null);
-  const isNavigating = useRef(false);
+  const [navigatingTo, setNavigatingTo] = useState<string | null>(null); // NEW: State to remember the destination
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const handlePortalClick = (e: MouseEvent<HTMLAnchorElement>, href: string) => {
     e.preventDefault();
-    if (isNavigating.current) return;
+    if (navigatingTo) return; // Prevent new clicks while a navigation is in progress
 
-    isNavigating.current = true;
-    
+    // THE FIX: Remember which URL we want to go to
+    setNavigatingTo(href);
+
     // Play the magickal whoosh sound
     if (!audioRef.current) {
       audioRef.current = new Audio('/audio/portal-whoosh.mp3');
@@ -63,20 +64,17 @@ export default function HallPage() {
 
     // Trigger the sparkle animation at the click position
     setSparkle({ key: Date.now(), x: e.clientX, y: e.clientY });
-
-    // The sparkle component will handle the delay via its onAnimationComplete prop
   };
 
-  const handleAnimationComplete = (href: string) => {
-    router.push(href);
-    // Reset state for next navigation
+  // THE FIX: This function now reads the destination from our state variable
+  const handleAnimationComplete = () => {
+    if (navigatingTo) {
+      router.push(navigatingTo);
+    }
+    // Reset state after navigation
     setSparkle(null);
-    isNavigating.current = false;
+    setNavigatingTo(null);
   };
-  
-  // Find the href of the currently active portal
-  const activePortalHref = sparkle ? portals.find(p => sparkle.key && p.title === portals.find(portal => portal.href === window.location.pathname)?.title)?.href : undefined;
-
 
   return (
     <>
@@ -95,10 +93,11 @@ export default function HallPage() {
       {sparkle && (
         <div
           key={sparkle.key}
-          className="fixed z-50"
+          className="fixed z-50 pointer-events-none"
           style={{ left: sparkle.x, top: sparkle.y }}
         >
-          <Sparkle onAnimationComplete={() => handleAnimationComplete(portals.find(p => sparkle.key && p.title === portals.find(portal => portal.href === window.location.pathname)?.title)?.href || '')} />
+          {/* THE FIX: The callback is now much simpler */}
+          <Sparkle onAnimationComplete={handleAnimationComplete} />
         </div>
       )}
     </>
