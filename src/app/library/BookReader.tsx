@@ -5,12 +5,15 @@ import HTMLFlipBook from 'react-pageflip';
 import { Book } from './content';
 
 // --- Helper Components for different page types ---
+
+// A single styled page component
 const Page = React.forwardRef<HTMLDivElement, { children: React.ReactNode }>(({ children }, ref) => {
   return (
     <div 
       ref={ref} 
       className="flex items-center justify-center p-8 md:p-12 bg-cover bg-center shadow-inner shadow-black/30"
-      style={{ backgroundImage: "url('/images/parchment-bg.png')" }}
+      // THE FIX: Updated the path to your parchment background image
+      style={{ backgroundImage: "url('/images/books/parchment-bg.png')" }}
     >
       <div className="text-gray-800 text-lg leading-relaxed">{children}</div>
     </div>
@@ -18,6 +21,7 @@ const Page = React.forwardRef<HTMLDivElement, { children: React.ReactNode }>(({ 
 });
 Page.displayName = 'Page';
 
+// The front cover of the book
 const CoverPage = React.forwardRef<HTMLDivElement, { title: string }>(({ title }, ref) => {
   return (
     <div ref={ref} className="bg-gray-800 flex flex-col items-center justify-center p-4 shadow-lg shadow-black/50">
@@ -27,6 +31,7 @@ const CoverPage = React.forwardRef<HTMLDivElement, { title: string }>(({ title }
 });
 CoverPage.displayName = 'CoverPage';
 
+// The Table of Contents page
 const TableOfContents = React.forwardRef<HTMLDivElement, { book: Book, onChapterClick: (page: number) => void }>(({ book, onChapterClick }, ref) => {
   return (
     <Page ref={ref}>
@@ -50,16 +55,17 @@ const TableOfContents = React.forwardRef<HTMLDivElement, { book: Book, onChapter
 });
 TableOfContents.displayName = 'TableOfContents';
 
+
 // --- The Main Book Reader Component ---
+
 interface BookReaderProps {
   book: Book;
 }
+
 export default function BookReader({ book }: BookReaderProps) {
   const flipBookRef = useRef<any>(null);
 
   const handleChapterClick = useCallback((pageNumber: number) => {
-    // The library displays two pages at a time, so we flip to the spread.
-    // Multiplying by 2 is not needed. We flip to the page number itself.
     flipBookRef.current?.pageFlip().flip(pageNumber);
   }, []);
 
