@@ -29,10 +29,11 @@ export default async function BookPage({ params }: PageProps) {
       </nav>
 
       {/* 
-        THE FIX: Added padding to the top (`pt-24`) to push the book down from the navigation,
-        ensuring it has room to be fully visible.
+        THE FIX: Reduced top padding on mobile from `pt-24` to `pt-20`.
+        This pulls the book up on smaller screens, while the `sm:pt-16`
+        for larger screens remains unchanged.
       */}
-      <div className="flex items-center justify-center min-h-screen p-4 sm:p-8 pt-24 sm:pt-16">
+      <div className="flex items-center justify-center min-h-screen p-4 sm:p-8 pt-20 sm:pt-16">
         <BookReader book={book} />
       </div>
     </main>
