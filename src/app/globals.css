@@ -1,7 +1,22 @@
-/*
-  This is the correct, stable version. With the other config
-  files fixed, this will be processed correctly.
+@import "tailwindcss";
+
+/* Define custom theme variables if needed, or rely on standard Tailwind */
+@theme {
+  --font-cinzel:Cn "Cinzel", serif;
+}
+
+:root {
+  --background: #000000;
+  --foreground: #ffffff;
+}
+
+/* 
+  Removed the explicit Arial font-family override that was likely 
+  killing your Cinzel font application in the previous version.
 */
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+body {
+  background: var(--background);
+  color: var(--foreground);
+  /* Ensure the Next.js font class applied in layout.tsx takes precedence */
+  font-family: inherit; 
+}

@@ -2,7 +2,13 @@ import type { Metadata } from "next";
 import { Cinzel } from "next/font/google";
 import "./globals.css";
 
-const cinzel = Cinzel({ subsets: ["latin"] });
+// Initialize the font with 'variable' to use it easily with Tailwind if preferred,
+// though direct application to body works too.
+const cinzel = Cinzel({ 
+  subsets: ["latin"],
+  variable: '--font-cinzel',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: "LordMagick.com",
@@ -16,8 +22,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      {/* This line applies the ancient font to your entire website */}
-      <body className={cinzel.className}>{children}</body>
+      {/* 
+        Apply the font className AND antialiasing for better text rendering.
+        The text-white default helps prevent flashes of unstyled content colors.
+      */}
+      <body className={`${cinzel.className} antialiased bg-black text-white`}>
+        {children}
+      </body>
     </html>
   );
 }
