@@ -13,14 +13,16 @@
 }
 
 /*
-  NEW: Sparkle Sprite Animation
-  This keyframe animation scrolls through the background image in steps.
-  This example assumes a sprite sheet with 24 frames. If yours has a
-  different number, change '24' to your frame count.
+  FIXED: Sparkle Sprite Animation (Now Vertical)
+  This animation now scrolls the background from top to bottom.
+  
+  IMPORTANT: The `to` value MUST be adjusted based on your sprite sheet.
+  Calculation: `0 -100% * (number of frames)`
+  Example for 10 frames: `0 -1000%`
 */
 @keyframes play-sparkle {
-  from { background-position: 0% 0; }
-  to { background-position: -2400% 0; } /* 100% * 24 frames */
+  from { background-position: 0 0; }
+  to { background-position: 0 100%; }
 }
 
 /* Helper class for the soft top edge (no changes) */
