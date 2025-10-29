@@ -15,7 +15,7 @@ const portals = [
 ];
 
 // NEW: This is now the master volume specifically for Sound Effects (SFX).
-const SFX_VOLUME = 0.6; // 60% volume, more prominent than the drone.
+const SFX_VOLUME = 0.2; // 20% volume, more prominent than the drone.
 
 export default function HallPage() {
   const router = useRouter();

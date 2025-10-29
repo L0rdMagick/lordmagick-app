@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 
-const DRONE_VOLUME = 0.3; // 30% volume, ideal for ambience
+const DRONE_VOLUME = 0.5; // 30% volume, ideal for ambience
 
 const BackgroundAudio = () => {
   useEffect(() => {
