@@ -48,7 +48,7 @@ const portals = [
 
 // NEW: Define a single master volume for all sounds on this page.
 // 0.5 means 50% of the maximum volume. You can adjust this value.
-const MASTER_VOLUME = 0.5;
+const MASTER_VOLUME = 0.33;
 
 export default function HallPage() {
   const router = useRouter();
