@@ -15,10 +15,19 @@ Page.displayName = 'Page';
 const CoverPage = React.forwardRef<HTMLDivElement, { title: string, coverImage: string }>(({ title, coverImage }, ref) => ( <div ref={ref} className="relative bg-gray-900 shadow-lg shadow-black/50"> <Image src={coverImage} alt={`${title} cover`} fill style={{ objectFit: 'cover' }} priority /> <div className="absolute inset-0 bg-black/40" /> <div className="absolute inset-0 flex items-center justify-center z-10 p-4 pr-2"> <h1 className={`text-[#d2b48c] text-center max-w-[80%] text-2xl md:text-3xl lg:text-4xl ${uncialAntiqua.className}`} style={{ textShadow: '1px 1px 4px rgba(0,0,0,0.9)' }}>{title}</h1> </div> </div> ));
 CoverPage.displayName = 'CoverPage';
 
-// NEW: A component for the back cover that just shows the image.
-const BackCoverPage = React.forwardRef<HTMLDivElement, { coverImage: string }>(({ coverImage }, ref) => (
-  <div ref={ref} className="relative bg-gray-900 shadow-lg shadow-black/50">
+// THE FIX 1: The BackCoverPage now accepts an `onClose` function.
+const BackCoverPage = React.forwardRef<HTMLDivElement, { coverImage: string; onClose: () => void; }>(({ coverImage, onClose }, ref) => (
+  <div ref={ref} className="relative bg-gray-900 shadow-lg shadow-black/50 group">
     <Image src={coverImage} alt="Book back cover" fill style={{ objectFit: 'cover' }} />
+    {/* This overlay appears on hover and triggers the close action */}
+    <div 
+      className="absolute inset-0 bg-black/50 flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+      onClick={onClose}
+    >
+      <span className={`text-2xl text-amber-200 ${uncialAntiqua.className}`} style={{ textShadow: '1px 1px 3px rgba(0,0,0,0.7)' }}>
+        Close Tome &rarr;
+      </span>
+    </div>
   </div>
 ));
 BackCoverPage.displayName = 'BackCoverPage';
@@ -35,8 +44,12 @@ export default function BookReader({ book }: BookReaderProps) {
     flipBookRef.current?.pageFlip().flip(pageNumber);
   }, []);
 
+  // THE FIX 2: A new handler to trigger the final page flip.
+  const handleCloseBook = useCallback(() => {
+    flipBookRef.current?.pageFlip().flipNext();
+  }, []);
+
   return (
-    // THE FIX 1: Added max-h-[90vh] to ensure the book never exceeds 90% of the screen's height.
     <div className="w-full max-w-5xl aspect-[1/1.2] md:aspect-[2/1.2] max-h-[90vh]">
       <HTMLFlipBook
         width={500} height={600}
@@ -62,8 +75,8 @@ export default function BookReader({ book }: BookReaderProps) {
           <div className="text-center text-gray-500">End of Tome</div>
         </Page>
         
-        {/* THE FIX 2: Added the BackCoverPage as the very last child. */}
-        <BackCoverPage coverImage={book.coverImage} />
+        {/* THE FIX 3: Pass the `handleCloseBook` function to the BackCoverPage. */}
+        <BackCoverPage coverImage={book.coverImage} onClose={handleCloseBook} />
       </HTMLFlipBook>
     </div>
   );
