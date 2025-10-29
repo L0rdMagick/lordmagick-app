@@ -38,9 +38,8 @@ export default function HallPage() {
           alt="The Grand Hall of LordMagick.com"
           fill
           style={{ objectFit: 'cover' }}
-          quality={100} // Ensure high quality image
+          quality={100}
         />
-        {/* Semi-transparent overlay to help text and portals stand out */}
         <div className="absolute inset-0 bg-black/40" />
       </div>
 
@@ -63,7 +62,6 @@ export default function HallPage() {
         </header>
 
         {/* Responsive Portal Grid */}
-        {/* FIXED: Reverted to 'md:grid-cols-4' for a better PC layout experience on more screen sizes. */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-8 w-full max-w-7xl">
           {portals.map((portal) => (
             <Link
@@ -81,7 +79,6 @@ export default function HallPage() {
                   className="transition-transform duration-300 group-hover:scale-110"
                 />
               </div>
-              {/* This will now correctly inherit the Cinzel font */}
               <span className="mt-2 sm:mt-4 text-center font-semibold text-white text-md sm:text-lg" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.9)' }}>
                 {portal.title}
               </span>

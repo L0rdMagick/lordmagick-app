@@ -1,6 +1,6 @@
 /*
-  With the configuration files fixed, this will now work correctly
-  and the linter warnings in VS Code should disappear.
+  This is the correct, stable version. With the other config
+  files fixed, this will be processed correctly.
 */
 @tailwind base;
 @tailwind components;
