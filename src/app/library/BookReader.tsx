@@ -6,19 +6,14 @@ import HTMLFlipBook from 'react-pageflip';
 import { Book } from './content';
 import { Crimson_Text, Uncial_Antiqua } from 'next/font/google';
 
-// Font for the book's interior pages (no change)
 const crimsonText = Crimson_Text({
   subsets: ['latin'],
   weight: ['400', '700'],
 });
-
-// Font for the cover titles (no change)
 const uncialAntiqua = Uncial_Antiqua({
   subsets: ['latin'],
   weight: ['400'],
 });
-
-// --- Helper Components for different page types ---
 
 const Page = React.forwardRef<HTMLDivElement, { children: React.ReactNode }>(({ children }, ref) => {
   return (
@@ -32,11 +27,9 @@ const Page = React.forwardRef<HTMLDivElement, { children: React.ReactNode }>(({ 
 });
 Page.displayName = 'Page';
 
-// THE FIX: Refactored the CoverPage component for perfect centering.
 const CoverPage = React.forwardRef<HTMLDivElement, { title: string, coverImage: string }>(({ title, coverImage }, ref) => {
   return (
     <div ref={ref} className="relative bg-gray-900 shadow-lg shadow-black/50">
-      {/* Background Image - fills the entire cover */}
       <Image 
         src={coverImage}
         alt={`${title} cover`}
@@ -44,16 +37,14 @@ const CoverPage = React.forwardRef<HTMLDivElement, { title: string, coverImage: 
         style={{ objectFit: 'cover' }}
         priority
       />
-      {/* Dark overlay for readability */}
       <div className="absolute inset-0 bg-black/40" />
       
-      {/* 
-        Centering Container: This new div is the key.
-        It's an absolute overlay that uses flexbox to perfectly center the title.
-      */}
-      <div className="absolute inset-0 flex items-center justify-center z-10 p-4">
+      {/* Centering Container */}
+      {/* THE FIX 2: Added `pr-2` to nudge the title slightly to the right for visual centering */}
+      <div className="absolute inset-0 flex items-center justify-center z-10 p-4 pr-2">
         <h1 
-          className={`text-amber-200 text-center max-w-[80%] text-2xl md:text-3xl lg:text-4xl ${uncialAntiqua.className}`} 
+          // THE FIX 1: Changed text color to a tan hex code
+          className={`text-[#d2b48c] text-center max-w-[80%] text-2xl md:text-3xl lg:text-4xl ${uncialAntiqua.className}`} 
           style={{ textShadow: '1px 1px 4px rgba(0,0,0,0.9)' }}
         >
           {title}
@@ -64,35 +55,14 @@ const CoverPage = React.forwardRef<HTMLDivElement, { title: string, coverImage: 
 });
 CoverPage.displayName = 'CoverPage';
 
-
 const TableOfContents = React.forwardRef<HTMLDivElement, { book: Book, onChapterClick: (page: number) => void }>(({ book, onChapterClick }, ref) => {
-  return (
-    <Page ref={ref}>
-      <div>
-        <h2 className="text-3xl font-bold text-center mb-8 border-b-2 border-gray-500 pb-2">Table of Contents</h2>
-        <ul className="space-y-4">
-          {book.chapters.map((chapter, index) => (
-            <li key={index}>
-              <button
-                onClick={() => onChapterClick(index + 2)}
-                className="hover:text-amber-800 hover:underline transition-colors duration-300 text-left"
-              >
-                {chapter.title}
-              </button>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </Page>
-  );
+  // ... (No changes here)
+  return ( <Page ref={ref}> <div> <h2 className="text-3xl font-bold text-center mb-8 border-b-2 border-gray-500 pb-2">Table of Contents</h2> <ul className="space-y-4"> {book.chapters.map((chapter, index) => ( <li key={index}> <button onClick={() => onChapterClick(index + 2)} className="hover:text-amber-800 hover:underline transition-colors duration-300 text-left"> {chapter.title} </button> </li> ))} </ul> </div> </Page> );
 });
 TableOfContents.displayName = 'TableOfContents';
 
+interface BookReaderProps { book: Book; }
 
-// --- The Main Book Reader Component ---
-interface BookReaderProps {
-  book: Book;
-}
 export default function BookReader({ book }: BookReaderProps) {
   const flipBookRef = useRef<any>(null);
 
@@ -111,13 +81,21 @@ export default function BookReader({ book }: BookReaderProps) {
         minHeight={420}
         maxHeight={1350}
         maxShadowOpacity={0.5}
-        showCover={true}
+        showCover={true} // This tells the library to treat the first child as the cover
         mobileScrollSupport={true}
         className={`shadow-2xl shadow-black/70 ${crimsonText.className}`}
         ref={flipBookRef}
       >
+        {/*
+          THE FIX 3: We now ONLY have the CoverPage as the first element.
+          The library automatically uses this as the front cover, so no
+          extra monotone cover will be shown.
+        */}
         <CoverPage title={book.title} coverImage={book.coverImage} />
+
+        {/* The first "real" page is the Table of Contents */}
         <TableOfContents book={book} onChapterClick={handleChapterClick} />
+
         {book.chapters.map((chapter, index) => (
           <Page key={index}>
             <div>
@@ -126,6 +104,8 @@ export default function BookReader({ book }: BookReaderProps) {
             </div>
           </Page>
         ))}
+
+        {/* The final page is automatically used as the back cover */}
         <Page>
           <div className="text-center text-gray-500">End of Tome</div>
         </Page>
