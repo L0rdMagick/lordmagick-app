@@ -46,7 +46,7 @@ const portals = [
   },
 ];
 
-const MASTER_VOLUME = 0.5;
+const MASTER_VOLUME = 0.25;
 
 export default function HallPage() {
   const router = useRouter();
@@ -57,7 +57,7 @@ export default function HallPage() {
   useEffect(() => {
     const droneSound = new Audio('/audio/sfx-drone-main-hall.mp3');
     droneSound.loop = true;
-    droneSound.volume = MASTER_VOLUME;
+    droneSound.volume = .5;
     droneSound.play().catch(error => console.error("Drone audio failed to play:", error));
 
     portals.forEach(portal => {
