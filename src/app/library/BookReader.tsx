@@ -1,13 +1,19 @@
 "use client";
 
 import React, { useRef, useCallback } from 'react';
+import Image from 'next/image'; // NEW: Import the Image component
 import HTMLFlipBook from 'react-pageflip';
 import { Book } from './content';
+import { Crimson_Text } from 'next/font/google'; // NEW: Import the new font
+
+// NEW: Initialize the font for the book's interior pages
+const crimsonText = Crimson_Text({
+  subsets: ['latin'],
+  weight: ['400', '700'], // Include normal and bold weights
+});
 
 // --- Helper Components for different page types ---
 
-// A single styled page component
-// THE FIX: Changed the type for children from `React.Node` to `React.ReactNode`
 const Page = React.forwardRef<HTMLDivElement, { children: React.ReactNode }>(({ children }, ref) => {
   return (
     <div 
@@ -20,17 +26,27 @@ const Page = React.forwardRef<HTMLDivElement, { children: React.ReactNode }>(({ 
 });
 Page.displayName = 'Page';
 
-// The front cover of the book
-const CoverPage = React.forwardRef<HTMLDivElement, { title: string }>(({ title }, ref) => {
+// THE FIX 1: The CoverPage component now accepts and displays an image
+const CoverPage = React.forwardRef<HTMLDivElement, { title: string, coverImage: string }>(({ title, coverImage }, ref) => {
   return (
-    <div ref={ref} className="bg-gray-800 flex flex-col items-center justify-center p-4 shadow-lg shadow-black/50">
-      <h1 className="text-3xl text-amber-200 text-center" style={{ textShadow: '1px 1px 3px rgba(0,0,0,0.7)' }}>{title}</h1>
+    <div ref={ref} className="relative bg-gray-900 flex flex-col items-center justify-center p-4 shadow-lg shadow-black/50">
+      <Image 
+        src={coverImage}
+        alt={`${title} cover`}
+        fill
+        style={{ objectFit: 'cover' }}
+        priority // Load the cover image faster
+      />
+      {/* Add a dark overlay to ensure the title is always readable */}
+      <div className="absolute inset-0 bg-black/40" />
+      <h1 className="relative z-10 text-3xl text-amber-200 text-center" style={{ textShadow: '1px 1px 3px rgba(0,0,0,0.7)' }}>
+        {title}
+      </h1>
     </div>
   );
 });
 CoverPage.displayName = 'CoverPage';
 
-// The Table of Contents page
 const TableOfContents = React.forwardRef<HTMLDivElement, { book: Book, onChapterClick: (page: number) => void }>(({ book, onChapterClick }, ref) => {
   return (
     <Page ref={ref}>
@@ -68,6 +84,7 @@ export default function BookReader({ book }: BookReaderProps) {
 
   return (
     <div className="w-full max-w-5xl aspect-2/1.2">
+      {/* THE FIX 2: Apply the new font's className to the book container */}
       <HTMLFlipBook
         width={500}
         height={600}
@@ -79,11 +96,14 @@ export default function BookReader({ book }: BookReaderProps) {
         maxShadowOpacity={0.5}
         showCover={true}
         mobileScrollSupport={true}
-        className="shadow-2xl shadow-black/70"
+        className={`shadow-2xl shadow-black/70 ${crimsonText.className}`}
         ref={flipBookRef}
       >
-        <CoverPage title={book.title} />
+        {/* THE FIX 3: Pass the cover image URL to the CoverPage component */}
+        <CoverPage title={book.title} coverImage={book.coverImage} />
+        
         <TableOfContents book={book} onChapterClick={handleChapterClick} />
+        
         {book.chapters.map((chapter, index) => (
           <Page key={index}>
             <div>
@@ -92,6 +112,7 @@ export default function BookReader({ book }: BookReaderProps) {
             </div>
           </Page>
         ))}
+
         <Page>
           <div className="text-center text-gray-500">End of Tome</div>
         </Page>
