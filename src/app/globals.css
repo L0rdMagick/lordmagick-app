@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* Previous mist animations remain here... */
+/* Mist animations remain here */
 @keyframes flow-mist {
   0% { background-position: 0% 50%; }
   100% { background-position: 200% 50%; }
@@ -12,20 +12,11 @@
   100% { background-position: 200% 50%; opacity: 0; }
 }
 
-/*
-  FIXED: Sparkle Sprite Animation (Now Vertical)
-  This animation now scrolls the background from top to bottom.
-  
-  IMPORTANT: The `to` value MUST be adjusted based on your sprite sheet.
-  Calculation: `0 -100% * (number of frames)`
-  Example for 10 frames: `0 -1000%`
+/* 
+  REMOVED: The old @keyframes play-sparkle is no longer needed.
 */
-@keyframes play-sparkle {
-  from { background-position: 0 0; }
-  to { background-position: 0 100%; }
-}
 
-/* Helper class for the soft top edge (no changes) */
+/* Helper class for the soft top edge */
 .mist-overlay {
   mask-image: linear-gradient(to top, black 60%, transparent 100%);
   -webkit-mask-image: linear-gradient(to top, black 60%, transparent 100%);

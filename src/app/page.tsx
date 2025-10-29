@@ -11,6 +11,8 @@ export default function HomePage() {
   const handleEnter = () => {
     setIsEntering(true);
     if (videoRef.current) {
+      // THE FIX: Ensure the video is unmuted before playing.
+      videoRef.current.muted = false;
       videoRef.current.play();
     }
   };
@@ -26,14 +28,13 @@ export default function HomePage() {
         src="/videos/door-animation.mp4"
         className="absolute inset-0 w-full h-full object-cover z-10"
         playsInline
-        muted
+        // THE FIX: The video now starts muted but is unmuted on click.
+        muted 
         preload="auto"
         poster="/images/video-poster.png"
         onEnded={handleVideoEnd}
       />
 
-      {/* UPDATED: The button is now completely removed from the DOM when isEntering is true, */}
-      {/* instead of just being made invisible. This prevents any flashing. */}
       {!isEntering && (
         <button 
           onClick={handleEnter}

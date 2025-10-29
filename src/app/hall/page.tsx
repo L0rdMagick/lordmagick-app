@@ -1,16 +1,17 @@
-"use client"; // This must be the very first line
+"use client";
 
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useState, useRef, MouseEvent } from 'react';
+import Sparkle from '../components/Sparkle'; // NEW: Import the Sparkle component
 
-// (The interface and portals array remain the same)
 interface SparkleState {
   key: number;
   x: number;
   y: number;
 }
 const portals = [
+  // ... (portal data remains the same)
   {
     title: "Spell Room",
     href: "/spell-room",
@@ -46,78 +47,59 @@ export default function HallPage() {
   const router = useRouter();
   const [sparkle, setSparkle] = useState<SparkleState | null>(null);
   const isNavigating = useRef(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const handlePortalClick = (e: MouseEvent<HTMLAnchorElement>, href: string) => {
     e.preventDefault();
     if (isNavigating.current) return;
 
     isNavigating.current = true;
+    
+    // Play the magickal whoosh sound
+    if (!audioRef.current) {
+      audioRef.current = new Audio('/audio/portal-whoosh.mp3');
+    }
+    audioRef.current.play();
+
+    // Trigger the sparkle animation at the click position
     setSparkle({ key: Date.now(), x: e.clientX, y: e.clientY });
 
-    setTimeout(() => {
-      router.push(href);
-    }, 800);
+    // The sparkle component will handle the delay via its onAnimationComplete prop
   };
+
+  const handleAnimationComplete = (href: string) => {
+    router.push(href);
+    // Reset state for next navigation
+    setSparkle(null);
+    isNavigating.current = false;
+  };
+  
+  // Find the href of the currently active portal
+  const activePortalHref = sparkle ? portals.find(p => sparkle.key && p.title === portals.find(portal => portal.href === window.location.pathname)?.title)?.href : undefined;
+
 
   return (
     <>
       <main className="relative min-h-screen w-full bg-black">
         {/* All other page content remains the same... */}
-        <div className="fixed inset-0 z-0">
-          <Image src="/images/grand-hall-bg.png" alt="The Grand Hall" fill style={{ objectFit: 'cover' }} quality={100} />
-          <div className="absolute inset-0 bg-black/40" />
-        </div>
+        <div className="fixed inset-0 z-0"><Image src="/images/grand-hall-bg.png" alt="The Grand Hall" fill style={{ objectFit: 'cover' }} quality={100} /><div className="absolute inset-0 bg-black/40" /></div>
         <div className="relative z-20 flex flex-col items-center w-full px-4 pt-8 pb-16 sm:px-8 sm:pb-24">
-          <header className="text-center mb-12 text-white">
-            <div className="relative w-full max-w-sm md:max-w-md lg:max-w-lg mx-auto mb-4" style={{ filter: 'drop-shadow(2px 2px 8px rgba(0,0,0,0.8))' }}>
-              <Image src="/images/logo-lordmagick.com.png" alt="LordMagick.com Logo" width={600} height={200} priority style={{ width: '100%', height: 'auto' }} />
+            <header className="text-center mb-12 text-white"><div className="relative w-full max-w-sm md:max-w-md lg:max-w-lg mx-auto mb-4" style={{ filter: 'drop-shadow(2px 2px 8px rgba(0,0,0,0.8))' }}><Image src="/images/logo-lordmagick.com.png" alt="LordMagick.com Logo" width={600} height={200} priority style={{ width: '100%', height: 'auto' }} /></div><p className="text-lg md:text-xl text-amber-300" style={{ textShadow: '1px 1px 4px rgba(0,0,0,0.8)' }}>Unlock Ancient Secrets. Master Your Craft.</p></header>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-8 w-full max-w-7xl">
+                {portals.map((portal) => (<div key={portal.title} className="flex flex-col items-center gap-y-2"><div className="relative w-full max-w-[200px] aspect-3/1" style={{ filter: 'drop-shadow(2px 4px 6px rgba(0,0,0,0.6))' }}><Image src={portal.signImageSrc} alt={`${portal.title} Sign`} fill style={{ objectFit: 'contain' }} /></div><a href={portal.href} onClick={(e) => handlePortalClick(e, portal.href)} className={`relative w-full aspect-3/4 group block cursor-pointer transition-all duration-300 hover:scale-105 active:scale-95 ${portal.interactiveGlow}`} style={{ '--glow-color': 'transparent', filter: 'drop-shadow(8px 12px 20px rgba(0,0,0,0.8)) drop-shadow(0 0 15px var(--glow-color))' } as React.CSSProperties}><Image src={portal.imageSrc} alt={`${portal.title} Portal`} fill style={{ objectFit: 'contain' }} className="transition-transform duration-300 group-hover:scale-110" /></a></div>))}
             </div>
-            <p className="text-lg md:text-xl text-amber-300" style={{ textShadow: '1px 1px 4px rgba(0,0,0,0.8)' }}>
-              Unlock Ancient Secrets. Master Your Craft.
-            </p>
-          </header>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-8 w-full max-w-7xl">
-            {portals.map((portal) => (
-              <div key={portal.title} className="flex flex-col items-center gap-y-2">
-                <div className="relative w-full max-w-[200px] aspect-3/1" style={{ filter: 'drop-shadow(2px 4px 6px rgba(0,0,0,0.6))' }}>
-                  <Image src={portal.signImageSrc} alt={`${portal.title} Sign`} fill style={{ objectFit: 'contain' }} />
-                </div>
-                <a
-                  href={portal.href}
-                  onClick={(e) => handlePortalClick(e, portal.href)}
-                  className={`relative w-full aspect-3/4 group block cursor-pointer transition-all duration-300 hover:scale-105 active:scale-95 ${portal.interactiveGlow}`}
-                  style={{ '--glow-color': 'transparent', filter: 'drop-shadow(8px 12px 20px rgba(0,0,0,0.8)) drop-shadow(0 0 15px var(--glow-color))' } as React.CSSProperties}
-                >
-                  <Image src={portal.imageSrc} alt={`${portal.title} Portal`} fill style={{ objectFit: 'contain' }} className="transition-transform duration-300 group-hover:scale-110" />
-                </a>
-              </div>
-            ))}
-          </div>
         </div>
       </main>
 
-      {/* FIXED: Sparkle effect now configured for a VERTICAL sprite sheet */}
+      {/* NEW: Render the digital sparkle component */}
       {sparkle && (
         <div
           key={sparkle.key}
-          className="fixed pointer-events-none z-50 w-48 h-48 bg-[url('/images/sparkle-sprite.png')] bg-no-repeat"
-          style={{
-            left: sparkle.x,
-            top: sparkle.y,
-            transform: 'translate(-50%, -50%)',
-            // backgroundSize tells the browser the dimensions of the full sprite sheet
-            // The height is now 1000% (10 frames tall).
-            // Adjust this number to match your frame count! (e.g., 8 frames = 800%)
-            backgroundSize: '100% 1000%',
-            
-            // The animation now plays through 9 steps (for 10 frames).
-            // Adjust this number! It should be (number of frames - 1).
-            animation: 'play-sparkle 0.8s steps(9) forwards',
-          }}
-          onAnimationEnd={() => {
-            isNavigating.current = false;
-          }}
-        />
+          className="fixed z-50"
+          style={{ left: sparkle.x, top: sparkle.y }}
+        >
+          <Sparkle onAnimationComplete={() => handleAnimationComplete(portals.find(p => sparkle.key && p.title === portals.find(portal => portal.href === window.location.pathname)?.title)?.href || '')} />
+        </div>
       )}
     </>
   );
