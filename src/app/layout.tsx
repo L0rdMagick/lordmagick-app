@@ -22,8 +22,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       {/*
-        By applying the variable here, the `font-cinzel` utility class from our
-        Tailwind config will now correctly apply the Cinzel font family.
+        FIX: Added `font-cinzel` to the body's className.
+        This explicitly applies the font family defined in your Tailwind config.
+        The `cinzel.variable` makes the font available, and `font-cinzel` applies it.
       */}
       <body className={`${cinzel.variable} font-cinzel bg-black text-white antialiased`}>
         {children}

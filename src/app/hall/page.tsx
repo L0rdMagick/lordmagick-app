@@ -43,8 +43,11 @@ export default function HallPage() {
         <div className="absolute inset-0 bg-black/40" />
       </div>
 
-      {/* Content Layer */}
-      <div className="relative z-20 flex flex-col items-center w-full px-4 py-16 sm:px-8 sm:py-24">
+      {/* 
+        Content Layer 
+        FIX: Changed padding from py-16/py-24 to pt-8/pb-16 to move all content up.
+      */}
+      <div className="relative z-20 flex flex-col items-center w-full px-4 pt-8 pb-16 sm:px-8 sm:pb-24">
         <header className="text-center mb-12 text-white">
           <div className="relative w-full max-w-sm md:max-w-md lg:max-w-lg mx-auto mb-4" style={{ filter: 'drop-shadow(2px 2px 8px rgba(0,0,0,0.8))' }}>
             <Image
@@ -68,7 +71,14 @@ export default function HallPage() {
               key={portal.title}
               href={portal.href}
               className={`group flex flex-col items-center transition-all duration-300 hover:scale-105 active:scale-95 ${portal.interactiveGlow}`}
-              style={{ '--glow-color': 'transparent', filter: 'drop-shadow(0 0 15px var(--glow-color))' } as React.CSSProperties}
+              /*
+                FIX: Added a permanent drop-shadow for a 3D effect to the existing filter.
+                This new shadow will always be visible, while the glow appears on hover.
+              */
+              style={{
+                '--glow-color': 'transparent',
+                filter: 'drop-shadow(4px 6px 10px rgba(0,0,0,0.7)) drop-shadow(0 0 15px var(--glow-color))'
+              } as React.CSSProperties}
             >
               <div className="relative w-full aspect-3/4">
                 <Image
