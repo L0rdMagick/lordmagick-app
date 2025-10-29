@@ -1,45 +1,26 @@
 @import "tailwindcss";
 
-/* ANIMATION 1: The bottom layer (no changes) */
+/* Previous mist animations remain here... */
 @keyframes flow-mist {
-  0% {
-    background-position: 0% 50%;
-  }
-  100% {
-    background-position: 200% 50%;
-  }
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+@keyframes flow-mist-crossfade {
+  0% { background-position: 0% 50%; opacity: 0; }
+  6% { opacity: 1; }
+  96% { opacity: 1; }
+  100% { background-position: 200% 50%; opacity: 0; }
 }
 
 /*
-  ANIMATION 2: The top layer (UPDATED with balanced fade timing)
+  NEW: Sparkle Sprite Animation
+  This keyframe animation scrolls through the background image in steps.
+  This example assumes a sprite sheet with 24 frames. If yours has a
+  different number, change '24' to your frame count.
 */
-@keyframes flow-mist-crossfade {
-  /* Start completely transparent */
-  0% {
-    background-position: 0% 50%;
-    opacity: 0;
-  }
-  /*
-    THE TIMING FIX (FADE-IN):
-    The fade-in now happens over the first 6% of the animation (~2.7 seconds)
-    to make it feel smoother and less jarring.
-  */
-  6% {
-    opacity: 1;
-  }
-  /*
-    THE TIMING FIX (FADE-OUT):
-    The fade-out now happens over the last 4% of the animation (~1.8 seconds).
-    This creates a more perceptually balanced fade effect.
-  */
-  96% {
-    opacity: 1;
-  }
-  /* End completely transparent */
-  100% {
-    background-position: 200% 50%;
-    opacity: 0;
-  }
+@keyframes play-sparkle {
+  from { background-position: 0% 0; }
+  to { background-position: -2400% 0; } /* 100% * 24 frames */
 }
 
 /* Helper class for the soft top edge (no changes) */
