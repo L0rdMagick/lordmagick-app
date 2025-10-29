@@ -4,7 +4,6 @@ import React, { useRef, useCallback } from 'react';
 import Image from 'next/image';
 import HTMLFlipBook from 'react-pageflip';
 import { Book } from './content';
-// NEW: Import a second font, one specifically for the book covers
 import { Crimson_Text, Uncial_Antiqua } from 'next/font/google';
 
 // Font for the book's interior pages (no change)
@@ -13,7 +12,7 @@ const crimsonText = Crimson_Text({
   weight: ['400', '700'],
 });
 
-// NEW: A more flamboyant, magical font for the cover titles
+// Font for the cover titles (no change)
 const uncialAntiqua = Uncial_Antiqua({
   subsets: ['latin'],
   weight: ['400'],
@@ -33,11 +32,11 @@ const Page = React.forwardRef<HTMLDivElement, { children: React.ReactNode }>(({ 
 });
 Page.displayName = 'Page';
 
-// CoverPage component is now updated for better title presentation
+// THE FIX: Refactored the CoverPage component for perfect centering.
 const CoverPage = React.forwardRef<HTMLDivElement, { title: string, coverImage: string }>(({ title, coverImage }, ref) => {
   return (
-    // THE FIX 1: The flex container already centers content perfectly.
-    <div ref={ref} className="relative bg-gray-900 flex flex-col items-center justify-center p-4 shadow-lg shadow-black/50">
+    <div ref={ref} className="relative bg-gray-900 shadow-lg shadow-black/50">
+      {/* Background Image - fills the entire cover */}
       <Image 
         src={coverImage}
         alt={`${title} cover`}
@@ -45,23 +44,26 @@ const CoverPage = React.forwardRef<HTMLDivElement, { title: string, coverImage: 
         style={{ objectFit: 'cover' }}
         priority
       />
+      {/* Dark overlay for readability */}
       <div className="absolute inset-0 bg-black/40" />
-      {/*
-        THE FIX 2:
-        - Applied the new `uncialAntiqua` font.
-        - Changed `text-3xl` to a responsive `text-2xl md:text-3xl` for better fitting.
-        - Added `max-w-[80%]` to ensure the title never touches the edges of the cover.
+      
+      {/* 
+        Centering Container: This new div is the key.
+        It's an absolute overlay that uses flexbox to perfectly center the title.
       */}
-      <h1 
-        className={`relative z-10 text-amber-200 text-center max-w-[80%] text-2xl md:text-3xl lg:text-4xl ${uncialAntiqua.className}`} 
-        style={{ textShadow: '1px 1px 4px rgba(0,0,0,0.9)' }}
-      >
-        {title}
-      </h1>
+      <div className="absolute inset-0 flex items-center justify-center z-10 p-4">
+        <h1 
+          className={`text-amber-200 text-center max-w-[80%] text-2xl md:text-3xl lg:text-4xl ${uncialAntiqua.className}`} 
+          style={{ textShadow: '1px 1px 4px rgba(0,0,0,0.9)' }}
+        >
+          {title}
+        </h1>
+      </div>
     </div>
   );
 });
 CoverPage.displayName = 'CoverPage';
+
 
 const TableOfContents = React.forwardRef<HTMLDivElement, { book: Book, onChapterClick: (page: number) => void }>(({ book, onChapterClick }, ref) => {
   return (
