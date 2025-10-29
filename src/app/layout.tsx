@@ -7,7 +7,6 @@ const cinzel = Cinzel({
   display: 'swap',
 });
 
-// THE FIX: Changed the colon back to an equals sign to properly initialize the constant.
 export const metadata: Metadata = {
   title: "LordMagick.com",
   description: "Unlock Ancient Secrets. Master Your Craft.",
@@ -23,19 +22,24 @@ export default function RootLayout({
       <body className={`${cinzel.className} bg-black text-white antialiased`}>
         {children}
 
+        {/* 
+          THE OPACITY FIX: Changed both layers from opacity-30 to opacity-40
+          to make the mist effect more prominent.
+        */}
+
         {/* Bottom Layer (Always Visible) */}
         <div
           className="mist-overlay fixed bottom-0 left-0 w-full h-2/5 
                      bg-[url('/images/mist-overlay.png')] bg-repeat-x 
-                     z-30 pointer-events-none opacity-30 
+                     z-30 pointer-events-none opacity-40 
                      animate-[flow-mist_45s_linear_infinite]"
         />
         
         {/* Top Layer (Crossfades to hide the loop) */}
         <div
-          className="mist-overlay fixed bottom-0 left-0 w-full h-2/f/5 
+          className="mist-overlay fixed bottom-0 left-0 w-full h-2/5 
                      bg-[url('/images/mist-overlay.png')] bg-repeat-x 
-                     z-30 pointer-events-none opacity-30 
+                     z-30 pointer-events-none opacity-40 
                      animate-[flow-mist-crossfade_45s_linear_infinite]"
         />
       </body>

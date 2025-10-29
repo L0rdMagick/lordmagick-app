@@ -11,7 +11,7 @@
 }
 
 /*
-  ANIMATION 2: The top layer (UPDATED with a fade-in)
+  ANIMATION 2: The top layer (UPDATED with longer fade duration)
 */
 @keyframes flow-mist-crossfade {
   /* Start completely transparent */
@@ -20,17 +20,20 @@
     opacity: 0;
   }
   /*
-    THE FIX: Gently fade IN over the first 5% of the animation (~2.25 seconds).
-    This removes the jarring "snap" effect.
+    THE FADE-IN FIX:
+    Gently fade IN over the first 4.5% of the animation (~2 seconds).
   */
-  5% {
+  4.5% {
     opacity: 1;
   }
-  /* Stay fully opaque for the majority of the duration */
-  90% {
+  /*
+    THE FADE-OUT FIX:
+    Stay fully opaque until 95.5%, then fade OUT over the last ~2 seconds.
+  */
+  95.5% {
     opacity: 1;
   }
-  /* Fade out at the end */
+  /* End completely transparent */
   100% {
     background-position: 200% 50%;
     opacity: 0;
