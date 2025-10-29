@@ -16,28 +16,28 @@ const portals = [
     title: "Spell Room",
     href: "/spell-room",
     imageSrc: "/images/portal-spell.png",
-    signImageSrc: "/images/spell-room-sign.png", // NEW: Image for the plaque
+    signImageSrc: "/images/spell-room-sign.png",
     interactiveGlow: "group-hover:[--glow-color:theme(colors.purple.500)] active:[--glow-color:theme(colors.purple.500)]",
   },
   {
     title: "Oracle Room",
     href: "/oracle-room",
     imageSrc: "/images/portal-oracle.png",
-    signImageSrc: "/images/oracle-room-sign.png", // NEW: Image for the plaque
+    signImageSrc: "/images/oracle-room-sign.png",
     interactiveGlow: "group-hover:[--glow-color:theme(colors.cyan.500)] active:[--glow-color:theme(colors.cyan.500)]",
   },
   {
     title: "The Library",
     href: "/library",
     imageSrc: "/images/portal-library.png",
-    signImageSrc: "/images/the-library-sign.png", // NEW: Image for the plaque
+    signImageSrc: "/images/the-library-sign.png",
     interactiveGlow: "group-hover:[--glow-color:theme(colors.orange.500)] active:[--glow-color:theme(colors.orange.500)]",
   },
   {
     title: "Marketplace",
     href: "/marketplace",
     imageSrc: "/images/portal-marketplace.png",
-    signImageSrc: "/images/marketplace-sign.png", // NEW: Image for the plaque
+    signImageSrc: "/images/marketplace-sign.png",
     interactiveGlow: "group-hover:[--glow-color:theme(colors.green.500)] active:[--glow-color:theme(colors.green.500)]",
   },
 ];
@@ -82,12 +82,9 @@ export default function HallPage() {
           {/* Portal Grid */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-8 w-full max-w-7xl">
             {portals.map((portal) => (
-              <div key={portal.title} className="flex flex-col items-center">
-                {/*
-                  NEW: Render the Sign Image ABOVE the portal.
-                  This entire block replaces the old dynamic plaque div.
-                */}
-                <div className="relative w-full max-w-[200px] aspect-[3/1] mb-2" style={{ filter: 'drop-shadow(2px 4px 6px rgba(0,0,0,0.6))' }}>
+              <div key={portal.title} className="flex flex-col items-center gap-y-2">
+                {/* Plaque Image */}
+                <div className="relative w-full max-w-[200px] aspect-3/1" style={{ filter: 'drop-shadow(2px 4px 6px rgba(0,0,0,0.6))' }}>
                   <Image
                     src={portal.signImageSrc}
                     alt={`${portal.title} Sign`}
@@ -96,16 +93,24 @@ export default function HallPage() {
                   />
                 </div>
 
-                {/* Portal Link (No functional changes) */}
+                {/* 
+                  THE FIX: The sizing classes (`w-full`, `aspect-3/4`) have been moved to the `<a>` tag.
+                  The `<a>` tag is also now `relative` so the `fill` Image inside it works correctly.
+                  The redundant inner `div` has been removed.
+                */}
                 <a
                   href={portal.href}
                   onClick={(e) => handlePortalClick(e, portal.href)}
-                  className={`group block cursor-pointer transition-all duration-300 hover:scale-105 active:scale-95 ${portal.interactiveGlow}`}
+                  className={`relative w-full aspect-3/4 group block cursor-pointer transition-all duration-300 hover:scale-105 active:scale-95 ${portal.interactiveGlow}`}
                   style={{ '--glow-color': 'transparent', filter: 'drop-shadow(8px 12px 20px rgba(0,0,0,0.8)) drop-shadow(0 0 15px var(--glow-color))' } as React.CSSProperties}
                 >
-                  <div className="relative w-full aspect-3/4">
-                    <Image src={portal.imageSrc} alt={`${portal.title} Portal`} fill style={{ objectFit: 'contain' }} className="transition-transform duration-300 group-hover:scale-110" />
-                  </div>
+                  <Image 
+                    src={portal.imageSrc} 
+                    alt={`${portal.title} Portal`} 
+                    fill 
+                    style={{ objectFit: 'contain' }} 
+                    className="transition-transform duration-300 group-hover:scale-110" 
+                  />
                 </a>
               </div>
             ))}
