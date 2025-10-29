@@ -1,8 +1,18 @@
+"use client"; // NEW: Convert this to a client component to use hooks.
+
 import Image from 'next/image';
 import Link from 'next/link';
+import { useEffect } from 'react'; // NEW: Import useEffect
 import { libraryBooks } from './content';
 
 export default function LibraryPage() {
+  
+  // THE FIX: This useEffect hook runs every time you navigate to the bookshelf.
+  // It forcefully resets the body's overflow style, guaranteeing the scrollbar returns.
+  useEffect(() => {
+    document.body.style.overflow = 'auto';
+  }, []); // The empty array ensures this runs once when the component mounts.
+
   return (
     <main className="relative min-h-screen w-full bg-black bg-cover bg-center p-8" style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}>
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
@@ -20,11 +30,9 @@ export default function LibraryPage() {
           <Link
             key={book.slug}
             href={`/library/${book.slug}`}
-            // THE FIX: Updated to the correct Tailwind v4 important modifier syntax
             className="group flex flex-col items-center text-center transition-all duration-300 hover:scale-105! active:scale-95"
           >
             <div 
-              // THE FIX: Updated to the canonical aspect-ratio class
               className="relative w-full aspect-2/3 rounded-lg shadow-2xl shadow-black/50 overflow-hidden transform transition-transform duration-500 group-hover:-translate-y-2 group-hover:rotate-3"
               style={{ filter: 'drop-shadow(4px 8px 15px rgba(0,0,0,0.7))' }}
             >
