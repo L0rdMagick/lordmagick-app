@@ -68,10 +68,6 @@ export default function HallPage() {
               key={portal.title}
               href={portal.href}
               className={`group flex flex-col items-center transition-all duration-300 hover:scale-105 active:scale-95 ${portal.interactiveGlow}`}
-              /*
-                FIX: Greatly exaggerated the drop-shadow for a more dramatic 3D effect.
-                It's now darker, larger, and more offset.
-              */
               style={{
                 '--glow-color': 'transparent',
                 filter: 'drop-shadow(8px 12px 20px rgba(0,0,0,0.8)) drop-shadow(0 0 15px var(--glow-color))'

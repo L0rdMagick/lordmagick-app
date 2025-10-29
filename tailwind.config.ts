@@ -7,13 +7,9 @@ const config: Config = {
     "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
-    extend: {
-      fontFamily: {
-        // This makes the 'font-cinzel' utility class available,
-        // which we'll use in the layout file.
-        cinzel: ["var(--font-cinzel)"],
-      },
-    },
+    // We no longer need to extend the fontFamily here.
+    // The font is now handled directly by the className from next/font.
+    extend: {},
   },
   plugins: [],
 };

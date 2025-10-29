@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
-import { Cinzel } from "next/font/google";
+import { Cinzel } from "next/font/google"; // Correctly using Cinzel
 import "./globals.css";
 
-// Initialize the font and assign it a CSS variable name.
+// Initialize the Cinzel font. We no longer need the 'variable' property.
 const cinzel = Cinzel({
   subsets: ["latin"],
-  variable: '--font-cinzel', // This variable is used in tailwind.config.ts
   display: 'swap',
 });
 
@@ -22,11 +21,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       {/*
-        FIX: Added `font-cinzel` to the body's className.
-        This explicitly applies the font family defined in your Tailwind config.
-        The `cinzel.variable` makes the font available, and `font-cinzel` applies it.
+        THE FIX: We apply `cinzel.className` directly to the body.
+        This is the most foolproof method to apply the font from next/font.
+        It handles all the necessary CSS rules automatically.
       */}
-      <body className={`${cinzel.variable} font-cinzel bg-black text-white antialiased`}>
+      <body className={`${cinzel.className} bg-black text-white antialiased`}>
         {children}
       </body>
     </html>
