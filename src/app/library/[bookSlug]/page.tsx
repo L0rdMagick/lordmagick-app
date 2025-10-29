@@ -1,21 +1,31 @@
 import { libraryBooks } from '../content';
-import BookReader from '../BookReader'; // THE FIX: Changed path from './' to '../'
+import BookReader from '../BookReader';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 interface PageProps {
-  params: {
+  // The params object itself is a Promise in recent Next.js versions
+  params: Promise<{
     bookSlug: string;
-  };
+  }>;
 }
 
-export default function BookPage({ params }: PageProps) {
-  const { bookSlug } = params;
+// THE FIX 1: The function is now `async`
+export default async function BookPage({ params }: PageProps) {
+  // THE FIX 2: We `await` the params to resolve the Promise
+  const { bookSlug } = await params;
+  
+  // (You can remove the diagnostic console.logs now if you wish)
+  console.log(`Trying to find book with slug: "${bookSlug}"`);
+  
   const book = libraryBooks.find((b) => b.slug === bookSlug);
 
   if (!book) {
+    console.error(`Book with slug "${bookSlug}" was NOT FOUND in content.ts!`);
     notFound();
   }
+  
+  console.log(`Successfully found book: "${book.title}"`);
 
   return (
     <main className="relative min-h-screen w-full bg-black bg-cover bg-center" style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}>
