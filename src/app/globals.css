@@ -1,1 +1,26 @@
 @import "tailwindcss";
+
+/*
+  ADD THIS ANIMATION:
+  This creates a slow, infinitely looping horizontal scroll.
+  We move the background position to 200% to ensure a smooth loop
+  with seamless textures.
+*/
+@keyframes flow-mist {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+/*
+  ADD THIS HELPER CLASS:
+  This applies a gradient mask to the mist, making its top edge
+  fade softly into the background instead of having a hard line.
+*/
+.mist-overlay {
+  mask-image: linear-gradient(to top, black 60%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to top, black 60%, transparent 100%);
+}

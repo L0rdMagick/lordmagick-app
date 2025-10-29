@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
-import { Cinzel } from "next/font/google"; // Correctly using Cinzel
+import { Cinzel } from "next/font/google";
 import "./globals.css";
 
-// Initialize the Cinzel font. We no longer need the 'variable' property.
 const cinzel = Cinzel({
   subsets: ["latin"],
   display: 'swap',
@@ -20,13 +19,19 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      {/*
-        THE FIX: We apply `cinzel.className` directly to the body.
-        This is the most foolproof method to apply the font from next/font.
-        It handles all the necessary CSS rules automatically.
-      */}
       <body className={`${cinzel.className} bg-black text-white antialiased`}>
         {children}
+
+        {/* 
+          NEW: Mystical Mist Overlay 
+          This div creates the entire effect.
+        */}
+        <div
+          className="mist-overlay fixed bottom-0 left-0 w-full h-2/5 
+                     bg-[url('/images/mist-overlay.png')] bg-repeat-x 
+                     z-30 pointer-events-none opacity-50 
+                     animate-[flow-mist_45s_linear_infinite]"
+        />
       </body>
     </html>
   );
