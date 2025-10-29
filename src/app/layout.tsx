@@ -31,7 +31,7 @@ export default function RootLayout({
         <div
           className="mist-overlay fixed bottom-0 left-0 w-full h-2/5 
                      bg-[url('/images/mist-overlay.png')] bg-repeat-x 
-                     z-30 pointer-events-none opacity-[.30] 
+                     z-30 pointer-events-none opacity-[.50] 
                      animate-[flow-mist_45s_linear_infinite]"
         />
         
@@ -39,7 +39,7 @@ export default function RootLayout({
         <div
           className="mist-overlay fixed bottom-0 left-0 w-full h-2/5 
                      bg-[url('/images/mist-overlay.png')] bg-repeat-x 
-                     z-30 pointer-events-none opacity-[.30] 
+                     z-30 pointer-events-none opacity-[.50] 
                      animate-[flow-mist-crossfade_45s_linear_infinite]"
         />
       </body>
