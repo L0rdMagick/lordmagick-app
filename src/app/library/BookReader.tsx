@@ -1,15 +1,22 @@
 "use client";
 
 import React, { useRef, useCallback } from 'react';
-import Image from 'next/image'; // NEW: Import the Image component
+import Image from 'next/image';
 import HTMLFlipBook from 'react-pageflip';
 import { Book } from './content';
-import { Crimson_Text } from 'next/font/google'; // NEW: Import the new font
+// NEW: Import a second font, one specifically for the book covers
+import { Crimson_Text, Uncial_Antiqua } from 'next/font/google';
 
-// NEW: Initialize the font for the book's interior pages
+// Font for the book's interior pages (no change)
 const crimsonText = Crimson_Text({
   subsets: ['latin'],
-  weight: ['400', '700'], // Include normal and bold weights
+  weight: ['400', '700'],
+});
+
+// NEW: A more flamboyant, magical font for the cover titles
+const uncialAntiqua = Uncial_Antiqua({
+  subsets: ['latin'],
+  weight: ['400'],
 });
 
 // --- Helper Components for different page types ---
@@ -26,20 +33,29 @@ const Page = React.forwardRef<HTMLDivElement, { children: React.ReactNode }>(({ 
 });
 Page.displayName = 'Page';
 
-// THE FIX 1: The CoverPage component now accepts and displays an image
+// CoverPage component is now updated for better title presentation
 const CoverPage = React.forwardRef<HTMLDivElement, { title: string, coverImage: string }>(({ title, coverImage }, ref) => {
   return (
+    // THE FIX 1: The flex container already centers content perfectly.
     <div ref={ref} className="relative bg-gray-900 flex flex-col items-center justify-center p-4 shadow-lg shadow-black/50">
       <Image 
         src={coverImage}
         alt={`${title} cover`}
         fill
         style={{ objectFit: 'cover' }}
-        priority // Load the cover image faster
+        priority
       />
-      {/* Add a dark overlay to ensure the title is always readable */}
       <div className="absolute inset-0 bg-black/40" />
-      <h1 className="relative z-10 text-3xl text-amber-200 text-center" style={{ textShadow: '1px 1px 3px rgba(0,0,0,0.7)' }}>
+      {/*
+        THE FIX 2:
+        - Applied the new `uncialAntiqua` font.
+        - Changed `text-3xl` to a responsive `text-2xl md:text-3xl` for better fitting.
+        - Added `max-w-[80%]` to ensure the title never touches the edges of the cover.
+      */}
+      <h1 
+        className={`relative z-10 text-amber-200 text-center max-w-[80%] text-2xl md:text-3xl lg:text-4xl ${uncialAntiqua.className}`} 
+        style={{ textShadow: '1px 1px 4px rgba(0,0,0,0.9)' }}
+      >
         {title}
       </h1>
     </div>
@@ -84,7 +100,6 @@ export default function BookReader({ book }: BookReaderProps) {
 
   return (
     <div className="w-full max-w-5xl aspect-2/1.2">
-      {/* THE FIX 2: Apply the new font's className to the book container */}
       <HTMLFlipBook
         width={500}
         height={600}
@@ -99,11 +114,8 @@ export default function BookReader({ book }: BookReaderProps) {
         className={`shadow-2xl shadow-black/70 ${crimsonText.className}`}
         ref={flipBookRef}
       >
-        {/* THE FIX 3: Pass the cover image URL to the CoverPage component */}
         <CoverPage title={book.title} coverImage={book.coverImage} />
-        
         <TableOfContents book={book} onChapterClick={handleChapterClick} />
-        
         {book.chapters.map((chapter, index) => (
           <Page key={index}>
             <div>
@@ -112,7 +124,6 @@ export default function BookReader({ book }: BookReaderProps) {
             </div>
           </Page>
         ))}
-
         <Page>
           <div className="text-center text-gray-500">End of Tome</div>
         </Page>
