@@ -23,15 +23,15 @@ export default function RootLayout({
         {children}
 
         {/* 
-          THE OPACITY FIX: Changed both layers from opacity-30 to opacity-40
-          to make the mist effect more prominent.
+          THE OPACITY FIX: Changed from opacity-40 to a more precise opacity-[.35]
+          for a ~10% reduction in visibility.
         */}
 
         {/* Bottom Layer (Always Visible) */}
         <div
           className="mist-overlay fixed bottom-0 left-0 w-full h-2/5 
                      bg-[url('/images/mist-overlay.png')] bg-repeat-x 
-                     z-30 pointer-events-none opacity-40 
+                     z-30 pointer-events-none opacity-[.35] 
                      animate-[flow-mist_45s_linear_infinite]"
         />
         
@@ -39,7 +39,7 @@ export default function RootLayout({
         <div
           className="mist-overlay fixed bottom-0 left-0 w-full h-2/5 
                      bg-[url('/images/mist-overlay.png')] bg-repeat-x 
-                     z-30 pointer-events-none opacity-40 
+                     z-30 pointer-events-none opacity-[.35] 
                      animate-[flow-mist-crossfade_45s_linear_infinite]"
         />
       </body>
