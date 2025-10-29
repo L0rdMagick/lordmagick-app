@@ -18,17 +18,17 @@ export default function Template({ children }: { children: React.ReactNode }) {
         key={pathname}
         
         // The animation starts with the page invisible and slightly moved down.
-        initial={{ opacity: 0, y: 15 }}
+        initial={{ opacity: 0, y: 0 }}
         
         // The animation ends with the page fully visible at its normal position.
         animate={{ opacity: 1, y: 0 }}
         
         // NEW: This defines the exit animation. It will fade out and move up.
-        exit={{ opacity: 0, y: -15 }}
+        exit={{ opacity: 0, y: 0 }}
         
         // This defines the smooth transition timing for all states.
         // I've slightly shortened the duration for a crisper feel.
-        transition={{ ease: 'easeInOut', duration: 0.75 }}
+        transition={{ ease: 'easeInOut', duration: 2.00 }}
       >
         {children}
       </motion.div>
