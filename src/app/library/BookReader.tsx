@@ -5,8 +5,6 @@ import HTMLFlipBook from 'react-pageflip';
 import { Book } from './content';
 
 // --- Helper Components for different page types ---
-
-// A single styled page component
 const Page = React.forwardRef<HTMLDivElement, { children: React.ReactNode }>(({ children }, ref) => {
   return (
     <div 
@@ -20,7 +18,6 @@ const Page = React.forwardRef<HTMLDivElement, { children: React.ReactNode }>(({ 
 });
 Page.displayName = 'Page';
 
-// The front cover of the book
 const CoverPage = React.forwardRef<HTMLDivElement, { title: string }>(({ title }, ref) => {
   return (
     <div ref={ref} className="bg-gray-800 flex flex-col items-center justify-center p-4 shadow-lg shadow-black/50">
@@ -30,7 +27,6 @@ const CoverPage = React.forwardRef<HTMLDivElement, { title: string }>(({ title }
 });
 CoverPage.displayName = 'CoverPage';
 
-// The Table of Contents page
 const TableOfContents = React.forwardRef<HTMLDivElement, { book: Book, onChapterClick: (page: number) => void }>(({ book, onChapterClick }, ref) => {
   return (
     <Page ref={ref}>
@@ -54,22 +50,21 @@ const TableOfContents = React.forwardRef<HTMLDivElement, { book: Book, onChapter
 });
 TableOfContents.displayName = 'TableOfContents';
 
-
 // --- The Main Book Reader Component ---
-
 interface BookReaderProps {
   book: Book;
 }
-
 export default function BookReader({ book }: BookReaderProps) {
   const flipBookRef = useRef<any>(null);
 
   const handleChapterClick = useCallback((pageNumber: number) => {
-    flipBookRef.current?.pageFlip().flip(pageNumber * 2, 'top');
+    // The library displays two pages at a time, so we flip to the spread.
+    // Multiplying by 2 is not needed. We flip to the page number itself.
+    flipBookRef.current?.pageFlip().flip(pageNumber);
   }, []);
 
   return (
-    <div className="w-full max-w-5xl aspect-[2/1.2]">
+    <div className="w-full max-w-5xl aspect-2/1.2">
       <HTMLFlipBook
         width={500}
         height={600}
@@ -84,13 +79,8 @@ export default function BookReader({ book }: BookReaderProps) {
         className="shadow-2xl shadow-black/70"
         ref={flipBookRef}
       >
-        {/* Page 0: Front Cover */}
         <CoverPage title={book.title} />
-        
-        {/* Page 1: Table of Contents */}
         <TableOfContents book={book} onChapterClick={handleChapterClick} />
-        
-        {/* Subsequent pages for each chapter */}
         {book.chapters.map((chapter, index) => (
           <Page key={index}>
             <div>
@@ -99,12 +89,8 @@ export default function BookReader({ book }: BookReaderProps) {
             </div>
           </Page>
         ))}
-
-        {/* Final blank page for the back cover */}
         <Page>
-          <div className="text-center text-gray-500">
-            End of Tome
-          </div>
+          <div className="text-center text-gray-500">End of Tome</div>
         </Page>
       </HTMLFlipBook>
     </div>
