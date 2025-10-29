@@ -33,7 +33,7 @@ export default async function BookPage({ params }: PageProps) {
         This pulls the book up on smaller screens, while the `sm:pt-16`
         for larger screens remains unchanged.
       */}
-      <div className="flex items-center justify-center min-h-screen p-4 sm:p-8 pt-10 sm:pt-16">
+      <div className="flex items-center justify-center min-h-screen p-4 sm:p-8 pt-0 sm:pt-16">
         <BookReader book={book} />
       </div>
     </main>
