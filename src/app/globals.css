@@ -1,9 +1,6 @@
 @import "tailwindcss";
 
-/*
-  ANIMATION 1: The original, simple scroll for the bottom layer.
-  This layer is always visible and provides the base motion.
-*/
+/* ANIMATION 1: The bottom layer (no changes) */
 @keyframes flow-mist {
   0% {
     background-position: 0% 50%;
@@ -14,27 +11,33 @@
 }
 
 /*
-  NEW ANIMATION 2: The crossfade scroll for the top layer.
-  This layer scrolls identically but fades out at the very end of its loop,
-  revealing the bottom layer before it resets.
+  ANIMATION 2: The top layer (UPDATED with a fade-in)
 */
 @keyframes flow-mist-crossfade {
+  /* Start completely transparent */
   0% {
     background-position: 0% 50%;
+    opacity: 0;
+  }
+  /*
+    THE FIX: Gently fade IN over the first 5% of the animation (~2.25 seconds).
+    This removes the jarring "snap" effect.
+  */
+  5% {
     opacity: 1;
   }
-  /* For most of the animation, it's fully visible */
+  /* Stay fully opaque for the majority of the duration */
   90% {
     opacity: 1;
   }
-  /* In the last 10% of the animation, it fades out completely */
+  /* Fade out at the end */
   100% {
     background-position: 200% 50%;
     opacity: 0;
   }
 }
 
-/* Helper class for the soft top edge (no changes here) */
+/* Helper class for the soft top edge (no changes) */
 .mist-overlay {
   mask-image: linear-gradient(to top, black 60%, transparent 100%);
   -webkit-mask-image: linear-gradient(to top, black 60%, transparent 100%);
