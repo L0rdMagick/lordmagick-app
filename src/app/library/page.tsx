@@ -11,7 +11,7 @@ export default function LibraryPage() {
         <h1 className="text-5xl md:text-6xl text-amber-300" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
           The Library
         </h1>
-        <p className="mt-4 text-lg text-gray-300">Select a tome to begin your studies.</p>
+        <p className="mt-4 text-lg text-gray-300">Select a  tome to begin your studies.</p>
       </div>
 
       {/* The Bookshelf */}
