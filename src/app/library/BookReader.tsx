@@ -22,12 +22,12 @@ export default function BookReader({ book }: BookReaderProps) {
   const flipBookRef = useRef<any>(null);
 
   useEffect(() => {
-    // On mount, hide the scrollbar on both elements for safety.
+    // On mount, hide the scrollbar.
     document.documentElement.style.overflow = 'hidden';
     document.body.style.overflow = 'hidden';
 
-    // THE FIX: This cleanup function is now more robust.
-    // It runs when you navigate away from the book page for any reason.
+    // This cleanup function will run when the component unmounts.
+    // It's good practice, and the failsafe in template.tsx will back it up.
     return () => {
       document.documentElement.style.overflow = 'auto';
       document.body.style.overflow = 'auto';
