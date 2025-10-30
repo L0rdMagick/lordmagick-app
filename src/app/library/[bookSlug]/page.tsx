@@ -1,5 +1,5 @@
 import { getBookBySlug, getAllBooks } from '@/lib/library';
-import BookReader from '../BookReader';
+import BookReader from '../BookReader'; // FIX: The path is now '../BookReader' because we moved the file
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Book } from '@/types';
