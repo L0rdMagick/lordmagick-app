@@ -1,18 +1,11 @@
-"use client"; // NEW: Convert this to a client component to use hooks.
+"use client"; 
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useEffect } from 'react'; // NEW: Import useEffect
 import { libraryBooks } from './content';
 
 export default function LibraryPage() {
   
-  // THE FIX: This useEffect hook runs every time you navigate to the bookshelf.
-  // It forcefully resets the body's overflow style, guaranteeing the scrollbar returns.
-  useEffect(() => {
-    document.body.style.overflow = 'auto';
-  }, []); // The empty array ensures this runs once when the component mounts.
-
   return (
     <main className="relative min-h-screen w-full bg-black bg-cover bg-center p-8" style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}>
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
