@@ -1,21 +1,22 @@
-// We no longer need the raw bookCache for testing
 import { getBookBySlug } from '@/lib/library'; 
 import BookReader from '../BookReader';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
-// THE FIX: This line ensures the page is always rendered dynamically on the server
-// at request time, guaranteeing that the URL params are available.
+// THE FINAL FIX (Part 1): These two lines explicitly tell Next.js and Vercel:
+// 1. This page MUST be rendered dynamically on every request.
+// 2. You are NOT ALLOWED to cache anything for this page.
+// This forces Next.js to correctly parse the URL and provide the params every time.
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
-interface PageProps {
-  params: { bookSlug: string; };
-}
-
-export default async function BookPage({ params }: PageProps) {
-  // Check if params or bookSlug are missing, and trigger a 404 if so.
+// The interface is fine, but we'll use an inline type for maximum clarity.
+export default async function BookPage({ params }: { params: { bookSlug: string } }) {
+  
+  // Our defensive check remains.
   if (!params || !params.bookSlug) {
-    console.error('[RUNTIME ERROR] Page was rendered without a bookSlug in params.');
+    // This should no longer be possible with the configuration above.
+    console.error('[RUNTIME ERROR] Page was rendered without a bookSlug in params. This indicates a severe Next.js routing issue.');
     notFound();
   }
 
@@ -23,7 +24,6 @@ export default async function BookPage({ params }: PageProps) {
   const book = await getBookBySlug(bookSlug);
 
   if (!book) {
-    // This will now correctly trigger if a book like "non-existent-book" is visited.
     notFound();
   }
 
