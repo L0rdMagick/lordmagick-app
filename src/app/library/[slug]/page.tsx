@@ -1,28 +1,73 @@
-import { getBookBySlug } from '@/lib/library'; 
+"use client"; // This is now a Client Component.
+
+import { useState, useEffect } from 'react';
+import { useParams } from 'next/navigation';
+import { Book } from '@/lib/library'; // We still need the Book type
 import BookReader from '../BookReader';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
 
-// Keep these lines. They are still best practice for this situation.
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+// A simple loading component to show while we fetch the book data.
+function LoadingSpinner() {
+  return (
+    <div className="text-center text-amber-200 text-2xl">
+      <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-amber-200 mx-auto mb-4"></div>
+      Unsealing the Tome...
+    </div>
+  );
+}
 
-// THE FINAL FIX: We now expect a 'slug' parameter instead of 'bookSlug'.
-// This avoids the framework bug that is preventing 'bookSlug' from being passed.
-export default async function BookPage({ params }: { params: { slug: string } }) {
-  
-  if (!params || !params.slug) {
-    console.error('[RUNTIME ERROR] Page was rendered without a slug in params.');
-    notFound();
-  }
+export default function BookPage() {
+  // useParams is a client-side hook to get URL parameters.
+  // This replaces the broken server-side 'params' prop.
+  const params = useParams();
+  const slug = params.slug as string;
 
-  // Use the new 'slug' variable.
-  const slug = decodeURIComponent(params.slug);
-  const book = await getBookBySlug(slug);
+  const [book, setBook] = useState<Book | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  if (!book) {
-    notFound();
-  }
+  useEffect(() => {
+    // This effect runs in the browser after the page loads.
+    if (slug) {
+      const fetchBook = async () => {
+        try {
+          setLoading(true);
+          // We fetch the data from our new API endpoint.
+          const response = await fetch(`/api/books/${slug}`);
+          
+          if (!response.ok) {
+            throw new Error('The tome could not be found.');
+          }
+          
+          const data: Book = await response.json();
+          setBook(data);
+        } catch (err: any) {
+          setError(err.message);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchBook();
+    }
+  }, [slug]); // Rerun this effect if the slug changes.
+
+  // --- Main Render Logic ---
+
+  // The content of the main page wrapper.
+  const pageContent = () => {
+    if (loading) {
+      return <LoadingSpinner />;
+    }
+    if (error) {
+      return <div className="text-center text-red-400 text-2xl">Error: {error}</div>;
+    }
+    if (book) {
+      return <BookReader book={book} />;
+    }
+    // This will handle the case where the slug is somehow missing.
+    return <div className="text-center text-red-400 text-2xl">Invalid book specified.</div>;
+  };
 
   return (
     <main className="relative min-h-screen w-full bg-black bg-cover bg-center" style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}>
@@ -36,7 +81,7 @@ export default async function BookPage({ params }: { params: { slug: string } })
         </Link>
       </nav>
       <div className="flex items-center justify-center min-h-screen p-4 sm:p-8 pt-20 sm:pt-16">
-        <BookReader book={book} />
+        {pageContent()}
       </div>
     </main>
   );
