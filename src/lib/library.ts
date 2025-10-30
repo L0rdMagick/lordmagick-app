@@ -1,53 +1,42 @@
 import fs from 'fs';
 import path from 'path';
-import matter from 'gray-matter';
-import { marked } from 'marked';
+// NO LONGER IMPORTING 'gray-matter' or 'marked'
 import type { Book } from '@/types';
 
 const booksDirectory = path.join(process.cwd(), 'src/content/books');
 
-export async function getAllBooks(): Promise<Book[]> {
+export function getAllBooks(): Book[] {
   const allEntries = fs.readdirSync(booksDirectory);
   const bookSlugs = allEntries.filter(entry => {
     const fullPath = path.join(booksDirectory, entry);
     return fs.statSync(fullPath).isDirectory();
   });
-  
-  const allBooksData = await Promise.all(bookSlugs.map(slug => getBookBySlug(slug)));
-  return allBooksData;
+  // This still needs to return an array of book-like objects for generateStaticParams
+  return bookSlugs.map(slug => ({
+    slug: slug,
+    title: 'Test Title',
+    coverImage: '/images/books/placeholder.png', // A known-good image path
+    chapters: [],
+  }));
 }
 
-export async function getBookBySlug(slug: string): Promise<Book> {
-  const fullPath = path.join(booksDirectory, slug, 'index.md');
-  const fileContents = fs.readFileSync(fullPath, 'utf8');
-  const { data, content } = matter(fileContents);
-
-  // THE FIX: Correctly 'await' the asynchronous 'marked.parse()' function.
-  const contentHtml = await marked.parse(content || '');
-
-  const chapters: { title: string; content: string }[] = [];
-  const chapterParts = contentHtml.split(/(<h2[^>]*>.*?<\/h2>)/);
-
-  if (chapterParts.length > 1 && chapterParts[0].trim() === '') {
-    chapterParts.shift();
-  }
-
-  for (let i = 0; i < chapterParts.length; i += 2) {
-    const titleHtml = chapterParts[i];
-    const contentHtmlFragment = chapterParts[i + 1] || '';
-    const title = titleHtml.replace(/<[^>]+>/g, '').trim();
-    if (title) {
-      chapters.push({ title, content: contentHtmlFragment.trim() });
-    }
-  }
-
-  const bookData: Book = {
+export function getBookBySlug(slug: string): Book {
+  // THE DEFINITIVE DIAGNOSTIC STEP:
+  // This function IGNORES the file content entirely.
+  // It returns a completely hardcoded, 100% serializable object.
+  // If the build passes with this code, the problem is proven to be one of
+  // the parsing libraries we removed.
+  const hardcodedBook: Book = {
     slug: slug,
-    title: data.title || 'Untitled Book',
-    coverImage: data.coverImage || '',
-    chapters: chapters,
+    title: `Test Book: ${slug}`,
+    coverImage: '/images/books/energy-work-and-manipulation.png', // Use a known-good path
+    chapters: [
+      {
+        title: 'Test Chapter',
+        content: '<p>This is a test. If you see this, the build worked.</p>'
+      }
+    ]
   };
 
-  // The final sanitization step remains as the ultimate guarantee.
-  return JSON.parse(JSON.stringify(bookData));
+  return hardcodedBook;
 }
