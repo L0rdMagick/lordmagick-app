@@ -3,6 +3,7 @@ import path from 'path';
 import matter from 'gray-matter';
 import { remark } from 'remark';
 import html from 'remark-html';
+import { notFound } from 'next/navigation';
 
 // Define the structure of a Chapter and a Book
 export interface Chapter {
@@ -17,33 +18,34 @@ export interface Book {
   chapters: Chapter[];
 }
 
-// Point to the new directory where you'll store your book content
+// Point to the directory where you store your book content
 const booksDirectory = path.join(process.cwd(), '_books');
 
 /**
- * Parses a Markdown file into a Book object.
- * @param slug - The unique identifier for the book (from its filename).
- * @param fileContents - The raw string content of the markdown file.
- * @returns A promise that resolves to the fully parsed Book object.
+ * Parses a Markdown book file's content into a Book object.
  */
 async function parseBookFile(slug: string, fileContents: string): Promise<Book> {
-  // Use gray-matter to parse the book's metadata (frontmatter)
   const { data, content } = matter(fileContents);
 
-  // Find the corresponding cover image in the public directory
+  // Dynamically find the cover image based on the slug
   const coverImageExtensions = ['png', 'jpg', 'jpeg', 'webp'];
-  let coverImage = '/images/books/default-cover.png'; // A fallback cover
+  let coverImage = '/images/books/default-cover.png'; // A fallback
   for (const ext of coverImageExtensions) {
-    if (fs.existsSync(path.join(process.cwd(), `public/images/books/${slug}.${ext}`))) {
+    const potentialCover = path.join(process.cwd(), `public/images/books/${slug}.${ext}`);
+    if (fs.existsSync(potentialCover)) {
       coverImage = `/images/books/${slug}.${ext}`;
       break;
     }
   }
 
-  // --- Chapter Parsing Logic ---
-  // Split the book content into chapters using H2 headings (##) as delimiters
+  // Split the book content by H2 headings to create chapters
   const chapterHeadings = content.split('\n## ');
   const chapters: Chapter[] = [];
+
+  // Remove the first element if it's empty (from the frontmatter)
+  if (chapterHeadings[0].trim() === '') {
+    chapterHeadings.shift();
+  }
 
   for (const chapterText of chapterHeadings) {
     if (chapterText.trim() === '') continue;
@@ -52,14 +54,12 @@ async function parseBookFile(slug: string, fileContents: string): Promise<Book> 
     const title = lines[0].trim();
     const chapterContentRaw = lines.slice(1).join('\n');
 
-    // Convert the Markdown content of the chapter into HTML
+    // Convert chapter markdown to HTML
     const processedContent = await remark().use(html).process(chapterContentRaw);
     const contentHtml = processedContent.toString();
-
     chapters.push({ title, content: contentHtml });
   }
   
-  // Ensure required metadata is present
   if (!data.title) {
     throw new Error(`Book "${slug}" is missing a 'title' in its metadata.`);
   }
@@ -74,10 +74,8 @@ async function parseBookFile(slug: string, fileContents: string): Promise<Book> 
 
 /**
  * Gets all available books from the filesystem.
- * This function reads all .md files from the _books directory,
- * parses each one, and returns them as an array of Book objects.
  */
-async function getAllBooks(): Promise<Book[]> {
+export async function getAllBooks(): Promise<Book[]> {
   const fileNames = fs.readdirSync(booksDirectory).filter(file => file.endsWith('.md'));
   
   const allBooksData = await Promise.all(
@@ -92,5 +90,17 @@ async function getAllBooks(): Promise<Book[]> {
   return allBooksData;
 }
 
-// Export the dynamically generated list of books
-export const libraryBooks: Book[] = await getAllBooks();
+/**
+ * Gets a single book by its slug.
+ */
+export async function getBookBySlug(slug: string): Promise<Book | null> {
+    const fullPath = path.join(booksDirectory, `${slug}.md`);
+    
+    if (!fs.existsSync(fullPath)) {
+      return null;
+    }
+  
+    const fileContents = fs.readFileSync(fullPath, 'utf8');
+    const book = await parseBookFile(slug, fileContents);
+    return book;
+}

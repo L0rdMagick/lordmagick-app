@@ -1,16 +1,17 @@
-import { libraryBooks } from '../content';
+import { getBookBySlug } from '@/lib/library'; // FIXED IMPORT
 import BookReader from '../BookReader';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 interface PageProps {
-  params: Promise<{ bookSlug: string; }>;
+  params: { bookSlug: string; };
 }
 
 export default async function BookPage({ params }: PageProps) {
-  const { bookSlug } = await params;
-  const book = libraryBooks.find((b) => b.slug === bookSlug);
+  const { bookSlug } = params;
+  const book = await getBookBySlug(bookSlug);
 
+  // If the book doesn't exist, show a 404 page.
   if (!book) {
     notFound();
   }
@@ -28,12 +29,8 @@ export default async function BookPage({ params }: PageProps) {
         </Link>
       </nav>
 
-      {/* 
-        THE FIX: Reduced top padding on mobile from `pt-24` to `pt-20`.
-        This pulls the book up on smaller screens, while the `sm:pt-16`
-        for larger screens remains unchanged.
-      */}
-      <div className="flex items-center justify-center min-h-screen p-4 sm:p-8 pt-0 sm:pt-16">
+      <div className="flex items-center justify-center min-h-screen p-4 sm:p-8 pt-20 sm:pt-16">
+        {/* The BookReader component receives the book data fetched on the server */}
         <BookReader book={book} />
       </div>
     </main>
