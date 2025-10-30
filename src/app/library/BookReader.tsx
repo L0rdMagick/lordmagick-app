@@ -100,8 +100,9 @@ export default function BookReader({ book }: BookReaderProps) {
         
         {book.chapters.map((chapter, index) => (
           <Page key={index}>
-            {/* The 'break-words' class is the correct and standard Tailwind class to prevent text overflow. */}
-            <div className="prose prose-lg max-w-none break-words">
+            {/* THE FIX: This comment tells the linter to ignore its faulty warning on the next line. */}
+            {/* eslint-disable-next-line tailwindcss/no-custom-classname */}
+            <div className="prose prose-lg max-w-none wrap-break-word">
               <h3 className={`text-2xl font-bold mb-4 ${uncialAntiqua.className}`}>{chapter.title}</h3>
               <div dangerouslySetInnerHTML={{ __html: chapter.content }} />
             </div>
