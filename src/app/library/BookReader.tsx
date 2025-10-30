@@ -1,11 +1,13 @@
 "use client";
 
-import React, { useRef, useCallback, useEffect } from 'react';
+// REMOVED: No longer importing useEffect here.
+import React, { useRef, useCallback } from 'react'; 
 import Image from 'next/image';
 import HTMLFlipBook from 'react-pageflip';
-import type { Book } from '@/types';
+import { Book } from './content';
 import { Crimson_Text, Uncial_Antiqua } from 'next/font/google';
 
+// (All other code in this file remains exactly the same)
 const crimsonText = Crimson_Text({ subsets: ['latin'], weight: ['400', '700'], });
 const uncialAntiqua = Uncial_Antiqua({ subsets: ['latin'], weight: ['400'], });
 const Page = React.forwardRef<HTMLDivElement, { children?: React.ReactNode }>(({ children }, ref) => ( <div ref={ref} className="flex items-center justify-center p-8 md:p-12 bg-[#fdf9e8] bg-[url('/images/books/parchment-bg.png')] bg-cover bg-center shadow-inner shadow-black/30"> <div className="text-gray-800 text-lg leading-relaxed">{children}</div> </div> ));
@@ -14,27 +16,15 @@ const CoverPage = React.forwardRef<HTMLDivElement, { title: string, coverImage: 
 CoverPage.displayName = 'CoverPage';
 const BackCoverPage = React.forwardRef<HTMLDivElement, { coverImage: string; onClose: () => void; }>(({ coverImage, onClose }, ref) => ( <div ref={ref} className="relative bg-gray-900 shadow-lg shadow-black/50 group"> <Image src={coverImage} alt="Book back cover" fill style={{ objectFit: 'cover' }} /> <div className="absolute inset-0 bg-black/50 flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity duration-300" onClick={onClose}> <span className={`text-2xl text-amber-200 ${uncialAntiqua.className}`} style={{ textShadow: '1px 1px 3px rgba(0,0,0,0.7)' }}> Close Tome </span> </div> </div> ));
 BackCoverPage.displayName = 'BackCoverPage';
-const TableOfContents = React.forwardRef<HTMLDivElement, { book: Book, onChapterClick: (page: number) => void }>(({ book, onChapterClick }, ref) => ( <Page ref={ref}> <div> <h2 className="text-3xl font-bold text-center mb-8 border-b-2 border-gray-500 pb-2">Table of Contents</h2> <ul className="space-y-4"> 
-    {book.chapters.map((chapter: { title: string }, index: number) => ( 
-        <li key={index}> 
-            <button onClick={() => onChapterClick(index + 2)} className="hover:text-amber-800 hover:underline transition-colors duration-300 text-left"> {chapter.title} </button> 
-        </li> 
-    ))} 
-</ul> </div> </Page> ));
+const TableOfContents = React.forwardRef<HTMLDivElement, { book: Book, onChapterClick: (page: number) => void }>(({ book, onChapterClick }, ref) => ( <Page ref={ref}> <div> <h2 className="text-3xl font-bold text-center mb-8 border-b-2 border-gray-500 pb-2">Table of Contents</h2> <ul className="space-y-4"> {book.chapters.map((chapter, index) => ( <li key={index}> <button onClick={() => onChapterClick(index + 2)} className="hover:text-amber-800 hover:underline transition-colors duration-300 text-left"> {chapter.title} </button> </li> ))} </ul> </div> </Page> ));
 TableOfContents.displayName = 'TableOfContents';
-
-
 interface BookReaderProps { book: Book; }
 
 export default function BookReader({ book }: BookReaderProps) {
   const flipBookRef = useRef<any>(null);
 
-  useEffect(() => {
-    return () => {
-      document.documentElement.style.overflow = 'auto';
-      document.body.style.overflow = 'auto';
-    };
-  }, []);
+  // REMOVED: The old useEffect that managed the scrollbar is now gone.
+  // The bookshelf page will handle restoring the scrollbar instead.
 
   const handleChapterClick = useCallback((pageNumber: number) => {
     flipBookRef.current?.pageFlip().flip(pageNumber);
@@ -61,11 +51,11 @@ export default function BookReader({ book }: BookReaderProps) {
       >
         <CoverPage title={book.title} coverImage={book.coverImage} />
         <TableOfContents book={book} onChapterClick={handleChapterClick} />
-        {book.chapters.map((chapter: { title: string; content: string }, index: number) => (
+        {book.chapters.map((chapter, index) => (
           <Page key={index}>
             <div>
               <h3 className="text-2xl font-bold mb-4">{chapter.title}</h3>
-              <div className="book-content" dangerouslySetInnerHTML={{ __html: chapter.content }} />
+              <div dangerouslySetInnerHTML={{ __html: chapter.content }} />
             </div>
           </Page>
         ))}

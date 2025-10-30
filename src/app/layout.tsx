@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Cinzel } from "next/font/google";
 import "./globals.css";
-import ViewportManager from "./components/ViewportManager";
 import BackgroundAudio from "./components/BackgroundAudio"; // This path must match your file structure
 
 const cinzel = Cinzel({
@@ -22,7 +21,6 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${cinzel.className} bg-black text-white antialiased`}>
-        <ViewportManager />
         <BackgroundAudio />
         {children}
         

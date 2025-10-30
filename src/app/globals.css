@@ -1,13 +1,5 @@
 @import "tailwindcss";
 
-/* THE FIX: Add this new utility layer. */
-/* This tells mobile browsers that vertical swipes on an element with this class should be treated as a scroll. */
-@layer utilities {
-  .touch-pan-y {
-    touch-action: pan-y;
-  }
-}
-
 /* Mist animations remain here */
 @keyframes flow-mist {
   0% { background-position: 0% 50%; }
@@ -28,18 +20,4 @@
 .mist-overlay {
   mask-image: linear-gradient(to top, black 60%, transparent 100%);
   -webkit-mask-image: linear-gradient(to top, black 60%, transparent 100%);
-}
-/* New styles for images inside the book content */
-.book-content img {
-  display: block;
-  margin-left: auto;
-  margin-right: auto;
-  margin-top: 1.5rem;
-  margin-bottom: 1.5rem;
-  max-width: 80%; /* Adjust as needed */
-  height: auto;
-  aspect-ratio: 1 / 1; /* This makes the image square */
-  object-fit: cover; /* This prevents the image from distorting */
-  border-radius: 0.5rem; /* Optional: adds slightly rounded corners */
-  border: 1px solid rgba(0, 0, 0, 0.1); /* Optional: adds a subtle border */
 }
