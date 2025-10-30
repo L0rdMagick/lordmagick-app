@@ -3,25 +3,22 @@ import BookReader from '../BookReader';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
-// THE FINAL FIX (Part 1): These two lines explicitly tell Next.js and Vercel:
-// 1. This page MUST be rendered dynamically on every request.
-// 2. You are NOT ALLOWED to cache anything for this page.
-// This forces Next.js to correctly parse the URL and provide the params every time.
+// Keep these lines. They are still best practice for this situation.
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-// The interface is fine, but we'll use an inline type for maximum clarity.
-export default async function BookPage({ params }: { params: { bookSlug: string } }) {
+// THE FINAL FIX: We now expect a 'slug' parameter instead of 'bookSlug'.
+// This avoids the framework bug that is preventing 'bookSlug' from being passed.
+export default async function BookPage({ params }: { params: { slug: string } }) {
   
-  // Our defensive check remains.
-  if (!params || !params.bookSlug) {
-    // This should no longer be possible with the configuration above.
-    console.error('[RUNTIME ERROR] Page was rendered without a bookSlug in params. This indicates a severe Next.js routing issue.');
+  if (!params || !params.slug) {
+    console.error('[RUNTIME ERROR] Page was rendered without a slug in params.');
     notFound();
   }
 
-  const bookSlug = decodeURIComponent(params.bookSlug);
-  const book = await getBookBySlug(bookSlug);
+  // Use the new 'slug' variable.
+  const slug = decodeURIComponent(params.slug);
+  const book = await getBookBySlug(slug);
 
   if (!book) {
     notFound();
