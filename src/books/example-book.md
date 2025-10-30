@@ -38,17 +38,16 @@ This process is divided into four major stages:
 -   Citrinitas (yellowing)
 -   Rubedo (reddening)
 
-Each stage represents a profound transformation, mirroring the alchemist's own spiritual evolution. The path is long, but the rewards are immeasurable.```
+Each stage represents a profound transformation, mirroring the alchemist's own spiritual evolution. The path is long, but the rewards are immeasurable.
+
+---
+THE FIX (Part 2): This horizontal rule now acts as the "End of Book" marker.
+The parser will ignore everything below this line.
 
 ### How to Use the New System
 
-1.  **Create a Book File:** To add a new book titled "Grimoire of Shadows", create a new file named `grimoire-of-shadows.md` inside your `_books/` folder. The filename `grimoire-of-shadows` will become its unique `slug`.
+1.  **Create a Book File:** To add a new book titled "Grimoire of Shadows", create a new file named `grimoire-of-shadows.md` inside your `src/books/` folder. The filename `grimoire-of-shadows` will become its unique `slug`.
 2.  **Add Book Content:** Copy the format from `example-book.md`.
     *   **Title:** Set the main title in the `---` section at the top.
-    *   **Chapters:** Start each new chapter with `## ` (a space after the two hashes is important).
-    *   **Formatting:** Use standard Markdown for *italics*, **bold**, lists, etc.
-    *   **In-Book Images:** To add images inside a chapter, use the `![alt text](/path/to/image.png)` syntax. The path must be absolute from the `public` directory (e.g., `/images/books/grimoire/ritual.png`).
-3.  **Add the Cover Image:** Add the book's cover image to `public/images/books/`. The filename must match the slug exactly (e.g., `grimoire-of-shadows.png` or `grimoire-of-shadows.jpg`).
-4.  **Done!** The next time you build or run your application, the new book will automatically appear on your library bookshelf.
-
-This updated structure provides you with a powerful, clean, and easily replicable workflow for managing your library, elevating your project to a professional standard for content management.
+    *   **Chapters:** Start each new chapter with `## `.
+    *   **End of Book:** Place a `---` on its own line after the final chapter's content.

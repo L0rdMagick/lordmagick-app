@@ -4,10 +4,9 @@ import matter from 'gray-matter';
 import { remark } from 'remark';
 import html from 'remark-html';
 
-// --- TYPE DEFINITIONS ---
 export interface Chapter {
   title: string;
-  content: string; // HTML content
+  content: string;
 }
 
 export interface Book {
@@ -17,11 +16,8 @@ export interface Book {
   chapters: Chapter[];
 }
 
-// THE FIX (Part 1): Export a new type for the book summary.
 export type BookSummary = Pick<Book, 'slug' | 'title' | 'coverImage'>;
 
-
-// --- THE IN-MEMORY REGISTRY ---
 interface BookCache {
   [slug: string]: {
     title: string;
@@ -34,7 +30,6 @@ const booksDirectory = path.join(process.cwd(), 'src', 'books');
 
 try {
   const fileNames = fs.readdirSync(booksDirectory).filter(file => file.endsWith('.md'));
-
   for (const fileName of fileNames) {
     const slug = fileName.replace(/\.md$/, '');
     const fullPath = path.join(booksDirectory, fileName);
@@ -53,9 +48,15 @@ try {
   console.error('[BUILD-TIME] CRITICAL ERROR: Failed to read books directory and build registry.', error);
 }
 
-// --- HELPER FUNCTION ---
+// This function now correctly handles the "End of Book" marker.
 async function parseBookContent(rawContent: string): Promise<Chapter[]> {
-  const chapterHeadings = rawContent.split('\n## ').filter(c => c.trim() !== '');
+  // THE FIX (Part 1): We define an end marker and slice the content.
+  // This ensures that any instructional text after the marker is ignored.
+  const endOfBookMarker = '\n---';
+  const endMarkerIndex = rawContent.indexOf(endOfBookMarker);
+  const bookContent = endMarkerIndex !== -1 ? rawContent.slice(0, endMarkerIndex) : rawContent;
+
+  const chapterHeadings = bookContent.split('\n## ').filter(c => c.trim() !== '' && !c.startsWith('-'));
 
   const chapters: Chapter[] = await Promise.all(
     chapterHeadings.map(async (chapterText) => {
@@ -69,12 +70,6 @@ async function parseBookContent(rawContent: string): Promise<Chapter[]> {
   return chapters;
 }
 
-
-// --- REVISED PUBLIC FUNCTIONS ---
-/**
- * Gets a summary of all available books. Fast and efficient for the bookshelf.
- */
-// THE FIX (Part 2): Update the return type signature.
 export async function getAllBooks(): Promise<BookSummary[]> {
   const allBookSummaries = Object.entries(bookCache).map(([slug, data]) => {
     const coverImageExtensions = ['png', 'jpg', 'jpeg', 'webp'];
@@ -85,27 +80,17 @@ export async function getAllBooks(): Promise<BookSummary[]> {
         break;
       }
     }
-    return {
-      slug,
-      title: data.title,
-      coverImage,
-    };
+    return { slug, title: data.title, coverImage };
   });
-
   return allBookSummaries;
 }
 
-/**
- * Gets the full, parsed content of a single book by its slug.
- */
 export async function getBookBySlug(slug: string): Promise<Book | null> {
   const cachedBook = bookCache[slug];
-
   if (!cachedBook) {
     console.error(`[RUNTIME ERROR] Book with slug "${slug}" not found in cache.`);
     return null;
   }
-
   const coverImageExtensions = ['png', 'jpg', 'jpeg', 'webp'];
   let coverImage = '/images/books/default-cover.png';
   for (const ext of coverImageExtensions) {
@@ -114,13 +99,6 @@ export async function getBookBySlug(slug: string): Promise<Book | null> {
       break;
     }
   }
-
   const chapters = await parseBookContent(cachedBook.rawContent);
-
-  return {
-    slug,
-    title: cachedBook.title,
-    coverImage,
-    chapters,
-  };
+  return { slug, title: cachedBook.title, coverImage, chapters };
 }
