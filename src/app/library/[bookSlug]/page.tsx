@@ -1,14 +1,25 @@
-import { getBookBySlug } from '@/lib/library'; // FIXED IMPORT
+import { getBookBySlug, getAllBooks } from '@/lib/library'; // IMPORT getAllBooks
 import BookReader from '../BookReader';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+
+// NEW: This function tells Next.js which pages to build
+// It fetches all book slugs and provides them as possible params.
+export async function generateStaticParams() {
+  const books = await getAllBooks();
+ 
+  return books.map((book) => ({
+    bookSlug: book.slug,
+  }));
+}
 
 interface PageProps {
   params: { bookSlug: string; };
 }
 
 export default async function BookPage({ params }: PageProps) {
-  const { bookSlug } = params;
+  // Good practice: Decode the slug in case of special characters in filenames
+  const bookSlug = decodeURIComponent(params.bookSlug);
   const book = await getBookBySlug(bookSlug);
 
   // If the book doesn't exist, show a 404 page.
@@ -30,7 +41,6 @@ export default async function BookPage({ params }: PageProps) {
       </nav>
 
       <div className="flex items-center justify-center min-h-screen p-4 sm:p-8 pt-20 sm:pt-16">
-        {/* The BookReader component receives the book data fetched on the server */}
         <BookReader book={book} />
       </div>
     </main>
