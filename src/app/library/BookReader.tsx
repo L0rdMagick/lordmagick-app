@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useRef, useCallback } from 'react';
-// THE FIX (Part 1): Import the useRouter hook for navigation.
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import HTMLFlipBook from 'react-pageflip';
@@ -14,7 +13,7 @@ const uncialAntiqua = Uncial_Antiqua({ subsets: ['latin'], weight: ['400'], });
 // --- Child Components ---
 
 const Page = React.forwardRef<HTMLDivElement, { children?: React.ReactNode }>(({ children }, ref) => (
-  <div ref={ref} className="flex items-center justify-center p-8 md-p-12 bg-[#fdf9e8] bg-[url('/images/books/parchment-bg.png')] bg-cover bg-center shadow-inner shadow-black/30">
+  <div ref={ref} className="flex items-center justify-center p-8 md:p-12 bg-[#fdf9e8] bg-[url('/images/books/parchment-bg.png')] bg-cover bg-center shadow-inner shadow-black/30">
     <div className="text-gray-800 text-lg leading-relaxed w-full h-full">{children}</div>
   </div>
 ));
@@ -72,14 +71,12 @@ interface BookReaderProps {
 
 export default function BookReader({ book }: BookReaderProps) {
   const flipBookRef = useRef<any>(null);
-  // THE FIX (Part 2): Initialize the router.
   const router = useRouter();
 
   const handleChapterClick = useCallback((pageNumber: number) => {
     flipBookRef.current?.pageFlip().flip(pageNumber);
   }, []);
 
-  // This function is for the button on the 'End of Tome' page. It performs the closing animation.
   const handleCloseBookAnimation = useCallback(() => {
     const pageFlip = flipBookRef.current?.pageFlip();
     if (pageFlip) {
@@ -87,7 +84,6 @@ export default function BookReader({ book }: BookReaderProps) {
     }
   }, []);
 
-  // THE FIX (Part 3): Create a new function to handle navigating back to the library.
   const handleReturnToLibrary = useCallback(() => {
     router.push('/library');
   }, [router]);
@@ -110,8 +106,8 @@ export default function BookReader({ book }: BookReaderProps) {
         
         {book.chapters.map((chapter, index) => (
           <Page key={index}>
-            {/* eslint-disable-next-line tailwindcss/no-custom-classname */}
-            <div className="prose prose-lg max-w-none break-words">
+            {/* THE FIX: Replaced 'break-words' with 'break-all' for a guaranteed, forceful word wrap. */}
+            <div className="prose prose-lg max-w-none break-all">
               <h3 className={`text-2xl font-bold mb-4 ${uncialAntiqua.className}`}>{chapter.title}</h3>
               <div dangerouslySetInnerHTML={{ __html: chapter.content }} />
             </div>
@@ -122,7 +118,7 @@ export default function BookReader({ book }: BookReaderProps) {
           <div className="flex flex-col items-center justify-center h-full text-center">
             <p className="text-gray-500 mb-8 text-xl">End of Tome</p>
             <button
-              onClick={handleCloseBookAnimation} // This button now triggers the closing animation.
+              onClick={handleCloseBookAnimation}
               className={`text-2xl text-amber-800 hover:text-amber-600 transition-colors duration-300 ${uncialAntiqua.className}`}
               style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.3)' }}
             >
@@ -131,7 +127,6 @@ export default function BookReader({ book }: BookReaderProps) {
           </div>
         </Page>
 
-        {/* THE FIX (Part 4): The back cover now calls the correct function to return to the library. */}
         <BackCoverPage coverImage={book.coverImage} onReturn={handleReturnToLibrary} />
       </HTMLFlipBook>
     </div>
