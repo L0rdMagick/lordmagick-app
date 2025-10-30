@@ -5,7 +5,6 @@ import { remark } from 'remark';
 import html from 'remark-html';
 import type { Book } from '@/types';
 
-// The path is now relative to `process.cwd()`, pointing back into src/content
 const booksDirectory = path.join(process.cwd(), 'src/content/books');
 
 export function getAllBooks(): Book[] {
@@ -25,21 +24,15 @@ export function getAllBooks(): Book[] {
 
 export function getBookBySlug(slug: string): Book {
   const fullPath = path.join(booksDirectory, slug, 'index.md');
-  if (!fs.existsSync(fullPath)) {
-    throw new Error(`Markdown file not found for slug: ${slug}`);
-  }
   const fileContents = fs.readFileSync(fullPath, 'utf8');
 
   const matterResult = matter(fileContents);
 
-  // THE DEFINITIVE FIX IS HERE:
-  // We process the markdown, and then explicitly cast the result to a plain String.
-  // This removes any complex VFile object types from the processing pipeline.
   const processedContent = remark()
     .use(html)
     .processSync(matterResult.content);
   
-  const contentHtml = String(processedContent); // This is the crucial change.
+  const contentHtml = String(processedContent);
 
   const chaptersHtml = contentHtml.split(/<h2.*?>/);
   if (chaptersHtml.length > 0) {
@@ -54,10 +47,12 @@ export function getBookBySlug(slug: string): Book {
     return { title, content };
   });
 
+  // DEFENSIVE FIX: Explicitly cast frontmatter data to ensure they are plain strings,
+  // preventing any complex objects from causing serialization errors.
   const bookData: Book = {
     slug,
-    title: matterResult.data.title,
-    coverImage: matterResult.data.coverImage,
+    title: String(matterResult.data.title),
+    coverImage: String(matterResult.data.coverImage),
     chapters,
   };
 
