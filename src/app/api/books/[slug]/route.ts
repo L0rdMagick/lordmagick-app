@@ -1,11 +1,12 @@
 import { getBookBySlug } from '@/lib/library';
-import { NextResponse } from 'next/server';
+// Import NextRequest specifically for the correct type
+import { NextRequest, NextResponse } from 'next/server';
 
-// This is a dedicated serverless function that acts as our book API.
-// It receives a slug and returns the book data as JSON.
+// THE FIX: The function signature now perfectly matches what the Next.js
+// build process expects for an App Router API Route Handler.
 export async function GET(
-  request: Request,
-  { params }: { params: { slug: string } }
+  request: NextRequest, // Use NextRequest instead of the generic Request
+  { params }: { params: { slug: string } } // This is the correct context object structure
 ) {
   try {
     const slug = params.slug;
