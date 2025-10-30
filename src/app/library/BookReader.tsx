@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useRef, useCallback, useEffect, useImperativeHandle, forwardRef } from 'react'; 
+import React, { useRef, useCallback, useEffect } from 'react'; 
 import Image from 'next/image';
 import HTMLFlipBook from 'react-pageflip';
-import { Book } from '../library/content';
+import { Book } from './content'; // THE FIX: Corrected the import path.
 import { Crimson_Text, Uncial_Antiqua } from 'next/font/google';
 
 const crimsonText = Crimson_Text({ subsets: ['latin'], weight: ['400', '700'], });
@@ -18,22 +18,24 @@ const TableOfContents = React.forwardRef<HTMLDivElement, { book: Book, onChapter
 TableOfContents.displayName = 'TableOfContents';
 interface BookReaderProps { book: Book; }
 
-// THE FIX: Change the component to use forwardRef to accept a ref from its parent.
-const BookReader = forwardRef(function BookReader({ book }: BookReaderProps, ref) {
+export default function BookReader({ book }: BookReaderProps) {
   const flipBookRef = useRef<any>(null);
 
-  // THE FIX: Expose a `destroyBook` function to the parent component.
-  useImperativeHandle(ref, () => ({
-    destroyBook: () => {
+  useEffect(() => {
+    // This cleanup function runs when the component unmounts (when you navigate away).
+    return () => {
       const pageFlipInstance = flipBookRef.current?.pageFlip();
+
+      // This tells the library to clean up its own styles and event listeners.
       if (pageFlipInstance) {
         pageFlipInstance.destroy();
       }
-      // Also manually reset styles as a backup.
+      
+      // As a backup, we still manually restore scrolling.
       document.documentElement.style.overflow = 'auto';
       document.body.style.overflow = 'auto';
-    }
-  }));
+    };
+  }, []); // The empty dependency array ensures this runs only on mount and unmount.
 
   const handleChapterClick = useCallback((pageNumber: number) => {
     flipBookRef.current?.pageFlip().flip(pageNumber);
@@ -76,6 +78,4 @@ const BookReader = forwardRef(function BookReader({ book }: BookReaderProps, ref
       </HTMLFlipBook>
     </div>
   );
-});
-
-export default BookReader;
+}
