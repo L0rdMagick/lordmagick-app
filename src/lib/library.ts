@@ -4,7 +4,6 @@ import matter from 'gray-matter';
 import { remark } from 'remark';
 import html from 'remark-html';
 
-// Define the shape of our Book data, same as before
 export interface Book {
   slug: string;
   title: string;
@@ -18,11 +17,18 @@ export interface Book {
 const booksDirectory = path.join(process.cwd(), 'src/content/books');
 
 export function getAllBooks(): Book[] {
-  // Get all the folder names under src/content/books
-  const bookSlugs = fs.readdirSync(booksDirectory);
+  // Get all entry names (files and folders) in the books directory
+  const allEntries = fs.readdirSync(booksDirectory);
 
+  // THE FIX: Filter the list to include ONLY directories, ignoring any files.
+  const bookSlugs = allEntries.filter(entry => {
+    const fullPath = path.join(booksDirectory, entry);
+    // Use fs.statSync to get information about the entry and check if it's a directory
+    return fs.statSync(fullPath).isDirectory();
+  });
+
+  // Now, map over the clean list of actual book directories
   const allBooksData = bookSlugs.map((slug) => {
-    // For each slug, get the full book data
     return getBookBySlug(slug);
   });
 
@@ -33,19 +39,15 @@ export function getBookBySlug(slug: string): Book {
   const fullPath = path.join(booksDirectory, slug, 'index.md');
   const fileContents = fs.readFileSync(fullPath, 'utf8');
 
-  // Use gray-matter to parse the metadata section
   const matterResult = matter(fileContents);
 
-  // Use remark to convert markdown into HTML string
-  // We process the entire book content at once.
   const processedContent = remark()
     .use(html)
     .processSync(matterResult.content);
   const contentHtml = processedContent.toString();
 
-  // Split the HTML content by h2 tags to create chapters
   const chaptersHtml = contentHtml.split(/<h2.*?>/);
-  chaptersHtml.shift(); // Remove the first empty element
+  chaptersHtml.shift(); 
 
   const chapters = chaptersHtml.map((chapterHtml) => {
     const titleMatch = chapterHtml.match(/^(.*?)<\/h2>/);
