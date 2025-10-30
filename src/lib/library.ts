@@ -4,102 +4,98 @@ import matter from 'gray-matter';
 import { remark } from 'remark';
 import html from 'remark-html';
 
-// Define the structure of a Chapter and a Book
 export interface Chapter {
   title: string;
-  content: string; // Content is expected to be HTML
+  content: string;
 }
 
 export interface Book {
   slug: string;
-  title:string;
+  title: string;
   coverImage: string;
   chapters: Chapter[];
 }
 
-// THE FINAL FIX: Path now points to 'books' without the underscore.
 const booksDirectory = path.join(process.cwd(), 'src', 'books');
 
-/**
- * Parses a Markdown book file's content into a Book object.
- */
+// This function now has extensive error handling and logging for Vercel.
+export async function getAllBooks(): Promise<Book[]> {
+  console.log("--- Starting getAllBooks ---");
+  try {
+    console.log(`[DEBUG] Current Working Directory: ${process.cwd()}`);
+    console.log(`[DEBUG] Target Directory Path: ${booksDirectory}`);
+
+    // Check if the 'src' directory itself exists
+    const srcPath = path.join(process.cwd(), 'src');
+    if (!fs.existsSync(srcPath)) {
+        console.error("[ERROR] The 'src' directory does not exist. Build environment is incorrect.");
+        return [];
+    }
+    console.log(`[SUCCESS] Found 'src' directory. Contents:`, fs.readdirSync(srcPath));
+
+    // Check if the target 'books' directory exists
+    if (!fs.existsSync(booksDirectory)) {
+      console.error(`[ERROR] The target directory ${booksDirectory} was NOT FOUND.`);
+      return [];
+    }
+    console.log(`[SUCCESS] Found target directory: ${booksDirectory}`);
+
+    const fileNames = fs.readdirSync(booksDirectory).filter(file => file.endsWith('.md'));
+    console.log(`[INFO] Found markdown files in directory:`, fileNames);
+
+    if (fileNames.length === 0) {
+      console.warn("[WARNING] The 'books' directory exists, but it is empty or contains no .md files.");
+      return [];
+    }
+
+    const allBooksData = await Promise.all(
+      fileNames.map(fileName => {
+        const slug = fileName.replace(/\.md$/, '');
+        const fullPath = path.join(booksDirectory, fileName);
+        const fileContents = fs.readFileSync(fullPath, 'utf8');
+        return parseBookFile(slug, fileContents);
+      })
+    );
+
+    console.log("--- Finished getAllBooks Successfully ---");
+    return allBooksData;
+
+  } catch (error) {
+    console.error("[CRITICAL ERROR] An unexpected error occurred in getAllBooks:", error);
+    return []; // Return an empty array on failure
+  }
+}
+
+// No changes needed for the functions below, but they are included for completeness.
+export async function getBookBySlug(slug: string): Promise<Book | null> {
+    const fullPath = path.join(booksDirectory, `${slug}.md`);
+    if (!fs.existsSync(fullPath)) {
+      return null;
+    }
+    const fileContents = fs.readFileSync(fullPath, 'utf8');
+    return parseBookFile(slug, fileContents);
+}
+
 async function parseBookFile(slug: string, fileContents: string): Promise<Book> {
   const { data, content } = matter(fileContents);
-
-  // Dynamically find the cover image based on the slug
   const coverImageExtensions = ['png', 'jpg', 'jpeg', 'webp'];
-  let coverImage = '/images/books/default-cover.png'; // A fallback
+  let coverImage = '/images/books/default-cover.png';
   for (const ext of coverImageExtensions) {
-    const potentialCover = path.join(process.cwd(), `public/images/books/${slug}.${ext}`);
-    if (fs.existsSync(potentialCover)) {
+    if (fs.existsSync(path.join(process.cwd(), `public/images/books/${slug}.${ext}`))) {
       coverImage = `/images/books/${slug}.${ext}`;
       break;
     }
   }
-
-  // Split the book content by H2 headings to create chapters
-  const chapterHeadings = content.split('\n## ');
-  const chapters: Chapter[] = [];
-
-  // Remove the first element if it's empty (from the frontmatter)
-  if (chapterHeadings[0].trim() === '') {
-    chapterHeadings.shift();
-  }
-
-  for (const chapterText of chapterHeadings) {
-    if (chapterText.trim() === '') continue;
-
-    const lines = chapterText.split('\n');
-    const title = lines[0].trim();
-    const chapterContentRaw = lines.slice(1).join('\n');
-
-    // Convert chapter markdown to HTML
-    const processedContent = await remark().use(html).process(chapterContentRaw);
-    const contentHtml = processedContent.toString();
-    chapters.push({ title, content: contentHtml });
-  }
-  
-  if (!data.title) {
-    throw new Error(`Book "${slug}" is missing a 'title' in its metadata.`);
-  }
-
-  return {
-    slug,
-    title: data.title,
-    coverImage,
-    chapters,
-  };
-}
-
-/**
- * Gets all available books from the filesystem.
- */
-export async function getAllBooks(): Promise<Book[]> {
-  const fileNames = fs.readdirSync(booksDirectory).filter(file => file.endsWith('.md'));
-  
-  const allBooksData = await Promise.all(
-    fileNames.map(async (fileName) => {
-      const slug = fileName.replace(/\.md$/, '');
-      const fullPath = path.join(booksDirectory, fileName);
-      const fileContents = fs.readFileSync(fullPath, 'utf8');
-      return parseBookFile(slug, fileContents);
-    })
+  const chapterHeadings = content.split('\n## ').filter(c => c.trim() !== '');
+  const chapters: Chapter[] = await Promise.all(
+      chapterHeadings.map(async (chapterText) => {
+          const lines = chapterText.split('\n');
+          const title = lines[0].trim();
+          const chapterContentRaw = lines.slice(1).join('\n');
+          const processedContent = await remark().use(html).process(chapterContentRaw);
+          return { title, content: processedContent.toString() };
+      })
   );
-
-  return allBooksData;
-}
-
-/**
- * Gets a single book by its slug.
- */
-export async function getBookBySlug(slug: string): Promise<Book | null> {
-    const fullPath = path.join(booksDirectory, `${slug}.md`);
-    
-    if (!fs.existsSync(fullPath)) {
-      return null;
-    }
-  
-    const fileContents = fs.readFileSync(fullPath, 'utf8');
-    const book = await parseBookFile(slug, fileContents);
-    return book;
+  if (!data.title) throw new Error(`Book "${slug}" is missing a title.`);
+  return { slug, title: data.title, coverImage, chapters };
 }
