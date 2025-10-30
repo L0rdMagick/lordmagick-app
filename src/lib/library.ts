@@ -12,13 +12,13 @@ export interface Chapter {
 
 export interface Book {
   slug: string;
-  title: string;
+  title:string;
   coverImage: string;
   chapters: Chapter[];
 }
 
-// THE FIX: The path now includes 'src' to find the new folder location.
-const booksDirectory = path.join(process.cwd(), 'src', '_books');
+// THE FINAL FIX: Path now points to 'books' without the underscore.
+const booksDirectory = path.join(process.cwd(), 'src', 'books');
 
 /**
  * Parses a Markdown book file's content into a Book object.
