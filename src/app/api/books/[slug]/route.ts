@@ -1,15 +1,16 @@
 import { getBookBySlug } from '@/lib/library';
-// Import NextRequest specifically for the correct type
 import { NextRequest, NextResponse } from 'next/server';
 
-// THE FIX: The function signature now perfectly matches what the Next.js
-// build process expects for an App Router API Route Handler.
+// THE FINAL FIX: The function signature now accepts that 'params' is a Promise.
+// This is required by your specific Next.js v16.0.0 environment.
 export async function GET(
-  request: NextRequest, // Use NextRequest instead of the generic Request
-  { params }: { params: { slug: string } } // This is the correct context object structure
+  request: NextRequest,
+  // The context object's 'params' property is a Promise, as dictated by the error log.
+  context: { params: Promise<{ slug: string }> }
 ) {
   try {
-    const slug = params.slug;
+    // We MUST await the context.params to resolve the Promise and get the slug.
+    const { slug } = await context.params;
 
     if (!slug) {
       return NextResponse.json({ error: 'Book slug is required' }, { status: 400 });
@@ -21,7 +22,6 @@ export async function GET(
       return NextResponse.json({ error: 'Book not found' }, { status: 404 });
     }
 
-    // Return the book data successfully.
     return NextResponse.json(book);
 
   } catch (error) {
