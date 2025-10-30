@@ -1,9 +1,10 @@
-import { getAllBooks } from '@/lib/library'; // FIXED IMPORT
+import { getAllBooks } from '@/lib/library';
 import BookshelfClient from './BookshelfClient';
 
 export default async function LibraryPage() {
   
-  // This is a Server Component, so we can safely call our data fetching function.
+  // This line is critical. It dynamically fetches the list of books
+  // by reading the files in your `src/books` directory.
   const allBooks = await getAllBooks();
 
   return (
@@ -17,7 +18,7 @@ export default async function LibraryPage() {
         <p className="mt-4 text-lg text-gray-300">Select a tome to begin your studies.</p>
       </div>
 
-      {/* The Server Component renders the Client Component, passing the fetched data as a prop. */}
+      {/* This passes the dynamically fetched books to the component that displays them. */}
       <BookshelfClient books={allBooks} />
 
     </main>
