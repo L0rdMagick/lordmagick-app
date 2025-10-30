@@ -4,9 +4,10 @@ import matter from 'gray-matter';
 import { remark } from 'remark';
 import html from 'remark-html';
 
+// --- TYPE DEFINITIONS ---
 export interface Chapter {
   title: string;
-  content: string;
+  content: string; // HTML content
 }
 
 export interface Book {
@@ -16,68 +17,99 @@ export interface Book {
   chapters: Chapter[];
 }
 
+// --- THE IN-MEMORY REGISTRY ---
+// This is the core of the new, robust solution.
+// We read all books from the disk *once* when the server starts and cache their raw content.
+// This avoids all file system issues with Vercel's serverless environment.
+
+interface BookCache {
+  [slug: string]: {
+    title: string;
+    rawContent: string;
+  };
+}
+
+const bookCache: BookCache = {};
 const booksDirectory = path.join(process.cwd(), 'src', 'books');
 
-// This function now has extensive error handling and logging for Vercel.
-export async function getAllBooks(): Promise<Book[]> {
-  console.log("--- Starting getAllBooks ---");
-  try {
-    console.log(`[DEBUG] Current Working Directory: ${process.cwd()}`);
-    console.log(`[DEBUG] Target Directory Path: ${booksDirectory}`);
+try {
+  const fileNames = fs.readdirSync(booksDirectory).filter(file => file.endsWith('.md'));
 
-    // Check if the 'src' directory itself exists
-    const srcPath = path.join(process.cwd(), 'src');
-    if (!fs.existsSync(srcPath)) {
-        console.error("[ERROR] The 'src' directory does not exist. Build environment is incorrect.");
-        return [];
-    }
-    console.log(`[SUCCESS] Found 'src' directory. Contents:`, fs.readdirSync(srcPath));
-
-    // Check if the target 'books' directory exists
-    if (!fs.existsSync(booksDirectory)) {
-      console.error(`[ERROR] The target directory ${booksDirectory} was NOT FOUND.`);
-      return [];
-    }
-    console.log(`[SUCCESS] Found target directory: ${booksDirectory}`);
-
-    const fileNames = fs.readdirSync(booksDirectory).filter(file => file.endsWith('.md'));
-    console.log(`[INFO] Found markdown files in directory:`, fileNames);
-
-    if (fileNames.length === 0) {
-      console.warn("[WARNING] The 'books' directory exists, but it is empty or contains no .md files.");
-      return [];
-    }
-
-    const allBooksData = await Promise.all(
-      fileNames.map(fileName => {
-        const slug = fileName.replace(/\.md$/, '');
-        const fullPath = path.join(booksDirectory, fileName);
-        const fileContents = fs.readFileSync(fullPath, 'utf8');
-        return parseBookFile(slug, fileContents);
-      })
-    );
-
-    console.log("--- Finished getAllBooks Successfully ---");
-    return allBooksData;
-
-  } catch (error) {
-    console.error("[CRITICAL ERROR] An unexpected error occurred in getAllBooks:", error);
-    return []; // Return an empty array on failure
-  }
-}
-
-// No changes needed for the functions below, but they are included for completeness.
-export async function getBookBySlug(slug: string): Promise<Book | null> {
-    const fullPath = path.join(booksDirectory, `${slug}.md`);
-    if (!fs.existsSync(fullPath)) {
-      return null;
-    }
+  for (const fileName of fileNames) {
+    const slug = fileName.replace(/\.md$/, '');
+    const fullPath = path.join(booksDirectory, fileName);
     const fileContents = fs.readFileSync(fullPath, 'utf8');
-    return parseBookFile(slug, fileContents);
+    const { data, content } = matter(fileContents);
+
+    if (data.title) {
+      bookCache[slug] = {
+        title: data.title,
+        rawContent: content,
+      };
+    }
+  }
+  console.log('[BUILD-TIME] Successfully built book registry:', Object.keys(bookCache));
+} catch (error) {
+  console.error('[BUILD-TIME] CRITICAL ERROR: Failed to read books directory and build registry.', error);
 }
 
-async function parseBookFile(slug: string, fileContents: string): Promise<Book> {
-  const { data, content } = matter(fileContents);
+// --- HELPER FUNCTION ---
+// This function processes raw markdown content into structured chapters with HTML.
+async function parseBookContent(rawContent: string): Promise<Chapter[]> {
+  const chapterHeadings = rawContent.split('\n## ').filter(c => c.trim() !== '');
+
+  const chapters: Chapter[] = await Promise.all(
+    chapterHeadings.map(async (chapterText) => {
+      const lines = chapterText.split('\n');
+      const title = lines[0].trim();
+      const chapterContentRaw = lines.slice(1).join('\n');
+      const processedContent = await remark().use(html).process(chapterContentRaw);
+      return { title, content: processedContent.toString() };
+    })
+  );
+  return chapters;
+}
+
+
+// --- REVISED PUBLIC FUNCTIONS ---
+// These functions now read from the fast in-memory cache instead of the disk.
+
+/**
+ * Gets a summary of all available books. Fast and efficient for the bookshelf.
+ */
+export async function getAllBooks(): Promise<Pick<Book, 'slug' | 'title' | 'coverImage'>[]> {
+  const allBookSummaries = Object.entries(bookCache).map(([slug, data]) => {
+    // Logic to find cover image remains the same
+    const coverImageExtensions = ['png', 'jpg', 'jpeg', 'webp'];
+    let coverImage = '/images/books/default-cover.png';
+    for (const ext of coverImageExtensions) {
+      if (fs.existsSync(path.join(process.cwd(), `public/images/books/${slug}.${ext}`))) {
+        coverImage = `/images/books/${slug}.${ext}`;
+        break;
+      }
+    }
+    return {
+      slug,
+      title: data.title,
+      coverImage,
+    };
+  });
+
+  return allBookSummaries;
+}
+
+/**
+ * Gets the full, parsed content of a single book by its slug.
+ */
+export async function getBookBySlug(slug: string): Promise<Book | null> {
+  const cachedBook = bookCache[slug];
+
+  if (!cachedBook) {
+    console.error(`[RUNTIME ERROR] Book with slug "${slug}" not found in cache.`);
+    return null;
+  }
+
+  // Find the cover image
   const coverImageExtensions = ['png', 'jpg', 'jpeg', 'webp'];
   let coverImage = '/images/books/default-cover.png';
   for (const ext of coverImageExtensions) {
@@ -86,16 +118,14 @@ async function parseBookFile(slug: string, fileContents: string): Promise<Book> 
       break;
     }
   }
-  const chapterHeadings = content.split('\n## ').filter(c => c.trim() !== '');
-  const chapters: Chapter[] = await Promise.all(
-      chapterHeadings.map(async (chapterText) => {
-          const lines = chapterText.split('\n');
-          const title = lines[0].trim();
-          const chapterContentRaw = lines.slice(1).join('\n');
-          const processedContent = await remark().use(html).process(chapterContentRaw);
-          return { title, content: processedContent.toString() };
-      })
-  );
-  if (!data.title) throw new Error(`Book "${slug}" is missing a title.`);
-  return { slug, title: data.title, coverImage, chapters };
+
+  // Parse the raw markdown into chapters *on-demand*
+  const chapters = await parseBookContent(cachedBook.rawContent);
+
+  return {
+    slug,
+    title: cachedBook.title,
+    coverImage,
+    chapters,
+  };
 }
