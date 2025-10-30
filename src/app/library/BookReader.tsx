@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useCallback, useEffect } from 'react'; 
+import React, { useRef, useCallback, useEffect, useImperativeHandle, forwardRef } from 'react'; 
 import Image from 'next/image';
 import HTMLFlipBook from 'react-pageflip';
 import { Book } from '../library/content';
@@ -18,26 +18,22 @@ const TableOfContents = React.forwardRef<HTMLDivElement, { book: Book, onChapter
 TableOfContents.displayName = 'TableOfContents';
 interface BookReaderProps { book: Book; }
 
-export default function BookReader({ book }: BookReaderProps) {
+// THE FIX: Change the component to use forwardRef to accept a ref from its parent.
+const BookReader = forwardRef(function BookReader({ book }: BookReaderProps, ref) {
   const flipBookRef = useRef<any>(null);
 
-  useEffect(() => {
-    // This is the cleanup function that runs when the component unmounts.
-    return () => {
+  // THE FIX: Expose a `destroyBook` function to the parent component.
+  useImperativeHandle(ref, () => ({
+    destroyBook: () => {
       const pageFlipInstance = flipBookRef.current?.pageFlip();
-
-      // THE FIX: Check if the library instance exists and call its destroy() method.
-      // This forces the library to remove its own event listeners and, crucially,
-      // remove the `overflow: hidden` style it applied to the body.
       if (pageFlipInstance) {
         pageFlipInstance.destroy();
       }
-
-      // As a final backup, we'll still manually reset the styles.
+      // Also manually reset styles as a backup.
       document.documentElement.style.overflow = 'auto';
       document.body.style.overflow = 'auto';
-    };
-  }, []); // The empty array ensures this runs only once on mount and cleanup runs only on unmount.
+    }
+  }));
 
   const handleChapterClick = useCallback((pageNumber: number) => {
     flipBookRef.current?.pageFlip().flip(pageNumber);
@@ -80,4 +76,6 @@ export default function BookReader({ book }: BookReaderProps) {
       </HTMLFlipBook>
     </div>
   );
-}
+});
+
+export default BookReader;
