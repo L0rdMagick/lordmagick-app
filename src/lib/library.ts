@@ -1,7 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import matter from 'gray-matter';
-// NO LONGER IMPORTING 'marked'
+// NO LONGER IMPORTING 'gray-matter' or 'marked'
 import type { Book } from '@/types';
 
 const booksDirectory = path.join(process.cwd(), 'src/content/books');
@@ -12,29 +11,32 @@ export function getAllBooks(): Book[] {
     const fullPath = path.join(booksDirectory, entry);
     return fs.statSync(fullPath).isDirectory();
   });
-  return bookSlugs.map(slug => getBookBySlug(slug));
+  // This still needs to return an array of book-like objects for generateStaticParams
+  return bookSlugs.map(slug => ({
+    slug: slug,
+    title: 'Test Title',
+    coverImage: '/images/books/placeholder.png', // A known-good image path
+    chapters: [],
+  }));
 }
 
 export function getBookBySlug(slug: string): Book {
-  const fullPath = path.join(booksDirectory, slug, 'index.md');
-  const fileContents = fs.readFileSync(fullPath, 'utf8');
-  const { data, content } = matter(fileContents);
-
-  // DIAGNOSTIC STEP: We are NOT parsing the markdown.
-  // We are creating a single "chapter" with the raw, unprocessed content.
-  // We wrap it in <pre> tags so it displays on the page without breaking HTML.
-  const chapters = [{
-    title: 'Raw Markdown Content',
-    content: `<pre style="white-space: pre-wrap; word-wrap: break-word;">${content}</pre>`
-  }];
-
-  const bookData: Book = {
+  // THE DEFINITIVE DIAGNOSTIC STEP:
+  // This function IGNORES the file content entirely.
+  // It returns a completely hardcoded, 100% serializable object.
+  // If the build passes with this code, the problem is proven to be one of
+  // the parsing libraries we removed.
+  const hardcodedBook: Book = {
     slug: slug,
-    title: data.title || 'Untitled Book',
-    coverImage: data.coverImage || '',
-    chapters: chapters,
+    title: `Test Book: ${slug}`,
+    coverImage: '/images/books/energy-work-and-manipulation.png', // Use a known-good path
+    chapters: [
+      {
+        title: 'Test Chapter',
+        content: '<p>This is a test. If you see this, the build worked.</p>'
+      }
+    ]
   };
 
-  // The final sanitization step remains as a best practice.
-  return JSON.parse(JSON.stringify(bookData));
+  return hardcodedBook;
 }
