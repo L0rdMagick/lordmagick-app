@@ -1,25 +1,28 @@
-import { getBookBySlug, getAllBooks } from '@/lib/library';
+import { getBookBySlug } from '@/lib/library'; // We no longer need getAllBooks here
 import BookReader from '../BookReader';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
+// --- THIS ENTIRE FUNCTION HAS BEEN REMOVED ---
+// By removing generateStaticParams, we are telling Next.js to render this page
+// on-demand (dynamically) at request time, just like your original site did.
+// This is more robust and avoids the build-time file system issues.
+/*
 export async function generateStaticParams() {
   const books = await getAllBooks();
- 
-  // --- THIS IS THE CRUCIAL DEBUGGING LINE ---
   console.log('Found books to generate pages for:', JSON.stringify(books.map(b => b.slug)));
-  // -----------------------------------------
-
   return books.map((book) => ({
     bookSlug: book.slug,
   }));
 }
+*/
 
 interface PageProps {
   params: { bookSlug: string; };
 }
 
 export default async function BookPage({ params }: PageProps) {
+  // The rest of the component works perfectly for on-demand rendering.
   const bookSlug = decodeURIComponent(params.bookSlug);
   const book = await getBookBySlug(bookSlug);
 
