@@ -1,7 +1,6 @@
 "use client";
 
-// REMOVED: No longer importing useEffect here.
-import React, { useRef, useCallback } from 'react'; 
+import React, { useRef, useCallback, useEffect } from 'react'; 
 import Image from 'next/image';
 import HTMLFlipBook from 'react-pageflip';
 import { Book } from './content';
@@ -23,8 +22,18 @@ interface BookReaderProps { book: Book; }
 export default function BookReader({ book }: BookReaderProps) {
   const flipBookRef = useRef<any>(null);
 
-  // REMOVED: The old useEffect that managed the scrollbar is now gone.
-  // The bookshelf page will handle restoring the scrollbar instead.
+  // THE FIX: This hook manages the body's overflow style directly.
+  // It ensures the scrollbar is hidden when the book is open, and reliably
+  // restored when the component is unmounted (i.e., when you navigate away).
+  useEffect(() => {
+    // On mount (book opens), hide the scrollbar.
+    document.body.style.overflow = 'hidden';
+
+    // Return a cleanup function. This runs on unmount (when you leave the page).
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
+  }, []); // The empty array ensures this runs only once on mount and cleanup runs on unmount.
 
   const handleChapterClick = useCallback((pageNumber: number) => {
     flipBookRef.current?.pageFlip().flip(pageNumber);
