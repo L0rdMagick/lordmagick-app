@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { getAllBooks } from '../../lib/library'; // FIX: Use a direct relative path.
+import { getAllBooks } from '@/lib/library'; // Revert to alias path
 
 export default function LibraryPage() {
   const libraryBooks = getAllBooks(); 
@@ -16,7 +16,6 @@ export default function LibraryPage() {
         <p className="mt-4 text-lg text-gray-300">Select a tome to begin your studies.</p>
       </div>
 
-      {/* The Bookshelf */}
       <div className="relative z-10 mt-12 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-8">
         {libraryBooks.map((book) => (
           <Link

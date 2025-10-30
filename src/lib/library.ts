@@ -3,10 +3,10 @@ import path from 'path';
 import matter from 'gray-matter';
 import { remark } from 'remark';
 import html from 'remark-html';
-import type { Book } from '../types';
+import type { Book } from '@/types';
 
-// THE FIX: Point to the 'content' directory in the project root, not inside 'src'.
-const booksDirectory = path.join(process.cwd(), 'content/books');
+// The path is now relative to `process.cwd()`, pointing back into src/content
+const booksDirectory = path.join(process.cwd(), 'src/content/books');
 
 export function getAllBooks(): Book[] {
   const allEntries = fs.readdirSync(booksDirectory);
@@ -25,17 +25,26 @@ export function getAllBooks(): Book[] {
 
 export function getBookBySlug(slug: string): Book {
   const fullPath = path.join(booksDirectory, slug, 'index.md');
+  if (!fs.existsSync(fullPath)) {
+    throw new Error(`Markdown file not found for slug: ${slug}`);
+  }
   const fileContents = fs.readFileSync(fullPath, 'utf8');
 
   const matterResult = matter(fileContents);
 
+  // THE DEFINITIVE FIX IS HERE:
+  // We process the markdown, and then explicitly cast the result to a plain String.
+  // This removes any complex VFile object types from the processing pipeline.
   const processedContent = remark()
     .use(html)
     .processSync(matterResult.content);
-  const contentHtml = processedContent.toString();
+  
+  const contentHtml = String(processedContent); // This is the crucial change.
 
   const chaptersHtml = contentHtml.split(/<h2.*?>/);
-  chaptersHtml.shift(); 
+  if (chaptersHtml.length > 0) {
+    chaptersHtml.shift(); 
+  }
 
   const chapters = chaptersHtml.map((chapterHtml) => {
     const titleMatch = chapterHtml.match(/^(.*?)<\/h2>/);
@@ -45,10 +54,12 @@ export function getBookBySlug(slug: string): Book {
     return { title, content };
   });
 
-  return {
+  const bookData: Book = {
     slug,
     title: matterResult.data.title,
     coverImage: matterResult.data.coverImage,
     chapters,
   };
+
+  return bookData;
 }

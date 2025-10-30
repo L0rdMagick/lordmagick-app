@@ -1,4 +1,4 @@
-import { getBookBySlug, getAllBooks } from '../../../lib/library'; // FIX: Use a direct relative path.
+import { getBookBySlug, getAllBooks } from '@/lib/library'; // Revert to alias path
 import BookReader from '../BookReader';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
