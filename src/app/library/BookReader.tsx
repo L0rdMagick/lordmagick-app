@@ -3,7 +3,7 @@
 import React, { useRef, useCallback, useEffect } from 'react';
 import Image from 'next/image';
 import HTMLFlipBook from 'react-pageflip';
-import type { Book } from '../../types'; // FIX: Changed path from '@/types' to a relative path.
+import type { Book } from '@/types';
 import { Crimson_Text, Uncial_Antiqua } from 'next/font/google';
 
 const crimsonText = Crimson_Text({ subsets: ['latin'], weight: ['400', '700'], });
@@ -15,7 +15,6 @@ CoverPage.displayName = 'CoverPage';
 const BackCoverPage = React.forwardRef<HTMLDivElement, { coverImage: string; onClose: () => void; }>(({ coverImage, onClose }, ref) => ( <div ref={ref} className="relative bg-gray-900 shadow-lg shadow-black/50 group"> <Image src={coverImage} alt="Book back cover" fill style={{ objectFit: 'cover' }} /> <div className="absolute inset-0 bg-black/50 flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity duration-300" onClick={onClose}> <span className={`text-2xl text-amber-200 ${uncialAntiqua.className}`} style={{ textShadow: '1px 1px 3px rgba(0,0,0,0.7)' }}> Close Tome </span> </div> </div> ));
 BackCoverPage.displayName = 'BackCoverPage';
 const TableOfContents = React.forwardRef<HTMLDivElement, { book: Book, onChapterClick: (page: number) => void }>(({ book, onChapterClick }, ref) => ( <Page ref={ref}> <div> <h2 className="text-3xl font-bold text-center mb-8 border-b-2 border-gray-500 pb-2">Table of Contents</h2> <ul className="space-y-4"> 
-    {/* FIX: Added explicit types for 'chapter' and 'index' */}
     {book.chapters.map((chapter: { title: string }, index: number) => ( 
         <li key={index}> 
             <button onClick={() => onChapterClick(index + 2)} className="hover:text-amber-800 hover:underline transition-colors duration-300 text-left"> {chapter.title} </button> 
@@ -62,7 +61,6 @@ export default function BookReader({ book }: BookReaderProps) {
       >
         <CoverPage title={book.title} coverImage={book.coverImage} />
         <TableOfContents book={book} onChapterClick={handleChapterClick} />
-        {/* FIX: Added explicit types for 'chapter' and 'index' */}
         {book.chapters.map((chapter: { title: string; content: string }, index: number) => (
           <Page key={index}>
             <div>
