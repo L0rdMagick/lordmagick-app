@@ -3,9 +3,10 @@ import path from 'path';
 import matter from 'gray-matter';
 import { remark } from 'remark';
 import html from 'remark-html';
-import type { Book } from '../types'; // FIX: Changed path from '@/types' to a relative path.
+import type { Book } from '../types';
 
-const booksDirectory = path.join(process.cwd(), 'src/content/books');
+// THE FIX: Point to the 'content' directory in the project root, not inside 'src'.
+const booksDirectory = path.join(process.cwd(), 'content/books');
 
 export function getAllBooks(): Book[] {
   const allEntries = fs.readdirSync(booksDirectory);
