@@ -1,4 +1,4 @@
-import { getBookBySlug, getAllBooks } from '@/lib/library'; // Revert to alias path
+import { getBookBySlug, getAllBooks } from '@/lib/library';
 import BookReader from '../BookReader';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -8,15 +8,16 @@ interface PageProps {
 }
 
 export async function generateStaticParams() {
-  const books = getAllBooks();
+  const books = await getAllBooks(); // Await the result
   return books.map((book) => ({
     bookSlug: book.slug,
   }));
 }
 
-export default function BookPage({ params }: PageProps) {
+// This is now an async Server Component
+export default async function BookPage({ params }: PageProps) {
   const { bookSlug } = params;
-  const book = getBookBySlug(bookSlug);
+  const book = await getBookBySlug(bookSlug); // Await the result
 
   if (!book) {
     notFound();

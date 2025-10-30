@@ -1,68 +1,55 @@
 import fs from 'fs';
 import path from 'path';
 import matter from 'gray-matter';
-import { remark } from 'remark';
-import html from 'remark-html';
+import { marked } from 'marked';
 import type { Book } from '@/types';
 
 const booksDirectory = path.join(process.cwd(), 'src/content/books');
 
-export function getAllBooks(): Book[] {
+// This function now returns a Promise
+export async function getAllBooks(): Promise<Book[]> {
   const allEntries = fs.readdirSync(booksDirectory);
-
   const bookSlugs = allEntries.filter(entry => {
     const fullPath = path.join(booksDirectory, entry);
     return fs.statSync(fullPath).isDirectory();
   });
-
-  return bookSlugs.map(slug => getBookBySlug(slug));
+  
+  // Use Promise.all to wait for all books to be processed
+  const allBooksData = await Promise.all(bookSlugs.map(slug => getBookBySlug(slug)));
+  return allBooksData;
 }
 
-export function getBookBySlug(slug: string): Book {
+// This function now also returns a Promise
+export async function getBookBySlug(slug: string): Promise<Book> {
   const fullPath = path.join(booksDirectory, slug, 'index.md');
   const fileContents = fs.readFileSync(fullPath, 'utf8');
-  const matterResult = matter(fileContents);
+  const { data, content } = matter(fileContents);
 
-  // Use remark to convert markdown into HTML string
-  const processedContent = remark()
-    .use(html)
-    .processSync(matterResult.content);
+  // THE FIX: We must 'await' the result of marked.parse
+  const contentHtml = await marked.parse(content);
+
+  const chapters: { title: string; content: string }[] = [];
   
-  const contentHtml = String(processedContent);
-
-  let parsedChapters: { title: string; content: string }[] = [];
-
-  // Robustly split content into chapters
-  const chaptersHtml = contentHtml.split(/<h2.*?>/).filter(Boolean); // .filter(Boolean) removes empty strings
-
-  if (chaptersHtml.length > 0) {
-    // If we have a heading, the first element might be content before the first h2.
-    // A more robust way is to check if the original content starts with a heading.
-    const contentBeforeFirstHeading = contentHtml.split(/<h2.*?>/)[0];
-    if (contentBeforeFirstHeading && contentBeforeFirstHeading.trim() !== '') {
-        // This logic might need adjustment if you have content before the first chapter.
-        // For now, we assume chapters start with H2.
-    }
-    
-    parsedChapters = chaptersHtml.map((chapterHtml) => {
-      const titleMatch = chapterHtml.match(/^(.*?)<\/h2>/);
-      const title = titleMatch ? titleMatch[1] : 'Untitled Chapter';
-      const content = chapterHtml.substring(titleMatch ? titleMatch[0].length : 0).trim();
-      return { title, content };
-    });
+  const chapterSplit = contentHtml.split(/(<h2[^>]*>.*?<\/h2>)/);
+  if (chapterSplit.length > 0 && chapterSplit[0].trim() === '') {
+      chapterSplit.shift();
   }
 
-  // THE DEFINITIVE FIX:
-  // Create the final object and then "purify" it by running it through JSON.stringify and JSON.parse.
-  // This is a "sledgehammer" technique to strip out any and all complex object prototypes,
-  // functions, or `undefined` values, leaving only pure, serializable data that the Next.js
-  // build process cannot possibly reject.
-  const bookDataObject = {
+  for (let i = 0; i < chapterSplit.length; i += 2) {
+    const titleHtml = chapterSplit[i];
+    const contentHtmlFragment = chapterSplit[i + 1] || '';
+    
+    const title = titleHtml.replace(/<[^>]+>/g, ''); 
+    
+    chapters.push({ title, content: contentHtmlFragment });
+  }
+
+  const bookData: Book = {
     slug: slug,
-    title: matterResult.data.title || 'Untitled Book',
-    coverImage: matterResult.data.coverImage || '',
-    chapters: parsedChapters,
+    title: data.title || 'Untitled Book',
+    coverImage: data.coverImage || '',
+    chapters: chapters,
   };
 
-  return JSON.parse(JSON.stringify(bookDataObject));
+  return JSON.parse(JSON.stringify(bookData));
 }

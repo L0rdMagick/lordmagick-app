@@ -1,9 +1,10 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { getAllBooks } from '@/lib/library'; // Revert to alias path
+import { getAllBooks } from '@/lib/library';
 
-export default function LibraryPage() {
-  const libraryBooks = getAllBooks(); 
+// This is now an async Server Component
+export default async function LibraryPage() {
+  const libraryBooks = await getAllBooks(); 
 
   return (
     <main className="relative min-h-screen w-full bg-black bg-cover bg-center p-8" style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}>
