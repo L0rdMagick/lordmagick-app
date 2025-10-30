@@ -1,9 +1,11 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { getAllBooks } from '@/lib/library';
+import type { Book } from '@/types'; // Import the Book type for type safety
 
-// This is now an async Server Component
+// This component must be async to use 'await'
 export default async function LibraryPage() {
+  // THE FIX: 'await' the result of the async function
   const libraryBooks = await getAllBooks(); 
 
   return (
@@ -18,7 +20,8 @@ export default async function LibraryPage() {
       </div>
 
       <div className="relative z-10 mt-12 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-8">
-        {libraryBooks.map((book) => (
+        {/* THE FIX: Explicitly type 'book' to resolve the 'any' type error */}
+        {libraryBooks.map((book: Book) => (
           <Link
             key={book.slug}
             href={`/library/${book.slug}`}

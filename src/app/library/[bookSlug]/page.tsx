@@ -2,22 +2,27 @@ import { getBookBySlug, getAllBooks } from '@/lib/library';
 import BookReader from '../BookReader';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import type { Book } from '@/types'; // Import the Book type for type safety
 
 interface PageProps {
   params: { bookSlug: string; };
 }
 
+// This function must be async to use 'await'
 export async function generateStaticParams() {
-  const books = await getAllBooks(); // Await the result
-  return books.map((book) => ({
+  // THE FIX: 'await' the result here
+  const books = await getAllBooks(); 
+  // THE FIX: Explicitly type 'book' here
+  return books.map((book: Book) => ({
     bookSlug: book.slug,
   }));
 }
 
-// This is now an async Server Component
+// This component must be async to use 'await'
 export default async function BookPage({ params }: PageProps) {
   const { bookSlug } = params;
-  const book = await getBookBySlug(bookSlug); // Await the result
+  // THE FIX: 'await' the result here to get the actual Book object, not the Promise
+  const book = await getBookBySlug(bookSlug); 
 
   if (!book) {
     notFound();
