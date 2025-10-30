@@ -12,6 +12,7 @@ export function getAllBooks(): Book[] {
 
   const bookSlugs = allEntries.filter(entry => {
     const fullPath = path.join(booksDirectory, entry);
+    // This check is still important to prevent errors from hidden system files.
     return fs.statSync(fullPath).isDirectory();
   });
 
@@ -39,7 +40,7 @@ export function getBookBySlug(slug: string): Book {
     chaptersHtml.shift(); 
   }
 
-  const chapters = chaptersHtml.map((chapterHtml) => {
+  const parsedChapters = chaptersHtml.map((chapterHtml) => {
     const titleMatch = chapterHtml.match(/^(.*?)<\/h2>/);
     const title = titleMatch ? titleMatch[1] : 'Untitled Chapter';
     const content = chapterHtml.substring(titleMatch ? titleMatch[0].length : 0).trim();
@@ -47,14 +48,20 @@ export function getBookBySlug(slug: string): Book {
     return { title, content };
   });
 
-  // DEFENSIVE FIX: Explicitly cast frontmatter data to ensure they are plain strings,
-  // preventing any complex objects from causing serialization errors.
-  const bookData: Book = {
-    slug,
-    title: String(matterResult.data.title),
-    coverImage: String(matterResult.data.coverImage),
-    chapters,
+  // THE DEFINITIVE FIX:
+  // Create a new, completely clean "plain" JavaScript object.
+  // This explicitly copies only the primitive data we need and discards any
+  // complex prototypes or hidden properties from the parsing process that
+  // were causing the serialization error during the build.
+  const cleanBookObject: Book = {
+    slug: slug,
+    title: matterResult.data.title,
+    coverImage: matterResult.data.coverImage,
+    chapters: parsedChapters.map(chapter => ({
+      title: chapter.title,
+      content: chapter.content
+    }))
   };
 
-  return bookData;
+  return cleanBookObject;
 }
