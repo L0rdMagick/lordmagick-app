@@ -3,17 +3,17 @@
 import React, { useRef, useCallback } from 'react'; 
 import Image from 'next/image';
 import HTMLFlipBook from 'react-pageflip';
-import { Book } from '@/lib/library'; // THE FIX: Import 'Book' from the new central location.
+import { Book } from '@/lib/library';
 import { Crimson_Text, Uncial_Antiqua } from 'next/font/google';
 
 const crimsonText = Crimson_Text({ subsets: ['latin'], weight: ['400', '700'], });
 const uncialAntiqua = Uncial_Antiqua({ subsets: ['latin'], weight: ['400'], });
 
-// --- Child Components (No changes needed here) ---
+// --- Child Components (No changes) ---
 
 const Page = React.forwardRef<HTMLDivElement, { children?: React.ReactNode }>(({ children }, ref) => (
   <div ref={ref} className="flex items-center justify-center p-8 md:p-12 bg-[#fdf9e8] bg-[url('/images/books/parchment-bg.png')] bg-cover bg-center shadow-inner shadow-black/30">
-    <div className="text-gray-800 text-lg leading-relaxed">{children}</div>
+    <div className="text-gray-800 text-lg leading-relaxed w-full h-full">{children}</div>
   </div>
 ));
 Page.displayName = 'Page';
@@ -29,12 +29,9 @@ const CoverPage = React.forwardRef<HTMLDivElement, { title: string, coverImage: 
 ));
 CoverPage.displayName = 'CoverPage';
 
-const BackCoverPage = React.forwardRef<HTMLDivElement, { coverImage: string; onClose: () => void; }>(({ coverImage, onClose }, ref) => (
+const BackCoverPage = React.forwardRef<HTMLDivElement, { coverImage: string }>(({ coverImage }, ref) => (
   <div ref={ref} className="relative bg-gray-900 shadow-lg shadow-black/50 group">
     <Image src={coverImage} alt="Book back cover" fill style={{ objectFit: 'cover' }} />
-    <div className="absolute inset-0 bg-black/50 flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity duration-300" onClick={onClose}>
-      <span className={`text-2xl text-amber-200 ${uncialAntiqua.className}`} style={{ textShadow: '1px 1px 3px rgba(0,0,0,0.7)' }}> Close Tome </span>
-    </div>
   </div>
 ));
 BackCoverPage.displayName = 'BackCoverPage';
@@ -45,7 +42,6 @@ const TableOfContents = React.forwardRef<HTMLDivElement, { book: Book, onChapter
       <h2 className="text-3xl font-bold text-center mb-8 border-b-2 border-gray-500 pb-2">Table of Contents</h2>
       <ul className="space-y-4">
         {book.chapters.map((chapter, index) => (
-          // The first two pages are the cover and TOC, so chapters start at page index + 2
           <li key={index}>
             <button onClick={() => onChapterClick(index + 2)} className="hover:text-amber-800 hover:underline transition-colors duration-300 text-left">
               {chapter.title}
@@ -58,7 +54,7 @@ const TableOfContents = React.forwardRef<HTMLDivElement, { book: Book, onChapter
 ));
 TableOfContents.displayName = 'TableOfContents';
 
-// --- Main BookReader Component (No other changes needed) ---
+// --- Main BookReader Component ---
 
 interface BookReaderProps {
   book: Book;
@@ -71,10 +67,11 @@ export default function BookReader({ book }: BookReaderProps) {
     flipBookRef.current?.pageFlip().flip(pageNumber);
   }, []);
 
+  // This function is now used by our new button.
   const handleCloseBook = useCallback(() => {
     const pageFlip = flipBookRef.current?.pageFlip();
     if (pageFlip) {
-      // Flips to the last page which is the back cover
+      // This command flips the book to the very last page (the back cover).
       pageFlip.flip(pageFlip.getPageCount() - 1);
     }
   }, []);
@@ -104,11 +101,21 @@ export default function BookReader({ book }: BookReaderProps) {
           </Page>
         ))}
         
+        {/* THE FIX: The "End of Tome" page now has a "Close Tome" button. */}
         <Page>
-          <div className="text-center text-gray-500">End of Tome</div>
+          <div className="flex flex-col items-center justify-center h-full text-center">
+            <p className="text-gray-500 mb-8 text-xl">End of Tome</p>
+            <button
+              onClick={handleCloseBook}
+              className={`text-2xl text-amber-800 hover:text-amber-600 transition-colors duration-300 ${uncialAntiqua.className}`}
+              style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.3)' }}
+            >
+              Close Tome
+            </button>
+          </div>
         </Page>
 
-        <BackCoverPage coverImage={book.coverImage} onClose={handleCloseBook} />
+        <BackCoverPage coverImage={book.coverImage} />
       </HTMLFlipBook>
     </div>
   );
