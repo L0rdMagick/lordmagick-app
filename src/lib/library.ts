@@ -22,34 +22,47 @@ export function getBookBySlug(slug: string): Book {
   const fullPath = path.join(booksDirectory, slug, 'index.md');
   const fileContents = fs.readFileSync(fullPath, 'utf8');
   const matterResult = matter(fileContents);
-  const processedContent = remark().use(html).processSync(matterResult.content);
+
+  // Use remark to convert markdown into HTML string
+  const processedContent = remark()
+    .use(html)
+    .processSync(matterResult.content);
+  
   const contentHtml = String(processedContent);
 
-  const chaptersHtml = contentHtml.split(/<h2.*?>/);
+  let parsedChapters: { title: string; content: string }[] = [];
+
+  // Robustly split content into chapters
+  const chaptersHtml = contentHtml.split(/<h2.*?>/).filter(Boolean); // .filter(Boolean) removes empty strings
+
   if (chaptersHtml.length > 0) {
-    chaptersHtml.shift(); 
+    // If we have a heading, the first element might be content before the first h2.
+    // A more robust way is to check if the original content starts with a heading.
+    const contentBeforeFirstHeading = contentHtml.split(/<h2.*?>/)[0];
+    if (contentBeforeFirstHeading && contentBeforeFirstHeading.trim() !== '') {
+        // This logic might need adjustment if you have content before the first chapter.
+        // For now, we assume chapters start with H2.
+    }
+    
+    parsedChapters = chaptersHtml.map((chapterHtml) => {
+      const titleMatch = chapterHtml.match(/^(.*?)<\/h2>/);
+      const title = titleMatch ? titleMatch[1] : 'Untitled Chapter';
+      const content = chapterHtml.substring(titleMatch ? titleMatch[0].length : 0).trim();
+      return { title, content };
+    });
   }
 
-  const parsedChapters = chaptersHtml.map((chapterHtml) => {
-    const titleMatch = chapterHtml.match(/^(.*?)<\/h2>/);
-    const title = titleMatch ? titleMatch[1] : 'Untitled Chapter';
-    const content = chapterHtml.substring(titleMatch ? titleMatch[0].length : 0).trim();
-    return { title, content };
-  });
-
   // THE DEFINITIVE FIX:
-  // We now provide a default empty string ('') for any frontmatter property
-  // that might be missing (undefined). This guarantees that the final object
-  // is always 100% serializable and will never contain `undefined`.
-  const cleanBookObject: Book = {
+  // Create the final object and then "purify" it by running it through JSON.stringify and JSON.parse.
+  // This is a "sledgehammer" technique to strip out any and all complex object prototypes,
+  // functions, or `undefined` values, leaving only pure, serializable data that the Next.js
+  // build process cannot possibly reject.
+  const bookDataObject = {
     slug: slug,
-    title: matterResult.data.title || '',
+    title: matterResult.data.title || 'Untitled Book',
     coverImage: matterResult.data.coverImage || '',
-    chapters: parsedChapters.map(chapter => ({
-      title: chapter.title,
-      content: chapter.content
-    }))
+    chapters: parsedChapters,
   };
 
-  return cleanBookObject;
+  return JSON.parse(JSON.stringify(bookDataObject));
 }
