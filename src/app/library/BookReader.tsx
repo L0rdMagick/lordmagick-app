@@ -3,10 +3,9 @@
 import React, { useRef, useCallback, useEffect } from 'react'; 
 import Image from 'next/image';
 import HTMLFlipBook from 'react-pageflip';
-import { Book } from './content';
+import { Book } from '../library/content'; // Corrected import path
 import { Crimson_Text, Uncial_Antiqua } from 'next/font/google';
 
-// (All other code in this file remains exactly the same)
 const crimsonText = Crimson_Text({ subsets: ['latin'], weight: ['400', '700'], });
 const uncialAntiqua = Uncial_Antiqua({ subsets: ['latin'], weight: ['400'], });
 const Page = React.forwardRef<HTMLDivElement, { children?: React.ReactNode }>(({ children }, ref) => ( <div ref={ref} className="flex items-center justify-center p-8 md:p-12 bg-[#fdf9e8] bg-[url('/images/books/parchment-bg.png')] bg-cover bg-center shadow-inner shadow-black/30"> <div className="text-gray-800 text-lg leading-relaxed">{children}</div> </div> ));
@@ -22,18 +21,18 @@ interface BookReaderProps { book: Book; }
 export default function BookReader({ book }: BookReaderProps) {
   const flipBookRef = useRef<any>(null);
 
-  // THE FIX: This hook manages the body's overflow style directly.
-  // It ensures the scrollbar is hidden when the book is open, and reliably
-  // restored when the component is unmounted (i.e., when you navigate away).
   useEffect(() => {
-    // On mount (book opens), hide the scrollbar.
+    // On mount, hide the scrollbar on both elements for safety.
+    document.documentElement.style.overflow = 'hidden';
     document.body.style.overflow = 'hidden';
 
-    // Return a cleanup function. This runs on unmount (when you leave the page).
+    // THE FIX: This cleanup function is now more robust.
+    // It runs when you navigate away from the book page for any reason.
     return () => {
+      document.documentElement.style.overflow = 'auto';
       document.body.style.overflow = 'auto';
     };
-  }, []); // The empty array ensures this runs only once on mount and cleanup runs on unmount.
+  }, []); 
 
   const handleChapterClick = useCallback((pageNumber: number) => {
     flipBookRef.current?.pageFlip().flip(pageNumber);
