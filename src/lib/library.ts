@@ -17,11 +17,11 @@ export interface Book {
   chapters: Chapter[];
 }
 
-// --- THE IN-MEMORY REGISTRY ---
-// This is the core of the new, robust solution.
-// We read all books from the disk *once* when the server starts and cache their raw content.
-// This avoids all file system issues with Vercel's serverless environment.
+// THE FIX (Part 1): Export a new type for the book summary.
+export type BookSummary = Pick<Book, 'slug' | 'title' | 'coverImage'>;
 
+
+// --- THE IN-MEMORY REGISTRY ---
 interface BookCache {
   [slug: string]: {
     title: string;
@@ -54,7 +54,6 @@ try {
 }
 
 // --- HELPER FUNCTION ---
-// This function processes raw markdown content into structured chapters with HTML.
 async function parseBookContent(rawContent: string): Promise<Chapter[]> {
   const chapterHeadings = rawContent.split('\n## ').filter(c => c.trim() !== '');
 
@@ -72,14 +71,12 @@ async function parseBookContent(rawContent: string): Promise<Chapter[]> {
 
 
 // --- REVISED PUBLIC FUNCTIONS ---
-// These functions now read from the fast in-memory cache instead of the disk.
-
 /**
  * Gets a summary of all available books. Fast and efficient for the bookshelf.
  */
-export async function getAllBooks(): Promise<Pick<Book, 'slug' | 'title' | 'coverImage'>[]> {
+// THE FIX (Part 2): Update the return type signature.
+export async function getAllBooks(): Promise<BookSummary[]> {
   const allBookSummaries = Object.entries(bookCache).map(([slug, data]) => {
-    // Logic to find cover image remains the same
     const coverImageExtensions = ['png', 'jpg', 'jpeg', 'webp'];
     let coverImage = '/images/books/default-cover.png';
     for (const ext of coverImageExtensions) {
@@ -109,7 +106,6 @@ export async function getBookBySlug(slug: string): Promise<Book | null> {
     return null;
   }
 
-  // Find the cover image
   const coverImageExtensions = ['png', 'jpg', 'jpeg', 'webp'];
   let coverImage = '/images/books/default-cover.png';
   for (const ext of coverImageExtensions) {
@@ -119,7 +115,6 @@ export async function getBookBySlug(slug: string): Promise<Book | null> {
     }
   }
 
-  // Parse the raw markdown into chapters *on-demand*
   const chapters = await parseBookContent(cachedBook.rawContent);
 
   return {

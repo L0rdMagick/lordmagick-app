@@ -3,16 +3,16 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect } from 'react';
-import { Book } from '@/lib/library'; // FIXED IMPORT
+// THE FIX: Import BookSummary instead of the full Book type.
+import { BookSummary } from '@/lib/library';
 
 interface BookshelfClientProps {
-  books: Book[];
+  // THE FIX: The 'books' prop now expects an array of BookSummary.
+  books: BookSummary[];
 }
 
 export default function BookshelfClient({ books }: BookshelfClientProps) {
   
-  // This useEffect hook is why this component must be a Client Component.
-  // It ensures the scrollbar is restored when navigating back to the library.
   useEffect(() => {
     document.body.style.overflow = 'auto';
   }, []);
@@ -26,7 +26,6 @@ export default function BookshelfClient({ books }: BookshelfClientProps) {
           className="group flex flex-col items-center text-center transition-all duration-300 hover:scale-105 active:scale-95"
         >
           <div 
-            // FIXED TAILWIND CLASS: aspect-[2/3] changed to aspect-2/3
             className="relative w-full aspect-2/3 rounded-lg shadow-2xl shadow-black/50 overflow-hidden transform transition-transform duration-500 group-hover:-translate-y-2 group-hover:rotate-3"
             style={{ filter: 'drop-shadow(4px 8px 15px rgba(0,0,0,0.7))' }}
           >
