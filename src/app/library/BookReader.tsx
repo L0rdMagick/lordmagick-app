@@ -9,7 +9,7 @@ import { Crimson_Text, Uncial_Antiqua } from 'next/font/google';
 const crimsonText = Crimson_Text({ subsets: ['latin'], weight: ['400', '700'], });
 const uncialAntiqua = Uncial_Antiqua({ subsets: ['latin'], weight: ['400'], });
 
-// --- Child Components (No changes) ---
+// --- Child Components ---
 
 const Page = React.forwardRef<HTMLDivElement, { children?: React.ReactNode }>(({ children }, ref) => (
   <div ref={ref} className="flex items-center justify-center p-8 md:p-12 bg-[#fdf9e8] bg-[url('/images/books/parchment-bg.png')] bg-cover bg-center shadow-inner shadow-black/30">
@@ -29,9 +29,18 @@ const CoverPage = React.forwardRef<HTMLDivElement, { title: string, coverImage: 
 ));
 CoverPage.displayName = 'CoverPage';
 
-const BackCoverPage = React.forwardRef<HTMLDivElement, { coverImage: string }>(({ coverImage }, ref) => (
+// THE FIX (Part 1): The BackCoverPage now includes the 'onClose' prop and clickable overlay from the original file.
+const BackCoverPage = React.forwardRef<HTMLDivElement, { coverImage: string; onClose: () => void; }>(({ coverImage, onClose }, ref) => (
   <div ref={ref} className="relative bg-gray-900 shadow-lg shadow-black/50 group">
     <Image src={coverImage} alt="Book back cover" fill style={{ objectFit: 'cover' }} />
+    <div 
+      className="absolute inset-0 bg-black/50 flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity duration-300" 
+      onClick={onClose}
+    >
+      <span className={`text-2xl text-amber-200 ${uncialAntiqua.className}`} style={{ textShadow: '1px 1px 3px rgba(0,0,0,0.7)' }}>
+        Close Tome
+      </span>
+    </div>
   </div>
 ));
 BackCoverPage.displayName = 'BackCoverPage';
@@ -67,11 +76,10 @@ export default function BookReader({ book }: BookReaderProps) {
     flipBookRef.current?.pageFlip().flip(pageNumber);
   }, []);
 
-  // This function is now used by our new button.
   const handleCloseBook = useCallback(() => {
     const pageFlip = flipBookRef.current?.pageFlip();
     if (pageFlip) {
-      // This command flips the book to the very last page (the back cover).
+      // Flips to the very last page (the back cover) to create the closing animation.
       pageFlip.flip(pageFlip.getPageCount() - 1);
     }
   }, []);
@@ -94,14 +102,14 @@ export default function BookReader({ book }: BookReaderProps) {
         
         {book.chapters.map((chapter, index) => (
           <Page key={index}>
-            <div className="prose prose-lg max-w-none">
+            {/* THE FIX (Part 2): Added the 'break-words' class to force text to wrap, preventing overflow. */}
+            <div className="prose prose-lg max-w-none break-words">
               <h3 className={`text-2xl font-bold mb-4 ${uncialAntiqua.className}`}>{chapter.title}</h3>
               <div dangerouslySetInnerHTML={{ __html: chapter.content }} />
             </div>
           </Page>
         ))}
         
-        {/* THE FIX: The "End of Tome" page now has a "Close Tome" button. */}
         <Page>
           <div className="flex flex-col items-center justify-center h-full text-center">
             <p className="text-gray-500 mb-8 text-xl">End of Tome</p>
@@ -115,7 +123,8 @@ export default function BookReader({ book }: BookReaderProps) {
           </div>
         </Page>
 
-        <BackCoverPage coverImage={book.coverImage} />
+        {/* The 'onClose' prop is now correctly passed to the restored BackCoverPage component. */}
+        <BackCoverPage coverImage={book.coverImage} onClose={handleCloseBook} />
       </HTMLFlipBook>
     </div>
   );
