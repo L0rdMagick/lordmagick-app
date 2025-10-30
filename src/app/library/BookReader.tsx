@@ -3,7 +3,7 @@
 import React, { useRef, useCallback, useEffect } from 'react'; 
 import Image from 'next/image';
 import HTMLFlipBook from 'react-pageflip';
-import { Book } from '../library/content'; // Corrected import path
+import { Book } from '../library/content';
 import { Crimson_Text, Uncial_Antiqua } from 'next/font/google';
 
 const crimsonText = Crimson_Text({ subsets: ['latin'], weight: ['400', '700'], });
@@ -22,17 +22,22 @@ export default function BookReader({ book }: BookReaderProps) {
   const flipBookRef = useRef<any>(null);
 
   useEffect(() => {
-    // On mount, hide the scrollbar.
-    document.documentElement.style.overflow = 'hidden';
-    document.body.style.overflow = 'hidden';
-
-    // This cleanup function will run when the component unmounts.
-    // It's good practice, and the failsafe in template.tsx will back it up.
+    // This is the cleanup function that runs when the component unmounts.
     return () => {
+      const pageFlipInstance = flipBookRef.current?.pageFlip();
+
+      // THE FIX: Check if the library instance exists and call its destroy() method.
+      // This forces the library to remove its own event listeners and, crucially,
+      // remove the `overflow: hidden` style it applied to the body.
+      if (pageFlipInstance) {
+        pageFlipInstance.destroy();
+      }
+
+      // As a final backup, we'll still manually reset the styles.
       document.documentElement.style.overflow = 'auto';
       document.body.style.overflow = 'auto';
     };
-  }, []); 
+  }, []); // The empty array ensures this runs only once on mount and cleanup runs only on unmount.
 
   const handleChapterClick = useCallback((pageNumber: number) => {
     flipBookRef.current?.pageFlip().flip(pageNumber);
