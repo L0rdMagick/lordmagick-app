@@ -1,22 +1,18 @@
 import { libraryBooks } from '../content';
-import BookReader from '../BookReader';
+import BookReader from '../BookReader'; // THE FIX: This path is now correct based on your file structure.
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
-// This function tells Next.js which book pages exist so it can generate them.
-// This is a standard and important part of how dynamic routes work.
 export function generateStaticParams() {
   return libraryBooks.map((book) => ({
     bookSlug: book.slug,
   }));
 }
 
-// This is a standard Server Component for fetching page data.
 export default function BookPage({ params }: { params: { bookSlug: string } }) {
   const { bookSlug } = params;
   const book = libraryBooks.find((b) => b.slug === bookSlug);
 
-  // If the book isn't found, this will correctly show a 404 page.
   if (!book) {
     notFound();
   }

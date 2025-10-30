@@ -3,7 +3,7 @@
 import React, { useRef, useCallback, useEffect } from 'react'; 
 import Image from 'next/image';
 import HTMLFlipBook from 'react-pageflip';
-import { Book } from './content'; // This path is now correct.
+import { Book } from './content'; // This path is correct because the files are in the same directory.
 import { Crimson_Text, Uncial_Antiqua } from 'next/font/google';
 
 const crimsonText = Crimson_Text({ subsets: ['latin'], weight: ['400', '700'], });
@@ -26,17 +26,14 @@ export default function BookReader({ book }: BookReaderProps) {
     return () => {
       const pageFlipInstance = flipBookRef.current?.pageFlip();
 
-      // THE SCROLLING FIX: This tells the library to clean up its own styles
-      // and event listeners when you navigate away.
       if (pageFlipInstance) {
         pageFlipInstance.destroy();
       }
       
-      // As a final backup, manually restore scrolling on the main document elements.
       document.documentElement.style.overflow = 'auto';
       document.body.style.overflow = 'auto';
     };
-  }, []); // The empty array ensures this cleanup runs ONLY when the component is unmounted.
+  }, []);
 
   const handleChapterClick = useCallback((pageNumber: number) => {
     flipBookRef.current?.pageFlip().flip(pageNumber);
