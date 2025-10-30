@@ -29,7 +29,6 @@ const CoverPage = React.forwardRef<HTMLDivElement, { title: string, coverImage: 
 ));
 CoverPage.displayName = 'CoverPage';
 
-// THE FIX (Part 1): The BackCoverPage now includes the 'onClose' prop and clickable overlay from the original file.
 const BackCoverPage = React.forwardRef<HTMLDivElement, { coverImage: string; onClose: () => void; }>(({ coverImage, onClose }, ref) => (
   <div ref={ref} className="relative bg-gray-900 shadow-lg shadow-black/50 group">
     <Image src={coverImage} alt="Book back cover" fill style={{ objectFit: 'cover' }} />
@@ -79,7 +78,6 @@ export default function BookReader({ book }: BookReaderProps) {
   const handleCloseBook = useCallback(() => {
     const pageFlip = flipBookRef.current?.pageFlip();
     if (pageFlip) {
-      // Flips to the very last page (the back cover) to create the closing animation.
       pageFlip.flip(pageFlip.getPageCount() - 1);
     }
   }, []);
@@ -102,7 +100,7 @@ export default function BookReader({ book }: BookReaderProps) {
         
         {book.chapters.map((chapter, index) => (
           <Page key={index}>
-            {/* THE FIX (Part 2): Added the 'break-words' class to force text to wrap, preventing overflow. */}
+            {/* The 'break-words' class is the correct and standard Tailwind class to prevent text overflow. */}
             <div className="prose prose-lg max-w-none break-words">
               <h3 className={`text-2xl font-bold mb-4 ${uncialAntiqua.className}`}>{chapter.title}</h3>
               <div dangerouslySetInnerHTML={{ __html: chapter.content }} />
@@ -123,7 +121,6 @@ export default function BookReader({ book }: BookReaderProps) {
           </div>
         </Page>
 
-        {/* The 'onClose' prop is now correctly passed to the restored BackCoverPage component. */}
         <BackCoverPage coverImage={book.coverImage} onClose={handleCloseBook} />
       </HTMLFlipBook>
     </div>
