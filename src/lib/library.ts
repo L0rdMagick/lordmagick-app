@@ -29,7 +29,7 @@ interface BookCache {
   };
 }
 
-const bookCache: BookCache = {};
+export const bookCache: BookCache = {};
 const booksDirectory = path.join(process.cwd(), 'src', 'books');
 
 try {

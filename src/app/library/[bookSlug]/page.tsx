@@ -1,51 +1,65 @@
-import { getBookBySlug } from '@/lib/library'; // We no longer need getAllBooks here
+// We need to import the raw bookCache object for our test
+import { getBookBySlug, bookCache } from '@/lib/library'; 
 import BookReader from '../BookReader';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-
-// --- THIS ENTIRE FUNCTION HAS BEEN REMOVED ---
-// By removing generateStaticParams, we are telling Next.js to render this page
-// on-demand (dynamically) at request time, just like your original site did.
-// This is more robust and avoids the build-time file system issues.
-/*
-export async function generateStaticParams() {
-  const books = await getAllBooks();
-  console.log('Found books to generate pages for:', JSON.stringify(books.map(b => b.slug)));
-  return books.map((book) => ({
-    bookSlug: book.slug,
-  }));
-}
-*/
 
 interface PageProps {
   params: { bookSlug: string; };
 }
 
 export default async function BookPage({ params }: PageProps) {
-  // The rest of the component works perfectly for on-demand rendering.
   const bookSlug = decodeURIComponent(params.bookSlug);
-  const book = await getBookBySlug(bookSlug);
 
-  if (!book) {
+  // --- START OF LIVE DIAGNOSTIC LOGS ---
+  console.log(`--- BookPage DIAGNOSTIC START for slug: "${bookSlug}" ---`);
+
+  try {
+    // Test 1: Check if the bookCache object exists and what's inside it.
+    if (bookCache && Object.keys(bookCache).length > 0) {
+      console.log('[DIAGNOSTIC] SUCCESS: The bookCache is available.');
+      console.log('[DIAGNOSTIC] Cached book slugs are:', Object.keys(bookCache));
+    } else {
+      console.error('[DIAGNOSTIC] CRITICAL FAILURE: The bookCache is EMPTY or UNDEFINED at runtime.');
+    }
+
+    // Test 2: Attempt to get the book and log the result.
+    console.log(`[DIAGNOSTIC] Attempting to get book with getBookBySlug("${bookSlug}")...`);
+    const book = await getBookBySlug(bookSlug);
+
+    if (book) {
+      console.log('[DIAGNOSTIC] SUCCESS: getBookBySlug returned a book object.');
+    } else {
+      console.error(`[DIAGNOSTIC] FAILURE: getBookBySlug returned NULL for slug "${bookSlug}".`);
+    }
+    
+    console.log('--- BookPage DIAGNOSTIC END ---');
+    // --- END OF LIVE DIAGNOSTIC LOGS ---
+
+    // Original logic remains the same
+    if (!book) {
+      notFound();
+    }
+
+    return (
+      <main className="relative min-h-screen w-full bg-black bg-cover bg-center" style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}>
+        <div className="absolute inset-0 bg-black/70 backdrop-blur" />
+        <nav className="fixed top-0 left-0 right-0 z-50 flex flex-col sm:flex-row justify-between items-center p-4 gap-2">
+          <Link href="/library" className="text-gray-300 hover:text-amber-300 transition-colors duration-300 text-lg" style={{ textShadow: '1px 1px 3px rgba(0,0,0,0.7)' }}>
+            &larr; Back to Bookshelf
+          </Link>
+          <Link href="/hall" className="text-gray-300 hover:text-amber-300 transition-colors duration-300 text-lg" style={{ textShadow: '1px 1px 3px rgba(0,0,0,0.7)' }}>
+            Return to Grand Hall &rarr;
+          </Link>
+        </nav>
+        <div className="flex items-center justify-center min-h-screen p-4 sm:p-8 pt-20 sm:pt-16">
+          <BookReader book={book} />
+        </div>
+      </main>
+    );
+
+  } catch (error) {
+    console.error('[DIAGNOSTIC] CATASTROPHIC ERROR in BookPage:', error);
     notFound();
   }
-
-  return (
-    <main className="relative min-h-screen w-full bg-black bg-cover bg-center" style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}>
-      <div className="absolute inset-0 bg-black/70 backdrop-blur" />
-      
-      <nav className="fixed top-0 left-0 right-0 z-50 flex flex-col sm:flex-row justify-between items-center p-4 gap-2">
-        <Link href="/library" className="text-gray-300 hover:text-amber-300 transition-colors duration-300 text-lg" style={{ textShadow: '1px 1px 3px rgba(0,0,0,0.7)' }}>
-          &larr; Back to Bookshelf
-        </Link>
-        <Link href="/hall" className="text-gray-300 hover:text-amber-300 transition-colors duration-300 text-lg" style={{ textShadow: '1px 1px 3px rgba(0,0,0,0.7)' }}>
-          Return to Grand Hall &rarr;
-        </Link>
-      </nav>
-
-      <div className="flex items-center justify-center min-h-screen p-4 sm:p-8 pt-20 sm:pt-16">
-        <BookReader book={book} />
-      </div>
-    </main>
-  );
 }
