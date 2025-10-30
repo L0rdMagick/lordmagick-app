@@ -8,18 +8,16 @@ interface PageProps {
   params: { bookSlug: string; };
 }
 
-// This function is no longer async
-export function generateStaticParams() {
-  const books = getAllBooks();
+export async function generateStaticParams() {
+  const books = await getAllBooks();
   return books.map((book: Book) => ({
     bookSlug: book.slug,
   }));
 }
 
-// This is a standard Server Component again (not async)
-export default function BookPage({ params }: PageProps) {
+export default async function BookPage({ params }: PageProps) {
   const { bookSlug } = params;
-  const book = getBookBySlug(bookSlug);
+  const book = await getBookBySlug(bookSlug);
 
   if (!book) {
     notFound();

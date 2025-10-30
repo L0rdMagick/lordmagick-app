@@ -3,9 +3,8 @@ import Link from 'next/link';
 import { getAllBooks } from '@/lib/library';
 import type { Book } from '@/types';
 
-// This is a standard Server Component again (not async)
-export default function LibraryPage() {
-  const libraryBooks = getAllBooks(); 
+export default async function LibraryPage() {
+  const libraryBooks = await getAllBooks(); 
 
   return (
     <main className="relative min-h-screen w-full bg-black bg-cover bg-center p-8" style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}>

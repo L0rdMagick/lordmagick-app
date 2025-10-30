@@ -6,31 +6,32 @@ import type { Book } from '@/types';
 
 const booksDirectory = path.join(process.cwd(), 'src/content/books');
 
-export function getAllBooks(): Book[] {
+export async function getAllBooks(): Promise<Book[]> {
   const allEntries = fs.readdirSync(booksDirectory);
   const bookSlugs = allEntries.filter(entry => {
     const fullPath = path.join(booksDirectory, entry);
     return fs.statSync(fullPath).isDirectory();
   });
-  return bookSlugs.map(slug => getBookBySlug(slug));
+  
+  const allBooksData = await Promise.all(bookSlugs.map(slug => getBookBySlug(slug)));
+  return allBooksData;
 }
 
-export function getBookBySlug(slug: string): Book {
+export async function getBookBySlug(slug: string): Promise<Book> {
   const fullPath = path.join(booksDirectory, slug, 'index.md');
   const fileContents = fs.readFileSync(fullPath, 'utf8');
-  
-  // 1. Parse the metadata and content with gray-matter
   const { data, content } = matter(fileContents);
 
-  // 2. Use marked's SYNCHRONOUS parser. This returns a simple, clean string.
-  const contentHtml = marked.parseSync(content || '');
+  // THE FIX: Correctly 'await' the asynchronous 'marked.parse()' function.
+  const contentHtml = await marked.parse(content || '');
 
-  // 3. Robustly parse the resulting HTML into chapters
   const chapters: { title: string; content: string }[] = [];
   const chapterParts = contentHtml.split(/(<h2[^>]*>.*?<\/h2>)/);
+
   if (chapterParts.length > 1 && chapterParts[0].trim() === '') {
     chapterParts.shift();
   }
+
   for (let i = 0; i < chapterParts.length; i += 2) {
     const titleHtml = chapterParts[i];
     const contentHtmlFragment = chapterParts[i + 1] || '';
@@ -40,7 +41,6 @@ export function getBookBySlug(slug: string): Book {
     }
   }
 
-  // 4. Build the final, clean book object
   const bookData: Book = {
     slug: slug,
     title: data.title || 'Untitled Book',
@@ -48,6 +48,6 @@ export function getBookBySlug(slug: string): Book {
     chapters: chapters,
   };
 
-  // 5. As a final guarantee, sanitize the object to ensure it's 100% serializable
+  // The final sanitization step remains as the ultimate guarantee.
   return JSON.parse(JSON.stringify(bookData));
 }
