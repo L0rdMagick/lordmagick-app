@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useRef, useCallback } from 'react'; 
+import React, { useRef, useCallback } from 'react';
+// THE FIX (Part 1): Import the useRouter hook for navigation.
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import HTMLFlipBook from 'react-pageflip';
 import { Book } from '@/lib/library';
@@ -12,7 +14,7 @@ const uncialAntiqua = Uncial_Antiqua({ subsets: ['latin'], weight: ['400'], });
 // --- Child Components ---
 
 const Page = React.forwardRef<HTMLDivElement, { children?: React.ReactNode }>(({ children }, ref) => (
-  <div ref={ref} className="flex items-center justify-center p-8 md:p-12 bg-[#fdf9e8] bg-[url('/images/books/parchment-bg.png')] bg-cover bg-center shadow-inner shadow-black/30">
+  <div ref={ref} className="flex items-center justify-center p-8 md-p-12 bg-[#fdf9e8] bg-[url('/images/books/parchment-bg.png')] bg-cover bg-center shadow-inner shadow-black/30">
     <div className="text-gray-800 text-lg leading-relaxed w-full h-full">{children}</div>
   </div>
 ));
@@ -29,15 +31,15 @@ const CoverPage = React.forwardRef<HTMLDivElement, { title: string, coverImage: 
 ));
 CoverPage.displayName = 'CoverPage';
 
-const BackCoverPage = React.forwardRef<HTMLDivElement, { coverImage: string; onClose: () => void; }>(({ coverImage, onClose }, ref) => (
+const BackCoverPage = React.forwardRef<HTMLDivElement, { coverImage: string; onReturn: () => void; }>(({ coverImage, onReturn }, ref) => (
   <div ref={ref} className="relative bg-gray-900 shadow-lg shadow-black/50 group">
     <Image src={coverImage} alt="Book back cover" fill style={{ objectFit: 'cover' }} />
     <div 
       className="absolute inset-0 bg-black/50 flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity duration-300" 
-      onClick={onClose}
+      onClick={onReturn}
     >
       <span className={`text-2xl text-amber-200 ${uncialAntiqua.className}`} style={{ textShadow: '1px 1px 3px rgba(0,0,0,0.7)' }}>
-        Close Tome
+        Back to Library
       </span>
     </div>
   </div>
@@ -70,17 +72,25 @@ interface BookReaderProps {
 
 export default function BookReader({ book }: BookReaderProps) {
   const flipBookRef = useRef<any>(null);
+  // THE FIX (Part 2): Initialize the router.
+  const router = useRouter();
 
   const handleChapterClick = useCallback((pageNumber: number) => {
     flipBookRef.current?.pageFlip().flip(pageNumber);
   }, []);
 
-  const handleCloseBook = useCallback(() => {
+  // This function is for the button on the 'End of Tome' page. It performs the closing animation.
+  const handleCloseBookAnimation = useCallback(() => {
     const pageFlip = flipBookRef.current?.pageFlip();
     if (pageFlip) {
       pageFlip.flip(pageFlip.getPageCount() - 1);
     }
   }, []);
+
+  // THE FIX (Part 3): Create a new function to handle navigating back to the library.
+  const handleReturnToLibrary = useCallback(() => {
+    router.push('/library');
+  }, [router]);
 
   return (
     <div className="w-full max-w-5xl aspect-[1/1.2] md:aspect-[2/1.2] max-h-[90vh]">
@@ -100,7 +110,6 @@ export default function BookReader({ book }: BookReaderProps) {
         
         {book.chapters.map((chapter, index) => (
           <Page key={index}>
-            {/* THE FIX: This comment tells the linter to ignore its faulty warning on the next line. */}
             {/* eslint-disable-next-line tailwindcss/no-custom-classname */}
             <div className="prose prose-lg max-w-none break-words">
               <h3 className={`text-2xl font-bold mb-4 ${uncialAntiqua.className}`}>{chapter.title}</h3>
@@ -113,7 +122,7 @@ export default function BookReader({ book }: BookReaderProps) {
           <div className="flex flex-col items-center justify-center h-full text-center">
             <p className="text-gray-500 mb-8 text-xl">End of Tome</p>
             <button
-              onClick={handleCloseBook}
+              onClick={handleCloseBookAnimation} // This button now triggers the closing animation.
               className={`text-2xl text-amber-800 hover:text-amber-600 transition-colors duration-300 ${uncialAntiqua.className}`}
               style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.3)' }}
             >
@@ -122,7 +131,8 @@ export default function BookReader({ book }: BookReaderProps) {
           </div>
         </Page>
 
-        <BackCoverPage coverImage={book.coverImage} onClose={handleCloseBook} />
+        {/* THE FIX (Part 4): The back cover now calls the correct function to return to the library. */}
+        <BackCoverPage coverImage={book.coverImage} onReturn={handleReturnToLibrary} />
       </HTMLFlipBook>
     </div>
   );
