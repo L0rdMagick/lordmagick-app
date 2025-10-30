@@ -1,13 +1,11 @@
 "use client";
 
-// REMOVED: No longer importing useEffect here.
-import React, { useRef, useCallback } from 'react'; 
+import React, { useRef, useCallback, useEffect } from 'react'; // ADD: useEffect
 import Image from 'next/image';
 import HTMLFlipBook from 'react-pageflip';
 import { Book } from './content';
 import { Crimson_Text, Uncial_Antiqua } from 'next/font/google';
 
-// (All other code in this file remains exactly the same)
 const crimsonText = Crimson_Text({ subsets: ['latin'], weight: ['400', '700'], });
 const uncialAntiqua = Uncial_Antiqua({ subsets: ['latin'], weight: ['400'], });
 const Page = React.forwardRef<HTMLDivElement, { children?: React.ReactNode }>(({ children }, ref) => ( <div ref={ref} className="flex items-center justify-center p-8 md:p-12 bg-[#fdf9e8] bg-[url('/images/books/parchment-bg.png')] bg-cover bg-center shadow-inner shadow-black/30"> <div className="text-gray-800 text-lg leading-relaxed">{children}</div> </div> ));
@@ -23,8 +21,18 @@ interface BookReaderProps { book: Book; }
 export default function BookReader({ book }: BookReaderProps) {
   const flipBookRef = useRef<any>(null);
 
-  // REMOVED: The old useEffect that managed the scrollbar is now gone.
-  // The bookshelf page will handle restoring the scrollbar instead.
+  // THE DEFINITIVE FIX: This hook ensures that when the BookReader component
+  // is unmounted (i.e., when you navigate away), it forcefully restores
+  // scrolling to both the <html> and <body> elements.
+  useEffect(() => {
+    // This return function is the "cleanup" function. It runs only when the
+    // component is about to be destroyed.
+    return () => {
+      document.documentElement.style.overflow = 'auto'; // Target <html>
+      document.body.style.overflow = 'auto'; // Target <body>
+    };
+  }, []); // The empty dependency array means this effect runs once on mount and cleans up on unmount.
+
 
   const handleChapterClick = useCallback((pageNumber: number) => {
     flipBookRef.current?.pageFlip().flip(pageNumber);
