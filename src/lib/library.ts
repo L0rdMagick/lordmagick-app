@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
-// NO LONGER IMPORTING 'gray-matter' or 'marked'
+import matter from 'gray-matter';
+import { marked } from 'marked';
 import type { Book } from '@/types';
 
 const booksDirectory = path.join(process.cwd(), 'src/content/books');
@@ -11,32 +12,42 @@ export function getAllBooks(): Book[] {
     const fullPath = path.join(booksDirectory, entry);
     return fs.statSync(fullPath).isDirectory();
   });
-  // This still needs to return an array of book-like objects for generateStaticParams
-  return bookSlugs.map(slug => ({
-    slug: slug,
-    title: 'Test Title',
-    coverImage: '/images/books/placeholder.png', // A known-good image path
-    chapters: [],
-  }));
+  return bookSlugs.map(slug => getBookBySlug(slug));
 }
 
 export function getBookBySlug(slug: string): Book {
-  // THE DEFINITIVE DIAGNOSTIC STEP:
-  // This function IGNORES the file content entirely.
-  // It returns a completely hardcoded, 100% serializable object.
-  // If the build passes with this code, the problem is proven to be one of
-  // the parsing libraries we removed.
-  const hardcodedBook: Book = {
+  const fullPath = path.join(booksDirectory, slug, 'index.md');
+  const fileContents = fs.readFileSync(fullPath, 'utf8');
+  
+  // 1. Parse the metadata and content with gray-matter
+  const { data, content } = matter(fileContents);
+
+  // 2. Use marked's SYNCHRONOUS parser. This returns a simple, clean string.
+  const contentHtml = marked.parseSync(content || '');
+
+  // 3. Robustly parse the resulting HTML into chapters
+  const chapters: { title: string; content: string }[] = [];
+  const chapterParts = contentHtml.split(/(<h2[^>]*>.*?<\/h2>)/);
+  if (chapterParts.length > 1 && chapterParts[0].trim() === '') {
+    chapterParts.shift();
+  }
+  for (let i = 0; i < chapterParts.length; i += 2) {
+    const titleHtml = chapterParts[i];
+    const contentHtmlFragment = chapterParts[i + 1] || '';
+    const title = titleHtml.replace(/<[^>]+>/g, '').trim();
+    if (title) {
+      chapters.push({ title, content: contentHtmlFragment.trim() });
+    }
+  }
+
+  // 4. Build the final, clean book object
+  const bookData: Book = {
     slug: slug,
-    title: `Test Book: ${slug}`,
-    coverImage: '/images/books/energy-work-and-manipulation.png', // Use a known-good path
-    chapters: [
-      {
-        title: 'Test Chapter',
-        content: '<p>This is a test. If you see this, the build worked.</p>'
-      }
-    ]
+    title: data.title || 'Untitled Book',
+    coverImage: data.coverImage || '',
+    chapters: chapters,
   };
 
-  return hardcodedBook;
+  // 5. As a final guarantee, sanitize the object to ensure it's 100% serializable
+  return JSON.parse(JSON.stringify(bookData));
 }
