@@ -23,7 +23,8 @@ export default function LibraryPage() {
           <Link
             key={book.slug}
             href={`/library/${book.slug}`}
-            className="group flex flex-col items-center text-center transition-all duration-300 hover:scale-105! active:scale-95"
+            // THE FIX: Add the 'touch-pan-y' class here.
+            className="group flex flex-col items-center text-center transition-all duration-300 hover:scale-105! active:scale-95 touch-pan-y"
           >
             <div 
               className="relative w-full aspect-2/3 rounded-lg shadow-2xl shadow-black/50 overflow-hidden transform transition-transform duration-500 group-hover:-translate-y-2 group-hover:rotate-3"

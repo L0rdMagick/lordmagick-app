@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+/* THE FIX: Add this new utility layer. */
+/* This tells mobile browsers that vertical swipes on an element with this class should be treated as a scroll. */
+@layer utilities {
+  .touch-pan-y {
+    touch-action: pan-y;
+  }
+}
+
 /* Mist animations remain here */
 @keyframes flow-mist {
   0% { background-position: 0% 50%; }
