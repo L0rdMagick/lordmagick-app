@@ -3,31 +3,18 @@ import path from 'path';
 import matter from 'gray-matter';
 import { remark } from 'remark';
 import html from 'remark-html';
-
-export interface Book {
-  slug: string;
-  title: string;
-  coverImage: string;
-  chapters: {
-    title: string;
-    content: string;
-  }[];
-}
+import type { Book } from '../types'; // FIX: Changed path from '@/types' to a relative path.
 
 const booksDirectory = path.join(process.cwd(), 'src/content/books');
 
 export function getAllBooks(): Book[] {
-  // Get all entry names (files and folders) in the books directory
   const allEntries = fs.readdirSync(booksDirectory);
 
-  // THE FIX: Filter the list to include ONLY directories, ignoring any files.
   const bookSlugs = allEntries.filter(entry => {
     const fullPath = path.join(booksDirectory, entry);
-    // Use fs.statSync to get information about the entry and check if it's a directory
     return fs.statSync(fullPath).isDirectory();
   });
 
-  // Now, map over the clean list of actual book directories
   const allBooksData = bookSlugs.map((slug) => {
     return getBookBySlug(slug);
   });
