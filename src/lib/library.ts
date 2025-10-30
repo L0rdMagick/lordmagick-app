@@ -3,7 +3,6 @@ import path from 'path';
 import matter from 'gray-matter';
 import { remark } from 'remark';
 import html from 'remark-html';
-import { notFound } from 'next/navigation';
 
 // Define the structure of a Chapter and a Book
 export interface Chapter {
@@ -18,8 +17,8 @@ export interface Book {
   chapters: Chapter[];
 }
 
-// Point to the directory where you store your book content
-const booksDirectory = path.join(process.cwd(), '_books');
+// THE FIX: The path now includes 'src' to find the new folder location.
+const booksDirectory = path.join(process.cwd(), 'src', '_books');
 
 /**
  * Parses a Markdown book file's content into a Book object.
