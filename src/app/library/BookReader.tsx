@@ -102,7 +102,7 @@ export default function BookReader({ book }: BookReaderProps) {
           <Page key={index}>
             {/* THE FIX: This comment tells the linter to ignore its faulty warning on the next line. */}
             {/* eslint-disable-next-line tailwindcss/no-custom-classname */}
-            <div className="prose prose-lg max-w-none wrap-break-word">
+            <div className="prose prose-lg max-w-none break-words">
               <h3 className={`text-2xl font-bold mb-4 ${uncialAntiqua.className}`}>{chapter.title}</h3>
               <div dangerouslySetInnerHTML={{ __html: chapter.content }} />
             </div>
