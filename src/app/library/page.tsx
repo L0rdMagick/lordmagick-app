@@ -1,11 +1,10 @@
-"use client"; 
-
 import Image from 'next/image';
 import Link from 'next/link';
-import { libraryBooks } from './content';
+import { getAllBooks } from '@/lib/library'; // Update import path
 
 export default function LibraryPage() {
-  
+  const libraryBooks = getAllBooks(); // Fetch books from the file system
+
   return (
     <main className="relative min-h-screen w-full bg-black bg-cover bg-center p-8" style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}>
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
@@ -23,7 +22,6 @@ export default function LibraryPage() {
           <Link
             key={book.slug}
             href={`/library/${book.slug}`}
-            // THE FIX: Add the 'touch-pan-y' class here.
             className="group flex flex-col items-center text-center transition-all duration-300 hover:scale-105! active:scale-95 touch-pan-y"
           >
             <div 

@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useRef, useCallback, useEffect } from 'react'; // ADD: useEffect
+import React, { useRef, useCallback, useEffect } from 'react';
 import Image from 'next/image';
 import HTMLFlipBook from 'react-pageflip';
-import { Book } from './content';
+import { Book } from '@/lib/library'; // Update import path
 import { Crimson_Text, Uncial_Antiqua } from 'next/font/google';
 
+// ... (All the Page, CoverPage, etc. components remain exactly the same)
 const crimsonText = Crimson_Text({ subsets: ['latin'], weight: ['400', '700'], });
 const uncialAntiqua = Uncial_Antiqua({ subsets: ['latin'], weight: ['400'], });
 const Page = React.forwardRef<HTMLDivElement, { children?: React.ReactNode }>(({ children }, ref) => ( <div ref={ref} className="flex items-center justify-center p-8 md:p-12 bg-[#fdf9e8] bg-[url('/images/books/parchment-bg.png')] bg-cover bg-center shadow-inner shadow-black/30"> <div className="text-gray-800 text-lg leading-relaxed">{children}</div> </div> ));
@@ -16,23 +17,19 @@ const BackCoverPage = React.forwardRef<HTMLDivElement, { coverImage: string; onC
 BackCoverPage.displayName = 'BackCoverPage';
 const TableOfContents = React.forwardRef<HTMLDivElement, { book: Book, onChapterClick: (page: number) => void }>(({ book, onChapterClick }, ref) => ( <Page ref={ref}> <div> <h2 className="text-3xl font-bold text-center mb-8 border-b-2 border-gray-500 pb-2">Table of Contents</h2> <ul className="space-y-4"> {book.chapters.map((chapter, index) => ( <li key={index}> <button onClick={() => onChapterClick(index + 2)} className="hover:text-amber-800 hover:underline transition-colors duration-300 text-left"> {chapter.title} </button> </li> ))} </ul> </div> </Page> ));
 TableOfContents.displayName = 'TableOfContents';
+
+
 interface BookReaderProps { book: Book; }
 
 export default function BookReader({ book }: BookReaderProps) {
   const flipBookRef = useRef<any>(null);
 
-  // THE DEFINITIVE FIX: This hook ensures that when the BookReader component
-  // is unmounted (i.e., when you navigate away), it forcefully restores
-  // scrolling to both the <html> and <body> elements.
   useEffect(() => {
-    // This return function is the "cleanup" function. It runs only when the
-    // component is about to be destroyed.
     return () => {
-      document.documentElement.style.overflow = 'auto'; // Target <html>
-      document.body.style.overflow = 'auto'; // Target <body>
+      document.documentElement.style.overflow = 'auto';
+      document.body.style.overflow = 'auto';
     };
-  }, []); // The empty dependency array means this effect runs once on mount and cleans up on unmount.
-
+  }, []);
 
   const handleChapterClick = useCallback((pageNumber: number) => {
     flipBookRef.current?.pageFlip().flip(pageNumber);
@@ -63,7 +60,8 @@ export default function BookReader({ book }: BookReaderProps) {
           <Page key={index}>
             <div>
               <h3 className="text-2xl font-bold mb-4">{chapter.title}</h3>
-              <div dangerouslySetInnerHTML={{ __html: chapter.content }} />
+              {/* Add className here for styling the content */}
+              <div className="book-content" dangerouslySetInnerHTML={{ __html: chapter.content }} />
             </div>
           </Page>
         ))}
