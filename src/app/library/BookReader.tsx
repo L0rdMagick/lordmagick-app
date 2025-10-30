@@ -1,11 +1,13 @@
 "use client";
 
-import React, { useRef, useCallback, useEffect } from 'react'; 
+// REMOVED: No longer importing useEffect here.
+import React, { useRef, useCallback } from 'react'; 
 import Image from 'next/image';
 import HTMLFlipBook from 'react-pageflip';
-import { Book } from './content'; // This path is correct because the files are in the same directory.
+import { Book } from './content';
 import { Crimson_Text, Uncial_Antiqua } from 'next/font/google';
 
+// (All other code in this file remains exactly the same)
 const crimsonText = Crimson_Text({ subsets: ['latin'], weight: ['400', '700'], });
 const uncialAntiqua = Uncial_Antiqua({ subsets: ['latin'], weight: ['400'], });
 const Page = React.forwardRef<HTMLDivElement, { children?: React.ReactNode }>(({ children }, ref) => ( <div ref={ref} className="flex items-center justify-center p-8 md:p-12 bg-[#fdf9e8] bg-[url('/images/books/parchment-bg.png')] bg-cover bg-center shadow-inner shadow-black/30"> <div className="text-gray-800 text-lg leading-relaxed">{children}</div> </div> ));
@@ -21,19 +23,8 @@ interface BookReaderProps { book: Book; }
 export default function BookReader({ book }: BookReaderProps) {
   const flipBookRef = useRef<any>(null);
 
-  useEffect(() => {
-    // This is the cleanup function that runs when the component unmounts.
-    return () => {
-      const pageFlipInstance = flipBookRef.current?.pageFlip();
-
-      if (pageFlipInstance) {
-        pageFlipInstance.destroy();
-      }
-      
-      document.documentElement.style.overflow = 'auto';
-      document.body.style.overflow = 'auto';
-    };
-  }, []);
+  // REMOVED: The old useEffect that managed the scrollbar is now gone.
+  // The bookshelf page will handle restoring the scrollbar instead.
 
   const handleChapterClick = useCallback((pageNumber: number) => {
     flipBookRef.current?.pageFlip().flip(pageNumber);

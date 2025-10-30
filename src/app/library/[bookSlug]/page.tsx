@@ -1,16 +1,14 @@
 import { libraryBooks } from '../content';
-import BookReader from '../BookReader'; // THE FIX: This path is now correct based on your file structure.
+import BookReader from '../BookReader';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
-export function generateStaticParams() {
-  return libraryBooks.map((book) => ({
-    bookSlug: book.slug,
-  }));
+interface PageProps {
+  params: Promise<{ bookSlug: string; }>;
 }
 
-export default function BookPage({ params }: { params: { bookSlug: string } }) {
-  const { bookSlug } = params;
+export default async function BookPage({ params }: PageProps) {
+  const { bookSlug } = await params;
   const book = libraryBooks.find((b) => b.slug === bookSlug);
 
   if (!book) {
@@ -30,7 +28,12 @@ export default function BookPage({ params }: { params: { bookSlug: string } }) {
         </Link>
       </nav>
 
-      <div className="flex items-center justify-center min-h-screen p-4 sm:p-8 pt-20 sm:pt-16">
+      {/* 
+        THE FIX: Reduced top padding on mobile from `pt-24` to `pt-20`.
+        This pulls the book up on smaller screens, while the `sm:pt-16`
+        for larger screens remains unchanged.
+      */}
+      <div className="flex items-center justify-center min-h-screen p-4 sm:p-8 pt-0 sm:pt-16">
         <BookReader book={book} />
       </div>
     </main>

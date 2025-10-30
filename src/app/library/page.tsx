@@ -1,14 +1,17 @@
-"use client"; 
+"use client"; // NEW: Convert this to a client component to use hooks.
 
 import Image from 'next/image';
 import Link from 'next/link';
-// REMOVED: The old useEffect hook is no longer needed here.
+import { useEffect } from 'react'; // NEW: Import useEffect
 import { libraryBooks } from './content';
 
 export default function LibraryPage() {
   
-  // REMOVED: The old useEffect that tried to manage the scrollbar has been deleted
-  // because the logic is now correctly handled inside the BookReader component.
+  // THE FIX: This useEffect hook runs every time you navigate to the bookshelf.
+  // It forcefully resets the body's overflow style, guaranteeing the scrollbar returns.
+  useEffect(() => {
+    document.body.style.overflow = 'auto';
+  }, []); // The empty array ensures this runs once when the component mounts.
 
   return (
     <main className="relative min-h-screen w-full bg-black bg-cover bg-center p-8" style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}>

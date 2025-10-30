@@ -11,6 +11,7 @@ export default function HomePage() {
   const handleEnter = () => {
     setIsEntering(true);
     if (videoRef.current) {
+      // THE FIX: Ensure the video is unmuted before playing.
       videoRef.current.muted = false;
       videoRef.current.play();
     }
@@ -21,13 +22,13 @@ export default function HomePage() {
   };
 
   return (
-    // THE FIX: Changed h-screen and w-screen to min-h-screen and w-full.
-    <main className="relative bg-black min-h-screen w-full flex items-center justify-center overflow-hidden">
+    <main className="relative bg-black h-screen w-screen flex items-center justify-center overflow-hidden">
       <video
         ref={videoRef}
         src="/videos/door-animation.mp4"
         className="absolute inset-0 w-full h-full object-cover z-10"
         playsInline
+        // THE FIX: The video now starts muted but is unmuted on click.
         muted 
         preload="auto"
         poster="/images/video-poster.png"
