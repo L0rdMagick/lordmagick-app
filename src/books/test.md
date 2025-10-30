@@ -1,5 +1,5 @@
 ---
-title: "The Alchemist's Handbook"
+title: "Transmutation for Quadrapeds"
 ---
 
 ## Chapter 1: The Prima Materia
@@ -13,7 +13,7 @@ The journey of transformation is both physical and spiritual. Remember these key
 
 An alchemist's workspace is their sanctuary. Below is an engraving of a typical laboratory.
 
-![An alchemist's laboratory with various flasks and a furnace.](/images/books/alchemist-lab.jpg)
+![An alchemist's laboratory with various flasks and a furnace.](/images/books/🌿 Magical Herbalism & Potionry.png)
 
 To create a new book, you can insert images like the one above. Just make sure the image path starts with `/` and points to a file inside your `public` folder. For organization, you could create a subfolder in `public/images/books/` for each book's internal images.
 
