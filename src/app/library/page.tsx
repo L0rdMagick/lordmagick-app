@@ -1,9 +1,9 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { getAllBooks } from '@/lib/library'; // Update import path
+import { getAllBooks } from '../../lib/library'; // FIX: Use a direct relative path.
 
 export default function LibraryPage() {
-  const libraryBooks = getAllBooks(); // Fetch books from the file system
+  const libraryBooks = getAllBooks(); 
 
   return (
     <main className="relative min-h-screen w-full bg-black bg-cover bg-center p-8" style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}>

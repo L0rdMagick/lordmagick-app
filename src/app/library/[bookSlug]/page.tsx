@@ -1,4 +1,4 @@
-import { getBookBySlug, getAllBooks } from '@/lib/library'; // Update import path
+import { getBookBySlug, getAllBooks } from '../../../lib/library'; // FIX: Use a direct relative path.
 import BookReader from '../BookReader';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -7,7 +7,6 @@ interface PageProps {
   params: { bookSlug: string; };
 }
 
-// This function tells Next.js which pages to build at build time
 export async function generateStaticParams() {
   const books = getAllBooks();
   return books.map((book) => ({
