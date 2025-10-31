@@ -3,20 +3,18 @@ import BookReader from '../BookReader';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
-// This safeguard prevents faulty caching in Vercel.
 export const dynamic = 'force-dynamic';
 
 export default async function BookPage({ params }: { params: { slug: string } }) {
-  const slug = params.slug;
+  // THE FINAL TEST: This log will prove if the server is running this new code.
+  console.log(`[SERVER LOG] Attempting to render page for slug: "${params.slug}"`);
 
+  const slug = params.slug;
   if (!slug) {
     notFound();
   }
 
-  // Directly call our simple function on the server to get the book content.
   const book = await getBookHtmlContent(slug);
-
-  // If the file doesn't exist, this will correctly trigger a 404 page.
   if (!book) {
     notFound();
   }
