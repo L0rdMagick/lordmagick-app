@@ -3,11 +3,11 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect } from 'react';
-// THE FIX: Import BookSummary instead of the full Book type.
+// This component correctly uses the BookSummary type.
 import { BookSummary } from '@/lib/library';
 
+// This interface correctly defines that this component expects a 'books' prop.
 interface BookshelfClientProps {
-  // THE FIX: The 'books' prop now expects an array of BookSummary.
   books: BookSummary[];
 }
 

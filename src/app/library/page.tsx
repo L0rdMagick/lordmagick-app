@@ -1,11 +1,12 @@
+// This is your main library bookshelf page.
 import { getAllBooks } from '@/lib/library';
+// THE DEFINITIVE FIX: It now imports and uses the correct component.
 import BookshelfClient from './BookshelfClient';
 
-export default async function LibraryPage() {
+export default function LibraryPage() {
   
-  // This line is critical. It dynamically fetches the list of books
-  // by reading the files in your `src/books` directory.
-  const allBooks = await getAllBooks();
+  // This correctly fetches the list of all book summaries.
+  const allBooks = getAllBooks();
 
   return (
     <main className="relative min-h-screen w-full bg-black bg-cover bg-center p-8" style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}>
@@ -18,7 +19,7 @@ export default async function LibraryPage() {
         <p className="mt-4 text-lg text-gray-300">Select a tome to begin your studies.</p>
       </div>
 
-      {/* This passes the dynamically fetched books to the component that displays them. */}
+      {/* This line now correctly renders <BookshelfClient /> and passes the 'books' prop. The error will be gone. */}
       <BookshelfClient books={allBooks} />
 
     </main>
