@@ -12,23 +12,38 @@ interface BookReaderProps {
 
 export default function BookReader({ title, content }: BookReaderProps) {
   return (
-    // The main container for our book.
-    <div className={`w-full max-w-2xl h-[85vh] bg-[#fdf9e8] bg-[url('/images/books/parchment-bg.png')] bg-cover bg-center rounded-lg shadow-2xl shadow-black/70 flex flex-col p-8 md:p-10 ${crimsonText.className}`}>
+    // The main book container. It's a single, solid element.
+    <div className={`w-full max-w-5xl h-[85vh] bg-[#fdf9e8] bg-[url('/images/books/parchment-bg.png')] bg-cover bg-center rounded-lg shadow-2xl shadow-black/70 flex flex-col p-8 md:p-10 ${crimsonText.className}`}>
       
       {/* Book Title - Stays fixed at the top */}
-      {/* THE FIX: 'flex-shrink-0' has been updated to the canonical 'shrink-0'. */}
       <h1 className={`text-3xl md:text-4xl text-center text-gray-800 border-b-2 border-gray-500/50 pb-4 mb-6 shrink-0 ${uncialAntiqua.className}`}>
         {title}
       </h1>
 
-      {/* The Scrollable Content Area */}
-      {/* THE FIX: 'flex-grow' has been updated to the canonical 'grow'. */}
-      <div className="grow overflow-y-auto pr-4 -mr-4">
-        {/* The 'prose' classes from Tailwind automatically style your book's HTML for perfect readability. */}
-        <div
-          className="prose prose-lg max-w-none prose-headings:text-gray-800 prose-p:text-gray-900 prose-strong:text-gray-900 prose-em:text-gray-800"
-          dangerouslySetInnerHTML={{ __html: content }}
-        />
+      {/* THE DEFINITIVE FIX: The "Ancient Scroll" content area */}
+      <div 
+        className="grow overflow-x-auto overflow-y-hidden" // Allow horizontal scrolling, hide vertical
+        style={{
+          // Custom scrollbar styles for a more thematic feel
+          scrollbarWidth: 'thin',
+          scrollbarColor: '#854d0e #fdf9e8', // Dark amber handle, parchment track
+        }}
+      >
+        {/* This inner container holds the columns */}
+        <div 
+          className="h-full" 
+          style={{
+            columnWidth: '22rem', // Each "page" or column will be a readable width
+            columnGap: '4rem',    // The space between the "pages"
+            columnRule: '1px solid rgba(0, 0, 0, 0.2)', // A subtle line between pages
+          }}
+        >
+          {/* The 'prose' classes style your book's HTML for perfect readability */}
+          <div
+            className="prose prose-lg max-w-none prose-headings:text-gray-800 prose-p:text-gray-900 prose-strong:text-gray-900 prose-em:text-gray-800"
+            dangerouslySetInnerHTML={{ __html: content }}
+          />
+        </div>
       </div>
     </div>
   );
