@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+// THE FIX: We need to import CSSProperties to use it for our type assertion.
+import { useState, useEffect, useRef, useCallback, CSSProperties } from 'react';
 import { Crimson_Text, Uncial_Antiqua } from 'next/font/google';
 
 const crimsonText = Crimson_Text({ subsets: ['latin'], weight: ['400', '700'], });
 const uncialAntiqua = Uncial_Antiqua({ subsets: ['latin'], weight: ['400'], });
 
-const fontSizes = ['prose-lg', 'prose-xl', 'prose-2xl'];
+const fontSizes = ['16px', '18px', '20px', '22px'];
 
 interface BookReaderProps {
   title: string;
@@ -17,7 +18,7 @@ interface BookReaderProps {
 export default function BookReader({ title, content, onTocToggle }: BookReaderProps) {
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
-  const [fontSizeIndex, setFontSizeIndex] = useState(0);
+  const [fontSizeIndex, setFontSizeIndex] = useState(1);
 
   const viewportRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -33,7 +34,7 @@ export default function BookReader({ title, content, onTocToggle }: BookReaderPr
   }, []);
 
   useEffect(() => {
-    const timer = setTimeout(calculatePages, 150);
+    const timer = setTimeout(calculatePages, 200);
     window.addEventListener('resize', calculatePages);
     const resizeObserver = new ResizeObserver(calculatePages);
     if (contentRef.current) {
@@ -68,11 +69,14 @@ export default function BookReader({ title, content, onTocToggle }: BookReaderPr
     setFontSizeIndex(prev => Math.max(prev - 1, 0));
   };
 
+  // THE FIX: We cast our object to CSSProperties to allow the custom variable.
+  const contentStyle = {
+    '--prose-font-size': fontSizes[fontSizeIndex],
+  } as CSSProperties;
+
   return (
-    // THE FIX: Restored preferred width (max-w-2xl) and height (h-[85vh])
     <div className={`w-full max-w-2xl h-[85vh] bg-[#fdf9e8] bg-[url('/images/books/parchment-bg.png')] bg-cover bg-center rounded-lg shadow-2xl shadow-black/70 flex flex-col p-8 md:p-10 text-black ${crimsonText.className}`}>
       
-      {/* THE FIX: Header is restored to its clean, original style */}
       <h1 className={`text-3xl md:text-4xl text-center border-b-2 border-gray-500/50 pb-4 mb-6 shrink-0 ${uncialAntiqua.className}`}>
         {title}
       </h1>
@@ -87,13 +91,13 @@ export default function BookReader({ title, content, onTocToggle }: BookReaderPr
           
           <div ref={contentRef} className="hide-scrollbar">
             <div
-              className={`prose max-w-none ${fontSizes[fontSizeIndex]}`}
+              className="prose max-w-none"
+              style={contentStyle}
               dangerouslySetInnerHTML={{ __html: content }}
             />
           </div>
         </div>
 
-        {/* Navigation Arrows */}
         <button onClick={goToPrevPage} disabled={currentPage === 0} className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-full text-black/30 hover:text-black disabled:opacity-0 text-7xl z-10 transition-all">
           &#x2039;
         </button>
@@ -102,9 +106,7 @@ export default function BookReader({ title, content, onTocToggle }: BookReaderPr
         </button>
       </div>
 
-      {/* THE FIX: The entire footer is restored with all controls in their correct places */}
       <footer className="flex justify-between items-center pt-4 mt-4 border-t-2 border-gray-500/50 shrink-0">
-        {/* Left Side: Table of Contents Button */}
         <button 
           onClick={onTocToggle} 
           className="text-gray-600 hover:text-black transition-colors font-semibold uppercase text-sm tracking-wider"
@@ -112,12 +114,10 @@ export default function BookReader({ title, content, onTocToggle }: BookReaderPr
           Contents
         </button>
 
-        {/* Middle: Page Counter */}
         <span className="text-gray-700 font-sans text-sm">
           Page {currentPage + 1} of {totalPages}
         </span>
 
-        {/* Right Side: Font Size Controls are back */}
         <div className="flex items-center gap-2">
           <button onClick={decreaseFontSize} disabled={fontSizeIndex === 0} className="text-xl font-bold text-black/50 hover:text-black disabled:opacity-20 transition-colors">A-</button>
           <button onClick={increaseFontSize} disabled={fontSizeIndex === fontSizes.length - 1} className="text-2xl font-bold text-black/50 hover:text-black disabled:opacity-20 transition-colors">A+</button>

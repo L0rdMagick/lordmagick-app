@@ -21,3 +21,15 @@
   mask-image: linear-gradient(to top, black 60%, transparent 100%);
   -webkit-mask-image: linear-gradient(to top, black 60%, transparent 100%);
 }
+
+/* ADD THIS CODE TO THE END OF globals.css */
+
+.prose {
+  font-size: var(--prose-font-size, 18px); /* Defaults to 18px if variable isn't set */
+}
+
+/* This ensures all text elements inside the book inherit the size correctly */
+.prose p, .prose ul, .prose ol, .prose li, .prose h1, .prose h2, .prose h3, .prose h4, .prose strong, .prose em {
+  font-size: inherit !important;
+  color: inherit !important;
+}
