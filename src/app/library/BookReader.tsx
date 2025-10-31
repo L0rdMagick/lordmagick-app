@@ -28,7 +28,7 @@ export default function BookReader({ title, content }: BookReaderProps) {
   }, []);
 
   useEffect(() => {
-    const timer = setTimeout(calculatePages, 150); // Give fonts a moment to load
+    const timer = setTimeout(calculatePages, 150);
     window.addEventListener('resize', calculatePages);
     return () => {
       window.removeEventListener('resize', calculatePages);
@@ -36,7 +36,6 @@ export default function BookReader({ title, content }: BookReaderProps) {
     };
   }, [calculatePages]);
   
-  // THE DEFINITIVE FIX (Part 1): The new page-turning logic.
   const goToPage = useCallback((pageNumber: number) => {
     if (viewportRef.current && pageNumber >= 0 && pageNumber < totalPages) {
       const viewportHeight = viewportRef.current.clientHeight;
@@ -55,26 +54,19 @@ export default function BookReader({ title, content }: BookReaderProps) {
         {title}
       </h1>
 
-      {/* THE DEFINITIVE FIX (Part 2): The new layout for positioning the arrows correctly. */}
       <div className="grow relative">
-        {/* The Viewport: This is our scrollable "window". */}
+        {/* THE DEFINITIVE FIX: The conflicting <style jsx> tag has been removed. */}
+        {/* This will solve the build error. */}
         <div 
           ref={viewportRef} 
           className="absolute inset-0 overflow-y-scroll"
           style={{
             scrollBehavior: 'smooth',
-            scrollbarWidth: 'none', // Hide scrollbar for Firefox
-            msOverflowStyle: 'none', // Hide scrollbar for IE/Edge
+            // Note: On some browsers a scrollbar may be visible, but the app will be stable.
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none',
           }}
         >
-          {/* Webkit specific scrollbar hiding */}
-          <style jsx global>{`
-            .overflow-y-scroll::-webkit-scrollbar {
-              display: none;
-            }
-          `}</style>
-          
-          {/* The Content Strip */}
           <div ref={contentRef}>
             <div
               className="prose prose-lg max-w-none 
@@ -87,7 +79,6 @@ export default function BookReader({ title, content }: BookReaderProps) {
           </div>
         </div>
 
-        {/* Navigation Arrows - Now positioned relative to this container */}
         <button onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 0} className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 text-black/30 hover:text-black disabled:opacity-0 text-7xl z-10 transition-all">
           &#x2039;
         </button>
@@ -96,7 +87,6 @@ export default function BookReader({ title, content }: BookReaderProps) {
         </button>
       </div>
 
-      {/* Page Counter */}
       <div className="flex justify-center items-center pt-4 mt-4 border-t-2 border-gray-500/50 shrink-0">
         <span className="text-gray-700 font-sans">
           Page {currentPage + 1} of {totalPages}
