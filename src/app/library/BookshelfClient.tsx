@@ -3,16 +3,13 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect } from 'react';
-// This component correctly uses the BookSummary type.
 import { BookSummary } from '@/lib/library';
 
-// This interface correctly defines that this component expects a 'books' prop.
 interface BookshelfClientProps {
   books: BookSummary[];
 }
 
 export default function BookshelfClient({ books }: BookshelfClientProps) {
-  
   useEffect(() => {
     document.body.style.overflow = 'auto';
   }, []);
