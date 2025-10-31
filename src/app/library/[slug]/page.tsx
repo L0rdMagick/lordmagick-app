@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import BookReader from '../BookReader';
 import Link from 'next/link';
+import TableOfContents, { Chapter } from '../../components/TableOfContents';
 
 function LoadingSpinner() {
   return (
@@ -22,9 +23,10 @@ interface BookData {
 export default function BookPage() {
   const params = useParams();
   const slug = params.slug as string;
-  const [bookData, setBookData] = useState<BookData | null>(null);
+  const [bookData, setBookData] = useState<{ title: string; processedContent: string; chapters: Chapter[] } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isTocOpen, setIsTocOpen] = useState(false);
 
   useEffect(() => {
     if (slug) {
@@ -38,7 +40,20 @@ export default function BookPage() {
             throw new Error(errorData.error || 'The tome could not be found.');
           }
           const data: BookData = await response.json();
-          setBookData(data);
+
+          // THE FIX: Process content here to add IDs and extract chapters
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(data.content, 'text/html');
+          const headings = Array.from(doc.querySelectorAll('h2'));
+          const chapters: Chapter[] = headings.map((heading, index) => {
+            const id = `chapter-${index}`;
+            heading.id = id;
+            return { id, title: heading.textContent || 'Unnamed Chapter' };
+          });
+          const processedContent = doc.body.innerHTML;
+
+          setBookData({ title: data.title, processedContent, chapters });
+
         } catch (err: any) {
           setError(err.message);
         } finally {
@@ -49,16 +64,39 @@ export default function BookPage() {
     }
   }, [slug]);
 
+  const handleChapterSelect = (chapterId: string) => {
+    const chapterElement = document.getElementById(chapterId);
+    if (chapterElement) {
+        // We will pass this down to the BookReader to handle the scroll
+    }
+    setIsTocOpen(false); // Close TOC after selection
+  };
+
   const pageContent = () => {
     if (loading) return <LoadingSpinner />;
     if (error) return <div className="text-center text-red-400 text-xl">Error: {error}</div>;
-    if (bookData) return <BookReader title={bookData.title} content={bookData.content} />;
+    if (bookData) return (
+      <BookReader
+        title={bookData.title}
+        content={bookData.processedContent}
+        onTocToggle={() => setIsTocOpen(!isTocOpen)}
+      />
+    );
     return null;
   };
 
   return (
     <main className="relative min-h-screen w-full bg-black bg-cover bg-center" style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}>
       <div className="absolute inset-0 bg-black/70 backdrop-blur" />
+
+      {bookData && (
+        <TableOfContents
+          chapters={bookData.chapters}
+          isOpen={isTocOpen}
+          onClose={() => setIsTocOpen(false)}
+        />
+      )}
+
       <nav className="fixed top-0 left-0 right-0 z-50 flex justify-end items-center p-4 gap-4">
         <Link href="/library" className="text-gray-300 hover:text-amber-300" style={{ textShadow: '1px 1px 3px rgba(0,0,0,0.7)' }}>
           &larr; Bookshelf
