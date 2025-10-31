@@ -1,7 +1,6 @@
 import { getBookHtmlContent } from '@/lib/library';
 import { NextRequest, NextResponse } from 'next/server';
 
-// This is our reliable API endpoint.
 export async function GET(
   request: NextRequest,
   context: { params: Promise<{ slug: string }> }
@@ -18,7 +17,6 @@ export async function GET(
       return NextResponse.json({ error: 'Book not found' }, { status: 404 });
     }
 
-    // Return the book's title and HTML content as JSON.
     return NextResponse.json(book);
 
   } catch (error) {
