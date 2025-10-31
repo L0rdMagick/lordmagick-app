@@ -18,7 +18,6 @@ export default function BookReader({ title, content }: BookReaderProps) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
-  // This effect calculates the total number of pages based on content and viewport height.
   const calculatePages = useCallback(() => {
     if (viewportRef.current && contentRef.current) {
       const viewportHeight = viewportRef.current.clientHeight;
@@ -28,11 +27,15 @@ export default function BookReader({ title, content }: BookReaderProps) {
     }
   }, []);
 
-  // Recalculate pages when the window is resized.
   useEffect(() => {
     calculatePages();
+    // A small delay to recalculate after initial render and font loading
+    const timer = setTimeout(calculatePages, 100); 
     window.addEventListener('resize', calculatePages);
-    return () => window.removeEventListener('resize', calculatePages);
+    return () => {
+      window.removeEventListener('resize', calculatePages);
+      clearTimeout(timer);
+    };
   }, [calculatePages]);
 
   const goToNextPage = () => {
@@ -44,29 +47,27 @@ export default function BookReader({ title, content }: BookReaderProps) {
   };
 
   return (
-    // Main book container.
-    <div className={`w-full max-w-2xl h-[85vh] bg-[#fdf9e8] bg-[url('/images/books/parchment-bg.png')] bg-cover bg-center rounded-lg shadow-2xl shadow-black/70 flex flex-col p-8 md:p-10 ${crimsonText.className} relative`}>
+    // THE DEFINITIVE FIX: Added 'text-black' to the main container.
+    // This forcefully sets the default text color for everything inside the book to black,
+    // overriding the global 'text-white' style from the layout.
+    <div className={`w-full max-w-2xl h-[85vh] bg-[#fdf9e8] bg-[url('/images/books/parchment-bg.png')] bg-cover bg-center rounded-lg shadow-2xl shadow-black/70 flex flex-col p-8 md:p-10 text-black ${crimsonText.className} relative`}>
       
       {/* Book Title */}
-      <h1 className={`text-3xl md:text-4xl text-center text-black border-b-2 border-gray-500/50 pb-4 mb-6 shrink-0 ${uncialAntiqua.className}`}>
+      <h1 className={`text-3xl md:text-4xl text-center border-b-2 border-gray-500/50 pb-4 mb-6 shrink-0 ${uncialAntiqua.className}`}>
         {title}
       </h1>
 
-      {/* The Viewport: This is our "window" onto the content. */}
+      {/* The Viewport */}
       <div ref={viewportRef} className="grow overflow-hidden relative">
-        {/* The Content Strip: This long strip moves up and down. */}
+        {/* The Content Strip */}
         <div
           ref={contentRef}
           className="transition-transform duration-500 ease-in-out"
           style={{ transform: `translateY(-${currentPage * 100}%)` }}
         >
-          {/* The prose classes style the HTML for perfect readability. */}
+          {/* We no longer need to fight with prose colors, as the parent sets the color. */}
           <div
-            className="prose prose-lg max-w-none 
-                       prose-headings:text-black prose-p:text-black 
-                       prose-strong:text-black prose-em:text-black 
-                       prose-a:text-black prose-ul:text-black 
-                       prose-ol:text-black prose-li:text-black"
+            className="prose prose-lg max-w-none"
             dangerouslySetInnerHTML={{ __html: content }}
           />
         </div>
