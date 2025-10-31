@@ -1,27 +1,64 @@
-// This is now a Server Component. No "use client".
-import { getBookHtmlContent } from '@/lib/library';
+"use client";
+
+import { useState, useEffect } from 'react';
+import { useParams } from 'next/navigation';
 import BookReader from '../BookReader';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
 
-// This safeguard remains to prevent framework caching issues.
-export const dynamic = 'force-dynamic';
+function LoadingSpinner() {
+  return (
+    <div className="text-center text-amber-200 text-2xl">
+      <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-amber-200 mx-auto mb-4"></div>
+      Unsealing the Tome...
+    </div>
+  );
+}
 
-export default async function BookPage({ params }: { params: { slug: string } }) {
-  const slug = params.slug;
+// Define the shape of the data we expect from our new API.
+interface BookData {
+  title: string;
+  content: string;
+}
 
-  if (!slug) {
-    // This will catch any framework errors where the slug isn't passed.
-    notFound();
-  }
+export default function BookPage() {
+  const params = useParams();
+  const slug = params.slug as string;
 
-  // THE FIX: Directly call our new function on the server to get the book content.
-  const book = await getBookHtmlContent(slug);
+  const [bookData, setBookData] = useState<BookData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // If the file doesn't exist, this will correctly trigger a 404 page.
-  if (!book) {
-    notFound();
-  }
+  useEffect(() => {
+    if (slug) {
+      const fetchBook = async () => {
+        try {
+          setLoading(true);
+          setError(null);
+          const response = await fetch(`/api/books/${slug}`);
+          
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'The tome could not be found.');
+          }
+          
+          const data: BookData = await response.json();
+          setBookData(data);
+        } catch (err: any) {
+          setError(err.message);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchBook();
+    }
+  }, [slug]);
+
+  const pageContent = () => {
+    if (loading) return <LoadingSpinner />;
+    if (error) return <div className="text-center text-red-400 text-xl">Error: {error}</div>;
+    if (bookData) return <BookReader title={bookData.title} content={bookData.content} />;
+    return null;
+  };
 
   return (
     <main className="relative min-h-screen w-full bg-black bg-cover bg-center" style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}>
@@ -35,8 +72,7 @@ export default async function BookPage({ params }: { params: { slug: string } })
         </Link>
       </nav>
       <div className="flex items-center justify-center min-h-screen p-4 sm:p-8">
-        {/* Pass the fetched title and HTML content directly to the simple reader component. */}
-        <BookReader title={book.title} content={book.content} />
+        {pageContent()}
       </div>
     </main>
   );
