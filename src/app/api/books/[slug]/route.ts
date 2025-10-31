@@ -1,7 +1,7 @@
 import { getBookHtmlContent } from '@/lib/library';
 import { NextRequest, NextResponse } from 'next/server';
 
-// This is our new, reliable API endpoint.
+// This is our reliable API endpoint.
 export async function GET(
   request: NextRequest,
   context: { params: Promise<{ slug: string }> }
@@ -12,7 +12,6 @@ export async function GET(
       return NextResponse.json({ error: 'Book slug is required' }, { status: 400 });
     }
 
-    // We use the simple, reliable function from our library.ts
     const book = await getBookHtmlContent(slug);
 
     if (!book) {
