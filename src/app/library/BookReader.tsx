@@ -1,50 +1,32 @@
 "use client";
 
-import React, { useState } from 'react';
-import { ReactReader } from 'react-reader';
-import { useRouter } from 'next/navigation';
+import { Crimson_Text, Uncial_Antiqua } from 'next/font/google';
+
+const crimsonText = Crimson_Text({ subsets: ['latin'], weight: ['400', '700'], });
+const uncialAntiqua = Uncial_Antiqua({ subsets: ['latin'], weight: ['400'], });
 
 interface BookReaderProps {
-  // THE FIX: It now accepts the raw book data directly.
-  bookData: ArrayBuffer;
+  // It receives the title and the HTML content directly.
+  title: string;
+  content: string;
 }
 
-const myReaderStyles = {
-  reader: {
-    backgroundColor: '#fbf0d9',
-    color: '#222',
-    fontFamily: '"Crimson Text", serif',
-  },
-  arrow: {
-    color: '#222'
-  },
-};
-
-export default function BookReader({ bookData }: BookReaderProps) {
-  const [location, setLocation] = useState<string | number>(0);
-  const router = useRouter();
-
-  const handleReturnToLibrary = () => {
-    router.push('/library');
-  };
-
+export default function BookReader({ title, content }: BookReaderProps) {
   return (
-    <div className="relative w-full h-[90vh] max-w-5xl bg-gray-900 rounded-lg shadow-2xl shadow-black/70">
+    // This is our new book container.
+    <div className={`w-full max-w-2xl h-[80vh] bg-[#fdf9e8] bg-[url('/images/books/parchment-bg.png')] bg-cover bg-center rounded-lg shadow-2xl shadow-black/70 p-8 md:p-12 overflow-y-auto ${crimsonText.className}`}>
       
-      {/* ReactReader now receives the ArrayBuffer directly via the 'url' prop. */}
-      <ReactReader
-        url={bookData}
-        location={location}
-        locationChanged={(epubcfi: string) => setLocation(epubcfi)}
-        readerStyles={myReaderStyles as any}
+      {/* Book Title */}
+      <h1 className={`text-3xl md:text-4xl text-center text-gray-800 border-b-2 border-gray-500 pb-4 mb-8 ${uncialAntiqua.className}`}>
+        {title}
+      </h1>
+
+      {/* Book Content */}
+      {/* The 'prose' classes from Tailwind automatically style HTML tags (p, h1, ul, etc.) for excellent readability. */}
+      <div
+        className="prose prose-lg max-w-none prose-headings:text-gray-800 prose-p:text-gray-900 prose-strong:text-gray-900 prose-em:text-gray-800"
+        dangerouslySetInnerHTML={{ __html: content }}
       />
-      
-      <button 
-        onClick={handleReturnToLibrary}
-        className="absolute top-2 right-4 z-50 bg-black/50 text-white px-4 py-2 rounded-lg hover:bg-black/70 transition-colors"
-      >
-        Back to Library
-      </button>
     </div>
   );
 }

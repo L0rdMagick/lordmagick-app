@@ -14,17 +14,22 @@ function LoadingSpinner() {
   );
 }
 
+// Define the shape of the data we expect from our new API.
+interface BookData {
+  title: string;
+  content: string;
+}
+
 export default function BookPage() {
   const params = useParams();
   const slug = params.slug as string;
 
-  const [bookData, setBookData] = useState<ArrayBuffer | null>(null);
+  const [bookData, setBookData] = useState<BookData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (slug) {
-      // THE FIX: We now control the entire fetch process here.
       const fetchBook = async () => {
         try {
           setLoading(true);
@@ -32,12 +37,11 @@ export default function BookPage() {
           const response = await fetch(`/api/books/${slug}`);
           
           if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`The tome could not be found or is corrupted. (Server: ${errorText})`);
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'The tome could not be found.');
           }
           
-          // Get the raw data as an ArrayBuffer.
-          const data = await response.arrayBuffer();
+          const data: BookData = await response.json();
           setBookData(data);
         } catch (err: any) {
           setError(err.message);
@@ -51,9 +55,8 @@ export default function BookPage() {
 
   const pageContent = () => {
     if (loading) return <LoadingSpinner />;
-    if (error) return <div className="text-center text-red-400 text-xl">{error}</div>;
-    // We now pass the fetched data directly to the BookReader.
-    if (bookData) return <BookReader bookData={bookData} />;
+    if (error) return <div className="text-center text-red-400 text-xl">Error: {error}</div>;
+    if (bookData) return <BookReader title={bookData.title} content={bookData.content} />;
     return null;
   };
 
@@ -68,7 +71,7 @@ export default function BookPage() {
           Grand Hall &rarr;
         </Link>
       </nav>
-      <div className="flex items-center justify-center min-h-screen p-4 sm:p-8 pt-20 sm:pt-16">
+      <div className="flex items-center justify-center min-h-screen p-4 sm:p-8">
         {pageContent()}
       </div>
     </main>
