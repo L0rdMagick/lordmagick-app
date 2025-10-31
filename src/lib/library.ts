@@ -13,13 +13,11 @@ export interface BookSummary {
 export function getAllBooks(): BookSummary[] {
   const booksDirectory = path.join(process.cwd(), 'src', 'books');
   const fileNames = fs.readdirSync(booksDirectory).filter(file => file.endsWith('.md'));
-
-  const allBooksData = fileNames.map((fileName) => {
+  return fileNames.map((fileName) => {
     const slug = fileName.replace(/\.md$/, '');
     const fullPath = path.join(booksDirectory, fileName);
     const fileContents = fs.readFileSync(fullPath, 'utf8');
     const { data } = matter(fileContents);
-
     const coverImageExtensions = ['png', 'jpg', 'jpeg', 'webp'];
     let coverImage = '/images/books/default-cover.png';
     for (const ext of coverImageExtensions) {
@@ -28,31 +26,17 @@ export function getAllBooks(): BookSummary[] {
         break;
       }
     }
-    return {
-      slug,
-      title: data.title as string,
-      coverImage,
-    };
+    return { slug, title: data.title as string, coverImage };
   });
-  return allBooksData;
 }
 
 export async function getBookHtmlContent(slug: string) {
   const booksDirectory = path.join(process.cwd(), 'src', 'books');
   const fullPath = path.join(booksDirectory, `${slug}.md`);
-
-  if (!fs.existsSync(fullPath)) {
-    return null;
-  }
-
+  if (!fs.existsSync(fullPath)) return null;
   const fileContents = fs.readFileSync(fullPath, 'utf8');
   const { data, content } = matter(fileContents);
-
   const processedContent = await remark().use(html).process(content);
   const contentHtml = processedContent.toString();
-
-  return {
-    title: data.title as string,
-    content: contentHtml,
-  };
+  return { title: data.title as string, content: contentHtml };
 }

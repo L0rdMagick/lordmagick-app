@@ -1,32 +1,69 @@
-import { getBookHtmlContent } from '@/lib/library';
+"use client"; // This is now a Client Component.
+
+import { useState, useEffect } from 'react';
+import { useParams } from 'next/navigation';
 import BookReader from '../BookReader';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
-import { headers } from 'next/headers';
 
-export const dynamic = 'force-dynamic';
+function LoadingSpinner() {
+  return (
+    <div className="text-center text-amber-200 text-2xl">
+      <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-amber-200 mx-auto mb-4"></div>
+      Unsealing the Tome...
+    </div>
+  );
+}
 
-export default async function BookPage({ params }: { params: { slug: string } }) {
-  
-  // THE FINAL, ACTUAL, VERIFIED FIX: The 'await' keyword is now correctly placed here.
-  // This resolves the Promise that your specific build environment says the headers() function returns.
-  const headersList = await headers();
-  const urlPath = headersList.get('x-invoke-path') || '';
-  
-  const slug = urlPath.split('/').pop();
+// Define the shape of the data we expect from our new API.
+interface BookData {
+  title: string;
+  content: string;
+}
 
-  console.log(`[SERVER LOG] Manually parsed slug: "${slug}" from path: "${urlPath}"`);
+export default function BookPage() {
+  // useParams is a client-side hook that reliably gets URL parameters.
+  // This replaces the broken server-side 'params' prop.
+  const params = useParams();
+  const slug = params.slug as string;
 
-  if (!slug || slug === 'undefined') {
-    console.error(`[SERVER ERROR] Could not determine a valid slug from the URL.`);
-    notFound();
-  }
+  const [bookData, setBookData] = useState<BookData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const book = await getBookHtmlContent(slug);
+  useEffect(() => {
+    // This effect runs in the browser after the page loads.
+    if (slug) {
+      const fetchBook = async () => {
+        try {
+          setLoading(true);
+          setError(null);
+          // We fetch the data from our new API endpoint.
+          const response = await fetch(`/api/books/${slug}`);
+          
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'The tome could not be found.');
+          }
+          
+          const data: BookData = await response.json();
+          setBookData(data);
+        } catch (err: any) {
+          setError(err.message);
+        } finally {
+          setLoading(false);
+        }
+      };
 
-  if (!book) {
-    notFound();
-  }
+      fetchBook();
+    }
+  }, [slug]); // Rerun this effect if the slug changes.
+
+  const pageContent = () => {
+    if (loading) return <LoadingSpinner />;
+    if (error) return <div className="text-center text-red-400 text-xl">Error: {error}</div>;
+    if (bookData) return <BookReader title={bookData.title} content={bookData.content} />;
+    return null;
+  };
 
   return (
     <main className="relative min-h-screen w-full bg-black bg-cover bg-center" style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}>
@@ -40,7 +77,7 @@ export default async function BookPage({ params }: { params: { slug: string } })
         </Link>
       </nav>
       <div className="flex items-center justify-center min-h-screen p-4 sm:p-8">
-        <BookReader title={book.title} content={book.content} />
+        {pageContent()}
       </div>
     </main>
   );
