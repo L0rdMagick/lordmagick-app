@@ -28,62 +28,79 @@ export default function BookReader({ title, content }: BookReaderProps) {
   }, []);
 
   useEffect(() => {
-    calculatePages();
-    // A small delay to recalculate after initial render and font loading
-    const timer = setTimeout(calculatePages, 100); 
+    const timer = setTimeout(calculatePages, 150); // Give fonts a moment to load
     window.addEventListener('resize', calculatePages);
     return () => {
       window.removeEventListener('resize', calculatePages);
       clearTimeout(timer);
     };
   }, [calculatePages]);
-
-  const goToNextPage = () => {
-    setCurrentPage((prev) => Math.min(prev + 1, totalPages - 1));
-  };
-
-  const goToPrevPage = () => {
-    setCurrentPage((prev) => Math.max(prev - 1, 0));
-  };
+  
+  // THE DEFINITIVE FIX (Part 1): The new page-turning logic.
+  const goToPage = useCallback((pageNumber: number) => {
+    if (viewportRef.current && pageNumber >= 0 && pageNumber < totalPages) {
+      const viewportHeight = viewportRef.current.clientHeight;
+      viewportRef.current.scrollTo({
+        top: pageNumber * viewportHeight,
+        behavior: 'smooth',
+      });
+      setCurrentPage(pageNumber);
+    }
+  }, [totalPages]);
 
   return (
-    // THE DEFINITIVE FIX: Added 'text-black' to the main container.
-    // This forcefully sets the default text color for everything inside the book to black,
-    // overriding the global 'text-white' style from the layout.
-    <div className={`w-full max-w-2xl h-[85vh] bg-[#fdf9e8] bg-[url('/images/books/parchment-bg.png')] bg-cover bg-center rounded-lg shadow-2xl shadow-black/70 flex flex-col p-8 md:p-10 text-black ${crimsonText.className} relative`}>
+    <div className={`w-full max-w-2xl h-[85vh] bg-[#fdf9e8] bg-[url('/images/books/parchment-bg.png')] bg-cover bg-center rounded-lg shadow-2xl shadow-black/70 flex flex-col p-8 md:p-10 text-black ${crimsonText.className}`}>
       
-      {/* Book Title */}
       <h1 className={`text-3xl md:text-4xl text-center border-b-2 border-gray-500/50 pb-4 mb-6 shrink-0 ${uncialAntiqua.className}`}>
         {title}
       </h1>
 
-      {/* The Viewport */}
-      <div ref={viewportRef} className="grow overflow-hidden relative">
-        {/* The Content Strip */}
-        <div
-          ref={contentRef}
-          className="transition-transform duration-500 ease-in-out"
-          style={{ transform: `translateY(-${currentPage * 100}%)` }}
+      {/* THE DEFINITIVE FIX (Part 2): The new layout for positioning the arrows correctly. */}
+      <div className="grow relative">
+        {/* The Viewport: This is our scrollable "window". */}
+        <div 
+          ref={viewportRef} 
+          className="absolute inset-0 overflow-y-scroll"
+          style={{
+            scrollBehavior: 'smooth',
+            scrollbarWidth: 'none', // Hide scrollbar for Firefox
+            msOverflowStyle: 'none', // Hide scrollbar for IE/Edge
+          }}
         >
-          {/* We no longer need to fight with prose colors, as the parent sets the color. */}
-          <div
-            className="prose prose-lg max-w-none"
-            dangerouslySetInnerHTML={{ __html: content }}
-          />
+          {/* Webkit specific scrollbar hiding */}
+          <style jsx global>{`
+            .overflow-y-scroll::-webkit-scrollbar {
+              display: none;
+            }
+          `}</style>
+          
+          {/* The Content Strip */}
+          <div ref={contentRef}>
+            <div
+              className="prose prose-lg max-w-none 
+                         prose-headings:text-black prose-p:text-black 
+                         prose-strong:text-black prose-em:text-black 
+                         prose-a:text-black prose-ul:text-black 
+                         prose-ol:text-black prose-li:text-black"
+              dangerouslySetInnerHTML={{ __html: content }}
+            />
+          </div>
         </div>
-      </div>
 
-      {/* Navigation and Page Counter */}
-      <div className="flex justify-between items-center pt-4 mt-4 border-t-2 border-gray-500/50 shrink-0">
-        <button onClick={goToPrevPage} disabled={currentPage === 0} className="text-black/50 hover:text-black disabled:opacity-20 text-4xl transition-colors">
+        {/* Navigation Arrows - Now positioned relative to this container */}
+        <button onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 0} className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 text-black/30 hover:text-black disabled:opacity-0 text-7xl z-10 transition-all">
           &#x2039;
         </button>
+        <button onClick={() => goToPage(currentPage + 1)} disabled={currentPage === totalPages - 1} className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 text-black/30 hover:text-black disabled:opacity-0 text-7xl z-10 transition-all">
+          &#x203A;
+        </button>
+      </div>
+
+      {/* Page Counter */}
+      <div className="flex justify-center items-center pt-4 mt-4 border-t-2 border-gray-500/50 shrink-0">
         <span className="text-gray-700 font-sans">
           Page {currentPage + 1} of {totalPages}
         </span>
-        <button onClick={goToNextPage} disabled={currentPage === totalPages - 1} className="text-black/50 hover:text-black disabled:opacity-20 text-4xl transition-colors">
-          &#x203A;
-        </button>
       </div>
     </div>
   );
