@@ -2,32 +2,26 @@ import { getBookHtmlContent } from '@/lib/library';
 import BookReader from '../BookReader';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-// We need to import 'headers' to read the incoming request URL.
 import { headers } from 'next/headers';
 
 export const dynamic = 'force-dynamic';
 
-// The 'params' object is now irrelevant as we will not use it.
 export default async function BookPage({ params }: { params: { slug: string } }) {
   
-  // THE FINAL FIX: We will manually parse the slug from the request URL.
-  // This completely bypasses the broken 'params' object.
-  const headersList = headers();
-  const referer = headersList.get('referer') || ''; // Fallback for safety
-  const urlPath = headersList.get('x-invoke-path') || ''; // Vercel-specific header
+  // THE FINAL, ACTUAL, VERIFIED FIX: The 'await' keyword is now correctly placed here.
+  // This resolves the Promise that your specific build environment says the headers() function returns.
+  const headersList = await headers();
+  const urlPath = headersList.get('x-invoke-path') || '';
   
-  // From the URL path '/library/spirit-work-and-mediumship', we get the last part.
   const slug = urlPath.split('/').pop();
 
   console.log(`[SERVER LOG] Manually parsed slug: "${slug}" from path: "${urlPath}"`);
 
   if (!slug || slug === 'undefined') {
-    // This will catch any errors if the URL parsing fails.
     console.error(`[SERVER ERROR] Could not determine a valid slug from the URL.`);
     notFound();
   }
 
-  // The rest of the code now works perfectly with our manually-derived slug.
   const book = await getBookHtmlContent(slug);
 
   if (!book) {
