@@ -3,16 +3,39 @@ import BookReader from '../BookReader';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
-// This safeguard prevents faulty caching in Vercel.
 export const dynamic = 'force-dynamic';
 
 export default async function BookPage({ params }: { params: { slug: string } }) {
+  // --- START OF DIAGNOSTIC LOGGING ---
+  console.log(`[SERVER LOG] START: BookPage render initiated.`);
+  
   const slug = params.slug;
-  if (!slug) { notFound(); }
+  if (!slug) {
+    console.error('[SERVER ERROR] CRITICAL: Slug parameter is missing. Triggering notFound().');
+    notFound();
+  }
+  console.log(`[SERVER LOG] INFO: Received slug: "${slug}"`);
 
-  // Directly call our simple function on the server to get the book content.
-  const book = await getBookHtmlContent(slug);
-  if (!book) { notFound(); }
+  let book = null;
+  try {
+    console.log(`[SERVER LOG] ACTION: Calling getBookHtmlContent("${slug}")...`);
+    book = await getBookHtmlContent(slug);
+    
+    if (book) {
+      console.log(`[SERVER LOG] SUCCESS: Book content fetched for "${book.title}".`);
+    } else {
+      // This will be our most important clue if the file isn't found
+      console.error(`[SERVER ERROR] CRITICAL: getBookHtmlContent returned null for slug "${slug}". This means the file was not found. Triggering notFound().`);
+      notFound();
+    }
+  } catch (error) {
+    // This will catch any unexpected crashes inside the library function.
+    console.error(`[SERVER CATASTROPHE] An unhandled error occurred while fetching book content for slug "${slug}":`, error);
+    notFound();
+  }
+  
+  console.log(`[SERVER LOG] PRE-RENDER: Data is ready. Preparing to render BookReader component.`);
+  // --- END OF DIAGNOSTIC LOGGING ---
 
   return (
     <main className="relative min-h-screen w-full bg-black bg-cover bg-center" style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}>
@@ -26,7 +49,6 @@ export default async function BookPage({ params }: { params: { slug: string } })
         </Link>
       </nav>
       <div className="flex items-center justify-center min-h-screen p-4 sm:p-8">
-        {/* We pass the full title and HTML content to our new, intelligent BookReader. */}
         <BookReader title={book.title} content={book.content} />
       </div>
     </main>
