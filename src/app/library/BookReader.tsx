@@ -6,23 +6,16 @@ const crimsonText = Crimson_Text({ subsets: ['latin'], weight: ['400', '700'], }
 const uncialAntiqua = Uncial_Antiqua({ subsets: ['latin'], weight: ['400'], });
 
 interface BookReaderProps {
-  // It receives the title and the HTML content directly.
   title: string;
   content: string;
 }
 
 export default function BookReader({ title, content }: BookReaderProps) {
   return (
-    // This is our new book container. It's scrollable and styled.
     <div className={`w-full max-w-2xl h-[80vh] bg-[#fdf9e8] bg-[url('/images/books/parchment-bg.png')] bg-cover bg-center rounded-lg shadow-2xl shadow-black/70 p-8 md:p-12 overflow-y-auto ${crimsonText.className}`}>
-      
-      {/* Book Title */}
       <h1 className={`text-3xl md:text-4xl text-center text-gray-800 border-b-2 border-gray-500 pb-4 mb-8 ${uncialAntiqua.className}`}>
         {title}
       </h1>
-
-      {/* Book Content */}
-      {/* The 'prose' classes from Tailwind automatically style HTML tags for excellent readability. */}
       <div
         className="prose prose-lg max-w-none prose-headings:text-gray-800 prose-p:text-gray-900 prose-strong:text-gray-900 prose-em:text-gray-800"
         dangerouslySetInnerHTML={{ __html: content }}

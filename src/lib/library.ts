@@ -1,69 +1,63 @@
 import fs from 'fs';
 import path from 'path';
 import matter from 'gray-matter';
+import { remark } from 'remark';
+import html from 'remark-html';
 
-// --- TYPE DEFINITIONS ---
-// This is the summary used by the bookshelf page.
+// Type for the book summary used on the bookshelf page.
 export interface BookSummary {
   slug: string;
   title: string;
   coverImage: string;
 }
 
-// This is the structure of our in-memory cache.
-interface BookCache {
-  [slug: string]: {
-    title: string;
-    rawContent: string;
-  };
-}
-
-// --- THE IN-MEMORY REGISTRY ---
-// We build a cache of all book content when the server starts.
-// THE FIX: We now correctly 'export' this cache so our API can use it.
-export const bookCache: BookCache = {};
-const booksDirectory = path.join(process.cwd(), 'src', 'books');
-
-try {
+// Function for the bookshelf page: gets a list of all books.
+export function getAllBooks(): BookSummary[] {
+  const booksDirectory = path.join(process.cwd(), 'src', 'books');
   const fileNames = fs.readdirSync(booksDirectory).filter(file => file.endsWith('.md'));
 
-  for (const fileName of fileNames) {
+  const allBooksData = fileNames.map((fileName) => {
     const slug = fileName.replace(/\.md$/, '');
     const fullPath = path.join(booksDirectory, fileName);
     const fileContents = fs.readFileSync(fullPath, 'utf8');
-    const { data, content } = matter(fileContents);
+    const { data } = matter(fileContents);
 
-    if (data.title) {
-      bookCache[slug] = {
-        title: data.title,
-        rawContent: content,
-      };
-    }
-  }
-  console.log('[BUILD-TIME] Successfully built book registry:', Object.keys(bookCache));
-} catch (error) {
-  console.error('[BUILD-TIME] CRITICAL ERROR: Failed to read books directory and build registry.', error);
-}
-
-// --- FUNCTION FOR THE BOOKSHELF PAGE ---
-// This function reads from the cache to get a list of all book summaries.
-export function getAllBooks(): BookSummary[] {
-  const allBookSummaries = Object.entries(bookCache).map(([slug, data]) => {
-    // Find the corresponding cover image
     const coverImageExtensions = ['png', 'jpg', 'jpeg', 'webp'];
-    let coverImage = '/images/books/default-cover.png'; // A fallback
+    let coverImage = '/images/books/default-cover.png';
     for (const ext of coverImageExtensions) {
       if (fs.existsSync(path.join(process.cwd(), `public/images/books/${slug}.${ext}`))) {
         coverImage = `/images/books/${slug}.${ext}`;
         break;
       }
     }
+
     return {
       slug,
-      title: data.title,
+      title: data.title as string,
       coverImage,
     };
   });
 
-  return allBookSummaries;
+  return allBooksData;
+}
+
+// Function for the single book page: gets the full HTML content of one book.
+export async function getBookHtmlContent(slug: string) {
+  const booksDirectory = path.join(process.cwd(), 'src', 'books');
+  const fullPath = path.join(booksDirectory, `${slug}.md`);
+
+  if (!fs.existsSync(fullPath)) {
+    return null;
+  }
+
+  const fileContents = fs.readFileSync(fullPath, 'utf8');
+  const { data, content } = matter(fileContents);
+
+  const processedContent = await remark().use(html).process(content);
+  const contentHtml = processedContent.toString();
+
+  return {
+    title: data.title as string,
+    content: contentHtml,
+  };
 }
