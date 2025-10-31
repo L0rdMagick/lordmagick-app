@@ -1,4 +1,4 @@
-"use client"; // This is now a Client Component.
+"use client";
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
@@ -14,15 +14,12 @@ function LoadingSpinner() {
   );
 }
 
-// Define the shape of the data we expect from our new API.
 interface BookData {
   title: string;
   content: string;
 }
 
 export default function BookPage() {
-  // useParams is a client-side hook that reliably gets URL parameters.
-  // This replaces the broken server-side 'params' prop.
   const params = useParams();
   const slug = params.slug as string;
 
@@ -31,13 +28,11 @@ export default function BookPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // This effect runs in the browser after the page loads.
     if (slug) {
       const fetchBook = async () => {
         try {
           setLoading(true);
           setError(null);
-          // We fetch the data from our new API endpoint.
           const response = await fetch(`/api/books/${slug}`);
           
           if (!response.ok) {
@@ -53,10 +48,9 @@ export default function BookPage() {
           setLoading(false);
         }
       };
-
       fetchBook();
     }
-  }, [slug]); // Rerun this effect if the slug changes.
+  }, [slug]);
 
   const pageContent = () => {
     if (loading) return <LoadingSpinner />;
@@ -67,7 +61,10 @@ export default function BookPage() {
 
   return (
     <main className="relative min-h-screen w-full bg-black bg-cover bg-center" style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}>
+      {/* This overlay remains in the background */}
       <div className="absolute inset-0 bg-black/70 backdrop-blur" />
+
+      {/* The navigation is high up on the z-axis */}
       <nav className="fixed top-0 left-0 right-0 z-50 flex justify-end items-center p-4 gap-4">
         <Link href="/library" className="text-gray-300 hover:text-amber-300" style={{ textShadow: '1px 1px 3px rgba(0,0,0,0.7)' }}>
           &larr; Bookshelf
@@ -76,7 +73,10 @@ export default function BookPage() {
           Grand Hall &rarr;
         </Link>
       </nav>
-      <div className="flex items-center justify-center min-h-screen p-4 sm:p-8">
+
+      {/* THE FIX: Added 'relative' and 'z-10' to this container. */}
+      {/* This lifts the book and its contents ON TOP of the dark overlay. */}
+      <div className="relative z-10 flex items-center justify-center min-h-screen p-4 sm:p-8">
         {pageContent()}
       </div>
     </main>
