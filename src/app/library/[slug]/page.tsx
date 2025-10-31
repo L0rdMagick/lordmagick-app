@@ -1,70 +1,22 @@
-"use client";
-
-import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { getBookHtmlContent } from '@/lib/library';
 import BookReader from '../BookReader';
 import Link from 'next/link';
+import { notFound } from 'next/navigation';
 
-function LoadingSpinner() {
-  return (
-    <div className="text-center text-amber-200 text-2xl">
-      <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-amber-200 mx-auto mb-4"></div>
-      Unsealing the Tome...
-    </div>
-  );
-}
+// This safeguard prevents faulty caching in Vercel.
+export const dynamic = 'force-dynamic';
 
-interface BookData {
-  title: string;
-  content: string;
-}
+export default async function BookPage({ params }: { params: { slug: string } }) {
+  const slug = params.slug;
+  if (!slug) { notFound(); }
 
-export default function BookPage() {
-  const params = useParams();
-  const slug = params.slug as string;
-
-  const [bookData, setBookData] = useState<BookData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (slug) {
-      const fetchBook = async () => {
-        try {
-          setLoading(true);
-          setError(null);
-          const response = await fetch(`/api/books/${slug}`);
-          
-          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'The tome could not be found.');
-          }
-          
-          const data: BookData = await response.json();
-          setBookData(data);
-        } catch (err: any) {
-          setError(err.message);
-        } finally {
-          setLoading(false);
-        }
-      };
-      fetchBook();
-    }
-  }, [slug]);
-
-  const pageContent = () => {
-    if (loading) return <LoadingSpinner />;
-    if (error) return <div className="text-center text-red-400 text-xl">Error: {error}</div>;
-    if (bookData) return <BookReader title={bookData.title} content={bookData.content} />;
-    return null;
-  };
+  // Directly call our simple function on the server to get the book content.
+  const book = await getBookHtmlContent(slug);
+  if (!book) { notFound(); }
 
   return (
     <main className="relative min-h-screen w-full bg-black bg-cover bg-center" style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}>
-      {/* This overlay remains in the background */}
       <div className="absolute inset-0 bg-black/70 backdrop-blur" />
-
-      {/* The navigation is high up on the z-axis */}
       <nav className="fixed top-0 left-0 right-0 z-50 flex justify-end items-center p-4 gap-4">
         <Link href="/library" className="text-gray-300 hover:text-amber-300" style={{ textShadow: '1px 1px 3px rgba(0,0,0,0.7)' }}>
           &larr; Bookshelf
@@ -73,11 +25,9 @@ export default function BookPage() {
           Grand Hall &rarr;
         </Link>
       </nav>
-
-      {/* THE FIX: Added 'relative' and 'z-10' to this container. */}
-      {/* This lifts the book and its contents ON TOP of the dark overlay. */}
-      <div className="relative z-10 flex items-center justify-center min-h-screen p-4 sm:p-8">
-        {pageContent()}
+      <div className="flex items-center justify-center min-h-screen p-4 sm:p-8">
+        {/* We pass the full title and HTML content to our new, intelligent BookReader. */}
+        <BookReader title={book.title} content={book.content} />
       </div>
     </main>
   );
