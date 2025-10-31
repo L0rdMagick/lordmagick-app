@@ -4,14 +4,12 @@ import matter from 'gray-matter';
 import { remark } from 'remark';
 import html from 'remark-html';
 
-// Type for the book summary used on the bookshelf page.
 export interface BookSummary {
   slug: string;
   title: string;
   coverImage: string;
 }
 
-// Function for the bookshelf page: gets a list of all books.
 export function getAllBooks(): BookSummary[] {
   const booksDirectory = path.join(process.cwd(), 'src', 'books');
   const fileNames = fs.readdirSync(booksDirectory).filter(file => file.endsWith('.md'));
@@ -30,18 +28,15 @@ export function getAllBooks(): BookSummary[] {
         break;
       }
     }
-
     return {
       slug,
       title: data.title as string,
       coverImage,
     };
   });
-
   return allBooksData;
 }
 
-// Function for the single book page: gets the full HTML content of one book.
 export async function getBookHtmlContent(slug: string) {
   const booksDirectory = path.join(process.cwd(), 'src', 'books');
   const fullPath = path.join(booksDirectory, `${slug}.md`);

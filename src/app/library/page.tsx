@@ -3,7 +3,6 @@ import BookshelfClient from './BookshelfClient';
 
 export default function LibraryPage() {
   const allBooks = getAllBooks();
-
   return (
     <main className="relative min-h-screen w-full bg-black bg-cover bg-center p-8" style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}>
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
