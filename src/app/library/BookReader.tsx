@@ -35,17 +35,14 @@ export default function BookReader({ title, content, onTocToggle }: BookReaderPr
   useEffect(() => {
     const timer = setTimeout(calculatePages, 150);
     window.addEventListener('resize', calculatePages);
-
-    // THE FIX: Add an observer for when content like images loads, which can change height
     const resizeObserver = new ResizeObserver(calculatePages);
-    if(contentRef.current) {
+    if (contentRef.current) {
       resizeObserver.observe(contentRef.current);
     }
-
     return () => {
       window.removeEventListener('resize', calculatePages);
       clearTimeout(timer);
-      if(contentRef.current) {
+      if (contentRef.current) {
         resizeObserver.unobserve(contentRef.current);
       }
     };
@@ -60,27 +57,6 @@ export default function BookReader({ title, content, onTocToggle }: BookReaderPr
       });
     }
   }, [currentPage]);
-  
-  // This effect listens for clicks on chapter links inside the content itself
-  useEffect(() => {
-    const handleInternalLink = (event: Event) => {
-        const target = event.target as HTMLElement;
-        const anchor = target.closest('a');
-        if (anchor && anchor.getAttribute('href')?.startsWith('#')) {
-            event.preventDefault();
-            const chapterId = anchor.getAttribute('href')?.substring(1);
-            if(chapterId) {
-                const element = contentRef.current?.querySelector(`#${chapterId}`);
-                element?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-        }
-    };
-
-    const contentEl = contentRef.current;
-    contentEl?.addEventListener('click', handleInternalLink);
-    return () => contentEl?.removeEventListener('click', handleInternalLink);
-}, [content]);
-
 
   const goToNextPage = () => setCurrentPage(prev => Math.min(prev + 1, totalPages - 1));
   const goToPrevPage = () => setCurrentPage(prev => Math.max(prev - 1, 0));
@@ -91,25 +67,21 @@ export default function BookReader({ title, content, onTocToggle }: BookReaderPr
   const decreaseFontSize = () => {
     setFontSizeIndex(prev => Math.max(prev - 1, 0));
   };
-  
+
   return (
-    <div className={`w-full max-w-4xl h-[90vh] bg-[#fdf9e8] bg-[url('/images/books/parchment-bg.png')] bg-cover bg-center rounded-lg shadow-2xl shadow-black/70 flex flex-col p-6 md:p-10 text-black ${crimsonText.className}`}>
+    // THE FIX: Restored preferred width (max-w-2xl) and height (h-[85vh])
+    <div className={`w-full max-w-2xl h-[85vh] bg-[#fdf9e8] bg-[url('/images/books/parchment-bg.png')] bg-cover bg-center rounded-lg shadow-2xl shadow-black/70 flex flex-col p-8 md:p-10 text-black ${crimsonText.className}`}>
       
-      <header className="flex justify-between items-center border-b-2 border-gray-500/50 pb-4 mb-6 shrink-0">
-        <button onClick={onTocToggle} className="text-gray-600 hover:text-black transition-colors text-sm font-semibold">
-          CONTENTS
-        </button>
-        <h1 className={`text-2xl md:text-3xl text-center ${uncialAntiqua.className}`}>
-          {title}
-        </h1>
-        <div className="w-20"></div> {/* Spacer */}
-      </header>
+      {/* THE FIX: Header is restored to its clean, original style */}
+      <h1 className={`text-3xl md:text-4xl text-center border-b-2 border-gray-500/50 pb-4 mb-6 shrink-0 ${uncialAntiqua.className}`}>
+        {title}
+      </h1>
 
       <div className="grow relative">
         <div 
           ref={viewportRef} 
-          className="h-full overflow-y-scroll"
-          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          className="absolute inset-0 overflow-y-scroll"
+          style={{ scrollBehavior: 'smooth', scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           <style jsx global>{`.hide-scrollbar::-webkit-scrollbar { display: none; }`}</style>
           
@@ -130,14 +102,26 @@ export default function BookReader({ title, content, onTocToggle }: BookReaderPr
         </button>
       </div>
 
+      {/* THE FIX: The entire footer is restored with all controls in their correct places */}
       <footer className="flex justify-between items-center pt-4 mt-4 border-t-2 border-gray-500/50 shrink-0">
+        {/* Left Side: Table of Contents Button */}
+        <button 
+          onClick={onTocToggle} 
+          className="text-gray-600 hover:text-black transition-colors font-semibold uppercase text-sm tracking-wider"
+        >
+          Contents
+        </button>
+
+        {/* Middle: Page Counter */}
+        <span className="text-gray-700 font-sans text-sm">
+          Page {currentPage + 1} of {totalPages}
+        </span>
+
+        {/* Right Side: Font Size Controls are back */}
         <div className="flex items-center gap-2">
           <button onClick={decreaseFontSize} disabled={fontSizeIndex === 0} className="text-xl font-bold text-black/50 hover:text-black disabled:opacity-20 transition-colors">A-</button>
           <button onClick={increaseFontSize} disabled={fontSizeIndex === fontSizes.length - 1} className="text-2xl font-bold text-black/50 hover:text-black disabled:opacity-20 transition-colors">A+</button>
         </div>
-        <span className="text-gray-700 font-sans text-sm">
-          Page {currentPage + 1} of {totalPages}
-        </span>
       </footer>
     </div>
   );
