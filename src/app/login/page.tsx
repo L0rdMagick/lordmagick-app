@@ -2,25 +2,32 @@
 
 "use client";
 
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+// THE FIX: The function is now correctly named createBrowserClient
+import { createBrowserClient } from "@supabase/ssr";
 import { Auth } from "@supabase/auth-ui-react";
 import { ThemeSupa } from "@supabase/auth-ui-shared";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 
 export default function LoginPage() {
-  const supabase = createClientComponentClient();
+  // THE FIX: The function call is updated and now passes the required env variables.
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
   const router = useRouter();
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session) {
-        // User is logged in, redirect them to the hall.
-        router.push('/hall');
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event: AuthChangeEvent, session: Session | null) => {
+        if (session) {
+          router.push('/hall');
+        }
       }
-    });
+    );
 
     return () => {
       subscription.unsubscribe();
@@ -63,7 +70,6 @@ export default function LoginPage() {
             },
           }}
           theme="dark"
-          // THE FIX: Removed 'discord' from the array.
           providers={['google']}
           redirectTo={`${process.env.NEXT_PUBLIC_BASE_URL}/auth/callback`}
         />

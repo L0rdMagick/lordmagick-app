@@ -4,7 +4,8 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+// THE FIX: The function is now correctly named createBrowserClient
+import { createBrowserClient } from '@supabase/ssr';
 import type { User } from '@supabase/supabase-js';
 
 // Define the structure for a Tarot card
@@ -16,7 +17,7 @@ interface TarotCard {
 // Define the configurations for each reader
 const readerConfigs = {
   ambrose: {
-    assistantId: "517aca67-ced6-4710-927d-4dd1f5944419", // Ambrose's Vapi Assistant ID
+    assistantId: "517aca67-ced6-4710-927d-4dd1f5944419",
     buttonConfig: {
       idle: { title: "Begin Your Tarot Reading", subtitle: "Speak with Ambrose" },
       loading: { title: "Connecting to Spirit", subtitle: "Waiting for Ambrose" },
@@ -25,7 +26,7 @@ const readerConfigs = {
     }
   },
   natalia: {
-    assistantId: "5eded252-3876-4bda-90d8-aec2c5407285", // Natalia's Vapi Assistant ID
+    assistantId: "5eded252-3876-4bda-90d8-aec2c5407285",
     buttonConfig: {
       idle: { title: "Begin Your Tarot Reading", subtitle: "Speak with Natalia" },
       loading: { title: "Connecting to Spirit", subtitle: "Wait my lovely" },
@@ -38,25 +39,25 @@ const readerConfigs = {
 export default function TarotReaderPage() {
   const params = useParams();
   const router = useRouter();
-  const supabase = createClientComponentClient();
+  // THE FIX: The function call is updated and now passes the required env variables.
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
 
   const readerName = params.reader as keyof typeof readerConfigs;
   const config = readerConfigs[readerName];
 
-  // --- STATE MANAGEMENT ---
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isUiLocked, setIsUiLocked] = useState(false);
   const [cards, setCards] = useState<TarotCard[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  
-  // Refs
   const vapiInstanceRef = useRef<any>(null);
   const vapiSessionIdRef = useRef<string | null>(null);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const pollingAttemptsRef = useRef(0);
 
-  // --- AUTHENTICATION ---
   useEffect(() => {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -70,7 +71,6 @@ export default function TarotReaderPage() {
     checkUser();
   }, [router, supabase.auth]);
   
-  // --- UI & POPUP FUNCTIONS ---
   const showWarningPopup = () => {
     const modal = document.getElementById('warningModal');
     if (modal) modal.style.display = 'block';
@@ -104,16 +104,12 @@ export default function TarotReaderPage() {
       modal.style.display = 'block';
     }
   };
-
-  // --- CORE LOGIC FUNCTIONS ---
   
   const handleBeginReading = useCallback(async () => {
     if (!user || !vapiSessionIdRef.current || isUiLocked) return;
-
     setIsUiLocked(true);
     setErrorMessage(null);
     document.getElementById('loading')?.classList.remove('hidden');
-
     try {
         const response = await fetch('/api/tarot', {
             method: 'POST',
@@ -126,7 +122,6 @@ export default function TarotReaderPage() {
                 cardCount: 10,
             }),
         });
-
         if (!response.ok) {
             const errorData = await response.json();
             throw new Error(errorData.error || 'Failed to start session.');
@@ -177,16 +172,13 @@ export default function TarotReaderPage() {
     }, 15000); 
   }, [pollForCards, stopPolling]);
 
-  // --- VAPI INITIALIZATION ---
   useEffect(() => {
     if (typeof window === 'undefined' || !config) return;
-
     const script = document.createElement('script');
     script.src = "https://cdn.jsdelivr.net/gh/VapiAI/html-script-tag@latest/dist/assets/index.js";
     script.defer = true;
     script.async = true;
     document.body.appendChild(script);
-
     script.onload = () => {
       if (!window.vapiSDK) { console.error("Vapi SDK failed to load."); return; }
       const vapiInstance = window.vapiSDK.run({
@@ -200,17 +192,14 @@ export default function TarotReaderPage() {
         targetAudioElement: document.getElementById('vapiAudio')
       });
       vapiInstanceRef.current = vapiInstance;
-
       vapiInstance.on('call-start', () => { addOverlay(); startPollingForCards(); });
       vapiInstance.on('call-end', () => { removeOverlay(); stopPolling(); location.reload(); });
-      
       const buttonElement = document.getElementById("vapi-support-btn");
       if(buttonElement) {
         buttonElement.style.backgroundImage = `url('${config.buttonConfig.backgroundImageUrl}')`;
         buttonElement.addEventListener('click', handleBeginReading);
       }
     };
-
     return () => {
         const buttonElement = document.getElementById("vapi-support-btn");
         if (buttonElement) buttonElement.removeEventListener('click', handleBeginReading);
@@ -219,7 +208,6 @@ export default function TarotReaderPage() {
     };
   }, [config, handleBeginReading, startPollingForCards, stopPolling]);
 
-  // Override fetch to intercept the Vapi session URL
   useEffect(() => {
       if (typeof window === 'undefined') return;
       const currentFetch = window.fetch;
@@ -237,10 +225,7 @@ export default function TarotReaderPage() {
 
   if (isLoading || !user) {
     return (
-      <div 
-        className="relative min-h-screen w-full bg-black bg-cover bg-center flex items-center justify-center" 
-        style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}
-      >
+      <div className="relative min-h-screen w-full bg-black bg-cover bg-center flex items-center justify-center" style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}>
         <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
         <div className="text-center text-amber-200 text-2xl z-10">
           <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-amber-200 mx-auto mb-4"></div>
@@ -257,39 +242,13 @@ export default function TarotReaderPage() {
   return (
     <main className="relative min-h-screen w-full bg-black bg-cover bg-center" style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}>
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
-
       <audio id="vapiAudio" className="hidden"></audio>
-      
-      <div id="warningModal" className="modal">
-        <div className="modal-content">
-          <p>End the current reading and start a new one?</p>
-          <button onClick={() => location.reload()}>End Session</button>
-          <button onClick={() => { const modal = document.getElementById('warningModal'); if (modal) modal.style.display = 'none'; }}>Keep Session</button>
-        </div>
-      </div>
-      
-      <div id="errorModal" className="modal">
-        <div className="modal-content">
-          <p id="errorMessage">{errorMessage}</p>
-          <button onClick={() => router.push('/marketplace')}>Purchase Tokens</button>
-          <button onClick={() => { const modal = document.getElementById('errorModal'); if (modal) modal.style.display = 'none'; }}>Close</button>
-        </div>
-      </div>
-
+      <div id="warningModal" className="modal"><div className="modal-content"><p>End the current reading and start a new one?</p><button onClick={() => location.reload()}>End Session</button><button onClick={() => { const modal = document.getElementById('warningModal'); if (modal) modal.style.display = 'none'; }}>Keep Session</button></div></div>
+      <div id="errorModal" className="modal"><div className="modal-content"><p id="errorMessage">{errorMessage}</p><button onClick={() => router.push('/marketplace')}>Purchase Tokens</button><button onClick={() => { const modal = document.getElementById('errorModal'); if (modal) modal.style.display = 'none'; }}>Close</button></div></div>
       <div className="relative z-10">
         <div id="vapi-support-btn"></div>
-        <div className="tarot-container">
-          <div id="tarotDisplay" className="tarot-display">
-            {cards.map((card, index) => (
-              <Card key={index} card={card} />
-            ))}
-          </div>
-        </div>
-        <div className="loading-container">
-          <div id="loading" className="loading-spinner hidden">
-            <span>Shuffling your cards...<br/>Deck: <em>Cats of the Crown</em></span>
-          </div>
-        </div>
+        <div className="tarot-container"><div id="tarotDisplay" className="tarot-display">{cards.map((card, index) => (<Card key={index} card={card} />))}</div></div>
+        <div className="loading-container"><div id="loading" className="loading-spinner hidden"><span>Shuffling your cards...<br/>Deck: <em>Cats of the Crown</em></span></div></div>
       </div>
     </main>
   );
@@ -298,12 +257,10 @@ export default function TarotReaderPage() {
 function Card({ card }: { card: TarotCard }) {
   const [isFlipped, setIsFlipped] = useState(false);
   const [isEnlarged, setIsEnlarged] = useState(false);
-  
   const handleClick = () => {
     if (!isFlipped) setIsFlipped(true);
     else setIsEnlarged(!isEnlarged);
   };
-
   return (
     <div className={`card-container ${isEnlarged ? 'enlarged' : ''}`} onClick={handleClick}>
       <img src={card.url} alt={card.name} className={`card-image ${isFlipped ? '' : 'hidden'} ${isEnlarged ? 'enlarged' : ''}`} />
