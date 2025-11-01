@@ -162,7 +162,8 @@ export default function TarotReaderPage() {
         if (script.parentNode) {
             document.body.removeChild(script);
         }
-        vapiInstanceRef.current?.destroy();
+        // THE FIX: The correct cleanup method is .stop()
+        vapiInstanceRef.current?.stop();
     };
   }, [config, handleBeginReading]);
 
