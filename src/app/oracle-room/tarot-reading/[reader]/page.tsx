@@ -61,7 +61,7 @@ export default function TarotReaderPage() {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        router.push('/auth/login'); // Redirect to your login page if not authenticated
+        router.push('/hall?login=true'); // Redirect to request login
       } else {
         setUser(session.user);
         setIsLoading(false);
@@ -70,88 +70,12 @@ export default function TarotReaderPage() {
     checkUser();
   }, [router, supabase.auth]);
 
-  // --- VAPI INITIALIZATION ---
-  useEffect(() => {
-    if (typeof window === 'undefined' || !config) return;
-
-    // Load VAPI script dynamically
-    const script = document.createElement('script');
-    script.src = "https://cdn.jsdelivr.net/gh/VapiAI/html-script-tag@latest/dist/assets/index.js";
-    script.defer = true;
-    script.async = true;
-    document.body.appendChild(script);
-
-    script.onload = () => {
-      const vapiInstance = window.vapiSDK.run({
-        apiKey: process.env.NEXT_PUBLIC_VAPI_API_KEY!, // Ensure you have this in .env.local
-        assistant: config.assistantId,
-        config: {
-            ...config.buttonConfig,
-            width: "200px", height: "500px", type: "pill",
-            icon: "https://images.squarespace-cdn.com/content/662b53c5379e5a412f214a15/ddf5d813-9f00-409a-b052-290a1b985a8a/hand+icon+50px+height.png?content-type=image%2Fpng",
-        },
-        targetAudioElement: document.getElementById('vapiAudio')
-      });
-
-      vapiInstanceRef.current = vapiInstance;
-
-      // --- EVENT LISTENERS ---
-      vapiInstance.on('call-start', () => {
-        console.log('Call has started');
-        addOverlay();
-        startPollingForCards();
-      });
-
-      vapiInstance.on('call-end', () => {
-        console.log('Call has ended');
-        stopPolling();
-        location.reload(); // Simple way to reset state on call end
-      });
-      
-      const buttonElement = document.getElementById("vapi-support-btn");
-      if(buttonElement) {
-        buttonElement.style.backgroundImage = `url('${config.buttonConfig.backgroundImageUrl}')`;
-        buttonElement.addEventListener('click', handleBeginReading);
-      }
-    };
-
-    // Cleanup function
-    return () => {
-        const buttonElement = document.getElementById("vapi-support-btn");
-        if (buttonElement) {
-            buttonElement.removeEventListener('click', handleBeginReading);
-        }
-        document.body.removeChild(script);
-        vapiInstanceRef.current?.destroy();
-    };
-  }, [config]); // Re-run if config changes
-
   // --- CORE LOGIC FUNCTIONS ---
   
-  // Override fetch to intercept the Vapi session URL
-  const originalFetch = useRef(typeof window !== 'undefined' ? window.fetch : undefined);
-  useEffect(() => {
-      if (typeof window === 'undefined') return;
-      
-      const newFetch = async (url: RequestInfo | URL, ...args: any[]) => {
-          const urlString = url.toString();
-          if (urlString.includes('gs.daily.co/rooms/check/vapi')) {
-              const sessionId = urlString.split('/').pop();
-              console.log('VAPI Session ID captured:', sessionId);
-              vapiSessionIdRef.current = sessionId!;
-          }
-          return originalFetch.current!(url, ...args);
-      };
-      
-      window.fetch = newFetch;
-      
-      return () => { window.fetch = originalFetch.current!; };
-  }, []);
-
-  const handleBeginReading = async () => {
+  const handleBeginReading = useCallback(async () => {
     if (!user || !vapiSessionIdRef.current || isUiLocked) return;
 
-    setIsUiLocked(true); // Prevent multiple clicks
+    setIsUiLocked(true);
     setErrorMessage(null);
     document.getElementById('loading')?.classList.remove('hidden');
 
@@ -173,19 +97,100 @@ export default function TarotReaderPage() {
             throw new Error(errorData.error || 'Failed to start session.');
         }
 
-        // If successful, the 'call-start' event will handle the next steps
         console.log('Session started successfully.');
 
     } catch (err: any) {
-        setErrorMessage(err.message);
         showErrorPopup(err.message);
         setIsUiLocked(false);
         document.getElementById('loading')?.classList.add('hidden');
     }
-  };
+  }, [user, isUiLocked, readerName, router]); // Added router to dependencies
+
+  // --- VAPI INITIALIZATION ---
+  useEffect(() => {
+    if (typeof window === 'undefined' || !config) return;
+
+    const script = document.createElement('script');
+    script.src = "https://cdn.jsdelivr.net/gh/VapiAI/html-script-tag@latest/dist/assets/index.js";
+    script.defer = true;
+    script.async = true;
+    document.body.appendChild(script);
+
+    script.onload = () => {
+      if (!window.vapiSDK) {
+        console.error("Vapi SDK failed to load.");
+        return;
+      }
+
+      const vapiInstance = window.vapiSDK.run({
+        apiKey: process.env.NEXT_PUBLIC_VAPI_API_KEY!,
+        assistant: config.assistantId,
+        config: {
+            ...config.buttonConfig,
+            width: "200px", height: "500px", type: "pill",
+            icon: "https://images.squarespace-cdn.com/content/662b53c5379e5a412f214a15/ddf5d813-9f00-409a-b052-290a1b985a8a/hand+icon+50px+height.png?content-type=image%2Fpng",
+        },
+        targetAudioElement: document.getElementById('vapiAudio')
+      });
+
+      vapiInstanceRef.current = vapiInstance;
+
+      vapiInstance.on('call-start', () => {
+        console.log('Call has started');
+        addOverlay();
+        startPollingForCards();
+      });
+
+      vapiInstance.on('call-end', () => {
+        console.log('Call has ended');
+        stopPolling();
+        location.reload();
+      });
+      
+      const buttonElement = document.getElementById("vapi-support-btn");
+      if(buttonElement) {
+        buttonElement.style.backgroundImage = `url('${config.buttonConfig.backgroundImageUrl}')`;
+        buttonElement.addEventListener('click', handleBeginReading);
+      }
+    };
+
+    return () => {
+        const buttonElement = document.getElementById("vapi-support-btn");
+        if (buttonElement) {
+            buttonElement.removeEventListener('click', handleBeginReading);
+        }
+        if (script.parentNode) {
+            document.body.removeChild(script);
+        }
+        vapiInstanceRef.current?.destroy();
+    };
+  }, [config, handleBeginReading]);
+
+  // Override fetch to intercept the Vapi session URL
+  useEffect(() => {
+      if (typeof window === 'undefined') return;
+      const currentFetch = window.fetch;
+      
+      const newFetch: typeof window.fetch = async (url, ...args) => {
+          const urlString = url.toString();
+          if (urlString.includes('gs.daily.co/rooms/check/vapi')) {
+              const sessionId = urlString.split('/').pop();
+              console.log('VAPI Session ID captured:', sessionId);
+              if (sessionId) vapiSessionIdRef.current = sessionId;
+          }
+          return currentFetch(url, ...args);
+      };
+      
+      window.fetch = newFetch;
+      
+      return () => { window.fetch = currentFetch; };
+  }, []);
 
   const pollForCards = async () => {
     if (!vapiSessionIdRef.current || pollingAttemptsRef.current >= 20) {
+      if (pollingAttemptsRef.current >= 20) {
+        console.error("Max polling attempts reached. Stopping.");
+      }
       stopPolling();
       return;
     }
@@ -216,13 +221,12 @@ export default function TarotReaderPage() {
   };
 
   const startPollingForCards = () => {
-    stopPolling(); // Ensure no multiple pollers are running
+    stopPolling(); 
     pollingAttemptsRef.current = 0;
-    // Start polling immediately and then every 7 seconds
     setTimeout(() => {
         pollForCards();
         pollingIntervalRef.current = setInterval(pollForCards, 7000);
-    }, 15000); // Initial delay to allow Vapi to process
+    }, 15000); 
   };
 
   const stopPolling = () => {
@@ -232,7 +236,14 @@ export default function TarotReaderPage() {
     }
   };
 
-  // --- UI & POPUP FUNCTIONS ---
+  const showErrorPopup = (message: string) => {
+    const p = document.getElementById('errorMessage');
+    const modal = document.getElementById('errorModal');
+    if (p && modal) {
+      p.textContent = message;
+      modal.style.display = 'block';
+    }
+  };
 
   const addOverlay = () => {
     const buttonElement = document.getElementById('vapi-support-btn');
@@ -252,17 +263,6 @@ export default function TarotReaderPage() {
     if (modal) modal.style.display = 'block';
   };
 
-  const showErrorPopup = (message: string) => {
-    const p = document.getElementById('errorMessage');
-    const modal = document.getElementById('errorModal');
-    if (p && modal) {
-      p.textContent = message;
-      modal.style.display = 'block';
-    }
-  };
-
-  // --- RENDER LOGIC ---
-
   if (isLoading) {
     return <div className="min-h-screen flex items-center justify-center bg-black text-white">Loading Adept...</div>;
   }
@@ -275,10 +275,8 @@ export default function TarotReaderPage() {
     <main className="relative min-h-screen w-full bg-black bg-cover bg-center" style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}>
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
 
-      {/* Audio element for Vapi */}
       <audio id="vapiAudio" className="hidden"></audio>
 
-      {/* Warning Modal */}
       <div id="warningModal" className="modal">
         <div className="modal-content">
           <p>End the current reading and start a new one?</p>
@@ -287,20 +285,17 @@ export default function TarotReaderPage() {
         </div>
       </div>
       
-      {/* Error/Credits Modal */}
       <div id="errorModal" className="modal">
         <div className="modal-content">
           <p id="errorMessage">{errorMessage}</p>
-          <button onClick={() => router.push('/store/credits')}>Purchase Tokens</button>
+          <button onClick={() => router.push('/marketplace')}>Purchase Tokens</button>
           <button onClick={() => { const modal = document.getElementById('errorModal'); if (modal) modal.style.display = 'none'; }}>Close</button>
         </div>
       </div>
 
       <div className="relative z-10">
-        {/* Vapi button will be mounted here by the SDK */}
         <div id="vapi-support-btn"></div>
         
-        {/* Tarot Card Display */}
         <div className="tarot-container">
           <div id="tarotDisplay" className="tarot-display">
             {cards.map((card, index) => (
@@ -309,7 +304,6 @@ export default function TarotReaderPage() {
           </div>
         </div>
 
-        {/* Loading Spinner */}
         <div className="loading-container">
           <div id="loading" className="loading-spinner hidden">
             <span>Shuffling your cards...<br/>Deck: <em>Cats of the Crown</em></span>
@@ -319,8 +313,6 @@ export default function TarotReaderPage() {
     </main>
   );
 }
-
-// --- SUB-COMPONENT FOR TAROT CARDS ---
 
 function Card({ card }: { card: TarotCard }) {
   const [isFlipped, setIsFlipped] = useState(false);
