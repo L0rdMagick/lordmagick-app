@@ -1,4 +1,5 @@
 // src/app/oracle-room/tarot-reading/[reader]/page.tsx
+// NO CHANGES NEEDED IN THIS FILE
 
 "use client";
 
@@ -195,7 +196,6 @@ export default function TarotReaderPage() {
       
       const buttonElement = document.getElementById("vapi-support-btn");
       if(buttonElement) {
-        // THE FIX: Use a CSS variable to set the background image, which our new CSS rule will apply.
         buttonElement.style.setProperty('--vapi-background-image', `url('${config.buttonConfig.backgroundImageUrl}')`);
         buttonElement.addEventListener('click', handleBeginReading);
       }

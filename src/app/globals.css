@@ -356,20 +356,36 @@
 
 /* === END AI TAROT READER STYLES === */
 
-/* === VAPI BUTTON IMAGE OVERRIDE === */
+/* === VAPI BUTTON IMAGE AND SHAPE OVERRIDE === */
 
 #vapi-support-btn {
-  /* Use a CSS variable for the dynamic background image */
+  /* Use the CSS variable for the dynamic background image */
   background-image: var(--vapi-background-image) !important;
-  
-  /* Force the default solid color to be transparent */
-  background-color: transparent !important;
-  
-  /* Ensure the image is properly scaled and centered */
   background-size: cover !important;
   background-position: center !important;
   background-repeat: no-repeat !important;
-  
-  /* Optional: Remove any default border the SDK might add */
+
+  /* Force the default solid color to be transparent */
+  background-color: transparent !important;
+
+  /* THE FIX: Set the desired rounded rectangle shape */
+  border-radius: 1rem !important; /* You can adjust this value (e.g., 0.5rem, 1.5rem) */
+
+  /* Hide any parts of child elements that might stick out */
+  overflow: hidden !important;
+
+  /* Remove any default border */
   border: none !important;
+}
+
+/* THE FIX: Target the internal div that Vapi creates and make it transparent */
+#vapi-support-btn > div {
+  background-color: transparent !important;
+  /* Ensure the internal container also matches the parent's shape */
+  border-radius: 1rem !important;
+}
+
+/* THE FIX: Target and hide the default Vapi icon (phone, spinner, etc.) */
+#vapi-support-btn #vapi-icon {
+    display: none !important;
 }
