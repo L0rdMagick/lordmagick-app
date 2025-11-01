@@ -355,3 +355,21 @@
 
 
 /* === END AI TAROT READER STYLES === */
+
+/* === VAPI BUTTON IMAGE OVERRIDE === */
+
+#vapi-support-btn {
+  /* Use a CSS variable for the dynamic background image */
+  background-image: var(--vapi-background-image) !important;
+  
+  /* Force the default solid color to be transparent */
+  background-color: transparent !important;
+  
+  /* Ensure the image is properly scaled and centered */
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  
+  /* Optional: Remove any default border the SDK might add */
+  border: none !important;
+}

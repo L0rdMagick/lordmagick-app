@@ -4,7 +4,6 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-// THE FIX: The function is now correctly named createBrowserClient
 import { createBrowserClient } from '@supabase/ssr';
 import type { User } from '@supabase/supabase-js';
 
@@ -39,7 +38,6 @@ const readerConfigs = {
 export default function TarotReaderPage() {
   const params = useParams();
   const router = useRouter();
-  // THE FIX: The function call is updated and now passes the required env variables.
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -194,9 +192,11 @@ export default function TarotReaderPage() {
       vapiInstanceRef.current = vapiInstance;
       vapiInstance.on('call-start', () => { addOverlay(); startPollingForCards(); });
       vapiInstance.on('call-end', () => { removeOverlay(); stopPolling(); location.reload(); });
+      
       const buttonElement = document.getElementById("vapi-support-btn");
       if(buttonElement) {
-        buttonElement.style.backgroundImage = `url('${config.buttonConfig.backgroundImageUrl}')`;
+        // THE FIX: Use a CSS variable to set the background image, which our new CSS rule will apply.
+        buttonElement.style.setProperty('--vapi-background-image', `url('${config.buttonConfig.backgroundImageUrl}')`);
         buttonElement.addEventListener('click', handleBeginReading);
       }
     };
