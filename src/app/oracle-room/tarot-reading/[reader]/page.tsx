@@ -61,7 +61,6 @@ export default function TarotReaderPage() {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        // THE FIX: Redirect to the new, dedicated login page.
         router.push('/login'); 
       } else {
         setUser(session.user);
@@ -71,7 +70,7 @@ export default function TarotReaderPage() {
     checkUser();
   }, [router, supabase.auth]);
   
-  // --- UI & POPUP FUNCTIONS (re-integrated from original code) ---
+  // --- UI & POPUP FUNCTIONS ---
   const showWarningPopup = () => {
     const modal = document.getElementById('warningModal');
     if (modal) modal.style.display = 'block';
@@ -140,14 +139,14 @@ export default function TarotReaderPage() {
     }
   }, [user, isUiLocked, readerName]);
 
-  const stopPolling = () => {
+  const stopPolling = useCallback(() => {
     if (pollingIntervalRef.current) {
       clearInterval(pollingIntervalRef.current);
       pollingIntervalRef.current = null;
     }
-  };
+  }, []);
 
-  const pollForCards = async () => {
+  const pollForCards = useCallback(async () => {
     if (!vapiSessionIdRef.current || pollingAttemptsRef.current >= 20) {
       if (pollingAttemptsRef.current >= 20) console.error("Max polling attempts reached.");
       stopPolling();
@@ -167,16 +166,16 @@ export default function TarotReaderPage() {
             document.getElementById('loading')?.classList.add('hidden');
         }
     } catch (error) { console.error('Polling error:', error); }
-  };
+  }, [stopPolling]);
 
-  const startPollingForCards = () => {
+  const startPollingForCards = useCallback(() => {
     stopPolling(); 
     pollingAttemptsRef.current = 0;
     setTimeout(() => {
         pollForCards();
         pollingIntervalRef.current = setInterval(pollForCards, 7000);
     }, 15000); 
-  };
+  }, [pollForCards, stopPolling]);
 
   // --- VAPI INITIALIZATION ---
   useEffect(() => {
@@ -218,7 +217,7 @@ export default function TarotReaderPage() {
         if (script.parentNode) document.body.removeChild(script);
         vapiInstanceRef.current?.stop();
     };
-  }, [config, handleBeginReading]);
+  }, [config, handleBeginReading, startPollingForCards, stopPolling]);
 
   // Override fetch to intercept the Vapi session URL
   useEffect(() => {
@@ -236,8 +235,19 @@ export default function TarotReaderPage() {
       return () => { window.fetch = currentFetch; };
   }, []);
 
-  if (isLoading) {
-    return <div className="min-h-screen flex items-center justify-center bg-black text-white">Loading Adept...</div>;
+  if (isLoading || !user) {
+    return (
+      <div 
+        className="relative min-h-screen w-full bg-black bg-cover bg-center flex items-center justify-center" 
+        style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}
+      >
+        <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+        <div className="text-center text-amber-200 text-2xl z-10">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-amber-200 mx-auto mb-4"></div>
+          Verifying Access...
+        </div>
+      </div>
+    );
   }
   
   if (!config) {
@@ -250,7 +260,6 @@ export default function TarotReaderPage() {
 
       <audio id="vapiAudio" className="hidden"></audio>
       
-      {/* THE FIX: Re-added the warning modal for ending a session */}
       <div id="warningModal" className="modal">
         <div className="modal-content">
           <p>End the current reading and start a new one?</p>

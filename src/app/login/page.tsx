@@ -63,7 +63,8 @@ export default function LoginPage() {
             },
           }}
           theme="dark"
-          providers={['google', 'discord']} // Optional: Add social logins
+          // THE FIX: Removed 'discord' from the array.
+          providers={['google']}
           redirectTo={`${process.env.NEXT_PUBLIC_BASE_URL}/auth/callback`}
         />
         
