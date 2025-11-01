@@ -50,7 +50,7 @@ export default function TarotReaderPage() {
   const [cards, setCards] = useState<TarotCard[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   
-  // Refs to hold instances and states that shouldn't re-render the component
+  // Refs
   const vapiInstanceRef = useRef<any>(null);
   const vapiSessionIdRef = useRef<string | null>(null);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -61,7 +61,8 @@ export default function TarotReaderPage() {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        router.push('/hall?login=true'); // Redirect to request login
+        // THE FIX: Redirect to the new, dedicated login page.
+        router.push('/login'); 
       } else {
         setUser(session.user);
         setIsLoading(false);
@@ -69,6 +70,41 @@ export default function TarotReaderPage() {
     };
     checkUser();
   }, [router, supabase.auth]);
+  
+  // --- UI & POPUP FUNCTIONS (re-integrated from original code) ---
+  const showWarningPopup = () => {
+    const modal = document.getElementById('warningModal');
+    if (modal) modal.style.display = 'block';
+  };
+  
+  const addOverlay = () => {
+    const buttonElement = document.getElementById('vapi-support-btn');
+    if (buttonElement && !document.getElementById('buttonOverlay')) {
+      const overlay = document.createElement('div');
+      overlay.id = 'buttonOverlay';
+      overlay.addEventListener('click', (e) => {
+        e.stopPropagation();
+        showWarningPopup();
+      });
+      buttonElement.appendChild(overlay);
+    }
+  };
+
+  const removeOverlay = () => {
+    const overlay = document.getElementById('buttonOverlay');
+    if (overlay) {
+      overlay.parentNode?.removeChild(overlay);
+    }
+  };
+
+  const showErrorPopup = (message: string) => {
+    const p = document.getElementById('errorMessage');
+    const modal = document.getElementById('errorModal');
+    if (p && modal) {
+      p.textContent = message;
+      modal.style.display = 'block';
+    }
+  };
 
   // --- CORE LOGIC FUNCTIONS ---
   
@@ -96,15 +132,51 @@ export default function TarotReaderPage() {
             const errorData = await response.json();
             throw new Error(errorData.error || 'Failed to start session.');
         }
-
         console.log('Session started successfully.');
-
     } catch (err: any) {
         showErrorPopup(err.message);
         setIsUiLocked(false);
         document.getElementById('loading')?.classList.add('hidden');
     }
-  }, [user, isUiLocked, readerName, router]); // Added router to dependencies
+  }, [user, isUiLocked, readerName]);
+
+  const stopPolling = () => {
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
+    }
+  };
+
+  const pollForCards = async () => {
+    if (!vapiSessionIdRef.current || pollingAttemptsRef.current >= 20) {
+      if (pollingAttemptsRef.current >= 20) console.error("Max polling attempts reached.");
+      stopPolling();
+      return;
+    }
+    pollingAttemptsRef.current++;
+    try {
+        const response = await fetch('/api/tarot', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'getCards', vapiSessionId: vapiSessionIdRef.current }),
+        });
+        const data = await response.json();
+        if (data.cards && data.cards.length > 0) {
+            setCards(data.cards);
+            stopPolling();
+            document.getElementById('loading')?.classList.add('hidden');
+        }
+    } catch (error) { console.error('Polling error:', error); }
+  };
+
+  const startPollingForCards = () => {
+    stopPolling(); 
+    pollingAttemptsRef.current = 0;
+    setTimeout(() => {
+        pollForCards();
+        pollingIntervalRef.current = setInterval(pollForCards, 7000);
+    }, 15000); 
+  };
 
   // --- VAPI INITIALIZATION ---
   useEffect(() => {
@@ -117,11 +189,7 @@ export default function TarotReaderPage() {
     document.body.appendChild(script);
 
     script.onload = () => {
-      if (!window.vapiSDK) {
-        console.error("Vapi SDK failed to load.");
-        return;
-      }
-
+      if (!window.vapiSDK) { console.error("Vapi SDK failed to load."); return; }
       const vapiInstance = window.vapiSDK.run({
         apiKey: process.env.NEXT_PUBLIC_VAPI_API_KEY!,
         assistant: config.assistantId,
@@ -132,20 +200,10 @@ export default function TarotReaderPage() {
         },
         targetAudioElement: document.getElementById('vapiAudio')
       });
-
       vapiInstanceRef.current = vapiInstance;
 
-      vapiInstance.on('call-start', () => {
-        console.log('Call has started');
-        addOverlay();
-        startPollingForCards();
-      });
-
-      vapiInstance.on('call-end', () => {
-        console.log('Call has ended');
-        stopPolling();
-        location.reload();
-      });
+      vapiInstance.on('call-start', () => { addOverlay(); startPollingForCards(); });
+      vapiInstance.on('call-end', () => { removeOverlay(); stopPolling(); location.reload(); });
       
       const buttonElement = document.getElementById("vapi-support-btn");
       if(buttonElement) {
@@ -156,13 +214,8 @@ export default function TarotReaderPage() {
 
     return () => {
         const buttonElement = document.getElementById("vapi-support-btn");
-        if (buttonElement) {
-            buttonElement.removeEventListener('click', handleBeginReading);
-        }
-        if (script.parentNode) {
-            document.body.removeChild(script);
-        }
-        // THE FIX: The correct cleanup method is .stop()
+        if (buttonElement) buttonElement.removeEventListener('click', handleBeginReading);
+        if (script.parentNode) document.body.removeChild(script);
         vapiInstanceRef.current?.stop();
     };
   }, [config, handleBeginReading]);
@@ -171,98 +224,17 @@ export default function TarotReaderPage() {
   useEffect(() => {
       if (typeof window === 'undefined') return;
       const currentFetch = window.fetch;
-      
       const newFetch: typeof window.fetch = async (url, ...args) => {
           const urlString = url.toString();
           if (urlString.includes('gs.daily.co/rooms/check/vapi')) {
               const sessionId = urlString.split('/').pop();
-              console.log('VAPI Session ID captured:', sessionId);
               if (sessionId) vapiSessionIdRef.current = sessionId;
           }
           return currentFetch(url, ...args);
       };
-      
       window.fetch = newFetch;
-      
       return () => { window.fetch = currentFetch; };
   }, []);
-
-  const pollForCards = async () => {
-    if (!vapiSessionIdRef.current || pollingAttemptsRef.current >= 20) {
-      if (pollingAttemptsRef.current >= 20) {
-        console.error("Max polling attempts reached. Stopping.");
-      }
-      stopPolling();
-      return;
-    }
-
-    pollingAttemptsRef.current++;
-    console.log(`Polling for cards, attempt ${pollingAttemptsRef.current}`);
-
-    try {
-        const response = await fetch('/api/tarot', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                action: 'getCards',
-                vapiSessionId: vapiSessionIdRef.current,
-            }),
-        });
-        const data = await response.json();
-
-        if (data.cards && data.cards.length > 0) {
-            console.log('Cards received:', data.cards);
-            setCards(data.cards);
-            stopPolling();
-            document.getElementById('loading')?.classList.add('hidden');
-        }
-    } catch (error) {
-        console.error('Polling error:', error);
-    }
-  };
-
-  const startPollingForCards = () => {
-    stopPolling(); 
-    pollingAttemptsRef.current = 0;
-    setTimeout(() => {
-        pollForCards();
-        pollingIntervalRef.current = setInterval(pollForCards, 7000);
-    }, 15000); 
-  };
-
-  const stopPolling = () => {
-    if (pollingIntervalRef.current) {
-      clearInterval(pollingIntervalRef.current);
-      pollingIntervalRef.current = null;
-    }
-  };
-
-  const showErrorPopup = (message: string) => {
-    const p = document.getElementById('errorMessage');
-    const modal = document.getElementById('errorModal');
-    if (p && modal) {
-      p.textContent = message;
-      modal.style.display = 'block';
-    }
-  };
-
-  const addOverlay = () => {
-    const buttonElement = document.getElementById('vapi-support-btn');
-    if (buttonElement && !document.getElementById('buttonOverlay')) {
-      const overlay = document.createElement('div');
-      overlay.id = 'buttonOverlay';
-      overlay.addEventListener('click', (e) => {
-        e.stopPropagation();
-        showWarningPopup();
-      });
-      buttonElement.appendChild(overlay);
-    }
-  };
-
-  const showWarningPopup = () => {
-    const modal = document.getElementById('warningModal');
-    if (modal) modal.style.display = 'block';
-  };
 
   if (isLoading) {
     return <div className="min-h-screen flex items-center justify-center bg-black text-white">Loading Adept...</div>;
@@ -277,11 +249,12 @@ export default function TarotReaderPage() {
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
 
       <audio id="vapiAudio" className="hidden"></audio>
-
+      
+      {/* THE FIX: Re-added the warning modal for ending a session */}
       <div id="warningModal" className="modal">
         <div className="modal-content">
           <p>End the current reading and start a new one?</p>
-          <button onClick={() => location.reload()}>Start New Session</button>
+          <button onClick={() => location.reload()}>End Session</button>
           <button onClick={() => { const modal = document.getElementById('warningModal'); if (modal) modal.style.display = 'none'; }}>Keep Session</button>
         </div>
       </div>
@@ -296,7 +269,6 @@ export default function TarotReaderPage() {
 
       <div className="relative z-10">
         <div id="vapi-support-btn"></div>
-        
         <div className="tarot-container">
           <div id="tarotDisplay" className="tarot-display">
             {cards.map((card, index) => (
@@ -304,7 +276,6 @@ export default function TarotReaderPage() {
             ))}
           </div>
         </div>
-
         <div className="loading-container">
           <div id="loading" className="loading-spinner hidden">
             <span>Shuffling your cards...<br/>Deck: <em>Cats of the Crown</em></span>
@@ -320,28 +291,14 @@ function Card({ card }: { card: TarotCard }) {
   const [isEnlarged, setIsEnlarged] = useState(false);
   
   const handleClick = () => {
-    if (!isFlipped) {
-      setIsFlipped(true);
-    } else {
-      setIsEnlarged(!isEnlarged);
-    }
+    if (!isFlipped) setIsFlipped(true);
+    else setIsEnlarged(!isEnlarged);
   };
 
   return (
-    <div 
-        className={`card-container ${isEnlarged ? 'enlarged' : ''}`}
-        onClick={handleClick}
-    >
-      <img
-        src={card.url}
-        alt={card.name}
-        className={`card-image ${isFlipped ? '' : 'hidden'} ${isEnlarged ? 'enlarged' : ''}`}
-      />
-      <img
-        src="https://images.squarespace-cdn.com/content/63ff45f58b2ecb2de4ae9935/8afd5dd6-f795-41fc-a9ba-7a6b39921caf/9.jpg?content-type=image%2Fjpeg"
-        alt="Card back"
-        className={`card-cover ${isFlipped ? 'hidden' : ''}`}
-      />
+    <div className={`card-container ${isEnlarged ? 'enlarged' : ''}`} onClick={handleClick}>
+      <img src={card.url} alt={card.name} className={`card-image ${isFlipped ? '' : 'hidden'} ${isEnlarged ? 'enlarged' : ''}`} />
+      <img src="https://images.squarespace-cdn.com/content/63ff45f58b2ecb2de4ae9935/8afd5dd6-f795-41fc-a9ba-7a6b39921caf/9.jpg?content-type=image%2Fjpeg" alt="Card back" className={`card-cover ${isFlipped ? 'hidden' : ''}`} />
     </div>
   );
 }
