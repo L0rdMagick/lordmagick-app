@@ -1,5 +1,4 @@
 // src/app/oracle-room/tarot-reading/[reader]/page.tsx
-// NO CHANGES NEEDED IN THIS FILE
 
 "use client";
 
@@ -178,6 +177,7 @@ export default function TarotReaderPage() {
     script.defer = true;
     script.async = true;
     document.body.appendChild(script);
+
     script.onload = () => {
       if (!window.vapiSDK) { console.error("Vapi SDK failed to load."); return; }
       const vapiInstance = window.vapiSDK.run({
@@ -185,7 +185,9 @@ export default function TarotReaderPage() {
         assistant: config.assistantId,
         config: {
             ...config.buttonConfig,
-            width: "200px", height: "500px", type: "pill",
+            width: "300px", // Matched to CSS
+            height: "500px", // Matched to CSS
+            type: "pill",
             icon: "https://images.squarespace-cdn.com/content/662b53c5379e5a412f214a15/ddf5d813-9f00-409a-b052-290a1b985a8a/hand+icon+50px+height.png?content-type=image%2Fpng",
         },
         targetAudioElement: document.getElementById('vapiAudio')
@@ -196,7 +198,20 @@ export default function TarotReaderPage() {
       
       const buttonElement = document.getElementById("vapi-support-btn");
       if(buttonElement) {
-        buttonElement.style.setProperty('--vapi-background-image', `url('${config.buttonConfig.backgroundImageUrl}')`);
+        // THE FIX: Use a MutationObserver to wait for Vapi to create its internal elements
+        const observer = new MutationObserver((mutationsList, observer) => {
+            const innerButton = buttonElement.querySelector<HTMLElement>('div');
+            if (innerButton) {
+                // We found the inner div, now we can style it and stop observing
+                innerButton.style.backgroundImage = `url('${config.buttonConfig.backgroundImageUrl}')`;
+                innerButton.style.backgroundSize = 'cover';
+                innerButton.style.backgroundPosition = 'center';
+                innerButton.style.backgroundColor = 'transparent';
+                observer.disconnect(); // Stop observing once we've applied the style
+            }
+        });
+        observer.observe(buttonElement, { childList: true, subtree: true });
+
         buttonElement.addEventListener('click', handleBeginReading);
       }
     };

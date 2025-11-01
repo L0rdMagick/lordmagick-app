@@ -356,36 +356,32 @@
 
 /* === END AI TAROT READER STYLES === */
 
-/* === VAPI BUTTON IMAGE AND SHAPE OVERRIDE === */
+/* === VAPI BUTTON IMAGE AND SHAPE OVERRIDE (v2) === */
 
 #vapi-support-btn {
-  /* Use the CSS variable for the dynamic background image */
-  background-image: var(--vapi-background-image) !important;
-  background-size: cover !important;
-  background-position: center !important;
-  background-repeat: no-repeat !important;
-
-  /* Force the default solid color to be transparent */
-  background-color: transparent !important;
-
-  /* THE FIX: Set the desired rounded rectangle shape */
-  border-radius: 1rem !important; /* You can adjust this value (e.g., 0.5rem, 1.5rem) */
-
-  /* Hide any parts of child elements that might stick out */
-  overflow: hidden !important;
-
-  /* Remove any default border */
+  /* This outer container is now just a positioning wrapper. */
+  /* We remove its background and border styles. */
+  background: transparent !important;
   border: none !important;
+  
+  /* Ensure the rounded rectangle shape */
+  border-radius: 1rem !important;
+  overflow: hidden !important;
 }
 
-/* THE FIX: Target the internal div that Vapi creates and make it transparent */
+/* This targets the ACTUAL button div that Vapi creates inside our container */
 #vapi-support-btn > div {
-  background-color: transparent !important;
-  /* Ensure the internal container also matches the parent's shape */
+  /* We apply the desired shape to the inner button as well */
   border-radius: 1rem !important;
 }
 
-/* THE FIX: Target and hide the default Vapi icon (phone, spinner, etc.) */
+/* This targets and hides the default Vapi icon (phone, spinner, etc.) */
 #vapi-support-btn #vapi-icon {
     display: none !important;
+}
+
+/* This targets the text container and ensures it's centered */
+#vapi-title-container {
+    justify-content: center !important;
+    text-align: center;
 }
