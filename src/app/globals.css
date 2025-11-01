@@ -33,3 +33,325 @@
   font-size: inherit !important;
   color: inherit !important;
 }
+
+/* === BEGIN AI TAROT READER STYLES === */
+
+#vapiAudio {
+    display: none;
+}
+
+/* Parent container for the loading spinner */
+.loading-container .loading-spinner {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000000;
+    background-color: rgba(255, 255, 255, 0.9);
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.loading-container .loading-spinner:before {
+    content: '';
+    border: 8px solid #f3f3f3;
+    border-top: 8px solid #3498db;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite;
+    margin-right: 10px;
+}
+
+/* Text Styling */
+.loading-container .loading-spinner span {
+    font-family: Arial, sans-serif;
+    font-size: 18px;
+    color: #333;
+    font-weight: bold;
+}
+
+.loading-container .hidden {
+    display: none;
+}
+
+/* Container for tarot cards */
+.tarot-container {
+    display: flex;
+    flex-direction: column !important;
+    align-items: center !important;
+    margin-top: 0px !important;
+    margin-left: 0px !important;
+    width: 100% !important;
+    max-width: none !important;
+    z-index: 10000 !important;
+}
+
+.tarot-display {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 10px !important;
+    justify-content: center !important;
+    z-index: 100000 !important;
+    width: 800px !important;
+    max-width: none !important;
+    flex-grow: 1 !important;
+    flex-shrink: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+#vapi-support-btn {
+    position: fixed;
+    width: 300px;
+    height: 500px;
+    z-index: 100001 !important;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    animation: wobble 2s ease-in-out infinite;
+}
+
+#vapi-title {
+    background-color: rgba(0, 0, 0, 0.6);
+    text-align: center;
+    color: white;
+    padding: 5px;
+    border-radius: 10px;
+    margin-right: 5px;
+    margin-bottom: 0px;
+}
+
+#vapi-subtitle {
+    background-color: rgba(0, 0, 0, 0.6);
+    text-align: center;
+    color: white;
+    padding: 5px;
+    border-radius: 10px;
+    font-size: 18px !important;
+}
+
+#vapi-title-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    bottom: 8%;
+    width: 80%;
+    left: 6%;
+}
+
+#buttonOverlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: auto;
+    z-index: 1000001;
+    background-color: rgba(0, 0, 0, 0.0);
+}
+
+/* General Card Styles */
+.card-container {
+    position: relative !important;
+    z-index: 10001 !important;
+    cursor: pointer !important;
+    perspective: 1000px !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    box-sizing: border-box !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+.card-image, .card-cover {
+    backface-visibility: hidden !important;
+    transition: transform 0.6s ease, visibility 0.3s ease !important;
+    border-radius: 10px !important;
+}
+
+.card-cover {
+    opacity: 0;
+    animation: fadeIn 1.5s ease forwards;
+}
+
+@keyframes fadeIn {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
+}
+
+.hidden {
+    visibility: hidden !important;
+    transform: scale(0.1) !important;
+}
+
+.card-image {
+    transition: transform 0.5s ease !important;
+    position: absolute !important;
+}
+
+.card-image.enlarged {
+    z-index: 100001 !important;
+    visibility: visible !important;
+    position: absolute !important;
+}
+
+.card-container.enlarged {
+    z-index: 100001 !important;
+}
+
+/* Wobble animation keyframes */
+@keyframes wobble {
+    0%, 100% { transform: rotate(0deg); }
+    20% { transform: rotate(.7deg); }
+    40% { transform: rotate(-0.7deg); }
+    60% { transform: rotate(0.5deg); }
+    80% { transform: rotate(-0.3deg); }
+}
+
+#vapi-support-btn.vapi-btn-is-active {
+    pointer-events: none;
+    position: fixed !important;
+}
+
+/* Modal styles */
+.modal {
+    display: none; /* Hidden by default */
+    position: fixed;
+    bottom: 20px;
+    align-items: center;
+    justify-content: center;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2147483647;
+    background-color: rgba(255, 255, 255, 0.95);
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    width: 90%;
+    max-width: 500px;
+}
+
+.modal-content {
+    font-family: Arial, sans-serif;
+    font-size: 16px;
+    font-weight: bold;
+    color: #333;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.modal-content button {
+    font-family: Arial, sans-serif;
+    font-size: 18px;
+    font-weight: bold;
+    margin-top: 15px;
+    padding: 10px 20px;
+    cursor: pointer;
+    border: none;
+    background-color: #3498db;
+    color: white;
+    border-radius: 5px;
+    transition: background-color 0.2s;
+}
+
+.modal-content button:hover {
+    background-color: #2980b9;
+}
+
+
+/* Media Queries for Responsive Layout */
+/* Small screens */
+@media only screen and (max-width: 600px) {
+    #vapi-support-btn,
+    #vapi-support-btn.vapi-btn-is-active {
+        width: 350px !important;
+        height: 305px !important;
+        top: 8% !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        position: fixed !important;
+    }
+    .tarot-display {
+        margin-top: 350px !important;
+        gap: 10px !important;
+        width: 100% !important;
+    }
+    .card-container {
+        flex: 1 0 28% !important;
+        max-width: 30% !important;
+    }
+    .card-image.enlarged {
+        transform: scale(1.5) !important;
+    }
+    .card-image, .card-cover {
+        width: 100% !important;
+    }
+}
+
+/* Tablets */
+@media only screen and (min-width: 601px) and (max-width: 1023px) {
+    #vapi-support-btn,
+    #vapi-support-btn.vapi-btn-is-active {
+        width: 300px !important;
+        height: 400px !important;
+        left: 120px !important;
+        top: 50px !important;
+        position: fixed !important;
+    }
+    .tarot-display {
+        margin-top: -5px !important;
+        gap: 10px !important;
+        width: 500px !important;
+        margin-left: 320px !important;
+    }
+    .card-container {
+        flex: 1 0 20% !important;
+        max-width: 20% !important;
+    }
+    .card-image.enlarged {
+        transform: scale(1.9) !important;
+    }
+    .card-image, .card-cover {
+        width: 100px !important;
+    }
+}
+
+/* Large screens */
+@media only screen and (min-width: 1024px) {
+    #vapi-support-btn,
+    #vapi-support-btn.vapi-btn-is-active {
+        width: 300px !important;
+        height: 500px !important;
+        left: 150px !important;
+        top: 50px !important;
+        position: fixed !important;
+    }
+    .tarot-display {
+        margin-top: -10px !important;
+        gap: 10px !important;
+        width: 720px !important;
+        margin-left: 350px !important;
+    }
+    .card-container {
+        flex: 1 0 18% !important;
+        max-width: 18% !important;
+    }
+    .card-image.enlarged {
+        transform: scale(1.9) !important;
+    }
+    .card-image, .card-cover {
+        width: 100% !important;
+    }
+}
+
+
+/* === END AI TAROT READER STYLES === */
