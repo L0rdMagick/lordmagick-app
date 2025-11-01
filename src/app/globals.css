@@ -356,32 +356,48 @@
 
 /* === END AI TAROT READER STYLES === */
 
-/* === VAPI BUTTON IMAGE AND SHAPE OVERRIDE (v2) === */
+/* === VAPI BUTTON DEFINITIVE OVERRIDE === */
 
+/* This is our main positioning container. */
 #vapi-support-btn {
-  /* This outer container is now just a positioning wrapper. */
-  /* We remove its background and border styles. */
+  /* We remove all visual styles from the parent. It is now just a wrapper. */
   background: transparent !important;
   border: none !important;
+  overflow: visible !important; /* Allow children to have effects like glows */
+}
+
+/* This targets the ACTUAL interactive button that Vapi creates inside our container. */
+#vapi-support-btn > div {
+  /* Apply the background image to the correct element */
+  background-image: var(--vapi-background-image) !important;
+  background-size: cover !important;
+  background-position: center !important;
   
-  /* Ensure the rounded rectangle shape */
+  /* Force Vapi's default solid color to be transparent */
+  background-color: transparent !important;
+
+  /* Apply the rounded rectangle shape */
   border-radius: 1rem !important;
   overflow: hidden !important;
+  
+  /* Ensure it fills our container completely */
+  width: 100% !important;
+  height: 100% !important;
 }
 
-/* This targets the ACTUAL button div that Vapi creates inside our container */
-#vapi-support-btn > div {
-  /* We apply the desired shape to the inner button as well */
-  border-radius: 1rem !important;
-}
-
-/* This targets and hides the default Vapi icon (phone, spinner, etc.) */
+/* Hide the default Vapi icon (phone, spinner, etc.) */
 #vapi-support-btn #vapi-icon {
     display: none !important;
 }
 
-/* This targets the text container and ensures it's centered */
-#vapi-title-container {
-    justify-content: center !important;
-    text-align: center;
+/* This is the overlay for the "End Call" warning. */
+#buttonOverlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+    /* This high z-index ensures it is ON TOP of all Vapi elements */
+    z-index: 2147483640;
 }
