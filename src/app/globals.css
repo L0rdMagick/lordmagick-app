@@ -356,33 +356,32 @@
 
 /* === END AI TAROT READER STYLES === */
 
-/* === VAPI BUTTON DEFINITIVE OVERRIDE === */
+/* === VAPI BUTTON DEFINITIVE OVERRIDE (v3) === */
 
-/* This is our main positioning container. */
+/* This is OUR container div. It should now be INVISIBLE and used ONLY for positioning. */
 #vapi-support-btn {
-  /* We remove all visual styles from the parent. It is now just a wrapper. */
+  /* It keeps the positioning and size from the media queries. */
   background: transparent !important;
   border: none !important;
-  overflow: visible !important; /* Allow children to have effects like glows */
+  /* Crucially, we REMOVE the animation from the wrapper. */
+  animation: none !important;
 }
 
-/* This targets the ACTUAL interactive button that Vapi creates inside our container. */
+/* This targets the ACTUAL interactive button that Vapi creates INSIDE our container. */
 #vapi-support-btn > div {
-  /* Apply the background image to the correct element */
+  width: 100% !important;
+  height: 100% !important;
+
+  /* Apply ALL visual styles to this inner element. */
   background-image: var(--vapi-background-image) !important;
   background-size: cover !important;
   background-position: center !important;
-  
-  /* Force Vapi's default solid color to be transparent */
-  background-color: transparent !important;
-
-  /* Apply the rounded rectangle shape */
-  border-radius: 1rem !important;
+  background-color: transparent !important; /* Force Vapi's default color off */
+  border-radius: 1rem !important; /* Your desired rounded rectangle shape */
   overflow: hidden !important;
-  
-  /* Ensure it fills our container completely */
-  width: 100% !important;
-  height: 100% !important;
+
+  /* MOVE THE WOBBLE ANIMATION to the correct, visible element. */
+  animation: wobble 2s ease-in-out infinite;
 }
 
 /* Hide the default Vapi icon (phone, spinner, etc.) */
@@ -390,7 +389,7 @@
     display: none !important;
 }
 
-/* This is the overlay for the "End Call" warning. */
+/* This is the overlay for the "End Call" warning. It must have a high z-index. */
 #buttonOverlay {
     position: absolute;
     top: 0;
@@ -398,6 +397,5 @@
     width: 100%;
     height: 100%;
     cursor: pointer;
-    /* This high z-index ensures it is ON TOP of all Vapi elements */
-    z-index: 2147483640;
+    z-index: 2147483640; /* Ensures it's on top of Vapi's elements */
 }

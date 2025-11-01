@@ -76,14 +76,18 @@ export default function TarotReaderPage() {
   
   const addOverlay = () => {
     const buttonElement = document.getElementById('vapi-support-btn');
-    if (buttonElement && !document.getElementById('buttonOverlay')) {
+    // THE FIX: Find the REAL inner button that Vapi creates.
+    const innerButton = buttonElement?.querySelector<HTMLElement>('div');
+
+    if (innerButton && !document.getElementById('buttonOverlay')) {
       const overlay = document.createElement('div');
       overlay.id = 'buttonOverlay';
       overlay.addEventListener('click', (e) => {
         e.stopPropagation();
         showWarningPopup();
       });
-      buttonElement.appendChild(overlay);
+      // THE FIX: Append the overlay to the INNER button, not the outer wrapper!
+      innerButton.appendChild(overlay);
     }
   };
 
@@ -173,7 +177,6 @@ export default function TarotReaderPage() {
   useEffect(() => {
     if (typeof window === 'undefined' || !config) return;
 
-    // THE FIX: Set the CSS variable on the body or a parent element ONCE.
     document.documentElement.style.setProperty('--vapi-background-image', `url('${config.buttonConfig.backgroundImageUrl}')`);
 
     const script = document.createElement('script');
@@ -201,7 +204,6 @@ export default function TarotReaderPage() {
       
       const buttonElement = document.getElementById("vapi-support-btn");
       if(buttonElement) {
-        // Simplified: The CSS now handles all the styling. We just add the event listener.
         buttonElement.addEventListener('click', handleBeginReading);
       }
     };
