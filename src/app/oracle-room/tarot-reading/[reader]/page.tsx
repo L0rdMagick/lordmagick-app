@@ -6,7 +6,15 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 import type { User } from '@supabase/supabase-js';
-import Vapi from '@vapi-ai/web';
+
+// --- TYPE DECLARATIONS for the Vapi HTML Script SDK ---
+declare global {
+  interface Window {
+    vapiSDK: {
+      run: (config: any) => any;
+    };
+  }
+}
 
 // --- TYPE DEFINITIONS ---
 interface TarotCard { url: string; name: string; }
@@ -44,50 +52,21 @@ const readerConfigs: Record<string, ReaderConfig> = {
 
 export default function TarotReaderPage() {
   const params = useParams();
-  const router = useRouter();
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-
   const readerName = params.reader as keyof typeof readerConfigs;
   const config = readerConfigs[readerName];
 
-  // --- STATE AND REFS ---
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [callStatus, setCallStatus] = useState<'idle' | 'loading' | 'active'>('idle');
   const [cards, setCards] = useState<TarotCard[]>([]);
-  const vapiRef = useRef<Vapi | null>(null);
+  
   const vapiSessionIdRef = useRef<string | null>(null);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const pollingAttemptsRef = useRef(0);
 
-  // --- AUTH CHECK (Bypassed) ---
+  // --- AUTH CHECK (Bypassed for testing) ---
   useEffect(() => {
     setUser({ id: 'test-user-id' } as User);
     setIsLoading(false);
-  }, []);
-  
-  // THE FIX: Restore the reliable network interception logic to capture the session ID.
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const originalFetch = window.fetch;
-    window.fetch = async (input, init) => {
-        const urlString = typeof input === 'string' 
-          ? input 
-          : (input instanceof Request ? input.url : input.toString());
-          
-        if (urlString.includes('vapi.aiforpaper.com') && init?.method === 'POST') {
-            const sessionId = urlString.split('/').pop()?.split('?')[0];
-            if (sessionId) {
-                console.log('VAPI Session ID captured via fetch override:', sessionId);
-                vapiSessionIdRef.current = sessionId;
-            }
-        }
-        return originalFetch(input, init);
-    };
-    return () => { window.fetch = originalFetch; };
   }, []);
 
   // --- POLLING LOGIC ---
@@ -111,95 +90,110 @@ export default function TarotReaderPage() {
         if (data.cards && data.cards.length > 0) {
             setCards(data.cards);
             stopPolling();
-            document.getElementById('loading')?.classList.add('hidden');
+            const loadingEl = document.getElementById('loading');
+            if (loadingEl) loadingEl.classList.add('hidden');
         }
     } catch (error) { console.error('Polling error:', error); }
   }, [stopPolling]);
 
   const startPollingForCards = useCallback(() => {
     const sessionId = vapiSessionIdRef.current;
-    if (!sessionId) { console.error("Could not get session ID for polling."); return; }
+    if (!sessionId) { 
+        console.error("Could not get session ID for polling."); 
+        // Poll again for the ID in case of a race condition
+        setTimeout(startPollingForCards, 500);
+        return; 
+    }
     stopPolling(); 
     pollingAttemptsRef.current = 0;
-    document.getElementById('loading')?.classList.remove('hidden');
+    const loadingEl = document.getElementById('loading');
+    if (loadingEl) loadingEl.classList.remove('hidden');
+
     setTimeout(() => {
         pollForCards(sessionId);
         pollingIntervalRef.current = setInterval(() => pollForCards(sessionId), 7000);
     }, 15000);
   }, [pollForCards, stopPolling]);
 
-  // --- VAPI INITIALIZATION & EVENT HANDLING ---
+  // --- VAPI & NETWORK INTERCEPTION SETUP ---
   useEffect(() => {
-    if (!config) return;
-    const vapiInstance = new Vapi(process.env.NEXT_PUBLIC_VAPI_API_KEY!);
-    vapiRef.current = vapiInstance;
+    if (!config || !user) return;
 
-    // THE FIX: The call-start event handler correctly takes no arguments.
-    vapiInstance.on('call-start', () => { 
-      console.log('Call has started');
-      setCallStatus('active'); 
-      startPollingForCards(); 
-    });
-    vapiInstance.on('call-end', () => { 
-      console.log('Call has ended'); 
-      setCallStatus('idle'); 
-      stopPolling(); 
-      location.reload(); 
-    });
-    vapiInstance.on('error', (e) => { 
-      console.error('Vapi error:', e); 
-      setCallStatus('idle'); 
-      alert(`An error occurred: ${e?.message || 'Unknown error'}`); 
-    });
-
-    return () => { vapiInstance.stop(); };
-  }, [config, startPollingForCards, stopPolling]);
-
-  // --- UI HANDLERS ---
-  const showWarningPopup = () => {
-    const modal = document.getElementById('warningModal');
-    if (modal) modal.style.display = 'block';
-  };
-
-  // THE FIX: Restore the timeout logic to create the session after the fetch override has captured the ID.
-  const handleStartCall = async () => {
-    if (!user || callStatus !== 'idle' || !vapiRef.current) return;
-    setCallStatus('loading');
-    vapiRef.current.start(config.assistantId);
-
-    setTimeout(async () => {
-      const sessionId = vapiSessionIdRef.current;
-      if (!sessionId) {
-        alert('Could not initiate call. Please try again.');
-        setCallStatus('idle');
-        vapiRef.current?.stop();
-        return;
-      }
-      try {
-        const response = await fetch('/api/tarot', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
+    // 1. Intercept network requests to capture the session ID
+    const originalFetch = window.fetch;
+    window.fetch = async (input, init) => {
+      const urlString = typeof input === 'string' ? input : (input instanceof Request ? input.url : input.toString());
+      if (urlString.includes('vapi.aiforpaper.com')) {
+        const sessionId = urlString.split('/').pop()?.split('?')[0];
+        if (sessionId && sessionId.length > 10) { // Basic validation
+          console.log('VAPI Session ID captured:', sessionId);
+          vapiSessionIdRef.current = sessionId;
+          
+          // As soon as ID is captured, create the session record
+          try {
+            await fetch('/api/tarot', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
                 action: 'startSession',
                 userId: user.id,
                 vapiSessionId: sessionId,
                 readerName: readerName,
                 cardCount: 10,
-            }),
-        });
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Failed to start session.');
+              }),
+            });
+          } catch (err) {
+            console.error("Failed to start session on backend", err);
+          }
         }
-      } catch (err: any) {
-          alert(err.message);
-          vapiRef.current?.stop();
       }
-    }, 1500);
-  };
-  
-  const handleEndCall = () => {
-    showWarningPopup();
+      return originalFetch(input, init);
+    };
+
+    // 2. Dynamically inject the Vapi HTML script
+    const script = document.createElement('script');
+    script.src = "https://cdn.jsdelivr.net/gh/VapiAI/html-script-tag@latest/dist/assets/index.js";
+    script.async = true;
+    script.defer = true;
+    document.body.appendChild(script);
+
+    script.onload = () => {
+      if (window.vapiSDK) {
+        const vapiInstance = window.vapiSDK.run({
+          apiKey: process.env.NEXT_PUBLIC_VAPI_API_KEY!,
+          assistant: config.assistantId,
+          config: {
+            ...config.buttonConfig,
+            position: "manual" // We will manually place it
+          },
+        });
+
+        vapiInstance.on('call-start', () => {
+          console.log('Call has started');
+          startPollingForCards();
+          const btn = document.getElementById('vapi-support-btn');
+          if (btn) btn.onclick = showWarningPopup;
+        });
+
+        vapiInstance.on('call-end', () => {
+          console.log('Call has ended');
+          stopPolling();
+          location.reload();
+        });
+      }
+    };
+
+    return () => {
+      window.fetch = originalFetch; // Cleanup fetch override
+      const vapiButton = document.getElementById('vapi-support-btn');
+      if (vapiButton) vapiButton.remove();
+      document.body.removeChild(script);
+    };
+  }, [config, user, readerName, startPollingForCards, stopPolling]);
+
+  const showWarningPopup = () => {
+    const modal = document.getElementById('warningModal');
+    if (modal) modal.style.display = 'block';
   };
   
   if (isLoading || !config) {
@@ -219,20 +213,15 @@ export default function TarotReaderPage() {
       <div id="warningModal" className="modal">
         <div className="modal-content">
           <p>End the current reading?</p>
-          <button onClick={() => vapiRef.current?.stop()}>End Session</button>
+          <button onClick={() => location.reload()}>End Session</button>
           <button onClick={() => { const modal = document.getElementById('warningModal'); if (modal) modal.style.display = 'none'; }}>Keep Session</button>
         </div>
       </div>
       
+      {/* Vapi will inject its button here, but we style the container */}
+      <div id="vapi-support-btn" />
+
       <div className="relative z-10">
-        <div id="vapi-support-btn" onClick={callStatus === 'active' ? handleEndCall : handleStartCall}>
-          <div style={{ backgroundImage: `url('${config.buttonConfig.backgroundImageUrl}')` }}>
-            <div id="vapi-title-container">
-                <div id="vapi-title">{config.buttonConfig[callStatus].title}</div>
-                <div id="vapi-subtitle">{config.buttonConfig[callStatus].subtitle}</div>
-            </div>
-          </div>
-        </div>
         <div className="tarot-container">
             <div id="tarotDisplay" className="tarot-display">
                 {cards.map((card, index) => (<Card key={index} card={card} />))}
