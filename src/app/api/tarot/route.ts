@@ -22,8 +22,9 @@ export async function POST(request: Request) {
     // This is the Vapi Tool Call path, based on their documentation
     if (body?.message?.type === 'tool-calls') {
       const toolCall = body.message.toolCallList?.[0];
+      const callId = body.message.call?.id; 
 
-      if (!toolCall) {
+      if (!toolCall || !callId) {
         return NextResponse.json({ error: 'Invalid tool call payload' }, { status: 400 });
       }
 
@@ -32,18 +33,17 @@ export async function POST(request: Request) {
       const parameters = toolCall.arguments || {};
 
       let result: any;
-
       if (functionName === 'getTarotReadingCards') {
         const numCards = parameters.cardCount || 10;
         const shuffledCards = shuffleArray([...tarotCards]);
         const selectedCards = shuffledCards.slice(0, numCards);
-        const cardNames = selectedCards.map(url => tarotCardMapping[url] || 'Unknown Card');
+        result = selectedCards.map(url => tarotCardMapping[url] || 'Unknown Card');
         
-        // Respond to Vapi with the card names
-        result = cardNames;
-
-        // In the future, we will save the selected card URLs to the database here
-        // so the front-end can retrieve them. For now, we are focusing on the AI part.
+        // Save the selected card URLs to the database session
+        await supabaseAdmin
+          .from('tarot_sessions')
+          .update({ selected_cards: selectedCards })
+          .eq('vapi_session_id', callId);
 
       } else {
         return NextResponse.json({ error: `Unknown tool function: ${functionName}` }, { status: 400 });
@@ -58,10 +58,6 @@ export async function POST(request: Request) {
     // This is the path for our front-end client actions
     const { action, userId, vapiSessionId, readerName, cardCount } = body;
     if (action === 'startSession') {
-        // THE FIX: Temporarily bypassing the credit check.
-        // We will just log the request and return success.
-        console.log(`Bypassing credit check and starting session for user ${userId}`);
-        
         // We must still create a session record so we can store the cards later.
         const { error } = await supabaseAdmin
             .from('tarot_sessions')
@@ -74,11 +70,10 @@ export async function POST(request: Request) {
 
         if (error) throw error;
         
-        return NextResponse.json({ success: true, message: 'Session started (credits bypassed for testing).' });
+        return NextResponse.json({ success: true, message: 'Session started.' });
     }
 
     if (action === 'getCards') {
-        // This action is now CRITICAL for the front-end to get the card images.
         if (!vapiSessionId) {
             return new NextResponse(JSON.stringify({ error: 'vapiSessionId is required' }), { status: 400 });
         }
@@ -89,7 +84,6 @@ export async function POST(request: Request) {
             .single();
 
         if (error || !data || !data.selected_cards) {
-            // It's normal for this to be empty until the tool call completes.
             return new NextResponse(JSON.stringify({ cards: [] }));
         }
         
