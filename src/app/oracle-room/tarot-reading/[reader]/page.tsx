@@ -8,7 +8,7 @@ import { createBrowserClient } from '@supabase/ssr';
 import type { User } from '@supabase/supabase-js';
 import Vapi from '@vapi-ai/web';
 
-// Define structures for better type safety
+// --- TYPE DEFINITIONS ---
 interface TarotCard { url: string; name: string; }
 type CallStateConfig = { title: string; subtitle: string; };
 interface ReaderConfig {
@@ -37,7 +37,7 @@ const readerConfigs: Record<string, ReaderConfig> = {
       idle: { title: "Begin Your Tarot Reading", subtitle: "Speak with Natalia" },
       loading: { title: "Connecting to Spirit", subtitle: "Wait my lovely" },
       active: { title: "Reading is in Progress..", subtitle: "End the Reading" },
-      backgroundImageUrl: "https://images.squarespace-cdn.com/content/63ff45f58b2ecb2de4ae9935/56fb45f58b2ecb2de4ae9935/56fb4457-d689-43cc-95f8-08c15cc34c4b/Sage+the+Tarot+Reader.jpg?content-type=image%2Fjpeg"
+      backgroundImageUrl: "https://images.squarespace-cdn.com/content/63ff45f58b2ecb2de4ae9935/56fb4457-d689-43cc-95f8-08c15cc34c4b/Sage+the+Tarot+Reader.jpg?content-type=image%2Fjpeg"
     }
   }
 };
@@ -53,17 +53,18 @@ export default function TarotReaderPage() {
   const readerName = params.reader as keyof typeof readerConfigs;
   const config = readerConfigs[readerName];
 
+  // --- STATE AND REFS ---
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [callStatus, setCallStatus] = useState<'idle' | 'loading' | 'active'>('idle');
   const [cards, setCards] = useState<TarotCard[]>([]);
-  
   const vapiRef = useRef<Vapi | null>(null);
-  // THE FIX: Restore the ref to hold the session ID captured from the network.
+  // THE FIX: This ref will be populated by our network interception logic.
   const vapiSessionIdRef = useRef<string | null>(null);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const pollingAttemptsRef = useRef(0);
 
+  // --- AUTH CHECK ---
   useEffect(() => {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -73,7 +74,7 @@ export default function TarotReaderPage() {
     checkUser();
   }, [router, supabase.auth]);
   
-  // THE FIX: Restore your original, working network interception logic.
+  // THE FIX: Restore your brilliant, working network interception logic.
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const originalFetch = window.fetch;
@@ -86,48 +87,10 @@ export default function TarotReaderPage() {
         }
         return originalFetch(url, ...args);
     };
-    return () => { window.fetch = originalFetch; }; // Cleanup
+    return () => { window.fetch = originalFetch; }; // Cleanup on component unmount
   }, []);
 
-  useEffect(() => {
-    if (!config) return;
-    const vapiInstance = new Vapi(process.env.NEXT_PUBLIC_VAPI_API_KEY!);
-    vapiRef.current = vapiInstance;
-
-    vapiInstance.on('call-start', () => { 
-      console.log('Call has started');
-      setCallStatus('active'); 
-      startPollingForCards(); 
-    });
-    vapiInstance.on('call-end', () => { 
-      console.log('Call has ended'); 
-      setCallStatus('idle'); 
-      stopPolling(); 
-      location.reload(); 
-    });
-    vapiInstance.on('error', (e) => { 
-      console.error('Vapi error:', e); 
-      setCallStatus('idle'); 
-      showErrorPopup(e?.message || 'An unknown error occurred.'); 
-    });
-
-    return () => { vapiInstance.stop(); };
-  }, [config]);
-
-  const showWarningPopup = () => {
-    const modal = document.getElementById('warningModal');
-    if (modal) modal.style.display = 'block';
-  };
-  
-  const showErrorPopup = (message: string) => {
-    const p = document.getElementById('errorMessage');
-    const modal = document.getElementById('errorModal');
-    if (p && modal) {
-      p.textContent = message;
-      modal.style.display = 'block';
-    }
-  };
-  
+  // --- POLLING LOGIC ---
   const stopPolling = useCallback(() => {
     if (pollingIntervalRef.current) {
       clearInterval(pollingIntervalRef.current);
@@ -148,6 +111,7 @@ export default function TarotReaderPage() {
         if (data.cards && data.cards.length > 0) {
             setCards(data.cards);
             stopPolling();
+            document.getElementById('loading')?.classList.add('hidden');
         }
     } catch (error) { console.error('Polling error:', error); }
   }, [stopPolling]);
@@ -157,24 +121,70 @@ export default function TarotReaderPage() {
     if (!sessionId) { console.error("Could not get session ID for polling."); return; }
     stopPolling(); 
     pollingAttemptsRef.current = 0;
+    document.getElementById('loading')?.classList.remove('hidden');
     setTimeout(() => {
         pollForCards(sessionId);
         pollingIntervalRef.current = setInterval(() => pollForCards(sessionId), 7000);
-    }, 15000); 
+    }, 15000);
   }, [pollForCards, stopPolling]);
+
+  // --- VAPI INITIALIZATION & EVENT HANDLING ---
+  useEffect(() => {
+    if (!config) return;
+    const vapiInstance = new Vapi(process.env.NEXT_PUBLIC_VAPI_API_KEY!);
+    vapiRef.current = vapiInstance;
+
+    // THE FIX: The call-start event handler correctly takes no arguments.
+    vapiInstance.on('call-start', () => { 
+      console.log('Call has started');
+      setCallStatus('active'); 
+      startPollingForCards(); 
+    });
+    vapiInstance.on('call-end', () => { 
+      console.log('Call has ended'); 
+      setCallStatus('idle'); 
+      stopPolling(); 
+      location.reload(); 
+    });
+    vapiInstance.on('error', (e) => { 
+      console.error('Vapi error:', e); 
+      setCallStatus('idle'); 
+      showErrorPopup(e?.message || 'An unknown error occurred.'); 
+    });
+
+    return () => { vapiInstance.stop(); };
+  }, [config, startPollingForCards, stopPolling]);
+
+  // --- UI HANDLERS ---
+  const showWarningPopup = () => {
+    const modal = document.getElementById('warningModal');
+    if (modal) modal.style.display = 'block';
+  };
+  
+  const showErrorPopup = (message: string) => {
+    const p = document.getElementById('errorMessage');
+    const modal = document.getElementById('errorModal');
+    if (p && modal) {
+      p.textContent = message;
+      modal.style.display = 'block';
+    }
+  };
 
   const handleStartCall = async () => {
     if (!user || callStatus !== 'idle' || !vapiRef.current) return;
     setCallStatus('loading');
     
+    // Start the Vapi call. Our fetch override will capture the session ID automatically.
     vapiRef.current.start(config.assistantId);
 
-    // This timeout waits for the network interception to capture the session ID.
+    // After a delay, we assume the fetch override has captured the ID,
+    // and we create our session record in the backend.
     setTimeout(async () => {
       const sessionId = vapiSessionIdRef.current;
       if (!sessionId) {
         showErrorPopup('Could not initiate call. Please try again.');
         setCallStatus('idle');
+        vapiRef.current?.stop();
         return;
       }
       try {
@@ -197,13 +207,13 @@ export default function TarotReaderPage() {
           showErrorPopup(err.message);
           vapiRef.current?.stop();
       }
-    }, 1500); // Wait 1.5s for the fetch to be intercepted
+    }, 1500);
   };
-
+  
   const handleEndCall = () => {
     showWarningPopup();
   };
-
+  
   if (isLoading || !user) {
     return (
       <div className="relative min-h-screen w-full bg-black bg-cover bg-center flex items-center justify-center" style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}>
@@ -213,8 +223,6 @@ export default function TarotReaderPage() {
     );
   }
 
-  if (!config) { return null; }
-  
   return (
     <main className="relative min-h-screen w-full bg-black bg-cover bg-center" style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}>
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
@@ -225,7 +233,7 @@ export default function TarotReaderPage() {
       <div className="relative z-10">
         <div id="vapi-support-btn" onClick={callStatus === 'active' ? handleEndCall : handleStartCall}>
           <div style={{ backgroundImage: `url('${config.buttonConfig.backgroundImageUrl}')` }}>
-            <div id="vpi-title-container">
+            <div id="vapi-title-container">
               <div>
                 <div id="vapi-title">{config.buttonConfig[callStatus].title}</div>
                 <div id="vapi-subtitle">{config.buttonConfig[callStatus].subtitle}</div>
