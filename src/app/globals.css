@@ -12,10 +12,6 @@
   100% { background-position: 200% 50%; opacity: 0; }
 }
 
-/* 
-  REMOVED: The old @keyframes play-sparkle is no longer needed.
-*/
-
 /* Helper class for the soft top edge */
 .mist-overlay {
   mask-image: linear-gradient(to top, black 60%, transparent 100%);
@@ -105,17 +101,6 @@
     margin: 0 !important;
 }
 
-#vapi-support-btn {
-    position: fixed;
-    width: 300px;
-    height: 500px;
-    z-index: 100001 !important;
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    animation: wobble 2s ease-in-out infinite;
-}
-
 #vapi-title {
     background-color: rgba(0, 0, 0, 0.6);
     text-align: center;
@@ -143,17 +128,6 @@
     bottom: 8%;
     width: 80%;
     left: 6%;
-}
-
-#buttonOverlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: auto;
-    z-index: 1000001;
-    background-color: rgba(0, 0, 0, 0.0);
 }
 
 /* General Card Styles */
@@ -271,8 +245,7 @@
 /* Media Queries for Responsive Layout */
 /* Small screens */
 @media only screen and (max-width: 600px) {
-    #vapi-support-btn,
-    #vapi-support-btn.vapi-btn-is-active {
+    #vapi-support-btn {
         width: 350px !important;
         height: 305px !important;
         top: 8% !important;
@@ -299,8 +272,7 @@
 
 /* Tablets */
 @media only screen and (min-width: 601px) and (max-width: 1023px) {
-    #vapi-support-btn,
-    #vapi-support-btn.vapi-btn-is-active {
+    #vapi-support-btn {
         width: 300px !important;
         height: 400px !important;
         left: 120px !important;
@@ -327,8 +299,7 @@
 
 /* Large screens */
 @media only screen and (min-width: 1024px) {
-    #vapi-support-btn,
-    #vapi-support-btn.vapi-btn-is-active {
+    #vapi-support-btn {
         width: 300px !important;
         height: 500px !important;
         left: 150px !important;
@@ -353,17 +324,13 @@
     }
 }
 
+/* === VAPI BUTTON DEFINITIVE OVERRIDE (v4 FINAL) === */
 
-/* === END AI TAROT READER STYLES === */
-
-/* === VAPI BUTTON DEFINITIVE OVERRIDE (v3) === */
-
-/* This is OUR container div. It should now be INVISIBLE and used ONLY for positioning. */
+/* This is OUR container div. It should be INVISIBLE and used ONLY for positioning. */
 #vapi-support-btn {
-  /* It keeps the positioning and size from the media queries. */
   background: transparent !important;
   border: none !important;
-  /* Crucially, we REMOVE the animation from the wrapper. */
+  /* Remove the wobble from the invisible wrapper to stop the "ghosting" effect. */
   animation: none !important;
 }
 
@@ -376,12 +343,13 @@
   background-image: var(--vapi-background-image) !important;
   background-size: cover !important;
   background-position: center !important;
-  background-color: transparent !important; /* Force Vapi's default color off */
+  background-color: transparent !important;
   border-radius: 1rem !important; /* Your desired rounded rectangle shape */
   overflow: hidden !important;
+  border: none !important; /* Remove any default Vapi borders */
 
   /* MOVE THE WOBBLE ANIMATION to the correct, visible element. */
-  animation: wobble 2s ease-in-out infinite;
+  animation: wobble 3s infinite ease-in-out;
 }
 
 /* Hide the default Vapi icon (phone, spinner, etc.) */
@@ -389,13 +357,5 @@
     display: none !important;
 }
 
-/* This is the overlay for the "End Call" warning. It must have a high z-index. */
-#buttonOverlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    cursor: pointer;
-    z-index: 2147483640; /* Ensures it's on top of Vapi's elements */
-}
+
+/* === END AI TAROT READER STYLES === */

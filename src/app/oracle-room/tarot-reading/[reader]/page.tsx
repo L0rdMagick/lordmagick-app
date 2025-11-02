@@ -74,30 +74,6 @@ export default function TarotReaderPage() {
     if (modal) modal.style.display = 'block';
   };
   
-  const addOverlay = () => {
-    const buttonElement = document.getElementById('vapi-support-btn');
-    // THE FIX: Find the REAL inner button that Vapi creates.
-    const innerButton = buttonElement?.querySelector<HTMLElement>('div');
-
-    if (innerButton && !document.getElementById('buttonOverlay')) {
-      const overlay = document.createElement('div');
-      overlay.id = 'buttonOverlay';
-      overlay.addEventListener('click', (e) => {
-        e.stopPropagation();
-        showWarningPopup();
-      });
-      // THE FIX: Append the overlay to the INNER button, not the outer wrapper!
-      innerButton.appendChild(overlay);
-    }
-  };
-
-  const removeOverlay = () => {
-    const overlay = document.getElementById('buttonOverlay');
-    if (overlay) {
-      overlay.parentNode?.removeChild(overlay);
-    }
-  };
-
   const showErrorPopup = (message: string) => {
     const p = document.getElementById('errorMessage');
     const modal = document.getElementById('errorModal');
@@ -185,22 +161,40 @@ export default function TarotReaderPage() {
     script.async = true;
     document.body.appendChild(script);
 
+    // THE FIX: Define the click hijacking function
+    const handleActiveButtonClick = (event: MouseEvent) => {
+        event.preventDefault();
+        event.stopPropagation();
+        showWarningPopup();
+    };
+
     script.onload = () => {
       if (!window.vapiSDK) { console.error("Vapi SDK failed to load."); return; }
       const vapiInstance = window.vapiSDK.run({
         apiKey: process.env.NEXT_PUBLIC_VAPI_API_KEY!,
         assistant: config.assistantId,
-        config: {
-            ...config.buttonConfig,
-            width: "300px",
-            height: "500px",
-            type: "pill",
-        },
+        config: { ...config.buttonConfig, width: "300px", height: "500px", type: "pill" },
         targetAudioElement: document.getElementById('vapiAudio')
       });
       vapiInstanceRef.current = vapiInstance;
-      vapiInstance.on('call-start', () => { addOverlay(); startPollingForCards(); });
-      vapiInstance.on('call-end', () => { removeOverlay(); stopPolling(); location.reload(); });
+
+      vapiInstance.on('call-start', () => {
+        startPollingForCards();
+        // THE FIX: When the call starts, find the inner button and add our hijacking listener
+        const innerButton = document.querySelector<HTMLElement>('#vapi-support-btn > div');
+        if (innerButton) {
+            innerButton.addEventListener('click', handleActiveButtonClick, true); // Use capture phase
+        }
+      });
+      vapiInstance.on('call-end', () => {
+        stopPolling();
+        // THE FIX: When the call ends, clean up the listener to prevent memory leaks
+        const innerButton = document.querySelector<HTMLElement>('#vapi-support-btn > div');
+        if (innerButton) {
+            innerButton.removeEventListener('click', handleActiveButtonClick, true);
+        }
+        location.reload();
+      });
       
       const buttonElement = document.getElementById("vapi-support-btn");
       if(buttonElement) {
@@ -211,6 +205,11 @@ export default function TarotReaderPage() {
     return () => {
         const buttonElement = document.getElementById("vapi-support-btn");
         if (buttonElement) buttonElement.removeEventListener('click', handleBeginReading);
+        // Cleanup for the active button listener as well
+        const innerButton = document.querySelector<HTMLElement>('#vapi-support-btn > div');
+        if (innerButton) {
+            innerButton.removeEventListener('click', handleActiveButtonClick, true);
+        }
         if (script.parentNode) document.body.removeChild(script);
         vapiInstanceRef.current?.stop();
     };
