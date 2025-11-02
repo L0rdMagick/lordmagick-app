@@ -324,35 +324,31 @@
     }
 }
 
-/* === VAPI BUTTON DEFINITIVE OVERRIDE (v4 FINAL) === */
+/* === VAPI BUTTON DEFINITIVE OVERRIDE (v5 FINAL) === */
 
-/* This is OUR container div. It should be INVISIBLE and used ONLY for positioning. */
+/* This is OUR container div for positioning. */
 #vapi-support-btn {
-  background: transparent !important;
-  border: none !important;
-  /* Remove the wobble from the invisible wrapper to stop the "ghosting" effect. */
-  animation: none !important;
+  animation: none !important; /* No wobble on the invisible wrapper */
 }
 
-/* This targets the ACTUAL interactive button that Vapi creates INSIDE our container. */
+/* This targets the ACTUAL button that Vapi creates. */
 #vapi-support-btn > div {
-  width: 100% !important;
-  height: 100% !important;
-
-  /* Apply ALL visual styles to this inner element. */
   background-image: var(--vapi-background-image) !important;
   background-size: cover !important;
   background-position: center !important;
   background-color: transparent !important;
-  border-radius: 1rem !important; /* Your desired rounded rectangle shape */
+  border-radius: 1rem !important;
   overflow: hidden !important;
-  border: none !important; /* Remove any default Vapi borders */
-
-  /* MOVE THE WOBBLE ANIMATION to the correct, visible element. */
+  border: none !important;
   animation: wobble 3s infinite ease-in-out;
 }
 
-/* Hide the default Vapi icon (phone, spinner, etc.) */
+/* Hide the default icon */
 #vapi-support-btn #vapi-icon {
+    display: none !important;
+}
+
+/* Hide the default title/subtitle text elements */
+#vapi-title-container {
     display: none !important;
 }
