@@ -2,9 +2,11 @@
 
 declare global {
   interface Window {
-    // THE FIX: The type is now specific and centralized here.
+    // THE FIX: The full, correct type for the Vapi SDK is now centralized here.
     vapiSDK: {
       run: (config: any) => any;
+      stop: () => void;
+      on: (event: string, callback: (...args: any[]) => void) => void;
     };
   }
 }

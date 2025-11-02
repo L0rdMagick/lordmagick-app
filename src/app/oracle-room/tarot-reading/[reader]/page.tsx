@@ -3,20 +3,11 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { createBrowserClient } from '@supabase/ssr';
+import { useParams } from 'next/navigation';
 import type { User } from '@supabase/supabase-js';
 
-// --- TYPE DECLARATIONS for the Vapi HTML Script SDK ---
-declare global {
-  interface Window {
-    vapiSDK: {
-      run: (config: any) => any;
-      stop: () => void; // Add stop for explicit control
-      on: (event: string, callback: (...args: any[]) => void) => void; // Add on for events
-    };
-  }
-}
+// THE FIX: The duplicate and conflicting 'declare global' block has been removed.
+// The component now relies on the centralized type definition in `vapi.d.ts`.
 
 // --- TYPE DEFINITIONS ---
 interface TarotCard { url: string; name: string; }
@@ -65,13 +56,11 @@ export default function TarotReaderPage() {
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const pollingAttemptsRef = useRef(0);
 
-  // --- AUTH CHECK (Bypassed for testing) ---
   useEffect(() => {
     setUser({ id: 'test-user-id' } as User);
     setIsLoading(false);
   }, []);
 
-  // --- POLLING LOGIC ---
   const stopPolling = useCallback(() => {
     if (pollingIntervalRef.current) {
       clearInterval(pollingIntervalRef.current);
@@ -83,7 +72,6 @@ export default function TarotReaderPage() {
     if (pollingAttemptsRef.current >= 20) { stopPolling(); return; }
     pollingAttemptsRef.current++;
     try {
-        // THE FIX: Point to the dedicated session handler endpoint
         const response = await fetch('/api/tarot/session', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -103,7 +91,7 @@ export default function TarotReaderPage() {
     const sessionId = vapiSessionIdRef.current;
     if (!sessionId) { 
         console.error("Could not get session ID for polling. Retrying..."); 
-        setTimeout(startPollingForCards, 500); // Retry quickly until ID is captured
+        setTimeout(startPollingForCards, 500);
         return; 
     }
     stopPolling(); 
@@ -117,25 +105,19 @@ export default function TarotReaderPage() {
     }, 15000);
   }, [pollForCards, stopPolling]);
 
-  // --- VAPI & NETWORK INTERCEPTION SETUP ---
   useEffect(() => {
     if (!config || !user) return;
 
     const originalFetch = window.fetch;
-    // Set up interception to capture session ID and create DB record immediately
     window.fetch = async (input, init) => {
       const urlString = typeof input === 'string' ? input : (input instanceof Request ? input.url : input.toString());
-      
-      // Check for the specific URL pattern Vapi uses to start a call/session
       if (urlString.includes('vapi.aiforpaper.com')) {
         const sessionId = urlString.split('/').pop()?.split('?')[0];
         if (sessionId && sessionId.length > 10) {
           console.log('VAPI Session ID captured:', sessionId);
           vapiSessionIdRef.current = sessionId;
           
-          // As soon as ID is captured, attempt to create the session record
           try {
-            // THE FIX: Point to the dedicated session handler endpoint
             await fetch('/api/tarot/session', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -155,7 +137,6 @@ export default function TarotReaderPage() {
       return originalFetch(input, init);
     };
 
-    // Dynamically inject the Vapi HTML script
     const script = document.createElement('script');
     script.src = "https://cdn.jsdelivr.net/gh/VapiAI/html-script-tag@latest/dist/assets/index.js";
     script.async = true;
@@ -189,7 +170,7 @@ export default function TarotReaderPage() {
     };
 
     return () => {
-      window.fetch = originalFetch; // Cleanup fetch override
+      window.fetch = originalFetch;
       const vapiButton = document.getElementById('vapi-support-btn');
       if (vapiButton) vapiButton.remove();
       document.body.removeChild(script);
@@ -261,7 +242,7 @@ function Card({ card }: { card: TarotCard }) {
         onClick={handleClick}
       >
         <img src={card.url} alt={card.name} className={`card-image ${isEnlarged ? 'enlarged' : ''}`} />
-        <img src="https://images.squarespace-cdn.com/content/63ff45f58b2ecb2de4ae9935/8afd5dd6-f795-41fc-a9ba-7a6b39921caf/9.jpg?content-type=image%2Fjpeg" alt="Card back" className="card-cover" />
+        <img src="https://images.squarespace-cdn.com/content/v1/63ff45f58b2ecb2de4ae9935/8afd5dd6-f795-41fc-a9ba-7a6b39921caf/9.jpg?content-type=image%2Fjpeg" alt="Card back" className="card-cover" />
       </div>
       {isEnlarged && (
         <div 
