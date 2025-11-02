@@ -7,8 +7,16 @@ import { useParams, useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 import type { User } from '@supabase/supabase-js';
 
-// THE FIX: The conflicting global declaration has been removed from this file.
-// The correct type is now provided by `vapi.d.ts`.
+// --- TYPE DECLARATIONS for the Vapi HTML Script SDK ---
+declare global {
+  interface Window {
+    vapiSDK: {
+      run: (config: any) => any;
+      stop: () => void; // Add stop for explicit control
+      on: (event: string, callback: (...args: any[]) => void) => void; // Add on for events
+    };
+  }
+}
 
 // --- TYPE DEFINITIONS ---
 interface TarotCard { url: string; name: string; }
@@ -75,7 +83,8 @@ export default function TarotReaderPage() {
     if (pollingAttemptsRef.current >= 20) { stopPolling(); return; }
     pollingAttemptsRef.current++;
     try {
-        const response = await fetch('/api/tarot', {
+        // THE FIX: Point to the dedicated session handler endpoint
+        const response = await fetch('/api/tarot/session', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ action: 'getCards', vapiSessionId: sessionId }),
@@ -93,8 +102,8 @@ export default function TarotReaderPage() {
   const startPollingForCards = useCallback(() => {
     const sessionId = vapiSessionIdRef.current;
     if (!sessionId) { 
-        console.error("Could not get session ID for polling."); 
-        setTimeout(startPollingForCards, 500);
+        console.error("Could not get session ID for polling. Retrying..."); 
+        setTimeout(startPollingForCards, 500); // Retry quickly until ID is captured
         return; 
     }
     stopPolling(); 
@@ -113,16 +122,21 @@ export default function TarotReaderPage() {
     if (!config || !user) return;
 
     const originalFetch = window.fetch;
+    // Set up interception to capture session ID and create DB record immediately
     window.fetch = async (input, init) => {
       const urlString = typeof input === 'string' ? input : (input instanceof Request ? input.url : input.toString());
+      
+      // Check for the specific URL pattern Vapi uses to start a call/session
       if (urlString.includes('vapi.aiforpaper.com')) {
         const sessionId = urlString.split('/').pop()?.split('?')[0];
         if (sessionId && sessionId.length > 10) {
           console.log('VAPI Session ID captured:', sessionId);
           vapiSessionIdRef.current = sessionId;
           
+          // As soon as ID is captured, attempt to create the session record
           try {
-            await fetch('/api/tarot', {
+            // THE FIX: Point to the dedicated session handler endpoint
+            await fetch('/api/tarot/session', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -141,6 +155,7 @@ export default function TarotReaderPage() {
       return originalFetch(input, init);
     };
 
+    // Dynamically inject the Vapi HTML script
     const script = document.createElement('script');
     script.src = "https://cdn.jsdelivr.net/gh/VapiAI/html-script-tag@latest/dist/assets/index.js";
     script.async = true;
@@ -174,7 +189,7 @@ export default function TarotReaderPage() {
     };
 
     return () => {
-      window.fetch = originalFetch;
+      window.fetch = originalFetch; // Cleanup fetch override
       const vapiButton = document.getElementById('vapi-support-btn');
       if (vapiButton) vapiButton.remove();
       document.body.removeChild(script);
@@ -203,7 +218,7 @@ export default function TarotReaderPage() {
       <div id="warningModal" className="modal">
         <div className="modal-content">
           <p>End the current reading?</p>
-          <button onClick={() => location.reload()}>End Session</button>
+          <button onClick={() => window.vapiSDK?.stop()}>End Session</button>
           <button onClick={() => { const modal = document.getElementById('warningModal'); if (modal) modal.style.display = 'none'; }}>Keep Session</button>
         </div>
       </div>
