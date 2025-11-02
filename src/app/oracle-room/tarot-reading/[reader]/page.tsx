@@ -46,7 +46,7 @@ export default function TarotReaderPage() {
     document.documentElement.style.setProperty('--vapi-background-image', `url('${config.backgroundImageUrl}')`);
 
     const scriptId = 'vapi-script';
-    if (document.getElementById(scriptId)) return; // Prevent multiple script injections
+    if (document.getElementById(scriptId)) return;
 
     const script = document.createElement('script');
     script.id = scriptId;
@@ -60,11 +60,9 @@ export default function TarotReaderPage() {
         const vapiInstance = window.vapiSDK.run({
           apiKey: process.env.NEXT_PUBLIC_VAPI_API_KEY!,
           assistant: config.assistantId,
-          // We pass an empty config because our global CSS handles all the styling.
           config: {}, 
         });
 
-        // THE FIX: Re-implement the "End Call" warning logic
         vapiInstance.on('call-start', () => {
             const buttonElement = document.getElementById('vapi-support-btn');
             const innerButton = buttonElement?.querySelector<HTMLElement>('div');
@@ -95,11 +93,7 @@ export default function TarotReaderPage() {
   return (
     <main className="relative min-h-screen w-full bg-black bg-cover bg-center" style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}>
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
-      
-      {/* Vapi will inject its button into this div */}
       <div id="vapi-support-btn"></div>
-      
-      {/* Warning Modal for ending call */}
       <div id="warningModal" className="modal">
         <div className="modal-content">
           <p>End the current reading?</p>
@@ -110,9 +104,6 @@ export default function TarotReaderPage() {
           }}>Keep Session</button>
         </div>
       </div>
-
-      {/* We can add the card display back later once the AI flow is confirmed working */}
-      {/* <div className="tarot-container"><div id="tarotDisplay" className="tarot-display"></div></div> */}
     </main>
   );
 }
