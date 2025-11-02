@@ -326,12 +326,12 @@
 
 /* === VAPI BUTTON DEFINITIVE OVERRIDE (v5 FINAL) === */
 
-/* This is OUR container div for positioning. */
+/* This is OUR container div, used for positioning the button. */
 #vapi-support-btn {
-  animation: none !important; /* No wobble on the invisible wrapper */
+  animation: none !important;
 }
 
-/* This targets the ACTUAL button that Vapi creates. */
+/* This targets the ACTUAL interactive button that Vapi creates. */
 #vapi-support-btn > div {
   background-image: var(--vapi-background-image) !important;
   background-size: cover !important;
@@ -343,12 +343,19 @@
   animation: wobble 3s infinite ease-in-out;
 }
 
-/* Hide the default icon */
-#vapi-support-btn #vapi-icon {
+/* Hide Vapi's default icon and text elements. */
+#vapi-support-btn #vapi-icon,
+#vapi-title-container {
     display: none !important;
 }
 
-/* Hide the default title/subtitle text elements */
-#vapi-title-container {
-    display: none !important;
+/* This is the overlay for the "End Call" warning. */
+#buttonOverlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+    z-index: 2147483640; /* High z-index to be on top */
 }
