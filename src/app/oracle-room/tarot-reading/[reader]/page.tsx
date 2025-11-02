@@ -7,14 +7,8 @@ import { useParams, useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 import type { User } from '@supabase/supabase-js';
 
-// --- TYPE DECLARATIONS for the Vapi HTML Script SDK ---
-declare global {
-  interface Window {
-    vapiSDK: {
-      run: (config: any) => any;
-    };
-  }
-}
+// THE FIX: The conflicting global declaration has been removed from this file.
+// The correct type is now provided by `vapi.d.ts`.
 
 // --- TYPE DEFINITIONS ---
 interface TarotCard { url: string; name: string; }
@@ -100,7 +94,6 @@ export default function TarotReaderPage() {
     const sessionId = vapiSessionIdRef.current;
     if (!sessionId) { 
         console.error("Could not get session ID for polling."); 
-        // Poll again for the ID in case of a race condition
         setTimeout(startPollingForCards, 500);
         return; 
     }
@@ -119,17 +112,15 @@ export default function TarotReaderPage() {
   useEffect(() => {
     if (!config || !user) return;
 
-    // 1. Intercept network requests to capture the session ID
     const originalFetch = window.fetch;
     window.fetch = async (input, init) => {
       const urlString = typeof input === 'string' ? input : (input instanceof Request ? input.url : input.toString());
       if (urlString.includes('vapi.aiforpaper.com')) {
         const sessionId = urlString.split('/').pop()?.split('?')[0];
-        if (sessionId && sessionId.length > 10) { // Basic validation
+        if (sessionId && sessionId.length > 10) {
           console.log('VAPI Session ID captured:', sessionId);
           vapiSessionIdRef.current = sessionId;
           
-          // As soon as ID is captured, create the session record
           try {
             await fetch('/api/tarot', {
               method: 'POST',
@@ -150,7 +141,6 @@ export default function TarotReaderPage() {
       return originalFetch(input, init);
     };
 
-    // 2. Dynamically inject the Vapi HTML script
     const script = document.createElement('script');
     script.src = "https://cdn.jsdelivr.net/gh/VapiAI/html-script-tag@latest/dist/assets/index.js";
     script.async = true;
@@ -164,7 +154,7 @@ export default function TarotReaderPage() {
           assistant: config.assistantId,
           config: {
             ...config.buttonConfig,
-            position: "manual" // We will manually place it
+            position: "manual"
           },
         });
 
@@ -184,7 +174,7 @@ export default function TarotReaderPage() {
     };
 
     return () => {
-      window.fetch = originalFetch; // Cleanup fetch override
+      window.fetch = originalFetch;
       const vapiButton = document.getElementById('vapi-support-btn');
       if (vapiButton) vapiButton.remove();
       document.body.removeChild(script);
@@ -218,7 +208,6 @@ export default function TarotReaderPage() {
         </div>
       </div>
       
-      {/* Vapi will inject its button here, but we style the container */}
       <div id="vapi-support-btn" />
 
       <div className="relative z-10">

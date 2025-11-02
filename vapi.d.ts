@@ -2,7 +2,10 @@
 
 declare global {
   interface Window {
-    vapiSDK: any;
+    // THE FIX: The type is now specific and centralized here.
+    vapiSDK: {
+      run: (config: any) => any;
+    };
   }
 }
 
