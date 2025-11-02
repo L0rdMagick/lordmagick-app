@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, useEffect, useRef, useCallback, MouseEvent } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 import type { User } from '@supabase/supabase-js';
@@ -59,7 +59,6 @@ export default function TarotReaderPage() {
   const [callStatus, setCallStatus] = useState<'idle' | 'loading' | 'active'>('idle');
   const [cards, setCards] = useState<TarotCard[]>([]);
   const vapiRef = useRef<Vapi | null>(null);
-  // THE FIX: This ref will be populated by our network interception logic.
   const vapiSessionIdRef = useRef<string | null>(null);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const pollingAttemptsRef = useRef(0);
@@ -74,20 +73,26 @@ export default function TarotReaderPage() {
     checkUser();
   }, [router, supabase.auth]);
   
-  // THE FIX: Restore your brilliant, working network interception logic.
+  // --- VAPI SESSION ID INTERCEPTION ---
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const originalFetch = window.fetch;
-    window.fetch = async (url, ...args) => {
-        const urlString = url.toString();
-        if (urlString.includes('gs.daily.co/rooms/check/vapi')) {
-            const sessionId = urlString.split('/').pop();
-            console.log('VAPI Session ID captured via fetch override:', sessionId);
-            if (sessionId) vapiSessionIdRef.current = sessionId;
+    window.fetch = async (input, init) => {
+      // THE FIX: Correctly handle string, Request, and URL object types for the fetch input.
+      const urlString = typeof input === 'string' 
+        ? input 
+        : (input instanceof Request ? input.url : input.toString());
+        
+      if (urlString.includes('vapi.aiforpaper.com') && init?.method === 'POST') {
+        const sessionId = urlString.split('/').pop()?.split('?')[0];
+        if (sessionId) {
+          console.log('VAPI Session ID captured via fetch override:', sessionId);
+          vapiSessionIdRef.current = sessionId;
         }
-        return originalFetch(url, ...args);
+      }
+      return originalFetch(input, init);
     };
-    return () => { window.fetch = originalFetch; }; // Cleanup on component unmount
+    return () => { window.fetch = originalFetch; };
   }, []);
 
   // --- POLLING LOGIC ---
@@ -117,15 +122,19 @@ export default function TarotReaderPage() {
   }, [stopPolling]);
 
   const startPollingForCards = useCallback(() => {
-    const sessionId = vapiSessionIdRef.current;
-    if (!sessionId) { console.error("Could not get session ID for polling."); return; }
-    stopPolling(); 
-    pollingAttemptsRef.current = 0;
-    document.getElementById('loading')?.classList.remove('hidden');
     setTimeout(() => {
-        pollForCards(sessionId);
-        pollingIntervalRef.current = setInterval(() => pollForCards(sessionId), 7000);
-    }, 15000);
+        const sessionId = vapiSessionIdRef.current;
+        if (!sessionId) { console.error("Could not get session ID for polling."); return; }
+        stopPolling(); 
+        pollingAttemptsRef.current = 0;
+        document.getElementById('loading')?.classList.remove('hidden');
+        
+        // Initial poll after 15 seconds, then poll every 7 seconds
+        setTimeout(() => {
+            pollForCards(sessionId);
+            pollingIntervalRef.current = setInterval(() => pollForCards(sessionId), 7000);
+        }, 15000);
+    }, 1000); // Wait a second to ensure session ID is captured
   }, [pollForCards, stopPolling]);
 
   // --- VAPI INITIALIZATION & EVENT HANDLING ---
@@ -134,7 +143,6 @@ export default function TarotReaderPage() {
     const vapiInstance = new Vapi(process.env.NEXT_PUBLIC_VAPI_API_KEY!);
     vapiRef.current = vapiInstance;
 
-    // THE FIX: The call-start event handler correctly takes no arguments.
     vapiInstance.on('call-start', () => { 
       console.log('Call has started');
       setCallStatus('active'); 
@@ -173,12 +181,8 @@ export default function TarotReaderPage() {
   const handleStartCall = async () => {
     if (!user || callStatus !== 'idle' || !vapiRef.current) return;
     setCallStatus('loading');
-    
-    // Start the Vapi call. Our fetch override will capture the session ID automatically.
     vapiRef.current.start(config.assistantId);
 
-    // After a delay, we assume the fetch override has captured the ID,
-    // and we create our session record in the backend.
     setTimeout(async () => {
       const sessionId = vapiSessionIdRef.current;
       if (!sessionId) {
@@ -214,7 +218,7 @@ export default function TarotReaderPage() {
     showWarningPopup();
   };
   
-  if (isLoading || !user) {
+  if (isLoading || !user || !config) {
     return (
       <div className="relative min-h-screen w-full bg-black bg-cover bg-center flex items-center justify-center" style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}>
         <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
@@ -234,15 +238,17 @@ export default function TarotReaderPage() {
         <div id="vapi-support-btn" onClick={callStatus === 'active' ? handleEndCall : handleStartCall}>
           <div style={{ backgroundImage: `url('${config.buttonConfig.backgroundImageUrl}')` }}>
             <div id="vapi-title-container">
-              <div>
                 <div id="vapi-title">{config.buttonConfig[callStatus].title}</div>
                 <div id="vapi-subtitle">{config.buttonConfig[callStatus].subtitle}</div>
-              </div>
             </div>
           </div>
         </div>
-        <div className="tarot-container"><div id="tarotDisplay" className="tarot-display">{cards.map((card, index) => (<Card key={index} card={card} />))}</div></div>
-        <div className="loading-container"><div id="loading" className={callStatus === 'loading' ? "loading-spinner" : "loading-spinner hidden"}><span>Shuffling your cards...<br/>Deck: <em>Cats of the Crown</em></span></div></div>
+        <div className="tarot-container">
+            <div id="tarotDisplay" className="tarot-display">
+                {cards.map((card, index) => (<Card key={index} card={card} />))}
+            </div>
+        </div>
+        <div className="loading-container"><div id="loading" className="loading-spinner hidden"><span>Shuffling your cards...<br/>Deck: <em>Cats of the Crown</em></span></div></div>
       </div>
     </main>
   );
@@ -251,14 +257,36 @@ export default function TarotReaderPage() {
 function Card({ card }: { card: TarotCard }) {
   const [isFlipped, setIsFlipped] = useState(false);
   const [isEnlarged, setIsEnlarged] = useState(false);
+
   const handleClick = () => {
-    if (!isFlipped) setIsFlipped(true);
-    else setIsEnlarged(!isEnlarged);
+    if (!isFlipped) {
+      setIsFlipped(true);
+    } else {
+      setIsEnlarged(!isEnlarged);
+    }
   };
+
+  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    setIsEnlarged(false);
+  };
+
   return (
-    <div className={`card-container ${isEnlarged ? 'enlarged' : ''}`} onClick={handleClick}>
-      <img src={card.url} alt={card.name} className={`card-image ${isFlipped ? '' : 'hidden'} ${isEnlarged ? 'enlarged' : ''}`} />
-      <img src="https://images.squarespace-cdn.com/content/63ff45f58b2ecb2de4ae9935/8afd5dd6-f795-41fc-a9ba-7a6b39921caf/9.jpg?content-type=image%2Fjpeg" alt="Card back" className={`card-cover ${isFlipped ? 'hidden' : ''}`} />
-    </div>
+    <>
+      <div 
+        className={`card-container ${isFlipped ? 'flipped' : ''}`} 
+        onClick={handleClick}
+      >
+        <img src={card.url} alt={card.name} className={`card-image ${isEnlarged ? 'enlarged' : ''}`} />
+        <img src="https://images.squarespace-cdn.com/content/63ff45f58b2ecb2de4ae9935/8afd5dd6-f795-41fc-a9ba-7a6b39921caf/9.jpg?content-type=image%2Fjpeg" alt="Card back" className="card-cover" />
+      </div>
+      {isEnlarged && (
+        <div 
+          onClick={handleBackdropClick} 
+          // THE FIX: Simplified the z-index class per Tailwind CSS recommendation.
+          className="fixed inset-0 bg-black/70 z-2147483645"
+        />
+      )}
+    </>
   );
 }
