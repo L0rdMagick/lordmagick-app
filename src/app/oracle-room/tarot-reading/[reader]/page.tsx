@@ -163,8 +163,10 @@ export default function TarotReaderPage() {
 
     // THE FIX: Define the click hijacking function
     const handleActiveButtonClick = (event: MouseEvent) => {
+        // Stop Vapi's default "hang up" action from happening
         event.preventDefault();
         event.stopPropagation();
+        // Show our custom warning modal instead
         showWarningPopup();
     };
 
@@ -183,7 +185,8 @@ export default function TarotReaderPage() {
         // THE FIX: When the call starts, find the inner button and add our hijacking listener
         const innerButton = document.querySelector<HTMLElement>('#vapi-support-btn > div');
         if (innerButton) {
-            innerButton.addEventListener('click', handleActiveButtonClick, true); // Use capture phase
+            // Use the "capture" phase to ensure our listener runs first
+            innerButton.addEventListener('click', handleActiveButtonClick, true);
         }
       });
       vapiInstance.on('call-end', () => {
