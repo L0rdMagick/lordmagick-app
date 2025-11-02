@@ -8,8 +8,8 @@ const tarotCardMapping: { [key: string]: string } = { 'https://images.squarespac
 
 // THE FIX: Adding CORS headers to all responses
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*', // Or be more specific: 'https://dashboard.vapi.ai'
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
 
@@ -20,9 +20,14 @@ export async function OPTIONS(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    // For Vapi's Test Tool, which sends a different Content-Type
+    if (request.method === 'OPTIONS') {
+        return new NextResponse(null, { headers: corsHeaders });
+    }
+    
     const body = await request.json();
 
-    // This is the Vapi Tool Call path
+    // Vapi Tool Call path
     if (body?.message?.type === 'tool-calls') {
       const toolCall = body.message.toolCallList?.[0];
       if (!toolCall) {
@@ -49,15 +54,15 @@ export async function POST(request: Request) {
       return new NextResponse(JSON.stringify(vapiResponse), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
     
-    // This is the path for our front-end client actions
+    // Front-end client actions path
     const { action, userId } = body;
     if (action === 'startSession') {
         console.log(`Bypassing credit check and starting session for user ${userId}`);
-        return new NextResponse(JSON.stringify({ success: true, message: 'Session started (credits bypassed for testing).' }), { headers: corsHeaders });
+        return new NextResponse(JSON.stringify({ success: true, message: 'Session started (credits bypassed for testing).' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     if (action === 'getCards') {
-        return new NextResponse(JSON.stringify({ cards: [] }), { headers: corsHeaders });
+        return new NextResponse(JSON.stringify({ cards: [] }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     return new NextResponse(JSON.stringify({ error: 'Invalid action or payload' }), { status: 400, headers: corsHeaders });
