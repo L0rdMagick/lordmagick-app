@@ -63,31 +63,29 @@ export default function TarotReaderPage() {
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const pollingAttemptsRef = useRef(0);
 
-  // --- AUTH CHECK (Temporarily Bypassed for Testing) ---
+  // --- AUTH CHECK (Bypassed) ---
   useEffect(() => {
-    // THE FIX: Authentication is bypassed to allow testing without a purchase.
-    // A mock user is created, and loading is disabled immediately.
     setUser({ id: 'test-user-id' } as User);
     setIsLoading(false);
   }, []);
   
-  // --- VAPI SESSION ID INTERCEPTION ---
+  // THE FIX: Restore the reliable network interception logic to capture the session ID.
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const originalFetch = window.fetch;
     window.fetch = async (input, init) => {
-      const urlString = typeof input === 'string' 
-        ? input 
-        : (input instanceof Request ? input.url : input.toString());
-        
-      if (urlString.includes('vapi.aiforpaper.com') && init?.method === 'POST') {
-        const sessionId = urlString.split('/').pop()?.split('?')[0];
-        if (sessionId) {
-          console.log('VAPI Session ID captured via fetch override:', sessionId);
-          vapiSessionIdRef.current = sessionId;
+        const urlString = typeof input === 'string' 
+          ? input 
+          : (input instanceof Request ? input.url : input.toString());
+          
+        if (urlString.includes('vapi.aiforpaper.com') && init?.method === 'POST') {
+            const sessionId = urlString.split('/').pop()?.split('?')[0];
+            if (sessionId) {
+                console.log('VAPI Session ID captured via fetch override:', sessionId);
+                vapiSessionIdRef.current = sessionId;
+            }
         }
-      }
-      return originalFetch(input, init);
+        return originalFetch(input, init);
     };
     return () => { window.fetch = originalFetch; };
   }, []);
@@ -119,18 +117,15 @@ export default function TarotReaderPage() {
   }, [stopPolling]);
 
   const startPollingForCards = useCallback(() => {
+    const sessionId = vapiSessionIdRef.current;
+    if (!sessionId) { console.error("Could not get session ID for polling."); return; }
+    stopPolling(); 
+    pollingAttemptsRef.current = 0;
+    document.getElementById('loading')?.classList.remove('hidden');
     setTimeout(() => {
-        const sessionId = vapiSessionIdRef.current;
-        if (!sessionId) { console.error("Could not get session ID for polling."); return; }
-        stopPolling(); 
-        pollingAttemptsRef.current = 0;
-        document.getElementById('loading')?.classList.remove('hidden');
-        
-        setTimeout(() => {
-            pollForCards(sessionId);
-            pollingIntervalRef.current = setInterval(() => pollForCards(sessionId), 7000);
-        }, 15000);
-    }, 1000);
+        pollForCards(sessionId);
+        pollingIntervalRef.current = setInterval(() => pollForCards(sessionId), 7000);
+    }, 15000);
   }, [pollForCards, stopPolling]);
 
   // --- VAPI INITIALIZATION & EVENT HANDLING ---
@@ -139,6 +134,7 @@ export default function TarotReaderPage() {
     const vapiInstance = new Vapi(process.env.NEXT_PUBLIC_VAPI_API_KEY!);
     vapiRef.current = vapiInstance;
 
+    // THE FIX: The call-start event handler correctly takes no arguments.
     vapiInstance.on('call-start', () => { 
       console.log('Call has started');
       setCallStatus('active'); 
@@ -153,7 +149,7 @@ export default function TarotReaderPage() {
     vapiInstance.on('error', (e) => { 
       console.error('Vapi error:', e); 
       setCallStatus('idle'); 
-      alert(`An error occurred: ${e?.message || 'Unknown error'}`);
+      alert(`An error occurred: ${e?.message || 'Unknown error'}`); 
     });
 
     return () => { vapiInstance.stop(); };
@@ -165,6 +161,7 @@ export default function TarotReaderPage() {
     if (modal) modal.style.display = 'block';
   };
 
+  // THE FIX: Restore the timeout logic to create the session after the fetch override has captured the ID.
   const handleStartCall = async () => {
     if (!user || callStatus !== 'idle' || !vapiRef.current) return;
     setCallStatus('loading');
@@ -201,7 +198,6 @@ export default function TarotReaderPage() {
     }, 1500);
   };
   
-  // This function is preserved to show the end session confirmation.
   const handleEndCall = () => {
     showWarningPopup();
   };
@@ -220,7 +216,6 @@ export default function TarotReaderPage() {
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
       <audio id="vapiAudio" className="hidden"></audio>
       
-      {/* This modal for ending the session is preserved. */}
       <div id="warningModal" className="modal">
         <div className="modal-content">
           <p>End the current reading?</p>
