@@ -63,22 +63,19 @@ export default function TarotReaderPage() {
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const pollingAttemptsRef = useRef(0);
 
-  // --- AUTH CHECK ---
+  // --- AUTH CHECK (Temporarily Bypassed for Testing) ---
   useEffect(() => {
-    const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { router.push('/login'); } 
-      else { setUser(session.user); setIsLoading(false); }
-    };
-    checkUser();
-  }, [router, supabase.auth]);
+    // THE FIX: Authentication is bypassed to allow testing without a purchase.
+    // A mock user is created, and loading is disabled immediately.
+    setUser({ id: 'test-user-id' } as User);
+    setIsLoading(false);
+  }, []);
   
   // --- VAPI SESSION ID INTERCEPTION ---
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const originalFetch = window.fetch;
     window.fetch = async (input, init) => {
-      // THE FIX: Correctly handle string, Request, and URL object types for the fetch input.
       const urlString = typeof input === 'string' 
         ? input 
         : (input instanceof Request ? input.url : input.toString());
@@ -129,12 +126,11 @@ export default function TarotReaderPage() {
         pollingAttemptsRef.current = 0;
         document.getElementById('loading')?.classList.remove('hidden');
         
-        // Initial poll after 15 seconds, then poll every 7 seconds
         setTimeout(() => {
             pollForCards(sessionId);
             pollingIntervalRef.current = setInterval(() => pollForCards(sessionId), 7000);
         }, 15000);
-    }, 1000); // Wait a second to ensure session ID is captured
+    }, 1000);
   }, [pollForCards, stopPolling]);
 
   // --- VAPI INITIALIZATION & EVENT HANDLING ---
@@ -157,7 +153,7 @@ export default function TarotReaderPage() {
     vapiInstance.on('error', (e) => { 
       console.error('Vapi error:', e); 
       setCallStatus('idle'); 
-      showErrorPopup(e?.message || 'An unknown error occurred.'); 
+      alert(`An error occurred: ${e?.message || 'Unknown error'}`);
     });
 
     return () => { vapiInstance.stop(); };
@@ -168,15 +164,6 @@ export default function TarotReaderPage() {
     const modal = document.getElementById('warningModal');
     if (modal) modal.style.display = 'block';
   };
-  
-  const showErrorPopup = (message: string) => {
-    const p = document.getElementById('errorMessage');
-    const modal = document.getElementById('errorModal');
-    if (p && modal) {
-      p.textContent = message;
-      modal.style.display = 'block';
-    }
-  };
 
   const handleStartCall = async () => {
     if (!user || callStatus !== 'idle' || !vapiRef.current) return;
@@ -186,7 +173,7 @@ export default function TarotReaderPage() {
     setTimeout(async () => {
       const sessionId = vapiSessionIdRef.current;
       if (!sessionId) {
-        showErrorPopup('Could not initiate call. Please try again.');
+        alert('Could not initiate call. Please try again.');
         setCallStatus('idle');
         vapiRef.current?.stop();
         return;
@@ -208,21 +195,22 @@ export default function TarotReaderPage() {
             throw new Error(errorData.error || 'Failed to start session.');
         }
       } catch (err: any) {
-          showErrorPopup(err.message);
+          alert(err.message);
           vapiRef.current?.stop();
       }
     }, 1500);
   };
   
+  // This function is preserved to show the end session confirmation.
   const handleEndCall = () => {
     showWarningPopup();
   };
   
-  if (isLoading || !user || !config) {
+  if (isLoading || !config) {
     return (
       <div className="relative min-h-screen w-full bg-black bg-cover bg-center flex items-center justify-center" style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}>
         <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
-        <div className="text-center text-amber-200 text-2xl z-10"><div className="animate-spin rounded-full h-16 w-16 border-b-2 border-amber-200 mx-auto mb-4"></div>Verifying Access...</div>
+        <div className="text-center text-amber-200 text-2xl z-10"><div className="animate-spin rounded-full h-16 w-16 border-b-2 border-amber-200 mx-auto mb-4"></div>Loading Oracle...</div>
       </div>
     );
   }
@@ -231,8 +219,15 @@ export default function TarotReaderPage() {
     <main className="relative min-h-screen w-full bg-black bg-cover bg-center" style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}>
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
       <audio id="vapiAudio" className="hidden"></audio>
-      <div id="warningModal" className="modal"><div className="modal-content"><p>End the current reading?</p><button onClick={() => vapiRef.current?.stop()}>End Session</button><button onClick={() => { const modal = document.getElementById('warningModal'); if (modal) modal.style.display = 'none'; }}>Keep Session</button></div></div>
-      <div id="errorModal" className="modal"><div className="modal-content"><p id="errorMessage"></p><button onClick={() => router.push('/marketplace')}>Purchase Tokens</button><button onClick={() => { const modal = document.getElementById('errorModal'); if (modal) modal.style.display = 'none'; }}>Close</button></div></div>
+      
+      {/* This modal for ending the session is preserved. */}
+      <div id="warningModal" className="modal">
+        <div className="modal-content">
+          <p>End the current reading?</p>
+          <button onClick={() => vapiRef.current?.stop()}>End Session</button>
+          <button onClick={() => { const modal = document.getElementById('warningModal'); if (modal) modal.style.display = 'none'; }}>Keep Session</button>
+        </div>
+      </div>
       
       <div className="relative z-10">
         <div id="vapi-support-btn" onClick={callStatus === 'active' ? handleEndCall : handleStartCall}>
@@ -283,7 +278,6 @@ function Card({ card }: { card: TarotCard }) {
       {isEnlarged && (
         <div 
           onClick={handleBackdropClick} 
-          // THE FIX: Simplified the z-index class per Tailwind CSS recommendation.
           className="fixed inset-0 bg-black/70 z-2147483645"
         />
       )}
