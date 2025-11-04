@@ -3,8 +3,9 @@
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useState, useRef, MouseEvent, useEffect } from 'react';
-import { motion } from 'framer-motion'; // 1. Import motion
+import { motion } from 'framer-motion';
 import Sparkle from '../components/Sparkle';
+import LogoutButton from '../components/LogoutButton'; // NEW: Import the LogoutButton
 
 interface SparkleState { key: number; x: number; y: number; }
 
@@ -93,7 +94,7 @@ export default function HallPage() {
 
   return (
     <>
-      {/* 2. Change <main> to <motion.main> and add animation properties */}
+      <LogoutButton /> {/* NEW: Add the logout button here */}
       <motion.main 
         className="relative min-h-screen w-full bg-black"
         initial={{ opacity: 0 }}
