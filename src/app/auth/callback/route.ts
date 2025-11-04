@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
   const code = requestUrl.searchParams.get('code');
 
   if (code) {
-    // THE FIX: The cookies() function can be async in some contexts. Awaiting it resolves the type error.
+    // THE FIX: The cookies() function in this context is asynchronous and must be awaited.
     const cookieStore = await cookies(); 
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
