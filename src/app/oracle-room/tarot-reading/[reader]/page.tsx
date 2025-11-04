@@ -119,21 +119,36 @@ export default function TarotReaderPage() {
   }, [pollForCards, stopPolling]);
 
   useEffect(() => {
-    if (!config || !user) return;
+    // NEW LOG: Check if this effect hook is running at all.
+    console.log("Vapi setup effect is running. User:", user);
+
+    if (!config || !user) {
+      // NEW LOG: Explain why the hook is stopping.
+      console.log("Vapi setup SKIPPED: Missing config or user.");
+      return;
+    }
 
     const originalFetch = window.fetch;
     window.fetch = async (input, init) => {
       const urlString = typeof input === 'string' ? input : (input instanceof Request ? input.url : input.toString());
       
-      // THE FIX: Changed the URL to match the current Vapi SDK endpoint.
+      // NEW LOG: Log EVERY network request the page makes.
+      console.log(`FETCH INTERCEPTED: ${urlString}`);
+      
       if (urlString.includes('vapi.daily.co')) {
+        // NEW LOG: Confirm that we found the correct URL.
+        console.log("SUCCESS: Vapi URL detected!");
+
         const sessionId = urlString.split('/').pop()?.split('?')[0];
         if (sessionId && sessionId.length > 10) {
           console.log('VAPI Session ID captured:', sessionId);
           vapiSessionIdRef.current = sessionId;
           
           try {
-            await fetch('/api/tarot/session', {
+            // NEW LOG: Announce that we are attempting to create the session.
+            console.log(`Attempting to create session record with user ID: ${user.id} and vapi_session_id: ${sessionId}`);
+            
+            const response = await fetch('/api/tarot/session', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -144,14 +159,25 @@ export default function TarotReaderPage() {
                 cardCount: 10,
               }),
             });
+
+            // NEW LOG: Check if the session creation was successful.
+            if (!response.ok) {
+              const errorBody = await response.json();
+              console.error("API Error: Failed to start session on backend.", response.status, errorBody);
+            } else {
+              console.log("API Success: Session record created/upserted successfully.");
+            }
+
           } catch (err) {
-            console.error("Failed to start session on backend", err);
+            console.error("FETCH Error: Failed to send startSession request.", err);
           }
         }
       }
       return originalFetch(input, init);
     };
 
+    // NEW LOG: Announce that the Vapi script is being added to the page.
+    console.log("Injecting Vapi SDK script...");
     const script = document.createElement('script');
     script.src = "https://cdn.jsdelivr.net/gh/VapiAI/html-script-tag@latest/dist/assets/index.js";
     script.async = true;
@@ -159,6 +185,8 @@ export default function TarotReaderPage() {
     document.body.appendChild(script);
 
     script.onload = () => {
+      // NEW LOG: Announce that the SDK has loaded and we are initializing it.
+      console.log("Vapi SDK script loaded. Initializing SDK...");
       if (window.vapiSDK) {
         const vapiInstance = window.vapiSDK.run({
           apiKey: process.env.NEXT_PUBLIC_VAPI_API_KEY!,
@@ -170,21 +198,24 @@ export default function TarotReaderPage() {
         });
 
         vapiInstance.on('call-start', () => {
-          console.log('Call has started');
+          console.log('Event: call-start received. Beginning to poll for cards.');
           startPollingForCards();
           const btn = document.getElementById('vapi-support-btn');
           if (btn) btn.onclick = showWarningPopup;
         });
 
         vapiInstance.on('call-end', () => {
-          console.log('Call has ended');
+          console.log('Event: call-end received.');
           stopPolling();
           location.reload();
         });
+      } else {
+        console.error("Vapi SDK did not initialize on window object.");
       }
     };
 
     return () => {
+      console.log("Cleanup: Restoring original fetch and removing Vapi script.");
       window.fetch = originalFetch;
       const vapiButton = document.getElementById('vapi-support-btn');
       if (vapiButton) vapiButton.remove();
@@ -203,7 +234,7 @@ export default function TarotReaderPage() {
     return (
       <div className="relative min-h-screen w-full bg-black bg-cover bg-center flex items-center justify-center" style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}>
         <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
-        <div className="text-center text-amber-200 text-2xl z-10"><div className="animate-spin rounded-full h-16 w-16 border-b-2 border-amber-200 mx-auto mb-4"></div>Loading Oracle...</div>
+        <div className="text-center text-amber-200 text-2xl z-10"><div className="animate-spin rounded-full h-16 w-16 border-b-2 border-amber-200 mx-auto mb-4"></div>Authenticating and Loading Oracle...</div>
       </div>
     );
   }
