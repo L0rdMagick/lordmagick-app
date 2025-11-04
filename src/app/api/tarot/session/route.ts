@@ -3,8 +3,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-// THE FIX: Use the standard createClient with the service role key.
-// This is the correct way to create an admin client in a serverless function.
+// Use the standard createClient with the service role key for admin-level access.
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_KEY!,
@@ -21,15 +20,16 @@ export async function POST(request: Request) {
 
     // --- Start Session Action ---
     if (action === 'startSession') {
-        if (!vapiSessionId || !userId) {
-            return NextResponse.json({ error: 'Missing session or user ID for startSession' }, { status: 400 });
+        if (!vapiSessionId) {
+            return NextResponse.json({ error: 'Missing vapiSessionId for startSession' }, { status: 400 });
         }
         
+        // Restore the full upsert logic, including the user_id.
         const { error } = await supabaseAdmin
             .from('tarot_sessions')
             .upsert({
                 vapi_session_id: vapiSessionId,
-                user_id: userId,
+                user_id: userId, // This is now included again.
                 reader_name: readerName,
                 card_count: cardCount,
             }, {
@@ -38,11 +38,10 @@ export async function POST(request: Request) {
 
         if (error) {
             console.error('[SESSION HANDLER DB ERROR]:', error);
-            // Provide a more detailed error response to the client for debugging
             return NextResponse.json({ error: error.message }, { status: 500 });
         }
         
-        return NextResponse.json({ success: true, message: 'Session upserted.' });
+        return NextResponse.json({ success: true, message: 'Session upserted successfully.' });
     }
 
     // --- Get Cards Action ---
