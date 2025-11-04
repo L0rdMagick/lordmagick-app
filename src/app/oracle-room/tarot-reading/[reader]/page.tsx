@@ -3,8 +3,8 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation'; // NEW IMPORT
-import { createBrowserClient } from '@supabase/ssr'; // NEW IMPORT
+import { useParams, useRouter } from 'next/navigation';
+import { createBrowserClient } from '@supabase/ssr';
 import type { User } from '@supabase/supabase-js';
 
 // --- TYPE DEFINITIONS ---
@@ -43,11 +43,10 @@ const readerConfigs: Record<string, ReaderConfig> = {
 
 export default function TarotReaderPage() {
   const params = useParams();
-  const router = useRouter(); // NEW: For redirection
+  const router = useRouter();
   const readerName = params.reader as keyof typeof readerConfigs;
   const config = readerConfigs[readerName];
 
-  // NEW: Create Supabase client instance
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -61,14 +60,12 @@ export default function TarotReaderPage() {
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const pollingAttemptsRef = useRef(0);
 
-  // THE FIX: Replace placeholder user with real Supabase authentication check.
   useEffect(() => {
     const checkUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setUser(user);
       } else {
-        // If no user is logged in, redirect to the login page.
         router.push('/login');
       }
       setIsLoading(false);
@@ -122,12 +119,14 @@ export default function TarotReaderPage() {
   }, [pollForCards, stopPolling]);
 
   useEffect(() => {
-    if (!config || !user) return; // Wait until we have a real user
+    if (!config || !user) return;
 
     const originalFetch = window.fetch;
     window.fetch = async (input, init) => {
       const urlString = typeof input === 'string' ? input : (input instanceof Request ? input.url : input.toString());
-      if (urlString.includes('vapi.aiforpaper.com')) {
+      
+      // THE FIX: Changed the URL to match the current Vapi SDK endpoint.
+      if (urlString.includes('vapi.daily.co')) {
         const sessionId = urlString.split('/').pop()?.split('?')[0];
         if (sessionId && sessionId.length > 10) {
           console.log('VAPI Session ID captured:', sessionId);
@@ -139,7 +138,7 @@ export default function TarotReaderPage() {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 action: 'startSession',
-                userId: user.id, // Now using the REAL user ID
+                userId: user.id,
                 vapiSessionId: sessionId,
                 readerName: readerName,
                 cardCount: 10,
@@ -189,7 +188,7 @@ export default function TarotReaderPage() {
       window.fetch = originalFetch;
       const vapiButton = document.getElementById('vapi-support-btn');
       if (vapiButton) vapiButton.remove();
-      if(script.parentNode) {
+      if (script.parentNode) {
         script.parentNode.removeChild(script);
       }
     };
@@ -200,7 +199,7 @@ export default function TarotReaderPage() {
     if (modal) modal.style.display = 'block';
   };
   
-  if (isLoading || !config || !user) { // Also check for user before rendering
+  if (isLoading || !config || !user) {
     return (
       <div className="relative min-h-screen w-full bg-black bg-cover bg-center flex items-center justify-center" style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}>
         <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
