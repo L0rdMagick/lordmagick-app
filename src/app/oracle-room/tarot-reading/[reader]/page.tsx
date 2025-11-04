@@ -127,8 +127,8 @@ export default function TarotReaderPage() {
     window.fetch = async (input, init) => {
       const urlString = typeof input === 'string' ? input : (input instanceof Request ? input.url : input.toString());
       
-      // THE FINAL FIX: Look for 'daily.co' which covers 'gs.daily.co', 'vapi.daily.co', etc.
-      if (urlString.includes('daily.co')) {
+      // THE FINAL FIX: Make the URL check more specific to only catch the session URL.
+      if (urlString.includes('/rooms/check/vapi/')) {
         const sessionId = urlString.split('/').pop()?.split('?')[0];
         if (sessionId && sessionId.length > 10) {
           console.log('SUCCESS: Vapi Session ID captured:', sessionId);
