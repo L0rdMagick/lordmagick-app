@@ -3,11 +3,9 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation'; // NEW IMPORT
+import { createBrowserClient } from '@supabase/ssr'; // NEW IMPORT
 import type { User } from '@supabase/supabase-js';
-
-// THE FIX: The duplicate and conflicting 'declare global' block has been removed.
-// The component now relies on the centralized type definition in `vapi.d.ts`.
 
 // --- TYPE DEFINITIONS ---
 interface TarotCard { url: string; name: string; }
@@ -45,8 +43,15 @@ const readerConfigs: Record<string, ReaderConfig> = {
 
 export default function TarotReaderPage() {
   const params = useParams();
+  const router = useRouter(); // NEW: For redirection
   const readerName = params.reader as keyof typeof readerConfigs;
   const config = readerConfigs[readerName];
+
+  // NEW: Create Supabase client instance
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
 
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -56,10 +61,21 @@ export default function TarotReaderPage() {
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const pollingAttemptsRef = useRef(0);
 
+  // THE FIX: Replace placeholder user with real Supabase authentication check.
   useEffect(() => {
-    setUser({ id: 'test-user-id' } as User);
-    setIsLoading(false);
-  }, []);
+    const checkUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUser(user);
+      } else {
+        // If no user is logged in, redirect to the login page.
+        router.push('/login');
+      }
+      setIsLoading(false);
+    };
+
+    checkUser();
+  }, [router, supabase.auth]);
 
   const stopPolling = useCallback(() => {
     if (pollingIntervalRef.current) {
@@ -106,7 +122,7 @@ export default function TarotReaderPage() {
   }, [pollForCards, stopPolling]);
 
   useEffect(() => {
-    if (!config || !user) return;
+    if (!config || !user) return; // Wait until we have a real user
 
     const originalFetch = window.fetch;
     window.fetch = async (input, init) => {
@@ -123,7 +139,7 @@ export default function TarotReaderPage() {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 action: 'startSession',
-                userId: user.id,
+                userId: user.id, // Now using the REAL user ID
                 vapiSessionId: sessionId,
                 readerName: readerName,
                 cardCount: 10,
@@ -173,7 +189,9 @@ export default function TarotReaderPage() {
       window.fetch = originalFetch;
       const vapiButton = document.getElementById('vapi-support-btn');
       if (vapiButton) vapiButton.remove();
-      document.body.removeChild(script);
+      if(script.parentNode) {
+        script.parentNode.removeChild(script);
+      }
     };
   }, [config, user, readerName, startPollingForCards, stopPolling]);
 
@@ -182,7 +200,7 @@ export default function TarotReaderPage() {
     if (modal) modal.style.display = 'block';
   };
   
-  if (isLoading || !config) {
+  if (isLoading || !config || !user) { // Also check for user before rendering
     return (
       <div className="relative min-h-screen w-full bg-black bg-cover bg-center flex items-center justify-center" style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}>
         <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
