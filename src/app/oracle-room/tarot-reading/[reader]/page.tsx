@@ -119,12 +119,7 @@ export default function TarotReaderPage() {
   }, [pollForCards, stopPolling]);
 
   useEffect(() => {
-    // NEW LOG: Check if this effect hook is running at all.
-    console.log("Vapi setup effect is running. User:", user);
-
     if (!config || !user) {
-      // NEW LOG: Explain why the hook is stopping.
-      console.log("Vapi setup SKIPPED: Missing config or user.");
       return;
     }
 
@@ -132,22 +127,14 @@ export default function TarotReaderPage() {
     window.fetch = async (input, init) => {
       const urlString = typeof input === 'string' ? input : (input instanceof Request ? input.url : input.toString());
       
-      // NEW LOG: Log EVERY network request the page makes.
-      console.log(`FETCH INTERCEPTED: ${urlString}`);
-      
-      if (urlString.includes('vapi.daily.co')) {
-        // NEW LOG: Confirm that we found the correct URL.
-        console.log("SUCCESS: Vapi URL detected!");
-
+      // THE FINAL FIX: Look for 'daily.co' which covers 'gs.daily.co', 'vapi.daily.co', etc.
+      if (urlString.includes('daily.co')) {
         const sessionId = urlString.split('/').pop()?.split('?')[0];
         if (sessionId && sessionId.length > 10) {
-          console.log('VAPI Session ID captured:', sessionId);
+          console.log('SUCCESS: Vapi Session ID captured:', sessionId);
           vapiSessionIdRef.current = sessionId;
           
           try {
-            // NEW LOG: Announce that we are attempting to create the session.
-            console.log(`Attempting to create session record with user ID: ${user.id} and vapi_session_id: ${sessionId}`);
-            
             const response = await fetch('/api/tarot/session', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -160,7 +147,6 @@ export default function TarotReaderPage() {
               }),
             });
 
-            // NEW LOG: Check if the session creation was successful.
             if (!response.ok) {
               const errorBody = await response.json();
               console.error("API Error: Failed to start session on backend.", response.status, errorBody);
@@ -176,8 +162,6 @@ export default function TarotReaderPage() {
       return originalFetch(input, init);
     };
 
-    // NEW LOG: Announce that the Vapi script is being added to the page.
-    console.log("Injecting Vapi SDK script...");
     const script = document.createElement('script');
     script.src = "https://cdn.jsdelivr.net/gh/VapiAI/html-script-tag@latest/dist/assets/index.js";
     script.async = true;
@@ -185,8 +169,6 @@ export default function TarotReaderPage() {
     document.body.appendChild(script);
 
     script.onload = () => {
-      // NEW LOG: Announce that the SDK has loaded and we are initializing it.
-      console.log("Vapi SDK script loaded. Initializing SDK...");
       if (window.vapiSDK) {
         const vapiInstance = window.vapiSDK.run({
           apiKey: process.env.NEXT_PUBLIC_VAPI_API_KEY!,
@@ -215,7 +197,6 @@ export default function TarotReaderPage() {
     };
 
     return () => {
-      console.log("Cleanup: Restoring original fetch and removing Vapi script.");
       window.fetch = originalFetch;
       const vapiButton = document.getElementById('vapi-support-btn');
       if (vapiButton) vapiButton.remove();
