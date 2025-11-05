@@ -13,6 +13,7 @@ type CallStateConfig = { title: string; subtitle: string; };
 interface ReaderConfig {
   assistantId: string;
   buttonConfig: {
+    type: 'pill'; // THE FIX: Explicitly define the button type.
     idle: CallStateConfig;
     loading: CallStateConfig;
     active: CallStateConfig;
@@ -24,6 +25,7 @@ const readerConfigs: Record<string, ReaderConfig> = {
   ambrose: {
     assistantId: "517aca67-ced6-4710-927d-4dd1f5944419",
     buttonConfig: {
+      type: "pill", // THE FIX: Specify 'pill' to use the background image.
       idle: { title: "Begin Your Tarot Reading", subtitle: "Speak with Ambrose" },
       loading: { title: "Connecting to Spirit", subtitle: "Waiting for Ambrose" },
       active: { title: "Speaking with Ambrose", subtitle: "End the Reading" },
@@ -33,6 +35,7 @@ const readerConfigs: Record<string, ReaderConfig> = {
   natalia: {
     assistantId: "5eded252-3876-4bda-90d8-aec2c5407285",
     buttonConfig: {
+      type: "pill", // THE FIX: Specify 'pill' to use the background image.
       idle: { title: "Begin Your Tarot Reading", subtitle: "Speak with Natalia" },
       loading: { title: "Connecting to Spirit", subtitle: "Wait my lovely" },
       active: { title: "Reading is in Progress..", subtitle: "End the Reading" },
