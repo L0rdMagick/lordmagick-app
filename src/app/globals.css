@@ -271,7 +271,7 @@
 }
 
 
-/* === THE FIX: FINAL RESPONSIVE LAYOUT === */
+/* === FINAL RESPONSIVE LAYOUT === */
 
 /* --- Mobile View (< 768px) --- */
 @media only screen and (max-width: 767px) {
@@ -294,7 +294,8 @@
 
     .tarot-display {
         display: grid !important;
-        grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+        /* THE FIX: Explicit 3-column grid to fill space */
+        grid-template-columns: repeat(3, 1fr);
         gap: 10px;
         width: 100% !important;
     }
@@ -321,7 +322,8 @@
 
     .tarot-display {
         display: grid !important;
-        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        /* THE FIX: Explicit 5-column grid to fill space */
+        grid-template-columns: repeat(5, 1fr);
         gap: 15px;
         width: 100% !important;
     }
