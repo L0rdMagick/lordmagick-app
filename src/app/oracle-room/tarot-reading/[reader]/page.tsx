@@ -64,12 +64,13 @@ export default function TarotReaderPage() {
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const pollingAttemptsRef = useRef(0);
 
+  // THE FIX: Re-implement the showWarningPopup function
   const showWarningPopup = () => {
     const modal = document.getElementById('warningModal');
     if (modal) modal.style.display = 'block';
   };
 
-  // THE FIX: Re-implement the overlay logic from the original working version.
+  // THE FIX: Re-implement the addOverlay and removeOverlay logic
   const addOverlay = useCallback(() => {
     const buttonElement = document.getElementById('vapi-support-btn');
     if (buttonElement && !document.getElementById('vapi-button-overlay')) {
@@ -81,7 +82,7 @@ export default function TarotReaderPage() {
       overlay.style.width = '100%';
       overlay.style.height = '100%';
       overlay.style.cursor = 'pointer';
-      overlay.style.zIndex = '2'; // Ensure it's on top of other button content
+      overlay.style.zIndex = '2'; 
       overlay.onclick = (event) => {
         event.stopPropagation();
         showWarningPopup();
@@ -226,12 +227,12 @@ export default function TarotReaderPage() {
         vapiInstance.on('call-start', () => {
           console.log('Event: call-start received. Beginning to poll for cards.');
           startPollingForCards();
-          addOverlay(); // THE FIX: Add the overlay when the call starts.
+          addOverlay();
         });
 
         vapiInstance.on('call-end', () => {
           console.log('Event: call-end received.');
-          removeOverlay(); // THE FIX: Remove the overlay when the call ends.
+          removeOverlay();
           stopPolling();
           location.reload();
         });
@@ -242,7 +243,7 @@ export default function TarotReaderPage() {
 
     return () => {
       window.fetch = originalFetch;
-      removeOverlay(); // THE FIX: Ensure overlay is removed on component unmount.
+      removeOverlay();
       const vapiButton = document.getElementById('vapi-support-btn');
       if (vapiButton) vapiButton.remove();
       if (script.parentNode) {
@@ -270,11 +271,15 @@ export default function TarotReaderPage() {
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
       <audio id="vapiAudio" className="hidden"></audio>
       
+      {/* THE FIX: Restore the warning modal JSX to the page */}
       <div id="warningModal" className="modal">
         <div className="modal-content">
           <p>End the current reading?</p>
           <button onClick={() => window.vapiSDK?.stop()}>End Session</button>
-          <button onClick={() => { const modal = document.getElementById('warningModal'); if (modal) modal.style.display = 'none'; }}>Keep Session</button>
+          <button onClick={() => { 
+            const modal = document.getElementById('warningModal'); 
+            if (modal) modal.style.display = 'none'; 
+          }}>Keep Session</button>
         </div>
       </div>
       
