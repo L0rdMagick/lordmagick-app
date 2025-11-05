@@ -1,4 +1,4 @@
-// src/app/oracle-room/tarot-reading/[reader]/page.tsx
+// src/app/oracle-room/tarot-reading/[slug]/page.tsx
 
 "use client";
 
@@ -7,48 +7,55 @@ import { useParams, useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 import type { User } from '@supabase/supabase-js';
 
-// --- TYPE DEFINITIONS ---
+// --- TYPE DEFINITIONS & CONFIGURATION ---
 interface TarotCard { url: string; name: string; }
 type CallStateConfig = { title: string; subtitle: string; };
-interface ReaderConfig {
-  assistantId: string;
-  buttonConfig: {
-    type: 'pill'; 
-    idle: CallStateConfig;
-    loading: CallStateConfig;
-    active: CallStateConfig;
-    backgroundImageUrl: string;
-  };
+
+interface ReaderProfile {
+  displayName: string;
+  backgroundImageUrl: string;
 }
 
-const readerConfigs: Record<string, ReaderConfig> = {
+interface ReaderConfig {
+  profile: ReaderProfile;
+  assistants: Record<string, string>;
+}
+
+const readerData: Record<string, ReaderConfig> = {
   ambrose: {
-    assistantId: "517aca67-ced6-4710-927d-4dd1f5944419",
-    buttonConfig: {
-      type: "pill", 
-      idle: { title: "Begin Your Tarot Reading", subtitle: "Speak with Ambrose" },
-      loading: { title: "Connecting to Spirit", subtitle: "Waiting for Ambrose" },
-      active: { title: "Speaking with Ambrose", subtitle: "End the Reading" },
+    profile: {
+      displayName: "Ambrose",
       backgroundImageUrl: "https://images.squarespace-cdn.com/content/662b53c5379e5a412f214a15/ce4dd7e2-a21c-47e9-a2f3-ae98693f0da4/A_front-facing_portrait_of_an_attractive%2C_charisma.jpg?content-type=image%2Fjpeg"
+    },
+    assistants: {
+      "5": "3ca1609f-a052-42ce-9106-ccb530b429e6",
+      "10": "29bce012-e0a9-4347-999d-f36a500f8eb1",
+      "20": "517aca67-ced6-4710-927d-4dd1f5944419",
     }
   },
   natalia: {
-    assistantId: "5eded252-3876-4bda-90d8-aec2c5407285",
-    buttonConfig: {
-      type: "pill", 
-      idle: { title: "Begin Your Tarot Reading", subtitle: "Speak with Natalia" },
-      loading: { title: "Connecting to Spirit", subtitle: "Wait my lovely" },
-      active: { title: "Reading is in Progress..", subtitle: "End the Reading" },
+    profile: {
+      displayName: "Natalia",
       backgroundImageUrl: "https://images.squarespace-cdn.com/content/63ff45f58b2ecb2de4ae9935/56fb4457-d689-43cc-95f8-08c15cc34c4b/Sage+the+Tarot+Reader.jpg?content-type=image%2Fjpeg"
+    },
+    assistants: {
+      "5": "34347501-52b8-4980-9b67-aedd56967cfb",
+      "10": "39e63560-a609-4266-8db7-7a355b88f661",
+      "20": "5eded252-3876-4bda-90d8-aec2c5407285",
     }
   }
 };
 
+
 export default function TarotReaderPage() {
   const params = useParams();
   const router = useRouter();
-  const readerName = params.reader as keyof typeof readerConfigs;
-  const config = readerConfigs[readerName];
+  const slug = params.slug as string;
+
+  // --- Parse Slug to get Reader and Duration ---
+  const [readerName, duration] = (slug || '').split('-');
+  const readerInfo = readerData[readerName];
+  const assistantId = readerInfo?.assistants[duration];
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -66,6 +73,12 @@ export default function TarotReaderPage() {
   const pollingAttemptsRef = useRef(0);
 
   useEffect(() => {
+    // Redirect if the slug is invalid
+    if (!assistantId) {
+      router.push('/oracle-room/tarot-reading');
+      return;
+    }
+
     const checkUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
@@ -77,7 +90,7 @@ export default function TarotReaderPage() {
     };
 
     checkUser();
-  }, [router, supabase.auth]);
+  }, [router, supabase.auth, assistantId]);
 
   const stopPolling = useCallback(() => {
     if (pollingIntervalRef.current) {
@@ -124,9 +137,18 @@ export default function TarotReaderPage() {
   }, [pollForCards, stopPolling]);
 
   useEffect(() => {
-    if (!config || !user) {
+    if (!readerInfo || !user || !assistantId) {
       return;
     }
+
+    // Dynamically create button config
+    const buttonConfig = {
+      type: "pill",
+      idle: { title: `Begin ${duration} Minute Reading`, subtitle: `Speak with ${readerInfo.profile.displayName}` },
+      loading: { title: "Connecting to Spirit", subtitle: `Waiting for ${readerInfo.profile.displayName}` },
+      active: { title: `Speaking with ${readerInfo.profile.displayName}`, subtitle: "End the Reading" },
+      backgroundImageUrl: readerInfo.profile.backgroundImageUrl
+    };
 
     const originalFetch = window.fetch;
     window.fetch = async (input, init) => {
@@ -176,9 +198,9 @@ export default function TarotReaderPage() {
       if (window.vapiSDK) {
         const vapiInstance = window.vapiSDK.run({
           apiKey: process.env.NEXT_PUBLIC_VAPI_API_KEY!,
-          assistant: config.assistantId,
+          assistant: assistantId,
           config: {
-            ...config.buttonConfig,
+            ...buttonConfig,
             position: "manual"
           },
         });
@@ -186,7 +208,7 @@ export default function TarotReaderPage() {
         setTimeout(() => {
           const vapiButton = document.getElementById('vapi-support-btn');
           if (vapiButton) {
-            vapiButton.style.backgroundImage = `url('${config.buttonConfig.backgroundImageUrl}')`;
+            vapiButton.style.backgroundImage = `url('${buttonConfig.backgroundImageUrl}')`;
           }
         }, 100);
 
@@ -215,7 +237,7 @@ export default function TarotReaderPage() {
         script.parentNode.removeChild(script);
       }
     };
-  }, [config, user, readerName, startPollingForCards, stopPolling]);
+  }, [readerInfo, user, assistantId, duration, readerName, startPollingForCards, stopPolling]);
 
   const showWarningPopup = () => {
     const modal = document.getElementById('warningModal');
@@ -226,7 +248,7 @@ export default function TarotReaderPage() {
     setEnlargedCard(card);
   };
   
-  if (isLoading || !config || !user) {
+  if (isLoading || !readerInfo || !user) {
     return (
       <div className="relative min-h-screen w-full bg-black bg-cover bg-center flex items-center justify-center" style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}>
         <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
@@ -243,7 +265,6 @@ export default function TarotReaderPage() {
       <div id="warningModal" className="modal">
         <div className="modal-content">
           <p>Start a new session?</p>
-          {/* THE FIX: Button now directly reloads the page */}
           <button onClick={() => location.reload()}>Start New Session</button>
           <button onClick={() => { 
               const modal = document.getElementById('warningModal'); 
@@ -264,8 +285,6 @@ export default function TarotReaderPage() {
                   top: 0,
                   left: 0,
                   zIndex: 2147483645,
-                  // This is a bit of a hack to only make the button area clickable
-                  // We rely on the CSS media queries to know where the button is
                   clipPath: 'inset(50px calc(100% - 450px) calc(100% - 550px) 150px)', // Desktop
               }}
           />
