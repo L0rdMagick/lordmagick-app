@@ -72,34 +72,11 @@
     display: none;
 }
 
-/* Tarot Layout */
-.tarot-container {
-    display: flex;
-    flex-direction: column !important;
-    align-items: center !important;
-    margin-top: 0px !important;
-    margin-left: 0px !important;
-    width: 100% !important;
-    max-width: none !important;
-    z-index: 10000 !important;
-}
-.tarot-display {
-    display: flex !important;
-    flex-wrap: wrap !important;
-    gap: 10px !important;
-    justify-content: center !important;
-    z-index: 100000 !important;
-    width: 800px !important;
-    max-width: none !important;
-    flex-grow: 1 !important;
-    flex-shrink: 0 !important;
-    padding: 0 !important;
-    margin: 0 !important;
-}
 
 /* Vapi Button Styling */
 #vapi-support-btn {
-    position: fixed;
+    /* Use position relative so it flows in the flex container */
+    position: relative !important;
     z-index: 100001 !important;
     background-size: cover;
     background-position: center;
@@ -109,6 +86,7 @@
     overflow: hidden;
     border: none !important;
     background-color: transparent !important;
+    flex-shrink: 0; /* Prevent the button from shrinking */
 }
 
 #vapi-support-btn > div {
@@ -120,7 +98,11 @@
 }
 
 .vapi-overlay {
-    position: fixed;
+    position: absolute; /* Position relative to the button */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     z-index: 2147483645;
     background-color: transparent;
     border-radius: 1rem;
@@ -129,7 +111,7 @@
 
 
 /* Vapi Button Text Styling */
-#vapi-title {
+#vapi-title, #vapi-subtitle {
     background-color: rgba(0, 0, 0, 0.6);
     text-align: center;
     color: white;
@@ -137,11 +119,6 @@
     border-radius: 10px;
 }
 #vapi-subtitle {
-    background-color: rgba(0, 0, 0, 0.6);
-    text-align: center;
-    color: white;
-    padding: 8px 12px;
-    border-radius: 10px;
     font-size: 16px !important;
     margin-top: 5px;
 }
@@ -156,7 +133,6 @@
     left: 5%;
 }
 
-/* THE FIX: New styles for the icon container */
 #vapi-icon-container {
     position: absolute !important;
     bottom: 15px !important;
@@ -303,59 +279,117 @@
 }
 
 
-/* === MEDIA QUERIES === */
-/* Small screens */
-@media only screen and (max-width: 600px) {
-    #vapi-support-btn, .vapi-overlay {
+/* === THE FIX: NEW RESPONSIVE LAYOUT RULES === */
+
+/* Main layout container */
+.tarot-reading-layout {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    width: 100%;
+    min-height: 100vh;
+    padding: 1rem;
+    box-sizing: border-box;
+}
+
+/* Wrapper for the cards */
+.cards-wrapper {
+    display: flex;
+    justify-content: center;
+}
+
+/* The grid of cards */
+.tarot-display {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 10px !important;
+    justify-content: center !important;
+}
+
+/* --- Mobile View (< 768px) --- */
+@media only screen and (max-width: 767px) {
+    .tarot-reading-layout {
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+        padding-top: 2rem;
+    }
+
+    #vapi-support-btn {
         width: 350px !important;
         height: 305px !important;
-        top: 8% !important;
-        left: 50% !important;
-        transform: translateX(-50%) !important;
+        /* No fixed positioning needed */
     }
+
+    .vapi-overlay {
+        position: absolute;
+        width: 350px !important;
+        height: 305px !important;
+    }
+
+    .cards-wrapper {
+        width: 100%;
+        max-width: 450px; /* Constrain card width on mobile */
+    }
+
     .tarot-display {
-        margin-top: 390px !important;
         width: 100% !important;
     }
+
     .card-container {
-        flex: 1 0 28% !important;
+        flex: 1 0 30% !important; /* 3 cards per row */
         max-width: 30% !important;
     }
 }
-/* Tablets */
-@media only screen and (min-width: 601px) and (max-width: 1023px) {
-    #vapi-support-btn, .vapi-overlay {
+
+
+/* --- Tablet and Desktop View (> 768px) --- */
+@media only screen and (min-width: 768px) {
+    .tarot-reading-layout {
+        flex-direction: row;
+        align-items: flex-start; /* Aligns top edges */
+        justify-content: center;
+        gap: 2rem;
+        padding: 50px 2rem;
+    }
+
+    #vapi-support-btn {
         width: 300px !important;
         height: 400px !important;
-        left: 50px !important;
-        top: 100px !important;
+        top: auto !important; /* Override Vapi defaults */
+        left: auto !important;
     }
+    .vapi-overlay {
+        position: absolute;
+        width: 300px !important;
+        height: 400px !important;
+    }
+
+    .cards-wrapper {
+        flex: 1; /* This makes it fill the remaining space */
+        height: 100%;
+    }
+
     .tarot-display {
-        margin-top: 0 !important;
-        width: calc(100% - 370px) !important;
-        margin-left: 360px !important;
+        width: 100% !important;
+        max-width: 800px;
     }
+
     .card-container {
-        flex: 1 0 20% !important;
-        max-width: 20% !important;
+        flex: 1 0 18% !important; /* 5 cards per row */
+        max-width: 18% !important;
     }
 }
-/* Large screens */
-@media only screen and (min-width: 1024px) {
-    #vapi-support-btn, .vapi-overlay {
-        width: 300px !important;
+
+/* --- Large Desktop View (> 1280px) --- */
+@media only screen and (min-width: 1280px) {
+    #vapi-support-btn {
         height: 500px !important;
-        left: 150px !important;
-        top: 50px !important;
     }
-    .tarot-display {
-        margin-top: 0 !important;
-        gap: 15px !important;
-        width: 720px !important;
-        margin-left: 480px !important;
+    .vapi-overlay {
+        height: 500px !important;
     }
-    .card-container {
-        flex: 1 0 18% !important;
-        max-width: 18% !important;
+    .tarot-reading-layout {
+        gap: 3rem;
     }
 }

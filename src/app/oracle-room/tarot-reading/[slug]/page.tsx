@@ -141,7 +141,6 @@ export default function TarotReaderPage() {
       return;
     }
 
-    // THE FIX: Updated icon URLs to point to local files
     const buttonConfig = {
       type: "pill",
       idle: { 
@@ -285,26 +284,21 @@ export default function TarotReaderPage() {
         </div>
       </div>
       
-      <div id="vapi-support-btn" />
+      {/* THE FIX: New Flexbox layout container */}
+      <div className="tarot-reading-layout">
+        <div id="vapi-support-btn" />
+        {isCallActive && <div onClick={showWarningPopup} className="vapi-overlay" />}
 
-      {isCallActive && (
-          <div 
-              onClick={showWarningPopup}
-              className="vapi-overlay"
-          />
-      )}
-
-
-      <div className="relative z-10">
-        <div className="tarot-container">
-            <div id="tarotDisplay" className="tarot-display">
-                {cards.map((card, index) => (
-                  <Card key={index} card={card} onEnlarge={handleEnlargeCard} />
-                ))}
-            </div>
+        <div className="cards-wrapper">
+          <div id="tarotDisplay" className="tarot-display">
+            {cards.map((card, index) => (
+              <Card key={index} card={card} onEnlarge={handleEnlargeCard} />
+            ))}
+          </div>
         </div>
-        <div className="loading-container"><div id="loading" className="loading-spinner hidden"><span>Shuffling your cards...<br/>Deck: <em>Cats of the Crown</em></span></div></div>
       </div>
+
+      <div className="loading-container"><div id="loading" className="loading-spinner hidden"><span>Shuffling your cards...<br/>Deck: <em>Cats of the Crown</em></span></div></div>
 
       {enlargedCard && (
         <>
