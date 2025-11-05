@@ -9,7 +9,7 @@ import type { User } from '@supabase/supabase-js';
 
 // --- TYPE DEFINITIONS & CONFIGURATION ---
 interface TarotCard { url: string; name: string; }
-type CallStateConfig = { title: string; subtitle: string; };
+type CallStateConfig = { title: string; subtitle: string; icon?: string; }; // icon is optional
 
 interface ReaderProfile {
   displayName: string;
@@ -141,12 +141,24 @@ export default function TarotReaderPage() {
       return;
     }
 
-    // Dynamically create button config
+    // THE FIX: Dynamically create button config with new icons
     const buttonConfig = {
       type: "pill",
-      idle: { title: `Begin ${duration} Minute Reading`, subtitle: `Speak with ${readerInfo.profile.displayName}` },
-      loading: { title: "Connecting to Spirit", subtitle: `Waiting for ${readerInfo.profile.displayName}` },
-      active: { title: `Speaking with ${readerInfo.profile.displayName}`, subtitle: "End the Reading" },
+      idle: { 
+        title: `Begin ${duration} Minute Reading`, 
+        subtitle: `Speak with ${readerInfo.profile.displayName}`,
+        icon: `https://i.imgur.com/fgtf0lI.png` // Green Phone Icon
+      },
+      loading: { 
+        title: "Connecting to Spirit", 
+        subtitle: `Waiting for ${readerInfo.profile.displayName}`,
+        icon: `https://images.squarespace-cdn.com/content/662b53c5379e5a412f214a15/737ac3cb-488e-4887-87f6-dbe63a3faa6d/spiral+icon+50+height.png?content-type=image%2Fpng` // Spiral Icon from old code
+      },
+      active: { 
+        title: `Speaking with ${readerInfo.profile.displayName}`, 
+        subtitle: "End the Reading",
+        icon: `https://i.imgur.com/NTJmZ29.png` // Red Hangup Icon
+      },
       backgroundImageUrl: readerInfo.profile.backgroundImageUrl
     };
 
@@ -275,7 +287,6 @@ export default function TarotReaderPage() {
       
       <div id="vapi-support-btn" />
 
-      {/* THE FIX: Overlay now uses a CSS class to perfectly match the button's size and position */}
       {isCallActive && (
           <div 
               onClick={showWarningPopup}

@@ -119,7 +119,6 @@
   display: none !important;
 }
 
-/* THE FIX: New overlay class */
 .vapi-overlay {
     position: fixed;
     z-index: 2147483645;
@@ -156,6 +155,29 @@
     width: 90%;
     left: 5%;
 }
+
+/* THE FIX: New styles for the icon container */
+#vapi-icon-container {
+    position: absolute !important;
+    bottom: 15px !important;
+    left: 15px !important;
+    width: 50px !important;
+    height: 50px !important;
+    background-color: rgba(0, 0, 0, 0.5) !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3) !important;
+    padding: 8px !important;
+    box-sizing: border-box !important;
+}
+#vapi-icon-container > img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+}
+
 
 /* Card Styles */
 .card-container {
