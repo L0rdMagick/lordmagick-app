@@ -108,19 +108,16 @@
     border-radius: 1rem;
     overflow: hidden;
     border: none !important;
-    background-color: transparent !important; /* Ensure main container has no bg color */
+    background-color: transparent !important;
 }
 
-/* THE FIX PART 1: Force the inner div created by the SDK to be transparent. */
 #vapi-support-btn > div {
   background-color: transparent !important;
 }
 
-/* THE FIX PART 2: Hide the default SVG icon that covers the background image. */
 #vapi-support-btn > div > svg {
   display: none !important;
 }
-
 
 /* Vapi Button Text Styling */
 #vapi-title {
@@ -186,13 +183,35 @@
     transform: rotateY(0deg);
     opacity: 1;
 }
-.enlarged {
-    position: fixed !important;
-    top: 50% !important;
-    left: 50% !important;
-    transform: translate(-50%, -50%) scale(3.5) !important;
-    z-index: 2147483646 !important;
+
+/* THE FIX: New styles for the enlarged card modal */
+.card-enlarged-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  z-index: 40; /* High z-index */
 }
+.card-enlarged-container {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 50; /* Higher z-index to be on top of the backdrop */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.card-enlarged-image {
+  display: block;
+  max-width: 90vw;
+  max-height: 85vh; /* Responsive height */
+  width: auto;
+  height: auto;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+/* END THE FIX */
 
 /* Wobble Animation */
 @keyframes wobble {

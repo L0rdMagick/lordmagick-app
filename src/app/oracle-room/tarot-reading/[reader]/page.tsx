@@ -279,14 +279,21 @@ function Card({ card }: { card: TarotCard }) {
         className={`card-container ${isFlipped ? 'flipped' : ''}`} 
         onClick={handleClick}
       >
-        <img src={card.url} alt={card.name} className={`card-image ${isEnlarged ? 'enlarged' : ''}`} />
+        <img src={card.url} alt={card.name} className="card-image" />
         <img src="https://images.squarespace-cdn.com/content/v1/63ff45f58b2ecb2de4ae9935/8afd5dd6-f795-41fc-a9ba-7a6b39921caf/9.jpg?content-type=image%2Fjpeg" alt="Card back" className="card-cover" />
       </div>
+      
+      {/* THE FIX: Render the enlarged card and backdrop as a modal overlay */}
       {isEnlarged && (
-        <div 
-          onClick={handleBackdropClick} 
-          className="fixed inset-0 bg-black/70 z-2147483645"
-        />
+        <>
+          <div 
+            onClick={handleBackdropClick} 
+            className="card-enlarged-backdrop"
+          />
+          <div className="card-enlarged-container" onClick={handleBackdropClick}>
+             <img src={card.url} alt={card.name} className="card-enlarged-image" />
+          </div>
+        </>
       )}
     </>
   );
