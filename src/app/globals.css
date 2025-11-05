@@ -42,7 +42,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 2147483647;
+    /* THE FIX: Z-index is one level below the modal */
+    z-index: 2147483646;
     background-color: rgba(255, 255, 255, 0.9);
     border-radius: 10px;
     padding: 20px;
@@ -157,6 +158,7 @@
     justify-content: center !important;
     align-items: center !important;
     box-sizing: border-box !important;
+    aspect-ratio: 2 / 3; /* Maintain tarot card aspect ratio */
 }
 .card-image, .card-cover {
     backface-visibility: hidden !important;
@@ -234,6 +236,7 @@
     bottom: 20px;
     left: 50%;
     transform: translateX(-50%);
+    /* THE FIX: Highest z-index to ensure it's on top of the spinner */
     z-index: 2147483647;
     background-color: rgba(255, 255, 255, 0.95);
     border-radius: 10px;
@@ -289,14 +292,13 @@
     }
 
     .tarot-display {
+        display: grid !important;
+        /* THE FIX: Creates a responsive grid of cards */
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 10px;
         width: 100% !important;
-        max-width: 450px;
+        max-width: 450px; /* Constrain card width on mobile */
         margin: 0 auto;
-    }
-
-    .card-container {
-        flex: 1 0 30% !important;
-        max-width: 30% !important;
     }
 }
 
@@ -317,16 +319,16 @@
       margin-left: calc(300px + 50px + 20px); /* button width + left offset + gap */
       /* Fill the remaining space */
       width: calc(100% - (300px + 50px + 40px));
+      box-sizing: border-box;
     }
 
     .tarot-display {
+        display: grid !important;
+        /* THE FIX: Creates a responsive grid of cards */
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 15px;
         width: 100% !important;
-        max-width: 800px;
-    }
-
-    .card-container {
-        flex: 1 0 18% !important;
-        max-width: 18% !important;
+        max-width: 1000px;
     }
 }
 
