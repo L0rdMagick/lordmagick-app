@@ -97,23 +97,36 @@
     margin: 0 !important;
 }
 
-/* Vapi Button Container */
+/* THE FIX: Reverted to the original, working styles for the Vapi button */
 #vapi-support-btn {
-  position: fixed !important;
-  z-index: 100001 !important;
-  animation: wobble 3s infinite ease-in-out;
-}
-#vapi-support-btn > div {
-  background-size: cover !important;
-  background-position: center !important;
-  border-radius: 1rem !important;
-  overflow: hidden !important;
-  border: none !important;
-  width: 100%;
-  height: 100%;
+    position: fixed;
+    z-index: 100001 !important;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    animation: wobble 3s infinite ease-in-out;
+    border-radius: 1rem; /* Added to ensure the container is rounded */
+    overflow: hidden; /* Added to clip the inner content to the rounded corners */
+    border: none !important;
 }
 
-/* Vapi Button Text */
+/* Vapi Button Text Styling (from original) */
+#vapi-title {
+    background-color: rgba(0, 0, 0, 0.6);
+    text-align: center;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 10px;
+}
+#vapi-subtitle {
+    background-color: rgba(0, 0, 0, 0.6);
+    text-align: center;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 10px;
+    font-size: 16px !important;
+    margin-top: 5px;
+}
 #vapi-title-container {
     display: flex;
     flex-direction: column;
@@ -123,19 +136,6 @@
     bottom: 8%;
     width: 90%;
     left: 5%;
-}
-#vapi-title, #vapi-subtitle {
-    background-color: rgba(0, 0, 0, 0.7);
-    text-align: center;
-    color: white;
-    padding: 8px 12px;
-    border-radius: 10px;
-    font-size: 20px;
-    line-height: 1.2;
-}
-#vapi-subtitle {
-    font-size: 16px !important;
-    margin-top: 5px;
 }
 
 /* Card Styles */
@@ -233,7 +233,7 @@
     background-color: #2980b9;
 }
 
-/* === MEDIA QUERIES === */
+/* === MEDIA QUERIES (from original working file) === */
 /* Small screens */
 @media only screen and (max-width: 600px) {
     #vapi-support-btn {

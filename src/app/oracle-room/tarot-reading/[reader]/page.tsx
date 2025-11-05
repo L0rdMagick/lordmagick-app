@@ -181,15 +181,12 @@ export default function TarotReaderPage() {
           },
         });
         
-        // THE FIX: The SDK may take a moment to inject the button. A small timeout
-        // ensures the element exists before we style its inner div.
+        // THE FIX: Wait a moment for the SDK to create the button element, then
+        // apply the background image directly to it, as was done in the working version.
         setTimeout(() => {
           const vapiButton = document.getElementById('vapi-support-btn');
           if (vapiButton) {
-            const innerDiv = vapiButton.querySelector('div');
-            if (innerDiv) {
-              innerDiv.style.backgroundImage = `url('${config.buttonConfig.backgroundImageUrl}')`;
-            }
+            vapiButton.style.backgroundImage = `url('${config.buttonConfig.backgroundImageUrl}')`;
           }
         }, 100);
 
