@@ -13,7 +13,7 @@ type CallStateConfig = { title: string; subtitle: string; };
 interface ReaderConfig {
   assistantId: string;
   buttonConfig: {
-    type: 'pill'; // THE FIX: Explicitly define the button type.
+    type: 'pill'; 
     idle: CallStateConfig;
     loading: CallStateConfig;
     active: CallStateConfig;
@@ -25,7 +25,7 @@ const readerConfigs: Record<string, ReaderConfig> = {
   ambrose: {
     assistantId: "517aca67-ced6-4710-927d-4dd1f5944419",
     buttonConfig: {
-      type: "pill", // THE FIX: Specify 'pill' to use the background image.
+      type: "pill", 
       idle: { title: "Begin Your Tarot Reading", subtitle: "Speak with Ambrose" },
       loading: { title: "Connecting to Spirit", subtitle: "Waiting for Ambrose" },
       active: { title: "Speaking with Ambrose", subtitle: "End the Reading" },
@@ -35,7 +35,7 @@ const readerConfigs: Record<string, ReaderConfig> = {
   natalia: {
     assistantId: "5eded252-3876-4bda-90d8-aec2c5407285",
     buttonConfig: {
-      type: "pill", // THE FIX: Specify 'pill' to use the background image.
+      type: "pill", 
       idle: { title: "Begin Your Tarot Reading", subtitle: "Speak with Natalia" },
       loading: { title: "Connecting to Spirit", subtitle: "Wait my lovely" },
       active: { title: "Reading is in Progress..", subtitle: "End the Reading" },
@@ -130,7 +130,6 @@ export default function TarotReaderPage() {
     window.fetch = async (input, init) => {
       const urlString = typeof input === 'string' ? input : (input instanceof Request ? input.url : input.toString());
       
-      // THE FINAL FIX: Make the URL check more specific to only catch the session URL.
       if (urlString.includes('/rooms/check/vapi/')) {
         const sessionId = urlString.split('/').pop()?.split('?')[0];
         if (sessionId && sessionId.length > 10) {
@@ -181,6 +180,13 @@ export default function TarotReaderPage() {
             position: "manual"
           },
         });
+
+        // THE FIX: Manually set the background image after the SDK creates the button.
+        // This ensures the image is displayed correctly, mirroring your original working code.
+        const vapiButton = document.getElementById('vapi-support-btn');
+        if (vapiButton) {
+          vapiButton.style.backgroundImage = `url('${config.buttonConfig.backgroundImageUrl}')`;
+        }
 
         vapiInstance.on('call-start', () => {
           console.log('Event: call-start received. Beginning to poll for cards.');
