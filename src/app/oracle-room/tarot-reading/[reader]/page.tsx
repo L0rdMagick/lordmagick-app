@@ -64,41 +64,6 @@ export default function TarotReaderPage() {
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const pollingAttemptsRef = useRef(0);
 
-  // THE FIX: Re-implement the showWarningPopup function
-  const showWarningPopup = () => {
-    const modal = document.getElementById('warningModal');
-    if (modal) modal.style.display = 'block';
-  };
-
-  // THE FIX: Re-implement the addOverlay and removeOverlay logic
-  const addOverlay = useCallback(() => {
-    const buttonElement = document.getElementById('vapi-support-btn');
-    if (buttonElement && !document.getElementById('vapi-button-overlay')) {
-      const overlay = document.createElement('div');
-      overlay.id = 'vapi-button-overlay';
-      overlay.style.position = 'absolute';
-      overlay.style.top = '0';
-      overlay.style.left = '0';
-      overlay.style.width = '100%';
-      overlay.style.height = '100%';
-      overlay.style.cursor = 'pointer';
-      overlay.style.zIndex = '2'; 
-      overlay.onclick = (event) => {
-        event.stopPropagation();
-        showWarningPopup();
-      };
-      buttonElement.appendChild(overlay);
-    }
-  }, []);
-
-  const removeOverlay = useCallback(() => {
-    const overlay = document.getElementById('vapi-button-overlay');
-    if (overlay && overlay.parentNode) {
-      overlay.parentNode.removeChild(overlay);
-    }
-  }, []);
-
-
   useEffect(() => {
     const checkUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -161,6 +126,11 @@ export default function TarotReaderPage() {
     if (!config || !user) {
       return;
     }
+
+    const showWarningPopup = () => {
+      const modal = document.getElementById('warningModal');
+      if (modal) modal.style.display = 'block';
+    };
 
     const originalFetch = window.fetch;
     window.fetch = async (input, init) => {
@@ -227,12 +197,16 @@ export default function TarotReaderPage() {
         vapiInstance.on('call-start', () => {
           console.log('Event: call-start received. Beginning to poll for cards.');
           startPollingForCards();
-          addOverlay();
+          // THE FIX: Directly attach the click handler to the button when the call starts.
+          const btn = document.getElementById('vapi-support-btn');
+          if (btn) btn.onclick = showWarningPopup;
         });
 
         vapiInstance.on('call-end', () => {
           console.log('Event: call-end received.');
-          removeOverlay();
+          // THE FIX: Remove the click handler when the call ends to restore default behavior.
+          const btn = document.getElementById('vapi-support-btn');
+          if (btn) btn.onclick = null;
           stopPolling();
           location.reload();
         });
@@ -243,14 +217,13 @@ export default function TarotReaderPage() {
 
     return () => {
       window.fetch = originalFetch;
-      removeOverlay();
       const vapiButton = document.getElementById('vapi-support-btn');
       if (vapiButton) vapiButton.remove();
       if (script.parentNode) {
         script.parentNode.removeChild(script);
       }
     };
-  }, [config, user, readerName, startPollingForCards, stopPolling, addOverlay, removeOverlay]);
+  }, [config, user, readerName, startPollingForCards, stopPolling]);
 
   
   const handleEnlargeCard = (card: TarotCard) => {
@@ -271,7 +244,6 @@ export default function TarotReaderPage() {
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
       <audio id="vapiAudio" className="hidden"></audio>
       
-      {/* THE FIX: Restore the warning modal JSX to the page */}
       <div id="warningModal" className="modal">
         <div className="modal-content">
           <p>End the current reading?</p>
