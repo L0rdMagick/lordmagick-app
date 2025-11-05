@@ -57,7 +57,7 @@ export default function TarotReaderPage() {
 
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isCallActive, setIsCallActive] = useState(false); // THE FIX: State to track call status
+  const [isCallActive, setIsCallActive] = useState(false);
   const [cards, setCards] = useState<TarotCard[]>([]);
   const [enlargedCard, setEnlargedCard] = useState<TarotCard | null>(null);
   
@@ -192,13 +192,13 @@ export default function TarotReaderPage() {
 
         vapiInstance.on('call-start', () => {
           console.log('Event: call-start received. Beginning to poll for cards.');
-          setIsCallActive(true); // THE FIX: Set call to active
+          setIsCallActive(true);
           startPollingForCards();
         });
 
         vapiInstance.on('call-end', () => {
           console.log('Event: call-end received.');
-          setIsCallActive(false); // THE FIX: Set call to inactive
+          setIsCallActive(false);
           stopPolling();
           location.reload();
         });
@@ -243,11 +243,8 @@ export default function TarotReaderPage() {
       <div id="warningModal" className="modal">
         <div className="modal-content">
           <p>Start a new session?</p>
-          <button onClick={() => {
-              window.vapiSDK?.stop();
-              const modal = document.getElementById('warningModal');
-              if (modal) modal.style.display = 'none';
-          }}>Start New Session</button>
+          {/* THE FIX: Button now directly reloads the page */}
+          <button onClick={() => location.reload()}>Start New Session</button>
           <button onClick={() => { 
               const modal = document.getElementById('warningModal'); 
               if (modal) modal.style.display = 'none'; 
@@ -257,7 +254,6 @@ export default function TarotReaderPage() {
       
       <div id="vapi-support-btn" />
 
-      {/* THE FIX: Conditionally rendered overlay to safely intercept clicks */}
       {isCallActive && (
           <div 
               onClick={showWarningPopup}
@@ -267,7 +263,7 @@ export default function TarotReaderPage() {
                   height: '100%',
                   top: 0,
                   left: 0,
-                  zIndex: 2147483645, // High z-index but below the modal
+                  zIndex: 2147483645,
                   // This is a bit of a hack to only make the button area clickable
                   // We rely on the CSS media queries to know where the button is
                   clipPath: 'inset(50px calc(100% - 450px) calc(100% - 550px) 150px)', // Desktop
