@@ -9,7 +9,7 @@ import type { User } from '@supabase/supabase-js';
 
 // --- TYPE DEFINITIONS & CONFIGURATION ---
 interface TarotCard { url: string; name: string; }
-type CallStateConfig = { title: string; subtitle: string; icon?: string; }; // icon is optional
+type CallStateConfig = { title: string; subtitle: string; icon?: string; };
 
 interface ReaderProfile {
   displayName: string;
@@ -52,7 +52,6 @@ export default function TarotReaderPage() {
   const router = useRouter();
   const slug = params.slug as string;
 
-  // --- Parse Slug to get Reader and Duration ---
   const [readerName, duration] = (slug || '').split('-');
   const readerInfo = readerData[readerName];
   const assistantId = readerInfo?.assistants[duration];
@@ -73,7 +72,6 @@ export default function TarotReaderPage() {
   const pollingAttemptsRef = useRef(0);
 
   useEffect(() => {
-    // Redirect if the slug is invalid
     if (!assistantId) {
       router.push('/oracle-room/tarot-reading');
       return;
@@ -121,7 +119,6 @@ export default function TarotReaderPage() {
   const startPollingForCards = useCallback(() => {
     const sessionId = vapiSessionIdRef.current;
     if (!sessionId) { 
-        console.error("Could not get session ID for polling. Retrying..."); 
         setTimeout(startPollingForCards, 500);
         return; 
     }
@@ -168,11 +165,10 @@ export default function TarotReaderPage() {
       if (urlString.includes('/rooms/check/vapi/')) {
         const sessionId = urlString.split('/').pop()?.split('?')[0];
         if (sessionId && sessionId.length > 10) {
-          console.log('SUCCESS: Vapi Session ID captured:', sessionId);
           vapiSessionIdRef.current = sessionId;
           
           try {
-            const response = await fetch('/api/tarot/session', {
+            await fetch('/api/tarot/session', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -183,14 +179,6 @@ export default function TarotReaderPage() {
                 cardCount: 10,
               }),
             });
-
-            if (!response.ok) {
-              const errorBody = await response.json();
-              console.error("API Error: Failed to start session on backend.", response.status, errorBody);
-            } else {
-              console.log("API Success: Session record created/upserted successfully.");
-            }
-
           } catch (err) {
             console.error("FETCH Error: Failed to send startSession request.", err);
           }
@@ -224,19 +212,15 @@ export default function TarotReaderPage() {
         }, 100);
 
         vapiInstance.on('call-start', () => {
-          console.log('Event: call-start received. Beginning to poll for cards.');
           setIsCallActive(true);
           startPollingForCards();
         });
 
         vapiInstance.on('call-end', () => {
-          console.log('Event: call-end received.');
           setIsCallActive(false);
           stopPolling();
           location.reload();
         });
-      } else {
-        console.error("Vapi SDK did not initialize on window object.");
       }
     };
 
@@ -284,18 +268,15 @@ export default function TarotReaderPage() {
         </div>
       </div>
       
-      {/* THE FIX: New Flexbox layout container */}
-      <div className="tarot-reading-layout">
-        <div id="vapi-support-btn" />
-        {isCallActive && <div onClick={showWarningPopup} className="vapi-overlay" />}
+      <div id="vapi-support-btn" />
+      {isCallActive && <div onClick={showWarningPopup} className="vapi-overlay" />}
 
-        <div className="cards-wrapper">
+      <div className="tarot-container">
           <div id="tarotDisplay" className="tarot-display">
-            {cards.map((card, index) => (
-              <Card key={index} card={card} onEnlarge={handleEnlargeCard} />
-            ))}
+              {cards.map((card, index) => (
+                <Card key={index} card={card} onEnlarge={handleEnlargeCard} />
+              ))}
           </div>
-        </div>
       </div>
 
       <div className="loading-container"><div id="loading" className="loading-spinner hidden"><span>Shuffling your cards...<br/>Deck: <em>Cats of the Crown</em></span></div></div>
