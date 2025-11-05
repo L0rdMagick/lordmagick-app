@@ -284,8 +284,12 @@
     }
 
     .tarot-container {
-        margin-top: calc(305px + 2rem + 20px) !important;
-        padding: 20px; /* User-requested padding */
+        position: fixed;
+        top: calc(305px + 2rem + 20px); /* avatar height + top offset + gap */
+        left: 20px;
+        right: 20px;
+        bottom: 20px;
+        overflow-y: auto; /* Adds scrollbar ONLY if needed */
     }
 
     .tarot-display {
@@ -293,7 +297,6 @@
         grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
         gap: 10px;
         width: 100% !important;
-        margin: 0 auto;
     }
 }
 
@@ -308,10 +311,12 @@
     }
 
     .tarot-container {
-      box-sizing: border-box;
-      padding: 50px 20px 20px 20px; /* Aligns top, adds perimeter padding */
-      margin-left: calc(300px + 50px); /* button width + left offset */
-      width: calc(100% - (300px + 50px));
+        position: fixed;
+        top: 50px;
+        left: calc(300px + 50px + 20px); /* avatar width + left offset + gap */
+        right: 20px;
+        bottom: 20px;
+        overflow-y: auto;
     }
 
     .tarot-display {
@@ -330,7 +335,6 @@
     }
 
     .tarot-container {
-        margin-left: calc(300px + 150px);
-        width: calc(100% - (300px + 150px));
+        left: calc(300px + 150px + 20px); /* avatar width + left offset + gap */
     }
 }
