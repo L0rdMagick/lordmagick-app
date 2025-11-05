@@ -58,6 +58,7 @@ export default function TarotReaderPage() {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [cards, setCards] = useState<TarotCard[]>([]);
+  const [enlargedCard, setEnlargedCard] = useState<TarotCard | null>(null);
   
   const vapiSessionIdRef = useRef<string | null>(null);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -219,6 +220,10 @@ export default function TarotReaderPage() {
     const modal = document.getElementById('warningModal');
     if (modal) modal.style.display = 'block';
   };
+
+  const handleEnlargeCard = (card: TarotCard) => {
+    setEnlargedCard(card);
+  };
   
   if (isLoading || !config || !user) {
     return (
@@ -247,54 +252,47 @@ export default function TarotReaderPage() {
       <div className="relative z-10">
         <div className="tarot-container">
             <div id="tarotDisplay" className="tarot-display">
-                {cards.map((card, index) => (<Card key={index} card={card} />))}
+                {cards.map((card, index) => (
+                  <Card key={index} card={card} onEnlarge={handleEnlargeCard} />
+                ))}
             </div>
         </div>
         <div className="loading-container"><div id="loading" className="loading-spinner hidden"><span>Shuffling your cards...<br/>Deck: <em>Cats of the Crown</em></span></div></div>
       </div>
+
+      {enlargedCard && (
+        <>
+          <div 
+            onClick={() => setEnlargedCard(null)} 
+            className="card-enlarged-backdrop"
+          />
+          <div className="card-enlarged-container" onClick={() => setEnlargedCard(null)}>
+             <img src={enlargedCard.url} alt={enlargedCard.name} className="card-enlarged-image" />
+          </div>
+        </>
+      )}
     </main>
   );
 }
 
-function Card({ card }: { card: TarotCard }) {
+function Card({ card, onEnlarge }: { card: TarotCard; onEnlarge: (card: TarotCard) => void; }) {
   const [isFlipped, setIsFlipped] = useState(false);
-  const [isEnlarged, setIsEnlarged] = useState(false);
 
   const handleClick = () => {
     if (!isFlipped) {
       setIsFlipped(true);
     } else {
-      setIsEnlarged(!isEnlarged);
+      onEnlarge(card);
     }
   };
 
-  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    e.stopPropagation();
-    setIsEnlarged(false);
-  };
-
   return (
-    <>
-      <div 
-        className={`card-container ${isFlipped ? 'flipped' : ''}`} 
-        onClick={handleClick}
-      >
-        <img src={card.url} alt={card.name} className="card-image" />
-        <img src="https://images.squarespace-cdn.com/content/v1/63ff45f58b2ecb2de4ae9935/8afd5dd6-f795-41fc-a9ba-7a6b39921caf/9.jpg?content-type=image%2Fjpeg" alt="Card back" className="card-cover" />
-      </div>
-      
-      {/* THE FIX: Render the enlarged card and backdrop as a modal overlay */}
-      {isEnlarged && (
-        <>
-          <div 
-            onClick={handleBackdropClick} 
-            className="card-enlarged-backdrop"
-          />
-          <div className="card-enlarged-container" onClick={handleBackdropClick}>
-             <img src={card.url} alt={card.name} className="card-enlarged-image" />
-          </div>
-        </>
-      )}
-    </>
+    <div 
+      className={`card-container ${isFlipped ? 'flipped' : ''}`} 
+      onClick={handleClick}
+    >
+      <img src={card.url} alt={card.name} className="card-image" />
+      <img src="https://images.squarespace-cdn.com/content/v1/63ff45f58b2ecb2de4ae9935/8afd5dd6-f795-41fc-a9ba-7a6b39921caf/9.jpg?content-type=image%2Fjpeg" alt="Card back" className="card-cover" />
+    </div>
   );
 }

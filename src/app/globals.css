@@ -150,7 +150,7 @@
 /* Card Styles */
 .card-container {
     position: relative !important;
-    z-index: 10001 !important;
+    z-index: 1 !important; /* Lower z-index for individual cards */
     cursor: pointer !important;
     perspective: 1000px !important;
     display: flex !important;
@@ -184,34 +184,42 @@
     opacity: 1;
 }
 
-/* THE FIX: New styles for the enlarged card modal */
+/* THE FIX: Styles for the global enlarged card modal. */
 .card-enlarged-backdrop {
   position: fixed;
   inset: 0;
   background-color: rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(4px);
-  z-index: 40; /* High z-index */
+  z-index: 2147483646; /* Extremely high z-index */
+  cursor: pointer;
 }
 .card-enlarged-container {
   position: fixed;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  z-index: 50; /* Higher z-index to be on top of the backdrop */
+  z-index: 2147483647; /* Highest z-index */
   display: flex;
   justify-content: center;
   align-items: center;
+  padding: 1rem; 
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  pointer-events: none; /* Allows clicks to pass through to the backdrop */
 }
 .card-enlarged-image {
   display: block;
-  max-width: 90vw;
-  max-height: 85vh; /* Responsive height */
+  max-width: 100%;
+  max-height: 100%;
   width: auto;
   height: auto;
-  border-radius: 10px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  border-radius: 15px; /* Slightly larger radius for the bigger view */
+  box-shadow: 0 10px 40px rgba(0,0,0,0.7);
+  object-fit: contain; /* Ensures the entire card is visible without being cropped */
 }
 /* END THE FIX */
+
 
 /* Wobble Animation */
 @keyframes wobble {
