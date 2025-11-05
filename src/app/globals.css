@@ -97,7 +97,7 @@
     margin: 0 !important;
 }
 
-/* THE FIX: Reverted to the original, working styles for the Vapi button */
+/* Vapi Button Styling */
 #vapi-support-btn {
     position: fixed;
     z-index: 100001 !important;
@@ -105,12 +105,17 @@
     background-position: center;
     background-repeat: no-repeat;
     animation: wobble 3s infinite ease-in-out;
-    border-radius: 1rem; /* Added to ensure the container is rounded */
-    overflow: hidden; /* Added to clip the inner content to the rounded corners */
+    border-radius: 1rem;
+    overflow: hidden;
     border: none !important;
 }
 
-/* Vapi Button Text Styling (from original) */
+/* THE FIX: This rule hides the default SVG icon that covers the background image. */
+#vapi-support-btn > div > svg {
+  display: none !important;
+}
+
+/* Vapi Button Text Styling */
 #vapi-title {
     background-color: rgba(0, 0, 0, 0.6);
     text-align: center;
@@ -233,7 +238,7 @@
     background-color: #2980b9;
 }
 
-/* === MEDIA QUERIES (from original working file) === */
+/* === MEDIA QUERIES === */
 /* Small screens */
 @media only screen and (max-width: 600px) {
     #vapi-support-btn {
