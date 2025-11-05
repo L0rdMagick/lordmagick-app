@@ -127,11 +127,6 @@ export default function TarotReaderPage() {
       return;
     }
 
-    const showWarningPopup = () => {
-      const modal = document.getElementById('warningModal');
-      if (modal) modal.style.display = 'block';
-    };
-
     const originalFetch = window.fetch;
     window.fetch = async (input, init) => {
       const urlString = typeof input === 'string' ? input : (input instanceof Request ? input.url : input.toString());
@@ -197,16 +192,12 @@ export default function TarotReaderPage() {
         vapiInstance.on('call-start', () => {
           console.log('Event: call-start received. Beginning to poll for cards.');
           startPollingForCards();
-          // THE FIX: Directly attach the click handler to the button when the call starts.
           const btn = document.getElementById('vapi-support-btn');
           if (btn) btn.onclick = showWarningPopup;
         });
 
         vapiInstance.on('call-end', () => {
           console.log('Event: call-end received.');
-          // THE FIX: Remove the click handler when the call ends to restore default behavior.
-          const btn = document.getElementById('vapi-support-btn');
-          if (btn) btn.onclick = null;
           stopPolling();
           location.reload();
         });
@@ -225,7 +216,11 @@ export default function TarotReaderPage() {
     };
   }, [config, user, readerName, startPollingForCards, stopPolling]);
 
-  
+  const showWarningPopup = () => {
+    const modal = document.getElementById('warningModal');
+    if (modal) modal.style.display = 'block';
+  };
+
   const handleEnlargeCard = (card: TarotCard) => {
     setEnlargedCard(card);
   };
@@ -248,10 +243,7 @@ export default function TarotReaderPage() {
         <div className="modal-content">
           <p>End the current reading?</p>
           <button onClick={() => window.vapiSDK?.stop()}>End Session</button>
-          <button onClick={() => { 
-            const modal = document.getElementById('warningModal'); 
-            if (modal) modal.style.display = 'none'; 
-          }}>Keep Session</button>
+          <button onClick={() => { const modal = document.getElementById('warningModal'); if (modal) modal.style.display = 'none'; }}>Keep Session</button>
         </div>
       </div>
       
