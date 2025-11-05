@@ -275,18 +275,11 @@ export default function TarotReaderPage() {
       
       <div id="vapi-support-btn" />
 
+      {/* THE FIX: Overlay now uses a CSS class to perfectly match the button's size and position */}
       {isCallActive && (
           <div 
               onClick={showWarningPopup}
-              style={{
-                  position: 'fixed',
-                  width: '100%',
-                  height: '100%',
-                  top: 0,
-                  left: 0,
-                  zIndex: 2147483645,
-                  clipPath: 'inset(50px calc(100% - 450px) calc(100% - 550px) 150px)', // Desktop
-              }}
+              className="vapi-overlay"
           />
       )}
 
