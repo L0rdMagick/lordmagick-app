@@ -239,11 +239,12 @@ export default function TarotReaderPage() {
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
       <audio id="vapiAudio" className="hidden"></audio>
       
+      {/* THE FIX: Updated Modal */}
       <div id="warningModal" className="modal">
         <div className="modal-content">
-          <p>End the current reading?</p>
-          <button onClick={() => window.vapiSDK?.stop()}>End Session</button>
-          <button onClick={() => { const modal = document.getElementById('warningModal'); if (modal) modal.style.display = 'none'; }}>Keep Session</button>
+          <p>Start a new session?</p>
+          <button id="newSessionBtn" onClick={() => location.reload()}>Start New Session</button>
+          <button id="keepSessionBtn" onClick={() => { const modal = document.getElementById('warningModal'); if (modal) modal.style.display = 'none'; }}>Keep Session</button>
         </div>
       </div>
       
