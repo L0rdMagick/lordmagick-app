@@ -181,8 +181,6 @@ export default function TarotReaderPage() {
           },
         });
         
-        // THE FIX: Wait a moment for the SDK to create the button element, then
-        // apply the background image directly to it, as was done in the working version.
         setTimeout(() => {
           const vapiButton = document.getElementById('vapi-support-btn');
           if (vapiButton) {
