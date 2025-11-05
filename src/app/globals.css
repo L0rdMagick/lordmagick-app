@@ -100,6 +100,8 @@
     background-color: transparent;
     border-radius: 1rem;
     cursor: pointer;
+    /* THE FIX: Synchronize the wobble animation */
+    animation: wobble 3s infinite ease-in-out;
 }
 
 
@@ -294,8 +296,8 @@
 
     .tarot-display {
         display: grid !important;
-        /* THE FIX: Explicit 3-column grid to fill space */
-        grid-template-columns: repeat(3, 1fr);
+        /* THE FIX: Use auto-fit for intelligent column creation */
+        grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
         gap: 10px;
         width: 100% !important;
     }
@@ -322,8 +324,8 @@
 
     .tarot-display {
         display: grid !important;
-        /* THE FIX: Explicit 5-column grid to fill space */
-        grid-template-columns: repeat(5, 1fr);
+        /* THE FIX: Use auto-fit for intelligent column creation */
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
         gap: 15px;
         width: 100% !important;
     }
