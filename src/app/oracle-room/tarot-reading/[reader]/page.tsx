@@ -180,13 +180,18 @@ export default function TarotReaderPage() {
             position: "manual"
           },
         });
-
-        // THE FIX: Manually set the background image after the SDK creates the button.
-        // This ensures the image is displayed correctly, mirroring your original working code.
-        const vapiButton = document.getElementById('vapi-support-btn');
-        if (vapiButton) {
-          vapiButton.style.backgroundImage = `url('${config.buttonConfig.backgroundImageUrl}')`;
-        }
+        
+        // THE FIX: The SDK may take a moment to inject the button. A small timeout
+        // ensures the element exists before we style its inner div.
+        setTimeout(() => {
+          const vapiButton = document.getElementById('vapi-support-btn');
+          if (vapiButton) {
+            const innerDiv = vapiButton.querySelector('div');
+            if (innerDiv) {
+              innerDiv.style.backgroundImage = `url('${config.buttonConfig.backgroundImageUrl}')`;
+            }
+          }
+        }, 100);
 
         vapiInstance.on('call-start', () => {
           console.log('Event: call-start received. Beginning to poll for cards.');
