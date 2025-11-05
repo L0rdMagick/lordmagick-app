@@ -57,6 +57,7 @@ export default function TarotReaderPage() {
 
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isCallActive, setIsCallActive] = useState(false); // THE FIX: State to track call status
   const [cards, setCards] = useState<TarotCard[]>([]);
   const [enlargedCard, setEnlargedCard] = useState<TarotCard | null>(null);
   
@@ -191,13 +192,13 @@ export default function TarotReaderPage() {
 
         vapiInstance.on('call-start', () => {
           console.log('Event: call-start received. Beginning to poll for cards.');
+          setIsCallActive(true); // THE FIX: Set call to active
           startPollingForCards();
-          const btn = document.getElementById('vapi-support-btn');
-          if (btn) btn.onclick = showWarningPopup;
         });
 
         vapiInstance.on('call-end', () => {
           console.log('Event: call-end received.');
+          setIsCallActive(false); // THE FIX: Set call to inactive
           stopPolling();
           location.reload();
         });
@@ -239,16 +240,41 @@ export default function TarotReaderPage() {
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
       <audio id="vapiAudio" className="hidden"></audio>
       
-      {/* THE FIX: Updated Modal */}
       <div id="warningModal" className="modal">
         <div className="modal-content">
           <p>Start a new session?</p>
-          <button id="newSessionBtn" onClick={() => location.reload()}>Start New Session</button>
-          <button id="keepSessionBtn" onClick={() => { const modal = document.getElementById('warningModal'); if (modal) modal.style.display = 'none'; }}>Keep Session</button>
+          <button onClick={() => {
+              window.vapiSDK?.stop();
+              const modal = document.getElementById('warningModal');
+              if (modal) modal.style.display = 'none';
+          }}>Start New Session</button>
+          <button onClick={() => { 
+              const modal = document.getElementById('warningModal'); 
+              if (modal) modal.style.display = 'none'; 
+          }}>Keep Session</button>
         </div>
       </div>
       
       <div id="vapi-support-btn" />
+
+      {/* THE FIX: Conditionally rendered overlay to safely intercept clicks */}
+      {isCallActive && (
+          <div 
+              onClick={showWarningPopup}
+              style={{
+                  position: 'fixed',
+                  width: '100%',
+                  height: '100%',
+                  top: 0,
+                  left: 0,
+                  zIndex: 2147483645, // High z-index but below the modal
+                  // This is a bit of a hack to only make the button area clickable
+                  // We rely on the CSS media queries to know where the button is
+                  clipPath: 'inset(50px calc(100% - 450px) calc(100% - 550px) 150px)', // Desktop
+              }}
+          />
+      )}
+
 
       <div className="relative z-10">
         <div className="tarot-container">
