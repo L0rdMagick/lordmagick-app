@@ -141,23 +141,23 @@ export default function TarotReaderPage() {
       return;
     }
 
-    // THE FIX: Dynamically create button config with new icons
+    // THE FIX: Updated icon URLs to point to local files
     const buttonConfig = {
       type: "pill",
       idle: { 
         title: `Begin ${duration} Minute Reading`, 
         subtitle: `Speak with ${readerInfo.profile.displayName}`,
-        icon: `https://i.imgur.com/fgtf0lI.png` // Green Phone Icon
+        icon: `/images/ai%20tarot%20reader/app%20images/call%20icon.png`
       },
       loading: { 
         title: "Connecting to Spirit", 
         subtitle: `Waiting for ${readerInfo.profile.displayName}`,
-        icon: `https://images.squarespace-cdn.com/content/662b53c5379e5a412f214a15/737ac3cb-488e-4887-87f6-dbe63a3faa6d/spiral+icon+50+height.png?content-type=image%2Fpng` // Spiral Icon from old code
+        icon: `https://images.squarespace-cdn.com/content/662b53c5379e5a412f214a15/737ac3cb-488e-4887-87f6-dbe63a3faa6d/spiral+icon+50+height.png?content-type=image%2Fpng`
       },
       active: { 
         title: `Speaking with ${readerInfo.profile.displayName}`, 
         subtitle: "End the Reading",
-        icon: `https://i.imgur.com/NTJmZ29.png` // Red Hangup Icon
+        icon: `/images/ai%20tarot%20reader/app%20images/hang%20up%20icon.png`
       },
       backgroundImageUrl: readerInfo.profile.backgroundImageUrl
     };
