@@ -83,8 +83,13 @@ export const GrimoireDecoration: React.FC<IconProps> = ({ className }) => (
     </svg>
 );
 
-export const StoneTabletButton: React.FC<{children: React.ReactNode, onClick: () => void, className?: string}> = ({ children, onClick, className }) => (
-    <button onClick={onClick} className={`relative group transition-transform duration-200 hover:-translate-y-1 ${className}`}>
+export const StoneTabletButton: React.FC<{
+  children: React.ReactNode; 
+  onClick: () => void; 
+  className?: string;
+  style?: React.CSSProperties;
+}> = ({ children, onClick, className, style }) => (
+    <button onClick={onClick} className={`relative group transition-transform duration-200 hover:-translate-y-1 ${className}`} style={style}>
         <svg className="w-full h-full" viewBox="0 0 150 50" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M10.1 5.3L139.9 11.5C141.5 11.7 142.7 13.2 142.5 14.8L135.9 46.8C135.7 48.4 134.2 49.6 132.6 49.4L3.8 43.2C2.2 43 1 41.5 1.2 39.9L7.8 7.9C8 6.3 9.5 5.1 11.1 5.3Z" 
                   fill="url(#stone-fill)"

@@ -1,8 +1,8 @@
 // --- START OF FILE src/components/WiccaSpellGenerator.tsx ---
 
 import React, { useState } from 'react';
-import type { Session, WiccanSpellFormData, GeneratedWiccanSpell } from '../types';
-import { generateWiccanSpell } from '../services/geminiService';
+import type { Session, WiccanSpellFormData, GeneratedWiccanSpell } from '@/lib/types';
+import { generateWiccanSpell } from '@/lib/services/geminiService';
 import LoadingSpinner from './LoadingSpinner';
 import { WandIcon, MoonIcon, CheckCircleIcon, XCircleIcon } from './icons';
 import { WiccaRitual } from './WiccaRitual';
@@ -24,7 +24,6 @@ const getMoonPhase = (): string => {
     return "Waning Crescent";
 };
 
-// NEW: List of focal points for the dropdown
 const focalPoints = [
   "The Moon", "The Sun", "The Earth", "The Element of Air", "The Element of Fire",
   "The Element of Water", "The Horned God", "The Triple Goddess", "Hecate",
@@ -34,7 +33,7 @@ const focalPoints = [
 const WiccaSpellGenerator: React.FC<WiccaSpellGeneratorProps> = ({ session, isSubscribed, onBack }) => {
   const [formData, setFormData] = useState<WiccanSpellFormData>({
     intention: '',
-    focalPoint: focalPoints[0], // Default to the first item
+    focalPoint: focalPoints[0],
     moonPhase: getMoonPhase(),
   });
   const [generatedSpell, setGeneratedSpell] = useState<GeneratedWiccanSpell | null>(null);
@@ -91,7 +90,6 @@ const WiccaSpellGenerator: React.FC<WiccaSpellGeneratorProps> = ({ session, isSu
           <textarea name="intention" value={formData.intention} onChange={handleFormChange} required className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:ring-2 focus:ring-purple-500" placeholder="e.g., To find clarity on my career path" />
         </div>
         
-        {/* UPDATED: Changed from input to select/dropdown */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">What is your focal point?</label>
           <select name="focalPoint" value={formData.focalPoint} onChange={handleFormChange} required className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-purple-500">
@@ -108,7 +106,7 @@ const WiccaSpellGenerator: React.FC<WiccaSpellGeneratorProps> = ({ session, isSu
             {formData.moonPhase}
           </div>
         </div>
-        <button type="submit" className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-3 px-4 rounded-lg">
+        <button type="submit" className="w-full flex items-center justify-center gap-2 bg-linear-to-r from-purple-600 to-pink-600 text-white font-bold py-3 px-4 rounded-lg">
           <WandIcon /> Create Ritual
         </button>
       </form>

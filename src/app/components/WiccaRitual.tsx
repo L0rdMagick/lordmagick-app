@@ -1,10 +1,10 @@
 // --- START OF FILE src/components/WiccaRitual.tsx ---
 
 import React, { useState, useRef, useEffect } from 'react';
-import type { GeneratedWiccanSpell, WiccanIngredient } from '../types';
+import type { GeneratedWiccanSpell, WiccanIngredient } from '@/lib/types';
 import { SparklesIcon, StoneTabletButton, PentagramIcon } from './icons';
 import { Sprite } from './Sprite';
-import { findSprite } from '../lib/spriteLibrary';
+import { findSprite } from '@/lib/spriteLibrary';
 
 // --- Web Audio API Sound Manager ---
 const audioManager = {
@@ -194,7 +194,7 @@ export const WiccaRitual: React.FC<WiccaRitualProps> = ({ spell, onComplete }) =
 
     traceTimeoutRef.current = setTimeout(() => {
         if(traceIntervalRef.current) clearInterval(traceIntervalRef.current);
-        audioManager.stopHoldSound(); // <-- THIS IS THE FIX for the sound
+        audioManager.stopHoldSound();
         audioManager.playCompletionSound();
         setRitualStep(2);
         setTimeout(() => setShowFinale(true), 500);
@@ -230,7 +230,7 @@ export const WiccaRitual: React.FC<WiccaRitualProps> = ({ spell, onComplete }) =
   if (ritualStep === 2) {
     return (
       <div className="text-center flex flex-col items-center justify-center min-h-[500px] w-full h-full relative inset-0 bg-black animate-fade-in">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0a092d] to-black animate-smoke-in" style={{ backgroundImage: 'radial-gradient(circle at center, rgba(49, 26, 90, 0.5) 0%, rgba(10, 9, 45, 0) 70%)' }}></div>
+        <div className="absolute inset-0 bg-linear-to-br from-[#0a092d] to-black animate-smoke-in" style={{ backgroundImage: 'radial-gradient(circle at center, rgba(49, 26, 90, 0.5) 0%, rgba(10, 9, 45, 0) 70%)' }}></div>
         {showFinale && (
           <div className="relative w-full max-w-4xl flex flex-col items-center justify-center animate-fade-in-glow p-4">
             <SparklesIcon />
@@ -275,7 +275,8 @@ export const WiccaRitual: React.FC<WiccaRitualProps> = ({ spell, onComplete }) =
 
       {ritualStep === 1 && (
         <div className="w-full flex flex-col items-center justify-center">
-            <div className="relative w-[320px] h-[320px] sm:w-96 sm:h-96 flex items-center justify-center my-6">
+            {/* THE FIX: Changed h-[320px] to h-80 */}
+            <div className="relative w-80 h-80 sm:w-96 sm:h-96 flex items-center justify-center my-6">
                 <PentagramIcon className="absolute w-full h-full text-purple-400/50" isTracing={isTracing} />
                 {pentagramPoints.map((style, index) => {
                     const placedIngredient = placedIngredients[index];
@@ -287,7 +288,6 @@ export const WiccaRitual: React.FC<WiccaRitualProps> = ({ spell, onComplete }) =
                                 const spriteData = findSprite(placedIngredient.name);
                                 if (!spriteData) return null;
                                 const { sheet, itemInfo } = spriteData;
-                                // --- THIS IS THE FIX for the images ---
                                 return <Sprite 
                                             className="w-full h-full"
                                             sheetPath={sheet.path}
@@ -335,7 +335,8 @@ export const WiccaRitual: React.FC<WiccaRitualProps> = ({ spell, onComplete }) =
                                 />
                             </div>
                             <p className="text-xs text-purple-300 font-bold">{ingredient.name}</p>
-                            <p className="text-xs text-gray-400 italic max-w-[80px]">"{ingredient.activation_phrase}"</p>
+                            {/* THE FIX: Changed max-w-[80px] to max-w-20 */}
+                            <p className="text-xs text-gray-400 italic max-w-20">"{ingredient.activation_phrase}"</p>
                         </div>
                     );
                 })}

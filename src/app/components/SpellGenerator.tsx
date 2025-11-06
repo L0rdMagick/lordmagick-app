@@ -1,8 +1,8 @@
-// --- START OF FILE src/components/SpellGenerator.tsx ---
+// --- START OF FILE src/app/components/SpellGenerator.tsx ---
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import type { Session, SpellFormData, GeneratedSpell, Spell } from '../types';
-import { generateSpellAndSigil, saveSpell, getSpells, uploadBase64Image, getTodaysSpellCount } from '../services/geminiService';
+import type { Session, SpellFormData, GeneratedSpell, Spell } from '@/lib/types';
+import { generateSpellAndSigil, saveSpell, getSpells, uploadBase64Image, getTodaysSpellCount } from '@/lib/services/geminiService';
 import LoadingSpinner from './LoadingSpinner';
 import { WandIcon, GrimoireFlourish, GrimoireDecoration, StoneTabletButton } from './icons';
 
@@ -219,11 +219,11 @@ const RitualDisplay: React.FC<RitualDisplayProps> = ({ generatedSpell, onComplet
 
     const elements = ['Fire', 'Water', 'Air', 'Earth', 'Spirit'];
     const elementStyles: Record<string, { base: string; shadow: string; border: string; text: string; }> = {
-      Fire:   { base: 'bg-gradient-to-br from-red-500 to-orange-600', shadow: 'shadow-[0_0_15px_rgba(239,68,68,0.7)]',   border: 'border-red-300', text: 'text-white' },
-      Water:  { base: 'bg-gradient-to-br from-blue-500 to-cyan-600',   shadow: 'shadow-[0_0_15px_rgba(59,130,246,0.7)]',  border: 'border-blue-300', text: 'text-white' },
-      Air:    { base: 'bg-gradient-to-br from-yellow-300 to-amber-400', shadow: 'shadow-[0_0_15px_rgba(252,211,77,0.7)]', border: 'border-yellow-100', text: 'text-black/80' },
-      Earth:  { base: 'bg-gradient-to-br from-green-600 to-emerald-700', shadow: 'shadow-[0_0_15px_rgba(22,163,74,0.7)]',  border: 'border-green-400', text: 'text-white' },
-      Spirit: { base: 'bg-gradient-to-br from-indigo-500 to-purple-700', shadow: 'shadow-[0_0_15px_rgba(139,92,246,0.7)]', border: 'border-indigo-300', text: 'text-white' }
+      Fire:   { base: 'bg-linear-to-br from-red-500 to-orange-600', shadow: 'shadow-[0_0_15px_rgba(239,68,68,0.7)]',   border: 'border-red-300', text: 'text-white' },
+      Water:  { base: 'bg-linear-to-br from-blue-500 to-cyan-600',   shadow: 'shadow-[0_0_15px_rgba(59,130,246,0.7)]',  border: 'border-blue-300', text: 'text-white' },
+      Air:    { base: 'bg-linear-to-br from-yellow-300 to-amber-400', shadow: 'shadow-[0_0_15px_rgba(252,211,77,0.7)]', border: 'border-yellow-100', text: 'text-black/80' },
+      Earth:  { base: 'bg-linear-to-br from-green-600 to-emerald-700', shadow: 'shadow-[0_0_15px_rgba(22,163,74,0.7)]',  border: 'border-green-400', text: 'text-white' },
+      Spirit: { base: 'bg-linear-to-br from-indigo-500 to-purple-700', shadow: 'shadow-[0_0_15px_rgba(139,92,246,0.7)]', border: 'border-indigo-300', text: 'text-white' }
     };
 
     const handleElementPress = (el: string) => {
@@ -250,7 +250,7 @@ const RitualDisplay: React.FC<RitualDisplayProps> = ({ generatedSpell, onComplet
         const completionText = "It is done.";
         return (
             <div className="text-center flex flex-col items-center justify-center min-h-[400px] w-full h-full absolute inset-0 bg-black">
-                <div className="absolute inset-0 bg-gradient-to-br from-[#0a092d] to-black animate-smoke-in" style={{ backgroundImage: 'radial-gradient(circle at center, rgba(49, 26, 90, 0.5) 0%, rgba(10, 9, 45, 0) 70%)' }}></div>
+                <div className="absolute inset-0 bg-linear-to-br from-[#0a092d] to-black animate-smoke-in" style={{ backgroundImage: 'radial-gradient(circle at center, rgba(49, 26, 90, 0.5) 0%, rgba(10, 9, 45, 0) 70%)' }}></div>
                 <div className="relative flex flex-col items-center justify-center animate-fade-in-glow">
                     <GrimoireDecoration className="w-[450px] h-auto text-yellow-400/70" />
                     <div className="my-8">
@@ -364,7 +364,6 @@ const SpellGenerator: React.FC<SpellGeneratorProps> = ({ session, isSubscribed, 
       setGeneratedSpell(spell);
 
       if (isSubscribed) {
-        // Now that we have a real base64 image, upload it to storage
         const sigilPath = `${session.user.id}/${new Date().toISOString()}.png`;
         const sigilUrl = await uploadBase64Image(spell.sigilBase64, sigilPath);
 
@@ -423,7 +422,7 @@ const SpellGenerator: React.FC<SpellGeneratorProps> = ({ session, isSubscribed, 
                     <option className="bg-[#1a1a3d]">Spirit</option><option className="bg-[#1a1a3d]">Fire</option><option className="bg-[#1a1a3d]">Water</option><option className="bg-[#1a1a3d]">Air</option><option className="bg-[#1a1a3d]">Earth</option>
                 </select>
             </div>
-            <button type="submit" className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-3 px-4 rounded-lg">
+            <button type="submit" className="w-full flex items-center justify-center gap-2 bg-linear-to-r from-purple-600 to-pink-600 text-white font-bold py-3 px-4 rounded-lg">
                 <WandIcon /> Generate Spell
             </button>
         </form>
