@@ -40,35 +40,37 @@ export default function GlobalNav() {
         }`}
       />
 
-      {/* The Sliding Door Navigation Panel */}
+      {/* The Sliding "Drawer" Panel */}
       <div
-        className={`fixed top-0 right-0 bottom-0 z-40 h-full w-full max-w-sm md:max-w-md transition-transform duration-500 ease-in-out ${
+        className={`fixed top-0 right-0 bottom-0 z-40 h-full w-full max-w-sm md:max-w-md transition-transform duration-500 ease-in-out flex justify-end ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
-        {/* Door Image as the background */}
-        <Image
-          src="/images/door.png"
-          alt="Navigation Door"
-          fill
-          style={{ objectFit: 'contain', objectPosition: 'right' }}
-          className="pointer-events-none"
-        />
+        {/* THE FIX: A new container with a fixed aspect ratio that holds BOTH the image and the links */}
+        <div className="relative h-full w-auto aspect-1080/1920">
+          {/* Door Image as the background of this container */}
+          <Image
+            src="/images/door.png"
+            alt="Navigation Door"
+            fill
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            className="pointer-events-none object-contain"
+          />
 
-        {/* Links container, with responsive padding to ensure perfect centering */}
-        {/* THE FIX: Applies different padding for mobile vs. desktop to center the text correctly */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center space-y-6 pr-8 md:pr-16">
-          {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              onClick={closeNav}
-              className={`${uncialAntiqua.className} text-3xl text-amber-300 hover:text-amber-100 transition-colors`}
-              style={{ textShadow: '2px 2px 8px rgba(0,0,0,0.9)' }}
-            >
-              {link.name}
-            </Link>
-          ))}
+          {/* Links container, layered on top and centered within the aspect-ratio container */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center space-y-6 pr-4">
+            {navLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={closeNav}
+                className={`${uncialAntiqua.className} text-3xl text-amber-300 hover:text-amber-100 transition-colors`}
+                style={{ textShadow: '2px 2px 8px rgba(0,0,0,0.9)' }}
+              >
+                {link.name}
+              </Link>
+            ))}
+          </div>
         </div>
       </div>
     </>
