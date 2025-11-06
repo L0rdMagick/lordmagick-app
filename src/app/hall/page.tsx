@@ -38,7 +38,7 @@ const portals = [
     isExternal: false,
   },
   {
-    title: "Marketplace",
+    title: "Marketplace ",
     href: "/marketplace",
     imageSrc: "/images/portal-marketplace.png",
     signImageSrc: "/images/marketplace-sign.png",
