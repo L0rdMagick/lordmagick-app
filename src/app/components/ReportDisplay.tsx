@@ -21,16 +21,28 @@ interface ReportSection {
 }
 
 const imageMap: Record<string, string> = {
-    'introduction-your-personal-blueprint': '/images/reports/introduction.jpg',
-    'core-essence-type-strategy-and-authority': '/images/reports/core-essence.jpg',
-    'your-role-personality-the-profile': '/images/reports/profile.jpg',
-    'energy-centers-your-energetic-makeup': '/images/reports/energy-centers.jpg',
-    'your-gifts-and-lifeforce-gates-and-channels': '/images/reports/gifts.jpg',
-    'your-lifes-purpose-the-incarnation-cross': '/images/reports/purpose.jpg',
-    'career-and-vocation-thriving-in-your-work': '/images/reports/career.jpg',
-    'relationships-and-connection-the-design-of-your-heart': '/images/reports/relationships.jpg',
-    'challenges-the-not-self-theme-your-path-to-growth': '/images/reports/challenges.jpg',
-    'living-your-design-a-practical-guide': '/images/reports/living.jpg',
+    'introduction': '/images/reports/introduction.jpg',
+    'intro': '/images/reports/introduction.jpg',
+    'your-core-energetic-blueprint-the-manifesting-generator': '/images/reports/core-essence.jpg',
+    'mg_type': '/images/reports/core-essence.jpg',
+    'your-operational-guidance-strategy-authority': '/images/reports/profile.jpg',
+    'strategy_authority': '/images/reports/profile.jpg',
+    'your-lifes-purpose-perspective-the-profile-6-6': '/images/reports/profile.jpg',
+    'profile_6_6': '/images/reports/profile.jpg',
+    'your-lifes-theme-the-right-angle-cross-of-duality-30-29-20-34': '/images/reports/purpose.jpg',
+    'incarnation_cross': '/images/reports/purpose.jpg',
+    'your-energetic-centers-defined-undefined': '/images/reports/energy-centers.jpg',
+    'centers': '/images/reports/energy-centers.jpg',
+    'integration-practical-application': '/images/reports/living.jpg',
+    'integration': '/images/reports/living.jpg',
+};
+
+const createIdFromTitle = (title: string): string => {
+    return title.toLowerCase()
+        .replace(/\d+\.\s*/, '')
+        .replace(/[^a-z0-9\s-]/g, '')
+        .trim()
+        .replace(/\s+/g, '-');
 };
 
 const ReportDisplay: React.FC<ReportDisplayProps> = ({ reportContent }) => {
@@ -38,9 +50,13 @@ const ReportDisplay: React.FC<ReportDisplayProps> = ({ reportContent }) => {
   const { coverData, sections } = useMemo(() => {
     if (!reportContent) return { coverData: {}, sections: [] };
 
+    // --- THE FIX: Correctly split the report into its distinct parts ---
     const parts = reportContent.split('---');
+    if (parts.length < 2) return { coverData: {}, sections: [] }; // Not a valid report format
+
     const coverContent = parts[0] || '';
-    const mainContent = parts[1] || '';
+    // Everything after the first '---' is considered the body for parsing sections
+    const mainBodyContent = parts.slice(1).join('---'); 
 
     const cover: Record<string, string> = {};
     coverContent.split('\n').forEach(line => {
@@ -50,33 +66,26 @@ const ReportDisplay: React.FC<ReportDisplayProps> = ({ reportContent }) => {
       }
     });
 
-    // --- THE FIX: NEW ROBUST MARKDOWN PARSING LOGIC ---
     const parsedSections: ReportSection[] = [];
-    let currentSection: ReportSection | null = null;
-    const lines = mainContent.split('\n').filter(line => line.trim() !== '');
+    const contentBlocks = mainBodyContent.split(/(?=^##\s)/m).filter(block => block.trim() !== '');
 
-    const createIdFromTitle = (title: string) => {
-        return title.toLowerCase()
-            .replace(/\d+\.\s*/, '') // Remove numbering like "1. "
-            .replace(/[^a-z0-9\s-]/g, '') // Remove non-alphanumeric characters
-            .trim()
-            .replace(/\s+/g, '-'); // Replace spaces with hyphens
-    };
+    for (const block of contentBlocks) {
+        const lines = block.split('\n').filter(line => line.trim() !== '');
+        const headerLine = lines.shift() || '';
 
-    for (const line of lines) {
-        if (line.startsWith('## ')) {
-            if (currentSection) {
-                parsedSections.push(currentSection);
-            }
-            const title = line.substring(3).replace(/^\d+\.\s*/, '').trim();
-            const id = createIdFromTitle(title);
-            currentSection = { id, title, content: [], image: imageMap[id] };
-        } else if (currentSection) {
-            const tocItemMatch = line.match(/^\s*-\s*\[(.*?)]\((.*?)\)/);
+        const oldIdMatch = headerLine.match(/\{#(.*?)\}/);
+        const titleText = headerLine.replace(/\{#.*?\}/, '').replace(/^##\s*/, '').trim();
+        const id = oldIdMatch ? oldIdMatch[1] : createIdFromTitle(titleText);
+        
+        const currentSection: ReportSection = { id, title: titleText, content: [], image: imageMap[id] };
+        
+        for (const line of lines) {
+            const tocItemMatch = line.match(/^\s*-\s*\[(.*?)]\((.*?)\)|\d\.\s*\[(.*?)]\((.*?)\)/); // Handles both bullet and numbered lists
             const backToTopMatch = line.match(/\[Back to Top\]\((.*?)\)/);
-
+            
             if (tocItemMatch) {
-                currentSection.content.push({ type: 'li', text: tocItemMatch[1], href: tocItemMatch[2] });
+                // tocItemMatch will have groups [1, 2] for '-' lists or [3, 4] for '1.' lists
+                currentSection.content.push({ type: 'li', text: tocItemMatch[1] || tocItemMatch[3], href: tocItemMatch[2] || tocItemMatch[4] });
             } else if (backToTopMatch) {
                 currentSection.content.push({ type: 'back-to-top', text: 'Back to Top', href: backToTopMatch[1] });
             } else if (line.startsWith('#### ')) {
@@ -87,9 +96,6 @@ const ReportDisplay: React.FC<ReportDisplayProps> = ({ reportContent }) => {
                 currentSection.content.push({ type: 'p', text: line });
             }
         }
-    }
-
-    if (currentSection) {
         parsedSections.push(currentSection);
     }
     // --- END FIX ---
@@ -127,7 +133,7 @@ const ReportDisplay: React.FC<ReportDisplayProps> = ({ reportContent }) => {
         <div>
             {sections.map(section => (
                 <div key={section.id} id={section.id} className="py-8 scroll-mt-20">
-                     <h2 className="text-3xl font-bold font-serif text-purple-300 mt-12 mb-6 border-b-2 border-purple-400/50 pb-2">{section.title}</h2>
+                     <h2 className="text-3xl font-bold font-serif text-purple-300 mt-12 mb-6 border-b-2 border-purple-400/50 pb-2">{section.title.replace(/^\d+\.\s*/, '')}</h2>
                      {section.image && <img src={section.image} alt={section.title} className="rounded-lg my-6 w-full h-64 object-cover shadow-lg" loading="lazy" />}
                      
                      {section.id.includes('table-of-contents') ? (

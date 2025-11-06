@@ -27,6 +27,7 @@
     "npm:remark@^15.0.1": "15.0.1",
     "npm:stripe@^16.2.0": "16.12.0",
     "npm:stripe@^19.3.0": "19.3.0_@types+node@20.19.24",
+    "npm:supabase@2.54.11": "2.54.11",
     "npm:supabase@^2.54.11": "2.54.11",
     "npm:tailwindcss@^4.1.16": "4.1.16",
     "npm:typescript@5": "5.9.3",
