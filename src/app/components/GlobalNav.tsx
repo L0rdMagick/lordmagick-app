@@ -26,7 +26,6 @@ export default function GlobalNav() {
       {/* Navigation Trigger Button */}
       <button
         onClick={toggleNav}
-        // THE FIX: Changed z-[60] to z-50 for canonical class name
         className="fixed top-4 right-4 z-50 bg-black/50 text-white py-2 px-4 rounded-lg border border-gray-600 hover:bg-gray-700 transition-colors"
         aria-label="Toggle navigation menu"
       >
@@ -36,7 +35,6 @@ export default function GlobalNav() {
       {/* Backdrop - Dims the page when nav is open */}
       <div
         onClick={closeNav}
-        // THE FIX: Adjusted z-index to maintain stacking order
         className={`fixed inset-0 bg-black/70 backdrop-blur-sm z-30 transition-opacity duration-500 ${
           isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
@@ -44,7 +42,6 @@ export default function GlobalNav() {
 
       {/* The Sliding Door Navigation Panel */}
       <div
-        // THE FIX: Adjusted z-index to maintain stacking order
         className={`fixed top-0 right-0 bottom-0 z-40 h-full w-full max-w-sm md:max-w-md transition-transform duration-500 ease-in-out ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
@@ -59,7 +56,8 @@ export default function GlobalNav() {
         />
 
         {/* Links container, centered over the door */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center space-y-6">
+        {/* THE FIX: Added responsive right-padding to shift the text left and center it on the wood */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center space-y-6 pr-10 md:pr-16">
           {navLinks.map((link) => (
             <Link
               key={link.href}
