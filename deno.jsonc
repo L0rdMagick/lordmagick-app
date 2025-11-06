@@ -3,5 +3,6 @@
   "tasks": {
     "serve": "supabase functions serve"
   },
-  "nodeModulesDir": true
+  // THE FIX: Use the new "auto" value as recommended by the warning.
+  "nodeModulesDir": "auto"
 }

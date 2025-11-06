@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "deploy:functions": "supabase functions deploy --import-map ./supabase/import_map.json --project-ref kanuduuuwnpqbqcdczjp"
+    "deploy:functions": "npm exec supabase functions deploy -- --import-map ./supabase/import_map.json --project-ref kanuduuuwnpqbqcdczjp"
   },
   "dependencies": {
     "@supabase/auth-ui-react": "^0.4.7",
