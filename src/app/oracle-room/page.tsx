@@ -26,10 +26,8 @@ export default function OracleRoomPage() {
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 w-full max-w-4xl">
-          {/* Portal to Tarot Reading */}
           <Link
             href="/oracle-room/tarot-reading"
-            // THE FIX: Updated to canonical CSS variable for glow color
             className="group block p-6 bg-black/40 rounded-xl border border-gray-700/50 backdrop-blur-sm transition-all duration-300 hover:border-cyan-400/80 hover:scale-105 hover:bg-black/60 hover:[--glow-color:var(--color-cyan-400)]"
             style={{ '--glow-color': 'transparent', boxShadow: '0 0 45px -10px var(--glow-color)' } as React.CSSProperties}
           >
@@ -48,12 +46,9 @@ export default function OracleRoomPage() {
             </p>
           </Link>
 
-          {/* NEW: Portal to Human Design */}
-          <a
-            href="https://humandesign.lordmagick.com/"
-            target="_blank"
-            rel="noopener noreferrer"
-            // THE FIX: Updated to canonical CSS variable for glow color
+          {/* THE FIX: Changed from an <a> tag to a <Link> tag pointing to the new internal page */}
+          <Link
+            href="/oracle-room/human-design"
             className="group block p-6 bg-black/40 rounded-xl border border-gray-700/50 backdrop-blur-sm transition-all duration-300 hover:border-purple-400/80 hover:scale-105 hover:bg-black/60 hover:[--glow-color:var(--color-purple-400)]"
             style={{ '--glow-color': 'transparent', boxShadow: '0 0 45px -10px var(--glow-color)' } as React.CSSProperties}
           >
@@ -70,7 +65,7 @@ export default function OracleRoomPage() {
             <p className="text-gray-300 mt-2">
               Generate a personalized report to understand your unique energetic blueprint.
             </p>
-          </a>
+          </Link>
         </div>
         
       </div>

@@ -1,0 +1,170 @@
+// --- START OF FILE src/lib/services/geminiService.ts ---
+
+import { createBrowserClient } from '@supabase/ssr';
+import type { FormData, HumanDesignChart, Report, SpellFormData, GeneratedSpell, Spell, WiccanSpellFormData, GeneratedWiccanSpell } from '../types';
+
+// THE FIX: Use the Next.js Supabase client initialized for browser components
+const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
+// --- Human Design Report Functions (Now calling Supabase Edge Functions) ---
+
+export const calculateHumanDesignChart = async (formData: FormData): Promise<HumanDesignChart> => {
+    const { data, error } = await supabase.functions.invoke('generate-human-design', {
+        body: { action: 'calculate', formData },
+    });
+    if (error) {
+        console.error("Error invoking generate-human-design (calculate) function:", error);
+        throw new Error("Failed to calculate the chart data from the AI model.");
+    }
+    return data as HumanDesignChart;
+};
+
+export const generateReport = async (chartData: HumanDesignChart, name: string): Promise<string> => {
+    const { data, error } = await supabase.functions.invoke('generate-human-design', {
+        body: { action: 'generate', chartData, name },
+    });
+    if (error) {
+        console.error("Error invoking generate-human-design (generate) function:", error);
+        throw new Error("Failed to communicate with the AI model.");
+    }
+    return data.reportContent as string;
+};
+
+export const saveReport = async (userId: string, name: string, chartData: HumanDesignChart, reportContent: string): Promise<Report> => {
+    const { data, error } = await supabase.from('reports').insert({
+        user_id: userId,
+        name: name,
+        chart_data: chartData,
+        report_content: reportContent,
+    }).select().single();
+    if (error) {
+        console.error("Error saving report to Supabase:", error);
+        throw new Error('Could not save your report to the database.');
+    }
+    return data as Report;
+};
+
+export const getThisMonthsReportCount = async (userId: string): Promise<number> => {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const { count, error } = await supabase
+        .from('reports')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .gte('created_at', startOfMonth.toISOString());
+
+    if (error && error.code !== '42P01') {
+         console.error("Error fetching this month's report count:", error);
+         return 0; // Fail safe
+    }
+    
+    return count || 0;
+};
+
+
+// --- Chaos Magick Spell Function ---
+export const generateSpellAndSigil = async (formData: SpellFormData): Promise<GeneratedSpell> => {
+    const { data, error } = await supabase.functions.invoke('generate-spell', {
+        body: { formData },
+    });
+
+    if (error) {
+        console.error("Error invoking generate-spell function:", error);
+        throw new Error(error.message || "Failed to generate the magick spell from the AI model.");
+    }
+
+    return data as GeneratedSpell;
+};
+
+// --- NEW WICCAN SPELL FUNCTION ---
+export const generateWiccanSpell = async (formData: WiccanSpellFormData): Promise<GeneratedWiccanSpell> => {
+    const { data, error } = await supabase.functions.invoke('generate-wiccan-spell', {
+        body: formData,
+    });
+    if (error) {
+        console.error("Error invoking generate-wiccan-spell function:", error);
+        throw new Error(error.message || "Failed to generate the Wiccan spell from the AI model.");
+    }
+    return data as GeneratedWiccanSpell;
+};
+// --- END NEW WICCAN SPELL FUNCTION ---
+
+
+// --- Utility and Storage Functions ---
+export const uploadBase64Image = async (base64: string, path: string): Promise<string> => {
+    const byteCharacters = atob(base64);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: 'image/png' });
+
+    const { data, error } = await supabase.storage
+        .from('sigils')
+        .upload(path, blob, {
+            cacheControl: '3600',
+            upsert: true,
+        });
+
+    if (error) {
+        console.error('Error uploading sigil:', error);
+        throw new Error('Could not upload sigil image.');
+    }
+
+    const { data: { publicUrl } } = supabase.storage.from('sigils').getPublicUrl(path);
+    return publicUrl;
+};
+
+export const saveSpell = async (userId: string, spellData: {name: string, intention: string, incantation: string, sigil_url: string, element: string}): Promise<Spell> => {
+    const { data, error } = await supabase
+        .from('spells')
+        .insert({ user_id: userId, ...spellData })
+        .select()
+        .single();
+    
+    if (error) {
+        console.error("Error saving spell to Supabase:", error);
+        throw new Error('Could not save your spell to the database.');
+    }
+    return data as Spell;
+};
+
+export const getSpells = async (userId: string): Promise<Spell[]> => {
+    const { data, error } = await supabase
+        .from('spells')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+    
+    if (error && error.code !== '42P01') { // Ignore error if table doesn't exist
+        console.error("Error fetching spells:", error);
+        throw new Error("Could not fetch your Book of Shadows.");
+    }
+    return (data as Spell[]) || [];
+};
+
+export const getTodaysSpellCount = async (userId: string): Promise<number> => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const { count, error } = await supabase
+        .from('spells')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .gte('created_at', today.toISOString())
+        .lt('created_at', tomorrow.toISOString());
+
+    if (error && error.code !== '42P01') {
+         console.error("Error fetching today's spell count:", error);
+         return 0; // Fail safe
+    }
+    
+    return count || 0;
+}
