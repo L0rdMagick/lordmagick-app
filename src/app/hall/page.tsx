@@ -5,14 +5,15 @@ import { useRouter } from 'next/navigation';
 import { useState, useRef, MouseEvent, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Sparkle from '../components/Sparkle';
-import LogoutButton from '../components/LogoutButton'; // NEW: Import the LogoutButton
+import LogoutButton from '../components/LogoutButton';
 
 interface SparkleState { key: number; x: number; y: number; }
 
 const portals = [
   {
     title: "Spell Room",
-    href: "https://arcanum-ai-app.vercel.app/", 
+    // THE FIX: Updated href to the new subdomain
+    href: "https://spells.lordmagick.com/", 
     imageSrc: "/images/portal-spell.png",
     signImageSrc: "/images/spell-room-sign.png",
     interactiveGlow: "group-hover:[--glow-color:theme(colors.purple.500)] active:[--glow-color:theme(colors.purple.500)]",
@@ -94,7 +95,7 @@ export default function HallPage() {
 
   return (
     <>
-      <LogoutButton /> {/* NEW: Add the logout button here */}
+      <LogoutButton />
       <motion.main 
         className="relative min-h-screen w-full bg-black"
         initial={{ opacity: 0 }}

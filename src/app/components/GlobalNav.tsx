@@ -9,7 +9,8 @@ const uncialAntiqua = Uncial_Antiqua({ subsets: ['latin'], weight: ['400'] });
 
 const navLinks = [
   { name: "Grand Hall", href: "/hall" },
-  { name: "The Spell Room", href: "/spell-room" },
+  // THE FIX: Updated href to the new subdomain
+  { name: "The Spell Room", href: "https://spells.lordmagick.com/" },
   { name: "Oracle Room", href: "/oracle-room" },
   { name: "The Library", href: "/library" },
   { name: "Marketplace", href: "/marketplace" },
@@ -23,7 +24,6 @@ export default function GlobalNav() {
 
   return (
     <>
-      {/* Navigation Trigger Button */}
       <button
         onClick={toggleNav}
         className="fixed top-4 right-4 z-50 bg-black/50 text-white py-2 px-4 rounded-lg border border-gray-600 hover:bg-gray-700 transition-colors"
@@ -32,7 +32,6 @@ export default function GlobalNav() {
         Rooms
       </button>
 
-      {/* Backdrop - Dims the page when nav is open */}
       <div
         onClick={closeNav}
         className={`fixed inset-0 bg-black/70 backdrop-blur-sm z-30 transition-opacity duration-500 ${
@@ -40,17 +39,12 @@ export default function GlobalNav() {
         }`}
       />
 
-      {/* The Sliding "Drawer" Panel */}
-      {/* THE FIX: Added items-center to vertically center the door container */}
       <div
         className={`fixed top-0 right-0 bottom-0 z-40 h-full w-full max-w-sm md:max-w-md transition-transform duration-500 ease-in-out flex justify-end items-center overflow-hidden ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
-        {/* Container with a fixed aspect ratio that holds BOTH the image and the links */}
-        {/* THE FIX: Switched to width-driven sizing (w-full h-auto) to prevent horizontal clipping */}
         <div className="relative w-full h-auto aspect-1080/1920">
-          {/* Door Image as the background of this container */}
           <Image
             src="/images/door.png"
             alt="Navigation Door"
@@ -59,13 +53,15 @@ export default function GlobalNav() {
             className="pointer-events-none object-contain"
           />
 
-          {/* Links container, layered on top and perfectly centered */}
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="flex w-3/5 flex-col items-center space-y-6">
                 {navLinks.map((link) => (
                 <Link
                     key={link.href}
                     href={link.href}
+                    // Handle external links correctly
+                    target={link.href.startsWith('http') ? '_blank' : '_self'}
+                    rel={link.href.startsWith('http') ? 'noopener noreferrer' : ''}
                     onClick={closeNav}
                     className={`${uncialAntiqua.className} text-3xl text-center text-amber-300 hover:text-amber-100 transition-colors`}
                     style={{ textShadow: '2px 2px 8px rgba(0,0,0,0.9)' }}
