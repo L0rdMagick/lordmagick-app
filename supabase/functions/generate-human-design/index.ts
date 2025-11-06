@@ -29,8 +29,50 @@ Deno.serve(async (req: Request) => {
         if (action === 'calculate') {
             prompt = `Calculate the Human Design chart data for a person with these details: Name: ${formData.name}, DOB: ${formData.dateOfBirth}, Time: ${formData.timeOfBirth}, Place: ${formData.birthplace}. Return ONLY a valid JSON object with keys: type, strategy, authority, profile, incarnationCross, and a 'centers' array of objects with 'name' and 'defined' boolean properties.`;
         } else if (action === 'generate') {
-            // THE FIX: The prompt is updated to remove custom IDs and use standard Markdown.
-            prompt = `You are "Arcanum AI," an expert Human Design analyst. Write a detailed, multi-section report for ${name} based on this chart data: ${JSON.stringify(chartData)}. Use standard Markdown formatting. Include a "Table of Contents" section that links to the other section headers. Do NOT include custom HTML IDs like {#id-name}.`;
+            // THE FIX: Restored the original, highly detailed prompt for a long-form report.
+            prompt = `
+                You are "Arcanum AI," an expert Human Design analyst with a profound, eloquent, and insightful voice. Your task is to generate an exceptionally thorough, multi-page Human Design report for a client named ${name}, based on the provided chart data.
+
+                **Chart Data:**
+                ${JSON.stringify(chartData)}
+
+                **Report Structure and Formatting Instructions (Follow PRECISELY):**
+
+                1.  **Cover Page:** Start with a cover page section. It must be formatted exactly like this, with each item on a new line:
+                    \`\`\`
+                    TITLE: Human Design AI Report
+                    NAME: ${name}
+                    DESCRIPTION: A comprehensive, personalized guide to your unique energetic blueprint. This report delves into your core essence, personality, energy centers, life purpose, and provides practical guidance for living in alignment with your authentic self.
+                    SUBTITLE: [Generate a creative, fitting subtitle based on their Type, Profile, and Cross]
+                    ---
+                    \`\`\`
+
+                2.  **Main Content:** After the cover page's "---" separator, generate the main body of the report. The report must contain the following ten sections, in this exact order. Each section header MUST be a Markdown H2 (##) and MUST include a custom HTML ID in the format \`{#id-name}\`.
+
+                    -   \`## 1. Introduction: Your Personal Blueprint {#introduction-your-personal-blueprint}\`
+                    -   \`## 2. Core Essence: Type, Strategy, and Authority {#core-essence-type-strategy-and-authority}\`
+                    -   \`## 3. Your Role & Personality: The Profile {#your-role-personality-the-profile}\`
+                    -   \`## 4. Energy Centers: Your Energetic Makeup {#energy-centers-your-energetic-makeup}\`
+                    -   \`## 5. Your Gifts and Lifeforce: Gates and Channels {#your-gifts-and-lifeforce-gates-and-channels}\`
+                    -   \`## 6. Your Life's Purpose: The Incarnation Cross {#your-lifes-purpose-the-incarnation-cross}\`
+                    -   \`## 7. Career and Vocation: Thriving in Your Work {#career-and-vocation-thriving-in-your-work}\`
+                    -   \`## 8. Relationships and Connection: The Design of Your Heart {#relationships-and-connection-the-design-of-your-heart}\`
+                    -   \`## 9. Challenges & The Not-Self Theme: Your Path to Growth {#challenges-the-not-self-theme-your-path-to-growth}\`
+                    -   \`## 10. Living Your Design: A Practical Guide {#living-your-design-a-practical-guide}\`
+
+                3.  **Table of Contents:** The VERY FIRST section after the cover page must be the "Table of Contents". It must be a Markdown bulleted list, with each item linking to the corresponding section ID from the list above. Example: \`- [1. Introduction: Your Personal Blueprint](#introduction-your-personal-blueprint)\`
+
+                4.  **Content Depth:** Each section must be exceptionally detailed, insightful, and at least 3-5 long paragraphs. Use subheadings (### and ####) where appropriate. Use Markdown for formatting (bolding with **, italics with *, bullet points with *).
+
+                5.  **Back to Top Links:** At the end of EACH of the 10 main sections (from Introduction to Living Your Design), you MUST include a "Back to Top" link formatted exactly like this: \`[Back to Top](#cover-page)\`
+
+                **Tone and Voice:**
+                -   Your tone should be wise, empowering, and insightful.
+                -   Address the client directly by their name, ${name}.
+                -   Explain complex concepts clearly and provide practical, actionable advice.
+
+                Generate the complete report now based on these strict instructions.
+            `;
         } else {
             return new Response(JSON.stringify({ error: 'Invalid action' }), { status: 400 });
         }
