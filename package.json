@@ -2,11 +2,12 @@
   "name": "lordmagick-app",
   "version": "0.1.0",
   "private": true,
-  "scripts": {
+"scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "deploy:functions": "supabase functions deploy --import-map ./supabase/import_map.json --project-ref kanuduuuwnpqbqcdczjp"
   },
   "dependencies": {
     "@supabase/auth-ui-react": "^0.4.7",
