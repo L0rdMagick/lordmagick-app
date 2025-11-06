@@ -55,20 +55,22 @@ export default function GlobalNav() {
           className="pointer-events-none"
         />
 
-        {/* Links container, centered over the door */}
-        {/* THE FIX: Added responsive right-padding to shift the text left and center it on the wood */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center space-y-6 pr-10 md:pr-16">
-          {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              onClick={closeNav}
-              className={`${uncialAntiqua.className} text-3xl text-amber-300 hover:text-amber-100 transition-colors`}
-              style={{ textShadow: '2px 2px 8px rgba(0,0,0,0.9)' }}
-            >
-              {link.name}
-            </Link>
-          ))}
+        {/* THE FIX: New wrapper div that is positioned and sized to only cover the visible door area */}
+        <div className="absolute top-0 right-0 h-full w-4/5">
+            {/* This inner div now correctly centers the text within the visible door area */}
+            <div className="flex h-full flex-col items-center justify-center space-y-6">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={closeNav}
+                  className={`${uncialAntiqua.className} text-3xl text-amber-300 hover:text-amber-100 transition-colors`}
+                  style={{ textShadow: '2px 2px 8px rgba(0,0,0,0.9)' }}
+                >
+                  {link.name}
+                </Link>
+              ))}
+            </div>
         </div>
       </div>
     </>
