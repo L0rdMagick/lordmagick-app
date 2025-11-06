@@ -1,0 +1,7 @@
+{
+  "imports": {
+    "stripe": "npm:stripe@^16.2.0",
+    "@supabase/supabase-js": "npm:@supabase/supabase-js@^2.44.4",
+    "google-auth-library": "npm:google-auth-library@^9.11.0"
+  }
+}
