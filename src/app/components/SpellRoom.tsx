@@ -1,7 +1,6 @@
 // --- START OF FILE src/components/SpellRoom.tsx ---
 
 import React, { useState } from 'react';
-// THE FIX: Corrected the import path to use the '@' alias
 import type { Session } from '@/lib/types';
 import SpellGenerator from './SpellGenerator';
 import WiccaSpellGenerator from './WiccaSpellGenerator';
@@ -26,7 +25,7 @@ const traditions: { name: Tradition; description: string; image: string; isAvail
     name: "Wicca & Witchcraft",
     description: "Nature-based traditions working with deities, the elements, lunar cycles, and herbalism.",
     image: "/images/magickal-traditions-art/wicca.png",
-    isAvailable: true,
+    isAvailable: true, 
   },
   {
     name: "Ceremonial Magick",
@@ -89,6 +88,7 @@ const SpellRoom: React.FC<SpellRoomProps> = ({ session, isSubscribed, onBack }) 
               className="w-24 h-24 object-cover rounded-full mb-4 border-2 border-white/20 group-hover:border-purple-400 transition-colors" 
             />
             <h3 className="text-xl font-serif font-bold text-purple-300">{tradition.name}</h3>
+            {/* THE FIX: Changed flex-grow to grow */}
             <p className="text-gray-400 text-sm mt-2 grow">{tradition.description}</p>
             {!tradition.isAvailable && (
               <p className="mt-4 text-xs font-bold text-yellow-400 bg-yellow-900/50 px-2 py-1 rounded-full">COMING SOON</p>

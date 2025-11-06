@@ -10,15 +10,14 @@ import LogoutButton from '../components/LogoutButton';
 interface SparkleState { key: number; x: number; y: number; }
 
 const portals = [
-  {
+    {
     title: "Spell Room",
-    // THE FIX: Updated href to the new subdomain
-    href: "https://spells.lordmagick.com/", 
+    href: "/spell-room", 
     imageSrc: "/images/portal-spell.png",
     signImageSrc: "/images/spell-room-sign.png",
     interactiveGlow: "group-hover:[--glow-color:theme(colors.purple.500)] active:[--glow-color:theme(colors.purple.500)]",
     soundSrc: "/audio/sfx-spell-room-portal.mp3",
-    isExternal: true,
+    isExternal: false,
   },
   {
     title: "Oracle Room",
