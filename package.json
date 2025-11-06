@@ -7,7 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "deploy:functions": "npm exec supabase functions deploy -- --import-map ./supabase/import_map.json --project-ref kanuduuuwnpqbqcdczjp"
+    "deploy:functions": "supabase functions deploy --import-map ./supabase/import_map.json",
+    "deploy:checkout": "supabase functions deploy create-checkout-session --import-map ./supabase/import_map.json",
+    "deploy:humandesign": "supabase functions deploy generate-human-design --import-map ./supabase/import_map.json",
+    "deploy:wiccan": "supabase functions deploy generate-wiccan-spell --import-map ./supabase/import_map.json"
   },
   "dependencies": {
     "@supabase/auth-ui-react": "^0.4.7",
