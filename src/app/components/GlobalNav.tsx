@@ -41,14 +41,15 @@ export default function GlobalNav() {
       />
 
       {/* The Sliding "Drawer" Panel */}
-      {/* THE FIX #1: Added overflow-hidden to prevent the door from "peeking" on certain screen sizes */}
+      {/* THE FIX: Added items-center to vertically center the door container */}
       <div
-        className={`fixed top-0 right-0 bottom-0 z-40 h-full w-full max-w-sm md:max-w-md transition-transform duration-500 ease-in-out flex justify-end overflow-hidden ${
+        className={`fixed top-0 right-0 bottom-0 z-40 h-full w-full max-w-sm md:max-w-md transition-transform duration-500 ease-in-out flex justify-end items-center overflow-hidden ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
         {/* Container with a fixed aspect ratio that holds BOTH the image and the links */}
-        <div className="relative h-full w-auto aspect-1080/1920">
+        {/* THE FIX: Switched to width-driven sizing (w-full h-auto) to prevent horizontal clipping */}
+        <div className="relative w-full h-auto aspect-1080/1920">
           {/* Door Image as the background of this container */}
           <Image
             src="/images/door.png"
@@ -59,7 +60,6 @@ export default function GlobalNav() {
           />
 
           {/* Links container, layered on top and perfectly centered */}
-          {/* THE FIX #2: A wrapper div now centers a width-constrained column of links over the wooden part of the door */}
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="flex w-3/5 flex-col items-center space-y-6">
                 {navLinks.map((link) => (
