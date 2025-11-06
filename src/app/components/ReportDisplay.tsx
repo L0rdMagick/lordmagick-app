@@ -1,7 +1,7 @@
-// --- START OF FILE ReportDisplay.tsx ---
+// --- START OF FILE src/app/components/ReportDisplay.tsx ---
 
 import React, { useMemo, MouseEvent } from 'react';
-import { BackToTopIcon, LockIcon } from './icons';
+import { BackToTopIcon } from './icons';
 
 interface ReportDisplayProps {
   reportContent: string;
@@ -38,12 +38,10 @@ const ReportDisplay: React.FC<ReportDisplayProps> = ({ reportContent }) => {
   const { coverData, sections } = useMemo(() => {
     if (!reportContent) return { coverData: {}, sections: [] };
 
-    // More resilient parsing logic
     const parts = reportContent.split('---');
     const coverContent = parts[0] || '';
     const mainContent = parts[1] || '';
 
-    // Parse Cover
     const cover: Record<string, string> = {};
     coverContent.split('\n').forEach(line => {
       const match = line.match(/^(.*?):\s*(.*)$/);
@@ -52,26 +50,31 @@ const ReportDisplay: React.FC<ReportDisplayProps> = ({ reportContent }) => {
       }
     });
 
-    // Parse Sections
+    // --- THE FIX: NEW ROBUST MARKDOWN PARSING LOGIC ---
     const parsedSections: ReportSection[] = [];
-    const sectionRegex = /^##\s*(.*?)\s*\{#(.*?)\}/;
-    
-    // Split the main content by the section header pattern
-    const contentBlocks = mainContent.split(sectionRegex);
-    
-    for (let i = 1; i < contentBlocks.length; i += 3) {
-        const title = contentBlocks[i].replace(/^\d+\.\s*/, '').trim();
-        const id = contentBlocks[i+1].trim();
-        const sectionContent = contentBlocks[i+2] || '';
+    let currentSection: ReportSection | null = null;
+    const lines = mainContent.split('\n').filter(line => line.trim() !== '');
 
-        const currentSection: ReportSection = { id, title, content: [], image: imageMap[id] };
-        
-        const lines = sectionContent.split('\n').filter(line => line.trim() !== '');
+    const createIdFromTitle = (title: string) => {
+        return title.toLowerCase()
+            .replace(/\d+\.\s*/, '') // Remove numbering like "1. "
+            .replace(/[^a-z0-9\s-]/g, '') // Remove non-alphanumeric characters
+            .trim()
+            .replace(/\s+/g, '-'); // Replace spaces with hyphens
+    };
 
-        for (const line of lines) {
+    for (const line of lines) {
+        if (line.startsWith('## ')) {
+            if (currentSection) {
+                parsedSections.push(currentSection);
+            }
+            const title = line.substring(3).replace(/^\d+\.\s*/, '').trim();
+            const id = createIdFromTitle(title);
+            currentSection = { id, title, content: [], image: imageMap[id] };
+        } else if (currentSection) {
             const tocItemMatch = line.match(/^\s*-\s*\[(.*?)]\((.*?)\)/);
             const backToTopMatch = line.match(/\[Back to Top\]\((.*?)\)/);
-            
+
             if (tocItemMatch) {
                 currentSection.content.push({ type: 'li', text: tocItemMatch[1], href: tocItemMatch[2] });
             } else if (backToTopMatch) {
@@ -84,14 +87,12 @@ const ReportDisplay: React.FC<ReportDisplayProps> = ({ reportContent }) => {
                 currentSection.content.push({ type: 'p', text: line });
             }
         }
-        
-        // Add a special case for the Table of Contents to get its image
-        if (id === 'table-of-contents') {
-            currentSection.image = imageMap['introduction-your-personal-blueprint'];
-        }
+    }
 
+    if (currentSection) {
         parsedSections.push(currentSection);
     }
+    // --- END FIX ---
     
     return { coverData: cover, sections: parsedSections };
 
@@ -116,7 +117,7 @@ const ReportDisplay: React.FC<ReportDisplayProps> = ({ reportContent }) => {
       <div onClick={handleInternalLinkClick} className="bg-[#0a092d] p-4 sm:p-8 rounded-lg">
         <div id="cover-page" className="text-center flex flex-col items-center justify-center min-h-screen py-16">
               <div className="border-4 border-purple-400/50 p-6 sm:p-8 rounded-lg max-w-3xl">
-                  <h1 className="text-4xl sm:text-5xl font-bold font-serif text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500 mb-4">{coverData.title}</h1>
+                  <h1 className="text-4xl sm:text-5xl font-bold font-serif text-transparent bg-clip-text bg-linear-to-r from-purple-400 to-pink-500 mb-4">{coverData.title}</h1>
                   <p className="text-2xl text-gray-200 font-serif mb-8">For {coverData.name}</p>
                   <p className="text-xl italic text-purple-300 max-w-2xl mx-auto mb-8">"{coverData.subtitle}"</p>
                   <p className="text-md text-gray-400 max-w-2xl mx-auto">{coverData.description}</p>
