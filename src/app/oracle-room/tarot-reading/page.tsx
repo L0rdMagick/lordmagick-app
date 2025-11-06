@@ -67,7 +67,6 @@ export default function TarotReadingLandingPage() {
               </div>
               <h2 className={`text-3xl text-white ${uncialAntiqua.className}`}>{reader.name}</h2>
               <p className="text-sm text-gray-400 mb-2">{reader.title}</p>
-              {/* THE FIX: Changed flex-grow to grow */}
               <p className="text-gray-300 grow">{reader.description}</p>
 
               <div className="mt-6 flex flex-col space-y-3">
@@ -85,11 +84,7 @@ export default function TarotReadingLandingPage() {
           ))}
         </div>
         
-        <div className="mt-16">
-            <Link href="/oracle-room" className="text-gray-300 hover:text-amber-300 transition-colors" style={{ textShadow: '1px 1px 3px rgba(0,0,0,0.7)' }}>
-              &larr; Return to the Oracle Room
-            </Link>
-        </div>
+        {/* THE FIX: Redundant navigation link has been removed */}
       </div>
     </main>
   );

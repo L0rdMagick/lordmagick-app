@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import BookReader from '../BookReader';
-import Link from 'next/link';
 import TableOfContents, { Chapter } from '../../components/TableOfContents';
 
 function LoadingSpinner() {
@@ -41,7 +40,6 @@ export default function BookPage() {
           }
           const data: BookData = await response.json();
 
-          // THE FIX: Process content here to add IDs and extract chapters
           const parser = new DOMParser();
           const doc = parser.parseFromString(data.content, 'text/html');
           const headings = Array.from(doc.querySelectorAll('h2'));
@@ -97,14 +95,7 @@ export default function BookPage() {
         />
       )}
 
-      <nav className="fixed top-0 left-0 right-0 z-50 flex justify-end items-center p-4 gap-4">
-        <Link href="/library" className="text-gray-300 hover:text-amber-300" style={{ textShadow: '1px 1px 3px rgba(0,0,0,0.7)' }}>
-          &larr; Bookshelf
-        </Link>
-        <Link href="/hall" className="text-gray-300 hover:text-amber-300" style={{ textShadow: '1px 1px 3px rgba(0,0,0,0.7)' }}>
-          Grand Hall &rarr;
-        </Link>
-      </nav>
+      {/* THE FIX: Redundant nav block has been removed */}
       <div className="relative z-10 flex items-center justify-center min-h-screen p-4 sm:p-8">
         {pageContent()}
       </div>
