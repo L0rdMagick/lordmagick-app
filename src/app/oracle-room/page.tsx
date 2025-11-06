@@ -12,10 +12,8 @@ export default function OracleRoomPage() {
       className="relative min-h-screen w-full bg-black bg-cover bg-center p-8 flex items-center justify-center" 
       style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}
     >
-      {/* Background Overlay */}
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
 
-      {/* Main Content */}
       <div className="relative z-10 flex flex-col items-center text-center text-white max-w-4xl mx-auto">
         
         <header className="mb-12">
@@ -27,17 +25,17 @@ export default function OracleRoomPage() {
           </p>
         </header>
 
-        {/* Portal to Tarot Reading */}
-        <div className="w-full max-w-md">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 w-full max-w-4xl">
+          {/* Portal to Tarot Reading */}
           <Link
             href="/oracle-room/tarot-reading"
-            // THE FIX: Updated to use the canonical CSS variable for the glow color.
+            // THE FIX: Updated to canonical CSS variable for glow color
             className="group block p-6 bg-black/40 rounded-xl border border-gray-700/50 backdrop-blur-sm transition-all duration-300 hover:border-cyan-400/80 hover:scale-105 hover:bg-black/60 hover:[--glow-color:var(--color-cyan-400)]"
             style={{ '--glow-color': 'transparent', boxShadow: '0 0 45px -10px var(--glow-color)' } as React.CSSProperties}
           >
             <div className="relative w-full h-64 mb-4 overflow-hidden rounded-lg">
               <Image
-                src="/images/portal-oracle.png" // Re-using the oracle portal image
+                src="/images/portal-oracle.png"
                 alt="Portal to Tarot Reading"
                 fill
                 style={{ objectFit: 'cover' }}
@@ -46,18 +44,35 @@ export default function OracleRoomPage() {
             </div>
             <h2 className={`text-3xl text-white ${uncialAntiqua.className}`}>AI Tarot Reading</h2>
             <p className="text-gray-300 mt-2">
-              Consult the digital ether and receive guidance from our resident oracles, Ambrose and Natalia.
+              Consult the digital ether and receive guidance from our resident oracles.
             </p>
           </Link>
+
+          {/* NEW: Portal to Human Design */}
+          <a
+            href="https://humandesign.lordmagick.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            // THE FIX: Updated to canonical CSS variable for glow color
+            className="group block p-6 bg-black/40 rounded-xl border border-gray-700/50 backdrop-blur-sm transition-all duration-300 hover:border-purple-400/80 hover:scale-105 hover:bg-black/60 hover:[--glow-color:var(--color-purple-400)]"
+            style={{ '--glow-color': 'transparent', boxShadow: '0 0 45px -10px var(--glow-color)' } as React.CSSProperties}
+          >
+            <div className="relative w-full h-64 mb-4 overflow-hidden rounded-lg">
+              <Image
+                src="/images/portal-spell.png" 
+                alt="Portal to Human Design Analysis"
+                fill
+                style={{ objectFit: 'cover' }}
+                className="transition-transform duration-500 group-hover:scale-110"
+              />
+            </div>
+            <h2 className={`text-3xl text-white ${uncialAntiqua.className}`}>Human Design Analysis</h2>
+            <p className="text-gray-300 mt-2">
+              Generate a personalized report to understand your unique energetic blueprint.
+            </p>
+          </a>
         </div>
         
-        {/* Navigation Link */}
-        <div className="mt-16">
-            <Link href="/hall" className="text-gray-300 hover:text-amber-300 transition-colors" style={{ textShadow: '1px 1px 3px rgba(0,0,0,0.7)' }}>
-              &larr; Return to the Grand Hall
-            </Link>
-        </div>
-
       </div>
     </main>
   );
