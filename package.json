@@ -2,7 +2,7 @@
   "name": "lordmagick-app",
   "version": "0.1.0",
   "private": true,
-"scripts": {
+  "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
@@ -34,6 +34,8 @@
     "@types/react-dom": "^19",
     "autoprefixer": "^10.4.21",
     "eslint": "^9",
+    "google-auth-library": "^10.5.0",
+    "stripe": "^19.3.0",
     "supabase": "^2.54.11",
     "tailwindcss": "^4.1.16",
     "typescript": "^5"

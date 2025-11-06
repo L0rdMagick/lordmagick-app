@@ -1,0 +1,7 @@
+{
+  "importMap": "./supabase/import_map.json",
+  "tasks": {
+    "serve": "supabase functions serve"
+  },
+  "nodeModulesDir": true
+}
