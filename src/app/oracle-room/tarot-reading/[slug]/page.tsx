@@ -7,6 +7,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 import type { User } from '@supabase/supabase-js';
 import PermissionModal from '../../../components/PermissionModal';
+import Link from 'next/link'; // THE FIX: Import the Link component
 
 // --- TYPE DEFINITIONS & CONFIGURATION ---
 interface TarotCard { url: string; name: string; }
@@ -21,6 +22,35 @@ interface ReaderConfig {
   profile: ReaderProfile;
   assistants: Record<string, string>;
 }
+
+// THE FIX: New component for the magickal back link
+const MagickalBackLink = () => (
+    <Link 
+      href="/oracle-room/tarot-reading"
+      className="group absolute top-6 left-6 z-20 flex items-center gap-3 text-cyan-200 opacity-80 hover:opacity-100 transition-all duration-300"
+      style={{ filter: 'drop-shadow(1px 1px 3px rgba(0,0,0,0.7))' }}
+    >
+        <svg 
+            xmlns="http://www.w3.org/2000/svg" 
+            width="24" 
+            height="24" 
+            viewBox="0 0 24 24" 
+            fill="none" 
+            stroke="currentColor" 
+            strokeWidth="2" 
+            strokeLinecap="round" 
+            strokeLinejoin="round" 
+            className="transition-transform group-hover:-translate-x-1"
+        >
+            <path d="M19 12H5" />
+            <path d="M12 19l-7-7 7-7" />
+        </svg>
+        <span className="font-semibold tracking-wider group-hover:text-white">
+            Return to Chamber
+        </span>
+    </Link>
+);
+
 
 const readerData: Record<string, ReaderConfig> = {
   ambrose: {
@@ -67,7 +97,6 @@ export default function TarotReaderPage() {
   const [isCallActive, setIsCallActive] = useState(false);
   const [cards, setCards] = useState<TarotCard[]>([]);
   const [enlargedCard, setEnlargedCard] = useState<TarotCard | null>(null);
-  
   const [isPermissionModalOpen, setIsPermissionModalOpen] = useState(false);
   
   const vapiSessionIdRef = useRef<string | null>(null);
@@ -255,7 +284,7 @@ export default function TarotReaderPage() {
           location.reload();
         });
 
-        vapiInstance.on('error', (e: any) => { // THE FIX: Added 'any' type to the parameter
+        vapiInstance.on('error', (e: any) => {
             console.error("Vapi Error:", e);
             if (e?.code === "permission-denied" || e?.message?.includes("Permission denied")) {
                 setIsPermissionModalOpen(true);
@@ -297,6 +326,9 @@ export default function TarotReaderPage() {
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
       <audio id="vapiAudio" className="hidden"></audio>
       
+      {/* THE FIX: Add the back link to the page layout */}
+      <MagickalBackLink />
+
       <PermissionModal 
         isOpen={isPermissionModalOpen}
         onClose={() => setIsPermissionModalOpen(false)}
