@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import BookReader from '../BookReader';
+import BookReader from '../../components/BookReader';
 import TableOfContents, { Chapter } from '../../components/TableOfContents';
+import MagickalBackLink from '../../components/MagickalBackLink'; // THE FIX: Import the new component
 
 function LoadingSpinner() {
   return (
@@ -84,7 +85,7 @@ export default function BookPage() {
   };
 
   return (
-    <main className="relative min-h-screen w-full bg-black bg-cover bg-center" style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}>
+    <main className="relative min-h-screen w-full bg-black bg-cover bg-center p-4 md:p-8" style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}>
       <div className="absolute inset-0 bg-black/70 backdrop-blur" />
 
       {bookData && (
@@ -95,8 +96,14 @@ export default function BookPage() {
         />
       )}
 
-      {/* THE FIX: Redundant nav block has been removed */}
-      <div className="relative z-10 flex items-center justify-center min-h-screen p-4 sm:p-8">
+      {/* THE FIX: Add the back link to the top-left */}
+      <MagickalBackLink 
+        href="/library"
+        text="Return to Library"
+        className="absolute top-6 left-6 z-20"
+      />
+
+      <div className="relative z-10 flex items-center justify-center min-h-screen">
         {pageContent()}
       </div>
     </main>
