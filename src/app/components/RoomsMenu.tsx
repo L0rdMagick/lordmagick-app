@@ -58,13 +58,13 @@ export default function RoomsMenu() {
           isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
       />
-      {/* THE FIX: Removed flexbox alignment to simplify positioning */}
       <div
         className={`fixed top-0 right-0 bottom-0 z-50 h-full w-full max-w-sm md:max-w-md transition-transform duration-500 ease-in-out overflow-hidden ${
-          isOpen ? 'translate-x-0' : '-translate-x-full'
+          // THE FIX: Changed from '-translate-x-full' to 'translate-x-full'
+          // This ensures the menu hides off-screen to the RIGHT.
+          isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
-        {/* THE FIX: Changed to h-full to ensure the image container respects the panel's height */}
         <div className="relative w-full h-full">
           <Image
             src="/images/door.png"
