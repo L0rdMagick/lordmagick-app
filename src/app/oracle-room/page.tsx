@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { Uncial_Antiqua } from 'next/font/google';
-import RoomsButton from '../components/RoomsButton'; // THE FIX: Import the button
+import RoomsButton from '../components/RoomsButton';
 
 const uncialAntiqua = Uncial_Antiqua({ subsets: ['latin'], weight: ['400'] });
 
@@ -17,17 +17,17 @@ export default function OracleRoomPage() {
 
       <div className="relative z-10 flex flex-col items-center text-white max-w-4xl mx-auto w-full">
         
-        {/* THE FIX: Header is now a flex container */}
-        <header className="mb-12 flex justify-between items-center w-full">
-            <div className="text-left">
-                <h1 className={`text-5xl md:text-6xl text-cyan-300 ${uncialAntiqua.className}`} style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
+        {/* THE FIX: New responsive header structure */}
+        <header className="mb-12 w-full">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-4 w-full">
+                <h1 className={`text-5xl md:text-6xl text-cyan-300 text-center md:text-left ${uncialAntiqua.className}`} style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
                     The Oracle's Chamber
                 </h1>
-                <p className="mt-4 max-w-2xl text-lg text-gray-300">
-                    Here, the veils between worlds are thin. Gaze into the mists and choose your method of divination.
-                </p>
+                <RoomsButton className="ml-0 md:ml-8" />
             </div>
-            <RoomsButton className="ml-8" />
+            <p className="mt-4 max-w-2xl mx-auto text-lg text-gray-300 text-center">
+                Here, the veils between worlds are thin. Gaze into the mists and choose your method of divination.
+            </p>
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 w-full">

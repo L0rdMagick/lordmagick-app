@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 import { Uncial_Antiqua } from 'next/font/google';
 import type { User } from '@supabase/supabase-js';
-import { useNavMenu } from '@/app/context/NavMenuContext';
+import { useNavMenu } from '../context/NavMenuContext';
 
 const uncialAntiqua = Uncial_Antiqua({ subsets: ['latin'], weight: ['400'] });
 
@@ -58,12 +58,14 @@ export default function RoomsMenu() {
           isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
       />
+      {/* THE FIX: Removed flexbox alignment to simplify positioning */}
       <div
-        className={`fixed top-0 right-0 bottom-0 z-50 h-full w-full max-w-sm md:max-w-md transition-transform duration-500 ease-in-out flex justify-end items-center overflow-hidden ${
-          isOpen ? 'translate-x-0' : 'translate-x-full'
+        className={`fixed top-0 right-0 bottom-0 z-50 h-full w-full max-w-sm md:max-w-md transition-transform duration-500 ease-in-out overflow-hidden ${
+          isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="relative w-full h-auto aspect-1080/1920">
+        {/* THE FIX: Changed to h-full to ensure the image container respects the panel's height */}
+        <div className="relative w-full h-full">
           <Image
             src="/images/door.png"
             alt="Navigation Door"
