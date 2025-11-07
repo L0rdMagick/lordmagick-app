@@ -6,6 +6,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 import type { User } from '@supabase/supabase-js';
+import PermissionModal from '../../../components/PermissionModal';
 
 // --- TYPE DEFINITIONS & CONFIGURATION ---
 interface TarotCard { url: string; name: string; }
@@ -67,9 +68,39 @@ export default function TarotReaderPage() {
   const [cards, setCards] = useState<TarotCard[]>([]);
   const [enlargedCard, setEnlargedCard] = useState<TarotCard | null>(null);
   
+  const [isPermissionModalOpen, setIsPermissionModalOpen] = useState(false);
+  
   const vapiSessionIdRef = useRef<string | null>(null);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const pollingAttemptsRef = useRef(0);
+
+  const checkAndRequestMicPermission = useCallback(async () => {
+    try {
+      if (!navigator.permissions || !navigator.mediaDevices) {
+        console.warn("Permissions API or MediaDevices API not supported on this browser.");
+        await navigator.mediaDevices.getUserMedia({ audio: true });
+        return true;
+      }
+
+      const permissionStatus = await navigator.permissions.query({ name: 'microphone' as PermissionName });
+
+      if (permissionStatus.state === 'denied') {
+        console.warn('Microphone permission was already denied.');
+        setIsPermissionModalOpen(true);
+        return false;
+      }
+
+      await navigator.mediaDevices.getUserMedia({ audio: true });
+      console.log('Microphone permission granted.');
+      setIsPermissionModalOpen(false);
+      return true;
+
+    } catch (err) {
+      console.error('Microphone access was denied by the user or an error occurred.', err);
+      setIsPermissionModalOpen(true);
+      return false;
+    }
+  }, []);
 
   useEffect(() => {
     if (!assistantId) {
@@ -81,6 +112,7 @@ export default function TarotReaderPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setUser(user);
+        await checkAndRequestMicPermission();
       } else {
         router.push('/login');
       }
@@ -88,7 +120,8 @@ export default function TarotReaderPage() {
     };
 
     checkUser();
-  }, [router, supabase.auth, assistantId]);
+  }, [router, supabase.auth, assistantId, checkAndRequestMicPermission]);
+
 
   const stopPolling = useCallback(() => {
     if (pollingIntervalRef.current) {
@@ -221,6 +254,13 @@ export default function TarotReaderPage() {
           stopPolling();
           location.reload();
         });
+
+        vapiInstance.on('error', (e: any) => { // THE FIX: Added 'any' type to the parameter
+            console.error("Vapi Error:", e);
+            if (e?.code === "permission-denied" || e?.message?.includes("Permission denied")) {
+                setIsPermissionModalOpen(true);
+            }
+        });
       }
     };
 
@@ -257,6 +297,11 @@ export default function TarotReaderPage() {
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
       <audio id="vapiAudio" className="hidden"></audio>
       
+      <PermissionModal 
+        isOpen={isPermissionModalOpen}
+        onClose={() => setIsPermissionModalOpen(false)}
+      />
+
       <div id="warningModal" className="modal">
         <div className="modal-content">
           <p>Start a new session?</p>
