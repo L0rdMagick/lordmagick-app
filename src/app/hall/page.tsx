@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useState, useRef, MouseEvent, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Sparkle from '../components/Sparkle';
-import LogoutButton from '../components/LogoutButton';
+// THE FIX: The LogoutButton component is no longer needed here.
 
 interface SparkleState { key: number; x: number; y: number; }
 
@@ -94,7 +94,7 @@ export default function HallPage() {
 
   return (
     <>
-      <LogoutButton />
+      {/* THE FIX: The old LogoutButton component has been removed from here. */}
       <motion.main 
         className="relative min-h-screen w-full bg-black"
         initial={{ opacity: 0 }}
