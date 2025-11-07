@@ -7,27 +7,15 @@ import { useParams, useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 import type { User } from '@supabase/supabase-js';
 import PermissionModal from '../../../components/PermissionModal';
-import Link from 'next/link'; // THE FIX: Import the Link component
+import Link from 'next/link';
 
 // --- TYPE DEFINITIONS & CONFIGURATION ---
 interface TarotCard { url: string; name: string; }
-type CallStateConfig = { title: string; subtitle: string; icon?: string; };
 
-interface ReaderProfile {
-  displayName: string;
-  backgroundImageUrl: string;
-}
-
-interface ReaderConfig {
-  profile: ReaderProfile;
-  assistants: Record<string, string>;
-}
-
-// THE FIX: New component for the magickal back link
 const MagickalBackLink = () => (
     <Link 
       href="/oracle-room/tarot-reading"
-      className="group absolute top-6 left-6 z-20 flex items-center gap-3 text-cyan-200 opacity-80 hover:opacity-100 transition-all duration-300"
+      className="group flex items-center gap-3 text-cyan-200 opacity-80 hover:opacity-100 transition-all duration-300"
       style={{ filter: 'drop-shadow(1px 1px 3px rgba(0,0,0,0.7))' }}
     >
         <svg 
@@ -51,6 +39,15 @@ const MagickalBackLink = () => (
     </Link>
 );
 
+interface ReaderProfile {
+  displayName: string;
+  backgroundImageUrl: string;
+}
+
+interface ReaderConfig {
+  profile: ReaderProfile;
+  assistants: Record<string, string>;
+}
 
 const readerData: Record<string, ReaderConfig> = {
   ambrose: {
@@ -326,8 +323,9 @@ export default function TarotReaderPage() {
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
       <audio id="vapiAudio" className="hidden"></audio>
       
-      {/* THE FIX: Add the back link to the page layout */}
-      <MagickalBackLink />
+      <header className="relative z-20 h-24 flex items-center px-6">
+        <MagickalBackLink />
+      </header>
 
       <PermissionModal 
         isOpen={isPermissionModalOpen}

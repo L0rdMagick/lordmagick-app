@@ -9,6 +9,7 @@ import ReportDisplay from '@/app/components/ReportDisplay';
 import LoadingSpinner from '@/app/components/LoadingSpinner';
 import AuthPage from '@/app/components/AuthPage';
 import { HeaderIcon, PlusIcon, LockIcon } from '@/app/components/icons';
+import RoomsButton from '@/app/components/RoomsButton';
 
 export default function HumanDesignPage() {
   const [session, setSession] = useState<Session | null>(null);
@@ -152,16 +153,20 @@ export default function HumanDesignPage() {
     >
       <div className="absolute inset-0 bg-black/40" />
       <div className="relative z-10 container mx-auto max-w-4xl p-4 sm:p-6 md:p-8">
-        <header className="text-center mb-8 animate-fade-in-down">
-          <div className="flex justify-center items-center gap-4">
-            <HeaderIcon />
-            {/* THE FIX: Changed to canonical bg-linear-to-r */}
-            <h1 className="text-4xl sm:text-5xl font-bold text-transparent bg-clip-text bg-linear-to-r from-purple-400 via-pink-500 to-red-500">
-              Human Design
-            </h1>
-          </div>
-          <p className="text-lg text-gray-400 mt-2">Generate your personalized energetic blueprint.</p>
+        
+        <header className="mb-8 w-full">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-4 w-full">
+                <div className="flex items-center gap-4">
+                    <HeaderIcon />
+                    <h1 className="text-4xl sm:text-5xl font-bold text-transparent bg-clip-text bg-linear-to-r from-purple-400 via-pink-500 to-red-500">
+                      Human Design
+                    </h1>
+                </div>
+                <RoomsButton className="ml-0 md:ml-8" />
+            </div>
+            <p className="text-lg text-gray-400 mt-2 text-center">Generate your personalized energetic blueprint.</p>
         </header>
+
         <main className="bg-black/40 backdrop-blur-sm p-6 sm:p-8 rounded-2xl shadow-2xl shadow-purple-500/10 border border-white/10 transition-all duration-300">
           {loading ? <LoadingSpinner customMessage="Initializing session..." /> : !session ? <AuthPage /> : renderContent()}
         </main>

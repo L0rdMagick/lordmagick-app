@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { Uncial_Antiqua } from 'next/font/google';
+import RoomsButton from '../../components/RoomsButton';
 
 const uncialAntiqua = Uncial_Antiqua({ subsets: ['latin'], weight: ['400'] });
 
@@ -40,14 +41,18 @@ export default function TarotReadingLandingPage() {
     <main className="relative min-h-screen w-full bg-black bg-cover bg-center p-8" style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}>
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
       
-      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen text-center text-white">
-        <header className="mb-12">
-          <h1 className={`text-5xl md:text-6xl text-cyan-300 ${uncialAntiqua.className}`} style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
-            Choose Your Oracle
-          </h1>
-          <p className="mt-4 max-w-2xl text-lg text-gray-300">
-            Select the guide and the duration of the reading that resonates with your query.
-          </p>
+      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen text-white w-full">
+        
+        <header className="mb-12 w-full max-w-5xl">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-4 w-full">
+                <h1 className={`text-5xl md:text-6xl text-cyan-300 text-center md:text-left ${uncialAntiqua.className}`} style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
+                    Choose Your Oracle
+                </h1>
+                <RoomsButton className="ml-0 md:ml-8" />
+            </div>
+            <p className="mt-4 max-w-2xl text-lg text-gray-300 text-center md:text-left mx-auto md:mx-0">
+                Select the guide and the duration of the reading that resonates with your query.
+            </p>
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-16 w-full max-w-5xl">
@@ -83,8 +88,6 @@ export default function TarotReadingLandingPage() {
             </div>
           ))}
         </div>
-        
-        {/* THE FIX: Redundant navigation link has been removed */}
       </div>
     </main>
   );
