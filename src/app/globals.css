@@ -100,7 +100,6 @@
     background-color: transparent;
     border-radius: 1rem;
     cursor: pointer;
-    /* THE FIX: Synchronize the wobble animation */
     animation: wobble 3s infinite ease-in-out;
 }
 
@@ -280,23 +279,22 @@
     #vapi-support-btn, .vapi-overlay {
         width: 350px !important;
         height: 305px !important;
-        top: 6rem !important;
+        top: 6rem !important; 
         left: 50% !important;
         transform: translateX(-50%) !important;
     }
 
     .tarot-container {
         position: fixed;
-        top: calc(305px + 6rem + 20px); /* avatar height + top offset + gap */
+        top: calc(305px + 6rem + 20px);
         left: 20px;
         right: 20px;
         bottom: 20px;
-        overflow-y: auto; /* Adds scrollbar ONLY if needed */
+        overflow-y: auto;
     }
 
     .tarot-display {
         display: grid !important;
-        /* THE FIX: Use auto-fit for intelligent column creation */
         grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
         gap: 10px;
         width: 100% !important;
@@ -309,14 +307,16 @@
     #vapi-support-btn, .vapi-overlay {
         width: 300px !important;
         height: 400px !important;
-        top: 50px !important;
+        /* THE FIX: Changed top position to push avatar below the back link's header. */
+        top: 7rem !important;
         left: 50px !important;
     }
 
     .tarot-container {
         position: fixed;
-        top: 50px;
-        left: calc(300px + 50px + 20px); /* avatar width + left offset + gap */
+        /* THE FIX: Matched top position for alignment. */
+        top: 7rem !important;
+        left: calc(300px + 50px + 20px);
         right: 20px;
         bottom: 20px;
         overflow-y: auto;
@@ -324,7 +324,6 @@
 
     .tarot-display {
         display: grid !important;
-        /* THE FIX: Use auto-fit for intelligent column creation */
         grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
         gap: 15px;
         width: 100% !important;
@@ -335,10 +334,14 @@
 @media only screen and (min-width: 1280px) {
     #vapi-support-btn, .vapi-overlay {
         height: 500px !important;
+        /* THE FIX: Keep top position consistent. */
+        top: 7rem !important;
         left: 150px !important;
     }
 
     .tarot-container {
-        left: calc(300px + 150px + 20px); /* avatar width + left offset + gap */
+        /* THE FIX: Keep top position consistent. */
+        top: 7rem !important;
+        left: calc(300px + 150px + 20px);
     }
 }
