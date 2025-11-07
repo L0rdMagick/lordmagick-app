@@ -1,6 +1,6 @@
 // --- START OF FILE create-checkout-session/index.ts ---
 
-import Stripe from "stripe";
+import Stripe from "npm:stripe";
 import { corsHeaders } from '../_shared/cors.ts';
 
 Deno.serve(async (req: Request) => {

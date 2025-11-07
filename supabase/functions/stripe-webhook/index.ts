@@ -1,7 +1,7 @@
 // --- START OF FILE stripe-webhook/index.ts ---
 
-import Stripe from "stripe";
-import { createClient } from "@supabase/supabase-js";
+import Stripe from "npm:stripe";
+import { createClient } from "npm:@supabase/supabase-js";
 
 Deno.serve(async (req: Request) => {
   const signingSecret = Deno.env.get('STRIPE_WEBHOOK_SIGNING_SECRET');

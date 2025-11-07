@@ -1,6 +1,4 @@
-// --- START OF FILE supabase/functions/generate-human-design/index.ts ---
-
-import { GoogleAuth } from "google-auth-library";
+import { GoogleAuth } from "npm:google-auth-library";
 import { corsHeaders } from '../_shared/cors.ts';
 
 const GCP_PROJECT_ID = 'arcane-tools';

@@ -1,6 +1,6 @@
 // --- START OF FILE generate-spell/index.ts ---
 
-import { GoogleAuth } from "google-auth-library";
+import { GoogleAuth } from "npm:google-auth-library";
 import { corsHeaders } from '../_shared/cors.ts';
 
 const GCP_PROJECT_ID = 'arcane-tools'; // This is correct
