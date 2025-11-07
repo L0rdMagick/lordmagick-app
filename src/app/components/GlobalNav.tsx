@@ -12,7 +12,8 @@ const uncialAntiqua = Uncial_Antiqua({ subsets: ['latin'], weight: ['400'] });
 
 const navLinks = [
   { name: "Grand Hall", href: "/hall" },
-  { name: "The Spell Room", href: "https://spells.lordmagick.com/" },
+  // THE FIX: The link now correctly points to the internal /spell-room page.
+  { name: "The Spell Room", href: "/spell-room" },
   { name: "Oracle Room", href: "/oracle-room" },
   { name: "The Library", href: "/library" },
   { name: "Marketplace", href: "/marketplace" },
@@ -22,7 +23,6 @@ export default function GlobalNav() {
   const [isOpen, setIsOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   
-  // THE FIX: Import hooks for routing and auth
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createBrowserClient(
@@ -30,7 +30,6 @@ export default function GlobalNav() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 
-  // THE FIX: Check user auth state on component mount
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
@@ -51,27 +50,28 @@ export default function GlobalNav() {
   
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    closeNav(); // Close the menu
-    router.push('/'); // Redirect to the homepage after logout
-    router.refresh(); // Refresh router cache
+    closeNav();
+    router.push('/');
+    router.refresh();
   };
 
-  // THE FIX: Do not render the navigation on the root landing page
-  if (pathname === '/') {
+  // THE FIX: Define an array of paths where the "Rooms" button should NOT appear.
+  const excludedPaths = ['/', '/hall'];
+  if (excludedPaths.includes(pathname) || pathname.startsWith('/oracle-room/tarot-reading/')) {
     return null;
   }
 
   return (
     <>
-      {/* THE FIX: Button is restyled and repositioned to the bottom right */}
+      {/* THE FIX: Button is moved to the top-right and z-index is lowered to be behind the mist. */}
       <button
         onClick={toggleNav}
-        className="fixed bottom-6 right-6 z-50 w-36 h-20 transition-transform hover:scale-105 active:scale-95"
+        className="fixed top-6 right-6 z-20 w-36 h-20 transition-transform hover:scale-105 active:scale-95"
         style={{ filter: 'drop-shadow(2px 4px 8px rgba(0,0,0,0.7))' }}
         aria-label="Toggle navigation menu"
       >
         <Image
-            src="/images/glowing-rooms-button.png" // Assumes you created this image
+            src="/images/glowing-rooms-button.png"
             alt="Open rooms navigation"
             fill
             sizes="144px"
@@ -84,15 +84,17 @@ export default function GlobalNav() {
         </span>
       </button>
 
+      {/* THE FIX: Backdrop z-index is increased to be above the mist (z-30) */}
       <div
         onClick={closeNav}
-        className={`fixed inset-0 bg-black/70 backdrop-blur-sm z-30 transition-opacity duration-500 ${
+        className={`fixed inset-0 bg-black/70 backdrop-blur-sm z-40 transition-opacity duration-500 ${
           isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
       />
 
+      {/* THE FIX: Menu panel z-index is increased to be on top of everything. */}
       <div
-        className={`fixed top-0 right-0 bottom-0 z-40 h-full w-full max-w-sm md:max-w-md transition-transform duration-500 ease-in-out flex justify-end items-center overflow-hidden ${
+        className={`fixed top-0 right-0 bottom-0 z-50 h-full w-full max-w-sm md:max-w-md transition-transform duration-500 ease-in-out flex justify-end items-center overflow-hidden ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
@@ -121,7 +123,6 @@ export default function GlobalNav() {
                 </Link>
                 ))}
                 
-                {/* THE FIX: Conditional Login/Logout Button */}
                 <div className="pt-4 mt-4 border-t-2 border-amber-400/50 w-full">
                   {user ? (
                     <button
