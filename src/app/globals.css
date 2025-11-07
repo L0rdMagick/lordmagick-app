@@ -280,14 +280,14 @@
     #vapi-support-btn, .vapi-overlay {
         width: 350px !important;
         height: 305px !important;
-        top: 2rem !important;
+        top: 6rem !important;
         left: 50% !important;
         transform: translateX(-50%) !important;
     }
 
     .tarot-container {
         position: fixed;
-        top: calc(305px + 2rem + 20px); /* avatar height + top offset + gap */
+        top: calc(305px + 6rem + 20px); /* avatar height + top offset + gap */
         left: 20px;
         right: 20px;
         bottom: 20px;
