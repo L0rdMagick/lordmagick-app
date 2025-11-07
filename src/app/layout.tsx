@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { Cinzel } from "next/font/google";
-import { ReactElement } from "react"; // THE FIX: Import the correct type
+import { ReactElement } from "react";
 import "./globals.css";
 import BackgroundAudio from "./components/BackgroundAudio";
-import GlobalNav from "./components/GlobalNav";
+import { NavMenuProvider } from "./context/NavMenuContext"; // THE FIX: Import the provider
+import RoomsMenu from "./components/RoomsMenu"; // THE FIX: Import the new menu
 
 const cinzel = Cinzel({
   subsets: ["latin"],
@@ -15,7 +16,6 @@ export const metadata: Metadata = {
   description: "Unlock Ancient Secrets. Master Your Craft.",
 };
 
-// THE FIX: Use the imported ReactElement type
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -24,9 +24,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${cinzel.className} bg-black text-white antialiased`}>
-        <BackgroundAudio />
-        <GlobalNav />
-        {children}
+        {/* THE FIX: Wrap the application in the NavMenuProvider */}
+        <NavMenuProvider>
+          <BackgroundAudio />
+          {children}
+          <RoomsMenu /> {/* THE FIX: Add the global menu component */}
+        </NavMenuProvider>
         
         <div className="mist-overlay fixed bottom-0 left-0 w-full h-2/5 bg-[url('/images/mist-overlay.png')] bg-repeat-x z-30 pointer-events-none opacity-[.1] animate-[flow-mist_45s_linear_infinite]" />
         <div className="mist-overlay fixed bottom-0 left-0 w-full h-2/5 bg-[url('/images/mist-overlay.png')] bg-repeat-x z-30 pointer-events-none opacity-[.1] animate-[flow-mist-crossfade_45s_linear_infinite]" />
