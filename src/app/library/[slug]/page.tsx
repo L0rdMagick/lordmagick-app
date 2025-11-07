@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import BookReader from '../../components/BookReader';
+// THE FIX: Corrected the import path to point to the file in the same directory level.
+import BookReader from '../BookReader';
 import TableOfContents, { Chapter } from '../../components/TableOfContents';
-import MagickalBackLink from '../../components/MagickalBackLink'; // THE FIX: Import the new component
+import MagickalBackLink from '../../components/MagickalBackLink';
 
 function LoadingSpinner() {
   return (
@@ -96,7 +97,6 @@ export default function BookPage() {
         />
       )}
 
-      {/* THE FIX: Add the back link to the top-left */}
       <MagickalBackLink 
         href="/library"
         text="Return to Library"

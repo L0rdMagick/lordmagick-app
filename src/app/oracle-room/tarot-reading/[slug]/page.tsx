@@ -7,37 +7,10 @@ import { useParams, useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 import type { User } from '@supabase/supabase-js';
 import PermissionModal from '../../../components/PermissionModal';
-import Link from 'next/link';
+import MagickalBackLink from '../../../components/MagickalBackLink';
 
 // --- TYPE DEFINITIONS & CONFIGURATION ---
 interface TarotCard { url: string; name: string; }
-
-const MagickalBackLink = () => (
-    <Link 
-      href="/oracle-room/tarot-reading"
-      className="group flex items-center gap-3 text-cyan-200 opacity-80 hover:opacity-100 transition-all duration-300"
-      style={{ filter: 'drop-shadow(1px 1px 3px rgba(0,0,0,0.7))' }}
-    >
-        <svg 
-            xmlns="http://www.w3.org/2000/svg" 
-            width="24" 
-            height="24" 
-            viewBox="0 0 24 24" 
-            fill="none" 
-            stroke="currentColor" 
-            strokeWidth="2" 
-            strokeLinecap="round" 
-            strokeLinejoin="round" 
-            className="transition-transform group-hover:-translate-x-1"
-        >
-            <path d="M19 12H5" />
-            <path d="M12 19l-7-7 7-7" />
-        </svg>
-        <span className="font-semibold tracking-wider group-hover:text-white">
-            Return to Chamber
-        </span>
-    </Link>
-);
 
 interface ReaderProfile {
   displayName: string;
@@ -324,7 +297,10 @@ export default function TarotReaderPage() {
       <audio id="vapiAudio" className="hidden"></audio>
       
       <header className="relative z-20 h-24 flex items-center px-6">
-        <MagickalBackLink />
+        <MagickalBackLink 
+            href="/oracle-room/tarot-reading"
+            text="Return to Chamber"
+        />
       </header>
 
       <PermissionModal 
