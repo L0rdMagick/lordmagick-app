@@ -94,9 +94,8 @@ export default function HallPage() {
   return (
     <>
       <motion.main 
-        // THE FIX: The main container now uses flexbox to vertically center its content.
-        // Padding is also adjusted for better spacing.
-        className="relative min-h-screen w-full bg-black flex flex-col items-center justify-center p-4 sm:p-8"
+        // THE FIX: Reduced overall vertical padding to give content more room.
+        className="relative min-h-screen w-full bg-black flex flex-col items-center justify-center py-4 px-4 sm:px-8"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ ease: 'easeInOut', duration: 2.0 }}
@@ -106,9 +105,9 @@ export default function HallPage() {
             <div className="absolute inset-0 bg-black/40" />
         </div>
         
-        {/* THE FIX: This inner container no longer needs heavy padding, as the parent handles centering. */}
         <div className="relative z-20 flex flex-col items-center w-full">
-            <header className="text-center mb-8 md:mb-12 text-white">
+            {/* THE FIX: Reduced the header's bottom margin to pull the portals up. */}
+            <header className="text-center mb-6 text-white">
                 <div className="relative w-full max-w-sm md:max-w-md lg:max-w-lg mx-auto mb-4" style={{ filter: 'drop-shadow(2px 2px 8px rgba(0,0,0,0.8))' }}>
                     <Image src="/images/logo-lordmagick.com.png" alt="LordMagick.com Logo" width={600} height={200} priority style={{ width: '100%', height: 'auto' }} />
                 </div>
@@ -116,9 +115,10 @@ export default function HallPage() {
                     Unlock Ancient Secrets. Master Your Craft.
                 </p>
             </header>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-x-2 gap-y-4 sm:gap-8 w-full max-w-7xl">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-x-2 sm:gap-x-8 w-full max-w-7xl">
                 {portals.map((portal) => (
-                    <div key={portal.title} className="flex flex-col items-center gap-y-2">
+                    // THE FIX: Reduced the vertical gap between the sign and the portal image.
+                    <div key={portal.title} className="flex flex-col items-center gap-y-1">
                         <div className="relative w-full max-w-[200px] aspect-3/1" style={{ filter: 'drop-shadow(2px 4px 6px rgba(0,0,0,0.6))' }}>
                             <Image src={portal.signImageSrc} alt={`${portal.title} Sign`} fill style={{ objectFit: 'contain' }} />
                         </div>
