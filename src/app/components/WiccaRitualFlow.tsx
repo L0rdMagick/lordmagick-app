@@ -111,22 +111,29 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
 
         return (
             <AnimatePresence mode="wait">
-                <div key={ritualStep} className="relative w-full h-[70vh] max-h-[800px]">
-                    {/* --- THIS IS THE CORRECTED INTRO STAGE --- */}
+                {/* THE FIX: Increased height to maximize screen space */}
+                <div key={ritualStep} className="relative w-full h-[85vh] max-h-[900px]">
                     {ritualStep === 0 && (
                         <Stage>
-                            <Image src={`${ASSET_PATH}/wicca_intro_instructions.png`} fill style={{ objectFit: 'contain' }} alt="Wicca Instructions" priority />
-                            
-                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[45%] max-w-md text-center pointer-events-none">
-                                <h2 className="text-4xl lg:text-5xl font-serif text-purple-200 mb-6" style={{ textShadow: '0 0 10px rgba(192, 132, 252, 0.5)' }}>
-                                    Wiccan Spellcraft
-                                </h2>
-                                <p className="text-lg lg:text-xl text-gray-300 leading-relaxed">
-                                    Work with nature, the moon, and ancient energies to manifest your will. Follow the steps to craft your spell.
-                                </p>
+                            {/* This container ensures the image and button are laid out vertically */}
+                            <div className="w-full h-full flex flex-col items-center justify-center gap-6">
+                                {/* The Image container now has a relative position */}
+                                <div className="relative w-full grow">
+                                    <Image src={`${ASSET_PATH}/wicca_intro_instructions.png`} fill style={{ objectFit: 'contain' }} alt="Wicca Instructions" priority />
+                                    
+                                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[45%] max-w-md text-center pointer-events-none">
+                                        <h2 className="text-4xl lg:text-5xl font-serif text-purple-200 mb-6" style={{ textShadow: '0 0 10px rgba(192, 132, 252, 0.5)' }}>
+                                            Wiccan Spellcraft
+                                        </h2>
+                                        <p className="text-lg lg:text-xl text-gray-300 leading-relaxed">
+                                            Work with nature, the moon, and ancient energies to manifest your will. Follow the steps to craft your spell.
+                                        </p>
+                                    </div>
+                                </div>
+                                
+                                {/* THE FIX: Button is now outside the image container and positioned below it with a margin */}
+                                <RitualButton onClick={() => setRitualStep(1)} className="shrink-0 mb-4">Continue</RitualButton>
                             </div>
-                            
-                            <RitualButton onClick={() => setRitualStep(1)} className="absolute bottom-[15%]">Continue</RitualButton>
                         </Stage>
                     )}
                     {ritualStep === 1 && (
