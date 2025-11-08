@@ -11,7 +11,7 @@ import AuthPage from '@/app/components/AuthPage';
 import LoadingSpinner from '@/app/components/LoadingSpinner';
 import RoomsButton from '@/app/components/RoomsButton';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
-import ComingSoon from '@/app/components/comingsoon';
+import ComingSoon from '@/app/components/ComingSoon';
 
 const traditionDetails: { [key: string]: { name: string; component: React.FC<any> } } = {
   'chaos-magick-spells-app': { name: 'Chaos Magick', component: SpellGenerator },
