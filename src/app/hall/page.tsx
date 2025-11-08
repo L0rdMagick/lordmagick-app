@@ -101,25 +101,23 @@ export default function HallPage() {
         </div>
         
         <div className="relative z-20 flex flex-col items-center w-full max-w-7xl">
-            {/* THE FIX: Header margins are now responsive to viewport height (vh) */}
             <header className="text-center mb-[2vh] text-white">
                 <div 
-                  className="relative w-full mx-auto mb-[1vh]" 
-                  // THE FIX: Logo's max-width AND max-height scale with viewport, ensuring it shrinks to fit.
+                  // THE FIX: Added an aspect-ratio class to give the container dimensions.
+                  className="relative w-full mx-auto mb-[1vh] aspect-3/1"
                   style={{ 
                     filter: 'drop-shadow(2px 2px 8px rgba(0,0,0,0.8))',
-                    maxWidth: 'min(512px, 80vw)', // Cap the width on mobile
-                    maxHeight: '15vh' // The key change: limits height based on screen height
+                    maxWidth: 'min(512px, 80vw)',
+                    maxHeight: '15vh'
                   }}
                 >
                     <Image src="/images/logo-lordmagick.com.png" alt="LordMagick.com Logo" fill style={{ objectFit: 'contain' }} priority />
                 </div>
                 <p 
                   className="text-amber-300" 
-                  // THE FIX: Font size scales with viewport width/height for a balanced look.
                   style={{ 
                     textShadow: '1px 1px 4px rgba(0,0,0,0.8)',
-                    fontSize: 'clamp(1rem, 2.5vh, 1.25rem)' // Responsive font size
+                    fontSize: 'clamp(1rem, 2.5vh, 1.25rem)'
                   }}
                 >
                     Unlock Ancient Secrets. Master Your Craft.
