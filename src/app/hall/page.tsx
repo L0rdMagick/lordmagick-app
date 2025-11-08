@@ -90,8 +90,9 @@ export default function HallPage() {
   return (
     <>
       <motion.main 
-        // THE FIX: We add a small top padding (py-2) but rely on justify-center to handle the main centering.
-        className="relative h-screen w-screen overflow-hidden flex flex-col items-center justify-center py-2 px-4"
+        // THE FIX: On mobile (default), justify-start pushes content to the top. On desktop (md:), justify-center is used.
+        // Padding is adjusted for a tighter fit on mobile.
+        className="relative h-screen w-screen overflow-hidden flex flex-col items-center justify-start md:justify-center pt-6 pb-4 px-4"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ ease: 'easeInOut', duration: 2.0 }}
@@ -101,16 +102,14 @@ export default function HallPage() {
             <div className="absolute inset-0 bg-black/40" />
         </div>
         
-        {/* THE FIX: Removed all explicit top padding from this inner container. */}
         <div className="relative z-20 flex flex-col items-center w-full max-w-7xl">
             <header className="text-center text-white">
                 <div 
-                  className="relative w-full mx-auto aspect-3/1"
+                  // THE FIX: Added responsive height classes. h-[10vh] is for mobile, md:h-[18vh] is for desktop.
+                  className="relative w-full mx-auto aspect-3/1 h-[10vh] md:h-[18vh]"
                   style={{ 
                     filter: 'drop-shadow(2px 2px 8px rgba(0,0,0,0.8))',
                     maxWidth: 'min(480px, 80vw)',
-                    // THE FIX: Increased the max-height to allow the logo to be larger.
-                    maxHeight: '18vh',
                   }}
                 >
                     <Image src="/images/logo-lordmagick.com.png" alt="LordMagick.com Logo" fill style={{ objectFit: 'contain' }} priority />
@@ -125,8 +124,9 @@ export default function HallPage() {
                     Unlock Ancient Secrets. Master Your Craft.
                 </p>
             </header>
-            {/* THE FIX: Re-introduced a responsive top margin to create separation. */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-2 md:gap-x-8 w-full mt-[2vh] md:mt-[4vh]">
+            
+            {/* THE FIX: Margin-top is now responsive. Smaller on mobile, larger on desktop. */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-2 md:gap-x-8 w-full mt-4 md:mt-[4vh]">
                 {portals.map((portal) => (
                     <div key={portal.title} className="flex flex-col items-center gap-y-1">
                         <div className="relative w-full max-w-[150px] md:max-w-[200px] aspect-3/1" style={{ filter: 'drop-shadow(2px 4px 6px rgba(0,0,0,0.6))' }}>
