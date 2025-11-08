@@ -7,6 +7,8 @@ import type { Session, GeneratedWiccanSpell, WiccanIngredient } from '@/lib/type
 import { generateWiccanSpell } from '@/lib/services/geminiService';
 import LoadingSpinner from './LoadingSpinner';
 import { PentagramIcon } from './icons';
+import { Sprite } from './Sprite';
+import { findSprite } from '@/lib/spriteLibrary';
 
 // --- Helper Components for UI Stages ---
 
@@ -16,7 +18,7 @@ const Stage: React.FC<{ children: React.ReactNode }> = ({ children }) => (
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
         transition={{ duration: 0.7, ease: "easeInOut" }}
-        className="absolute inset-0 flex flex-col items-center justify-center"
+        className="absolute inset-0 flex flex-col items-center justify-center p-4"
     >
         {children}
     </motion.div>
@@ -42,9 +44,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
     const [generatedSpell, setGeneratedSpell] = useState<GeneratedWiccanSpell | null>(null);
     const [clickedElements, setClickedElements] = useState<string[]>([]);
     const [selectedDeity, setSelectedDeity] = useState<string | null>(null);
-    const [selectedIngredients, setSelectedIngredients] = useState<string[]>([]);
     const [chargingIndex, setChargingIndex] = useState(0);
-    const [placedIngredients, setPlacedIngredients] = useState<WiccanIngredient[]>([]);
     const [isCasting, setIsCasting] = useState(false);
     const castTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const ASSET_PATH = "/images/Spells/Wicca Tradition General";
@@ -79,22 +79,11 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
         }
     };
 
-    const handleIngredientSelect = (ingredientName: string) => {
-        const requiredIngredients = generatedSpell?.symbolic_ingredients.map(i => i.name) || [];
-        if (requiredIngredients.includes(ingredientName) && !selectedIngredients.includes(ingredientName)) {
-            setSelectedIngredients(prev => [...prev, ingredientName]);
-        }
-    };
-
     const handleCharge = () => {
-        const ingredientToPlace = generatedSpell?.symbolic_ingredients[chargingIndex];
-        if (ingredientToPlace) {
-            setPlacedIngredients(prev => [...prev, ingredientToPlace]);
-            if (chargingIndex < 4) {
-                setChargingIndex(prev => prev + 1);
-            } else {
-                setRitualStep(prev => prev + 1);
-            }
+        if (chargingIndex < 4) {
+            setChargingIndex(prev => prev + 1);
+        } else {
+            setRitualStep(prev => prev + 1);
         }
     };
 
@@ -146,37 +135,24 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                             <Image src={`${ASSET_PATH}/wicca_invoke_elements.png`} fill style={{ objectFit: 'contain' }} alt="Invoke Elements" />
                             {['air', 'fire', 'water', 'earth'].map((el, i) => {
                                 const positions = [
-                                    { top: '15%', left: '50%', transform: 'translateX(-50%)' }, // Top
-                                    { top: '50%', right: '15%', transform: 'translateY(-50%)' }, // Right
-                                    { bottom: '15%', left: '50%', transform: 'translateX(-50%)' },// Bottom
-                                    { top: '50%', left: '15%', transform: 'translateY(-50%)' } // Left
+                                    { top: '15%', left: '50%', transform: 'translateX(-50%)' },
+                                    { top: '50%', right: '15%', transform: 'translateY(-50%)' },
+                                    { bottom: '15%', left: '50%', transform: 'translateX(-50%)' },
+                                    { top: '50%', left: '15%', transform: 'translateY(-50%)' }
                                 ];
                                 const isClicked = clickedElements.includes(el);
-                                
-                                // THE FIX: Buttons are now visible with a glowing effect and clear feedback on click.
                                 return (
                                     <button 
                                         key={el} 
                                         onClick={() => handleElementClick(el)} 
-                                        className={`absolute w-20 h-20 rounded-full transition-all duration-300 backdrop-blur-sm
-                                            ${isClicked 
-                                                ? 'bg-purple-500/50 ring-2 ring-white shadow-lg shadow-purple-500/50' 
-                                                : 'bg-white/10 hover:bg-white/20'
-                                            }`}
+                                        className={`absolute w-20 h-20 rounded-full transition-all duration-300 backdrop-blur-sm ${isClicked ? 'bg-purple-500/50 ring-2 ring-white shadow-lg shadow-purple-500/50' : 'bg-white/10 hover:bg-white/20'}`}
                                         style={positions[i]}
                                     >
                                         <span className="text-white font-serif capitalize">{el}</span>
                                     </button>
                                 );
                             })}
-                             {clickedElements.length === 4 && (
-                                <RitualButton 
-                                    onClick={() => setRitualStep(3)} 
-                                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse"
-                                >
-                                    Continue
-                                </RitualButton>
-                             )}
+                             {clickedElements.length === 4 && <RitualButton onClick={() => setRitualStep(3)} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse">Continue</RitualButton>}
                         </Stage>
                     )}
                     {ritualStep === 3 && (
@@ -187,11 +163,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                                     <button 
                                         key={deity} 
                                         onClick={() => setSelectedDeity(deity)} 
-                                        className={`w-1/3 h-full rounded-lg transition-all duration-300
-                                        ${selectedDeity === deity 
-                                            ? 'bg-purple-500/30 ring-2 ring-white' 
-                                            : 'bg-transparent hover:bg-white/10'
-                                        }`} 
+                                        className={`w-1/3 h-full rounded-lg transition-all duration-300 ${selectedDeity === deity ? 'bg-purple-500/30 ring-2 ring-white' : 'bg-transparent hover:bg-white/10'}`} 
                                     />
                                 ))}
                             </div>
@@ -200,20 +172,59 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                     )}
                     {ritualStep === 4 && generatedSpell && (
                         <Stage>
-                             <Image src={`${ASSET_PATH}/wicca_ingredient_selection.png`} fill style={{ objectFit: 'contain' }} alt="Select Ingredients" />
-                             <p className="absolute top-[18%] text-center text-amber-100 font-serif w-1/2">
-                                Select your 5 ritual components. The spirits guide you to choose: {generatedSpell.symbolic_ingredients.map(i => i.name).join(', ')}.
-                             </p>
-                            {/* NOTE: This stage requires a more complex UI to map and select ingredients. This is a simplified representation for now. */}
-                            <RitualButton onClick={() => setRitualStep(5)} className="absolute bottom-[15%]">Prepare Components</RitualButton>
+                            <div className='text-center'>
+                                <h3 className="text-2xl font-serif text-amber-200 mb-2">The Spirits Guide You</h3>
+                                <p className="text-gray-300 mb-6">These components have been chosen for your intention.</p>
+                                <div className="grid grid-cols-5 gap-4 bg-black/30 p-4 rounded-lg">
+                                    {generatedSpell.symbolic_ingredients.map(ingredient => {
+                                        const spriteData = findSprite(ingredient.name);
+                                        if (!spriteData) return <div key={ingredient.name} className="w-24 h-24 border border-dashed border-gray-600 rounded-md flex items-center justify-center text-xs text-center text-gray-400">Missing: <br/>{ingredient.name}</div>;
+                                        // --- THIS IS FIX #1 ---
+                                        return (
+                                            <div key={ingredient.name} className="flex flex-col items-center gap-2">
+                                                <div className="w-24 h-24 bg-white/5 rounded-lg p-1">
+                                                    <Sprite 
+                                                        sheetPath={spriteData.sheet.path}
+                                                        x={spriteData.itemInfo.x}
+                                                        y={spriteData.itemInfo.y}
+                                                        spriteWidth={spriteData.sheet.spriteSize.width}
+                                                        spriteHeight={spriteData.sheet.spriteSize.height}
+                                                        sheetWidth={spriteData.sheet.sheetSize.width}
+                                                        sheetHeight={spriteData.sheet.sheetSize.height}
+                                                    />
+                                                </div>
+                                                <p className="text-sm font-semibold text-purple-300">{ingredient.name}</p>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                                <RitualButton onClick={() => setRitualStep(5)} className="mt-8">Prepare Components</RitualButton>
+                            </div>
                         </Stage>
                     )}
                     {ritualStep === 5 && generatedSpell && (
                          <Stage>
                             <Image src={`${ASSET_PATH}/wicca_charge_ingredient_template.png`} fill style={{ objectFit: 'contain' }} alt="Charge Ingredient" />
-                            <p className="absolute top-[25%] font-serif text-2xl">Hold to Charge the {generatedSpell.symbolic_ingredients[chargingIndex].name}</p>
-                             {/* This would be a dynamic image based on the ingredient */}
-                            <div className="absolute top-1/2 -translate-y-1/2 w-32 h-32 bg-white/20 rounded-full animate-pulse" />
+                            <p className="absolute top-[25%] font-serif text-2xl text-center">Hold to Charge the<br/>{generatedSpell.symbolic_ingredients[chargingIndex].name}</p>
+                            <div className="absolute top-1/2 -translate-y-1/2 w-32 h-32 animate-pulse cursor-pointer">
+                                {(() => {
+                                    const ingredient = generatedSpell.symbolic_ingredients[chargingIndex];
+                                    const spriteData = findSprite(ingredient.name);
+                                    if (!spriteData) return null;
+                                    // --- THIS IS FIX #2 ---
+                                    return (
+                                        <Sprite 
+                                            sheetPath={spriteData.sheet.path}
+                                            x={spriteData.itemInfo.x}
+                                            y={spriteData.itemInfo.y}
+                                            spriteWidth={spriteData.sheet.spriteSize.width}
+                                            spriteHeight={spriteData.sheet.spriteSize.height}
+                                            sheetWidth={spriteData.sheet.sheetSize.width}
+                                            sheetHeight={spriteData.sheet.sheetSize.height}
+                                        />
+                                    );
+                                })()}
+                            </div>
                             <RitualButton onClick={handleCharge} className="absolute bottom-[15%]">
                                 {chargingIndex < 4 ? 'Charge Next Component' : 'Continue to Incantation'}
                             </RitualButton>
@@ -230,15 +241,40 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                     )}
                     {ritualStep === 7 && generatedSpell && (
                         <Stage>
-                            <Image src={`${ASSET_PATH}/wicca_pentagram_ready_to_cast.png`} fill style={{ objectFit: 'contain' }} alt="Cast the Spell" />
-                            <div
+                           <div
                                 onMouseDown={handleCastHold} onMouseUp={handleCastRelease} onMouseLeave={handleCastRelease}
                                 onTouchStart={handleCastHold} onTouchEnd={handleCastRelease}
-                                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1/2 h-1/2 cursor-pointer"
+                                className="relative w-96 h-96 cursor-pointer flex items-center justify-center"
                             >
-                                <PentagramIcon className="w-full h-full text-white" isTracing={isCasting} />
+                                <Image src={`${ASSET_PATH}/wicca_pentagram_ready_to_cast.png`} fill style={{ objectFit: 'contain' }} alt="Cast the Spell" />
+                                <PentagramIcon className="absolute w-full h-full text-white pointer-events-none" isTracing={isCasting} />
+                                {generatedSpell.symbolic_ingredients.map((ing, i) => {
+                                    const spriteData = findSprite(ing.name);
+                                    if(!spriteData) return null;
+                                    const positions = [
+                                        { top: '0%', left: '50%', transform: 'translate(-50%, -50%)' },
+                                        { top: '34.5%', left: '97.5%', transform: 'translate(-50%, -50%)' },
+                                        { top: '90.4%', left: '79.3%', transform: 'translate(-50%, -50%)' },
+                                        { top: '90.4%', left: '20.6%', transform: 'translate(-50%, -50%)' },
+                                        { top: '34.5%', left: '2.5%', transform: 'translate(-50%, -50%)' },
+                                    ];
+                                    // --- THIS IS FIX #3 ---
+                                    return (
+                                        <div key={i} className="absolute w-16 h-16 pointer-events-none" style={positions[i]}>
+                                            <Sprite 
+                                                sheetPath={spriteData.sheet.path}
+                                                x={spriteData.itemInfo.x}
+                                                y={spriteData.itemInfo.y}
+                                                spriteWidth={spriteData.sheet.spriteSize.width}
+                                                spriteHeight={spriteData.sheet.spriteSize.height}
+                                                sheetWidth={spriteData.sheet.sheetSize.width}
+                                                sheetHeight={spriteData.sheet.sheetSize.height}
+                                            />
+                                        </div>
+                                    )
+                                })}
                             </div>
-                            <p className="absolute top-[48%] left-1/2 -translate-x-1/2 -translate-y-1/2 font-serif text-xl">Hold to Focus Your Will and Cast the Spell</p>
+                            <p className="absolute top-[48%] left-1/2 -translate-x-1/2 -translate-y-1/2 font-serif text-xl pointer-events-none">Hold to Focus Your Will and Cast the Spell</p>
                         </Stage>
                     )}
                     {ritualStep === 8 && generatedSpell && (
