@@ -4,96 +4,120 @@ import React, { useState } from 'react';
 import type { Session } from '@/lib/types';
 import SpellGenerator from './SpellGenerator';
 import WiccaSpellGenerator from './WiccaSpellGenerator';
-import { WandIcon } from './icons';
+import Image from 'next/image';
 
 interface SpellRoomProps {
   session: Session;
   isSubscribed: boolean;
-  onBack: () => void;
 }
 
 type Tradition = "Chaos Magick" | "Wicca & Witchcraft" | "Ceremonial Magick" | "Folk Magick" | "Hoodoo (Rootwork)";
 
-const traditions: { name: Tradition; description: string; image: string; isAvailable: boolean; }[] = [
-  {
-    name: "Chaos Magick",
-    description: "A modern, results-based system that borrows from any tradition and emphasizes the power of belief.",
-    image: "/images/magickal-traditions-art/chaos-magick.png",
-    isAvailable: true,
-  },
+interface TraditionInfo {
+  name: Tradition;
+  image: string;
+  isAvailable: boolean;
+  positionClasses: string;
+  widthClasses: string;
+}
+
+const traditions: TraditionInfo[] = [
   {
     name: "Wicca & Witchcraft",
-    description: "Nature-based traditions working with deities, the elements, lunar cycles, and herbalism.",
-    image: "/images/magickal-traditions-art/wicca.png",
-    isAvailable: true, 
+    image: "/images/spell-room/wicca-witchcraft-magick-button.png",
+    isAvailable: true,
+    positionClasses: "top-[2%] left-1/2 -translate-x-1/2",
+    widthClasses: "w-[30%] md:w-[25%] lg:w-[22%]"
+  },
+  {
+    name: "Chaos Magick",
+    image: "/images/spell-room/chaos-magick-button.png",
+    isAvailable: true,
+    positionClasses: "top-[15%] left-[2%] md:left-[8%]",
+    widthClasses: "w-[28%] md:w-[22%] lg:w-[20%]"
   },
   {
     name: "Ceremonial Magick",
-    description: "A highly structured system rooted in Hermeticism and Kabbalah, involving intricate rituals.",
-    image: "/images/magickal-traditions-art/ceremonial-magick.png",
+    image: "/images/spell-room/ceremonial-magick-button.png",
     isAvailable: false,
+    positionClasses: "top-[15%] right-[2%] md:right-[8%]",
+    widthClasses: "w-[28%] md:w-[22%] lg:w-[20%]"
   },
   {
     name: "Folk Magick",
-    description: "Practical, earth-based magic using common household items, natural curios, and regional folklore.",
-    image: "/images/magickal-traditions-art/folk-magick.png",
+    image: "/images/spell-room/folk-magick-button.png",
     isAvailable: false,
+    positionClasses: "bottom-[5%] left-[10%] md:left-[15%]",
+    widthClasses: "w-[28%] md:w-[24%] lg:w-[22%]"
   },
   {
     name: "Hoodoo (Rootwork)",
-    description: "African American folk magic focused on practical goals like drawing love, money, or luck.",
-    image: "/images/magickal-traditions-art/hoodoo.png",
+    image: "/images/spell-room/hoodoo-magick-button.png",
     isAvailable: false,
+    positionClasses: "bottom-[5%] right-[10%] md:right-[15%]",
+    widthClasses: "w-[28%] md:w-[24%] lg:w-[22%]"
   },
 ];
 
-const SpellRoom: React.FC<SpellRoomProps> = ({ session, isSubscribed, onBack }) => {
+interface TraditionButtonProps {
+  tradition: TraditionInfo;
+  onClick: () => void;
+}
+
+const TraditionButton: React.FC<TraditionButtonProps> = ({ tradition, onClick }) => (
+  <div className={`absolute ${tradition.positionClasses} ${tradition.widthClasses}`}>
+      <div className="relative">
+          <button
+              onClick={onClick}
+              disabled={!tradition.isAvailable}
+              className="transition-transform duration-300 ease-in-out hover:scale-105 active:scale-95 disabled:cursor-not-allowed group"
+              style={{ filter: 'drop-shadow(5px 8px 15px rgba(0,0,0,0.7))' }}
+          >
+              <Image 
+                  src={tradition.image} 
+                  alt={tradition.name}
+                  width={500}
+                  height={700}
+                  className={`w-full h-auto ${!tradition.isAvailable ? 'grayscale' : 'group-hover:brightness-110'}`}
+              />
+          </button>
+          {!tradition.isAvailable && (
+              <div className="absolute bottom-[8%] left-1/2 -translate-x-1/2 bg-black/70 text-yellow-400 text-xs md:text-sm font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+                  Coming Soon
+              </div>
+          )}
+      </div>
+  </div>
+);
+
+
+const SpellRoom: React.FC<SpellRoomProps> = ({ session, isSubscribed }) => {
   const [activeTradition, setActiveTradition] = useState<Tradition | null>(null);
 
-  // --- RENDER LOGIC ---
-  if (activeTradition === 'Chaos Magick') {
-    return <SpellGenerator session={session} isSubscribed={isSubscribed} onBack={() => setActiveTradition(null)} />;
+  const handleBackToSelection = () => setActiveTradition(null);
+
+  if (activeTradition) {
+    return (
+      <div className="w-full max-w-2xl bg-black/60 backdrop-blur-md p-8 rounded-lg border border-white/10">
+        {activeTradition === 'Chaos Magick' && (
+          <SpellGenerator session={session} isSubscribed={isSubscribed} onBack={handleBackToSelection} />
+        )}
+        {activeTradition === 'Wicca & Witchcraft' && (
+          <WiccaSpellGenerator session={session} isSubscribed={isSubscribed} onBack={handleBackToSelection} />
+        )}
+      </div>
+    );
   }
-  
-  if (activeTradition === 'Wicca & Witchcraft') {
-    return <WiccaSpellGenerator session={session} isSubscribed={isSubscribed} onBack={() => setActiveTradition(null)} />;
-  }
-  // --- END RENDER LOGIC ---
 
   return (
-    <div className="animate-fade-in">
-      <div className="flex justify-between items-center mb-8">
-        <button onClick={onBack} className="text-purple-400 hover:text-purple-300 text-sm">&larr; Back to Dashboard</button>
-        <h2 className="text-3xl font-bold font-serif text-gray-100">The Spell Room</h2>
-      </div>
-      <p className="text-center text-gray-400 mb-10">Select a tradition to begin your work.</p>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div className="w-full h-full animate-fade-in">
+       <div className="w-full h-[85vh] max-w-7xl mx-auto relative">
         {traditions.map((tradition) => (
-          <div
+          <TraditionButton 
             key={tradition.name}
+            tradition={tradition}
             onClick={() => tradition.isAvailable && setActiveTradition(tradition.name)}
-            className={`
-              rounded-lg p-6 flex flex-col items-center text-center border border-white/10
-              transition-all duration-300 transform group
-              ${tradition.isAvailable 
-                ? 'bg-white/5 hover:bg-purple-900/20 hover:border-purple-400/50 hover:-translate-y-1 cursor-pointer' 
-                : 'bg-black/20 filter grayscale cursor-not-allowed'
-              }
-            `}
-          >
-            <img 
-              src={tradition.image} 
-              alt={tradition.name} 
-              className="w-24 h-24 object-cover rounded-full mb-4 border-2 border-white/20 group-hover:border-purple-400 transition-colors" 
-            />
-            <h3 className="text-xl font-serif font-bold text-purple-300">{tradition.name}</h3>
-            {/* THE FIX: Changed flex-grow to grow */}
-            <p className="text-gray-400 text-sm mt-2 grow">{tradition.description}</p>
-            {!tradition.isAvailable && (
-              <p className="mt-4 text-xs font-bold text-yellow-400 bg-yellow-900/50 px-2 py-1 rounded-full">COMING SOON</p>
-            )}
-          </div>
+          />
         ))}
       </div>
     </div>

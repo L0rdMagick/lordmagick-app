@@ -6,7 +6,8 @@ import type { Session } from '@/lib/types';
 import SpellRoom from '../components/SpellRoom';
 import AuthPage from '../components/AuthPage';
 import LoadingSpinner from '../components/LoadingSpinner';
-import RoomsButton from '../components/RoomsButton'; // THE FIX: Import the button
+import RoomsButton from '../components/RoomsButton';
+import MagickalBackLink from '../components/MagickalBackLink';
 
 export default function SpellRoomPage() {
   const [session, setSession] = useState<Session | null>(null);
@@ -58,38 +59,32 @@ export default function SpellRoomPage() {
 
   const renderContent = () => {
     if (loading) {
-      return <LoadingSpinner customMessage="Unsealing the Spell Room..." />;
+      return <div className="bg-black/50 p-8 rounded-lg"><LoadingSpinner customMessage="Unsealing the Spell Room..." /></div>;
     }
     if (!session) {
-      return <AuthPage />;
+      return <div className="bg-black/50 backdrop-blur-sm p-8 rounded-lg border border-white/10 w-full max-w-lg"><AuthPage /></div>;
     }
     if (session && profile !== undefined) {
-      return <SpellRoom session={session} isSubscribed={profile?.is_subscribed || false} onBack={() => {}} />;
+      // SpellRoom now controls its own layout on the transparent background
+      return <SpellRoom session={session} isSubscribed={profile?.is_subscribed || false} />;
     }
-    return <LoadingSpinner customMessage="Summoning your Grimoire..." />;
+     return <div className="bg-black/50 p-8 rounded-lg"><LoadingSpinner customMessage="Summoning your Grimoire..." /></div>;
   };
 
   return (
     <main 
-      className="relative min-h-screen w-full bg-black bg-cover bg-center"
-      style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}
+      className="relative min-h-screen w-full bg-black bg-cover bg-center flex flex-col"
+      style={{ backgroundImage: "url('/images/spell-room/spell-room-background.png')" }}
     >
       <div className="absolute inset-0 bg-black/40" />
-      <div className="relative z-10 container mx-auto max-w-4xl p-4 sm:p-6 md:p-8">
-        
-        {/* THE FIX: Added the new responsive header to this page */}
-        <header className="mb-8 w-full">
-            <div className="flex flex-col md:flex-row justify-between items-center gap-4 w-full">
-                <h1 className={`text-5xl md:text-6xl text-purple-300 text-center md:text-left`} style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
-                    The Spell Room
-                </h1>
-                <RoomsButton className="ml-0 md:ml-8" />
-            </div>
-        </header>
+      
+      <header className="relative z-20 w-full flex justify-between items-center p-6">
+        <MagickalBackLink href="/hall" text="Grand Hall" />
+        <RoomsButton />
+      </header>
 
-        <main className="bg-black/40 backdrop-blur-sm p-6 sm:p-8 rounded-2xl shadow-2xl shadow-purple-500/10 border border-white/10">
-          {renderContent()}
-        </main>
+      <div className="relative z-10 grow flex items-center justify-center container mx-auto px-4">
+        {renderContent()}
       </div>
     </main>
   );
