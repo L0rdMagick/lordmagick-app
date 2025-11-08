@@ -1,3 +1,5 @@
+// --- START OF FILE src/app/spell-room/[tradition]/page.tsx ---
+
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -93,6 +95,18 @@ export default function SpellTraditionPage() {
           return <PageComponent />;
         }
 
+        // --- THIS IS THE FIX ---
+        // Conditionally render the container. WiccaSpellGenerator will NOT have the dark box.
+        if (PageComponent === WiccaSpellGenerator) {
+            return (
+                 <PageComponent 
+                    session={session} 
+                    isSubscribed={profile?.is_subscribed || false} 
+                    onBack={handleBack} 
+                />
+            );
+        }
+
         return (
           <div className="w-full max-w-2xl bg-black/60 backdrop-blur-md p-8 rounded-lg border border-white/10">
             <PageComponent 
@@ -124,7 +138,8 @@ export default function SpellTraditionPage() {
         </div>
       </header>
 
-      <div className="relative z-10 grow flex flex-col items-center justify-center container mx-auto px-4">
+      {/* THE FIX: Added a 'w-full' class to this container */}
+      <div className="relative z-10 grow flex flex-col items-center justify-center container mx-auto px-4 w-full">
         <h1 className="text-4xl md:text-5xl font-serif text-purple-300 text-center mb-8" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
           {traditionName}
         </h1>

@@ -111,13 +111,12 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
 
         return (
             <AnimatePresence mode="wait">
-                {/* THE FIX: Increased height to maximize screen space */}
                 <div key={ritualStep} className="relative w-full h-[85vh] max-h-[900px]">
                     {ritualStep === 0 && (
                         <Stage>
-                            {/* This container ensures the image and button are laid out vertically */}
-                            <div className="w-full h-full flex flex-col items-center justify-center gap-6">
-                                {/* The Image container now has a relative position */}
+                            {/* This container ensures the image and button are laid out vertically and take up full space */}
+                            <div className="w-full h-full flex flex-col items-center justify-center">
+                                {/* The Image container uses 'grow' to take up available space, pushing the button down */}
                                 <div className="relative w-full grow">
                                     <Image src={`${ASSET_PATH}/wicca_intro_instructions.png`} fill style={{ objectFit: 'contain' }} alt="Wicca Instructions" priority />
                                     
@@ -131,7 +130,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                                     </div>
                                 </div>
                                 
-                                {/* THE FIX: Button is now outside the image container and positioned below it with a margin */}
+                                {/* The button is now a 'shrink-0' item, positioned naturally below the 'grow' image container */}
                                 <RitualButton onClick={() => setRitualStep(1)} className="shrink-0 mb-4">Continue</RitualButton>
                             </div>
                         </Stage>
@@ -307,6 +306,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
     };
 
     return (
+        // The wrapper div now has a w-full class to ensure it fills the available space
         <div className="w-full h-full">
             {renderContent()}
         </div>
