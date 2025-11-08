@@ -112,16 +112,16 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
         return (
             <AnimatePresence mode="wait">
                 <div key={ritualStep} className="relative w-full h-[70vh] max-h-[800px]">
+                    {/* --- THIS IS THE CORRECTED INTRO STAGE --- */}
                     {ritualStep === 0 && (
                         <Stage>
                             <Image src={`${ASSET_PATH}/wicca_intro_instructions.png`} fill style={{ objectFit: 'contain' }} alt="Wicca Instructions" priority />
                             
-                            {/* --- THIS IS THE NEW TEXT BLOCK --- */}
-                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[50%] text-center pointer-events-none">
-                                <h2 className="text-4xl font-serif text-[#3a2414] mb-4" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.1)' }}>
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[45%] max-w-md text-center pointer-events-none">
+                                <h2 className="text-4xl lg:text-5xl font-serif text-purple-200 mb-6" style={{ textShadow: '0 0 10px rgba(192, 132, 252, 0.5)' }}>
                                     Wiccan Spellcraft
                                 </h2>
-                                <p className="text-lg text-[#4a2e1c]">
+                                <p className="text-lg lg:text-xl text-gray-300 leading-relaxed">
                                     Work with nature, the moon, and ancient energies to manifest your will. Follow the steps to craft your spell.
                                 </p>
                             </div>
