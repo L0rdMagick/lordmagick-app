@@ -63,7 +63,6 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
         setLoading(true);
         setError(null);
         try {
-            // The AI call now happens after the Deity selection
             const spell = await generateWiccanSpell({ intention, focalPoint: selectedDeity || 'The Divine', moonPhase: 'Current' });
             setGeneratedSpell(spell);
             setRitualStep(prev => prev + 1);
@@ -138,7 +137,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                                 onChange={(e) => setIntention(e.target.value)}
                                 placeholder="e.g. To find clarity on my career path"
                                 className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[40%] h-[15%] bg-transparent text-center text-[#4a2e1c] text-xl font-serif focus:outline-none resize-none"
-                            ></textarea>
+                            />
                             <RitualButton onClick={() => setRitualStep(2)} disabled={!intention} className="absolute bottom-[20%]">Seal My Intention</RitualButton>
                         </Stage>
                     )}
@@ -146,20 +145,54 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                         <Stage>
                             <Image src={`${ASSET_PATH}/wicca_invoke_elements.png`} fill style={{ objectFit: 'contain' }} alt="Invoke Elements" />
                             {['air', 'fire', 'water', 'earth'].map((el, i) => {
-                                const positions = [{top: '25%', left: '50%'}, {top: '50%', right: '25%'}, {bottom: '25%', left: '50%'}, {top: '50%', left: '25%'}];
+                                const positions = [
+                                    { top: '15%', left: '50%', transform: 'translateX(-50%)' }, // Top
+                                    { top: '50%', right: '15%', transform: 'translateY(-50%)' }, // Right
+                                    { bottom: '15%', left: '50%', transform: 'translateX(-50%)' },// Bottom
+                                    { top: '50%', left: '15%', transform: 'translateY(-50%)' } // Left
+                                ];
                                 const isClicked = clickedElements.includes(el);
-                                // --- THIS IS THE FIX: Added 'return' statement ---
-                                return <button key={el} onClick={() => handleElementClick(el)} className={`absolute w-16 h-16 rounded-full transition-all ${isClicked ? 'opacity-100 scale-110' : 'opacity-50'}`} style={positions[i]} />;
+                                
+                                // THE FIX: Buttons are now visible with a glowing effect and clear feedback on click.
+                                return (
+                                    <button 
+                                        key={el} 
+                                        onClick={() => handleElementClick(el)} 
+                                        className={`absolute w-20 h-20 rounded-full transition-all duration-300 backdrop-blur-sm
+                                            ${isClicked 
+                                                ? 'bg-purple-500/50 ring-2 ring-white shadow-lg shadow-purple-500/50' 
+                                                : 'bg-white/10 hover:bg-white/20'
+                                            }`}
+                                        style={positions[i]}
+                                    >
+                                        <span className="text-white font-serif capitalize">{el}</span>
+                                    </button>
+                                );
                             })}
-                             {clickedElements.length === 4 && <RitualButton onClick={() => setRitualStep(3)} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">Continue</RitualButton>}
+                             {clickedElements.length === 4 && (
+                                <RitualButton 
+                                    onClick={() => setRitualStep(3)} 
+                                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse"
+                                >
+                                    Continue
+                                </RitualButton>
+                             )}
                         </Stage>
                     )}
                     {ritualStep === 3 && (
                         <Stage>
                             <Image src={`${ASSET_PATH}/wicca_invoke_deity.png`} fill style={{ objectFit: 'contain' }} alt="Invoke Deity"/>
                             <div className="absolute top-[55%] w-[60%] h-[20%] flex justify-around">
-                                {['triple_goddess', 'horned_god', 'divine_source'].map(deity => (
-                                    <button key={deity} onClick={() => setSelectedDeity(deity)} className={`w-1/3 h-full rounded-full transition-all ${selectedDeity === deity ? 'opacity-100 scale-110' : 'opacity-50'}`} />
+                                {['Triple Goddess', 'Horned God', 'Divine Source'].map(deity => (
+                                    <button 
+                                        key={deity} 
+                                        onClick={() => setSelectedDeity(deity)} 
+                                        className={`w-1/3 h-full rounded-lg transition-all duration-300
+                                        ${selectedDeity === deity 
+                                            ? 'bg-purple-500/30 ring-2 ring-white' 
+                                            : 'bg-transparent hover:bg-white/10'
+                                        }`} 
+                                    />
                                 ))}
                             </div>
                             <RitualButton onClick={handleGenerateSpell} disabled={!selectedDeity} className="absolute bottom-[10%]">Confirm Invocation</RitualButton>
