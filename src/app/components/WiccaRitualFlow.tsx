@@ -115,6 +115,17 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                     {ritualStep === 0 && (
                         <Stage>
                             <Image src={`${ASSET_PATH}/wicca_intro_instructions.png`} fill style={{ objectFit: 'contain' }} alt="Wicca Instructions" priority />
+                            
+                            {/* --- THIS IS THE NEW TEXT BLOCK --- */}
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[50%] text-center pointer-events-none">
+                                <h2 className="text-4xl font-serif text-[#3a2414] mb-4" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.1)' }}>
+                                    Wiccan Spellcraft
+                                </h2>
+                                <p className="text-lg text-[#4a2e1c]">
+                                    Work with nature, the moon, and ancient energies to manifest your will. Follow the steps to craft your spell.
+                                </p>
+                            </div>
+                            
                             <RitualButton onClick={() => setRitualStep(1)} className="absolute bottom-[15%]">Continue</RitualButton>
                         </Stage>
                     )}
@@ -179,7 +190,6 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                                     {generatedSpell.symbolic_ingredients.map(ingredient => {
                                         const spriteData = findSprite(ingredient.name);
                                         if (!spriteData) return <div key={ingredient.name} className="w-24 h-24 border border-dashed border-gray-600 rounded-md flex items-center justify-center text-xs text-center text-gray-400">Missing: <br/>{ingredient.name}</div>;
-                                        // --- THIS IS FIX #1 ---
                                         return (
                                             <div key={ingredient.name} className="flex flex-col items-center gap-2">
                                                 <div className="w-24 h-24 bg-white/5 rounded-lg p-1">
@@ -211,7 +221,6 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                                     const ingredient = generatedSpell.symbolic_ingredients[chargingIndex];
                                     const spriteData = findSprite(ingredient.name);
                                     if (!spriteData) return null;
-                                    // --- THIS IS FIX #2 ---
                                     return (
                                         <Sprite 
                                             sheetPath={spriteData.sheet.path}
@@ -258,7 +267,6 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                                         { top: '90.4%', left: '20.6%', transform: 'translate(-50%, -50%)' },
                                         { top: '34.5%', left: '2.5%', transform: 'translate(-50%, -50%)' },
                                     ];
-                                    // --- THIS IS FIX #3 ---
                                     return (
                                         <div key={i} className="absolute w-16 h-16 pointer-events-none" style={positions[i]}>
                                             <Sprite 
