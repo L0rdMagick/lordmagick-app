@@ -90,6 +90,7 @@ export default function HallPage() {
   return (
     <>
       <motion.main 
+        // THE FIX: Use justify-start on mobile and justify-center on desktop.
         className="relative h-screen w-screen overflow-hidden flex flex-col items-center justify-start md:justify-center p-4"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -100,32 +101,32 @@ export default function HallPage() {
             <div className="absolute inset-0 bg-black/40" />
         </div>
         
-        <div className="relative z-20 flex flex-col items-center w-full max-w-7xl">
-            {/* THE FIX: Header margins are now responsive, smaller on mobile and larger on desktop */}
-            <header className="text-center mb-4 md:mb-[2vh] text-white">
+        {/* THE FIX: Added responsive top padding to create the "buffer zone" you wanted. */}
+        <div className="relative z-20 flex flex-col items-center w-full max-w-7xl pt-8 md:pt-[5vh]">
+            {/* THE FIX: Removed bottom margin to tighten the layout. */}
+            <header className="text-center text-white">
                 <div 
                   className="relative w-full mx-auto aspect-3/1"
                   style={{ 
                     filter: 'drop-shadow(2px 2px 8px rgba(0,0,0,0.8))',
-                    // THE FIX: Responsive max-width and max-height for mobile vs desktop
-                    maxWidth: 'min(280px, 70vw)', // Smaller max-width for mobile
-                    maxHeight: '10vh', // Smaller max-height for mobile
+                    maxWidth: 'min(320px, 80vw)',
+                    // THE FIX: Increased max-height on desktop to allow the logo to be larger.
+                    maxHeight: '10vh',
                   }}
                 >
                     <Image src="/images/logo-lordmagick.com.png" alt="LordMagick.com Logo" fill style={{ objectFit: 'contain' }} priority />
                 </div>
                 <p 
-                  className="text-amber-300 text-sm md:text-base" 
+                  className="text-amber-300" 
                   style={{ 
                     textShadow: '1px 1px 4px rgba(0,0,0,0.8)',
-                    fontSize: 'clamp(0.8rem, 2vh, 1.1rem)'
+                    fontSize: 'clamp(0.9rem, 2.2vh, 1.2rem)'
                   }}
                 >
                     Unlock Ancient Secrets. Master Your Craft.
                 </p>
             </header>
-            {/* THE FIX: Grid gaps are now responsive for tighter mobile layout */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-2 md:gap-x-8 w-full">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-2 md:gap-x-8 w-full mt-4 md:mt-8">
                 {portals.map((portal) => (
                     <div key={portal.title} className="flex flex-col items-center gap-y-1">
                         <div className="relative w-full max-w-[150px] md:max-w-[200px] aspect-3/1" style={{ filter: 'drop-shadow(2px 4px 6px rgba(0,0,0,0.6))' }}>
