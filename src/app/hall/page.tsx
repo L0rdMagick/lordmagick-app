@@ -90,8 +90,9 @@ export default function HallPage() {
   return (
     <>
       <motion.main 
-        // THE FIX: Changed `h-screen` to `h-[100dvh]` to respect mobile browser UI.
-        className="relative w-screen overflow-hidden flex flex-col items-center justify-start md:justify-center pt-6 pb-4 px-4 h-100dvh"
+        // THE FIX: On mobile (default), justify-start pushes content to the top. On desktop (md:), justify-center is used.
+        // Padding is adjusted for a tighter fit on mobile.
+        className="relative h-screen w-screen overflow-hidden flex flex-col items-center justify-start md:justify-center pt-6 pb-4 px-4"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ ease: 'easeInOut', duration: 2.0 }}
@@ -104,6 +105,7 @@ export default function HallPage() {
         <div className="relative z-20 flex flex-col items-center w-full max-w-7xl">
             <header className="text-center text-white">
                 <div 
+                  // THE FIX: Added responsive height classes. h-[10vh] is for mobile, md:h-[18vh] is for desktop.
                   className="relative w-full mx-auto aspect-3/1 h-[10vh] md:h-[18vh]"
                   style={{ 
                     filter: 'drop-shadow(2px 2px 8px rgba(0,0,0,0.8))',
@@ -123,6 +125,7 @@ export default function HallPage() {
                 </p>
             </header>
             
+            {/* THE FIX: Margin-top is now responsive. Smaller on mobile, larger on desktop. */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-2 md:gap-x-8 w-full mt-4 md:mt-[4vh]">
                 {portals.map((portal) => (
                     <div key={portal.title} className="flex flex-col items-center gap-y-1">
