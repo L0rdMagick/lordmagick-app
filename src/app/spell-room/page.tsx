@@ -7,7 +7,6 @@ import SpellRoom from '../components/SpellRoom';
 import AuthPage from '../components/AuthPage';
 import LoadingSpinner from '../components/LoadingSpinner';
 import RoomsButton from '../components/RoomsButton';
-import MagickalBackLink from '../components/MagickalBackLink';
 import Image from 'next/image';
 
 export default function SpellRoomPage() {
@@ -66,7 +65,7 @@ export default function SpellRoomPage() {
       return <div className="bg-black/50 backdrop-blur-sm p-8 rounded-lg border border-white/10 w-full max-w-lg"><AuthPage /></div>;
     }
     if (session && profile !== undefined) {
-      return <SpellRoom session={session} isSubscribed={profile?.is_subscribed || false} />;
+      return <SpellRoom />;
     }
      return <div className="bg-black/50 p-8 rounded-lg"><LoadingSpinner customMessage="Summoning your Grimoire..." /></div>;
   };
@@ -79,18 +78,18 @@ export default function SpellRoomPage() {
       <div className="absolute inset-0 bg-black/40" />
       
       <header className="relative z-20 w-full p-6">
-        <div className="flex justify-between items-center w-full max-w-7xl mx-auto">
-            <MagickalBackLink href="/hall" text="Grand Hall" />
+        <div className="w-full max-w-7xl mx-auto flex flex-col items-center gap-4 md:flex-row md:justify-between">
+            <div className="hidden md:block w-36 shrink-0"></div>
+            <div 
+              className="relative w-full mx-auto aspect-5/1 h-[8vh] md:h-[12vh] order-2 md:order-0"
+              style={{ 
+                filter: 'drop-shadow(2px 2px 8px rgba(0,0,0,0.8))',
+                maxWidth: 'min(500px, 70vw)',
+              }}
+            >
+                <Image src="/images/spell-room-logo.png" alt="The Spell Room" fill style={{ objectFit: 'contain' }} priority />
+            </div>
             <RoomsButton />
-        </div>
-        <div 
-          className="relative w-full mx-auto aspect-5/1 h-[8vh] md:h-[12vh] mt-2"
-          style={{ 
-            filter: 'drop-shadow(2px 2px 8px rgba(0,0,0,0.8))',
-            maxWidth: 'min(500px, 70vw)',
-          }}
-        >
-            <Image src="/images/spell-room/spell-room-logo.png" alt="The Spell Room" fill style={{ objectFit: 'contain' }} priority />
         </div>
       </header>
 
