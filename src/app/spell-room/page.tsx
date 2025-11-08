@@ -79,9 +79,8 @@ export default function SpellRoomPage() {
       
       <header className="relative z-20 w-full p-6">
         <div className="w-full max-w-7xl mx-auto flex flex-col items-center gap-4 md:flex-row md:justify-between">
-            <div className="hidden md:block w-36 shrink-0"></div>
             <div 
-              className="relative w-full mx-auto aspect-5/1 h-[8vh] md:h-[12vh] order-2 md:order-0"
+              className="relative w-full mx-auto aspect-5/1 h-[8vh] md:h-[12vh] order-2 md:order-1"
               style={{ 
                 filter: 'drop-shadow(2px 2px 8px rgba(0,0,0,0.8))',
                 maxWidth: 'min(500px, 70vw)',
@@ -89,7 +88,7 @@ export default function SpellRoomPage() {
             >
                 <Image src="/images/spell-room-logo.png" alt="The Spell Room" fill style={{ objectFit: 'contain' }} priority />
             </div>
-            <RoomsButton />
+            <RoomsButton className="order-1 md:order-2"/>
         </div>
       </header>
 

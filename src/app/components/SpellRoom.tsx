@@ -20,35 +20,35 @@ const traditions: TraditionInfo[] = [
     image: "/images/spell-room/wicca-witchcraft-magick-button.png",
     isAvailable: true,
     positionClasses: "md:absolute md:top-[1%] md:left-1/2 md:-translate-x-1/2",
-    widthClasses: "w-4/5 md:w-[28%] lg:w-[24%]",
+    widthClasses: "w-4/5 md:w-[26%] lg:w-[22%]",
   },
   {
     name: "Chaos Magick",
     image: "/images/spell-room/chaos-magick-button.png",
     isAvailable: true,
-    positionClasses: "md:absolute md:top-[35%] md:left-[2%] lg:left-[5%]",
-    widthClasses: "w-4/5 md:w-[26%] lg:w-[22%]",
+    positionClasses: "md:absolute md:top-[33%] md:left-[1%] lg:left-[4%]",
+    widthClasses: "w-4/5 md:w-[25%] lg:w-[21%]",
   },
   {
     name: "Ceremonial Magick",
     image: "/images/spell-room/ceremonial-magick-button.png",
-    isAvailable: false,
-    positionClasses: "md:absolute md:top-[35%] md:right-[2%] lg:right-[5%]",
-    widthClasses: "w-4/5 md:w-[26%] lg:w-[22%]",
+    isAvailable: true,
+    positionClasses: "md:absolute md:top-[33%] md:right-[1%] lg:right-[4%]",
+    widthClasses: "w-4/5 md:w-[25%] lg:w-[21%]",
   },
   {
     name: "Folk Magick",
     image: "/images/spell-room/folk-magick-button.png",
-    isAvailable: false,
-    positionClasses: "md:absolute md:bottom-[1%] md:left-[15%] lg:left-[20%]",
-    widthClasses: "w-4/5 md:w-[28%] lg:w-[24%]",
+    isAvailable: true,
+    positionClasses: "md:absolute md:bottom-[1%] md:left-[15%] lg:left-[22%]",
+    widthClasses: "w-4/5 md:w-[26%] lg:w-[23%]",
   },
   {
     name: "Hoodoo (Rootwork)",
     image: "/images/spell-room/hoodoo-magick-button.png",
-    isAvailable: false,
-    positionClasses: "md:absolute md:bottom-[1%] md:right-[15%] lg:right-[20%]",
-    widthClasses: "w-4/5 md:w-[28%] lg:w-[24%]",
+    isAvailable: true,
+    positionClasses: "md:absolute md:bottom-[1%] md:right-[15%] lg:right-[22%]",
+    widthClasses: "w-4/5 md:w-[26%] lg:w-[23%]",
   },
 ];
 
@@ -78,7 +78,7 @@ const TraditionButton: React.FC<TraditionButtonProps> = ({ tradition }) => {
                     alt={tradition.name}
                     width={500}
                     height={700}
-                    className={`w-full h-auto ${tradition.isAvailable ? 'group-hover:brightness-110' : ''}`}
+                    className="w-full h-auto group-hover:brightness-110"
                 />
             </div>
             {!tradition.isAvailable && (
@@ -90,19 +90,12 @@ const TraditionButton: React.FC<TraditionButtonProps> = ({ tradition }) => {
     );
 
     const wrapperClasses = `${tradition.positionClasses} ${tradition.widthClasses} mx-auto md:mx-0 group`;
-
-    if (tradition.isAvailable) {
-        return (
-            <Link href={href} className={wrapperClasses}>
-                {buttonContent}
-            </Link>
-        );
-    }
-
+    
+    // All buttons are links now, but we could add a disabled state back if needed
     return (
-        <div className={`${wrapperClasses} cursor-not-allowed`}>
+        <Link href={href} className={wrapperClasses}>
             {buttonContent}
-        </div>
+        </Link>
     );
 };
 

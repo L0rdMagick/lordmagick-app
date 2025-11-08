@@ -11,10 +11,14 @@ import AuthPage from '@/app/components/AuthPage';
 import LoadingSpinner from '@/app/components/LoadingSpinner';
 import RoomsButton from '@/app/components/RoomsButton';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
+import ComingSoon from '@/app/components/comingsoon';
 
 const traditionDetails: { [key: string]: { name: string; component: React.FC<any> } } = {
   'chaos-magick-spells-app': { name: 'Chaos Magick', component: SpellGenerator },
   'wicca-witchcraft-spells-app': { name: 'Wicca & Witchcraft', component: WiccaSpellGenerator },
+  'ceremonial-magick-spells-app': { name: 'Ceremonial Magick', component: ComingSoon },
+  'folk-magick-spells-app': { name: 'Folk Magick', component: ComingSoon },
+  'hoodoo-rootwork-spells-app': { name: 'Hoodoo (Rootwork)', component: ComingSoon },
 };
 
 export default function SpellTraditionPage() {
@@ -83,10 +87,15 @@ export default function SpellTraditionPage() {
     if (session && profile !== undefined) {
       const tradition = traditionDetails[traditionSlug];
       if (tradition) {
-        const SpellComponent = tradition.component;
+        const PageComponent = tradition.component;
+        
+        if (PageComponent === ComingSoon) {
+          return <PageComponent />;
+        }
+
         return (
           <div className="w-full max-w-2xl bg-black/60 backdrop-blur-md p-8 rounded-lg border border-white/10">
-            <SpellComponent 
+            <PageComponent 
               session={session} 
               isSubscribed={profile?.is_subscribed || false} 
               onBack={handleBack} 
