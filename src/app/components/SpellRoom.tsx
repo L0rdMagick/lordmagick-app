@@ -21,41 +21,42 @@ interface TraditionInfo {
   widthClasses: string;
 }
 
+// THE FIX: Adjusted absolute positioning values to create more space and prevent overlap on wide screens.
 const traditions: TraditionInfo[] = [
   {
     name: "Wicca & Witchcraft",
     image: "/images/spell-room/wicca-witchcraft-magick-button.png",
     isAvailable: true,
-    positionClasses: "md:absolute md:top-0 md:left-1/2 md:-translate-x-1/2",
+    positionClasses: "md:absolute md:top-[1%] md:left-1/2 md:-translate-x-1/2",
     widthClasses: "w-4/5 md:w-[28%] lg:w-[24%]"
   },
   {
     name: "Chaos Magick",
     image: "/images/spell-room/chaos-magick-button.png",
     isAvailable: true,
-    positionClasses: "md:absolute md:top-[33%] md:left-[2%] lg:left-[8%]",
+    positionClasses: "md:absolute md:top-[25%] md:left-[1%] lg:left-[5%]",
     widthClasses: "w-4/5 md:w-[26%] lg:w-[22%]"
   },
   {
     name: "Ceremonial Magick",
     image: "/images/spell-room/ceremonial-magick-button.png",
     isAvailable: false,
-    positionClasses: "md:absolute md:top-[33%] md:right-[2%] lg:right-[8%]",
+    positionClasses: "md:absolute md:top-[25%] md:right-[1%] lg:right-[5%]",
     widthClasses: "w-4/5 md:w-[26%] lg:w-[22%]"
   },
   {
     name: "Folk Magick",
     image: "/images/spell-room/folk-magick-button.png",
     isAvailable: false,
-    positionClasses: "md:absolute md:bottom-0 md:left-[20%] lg:left-[25%]",
+    positionClasses: "md:absolute md:bottom-[2%] md:left-[12%] lg:left-[18%]",
     widthClasses: "w-4/5 md:w-[28%] lg:w-[24%]"
   },
   {
     name: "Hoodoo (Rootwork)",
     image: "/images/spell-room/hoodoo-magick-button.png",
     isAvailable: false,
-    positionClasses: "md:absolute md:bottom-0 md:right-[20%] lg:right-[25%]",
-    widthClasses: "w-4/s5 md:w-[28%] lg:w-[24%]"
+    positionClasses: "md:absolute md:bottom-[2%] md:right-[12%] lg:right-[18%]",
+    widthClasses: "w-4/5 md:w-[28%] lg:w-[24%]"
   },
 ];
 
@@ -65,7 +66,8 @@ interface TraditionButtonProps {
 }
 
 const TraditionButton: React.FC<TraditionButtonProps> = ({ tradition, onClick }) => (
-  <div className={`${tradition.positionClasses} ${tradition.widthClasses}`}>
+  // THE FIX: Added mx-auto for mobile centering, md:mx-0 to reset for desktop absolute positioning.
+  <div className={`${tradition.positionClasses} ${tradition.widthClasses} mx-auto md:mx-0`}>
       <div className="relative">
           <button
               onClick={onClick}
@@ -111,7 +113,8 @@ const SpellRoom: React.FC<SpellRoomProps> = ({ session, isSubscribed }) => {
 
   return (
     <div className="w-full h-full animate-fade-in">
-       <div className="w-full max-w-7xl mx-auto flex flex-col items-center gap-6 py-6 md:h-[85vh] md:relative md:block md:py-0 md:gap-0">
+       {/* This container handles the responsive layout switch */}
+       <div className="w-full max-w-7xl mx-auto flex flex-col items-center gap-y-6 py-6 md:h-[85vh] md:relative md:block md:py-0 md:gap-y-0">
         {traditions.map((tradition) => (
           <TraditionButton 
             key={tradition.name}
