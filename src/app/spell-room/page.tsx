@@ -90,7 +90,7 @@ export default function SpellRoomPage() {
             maxWidth: 'min(500px, 70vw)',
           }}
         >
-            <Image src="/images/spell-room-logo.png" alt="The Spell Room" fill style={{ objectFit: 'contain' }} priority />
+            <Image src="/images/spell-room/spell-room-logo.png" alt="The Spell Room" fill style={{ objectFit: 'contain' }} priority />
         </div>
       </header>
 
