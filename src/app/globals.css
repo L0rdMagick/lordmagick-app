@@ -27,6 +27,25 @@
   color: inherit !important;
 }
 
+/* === BEGIN PENTAGRAM TRACING ANIMATION === */
+@keyframes trace-pentagram {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.pentagram-path {
+  /* A generous estimation of the SVG path length */
+  stroke-dasharray: 1000;
+  stroke-dashoffset: 1000;
+}
+
+.pentagram-path.tracing {
+  animation: trace-pentagram 13s linear forwards;
+}
+/* === END PENTAGRAM TRACING ANIMATION === */
+
+
 /* === BEGIN AI TAROT READER STYLES === */
 
 #vapiAudio {
