@@ -6,8 +6,6 @@ import { corsHeaders } from '../_shared/cors.ts';
 const GCP_PROJECT_ID = 'arcane-tools';
 const GCP_REGION = 'us-central1';
 
-// THE FIX: This list now contains all ingredients from your spriteLibrary.ts file.
-// The AI will be forced to choose ONLY from this list.
 const AVAILABLE_INGREDIENTS = [
     // tools1
     "Athame", "Wand", "Chalice", "Cauldron", "Pentacle", "Bell", "Candle", 
@@ -47,7 +45,7 @@ Deno.serve(async (req: Request) => {
 
         const apiUrl = `https://${GCP_REGION}-aiplatform.googleapis.com/v1/projects/${GCP_PROJECT_ID}/locations/${GCP_REGION}/publishers/google/models/gemini-2.5-flash:generateContent`;
         
-        // THE FIX: The prompt now uses the comprehensive list of available ingredients.
+        // THE FIX: The prompt now explicitly asks for more variety and stronger symbolic alignment.
         const prompt = `
           You are designing a self-contained, DIGITAL Wiccan ritual for an app.
           The user's intention is: "${intention}".
@@ -55,7 +53,7 @@ Deno.serve(async (req: Request) => {
           Generate a valid JSON object with the following keys:
           - "title": A fitting, poetic name for the ritual.
           - "incantation": A short, 2-4 line rhyming incantation for the user to speak at the start.
-          - "symbolic_ingredients": An array of EXACTLY FIVE objects. For each object, choose a "name" from this list: [${AVAILABLE_INGREDIENTS.map(i => `"${i}"`).join(", ")}]. Select the five ingredients that are MOST symbolically aligned with the user's intention. Prioritize variety and avoid repetition. Each object must also have an "activation_phrase" (a short, powerful phrase for the user to speak when placing that ingredient).
+          - "symbolic_ingredients": An array of EXACTLY FIVE objects. For each object, choose a "name" from this list: [${AVAILABLE_INGREDIENTS.map(i => `"${i}"`).join(", ")}]. Select the five ingredients that are MOST symbolically aligned with the user's intention. Prioritize variety and avoid repetition unless an ingredient is exceptionally fitting.
           - "central_chant": A short, 2-line rhyming chant to appear after all ingredients are placed.
           - "affirmation": A single, powerful sentence for the user to see at the very end to seal the spell.
           
