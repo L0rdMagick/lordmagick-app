@@ -21,41 +21,42 @@ interface TraditionInfo {
   widthClasses: string;
 }
 
+// THE FIX: Updated position and width classes to be responsive and prevent overlap.
 const traditions: TraditionInfo[] = [
   {
     name: "Wicca & Witchcraft",
     image: "/images/spell-room/wicca-witchcraft-magick-button.png",
     isAvailable: true,
-    positionClasses: "top-[2%] left-1/2 -translate-x-1/2",
-    widthClasses: "w-[30%] md:w-[25%] lg:w-[22%]"
+    positionClasses: "md:absolute md:top-[2%] md:left-1/2 md:-translate-x-1/2",
+    widthClasses: "w-4/5 md:w-[28%] lg:w-[24%]"
   },
   {
     name: "Chaos Magick",
     image: "/images/spell-room/chaos-magick-button.png",
     isAvailable: true,
-    positionClasses: "top-[15%] left-[2%] md:left-[8%]",
-    widthClasses: "w-[28%] md:w-[22%] lg:w-[20%]"
+    positionClasses: "md:absolute md:top-[25%] md:left-[2%] lg:left-[5%]",
+    widthClasses: "w-4/5 md:w-[26%] lg:w-[22%]"
   },
   {
     name: "Ceremonial Magick",
     image: "/images/spell-room/ceremonial-magick-button.png",
     isAvailable: false,
-    positionClasses: "top-[15%] right-[2%] md:right-[8%]",
-    widthClasses: "w-[28%] md:w-[22%] lg:w-[20%]"
+    positionClasses: "md:absolute md:top-[25%] md:right-[2%] lg:right-[5%]",
+    widthClasses: "w-4/5 md:w-[26%] lg:w-[22%]"
   },
   {
     name: "Folk Magick",
     image: "/images/spell-room/folk-magick-button.png",
     isAvailable: false,
-    positionClasses: "bottom-[5%] left-[10%] md:left-[15%]",
-    widthClasses: "w-[28%] md:w-[24%] lg:w-[22%]"
+    positionClasses: "md:absolute md:bottom-[2%] md:left-[10%] lg:left-[15%]",
+    widthClasses: "w-4/5 md:w-[28%] lg:w-[24%]"
   },
   {
     name: "Hoodoo (Rootwork)",
     image: "/images/spell-room/hoodoo-magick-button.png",
     isAvailable: false,
-    positionClasses: "bottom-[5%] right-[10%] md:right-[15%]",
-    widthClasses: "w-[28%] md:w-[24%] lg:w-[22%]"
+    positionClasses: "md:absolute md:bottom-[2%] md:right-[10%] lg:right-[15%]",
+    widthClasses: "w-4/5 md:w-[28%] lg:w-[24%]"
   },
 ];
 
@@ -65,7 +66,7 @@ interface TraditionButtonProps {
 }
 
 const TraditionButton: React.FC<TraditionButtonProps> = ({ tradition, onClick }) => (
-  <div className={`absolute ${tradition.positionClasses} ${tradition.widthClasses}`}>
+  <div className={`${tradition.positionClasses} ${tradition.widthClasses}`}>
       <div className="relative">
           <button
               onClick={onClick}
@@ -111,7 +112,8 @@ const SpellRoom: React.FC<SpellRoomProps> = ({ session, isSubscribed }) => {
 
   return (
     <div className="w-full h-full animate-fade-in">
-       <div className="w-full h-[85vh] max-w-7xl mx-auto relative">
+       {/* THE FIX: This container handles the responsive layout switch */}
+       <div className="w-full max-w-7xl mx-auto flex flex-col items-center gap-6 py-6 md:h-[85vh] md:relative md:block md:py-0 md:gap-0">
         {traditions.map((tradition) => (
           <TraditionButton 
             key={tradition.name}
