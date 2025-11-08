@@ -103,7 +103,7 @@ export default function SpellTraditionPage() {
           </div>
         );
       }
-      return <div className="text-white">Tradition not found. Please return to the Spell Room.</div>;
+      return <div className="text-white">Tradition not  found. Please return to the Spell Room.</div>;
     }
     return <div className="bg-black/50 p-8 rounded-lg"><LoadingSpinner /></div>;
   };
