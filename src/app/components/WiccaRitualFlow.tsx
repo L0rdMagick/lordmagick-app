@@ -321,17 +321,15 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
 
         return (
             <AnimatePresence mode="wait">
-                <div key={ritualStep} className="relative w-full h-[85vh] max-h-[900px]">
+                <div key={ritualStep} className="relative w-full h-full flex flex-col">
                     {ritualStep === 0 && (
-                        <Stage className="justify-start pt-8 md:justify-center md:pt-0">
-                            <div className="w-full h-full flex flex-col items-center justify-center">
-                                <div className="relative w-full grow">
+                        <Stage className="justify-start pt-4 md:justify-center md:pt-0">
+                            <div className="w-full grow flex flex-col items-center justify-center">
+                                <div className="relative w-full max-w-xl aspect-920/1300">
                                     <Image src={`${ASSET_PATH}/wicca_intro_instructions.png`} fill style={{ objectFit: 'contain' }} alt="Wicca Instructions" priority />
                                     <div
                                         className="absolute flex items-center justify-center text-center pointer-events-none"
-                                        style={{
-                                            left: `33.24%`, top: `4.61%`, width: `42.2%`, height: `13.18%`,
-                                        }}
+                                        style={{ left: '33.24%', top: '4.61%', width: '42.2%', height: '13.18%' }}
                                     >
                                         <h2 className="text-3xl md:text-4xl lg:text-5xl font-serif text-purple-200" style={{ textShadow: '0 0 10px rgba(192, 132, 252, 0.5)' }}>
                                             Wiccan Spellcraft
@@ -339,21 +337,19 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                                     </div>
                                     <div
                                         className="absolute text-center pointer-events-none flex items-center justify-center p-4"
-                                        style={{
-                                            left: `26.89%`, top: `20.33%`, width: `54.9%`, height: `44.7%`,
-                                        }}
+                                        style={{ left: '26.89%', top: '20.33%', width: '54.9%', height: '44.7%' }}
                                     >
                                         <p className="text-base md:text-lg lg:text-xl text-gray-300 leading-relaxed">
                                             Work with nature, the moon, and ancient energies to manifest your will. Follow the steps to craft your spell.
                                         </p>
                                     </div>
                                 </div>
-                                <RitualButton onClick={() => setRitualStep(1)} className="shrink-0 mb-4 -mt-8 relative z-10">Continue</RitualButton>
                             </div>
+                            <RitualButton onClick={() => setRitualStep(1)} className="shrink-0 mb-4 relative z-10">Continue</RitualButton>
                         </Stage>
                     )}
                     {ritualStep === 1 && (
-                        <Stage className="justify-start pt-8 md:justify-center md:pt-0">
+                        <Stage className="justify-start pt-4 md:justify-center md:pt-0">
                             <div className="w-full grow flex flex-col items-center justify-center">
                                 <div className="relative w-full max-w-lg aspect-3/4">
                                     <Image src={`${ASSET_PATH}/wicca_scroll_intention.png`} fill style={{ objectFit: 'contain' }} alt="Inscribe Intention" />
@@ -376,8 +372,9 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                     )}
                      {ritualStep === 2 && (
                         <Stage className="justify-center">
-                            <h3 className="text-2xl font-serif text-amber-200 mb-4">Hold Each Symbol to Invoke</h3>
-                            <div className="relative w-full max-w-md aspect-square">
+                            <h3 className="text-2xl font-serif text-amber-200 mb-8">Hold Each Symbol to Invoke</h3>
+                            <div className="relative w-full max-w-lg aspect-square">
+                                <Image src={`${ASSET_PATH}/elemental-activation-wicca-spells.png`} fill style={{ objectFit: 'contain' }} alt="Elemental Activation" className="opacity-50" />
                                 {['Spirit', 'Air', 'Fire', 'Earth', 'Water'].map((el, i) => {
                                     const positions = [
                                         { top: '5%', left: '50%', transform: 'translate(-50%, -50%)' }, { top: '40%', left: '95%', transform: 'translate(-50%, -50%)' },
