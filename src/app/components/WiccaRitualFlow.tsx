@@ -176,6 +176,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
     }, [chargingIndex, ritualStep]);
 
     const animateIngredientCharge = useCallback((timestamp: number) => {
+        // THE FIX: Corrected the variable name from `startTimeRef` to `chargeStartTimeRef`.
         if (!chargeStartTimeRef.current) chargeStartTimeRef.current = timestamp;
         const elapsedTime = timestamp - chargeStartTimeRef.current;
         const progress = Math.min(elapsedTime / CHARGE_DURATION_INGREDIENT, 1);
@@ -327,15 +328,11 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                             <div className="w-full h-full flex flex-col items-center justify-center">
                                 <div className="relative w-full grow">
                                     <Image src={`${ASSET_PATH}/wicca_intro_instructions.png`} fill style={{ objectFit: 'contain' }} alt="Wicca Instructions" priority />
-                                    <div 
+                                    <div
                                         className="absolute text-center pointer-events-none flex flex-col justify-center"
-                                        // THE FIX: Applying coordinates from user image for wicca_intro_instructions.png (920x1300)
-                                        // X: 247.4, Y: 264.3, W: 505.1, H: 581.1
                                         style={{
-                                            left: `calc( (247.4 / 1000) * 100% )`,
-                                            top: `calc( (264.3 / 1000) * 100% )`,
-                                            width: `calc( (505.1 / 1000) * 100% )`,
-                                            height: `calc( (581.1 / 1000) * 100% )`,
+                                            left: `calc( (247.4 / 920) * 100% )`, top: `calc( (264.3 / 1300) * 100% )`,
+                                            width: `calc( (505.1 / 920) * 100% )`, height: `calc( (581.1 / 1300) * 100% )`,
                                         }}
                                     >
                                         <h2 className="text-3xl md:text-4xl lg:text-5xl font-serif text-purple-200 mb-6" style={{ textShadow: '0 0 10px rgba(192, 132, 252, 0.5)' }}>
@@ -549,14 +546,10 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                              <div className="relative w-full h-full">
                                 <Image src={`${ASSET_PATH}/wicca_spell_manifestation.png`} fill style={{ objectFit: 'contain' }} alt="Spell Manifestation" />
                                 <div 
-                                    className="absolute text-center text-white font-serif text-4xl flex items-center justify-center"
-                                    // THE FIX: Applying coordinates from user image for wicca_spell_manifestation.png (assumed 1024x1024)
-                                    // X: 323, Y: 293.5, W: 384, H: 580.9
+                                    className="absolute text-center text-white font-serif text-4xl flex items-center justify-center p-4"
                                     style={{
-                                        left: `calc( (323 / 1024) * 100% )`,
-                                        top: `calc( (293.5 / 1024) * 100% )`,
-                                        width: `calc( (384 / 1024) * 100% )`,
-                                        height: `calc( (580.9 / 1024) * 100% )`,
+                                        left: `calc( (323 / 1024) * 100% )`, top: `calc( (293.5 / 1024) * 100% )`,
+                                        width: `calc( (384 / 1024) * 100% )`, height: `calc( (580.9 / 1024) * 100% )`,
                                     }}
                                 >
                                     {generatedSpell.affirmation}
