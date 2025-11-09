@@ -330,7 +330,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                                     <div
                                         className="absolute flex items-center justify-center text-center pointer-events-none"
                                         style={{
-                                            left: `33%`, top: `10%`, width: `33%`, height: `13%`,
+                                            left: `33.24%`, top: `4.61%`, width: `42.2%`, height: `13.18%`,
                                         }}
                                     >
                                         <h2 className="text-3xl md:text-4xl lg:text-5xl font-serif text-purple-200" style={{ textShadow: '0 0 10px rgba(192, 132, 252, 0.5)' }}>
@@ -340,7 +340,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                                     <div
                                         className="absolute text-center pointer-events-none flex items-center justify-center p-4"
                                         style={{
-                                            left: `33%`, top: `25%`, width: `33%`, height: `50%`,
+                                            left: `26.89%`, top: `20.33%`, width: `54.9%`, height: `44.7%`,
                                         }}
                                     >
                                         <p className="text-base md:text-lg lg:text-xl text-gray-300 leading-relaxed">
@@ -354,25 +354,24 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                     )}
                     {ritualStep === 1 && (
                         <Stage className="justify-start pt-8 md:justify-center md:pt-0">
-                             <div className="relative w-full grow max-h-full">
-                                <Image src={`${ASSET_PATH}/wicca_scroll_intention.png`} fill style={{ objectFit: 'contain' }} alt="Inscribe Intention" />
-                                 <div 
-                                    className="absolute text-center"
-                                    style={{
-                                        top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-                                        width: '55%', height: '50%',
-                                    }}
-                                 >
-                                     <h3 className="font-serif text-xl md:text-2xl text-[#4a2e1c] mb-2 md:mb-4">Inscribe Your Intention</h3>
-                                    <textarea
-                                        value={intention}
-                                        onChange={(e) => setIntention(e.target.value)}
-                                        placeholder="e.g. To find clarity on my career path"
-                                        className="w-full h-3/5 bg-transparent text-center text-[#4a2e1c] text-lg md:text-2xl font-serif focus:outline-none resize-none"
-                                    />
-                                 </div>
-                                <RitualButton onClick={() => setRitualStep(2)} disabled={!intention} className="absolute bottom-[15%] left-1/2 -translate-x-1/2">Seal My Intention</RitualButton>
+                            <div className="w-full grow flex flex-col items-center justify-center">
+                                <div className="relative w-full max-w-lg aspect-3/4">
+                                    <Image src={`${ASSET_PATH}/wicca_scroll_intention.png`} fill style={{ objectFit: 'contain' }} alt="Inscribe Intention" />
+                                    <div 
+                                        className="absolute text-center"
+                                        style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '55%', height: '50%' }}
+                                    >
+                                        <h3 className="font-serif text-xl md:text-2xl text-[#4a2e1c] mb-2 md:mb-4">Inscribe Your Intention</h3>
+                                        <textarea
+                                            value={intention}
+                                            onChange={(e) => setIntention(e.target.value)}
+                                            placeholder="e.g. To find clarity on my career path"
+                                            className="w-full h-3/5 bg-transparent text-center text-[#4a2e1c] text-lg md:text-2xl font-serif focus:outline-none resize-none"
+                                        />
+                                    </div>
+                                </div>
                             </div>
+                            <RitualButton onClick={() => setRitualStep(2)} disabled={!intention} className="shrink-0 mb-4 relative z-10">Seal My Intention</RitualButton>
                         </Stage>
                     )}
                      {ritualStep === 2 && (
@@ -553,7 +552,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                                 <div 
                                     className="absolute text-center text-white font-serif text-4xl flex items-center justify-center p-4"
                                     style={{
-                                        left: `31.5%`, top: `28.6%`, width: `37.5%`, height: `56.7%`,
+                                        left: `31.54%`, top: `28.66%`, width: `37.5%`, height: `56.73%`,
                                     }}
                                 >
                                     {generatedSpell.affirmation}
