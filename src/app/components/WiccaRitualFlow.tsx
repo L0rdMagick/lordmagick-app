@@ -160,7 +160,6 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
     const castAnimationFrameRef = useRef<number | null>(null);
     const castStartTimeRef = useRef<number | null>(null);
     
-    // THE FIX: Robust cleanup effect for all timers and sounds.
     useEffect(() => {
         return () => {
             if (chargeAnimationFrameRef.current) cancelAnimationFrame(chargeAnimationFrameRef.current);
@@ -168,15 +167,6 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
             chargingSoundRef.current?.pause();
         };
     }, []);
-    
-    // THE FIX: Reset charging state when the ingredient or overall ritual step changes to prevent bugs.
-    useEffect(() => {
-        setIsCharging(false);
-        setIsChargeComplete(false);
-        setChargeProgress(0);
-        if (chargeAnimationFrameRef.current) cancelAnimationFrame(chargeAnimationFrameRef.current);
-        chargingSoundRef.current?.pause();
-    }, [chargingIndex, ritualStep]);
 
     const animateIngredientCharge = useCallback((timestamp: number) => {
         if (!chargeStartTimeRef.current) chargeStartTimeRef.current = timestamp;
@@ -195,6 +185,20 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
         }
     }, []);
 
+    useEffect(() => {
+        if (isCharging && !isChargeComplete) {
+            chargeStartTimeRef.current = performance.now();
+            chargeAnimationFrameRef.current = requestAnimationFrame(animateIngredientCharge);
+        } else {
+            if (chargeAnimationFrameRef.current) {
+                cancelAnimationFrame(chargeAnimationFrameRef.current);
+                chargeAnimationFrameRef.current = null;
+            }
+            chargeStartTimeRef.current = null;
+        }
+        return () => { if (chargeAnimationFrameRef.current) cancelAnimationFrame(chargeAnimationFrameRef.current); };
+    }, [isCharging, isChargeComplete, animateIngredientCharge]);
+    
     const handleChargeStart = () => {
         if (isChargeComplete || isCharging) return;
         setIsCharging(true);
@@ -209,8 +213,15 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
         }
     };
     
+    // THE FIX: The state reset logic is now handled here, which is more reliable than a useEffect.
     const handleAdvanceAfterCharge = () => {
         playSound('/audio/sfx-spell-room-portal.mp3', 0.2);
+        
+        // Explicitly reset state for the next ingredient
+        setIsChargeComplete(false);
+        setChargeProgress(0);
+        setIsCharging(false);
+
         if (chargingIndex < 4) {
             setChargingIndex(prev => prev + 1);
         } else {
@@ -264,7 +275,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
             chargingSoundRef.current?.pause();
             playSound('/audio/sfx-chaos-explosion.mp3', 0.5);
             setRitualStep(prev => prev + 1);
-            setIsCasting(false); // Ensure state is cleaned up
+            setIsCasting(false);
         }
     }, []);
 
