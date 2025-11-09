@@ -176,7 +176,6 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
     }, [chargingIndex, ritualStep]);
 
     const animateIngredientCharge = useCallback((timestamp: number) => {
-        // THE FIX: Corrected the variable name from `startTimeRef` to `chargeStartTimeRef`.
         if (!chargeStartTimeRef.current) chargeStartTimeRef.current = timestamp;
         const elapsedTime = timestamp - chargeStartTimeRef.current;
         const progress = Math.min(elapsedTime / CHARGE_DURATION_INGREDIENT, 1);
@@ -329,15 +328,21 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                                 <div className="relative w-full grow">
                                     <Image src={`${ASSET_PATH}/wicca_intro_instructions.png`} fill style={{ objectFit: 'contain' }} alt="Wicca Instructions" priority />
                                     <div
-                                        className="absolute text-center pointer-events-none flex flex-col justify-center"
+                                        className="absolute flex items-center justify-center text-center pointer-events-none"
                                         style={{
-                                            left: `calc( (250 / 1000) * 100% )`, top: `calc( (100 / 1000) * 100% )`,
-                                            width: `calc( (250 / 1000) * 100% )`, height: `calc( (600 / 1000) * 100% )`,
+                                            left: `33.24%`, top: `4.61%`, width: `42.2%`, height: `13.18%`,
                                         }}
                                     >
-                                        <h2 className="text-3xl md:text-4xl lg:text-5xl font-serif text-purple-200 mb-6" style={{ textShadow: '0 0 10px rgba(192, 132, 252, 0.5)' }}>
+                                        <h2 className="text-3xl md:text-4xl lg:text-5xl font-serif text-purple-200" style={{ textShadow: '0 0 10px rgba(192, 132, 252, 0.5)' }}>
                                             Wiccan Spellcraft
                                         </h2>
+                                    </div>
+                                    <div
+                                        className="absolute text-center pointer-events-none flex items-center justify-center p-4"
+                                        style={{
+                                            left: `26.89%`, top: `20.33%`, width: `54.9%`, height: `44.7%`,
+                                        }}
+                                    >
                                         <p className="text-base md:text-lg lg:text-xl text-gray-300 leading-relaxed">
                                             Work with nature, the moon, and ancient energies to manifest your will. Follow the steps to craft your spell.
                                         </p>
@@ -355,7 +360,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                                     className="absolute text-center"
                                     style={{
                                         top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-                                        width: '63.5%', height: '58.9%', paddingTop: '8%',
+                                        width: '55%', height: '50%',
                                     }}
                                  >
                                      <h3 className="font-serif text-xl md:text-2xl text-[#4a2e1c] mb-2 md:mb-4">Inscribe Your Intention</h3>
@@ -494,8 +499,8 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                                 <div 
                                     className="absolute text-center"
                                     style={{
-                                        top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '63.5%', height: '58.9%',
-                                        paddingTop: '8%', display: 'flex', flexDirection: 'column', justifyContent: 'center'
+                                        top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '55%', height: '50%',
+                                        display: 'flex', flexDirection: 'column', justifyContent: 'center'
                                     }}
                                 >
                                     <h3 className="font-serif text-2xl text-[#4a2e1c] mb-4">Recite the Incantation</h3>
@@ -548,8 +553,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                                 <div 
                                     className="absolute text-center text-white font-serif text-4xl flex items-center justify-center p-4"
                                     style={{
-                                        left: `calc( (323 / 1024) * 100% )`, top: `calc( (293.5 / 1024) * 100% )`,
-                                        width: `calc( (384 / 1024) * 100% )`, height: `calc( (580.9 / 1024) * 100% )`,
+                                        left: `31.5%`, top: `28.6%`, width: `37.5%`, height: `56.7%`,
                                     }}
                                 >
                                     {generatedSpell.affirmation}
