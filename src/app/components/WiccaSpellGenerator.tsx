@@ -11,10 +11,9 @@ interface WiccaSpellGeneratorProps {
 }
 
 const WiccaSpellGenerator: React.FC<WiccaSpellGeneratorProps> = ({ session, isSubscribed, onBack }) => {
-  // THE FIX: Added h-full to this container to ensure it expands vertically,
-  // giving its child (WiccaRitualFlow) a valid height to fill.
+  // THE FIX: This h-full class now works correctly because its parent in page.tsx provides a valid height.
   return (
-    <div className="animate-fade-in-up w-full h-full max-w-4xl mx-auto">
+    <div className="w-full h-full max-w-4xl mx-auto">
       <WiccaRitualFlow session={session} isSubscribed={isSubscribed} onBack={onBack} />
     </div>
   );

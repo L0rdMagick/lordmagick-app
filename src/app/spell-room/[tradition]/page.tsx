@@ -129,18 +129,22 @@ export default function SpellTraditionPage() {
     >
       <div className="absolute inset-0 bg-black/50" />
       
-      <header className="relative z-20 w-full p-6">
+      <header className="relative z-20 w-full p-6 shrink-0">
         <div className="flex justify-between items-center w-full max-w-7xl mx-auto">
           <MagickalBackLink href="/spell-room" text="All Traditions" />
           <RoomsButton />
         </div>
       </header>
       
-      <div className="relative z-10 grow flex flex-col items-center justify-center container mx-auto px-4 w-full">
-        <h1 className="text-4xl md:text-5xl font-serif text-purple-300 text-center mb-8" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
+      {/* THE FIX: This container now correctly manages the vertical space */}
+      <div className="relative z-10 flex-1 flex flex-col items-center w-full container mx-auto px-4 pb-8">
+        <h1 className="text-4xl md:text-5xl font-serif text-purple-300 text-center mb-8 shrink-0" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
           {traditionName}
         </h1>
-        {renderContent()}
+        {/* This wrapper ensures the content inside it can safely use h-full */}
+        <div className="w-full flex-1 flex flex-col items-center justify-center">
+            {renderContent()}
+        </div>
       </div>
     </main>
   );
