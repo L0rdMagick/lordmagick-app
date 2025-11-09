@@ -438,7 +438,8 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                          <Stage className="justify-center">
                             <div className="relative w-full h-full">
                                 <Image src={`${ASSET_PATH}/wicca_charge_ingredient_template.png`} fill style={{ objectFit: 'contain' }} alt="Charge Ingredient" />
-                                <p className="absolute top-[25%] left-1/2 -translate-x-1/2 w-full text-center font-serif text-2xl">
+                                {/* THE FIX: Changed top-[25%] to top-[20%] to raise the text higher. */}
+                                <p className="absolute top-[20%] left-1/2 -translate-x-1/2 w-full text-center font-serif text-2xl">
                                     {isChargeComplete ? 'Component Charged!' : `Hold to Charge the ${generatedSpell.symbolic_ingredients[chargingIndex].name}`}
                                 </p>
                                 
