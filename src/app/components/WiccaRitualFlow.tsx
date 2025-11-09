@@ -127,8 +127,8 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
         setLoading(true);
         setError(null);
         try {
-            // Note: The AI prompt now asks for better variety.
-            const spell = await generateWiccanSpell({ intention });
+            // THE FIX: The call now includes all required properties for WiccanSpellFormData.
+            const spell = await generateWiccanSpell({ intention, focalPoint: selectedDeity || 'The Divine', moonPhase: 'Current' });
             setGeneratedSpell(spell);
             setRitualStep(prev => prev + 1);
         } catch (err: any) {
