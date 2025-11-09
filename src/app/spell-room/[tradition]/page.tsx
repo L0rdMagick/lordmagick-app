@@ -136,9 +136,9 @@ export default function SpellTraditionPage() {
         </div>
       </header>
 
-      {/* THE FIX: Added a 'w-full' class to this container to allow the Wicca flow to expand correctly. */}
-      <div className="relative z-10 grow flex flex-col items-center justify-center container mx-auto px-4 w-full">
-        <h1 className="text-4xl md:text-5xl font-serif text-purple-300 text-center mb-8" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
+      {/* THE FIX: Changed 'justify-center' to 'justify-start' for mobile and 'md:justify-center' for desktop. This aligns content to the top on tall screens. */}
+      <div className="relative z-10 grow flex flex-col items-center justify-start md:justify-center container mx-auto px-4 w-full">
+        <h1 className="text-4xl md:text-5xl font-serif text-purple-300 text-center mb-4 md:mb-8" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
           {traditionName}
         </h1>
         {renderContent()}

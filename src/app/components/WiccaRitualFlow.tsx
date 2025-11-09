@@ -145,7 +145,6 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
     const [chargedElements, setChargedElements] = useState<string[]>([]);
     const [selectedDeities, setSelectedDeities] = useState<string[]>([]);
     
-    // --- State for Ingredient Charging ---
     const [chargingIndex, setChargingIndex] = useState(0);
     const [isCharging, setIsCharging] = useState(false);
     const [chargeProgress, setChargeProgress] = useState(0);
@@ -154,7 +153,6 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
     const chargeStartTimeRef = useRef<number | null>(null);
     const chargingSoundRef = useRef<HTMLAudioElement | null>(null);
 
-    // --- State for Final Casting ---
     const [isCasting, setIsCasting] = useState(false);
     const [castCountdown, setCastCountdown] = useState(0);
     const castAnimationFrameRef = useRef<number | null>(null);
@@ -167,6 +165,14 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
             chargingSoundRef.current?.pause();
         };
     }, []);
+    
+    useEffect(() => {
+        setIsCharging(false);
+        setIsChargeComplete(false);
+        setChargeProgress(0);
+        if (chargeAnimationFrameRef.current) cancelAnimationFrame(chargeAnimationFrameRef.current);
+        chargingSoundRef.current?.pause();
+    }, [chargingIndex, ritualStep]);
 
     const animateIngredientCharge = useCallback((timestamp: number) => {
         if (!chargeStartTimeRef.current) chargeStartTimeRef.current = timestamp;
@@ -213,11 +219,9 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
         }
     };
     
-    // THE FIX: The state reset logic is now handled here, which is more reliable than a useEffect.
     const handleAdvanceAfterCharge = () => {
         playSound('/audio/sfx-spell-room-portal.mp3', 0.2);
         
-        // Explicitly reset state for the next ingredient
         setIsChargeComplete(false);
         setChargeProgress(0);
         setIsCharging(false);
@@ -316,17 +320,17 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
 
         return (
             <AnimatePresence mode="wait">
-                <div key={ritualStep} className="relative w-full h-[85vh] max-h-[900px]">
+                <div key={ritualStep} className="relative w-full h-full flex flex-col">
                     {ritualStep === 0 && (
-                        <Stage className="justify-center">
+                        <Stage className="justify-start pt-8 md:justify-center md:pt-0">
                             <div className="w-full h-full flex flex-col items-center justify-center">
                                 <div className="relative w-full grow">
                                     <Image src={`${ASSET_PATH}/wicca_intro_instructions.png`} fill style={{ objectFit: 'contain' }} alt="Wicca Instructions" priority />
-                                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[50%] max-w-xs text-center pointer-events-none">
-                                        <h2 className="text-4xl lg:text-5xl font-serif text-purple-200 mb-6" style={{ textShadow: '0 0 10px rgba(192, 132, 252, 0.5)' }}>
+                                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3/5 max-w-xs text-center pointer-events-none">
+                                        <h2 className="text-3xl md:text-4xl lg:text-5xl font-serif text-purple-200 mb-6" style={{ textShadow: '0 0 10px rgba(192, 132, 252, 0.5)' }}>
                                             Wiccan Spellcraft
                                         </h2>
-                                        <p className="text-lg lg:text-xl text-gray-300 leading-relaxed">
+                                        <p className="text-base md:text-lg lg:text-xl text-gray-300 leading-relaxed">
                                             Work with nature, the moon, and ancient energies to manifest your will. Follow the steps to craft your spell.
                                         </p>
                                     </div>
@@ -336,16 +340,16 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                         </Stage>
                     )}
                     {ritualStep === 1 && (
-                        <Stage className="justify-center">
+                        <Stage className="justify-start pt-8 md:justify-center md:pt-0">
                              <div className="relative w-full grow max-h-full">
                                 <Image src={`${ASSET_PATH}/wicca_scroll_intention.png`} fill style={{ objectFit: 'contain' }} alt="Inscribe Intention" />
-                                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[40%] text-center">
-                                     <h3 className="font-serif text-2xl text-[#4a2e1c] mb-4">Inscribe Your Intention</h3>
+                                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2/5 text-center">
+                                     <h3 className="font-serif text-xl md:text-2xl text-[#4a2e1c] mb-2 md:mb-4">Inscribe Your Intention</h3>
                                     <textarea
                                         value={intention}
                                         onChange={(e) => setIntention(e.target.value)}
                                         placeholder="e.g. To find clarity on my career path"
-                                        className="w-full h-24 bg-transparent text-center text-[#4a2e1c] text-2xl font-serif focus:outline-none resize-none"
+                                        className="w-full h-24 bg-transparent text-center text-[#4a2e1c] text-lg md:text-2xl font-serif focus:outline-none resize-none"
                                     />
                                  </div>
                                 <RitualButton onClick={() => setRitualStep(2)} disabled={!intention} className="absolute bottom-[15%] left-1/2 -translate-x-1/2">Seal My Intention</RitualButton>
