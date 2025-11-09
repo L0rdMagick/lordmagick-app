@@ -332,7 +332,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                                         className="absolute text-center pointer-events-none flex flex-col justify-center"
                                         style={{
                                             left: `calc( (247.4 / 920) * 100% )`, top: `calc( (264.3 / 1300) * 100% )`,
-                                            width: `calc( (505.1 / 920) * 100% )`, height: `calc( (581.1 / 1300) * 100% )`,
+                                            width: `calc( (200 / 920) * 100% )`, height: `calc( (581.1 / 1300) * 100% )`,
                                         }}
                                     >
                                         <h2 className="text-3xl md:text-4xl lg:text-5xl font-serif text-purple-200 mb-6" style={{ textShadow: '0 0 10px rgba(192, 132, 252, 0.5)' }}>
