@@ -176,7 +176,6 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
     }, [chargingIndex, ritualStep]);
 
     const animateIngredientCharge = useCallback((timestamp: number) => {
-        // THE FIX: Use `chargeStartTimeRef` which is correctly defined in this component's scope.
         if (!chargeStartTimeRef.current) chargeStartTimeRef.current = timestamp;
         const elapsedTime = timestamp - chargeStartTimeRef.current;
         const progress = Math.min(elapsedTime / CHARGE_DURATION_INGREDIENT, 1);
@@ -345,13 +344,29 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                         <Stage className="justify-start pt-8 md:justify-center md:pt-0">
                              <div className="relative w-full grow max-h-full">
                                 <Image src={`${ASSET_PATH}/wicca_scroll_intention.png`} fill style={{ objectFit: 'contain' }} alt="Inscribe Intention" />
-                                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[35%] text-center">
+                                 <div 
+                                    className="absolute text-center"
+                                    // THE FIX: Applying precise coordinates converted to percentages.
+                                    // Original image size is assumed to be 1000px wide for calculation simplicity.
+                                    // Left: (179.8 / 1000) * 100 = 18%
+                                    // Top: (233.9 / 1000) * 100 = 23.4%
+                                    // Width: (634.5 / 1000) * 100 = 63.5%
+                                    // Height: (589.2 / 1000) * 100 = 58.9%
+                                    style={{
+                                        top: '50%',
+                                        left: '50%',
+                                        transform: 'translate(-50%, -50%)',
+                                        width: '63.5%',
+                                        height: '58.9%',
+                                        paddingTop: '8%', // Manual adjustment for title
+                                    }}
+                                 >
                                      <h3 className="font-serif text-xl md:text-2xl text-[#4a2e1c] mb-2 md:mb-4">Inscribe Your Intention</h3>
                                     <textarea
                                         value={intention}
                                         onChange={(e) => setIntention(e.target.value)}
                                         placeholder="e.g. To find clarity on my career path"
-                                        className="w-full h-24 bg-transparent text-center text-[#4a2e1c] text-lg md:text-2xl font-serif focus:outline-none resize-none"
+                                        className="w-full h-3/5 bg-transparent text-center text-[#4a2e1c] text-lg md:text-2xl font-serif focus:outline-none resize-none"
                                     />
                                  </div>
                                 <RitualButton onClick={() => setRitualStep(2)} disabled={!intention} className="absolute bottom-[15%] left-1/2 -translate-x-1/2">Seal My Intention</RitualButton>
@@ -479,7 +494,20 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                         <Stage className="justify-center">
                             <div className="relative w-full h-full">
                                 <Image src={`${ASSET_PATH}/wicca_incantation_scroll.png`} fill style={{ objectFit: 'contain' }} alt="Incantation" />
-                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center w-2/5">
+                                <div 
+                                    className="absolute text-center"
+                                    style={{
+                                        top: '50%',
+                                        left: '50%',
+                                        transform: 'translate(-50%, -50%)',
+                                        width: '63.5%',
+                                        height: '58.9%',
+                                        paddingTop: '8%',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        justifyContent: 'center'
+                                    }}
+                                >
                                     <h3 className="font-serif text-2xl text-[#4a2e1c] mb-4">Recite the Incantation</h3>
                                     <p className="font-serif text-2xl text-[#4a2e1c] whitespace-pre-line leading-relaxed">{generatedSpell.central_chant}</p>
                                 </div>
