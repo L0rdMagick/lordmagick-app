@@ -82,6 +82,7 @@ const ChargingElement: React.FC<ChargingElementProps> = ({ name, isCharged, onCh
         if (chargeProgress < 1) {
             animationFrameRef.current = requestAnimationFrame(animateCharge);
         } else {
+            soundRef.current?.pause();
             onChargeComplete(name);
         }
     }, [name, onChargeComplete]);
@@ -175,6 +176,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
     }, [chargingIndex, ritualStep]);
 
     const animateIngredientCharge = useCallback((timestamp: number) => {
+        // THE FIX: Use `chargeStartTimeRef` which is correctly defined in this component's scope.
         if (!chargeStartTimeRef.current) chargeStartTimeRef.current = timestamp;
         const elapsedTime = timestamp - chargeStartTimeRef.current;
         const progress = Math.min(elapsedTime / CHARGE_DURATION_INGREDIENT, 1);
@@ -251,7 +253,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
     
     const handleElementChargeComplete = (elementName: string) => {
         if (!chargedElements.includes(elementName)) {
-            playSound('/audio/sfx-chaos-activate.mp3', 0.4); // The bell-like sound
+            playSound('/audio/sfx-chaos-activate.mp3', 0.4); 
             setChargedElements(prev => [...prev, elementName]);
         }
     };
@@ -438,7 +440,6 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                          <Stage className="justify-center">
                             <div className="relative w-full h-full">
                                 <Image src={`${ASSET_PATH}/wicca_charge_ingredient_template.png`} fill style={{ objectFit: 'contain' }} alt="Charge Ingredient" />
-                                {/* THE FIX: Changed top-[25%] to top-[20%] to raise the text higher. */}
                                 <p className="absolute top-[20%] left-1/2 -translate-x-1/2 w-full text-center font-serif text-2xl">
                                     {isChargeComplete ? 'Component Charged!' : `Hold to Charge the ${generatedSpell.symbolic_ingredients[chargingIndex].name}`}
                                 </p>
@@ -478,7 +479,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                         <Stage className="justify-center">
                             <div className="relative w-full h-full">
                                 <Image src={`${ASSET_PATH}/wicca_incantation_scroll.png`} fill style={{ objectFit: 'contain' }} alt="Incantation" />
-                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center w-1/2">
+                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center w-2/5">
                                     <h3 className="font-serif text-2xl text-[#4a2e1c] mb-4">Recite the Incantation</h3>
                                     <p className="font-serif text-2xl text-[#4a2e1c] whitespace-pre-line leading-relaxed">{generatedSpell.central_chant}</p>
                                 </div>
@@ -526,7 +527,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                          <Stage className="justify-center">
                              <div className="relative w-full h-full">
                                 <Image src={`${ASSET_PATH}/wicca_spell_manifestation.png`} fill style={{ objectFit: 'contain' }} alt="Spell Manifestation" />
-                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center text-white font-serif text-4xl w-2/3 md:w-1/2">
+                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center text-white font-serif text-4xl w-1/2 md:w-2/5">
                                     {generatedSpell.affirmation}
                                 </div>
                                 <RitualButton onClick={onBack} className="absolute bottom-[25%] left-1/2 -translate-x-1/2">Return to Spell Room</RitualButton>
