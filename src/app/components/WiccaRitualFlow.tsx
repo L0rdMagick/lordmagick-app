@@ -330,7 +330,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                                     <div
                                         className="absolute flex items-center justify-center text-center pointer-events-none"
                                         style={{
-                                            left: `33.24%`, top: `4.61%`, width: `42.2%`, height: `13.18%`,
+                                            left: `25%`, top: `10%`, width: `25%`, height: `13.18%`,
                                         }}
                                     >
                                         <h2 className="text-3xl md:text-4xl lg:text-5xl font-serif text-purple-200" style={{ textShadow: '0 0 10px rgba(192, 132, 252, 0.5)' }}>
@@ -340,7 +340,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                                     <div
                                         className="absolute text-center pointer-events-none flex items-center justify-center p-4"
                                         style={{
-                                            left: `26.89%`, top: `20.33%`, width: `54.9%`, height: `44.7%`,
+                                            left: `25%`, top: `15%`, width: `25%`, height: `33%`,
                                         }}
                                     >
                                         <p className="text-base md:text-lg lg:text-xl text-gray-300 leading-relaxed">
