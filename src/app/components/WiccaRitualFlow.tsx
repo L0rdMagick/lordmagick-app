@@ -208,7 +208,6 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
         return (
             <AnimatePresence mode="wait">
                 <div key={ritualStep} className="relative w-full h-full">
-                    {/* --- THIS IS THE CORRECTED INTRO STAGE --- */}
                     {ritualStep === 0 && (
                         <Stage>
                              <div className="relative w-full h-full max-h-[85vh]">

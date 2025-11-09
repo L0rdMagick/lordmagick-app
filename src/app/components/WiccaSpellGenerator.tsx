@@ -2,7 +2,7 @@
 
 import React from 'react';
 import type { Session } from '@/lib/types';
-import { WiccaRitualFlow } from './WiccaRitualFlow'; // Import the new, consolidated component
+import { WiccaRitualFlow } from './WiccaRitualFlow'; 
 
 interface WiccaSpellGeneratorProps {
   session: Session;
@@ -11,10 +11,10 @@ interface WiccaSpellGeneratorProps {
 }
 
 const WiccaSpellGenerator: React.FC<WiccaSpellGeneratorProps> = ({ session, isSubscribed, onBack }) => {
-  // The entire ritual flow is now encapsulated in the WiccaRitualFlow component.
-  // This parent component's only job is to render it and pass the necessary props.
+  // THE FIX: Added h-full to this container to ensure it expands vertically,
+  // giving its child (WiccaRitualFlow) a valid height to fill.
   return (
-    <div className="animate-fade-in-up w-full max-w-4xl mx-auto">
+    <div className="animate-fade-in-up w-full h-full max-w-4xl mx-auto">
       <WiccaRitualFlow session={session} isSubscribed={isSubscribed} onBack={onBack} />
     </div>
   );
