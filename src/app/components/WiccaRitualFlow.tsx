@@ -469,7 +469,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                                     )
                                 })}
                             </div>
-                            <p className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-20px font-serif text-xl pointer-events-none">Hold to Focus Your Will and Cast the Spell</p>
+                            <p className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-5 font-serif text-xl pointer-events-none">Hold to Focus Your Will and Cast the Spell</p>
                         </Stage>
                     )}
                     {ritualStep === 8 && generatedSpell && (
