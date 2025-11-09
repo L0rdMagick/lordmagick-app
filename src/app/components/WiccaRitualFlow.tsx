@@ -70,7 +70,7 @@ const HoldButton: React.FC<{
         if (isComplete) return;
         audioManager.init();
         intervalRef.current = setInterval(() => {
-            progressRef.current += 50; // Update interval
+            progressRef.current += 50;
             const newProgress = (progressRef.current / holdTime) * 100;
             setProgress(newProgress);
             if (progressRef.current >= holdTime) {
@@ -91,7 +91,7 @@ const HoldButton: React.FC<{
         progressRef.current = 0;
     };
 
-    const circumference = 2 * Math.PI * 45; // For a 100x100 SVG
+    const circumference = 2 * Math.PI * 45;
     const strokeDashoffset = circumference * (1 - progress / 100);
 
     return (
@@ -207,19 +207,18 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
 
         return (
             <AnimatePresence mode="wait">
-                <div key={ritualStep} className="relative w-full h-full flex flex-col">
+                <div key={ritualStep} className="relative w-full h-full">
+                    {/* --- THIS IS THE CORRECTED INTRO STAGE --- */}
                     {ritualStep === 0 && (
                         <Stage>
-                            <div className="w-full h-full flex flex-col items-center justify-center">
-                                <div className="relative w-full grow max-h-[80vh]">
-                                    <Image src={`${ASSET_PATH}/wicca_intro_instructions.png`} fill style={{ objectFit: 'contain' }} alt="Wicca Instructions" priority />
-                                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[45%] max-w-md text-center pointer-events-none">
-                                        <h2 className="text-2xl sm:text-3xl md:text-4xl font-serif text-purple-200 mb-4 sm:mb-6" style={{ textShadow: '0 0 10px rgba(192, 132, 252, 0.5)' }}>Wiccan Spellcraft</h2>
-                                        <p className="text-base sm:text-lg text-gray-300 leading-relaxed">Work with nature, the moon, and ancient energies to manifest your will. Follow the steps to craft your spell.</p>
-                                    </div>
+                             <div className="relative w-full h-full max-h-[85vh]">
+                                <Image src={`${ASSET_PATH}/wicca_intro_instructions.png`} fill style={{ objectFit: 'contain' }} alt="Wicca Instructions" priority />
+                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[45%] max-w-md text-center pointer-events-none">
+                                    <h2 className="text-2xl sm:text-3xl md:text-4xl font-serif text-purple-200 mb-4 sm:mb-6" style={{ textShadow: '0 0 10px rgba(192, 132, 252, 0.5)' }}>Wiccan Spellcraft</h2>
+                                    <p className="text-base sm:text-lg text-gray-300 leading-relaxed">Work with nature, the moon, and ancient energies to manifest your will.</p>
                                 </div>
-                                <RitualButton onClick={() => setRitualStep(1)} className="shrink-0 mt-4">Continue</RitualButton>
                             </div>
+                            <RitualButton onClick={() => setRitualStep(1)} className="absolute bottom-0">Continue</RitualButton>
                         </Stage>
                     )}
                     {ritualStep === 1 && (
@@ -233,7 +232,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                         <Stage>
                             <div className="text-center mb-4">
                                 <h3 className="text-2xl font-serif text-amber-200">Invoke the Elements</h3>
-                                <p className="text-gray-400">Hold each element to call it forth.</p>
+                                <p className="text-gray-400">Hold each element for 5 seconds to call it forth.</p>
                             </div>
                             <div className="relative w-72 h-72 sm:w-80 sm:h-80">
                                 {['Spirit', 'Air', 'Fire', 'Water', 'Earth'].map((el, i) => {
