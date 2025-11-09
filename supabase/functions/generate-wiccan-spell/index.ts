@@ -43,8 +43,8 @@ Deno.serve(async (req: Request) => {
         const accessToken = (await client.getAccessToken()).token;
         if (!accessToken) { throw new Error("Failed to retrieve access token."); }
 
-        // THE FIX: Reverted to the 'gemini-1.5-flash' model, which is verified to be working in your other project functions.
-        const apiUrl = `https://${GCP_REGION}-aiplatform.googleapis.com/v1/projects/${GCP_PROJECT_ID}/locations/${GCP_REGION}/publishers/google/models/gemini-1.5-flash:generateContent`;
+        // THE FIX: Reverted to the original, working model name for this specific function.
+        const apiUrl = `https://${GCP_REGION}-aiplatform.googleapis.com/v1/projects/${GCP_PROJECT_ID}/locations/${GCP_REGION}/publishers/google/models/gemini-2.5-flash:generateContent`;
         
         const prompt = `
           You are designing a self-contained, DIGITAL Wiccan ritual for an app.
