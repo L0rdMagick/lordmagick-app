@@ -327,7 +327,17 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                             <div className="w-full h-full flex flex-col items-center justify-center">
                                 <div className="relative w-full grow">
                                     <Image src={`${ASSET_PATH}/wicca_intro_instructions.png`} fill style={{ objectFit: 'contain' }} alt="Wicca Instructions" priority />
-                                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3/5 max-w-[280px] text-center pointer-events-none">
+                                    <div 
+                                        className="absolute text-center pointer-events-none flex flex-col justify-center"
+                                        // THE FIX: Applying coordinates from user image for wicca_intro_instructions.png (920x1300)
+                                        // X: 247.4, Y: 264.3, W: 505.1, H: 581.1
+                                        style={{
+                                            left: `calc( (247.4 / 920) * 100% )`,
+                                            top: `calc( (264.3 / 1300) * 100% )`,
+                                            width: `calc( (505.1 / 920) * 100% )`,
+                                            height: `calc( (581.1 / 1300) * 100% )`,
+                                        }}
+                                    >
                                         <h2 className="text-3xl md:text-4xl lg:text-5xl font-serif text-purple-200 mb-6" style={{ textShadow: '0 0 10px rgba(192, 132, 252, 0.5)' }}>
                                             Wiccan Spellcraft
                                         </h2>
@@ -346,19 +356,9 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                                 <Image src={`${ASSET_PATH}/wicca_scroll_intention.png`} fill style={{ objectFit: 'contain' }} alt="Inscribe Intention" />
                                  <div 
                                     className="absolute text-center"
-                                    // THE FIX: Applying precise coordinates converted to percentages.
-                                    // Original image size is assumed to be 1000px wide for calculation simplicity.
-                                    // Left: (179.8 / 1000) * 100 = 18%
-                                    // Top: (233.9 / 1000) * 100 = 23.4%
-                                    // Width: (634.5 / 1000) * 100 = 63.5%
-                                    // Height: (589.2 / 1000) * 100 = 58.9%
                                     style={{
-                                        top: '50%',
-                                        left: '50%',
-                                        transform: 'translate(-50%, -50%)',
-                                        width: '63.5%',
-                                        height: '58.9%',
-                                        paddingTop: '8%', // Manual adjustment for title
+                                        top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+                                        width: '63.5%', height: '58.9%', paddingTop: '8%',
                                     }}
                                  >
                                      <h3 className="font-serif text-xl md:text-2xl text-[#4a2e1c] mb-2 md:mb-4">Inscribe Your Intention</h3>
@@ -497,15 +497,8 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                                 <div 
                                     className="absolute text-center"
                                     style={{
-                                        top: '50%',
-                                        left: '50%',
-                                        transform: 'translate(-50%, -50%)',
-                                        width: '63.5%',
-                                        height: '58.9%',
-                                        paddingTop: '8%',
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        justifyContent: 'center'
+                                        top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '63.5%', height: '58.9%',
+                                        paddingTop: '8%', display: 'flex', flexDirection: 'column', justifyContent: 'center'
                                     }}
                                 >
                                     <h3 className="font-serif text-2xl text-[#4a2e1c] mb-4">Recite the Incantation</h3>
@@ -555,7 +548,17 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                          <Stage className="justify-center">
                              <div className="relative w-full h-full">
                                 <Image src={`${ASSET_PATH}/wicca_spell_manifestation.png`} fill style={{ objectFit: 'contain' }} alt="Spell Manifestation" />
-                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center text-white font-serif text-4xl w-1/2 md:w-2/5">
+                                <div 
+                                    className="absolute text-center text-white font-serif text-4xl flex items-center justify-center"
+                                    // THE FIX: Applying coordinates from user image for wicca_spell_manifestation.png (assumed 1024x1024)
+                                    // X: 323, Y: 293.5, W: 384, H: 580.9
+                                    style={{
+                                        left: `calc( (323 / 1024) * 100% )`,
+                                        top: `calc( (293.5 / 1024) * 100% )`,
+                                        width: `calc( (384 / 1024) * 100% )`,
+                                        height: `calc( (580.9 / 1024) * 100% )`,
+                                    }}
+                                >
                                     {generatedSpell.affirmation}
                                 </div>
                                 <RitualButton onClick={onBack} className="absolute bottom-[25%] left-1/2 -translate-x-1/2">Return to Spell Room</RitualButton>
