@@ -31,7 +31,8 @@ Deno.serve(async (req: Request) => {
     }
 
     try {
-        const { intention } = await req.json();
+        // THE FIX: Correctly destructure all incoming data from the request.
+        const { intention, focalPoint, moonPhase } = await req.json();
         const serviceAccountKey = Deno.env.get('GCP_SERVICE_ACCOUNT_KEY');
         if (!serviceAccountKey) { throw new Error("GCP_SERVICE_ACCOUNT_KEY secret is not set in Supabase."); }
 
@@ -45,15 +46,17 @@ Deno.serve(async (req: Request) => {
 
         const apiUrl = `https://${GCP_REGION}-aiplatform.googleapis.com/v1/projects/${GCP_PROJECT_ID}/locations/${GCP_REGION}/publishers/google/models/gemini-1.5-flash:generateContent`;
         
-        // THE FIX: The prompt now explicitly asks for more variety and stronger symbolic alignment.
+        // THE FIX: The prompt now uses the focalPoint (deity) and moonPhase to generate a more relevant spell.
         const prompt = `
           You are designing a self-contained, DIGITAL Wiccan ritual for an app.
           The user's intention is: "${intention}".
+          The user has chosen to focus their energy through the divine aspect of: "${focalPoint}".
+          The current moon phase is: "${moonPhase}".
 
           Generate a valid JSON object with the following keys:
-          - "title": A fitting, poetic name for the ritual.
+          - "title": A fitting, poetic name for the ritual that reflects the intention and focal point.
           - "incantation": A short, 2-4 line rhyming incantation for the user to speak at the start.
-          - "symbolic_ingredients": An array of EXACTLY FIVE objects. For each object, choose a "name" from this list: [${AVAILABLE_INGREDIENTS.map(i => `"${i}"`).join(", ")}]. Select the five ingredients that are MOST symbolically aligned with the user's intention. Prioritize variety and avoid repetition unless an ingredient is exceptionally fitting.
+          - "symbolic_ingredients": An array of EXACTLY FIVE objects. For each object, choose a "name" from this list: [${AVAILABLE_INGREDIENTS.map(i => `"${i}"`).join(", ")}]. Select the five ingredients that are MOST symbolically aligned with the user's intention and chosen focal point (${focalPoint}). Prioritize variety and avoid repetition unless an ingredient is exceptionally fitting.
           - "central_chant": A short, 2-line rhyming chant to appear after all ingredients are placed.
           - "affirmation": A single, powerful sentence for the user to see at the very end to seal the spell.
           
