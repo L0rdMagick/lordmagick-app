@@ -145,6 +145,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
     const [chargedElements, setChargedElements] = useState<string[]>([]);
     const [selectedDeities, setSelectedDeities] = useState<string[]>([]);
     
+    // --- State for Ingredient Charging ---
     const [chargingIndex, setChargingIndex] = useState(0);
     const [isCharging, setIsCharging] = useState(false);
     const [chargeProgress, setChargeProgress] = useState(0);
@@ -153,12 +154,13 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
     const chargeStartTimeRef = useRef<number | null>(null);
     const chargingSoundRef = useRef<HTMLAudioElement | null>(null);
 
-    // --- REFACTORED CASTING LOGIC ---
+    // --- State for Final Casting ---
     const [isCasting, setIsCasting] = useState(false);
     const [castCountdown, setCastCountdown] = useState(0);
     const castAnimationFrameRef = useRef<number | null>(null);
     const castStartTimeRef = useRef<number | null>(null);
     
+    // THE FIX: Robust cleanup effect for all timers and sounds.
     useEffect(() => {
         return () => {
             if (chargeAnimationFrameRef.current) cancelAnimationFrame(chargeAnimationFrameRef.current);
@@ -166,6 +168,15 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
             chargingSoundRef.current?.pause();
         };
     }, []);
+    
+    // THE FIX: Reset charging state when the ingredient or overall ritual step changes to prevent bugs.
+    useEffect(() => {
+        setIsCharging(false);
+        setIsChargeComplete(false);
+        setChargeProgress(0);
+        if (chargeAnimationFrameRef.current) cancelAnimationFrame(chargeAnimationFrameRef.current);
+        chargingSoundRef.current?.pause();
+    }, [chargingIndex, ritualStep]);
 
     const animateIngredientCharge = useCallback((timestamp: number) => {
         if (!chargeStartTimeRef.current) chargeStartTimeRef.current = timestamp;
@@ -202,8 +213,6 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
         playSound('/audio/sfx-spell-room-portal.mp3', 0.2);
         if (chargingIndex < 4) {
             setChargingIndex(prev => prev + 1);
-            setIsChargeComplete(false);
-            setChargeProgress(0);
         } else {
             setRitualStep(prev => prev + 1);
         }
@@ -241,23 +250,21 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
         );
     };
 
-    // --- REFACTORED CASTING LOGIC ---
     const animateCast = useCallback((timestamp: number) => {
         if (!castStartTimeRef.current) castStartTimeRef.current = timestamp;
         const elapsedTime = timestamp - castStartTimeRef.current;
         
-        // Update countdown
-        const currentSecond = Math.floor(elapsedTime / 1000) + 1;
+        const currentSecond = Math.min(13, Math.floor(elapsedTime / 1000) + 1);
         setCastCountdown(currentSecond);
 
         if (elapsedTime < CAST_DURATION) {
             castAnimationFrameRef.current = requestAnimationFrame(animateCast);
         } else {
             setCastCountdown(13);
-            setIsCasting(false);
             chargingSoundRef.current?.pause();
             playSound('/audio/sfx-chaos-explosion.mp3', 0.5);
             setRitualStep(prev => prev + 1);
+            setIsCasting(false); // Ensure state is cleaned up
         }
     }, []);
 
@@ -276,6 +283,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
         chargingSoundRef.current?.pause();
         if (castAnimationFrameRef.current) {
             cancelAnimationFrame(castAnimationFrameRef.current);
+            castAnimationFrameRef.current = null;
         }
         castStartTimeRef.current = null;
     };
@@ -287,7 +295,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
     const strokeDashoffset = CIRCUMFERENCE * (1 - chargeProgress / 100);
 
     const renderContent = () => {
-        if (loading) return <LoadingSpinner customMessage="Consulting the energies..." />;
+        if (loading) return <LoadingSpinner title="Weaving the Spell..." customMessage="Gathering ancient energies for your ritual..." />;
         if (error) return (
             <div className="text-center text-red-400 p-4 bg-red-500/10 rounded-lg">
                 <p>{error}</p>
@@ -320,7 +328,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                         <Stage className="justify-center">
                              <div className="relative w-full grow max-h-full">
                                 <Image src={`${ASSET_PATH}/wicca_scroll_intention.png`} fill style={{ objectFit: 'contain' }} alt="Inscribe Intention" />
-                                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[45%] text-center">
+                                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[40%] text-center">
                                      <h3 className="font-serif text-2xl text-[#4a2e1c] mb-4">Inscribe Your Intention</h3>
                                     <textarea
                                         value={intention}
@@ -339,10 +347,8 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                             <div className="relative w-full max-w-md aspect-square">
                                 {['Spirit', 'Air', 'Fire', 'Earth', 'Water'].map((el, i) => {
                                     const positions = [
-                                        { top: '5%', left: '50%', transform: 'translate(-50%, -50%)' },
-                                        { top: '40%', left: '95%', transform: 'translate(-50%, -50%)' },
-                                        { top: '90%', left: '80%', transform: 'translate(-50%, -50%)' },
-                                        { top: '90%', left: '20%', transform: 'translate(-50%, -50%)' },
+                                        { top: '5%', left: '50%', transform: 'translate(-50%, -50%)' }, { top: '40%', left: '95%', transform: 'translate(-50%, -50%)' },
+                                        { top: '90%', left: '80%', transform: 'translate(-50%, -50%)' }, { top: '90%', left: '20%', transform: 'translate(-50%, -50%)' },
                                         { top: '40%', left: '5%', transform: 'translate(-50%, -50%)' },
                                     ];
                                     return (
@@ -361,8 +367,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                             <h3 className="text-3xl font-serif text-amber-200 mb-8">Invoke a Guiding Deity or Force</h3>
                             <div className="w-full max-w-4xl flex flex-col md:flex-row items-center justify-center gap-8">
                                 {[
-                                    { name: 'Triple Goddess', img: 'wicca_deity_triple_goddess.png' },
-                                    { name: 'Horned God', img: 'wicca_deity_horned_god.png' },
+                                    { name: 'Triple Goddess', img: 'wicca_deity_triple_goddess.png' }, { name: 'Horned God', img: 'wicca_deity_horned_god.png' },
                                     { name: 'Divine Source', img: 'wicca_deity_divine_source.png' }
                                 ].map(deity => {
                                     const isSelected = selectedDeities.includes(deity.name);
@@ -390,7 +395,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                     {ritualStep === 4 && generatedSpell && (
                         <Stage className="justify-center">
                             <div className='text-center'>
-                                <h3 className="text-2xl font-serif text-amber-200 mb-2">The Spirits Guide You</h3>
+                                <h3 className="text-2xl font-serif text-amber-200 mb-2">The Spirits Guide Your Choice</h3>
                                 <p className="text-gray-300 mb-6">These components have been chosen for your intention.</p>
                                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 bg-black/30 p-4 rounded-lg">
                                     {generatedSpell.symbolic_ingredients.map(ingredient => {
@@ -492,13 +497,13 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                                 })}
                                 {isCasting && castCountdown > 0 && (
                                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                        <span className="text-7xl font-bold text-white animate-ping" style={{ textShadow: '0 0 20px white', animationIterationCount: '1' }}>
+                                        <span className="text-7xl font-bold text-white animate-ping" style={{ textShadow: '0 0 20px white', animationIterationCount: '1', animationDelay: `${(castCountdown - 1) % 1}s` }}>
                                             {castCountdown}
                                         </span>
                                     </div>
                                 )}
                             </div>
-                            <p className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-5 font-serif text-xl pointer-events-none">Hold to Focus Your Will and Cast the Spell</p>
+                            <p className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-5 font-serif text-xl pointer-events-none text-center">Hold to Focus Your Will and Cast the Spell</p>
                         </Stage>
                     )}
                     {ritualStep === 8 && generatedSpell && (
