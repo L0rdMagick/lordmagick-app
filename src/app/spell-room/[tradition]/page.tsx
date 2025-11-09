@@ -94,9 +94,7 @@ export default function SpellTraditionPage() {
         if (PageComponent === ComingSoon) {
           return <PageComponent />;
         }
-
-        // --- THIS IS THE FIX ---
-        // Conditionally render the container. WiccaSpellGenerator will NOT have the dark box.
+        
         if (PageComponent === WiccaSpellGenerator) {
             return (
                  <PageComponent 
@@ -138,7 +136,7 @@ export default function SpellTraditionPage() {
         </div>
       </header>
 
-      {/* THE FIX: Added a 'w-full' class to this container */}
+      {/* THE FIX: Added a 'w-full' class to this container to allow the Wicca flow to expand correctly. */}
       <div className="relative z-10 grow flex flex-col items-center justify-center container mx-auto px-4 w-full">
         <h1 className="text-4xl md:text-5xl font-serif text-purple-300 text-center mb-8" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
           {traditionName}

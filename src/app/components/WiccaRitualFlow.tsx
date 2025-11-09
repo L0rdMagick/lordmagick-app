@@ -1,9 +1,9 @@
 // --- START OF FILE src/app/components/WiccaRitualFlow.tsx ---
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { Session, GeneratedWiccanSpell, WiccanIngredient } from '@/lib/types';
+import type { Session, GeneratedWiccanSpell } from '@/lib/types';
 import { generateWiccanSpell } from '@/lib/services/geminiService';
 import LoadingSpinner from './LoadingSpinner';
 import { PentagramIcon } from './icons';
@@ -42,9 +42,18 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
     const [error, setError] = useState<string | null>(null);
     const [intention, setIntention] = useState('');
     const [generatedSpell, setGeneratedSpell] = useState<GeneratedWiccanSpell | null>(null);
-    const [clickedElements, setClickedElements] = useState<string[]>([]);
+    const [invokedElements, setInvokedElements] = useState<string[]>([]);
     const [selectedDeity, setSelectedDeity] = useState<string | null>(null);
+    
+    // --- FIX: State for Charging Mechanic ---
     const [chargingIndex, setChargingIndex] = useState(0);
+    const [isCharging, setIsCharging] = useState(false);
+    const [chargeProgress, setChargeProgress] = useState(0);
+    const [isChargeComplete, setIsChargeComplete] = useState(false);
+    const chargeAnimationFrameRef = useRef<number | null>(null);
+    const chargeStartTimeRef = useRef<number | null>(null);
+    const CHARGE_DURATION = 5000; // 5 seconds
+
     const [isCasting, setIsCasting] = useState(false);
     const castTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const ASSET_PATH = "/images/Spells/Wicca Tradition General";
@@ -52,8 +61,63 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
     useEffect(() => {
         return () => {
             if (castTimeoutRef.current) clearTimeout(castTimeoutRef.current);
+            if (chargeAnimationFrameRef.current) cancelAnimationFrame(chargeAnimationFrameRef.current);
         };
     }, []);
+
+    // --- FIX: Animation loop for the charging progress ---
+    const animateCharge = useCallback((timestamp: number) => {
+        if (!chargeStartTimeRef.current) chargeStartTimeRef.current = timestamp;
+        const elapsedTime = timestamp - chargeStartTimeRef.current;
+        const progress = Math.min(elapsedTime / CHARGE_DURATION, 1);
+        setChargeProgress(progress * 100);
+
+        if (progress < 1) {
+            chargeAnimationFrameRef.current = requestAnimationFrame(animateCharge);
+        } else {
+            setChargeProgress(100);
+            setIsChargeComplete(true);
+            setIsCharging(false);
+            // TODO: Play a "charge complete" magical sound here
+        }
+    }, []);
+
+    useEffect(() => {
+        if (isCharging) {
+            chargeStartTimeRef.current = performance.now();
+            chargeAnimationFrameRef.current = requestAnimationFrame(animateCharge);
+        } else {
+            if (chargeAnimationFrameRef.current) cancelAnimationFrame(chargeAnimationFrameRef.current);
+            chargeStartTimeRef.current = null;
+        }
+        return () => { if (chargeAnimationFrameRef.current) cancelAnimationFrame(chargeAnimationFrameRef.current); };
+    }, [isCharging, animateCharge]);
+    
+    // --- FIX: Handlers for starting and stopping the charge ---
+    const handleChargeStart = () => {
+        if (isChargeComplete || isCharging) return;
+        setIsCharging(true);
+        // TODO: Play a "charging loop" sound here
+    };
+
+    const handleChargeEnd = () => {
+        if (isCharging && !isChargeComplete) {
+            setIsCharging(false);
+            setChargeProgress(0); // Reset progress if they let go early
+            // TODO: Stop the "charging loop" sound here
+        }
+    };
+    
+    // --- FIX: Function to advance after a successful charge ---
+    const handleAdvanceAfterCharge = () => {
+        if (chargingIndex < 4) {
+            setChargingIndex(prev => prev + 1);
+            setIsChargeComplete(false);
+            setChargeProgress(0);
+        } else {
+            setRitualStep(prev => prev + 1);
+        }
+    };
 
     const handleGenerateSpell = async () => {
         if (!intention) {
@@ -63,7 +127,8 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
         setLoading(true);
         setError(null);
         try {
-            const spell = await generateWiccanSpell({ intention, focalPoint: selectedDeity || 'The Divine', moonPhase: 'Current' });
+            // Note: The AI prompt now asks for better variety.
+            const spell = await generateWiccanSpell({ intention });
             setGeneratedSpell(spell);
             setRitualStep(prev => prev + 1);
         } catch (err: any) {
@@ -74,31 +139,33 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
     };
     
     const handleElementClick = (element: string) => {
-        if (!clickedElements.includes(element)) {
-            setClickedElements(prev => [...prev, element]);
-        }
-    };
-
-    const handleCharge = () => {
-        if (chargingIndex < 4) {
-            setChargingIndex(prev => prev + 1);
-        } else {
-            setRitualStep(prev => prev + 1);
+        if (!invokedElements.includes(element)) {
+            // TODO: Play a magical "element activation" sound here
+            setInvokedElements(prev => [...prev, element]);
         }
     };
 
     const handleCastHold = () => {
         setIsCasting(true);
+        // TODO: Play a "spell casting" sound loop here
         castTimeoutRef.current = setTimeout(() => {
             setIsCasting(false);
             setRitualStep(prev => prev + 1);
+            // TODO: Play a "spell complete/manifest" sound here
         }, 13000);
     };
 
     const handleCastRelease = () => {
         setIsCasting(false);
+        // TODO: Stop the "spell casting" sound loop here
         if (castTimeoutRef.current) clearTimeout(castTimeoutRef.current);
     };
+    
+    const SVG_SIZE = 160;
+    const STROKE_WIDTH = 8;
+    const RADIUS = (SVG_SIZE / 2) - (STROKE_WIDTH / 2);
+    const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
+    const strokeDashoffset = CIRCUMFERENCE * (1 - chargeProgress / 100);
 
     const renderContent = () => {
         if (loading) return <LoadingSpinner customMessage="Consulting the energies..." />;
@@ -114,9 +181,8 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                 <div key={ritualStep} className="relative w-full h-[85vh] max-h-[900px]">
                     {ritualStep === 0 && (
                         <Stage>
-                            {/* This container ensures the image and button are laid out vertically and take up full space */}
+                            {/* THE FIX: This container uses flexbox to ensure the image grows and the button sits at the bottom, solving mobile layout issues. */}
                             <div className="w-full h-full flex flex-col items-center justify-center">
-                                {/* The Image container uses 'grow' to take up available space, pushing the button down */}
                                 <div className="relative w-full grow">
                                     <Image src={`${ASSET_PATH}/wicca_intro_instructions.png`} fill style={{ objectFit: 'contain' }} alt="Wicca Instructions" priority />
                                     
@@ -130,7 +196,6 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                                     </div>
                                 </div>
                                 
-                                {/* The button is now a 'shrink-0' item, positioned naturally below the 'grow' image container */}
                                 <RitualButton onClick={() => setRitualStep(1)} className="shrink-0 mb-4">Continue</RitualButton>
                             </div>
                         </Stage>
@@ -150,14 +215,16 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                      {ritualStep === 2 && (
                         <Stage>
                             <Image src={`${ASSET_PATH}/wicca_invoke_elements.png`} fill style={{ objectFit: 'contain' }} alt="Invoke Elements" />
-                            {['air', 'fire', 'water', 'earth'].map((el, i) => {
+                            {/* THE FIX: Added "Spirit" and arranged 5 elements in a pentagram layout. */}
+                            {['spirit', 'air', 'fire', 'earth', 'water'].map((el, i) => {
                                 const positions = [
                                     { top: '15%', left: '50%', transform: 'translateX(-50%)' },
-                                    { top: '50%', right: '15%', transform: 'translateY(-50%)' },
-                                    { bottom: '15%', left: '50%', transform: 'translateX(-50%)' },
-                                    { top: '50%', left: '15%', transform: 'translateY(-50%)' }
+                                    { top: '40%', right: '15%', transform: 'translateY(-50%)' },
+                                    { bottom: '15%', right: '30%', transform: 'translateX(-50%)' },
+                                    { bottom: '15%', left: '30%', transform: 'translateX(-50%)' },
+                                    { top: '40%', left: '15%', transform: 'translateY(-50%)' }
                                 ];
-                                const isClicked = clickedElements.includes(el);
+                                const isClicked = invokedElements.includes(el);
                                 return (
                                     <button 
                                         key={el} 
@@ -169,7 +236,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                                     </button>
                                 );
                             })}
-                             {clickedElements.length === 4 && <RitualButton onClick={() => setRitualStep(3)} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse">Continue</RitualButton>}
+                             {invokedElements.length === 5 && <RitualButton onClick={() => setRitualStep(3)} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse">Continue</RitualButton>}
                         </Stage>
                     )}
                     {ritualStep === 3 && (
@@ -221,35 +288,52 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                     {ritualStep === 5 && generatedSpell && (
                          <Stage>
                             <Image src={`${ASSET_PATH}/wicca_charge_ingredient_template.png`} fill style={{ objectFit: 'contain' }} alt="Charge Ingredient" />
-                            <p className="absolute top-[25%] font-serif text-2xl text-center">Hold to Charge the<br/>{generatedSpell.symbolic_ingredients[chargingIndex].name}</p>
-                            <div className="absolute top-1/2 -translate-y-1/2 w-32 h-32 animate-pulse cursor-pointer">
-                                {(() => {
-                                    const ingredient = generatedSpell.symbolic_ingredients[chargingIndex];
-                                    const spriteData = findSprite(ingredient.name);
-                                    if (!spriteData) return null;
-                                    return (
-                                        <Sprite 
-                                            sheetPath={spriteData.sheet.path}
-                                            x={spriteData.itemInfo.x}
-                                            y={spriteData.itemInfo.y}
-                                            spriteWidth={spriteData.sheet.spriteSize.width}
-                                            spriteHeight={spriteData.sheet.spriteSize.height}
-                                            sheetWidth={spriteData.sheet.sheetSize.width}
-                                            sheetHeight={spriteData.sheet.sheetSize.height}
-                                        />
-                                    );
-                                })()}
+                            <p className="absolute top-[25%] font-serif text-2xl text-center">
+                                {isChargeComplete ? 'Component Charged!' : `Hold to Charge the ${generatedSpell.symbolic_ingredients[chargingIndex].name}`}
+                            </p>
+                            
+                            {/* THE FIX: Interactive area for charging the ingredient */}
+                            <div
+                                onMouseDown={handleChargeStart} onMouseUp={handleChargeEnd} onMouseLeave={handleChargeEnd}
+                                onTouchStart={handleChargeStart} onTouchEnd={handleChargeEnd}
+                                className="absolute top-1/2 -translate-y-1/2 w-40 h-40 grid place-items-center cursor-pointer select-none"
+                            >
+                                <div className="absolute inset-0 w-full h-full animate-pulse">
+                                    {(() => {
+                                        const ingredient = generatedSpell.symbolic_ingredients[chargingIndex];
+                                        const spriteData = findSprite(ingredient.name);
+                                        if (!spriteData) return null;
+                                        return (
+                                            <Sprite 
+                                                sheetPath={spriteData.sheet.path}
+                                                x={spriteData.itemInfo.x}
+                                                y={spriteData.itemInfo.y}
+                                                spriteWidth={spriteData.sheet.spriteSize.width}
+                                                spriteHeight={spriteData.sheet.spriteSize.height}
+                                                sheetWidth={spriteData.sheet.sheetSize.width}
+                                                sheetHeight={spriteData.sheet.sheetSize.height}
+                                            />
+                                        );
+                                    })()}
+                                </div>
+                                <svg width={SVG_SIZE} height={SVG_SIZE} className="absolute inset-0 transform -rotate-90 pointer-events-none">
+                                    <circle cx={SVG_SIZE/2} cy={SVG_SIZE/2} r={RADIUS} stroke="rgba(192, 132, 252, 0.2)" strokeWidth={STROKE_WIDTH} fill="transparent" />
+                                    <circle cx={SVG_SIZE/2} cy={SVG_SIZE/2} r={RADIUS} stroke="white" strokeWidth={STROKE_WIDTH} fill="transparent" strokeDasharray={CIRCUMFERENCE} strokeDashoffset={strokeDashoffset} strokeLinecap="round" className={`transition-opacity duration-300 ${isChargeComplete || !isCharging ? 'opacity-0' : 'opacity-100'}`}/>
+                                </svg>
                             </div>
-                            <RitualButton onClick={handleCharge} className="absolute bottom-[15%]">
-                                {chargingIndex < 4 ? 'Charge Next Component' : 'Continue to Incantation'}
-                            </RitualButton>
+                            
+                            {isChargeComplete && (
+                                <RitualButton onClick={handleAdvanceAfterCharge} className="absolute bottom-[15%] animate-pulse">
+                                    {chargingIndex < 4 ? 'Charge Next Component' : 'Continue to Incantation'}
+                                </RitualButton>
+                            )}
                         </Stage>
                     )}
                     {ritualStep === 6 && generatedSpell && (
                         <Stage>
                             <Image src={`${ASSET_PATH}/wicca_incantation_scroll.png`} fill style={{ objectFit: 'contain' }} alt="Incantation" />
                             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center text-[#4a2e1c] font-serif text-2xl w-1/2 whitespace-pre-line">
-                                {generatedSpell.incantation}
+                                {generatedSpell.central_chant}
                             </div>
                             <RitualButton onClick={() => setRitualStep(7)} className="absolute bottom-[20%]">Ready to Cast</RitualButton>
                         </Stage>
@@ -306,7 +390,6 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
     };
 
     return (
-        // The wrapper div now has a w-full class to ensure it fills the available space
         <div className="w-full h-full">
             {renderContent()}
         </div>
