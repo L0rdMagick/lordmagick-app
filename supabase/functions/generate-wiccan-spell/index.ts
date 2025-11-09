@@ -31,7 +31,6 @@ Deno.serve(async (req: Request) => {
     }
 
     try {
-        // THE FIX: Correctly destructure all incoming data from the request.
         const { intention, focalPoint, moonPhase } = await req.json();
         const serviceAccountKey = Deno.env.get('GCP_SERVICE_ACCOUNT_KEY');
         if (!serviceAccountKey) { throw new Error("GCP_SERVICE_ACCOUNT_KEY secret is not set in Supabase."); }
@@ -44,9 +43,9 @@ Deno.serve(async (req: Request) => {
         const accessToken = (await client.getAccessToken()).token;
         if (!accessToken) { throw new Error("Failed to retrieve access token."); }
 
-        const apiUrl = `https://${GCP_REGION}-aiplatform.googleapis.com/v1/projects/${GCP_PROJECT_ID}/locations/${GCP_REGION}/publishers/google/models/gemini-1.5-flash:generateContent`;
+        // THE FIX: Updated the model name to a stable version, 'gemini-1.5-flash-001', to resolve the "model not found" error.
+        const apiUrl = `https://${GCP_REGION}-aiplatform.googleapis.com/v1/projects/${GCP_PROJECT_ID}/locations/${GCP_REGION}/publishers/google/models/gemini-1.5-flash-001:generateContent`;
         
-        // THE FIX: The prompt now uses the focalPoint (deity) and moonPhase to generate a more relevant spell.
         const prompt = `
           You are designing a self-contained, DIGITAL Wiccan ritual for an app.
           The user's intention is: "${intention}".
@@ -76,6 +75,7 @@ Deno.serve(async (req: Request) => {
 
         if (!response.ok) {
             const errorBody = await response.json();
+            // This will now provide a more detailed error message if the AI call fails for other reasons.
             throw new Error(`Vertex AI request failed: ${errorBody.error.message}`);
         }
 
