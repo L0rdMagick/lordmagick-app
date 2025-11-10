@@ -466,9 +466,8 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                             </div>
                         </Stage>
                     )}
-                    {/* THE FIX: Re-structured entire block for ritualStep 5 */}
                     {ritualStep === 5 && generatedSpell && (
-                        <Stage className="justify-between pt-16 sm:pt-8">
+                         <Stage className="justify-between pt-16 sm:pt-8">
                             <div className="w-full flex flex-col items-center">
                                 <div className="relative w-full max-w-lg aspect-4/5">
                                     <Image src={`${ASSET_PATH}/wicca_charge_ingredient_template.png`} fill style={{ objectFit: 'contain' }} alt="Charge Ingredient" />
@@ -510,9 +509,10 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                             </div>
                         </Stage>
                     )}
+                    {/* THE FIX: Entire block for ritualStep 6 has been updated */}
                     {ritualStep === 6 && generatedSpell && (
-                        <Stage className="justify-center">
-                            <div className="w-full grow flex flex-col items-center justify-center">
+                        <Stage className="justify-between pt-16 sm:pt-8">
+                             <div className="w-full flex flex-col items-center">
                                 <div className="relative w-full max-w-lg aspect-4/5">
                                     <Image src={`${ASSET_PATH}/wicca_incantation_scroll.png`} fill style={{ objectFit: 'contain' }} alt="Incantation" />
                                     <div 
@@ -526,7 +526,9 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                                     </div>
                                 </div>
                             </div>
-                            <RitualButton onClick={() => setRitualStep(7)} className="shrink-0 mb-4 relative z-10">Ready to Cast</RitualButton>
+                            <div className="w-full flex justify-center pb-10">
+                                <RitualButton onClick={() => setRitualStep(7)}>Ready to Cast</RitualButton>
+                            </div>
                         </Stage>
                     )}
                     {ritualStep === 7 && generatedSpell && (
