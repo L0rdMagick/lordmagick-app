@@ -321,26 +321,16 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
 
         return (
             <AnimatePresence mode="wait">
-                <div key={ritualStep} className="relative w-full h-[85vh] max-h-[900px]">
+                <div key={ritualStep} className="w-full h-full">
                     {ritualStep === 0 && (
                         <Stage className="justify-center">
                             <div className="w-full grow flex flex-col items-center justify-center">
                                 <div className="relative w-full max-w-2xl aspect-square">
                                     <Image src={`${ASSET_PATH}/wicca_intro_instructions.png`} fill style={{ objectFit: 'contain' }} alt="Wicca Instructions" priority />
                                     <div
-                                        className="absolute flex items-center justify-center text-center pointer-events-none"
-                                        style={{
-                                            left: '50%', top: '15%', width: '60%', height: '10%', transform: 'translateX(-50%)'
-                                        }}
-                                    >
-                                        <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-serif text-purple-200" style={{ textShadow: '0 0 10px rgba(192, 132, 252, 0.5)' }}>
-                                            Wiccan Spellcraft
-                                        </h2>
-                                    </div>
-                                    <div
                                         className="absolute text-center pointer-events-none flex items-center justify-center p-4"
                                         style={{
-                                            left: '50%', top: '50%', width: '65%', height: '40%', transform: 'translate(-50%, -50%)'
+                                            left: '50%', top: '48%', width: '65%', height: '40%', transform: 'translate(-50%, -50%)'
                                         }}
                                     >
                                         <p className="text-sm sm:text-base md:text-lg lg:text-xl text-gray-300 leading-relaxed">
@@ -349,7 +339,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                                     </div>
                                 </div>
                             </div>
-                            <RitualButton onClick={() => setRitualStep(1)} className="shrink-0 mb-4 relative z-10">Continue</RitualButton>
+                            <RitualButton onClick={() => setRitualStep(1)} className="shrink-0 mb-4 relative z-10">Begin the Ritual</RitualButton>
                         </Stage>
                     )}
                     {ritualStep === 1 && (
@@ -574,8 +564,15 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
     };
 
     return (
-        <div className="w-full h-full">
-            {renderContent()}
+        <div className="w-full h-full flex flex-col items-center">
+            {/* THE FIX: Dedicated header to prevent overlap */}
+            <h1 className="text-4xl md:text-5xl font-serif text-purple-200 py-4 md:py-8 shrink-0" style={{ textShadow: '0 0 10px rgba(192, 132, 252, 0.5)' }}>
+                Wicca & Witchcraft
+            </h1>
+            {/* THE FIX: Wrapper for content that fills remaining space */}
+            <div className="w-full grow relative">
+                {renderContent()}
+            </div>
         </div>
     );
 };
