@@ -16,6 +16,22 @@ const CHARGE_DURATION_ELEMENT = 5000;
 const CHARGE_DURATION_INGREDIENT = 5000;
 const CAST_DURATION = 13000;
 
+const ELEMENT_INCANTATIONS: { [key: string]: string } = {
+    Spirit: "By Spirit's breath, my spell takes form.",
+    Air: "Winds of knowledge, clear the storm.",
+    Fire: "Flame of passion, bright and bold.",
+    Earth: "Roots of stability, stories old.",
+    Water: "Tides of emotion, ebb and flow."
+};
+
+const INGREDIENT_INCANTATIONS: string[] = [
+    "By nature's gift, your power wakes.",
+    "Ancient magic, for goodness sakes.",
+    "Lend your essence to my will.",
+    "Energy rise and be not still.",
+    "With this charge, my spell is true."
+];
+
 // --- Sound Utility ---
 const playSound = (src: string, volume: number = 0.5, loop: boolean = false) => {
     if (typeof window === 'undefined') return null;
@@ -61,12 +77,13 @@ const RitualButton: React.FC<{ onClick: () => void; children: React.ReactNode; c
 
 interface ChargingElementProps {
   name: string;
+  incantation: string;
   isCharged: boolean;
   onChargeComplete: (name: string) => void;
   style: React.CSSProperties;
 }
 
-const ChargingElement: React.FC<ChargingElementProps> = ({ name, isCharged, onChargeComplete, style }) => {
+const ChargingElement: React.FC<ChargingElementProps> = ({ name, incantation, isCharged, onChargeComplete, style }) => {
     const [progress, setProgress] = useState(0);
     const [isHolding, setIsHolding] = useState(false);
     const animationFrameRef = useRef<number | null>(null);
@@ -116,6 +133,9 @@ const ChargingElement: React.FC<ChargingElementProps> = ({ name, isCharged, onCh
 
     return (
         <div className="absolute grid place-items-center" style={style}>
+            {isHolding && !isCharged && (
+                <p className="absolute -top-8 text-amber-200 font-serif animate-pulse text-sm text-center w-40">{incantation}</p>
+            )}
             <button
                 onMouseDown={handleHoldStart} onMouseUp={handleHoldEnd} onMouseLeave={handleHoldEnd}
                 onTouchStart={handleHoldStart} onTouchEnd={handleHoldEnd}
@@ -321,7 +341,8 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
 
         return (
             <AnimatePresence mode="wait">
-                <div key={ritualStep} className="relative w-full h-[85vh] max-h-[900px]">
+                {/* THE FIX: Removed h-[85vh] to prevent the container from pushing content down on tall screens. */}
+                <div key={ritualStep} className="relative w-full max-h-[900px]">
                     {ritualStep === 0 && (
                         <Stage className="justify-start pt-8 md:justify-center md:pt-0">
                             <div className="w-full h-full flex flex-col items-center justify-center">
@@ -376,8 +397,8 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                     )}
                      {ritualStep === 2 && (
                         <Stage className="justify-center">
-                            <h3 className="text-2xl font-serif text-amber-200 mb-4">Hold Each Symbol to Invoke</h3>
-                            <div className="relative w-full max-w-md aspect-square">
+                            <h3 className="text-2xl font-serif text-amber-200 mb-4 text-center">Hold each symbol and speak its incantation to invoke.</h3>
+                            <div className="relative w-full max-w-md aspect-square mt-8">
                                 {['Spirit', 'Air', 'Fire', 'Earth', 'Water'].map((el, i) => {
                                     const positions = [
                                         { top: '5%', left: '50%', transform: 'translate(-50%, -50%)' }, { top: '40%', left: '95%', transform: 'translate(-50%, -50%)' },
@@ -387,6 +408,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                                     return (
                                         <ChargingElement 
                                             key={el} name={el} isCharged={chargedElements.includes(el)}
+                                            incantation={ELEMENT_INCANTATIONS[el]}
                                             onChargeComplete={handleElementChargeComplete} style={positions[i]}
                                         />
                                     );
@@ -426,8 +448,9 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                         </Stage>
                     )}
                     {ritualStep === 4 && generatedSpell && (
-                        <Stage className="justify-center">
-                            <div className='text-center'>
+                        /* THE FIX: Changed to justify-start to prevent content overlapping with the page title */
+                        <Stage className="justify-start pt-4 md:justify-center md:pt-0">
+                            <div className='text-center w-full'>
                                 <h3 className="text-2xl font-serif text-amber-200 mb-2">The Spirits Guide Your Choice</h3>
                                 <p className="text-gray-300 mb-6">These components have been chosen for your intention.</p>
                                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 bg-black/30 p-4 rounded-lg">
@@ -456,10 +479,16 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                          <Stage className="justify-center">
                             <div className="relative w-full h-full">
                                 <Image src={`${ASSET_PATH}/wicca_charge_ingredient_template.png`} fill style={{ objectFit: 'contain' }} alt="Charge Ingredient" />
-                                <p className="absolute top-[20%] left-1/2 -translate-x-1/2 w-full text-center font-serif text-2xl">
-                                    {isChargeComplete ? 'Component Charged!' : `Hold to Charge the ${generatedSpell.symbolic_ingredients[chargingIndex].name}`}
-                                </p>
-                                
+                                <div className='absolute top-[18%] left-1/2 -translate-x-1/2 w-full px-4 text-center'>
+                                     <p className="font-serif text-lg text-gray-300">Recite the incantation as you hold to charge the component.</p>
+                                     <p className="font-serif text-xl text-amber-200 mt-2 h-12">
+                                        {!isChargeComplete && `"${INGREDIENT_INCANTATIONS[chargingIndex]}"`}
+                                     </p>
+                                     <p className="font-serif text-2xl mt-2 text-white">
+                                        {isChargeComplete ? 'Component Charged!' : generatedSpell.symbolic_ingredients[chargingIndex].name}
+                                     </p>
+                                </div>
+
                                 <div
                                     onMouseDown={handleChargeStart} onMouseUp={handleChargeEnd} onMouseLeave={handleChargeEnd}
                                     onTouchStart={handleChargeStart} onTouchEnd={handleChargeEnd}
@@ -551,7 +580,8 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                                 <div 
                                     className="absolute text-center text-white font-serif flex items-center justify-center p-4"
                                     style={{
-                                        left: '50%', top: '55%', width: '45%', height: '50%', transform: 'translate(-50%, -50%)'
+                                        /* THE FIX: Adjusted positioning for better vertical centering and word wrap. */
+                                        left: '50%', top: '50%', width: '55%', height: '50%', transform: 'translate(-50%, -50%)'
                                     }}
                                 >
                                     <p className="text-2xl sm:text-3xl md:text-4xl">
