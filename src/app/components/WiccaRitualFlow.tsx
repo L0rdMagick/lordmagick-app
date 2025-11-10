@@ -325,7 +325,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                 <div key={ritualStep} className="relative w-full h-full">
                     {/* THE FIX: Updated entire block for step 0 to match visual target */}
                     {ritualStep === 0 && (
-                        <Stage className="justify-between pt-5 sm:pt-4">
+                        <Stage className="justify-between pt-10 sm:pt-4">
                             <div className="w-full flex flex-col items-center">
                                 <div className="relative w-full max-w-lg aspect-4/5">
                                     <Image src={`${ASSET_PATH}/wicca_intro_instructions.png`} fill style={{ objectFit: 'contain' }} alt="Wicca Instructions" priority />
