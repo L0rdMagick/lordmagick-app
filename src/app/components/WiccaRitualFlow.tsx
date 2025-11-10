@@ -405,7 +405,6 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                              )}
                         </Stage>
                     )}
-                    {/* THE FIX: Entire block for ritualStep 3 has been updated */}
                     {ritualStep === 3 && (
                         <Stage className="justify-between pt-16 sm:pt-8">
                             <div className="w-full flex flex-col items-center">
@@ -438,18 +437,19 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                             </div>
                         </Stage>
                     )}
+                    {/* THE FIX: Entire block for ritualStep 4 has been updated */}
                     {ritualStep === 4 && generatedSpell && (
-                        <Stage className="justify-center">
+                        <Stage className="justify-between pt-16 sm:pt-8">
                             <div className='text-center'>
                                 <h3 className="text-2xl font-serif text-amber-200 mb-2">The Spirits Guide Your Choice</h3>
                                 <p className="text-gray-300 mb-6">These components have been chosen for your intention.</p>
-                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 bg-black/30 p-4 rounded-lg">
+                                <div className="grid grid-cols-3 sm:grid-cols-5 gap-4 bg-black/30 p-4 rounded-lg">
                                     {generatedSpell.symbolic_ingredients.map(ingredient => {
                                         const spriteData = findSprite(ingredient.name);
-                                        if (!spriteData) return <div key={ingredient.name} className="w-24 h-24 border border-dashed border-gray-600 rounded-md flex items-center justify-center text-xs text-center text-gray-400">Missing: <br/>{ingredient.name}</div>;
+                                        if (!spriteData) return <div key={ingredient.name} className="w-20 h-20 sm:w-24 sm:h-24 border border-dashed border-gray-600 rounded-md flex items-center justify-center text-xs text-center text-gray-400">Missing: <br/>{ingredient.name}</div>;
                                         return (
                                             <div key={ingredient.name} className="flex flex-col items-center gap-2">
-                                                <div className="w-24 h-24 bg-white/5 rounded-lg p-1">
+                                                <div className="w-20 h-20 sm:w-24 sm:h-24 bg-white/5 rounded-lg p-1">
                                                     <Sprite 
                                                         sheetPath={spriteData.sheet.path} x={spriteData.itemInfo.x} y={spriteData.itemInfo.y}
                                                         spriteWidth={spriteData.sheet.spriteSize.width} spriteHeight={spriteData.sheet.spriteSize.height}
@@ -461,7 +461,9 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                                         );
                                     })}
                                 </div>
-                                <RitualButton onClick={() => setRitualStep(5)} className="mt-8">Prepare Components</RitualButton>
+                            </div>
+                            <div className="w-full flex justify-center pb-10">
+                                <RitualButton onClick={() => setRitualStep(5)}>Prepare Components</RitualButton>
                             </div>
                         </Stage>
                     )}
