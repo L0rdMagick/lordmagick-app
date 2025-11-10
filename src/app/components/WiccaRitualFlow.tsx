@@ -466,11 +466,11 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                             </div>
                         </Stage>
                     )}
-                    {/* THE FIX: Entire block for ritualStep 5 has been updated */}
+                    {/* THE FIX: Entire block for ritualStep 5 has been updated for correct layout and visibility */}
                     {ritualStep === 5 && generatedSpell && (
-                         <Stage className="justify-center pt-16 sm:pt-8">
-                            <div className="relative w-full h-full flex flex-col items-center justify-center">
-                                <p className="font-serif text-2xl mb-4">
+                         <Stage className="justify-center pt-24 sm:pt-16">
+                            <div className="relative flex flex-col items-center justify-center">
+                                <p className="font-serif text-2xl text-amber-200 mb-6 text-center">
                                     {isChargeComplete ? 'Component Charged!' : `Hold to Charge the ${generatedSpell.symbolic_ingredients[chargingIndex].name}`}
                                 </p>
                                 
@@ -496,14 +496,13 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                                         <circle cx={SVG_SIZE/2} cy={SVG_SIZE/2} r={RADIUS} stroke="white" strokeWidth={STROKE_WIDTH} fill="transparent" strokeDasharray={CIRCUMFERENCE} strokeDashoffset={strokeDashoffset} strokeLinecap="round" className={`transition-opacity duration-300 ${isChargeComplete || !isCharging ? 'opacity-0' : 'opacity-100'}`}/>
                                     </svg>
                                 </div>
-                                
-                                <div className="absolute bottom-10">
-                                    {isChargeComplete && (
-                                        <RitualButton onClick={handleAdvanceAfterCharge} className="animate-pulse">
-                                            {chargingIndex < 4 ? 'Charge Next Component' : 'Continue to Incantation'}
-                                        </RitualButton>
-                                    )}
-                                </div>
+                            </div>
+                            <div className="absolute bottom-10">
+                                {isChargeComplete && (
+                                    <RitualButton onClick={handleAdvanceAfterCharge} className="animate-pulse">
+                                        {chargingIndex < 4 ? 'Charge Next Component' : 'Continue to Incantation'}
+                                    </RitualButton>
+                                )}
                             </div>
                         </Stage>
                     )}
