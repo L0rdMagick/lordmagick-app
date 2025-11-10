@@ -41,7 +41,6 @@ const Stage: React.FC<{ children: React.ReactNode; className?: string }> = ({ ch
 );
 
 const RitualButton: React.FC<{ onClick: () => void; children: React.ReactNode; className?: string; disabled?: boolean; }> = ({ onClick, children, className, disabled }) => {
-    // THE FIX: Corrected the arrow function syntax from "().=>" to "() =>"
     const handleClick = () => {
         if (!disabled) {
             playSound('/audio/sfx-spell-room-portal.mp3', 0.2);
@@ -323,35 +322,43 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
         return (
             <AnimatePresence mode="wait">
                 <div key={ritualStep} className="relative w-full h-full">
-                    {/* THE FIX: Updated entire block for step 0 to match visual target */}
                     {ritualStep === 0 && (
-                        <Stage className="justify-between pt-10 sm:pt-4">
-                            <div className="w-full flex flex-col items-center">
+                        <Stage className="justify-between">
+                            {/* Top Content: A container with padding to position the scroll correctly below the external header. */}
+                            <div className="w-full flex justify-center pt-16 sm:pt-8">
                                 <div className="relative w-full max-w-lg aspect-4/5">
                                     <Image src={`${ASSET_PATH}/wicca_intro_instructions.png`} fill style={{ objectFit: 'contain' }} alt="Wicca Instructions" priority />
+                                    
+                                    {/* Overlay for "Wiccan Spellcraft" title, styled to match the image */}
                                     <div
                                         className="absolute flex items-center justify-center text-center pointer-events-none"
                                         style={{
-                                            left: '50%', top: '28%', width: '55%', height: '15%', transform: 'translateX(-50%)'
+                                            left: '50%', top: '30%', width: '60%', height: '15%', transform: 'translateX(-50%)'
                                         }}
                                     >
-                                        <h2 className="text-2xl sm:text-3xl font-serif text-gray-200" style={{ textShadow: '0 0 8px rgba(0, 0, 0, 0.5)' }}>
+                                        <h2 className="text-xl sm:text-2xl md:text-3xl font-serif text-gray-200" style={{ textShadow: '0 0 8px rgba(0, 0, 0, 0.5)' }}>
                                             Wiccan Spellcraft
                                         </h2>
                                     </div>
+                                    
+                                    {/* Overlay for the descriptive paragraph, styled to match the image */}
                                     <div
                                         className="absolute text-center pointer-events-none flex items-center justify-center p-4"
                                         style={{
-                                            left: '50%', top: '60%', width: '60%', height: '45%', transform: 'translate(-50%, -50%)'
+                                            left: '50%', top: '58%', width: '65%', height: '40%', transform: 'translate(-50%, -50%)'
                                         }}
                                     >
-                                        <p className="text-base md:text-lg text-gray-200 leading-relaxed">
+                                        <p className="text-sm sm:text-base md:text-lg text-gray-300 leading-relaxed">
                                             Work with nature, the moon, and ancient energies to manifest your will. Follow the steps to craft your spell.
                                         </p>
                                     </div>
                                 </div>
                             </div>
-                            <RitualButton onClick={() => setRitualStep(1)} className="shrink-0 mb-10 relative z-10">Continue</RitualButton>
+                            
+                            {/* Bottom Content: A container with padding to position the button at the very bottom. */}
+                            <div className="w-full flex justify-center pb-10">
+                                <RitualButton onClick={() => setRitualStep(1)}>Continue</RitualButton>
+                            </div>
                         </Stage>
                     )}
                     {ritualStep === 1 && (
