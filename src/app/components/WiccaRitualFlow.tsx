@@ -323,14 +323,14 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
             <AnimatePresence mode="wait">
                 <div key={ritualStep} className="relative w-full h-[85vh] max-h-[900px]">
                     {ritualStep === 0 && (
-                        <Stage className="justify-start pt-8 md:justify-center md:pt-0">
-                            <div className="w-full h-full flex flex-col items-center justify-center">
-                                <div className="relative w-full grow">
+                        <Stage className="justify-center">
+                            <div className="w-full grow flex flex-col items-center justify-center">
+                                <div className="relative w-full max-w-2xl aspect-square">
                                     <Image src={`${ASSET_PATH}/wicca_intro_instructions.png`} fill style={{ objectFit: 'contain' }} alt="Wicca Instructions" priority />
                                     <div
                                         className="absolute flex items-center justify-center text-center pointer-events-none"
                                         style={{
-                                            left: '50%', top: '12%', width: '60%', height: '10%', transform: 'translateX(-50%)'
+                                            left: '50%', top: '15%', width: '60%', height: '10%', transform: 'translateX(-50%)'
                                         }}
                                     >
                                         <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-serif text-purple-200" style={{ textShadow: '0 0 10px rgba(192, 132, 252, 0.5)' }}>
@@ -340,7 +340,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                                     <div
                                         className="absolute text-center pointer-events-none flex items-center justify-center p-4"
                                         style={{
-                                            left: '50%', top: '45%', width: '65%', height: '40%', transform: 'translate(-50%, -50%)'
+                                            left: '50%', top: '50%', width: '65%', height: '40%', transform: 'translate(-50%, -50%)'
                                         }}
                                     >
                                         <p className="text-sm sm:text-base md:text-lg lg:text-xl text-gray-300 leading-relaxed">
@@ -348,8 +348,8 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                                         </p>
                                     </div>
                                 </div>
-                                <RitualButton onClick={() => setRitualStep(1)} className="shrink-0 mb-4 -mt-8 relative z-10">Continue</RitualButton>
                             </div>
+                            <RitualButton onClick={() => setRitualStep(1)} className="shrink-0 mb-4 relative z-10">Continue</RitualButton>
                         </Stage>
                     )}
                     {ritualStep === 1 && (
@@ -493,73 +493,79 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                     )}
                     {ritualStep === 6 && generatedSpell && (
                         <Stage className="justify-center">
-                            <div className="relative w-full h-full">
-                                <Image src={`${ASSET_PATH}/wicca_incantation_scroll.png`} fill style={{ objectFit: 'contain' }} alt="Incantation" />
-                                <div 
-                                    className="absolute text-center flex flex-col justify-center items-center"
-                                    style={{
-                                        top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '60%', height: '50%',
-                                    }}
-                                >
-                                    <h3 className="font-serif text-xl sm:text-2xl text-[#4a2e1c] mb-4">Recite the Incantation</h3>
-                                    <p className="font-serif text-lg sm:text-2xl text-[#4a2e1c] whitespace-pre-line leading-relaxed">{generatedSpell.central_chant}</p>
+                            <div className="w-full grow flex flex-col items-center justify-center">
+                                <div className="relative w-full max-w-lg aspect-4/5">
+                                    <Image src={`${ASSET_PATH}/wicca_incantation_scroll.png`} fill style={{ objectFit: 'contain' }} alt="Incantation" />
+                                    <div 
+                                        className="absolute text-center flex flex-col justify-center items-center p-4"
+                                        style={{
+                                            top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '65%', height: '50%',
+                                        }}
+                                    >
+                                        <h3 className="font-serif text-xl sm:text-2xl text-[#4a2e1c] mb-4">Recite the Incantation</h3>
+                                        <p className="font-serif text-base sm:text-xl text-[#4a2e1c] whitespace-pre-line leading-relaxed">{generatedSpell.central_chant}</p>
+                                    </div>
                                 </div>
-                                <RitualButton onClick={() => setRitualStep(7)} className="absolute bottom-[20%] left-1/2 -translate-x-1/2">Ready to Cast</RitualButton>
                             </div>
+                            <RitualButton onClick={() => setRitualStep(7)} className="shrink-0 mb-4 relative z-10">Ready to Cast</RitualButton>
                         </Stage>
                     )}
                     {ritualStep === 7 && generatedSpell && (
                         <Stage className="justify-center">
-                           <div
-                                onMouseDown={handleCastHold} onMouseUp={handleCastRelease} onMouseLeave={handleCastRelease}
-                                onTouchStart={handleCastHold} onTouchEnd={handleCastRelease}
-                                className="relative w-96 h-96 cursor-pointer flex items-center justify-center"
-                            >
-                                <Image src={`${ASSET_PATH}/wicca_pentagram_ready_to_cast.png`} fill style={{ objectFit: 'contain' }} alt="Cast the Spell" />
-                                <PentagramIcon className="absolute w-full h-full text-white pointer-events-none" isTracing={isCasting} />
-                                {generatedSpell.symbolic_ingredients.map((ing, i) => {
-                                    const spriteData = findSprite(ing.name);
-                                    if(!spriteData) return null;
-                                    const positions = [
-                                        { top: '0%', left: '50%', transform: 'translate(-50%, -50%)' }, { top: '34.5%', left: '97.5%', transform: 'translate(-50%, -50%)' },
-                                        { top: '90.4%', left: '79.3%', transform: 'translate(-50%, -50%)' }, { top: '90.4%', left: '20.6%', transform: 'translate(-50%, -50%)' },
-                                        { top: '34.5%', left: '2.5%', transform: 'translate(-50%, -50%)' },
-                                    ];
-                                    return <div key={i} className="absolute w-16 h-16 pointer-events-none" style={positions[i]}>
-                                        <Sprite 
-                                            sheetPath={spriteData.sheet.path} x={spriteData.itemInfo.x} y={spriteData.itemInfo.y}
-                                            spriteWidth={spriteData.sheet.spriteSize.width} spriteHeight={spriteData.sheet.spriteSize.height}
-                                            sheetWidth={spriteData.sheet.sheetSize.width} sheetHeight={spriteData.sheet.sheetSize.height}
-                                        />
-                                    </div>
-                                })}
-                                {isCasting && castCountdown > 0 && (
-                                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                        <span className="text-7xl font-bold text-white animate-ping" style={{ textShadow: '0 0 20px white', animationIterationCount: '1', animationDelay: `${(castCountdown - 1) % 1}s` }}>
-                                            {castCountdown}
-                                        </span>
-                                    </div>
-                                )}
+                            <div className="w-full grow flex flex-col items-center justify-center">
+                               <div
+                                    onMouseDown={handleCastHold} onMouseUp={handleCastRelease} onMouseLeave={handleCastRelease}
+                                    onTouchStart={handleCastHold} onTouchEnd={handleCastRelease}
+                                    className="relative w-full max-w-md aspect-square cursor-pointer flex items-center justify-center"
+                                >
+                                    <Image src={`${ASSET_PATH}/wicca_pentagram_ready_to_cast.png`} fill style={{ objectFit: 'contain' }} alt="Cast the Spell" />
+                                    <PentagramIcon className="absolute w-full h-full text-white pointer-events-none" isTracing={isCasting} />
+                                    {generatedSpell.symbolic_ingredients.map((ing, i) => {
+                                        const spriteData = findSprite(ing.name);
+                                        if(!spriteData) return null;
+                                        const positions = [
+                                            { top: '0%', left: '50%', transform: 'translate(-50%, -50%)' }, { top: '34.5%', left: '97.5%', transform: 'translate(-50%, -50%)' },
+                                            { top: '90.4%', left: '79.3%', transform: 'translate(-50%, -50%)' }, { top: '90.4%', left: '20.6%', transform: 'translate(-50%, -50%)' },
+                                            { top: '34.5%', left: '2.5%', transform: 'translate(-50%, -50%)' },
+                                        ];
+                                        return <div key={i} className="absolute w-16 h-16 pointer-events-none" style={positions[i]}>
+                                            <Sprite 
+                                                sheetPath={spriteData.sheet.path} x={spriteData.itemInfo.x} y={spriteData.itemInfo.y}
+                                                spriteWidth={spriteData.sheet.spriteSize.width} spriteHeight={spriteData.sheet.spriteSize.height}
+                                                sheetWidth={spriteData.sheet.sheetSize.width} sheetHeight={spriteData.sheet.sheetSize.height}
+                                            />
+                                        </div>
+                                    })}
+                                    {isCasting && castCountdown > 0 && (
+                                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                            <span className="text-7xl font-bold text-white animate-ping" style={{ textShadow: '0 0 20px white', animationIterationCount: '1', animationDelay: `${(castCountdown - 1) % 1}s` }}>
+                                                {castCountdown}
+                                            </span>
+                                        </div>
+                                    )}
+                                    <p className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-5 font-serif text-xl pointer-events-none text-center">Hold to Focus Your Will and Cast the Spell</p>
+                                </div>
                             </div>
-                            <p className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-5 font-serif text-xl pointer-events-none text-center">Hold to Focus Your Will and Cast the Spell</p>
                         </Stage>
                     )}
                     {ritualStep === 8 && generatedSpell && (
                          <Stage className="justify-center">
-                             <div className="relative w-full h-full">
-                                <Image src={`${ASSET_PATH}/wicca_spell_manifestation.png`} fill style={{ objectFit: 'contain' }} alt="Spell Manifestation" />
-                                <div 
-                                    className="absolute text-center text-white font-serif flex items-center justify-center p-4"
-                                    style={{
-                                        left: '50%', top: '55%', width: '45%', height: '50%', transform: 'translate(-50%, -50%)'
-                                    }}
-                                >
-                                    <p className="text-2xl sm:text-3xl md:text-4xl">
-                                     {generatedSpell.affirmation}
-                                    </p>
+                             <div className="w-full grow flex flex-col items-center justify-center">
+                                <div className="relative w-full max-w-2xl aspect-square">
+                                    <Image src={`${ASSET_PATH}/wicca_spell_manifestation.png`} fill style={{ objectFit: 'contain' }} alt="Spell Manifestation" />
+                                    <div 
+                                        className="absolute text-center text-white font-serif flex items-center justify-center p-4"
+                                        style={{
+                                            left: '50%', top: '55%', width: '45%', height: '40%', transform: 'translate(-50%, -50%)'
+                                        }}
+                                    >
+                                        <p className="text-2xl sm:text-3xl md:text-4xl">
+                                         {generatedSpell.affirmation}
+                                        </p>
+                                    </div>
                                 </div>
-                                <RitualButton onClick={onBack} className="absolute bottom-[25%] left-1/2 -translate-x-1/2">Return to Spell Room</RitualButton>
-                            </div>
+                             </div>
+                            <RitualButton onClick={onBack} className="shrink-0 mb-4 relative z-10">Return to Spell Room</RitualButton>
                          </Stage>
                     )}
                 </div>
