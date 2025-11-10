@@ -321,35 +321,31 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
 
         return (
             <AnimatePresence mode="wait">
-                <div key={ritualStep} className="relative w-full h-[85vh] max-h-[900px]">
+                <div key={ritualStep} className="relative w-full h-full">
                     {ritualStep === 0 && (
-                        <Stage className="justify-center">
-                            <div className="w-full grow flex flex-col items-center justify-center">
-                                <div className="relative w-full max-w-2xl aspect-square">
+                        <Stage className="justify-end md:justify-center p-4">
+                            <div className="w-full grow flex items-center justify-center">
+                                <div className="relative w-full max-w-sm md:max-w-md aspect-3/4">
                                     <Image src={`${ASSET_PATH}/wicca_intro_instructions.png`} fill style={{ objectFit: 'contain' }} alt="Wicca Instructions" priority />
-                                    <div
-                                        className="absolute flex items-center justify-center text-center pointer-events-none"
-                                        style={{
-                                            left: '50%', top: '15%', width: '60%', height: '10%', transform: 'translateX(-50%)'
-                                        }}
-                                    >
-                                        <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-serif text-purple-200" style={{ textShadow: '0 0 10px rgba(192, 132, 252, 0.5)' }}>
-                                            Wiccan Spellcraft
-                                        </h2>
-                                    </div>
-                                    <div
-                                        className="absolute text-center pointer-events-none flex items-center justify-center p-4"
-                                        style={{
-                                            left: '50%', top: '50%', width: '65%', height: '40%', transform: 'translate(-50%, -50%)'
-                                        }}
-                                    >
-                                        <p className="text-sm sm:text-base md:text-lg lg:text-xl text-gray-300 leading-relaxed">
+                                    
+                                    <div className="absolute inset-x-0 top-[20%] h-1/2 flex flex-col items-center text-center pointer-events-none">
+                                        <div className="bg-black/25 backdrop-blur-sm rounded-md py-2 px-4 mb-4">
+                                            <h2 className="text-xl md:text-2xl font-serif text-gray-200" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.5)' }}>
+                                                Wiccan Spellcraft
+                                            </h2>
+                                        </div>
+                                        <p className="text-sm md:text-base uppercase tracking-wider text-gray-300 leading-relaxed px-6" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.7)' }}>
                                             Work with nature, the moon, and ancient energies to manifest your will. Follow the steps to craft your spell.
                                         </p>
                                     </div>
+                                    
+                                    <div className="absolute bottom-0 left-0 w-full h-1/2 bg-linear-to-t from-black/70 via-black/40 to-transparent pointer-events-none" />
                                 </div>
                             </div>
-                            <RitualButton onClick={() => setRitualStep(1)} className="shrink-0 mb-4 relative z-10">Continue</RitualButton>
+                            
+                            <div className="shrink-0 w-full flex justify-center py-4">
+                                <RitualButton onClick={() => setRitualStep(1)}>Continue</RitualButton>
+                            </div>
                         </Stage>
                     )}
                     {ritualStep === 1 && (
