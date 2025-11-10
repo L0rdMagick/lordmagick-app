@@ -336,16 +336,15 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
             <AnimatePresence mode="wait">
                 <div key={ritualStep} className="w-full h-full">
                     {ritualStep === 0 && (
-                        // THE FIX: Corrected structure for full-page image backgrounds
-                        <Stage className="p-0">
+                        <Stage className="p-0 justify-center">
                             <div className="w-full h-full relative">
-                                <Image src={`${ASSET_PATH}/wicca_intro_instructions.png`} fill style={{ objectFit: 'contain' }} alt="Wicca Instructions" priority />
+                                <Image src={`${ASSET_PATH}/wicca_intro_instructions.png`} layout="fill" objectFit="contain" alt="Wicca Instructions" priority />
                                 <div className="absolute inset-0 flex flex-col items-center justify-center p-4">
-                                    <div className="w-full grow flex flex-col items-center justify-center text-center">
+                                    <div className="grow w-full flex flex-col items-center justify-center text-center">
                                         <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-serif text-purple-200" style={{ textShadow: '0 0 10px rgba(192, 132, 252, 0.5)' }}>
                                             Wiccan Spellcraft
                                         </h2>
-                                        <p className="mt-4 text-sm sm:text-base md:text-lg lg:text-xl text-gray-300 leading-relaxed max-w-md">
+                                        <p className="mt-4 text-sm sm:text-base md:text-lg text-gray-300 leading-relaxed max-w-md">
                                             Work with nature, the moon, and ancient energies to manifest your will.
                                         </p>
                                     </div>
@@ -355,18 +354,18 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                         </Stage>
                     )}
                     {ritualStep === 1 && (
-                        <Stage>
-                            <div className="w-full grow flex items-center justify-center relative">
-                                <div className="relative w-full h-full max-w-lg aspect-4/5">
-                                    <Image src={`${ASSET_PATH}/wicca_scroll_intention.png`} fill style={{ objectFit: 'contain' }} alt="Inscribe Intention" />
-                                    <div className="absolute flex flex-col items-center justify-center text-center p-4" style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '60%', height: '55%' }}>
-                                        <h3 className="font-serif text-xl md:text-2xl text-[#4a2e1c] mb-2 md:mb-4">Inscribe Your Intention</h3>
-                                        <textarea value={intention} onChange={(e) => setIntention(e.target.value)} placeholder="e.g. To find clarity on my career path" className="w-full h-3/5 bg-transparent text-center text-[#4a2e1c] text-base sm:text-lg md:text-xl font-serif focus:outline-none resize-none" />
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="shrink-0 pt-4"><RitualButton onClick={() => setRitualStep(2)} disabled={!intention}>Seal My Intention</RitualButton></div>
-                        </Stage>
+                       <Stage className="justify-center">
+                           <div className="w-full grow flex items-center justify-center relative">
+                               <div className="relative w-full h-full max-w-lg">
+                                   <Image src={`${ASSET_PATH}/wicca_scroll_intention.png`} layout="fill" objectFit="contain" alt="Inscribe Intention" />
+                                   <div className="absolute flex flex-col items-center justify-center text-center p-4" style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '60%', height: '55%' }}>
+                                       <h3 className="font-serif text-xl md:text-2xl text-[#4a2e1c] mb-2 md:mb-4">Inscribe Your Intention</h3>
+                                       <textarea value={intention} onChange={(e) => setIntention(e.target.value)} placeholder="e.g. To find clarity on my career path" className="w-full h-3/5 bg-transparent text-center text-[#4a2e1c] text-base sm:text-lg md:text-xl font-serif focus:outline-none resize-none" />
+                                   </div>
+                               </div>
+                           </div>
+                           <div className="shrink-0 pt-4"><RitualButton onClick={() => setRitualStep(2)} disabled={!intention}>Seal My Intention</RitualButton></div>
+                       </Stage>
                     )}
                     {ritualStep === 2 && (
                         <Stage className="justify-start pt-4">
@@ -388,7 +387,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                                      const isSelected = selectedDeities.includes(deity.name);
                                      return (
                                          <div key={deity.name} onClick={() => handleDeityToggle(deity.name)} className="text-center cursor-pointer group">
-                                             <div className={`relative w-48 h-48 transition-all duration-300 transform ${isSelected ? 'scale-110' : 'group-hover:scale-105'}`}><Image src={`${ASSET_PATH}/${deity.img}`} fill style={{ objectFit: 'contain' }} alt={deity.name} className={`transition-all duration-300 ${isSelected ? 'brightness-110' : 'brightness-75 group-hover:brightness-100'}`} /><div className={`absolute inset-0 rounded-full ring-2 transition-all duration-300 ${isSelected ? 'ring-purple-400 ring-offset-4 ring-offset-black/20' : 'ring-transparent'}`} /></div>
+                                             <div className={`relative w-48 h-48 transition-all duration-300 transform ${isSelected ? 'scale-110' : 'group-hover:scale-105'}`}><Image src={`${ASSET_PATH}/${deity.img}`} layout="fill" objectFit="contain" alt={deity.name} className={`transition-all duration-300 ${isSelected ? 'brightness-110' : 'brightness-75 group-hover:brightness-100'}`} /><div className={`absolute inset-0 rounded-full ring-2 transition-all duration-300 ${isSelected ? 'ring-purple-400 ring-offset-4 ring-offset-black/20' : 'ring-transparent'}`} /></div>
                                              <p className={`mt-2 text-lg font-serif transition-colors duration-300 ${isSelected ? 'text-purple-300' : 'text-gray-400 group-hover:text-white'}`}>{deity.name}</p>
                                          </div>
                                      )
@@ -421,10 +420,10 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                         </Stage>
                     )}
                     {ritualStep === 5 && generatedSpell && (
-                         <Stage className="p-0">
+                         <Stage className="p-0 justify-center">
                              <div className="relative w-full h-full">
-                                 <Image src={`${ASSET_PATH}/wicca_charge_ingredient_template.png`} fill style={{ objectFit: 'contain' }} alt="Charge Ingredient" />
-                                 <div className='absolute top-[15%] left-1/2 -translate-x-1/2 w-full px-4 text-center'>
+                                 <Image src={`${ASSET_PATH}/wicca_charge_ingredient_template.png`} layout="fill" objectFit="contain" alt="Charge Ingredient" />
+                                 <div className="absolute inset-0 flex flex-col items-center justify-start text-center pt-[25%] sm:pt-[20%] px-4">
                                       <p className="font-serif text-lg text-gray-300">Recite the incantation as you hold to charge.</p>
                                       <p className="font-serif text-xl text-amber-200 mt-2 h-12">{!isChargeComplete && `"${INGREDIENT_INCANTATIONS[chargingIndex]}"`}</p>
                                       <p className="font-serif text-2xl mt-2 text-white">{isChargeComplete ? 'Component Charged!' : generatedSpell.symbolic_ingredients[chargingIndex].name}</p>
@@ -433,16 +432,16 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                                      <div className={`absolute inset-0 w-full h-full transition-transform duration-300 ${isCharging ? 'scale-110' : 'scale-100'}`}>{(() => { const i = generatedSpell.symbolic_ingredients[chargingIndex]; const d = findSprite(i.name); if (!d) return null; return <Sprite sheetPath={d.sheet.path} x={d.itemInfo.x} y={d.itemInfo.y} spriteWidth={d.sheet.spriteSize.width} spriteHeight={d.sheet.spriteSize.height} sheetWidth={d.sheet.sheetSize.width} sheetHeight={d.sheet.sheetSize.height} />; })()}</div>
                                      <svg width={SVG_SIZE} height={SVG_SIZE} className="absolute inset-0 transform -rotate-90 pointer-events-none"><circle cx={SVG_SIZE/2} cy={SVG_SIZE/2} r={RADIUS} stroke="rgba(192, 132, 252, 0.2)" strokeWidth={STROKE_WIDTH} fill="transparent" /><circle cx={SVG_SIZE/2} cy={SVG_SIZE/2} r={RADIUS} stroke="white" strokeWidth={STROKE_WIDTH} fill="transparent" strokeDasharray={CIRCUMFERENCE} strokeDashoffset={strokeDashoffset} strokeLinecap="round" className={`transition-opacity duration-300 ${isChargeComplete || !isCharging ? 'opacity-0' : 'opacity-100'}`}/></svg>
                                  </div>
-                                 {isChargeComplete && <RitualButton onClick={handleAdvanceAfterCharge} className="absolute bottom-[22%] left-1/2 -translate-x-1/2 animate-pulse">{chargingIndex < 4 ? 'Charge Next Component' : 'Continue to Incantation'}</RitualButton>}
+                                 {isChargeComplete && <div className="absolute bottom-[22%] left-1/2 -translate-x-1/2"><RitualButton onClick={handleAdvanceAfterCharge} className="animate-pulse">{chargingIndex < 4 ? 'Charge Next Component' : 'Continue to Incantation'}</RitualButton></div>}
                              </div>
                          </Stage>
                     )}
                     {ritualStep === 6 && generatedSpell && (
-                        <Stage className="p-0">
-                             <div className="w-full h-full relative">
-                                <Image src={`${ASSET_PATH}/wicca_incantation_scroll.png`} fill style={{ objectFit: 'contain' }} alt="Incantation" />
+                        <Stage className="p-0 justify-center">
+                            <div className="w-full h-full relative">
+                                <Image src={`${ASSET_PATH}/wicca_incantation_scroll.png`} layout="fill" objectFit="contain" alt="Incantation" />
                                 <div className="absolute inset-0 flex flex-col items-center justify-center p-4">
-                                    <div className="w-full grow flex flex-col items-center justify-center text-center text-[#4a2e1c]" style={{ paddingTop: '10%', paddingBottom: '10%' }}>
+                                    <div className="w-full grow flex flex-col items-center justify-center text-center text-[#4a2e1c] px-8">
                                         <h3 className="font-serif text-xl sm:text-2xl mb-4">Recite the Incantation</h3>
                                         <p className="font-serif text-lg sm:text-2xl whitespace-pre-line leading-relaxed">{generatedSpell.central_chant}</p>
                                     </div>
@@ -455,7 +454,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                         <Stage className="justify-center">
                            <p className="font-serif text-xl pointer-events-none text-center mb-4">Hold to Focus Your Will and Cast the Spell</p>
                            <div onMouseDown={handleCastHold} onMouseUp={handleCastRelease} onMouseLeave={handleCastRelease} onTouchStart={handleCastHold} onTouchEnd={handleCastRelease} className="relative w-96 h-96 cursor-pointer flex items-center justify-center">
-                               <Image src={`${ASSET_PATH}/wicca_pentagram_ready_to_cast.png`} fill style={{ objectFit: 'contain' }} alt="Cast the Spell" />
+                               <Image src={`${ASSET_PATH}/wicca_pentagram_ready_to_cast.png`} layout="fill" objectFit="contain" alt="Cast the Spell" />
                                <PentagramIcon className="absolute w-full h-full text-white pointer-events-none" isTracing={isCasting} />
                                {generatedSpell.symbolic_ingredients.map((ing, i) => {
                                    const d = findSprite(ing.name); if(!d) return null;
@@ -467,9 +466,9 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                         </Stage>
                     )}
                     {ritualStep === 8 && generatedSpell && (
-                         <Stage className="p-0">
+                         <Stage className="p-0 justify-center">
                             <div className="w-full h-full relative">
-                               <Image src={`${ASSET_PATH}/wicca_spell_manifestation.png`} fill style={{ objectFit: 'contain' }} alt="Spell Manifestation" />
+                               <Image src={`${ASSET_PATH}/wicca_spell_manifestation.png`} layout="fill" objectFit="contain" alt="Spell Manifestation" />
                                <div className="absolute inset-0 flex flex-col items-center justify-center p-4">
                                    <div className="w-full grow flex items-center justify-center text-center text-white p-8">
                                        <p className="text-2xl sm:text-3xl md:text-4xl font-serif">{generatedSpell.affirmation}</p>
