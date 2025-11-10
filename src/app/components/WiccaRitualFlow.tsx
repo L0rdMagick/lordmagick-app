@@ -437,7 +437,6 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                             </div>
                         </Stage>
                     )}
-                    {/* THE FIX: Entire block for ritualStep 4 has been updated */}
                     {ritualStep === 4 && generatedSpell && (
                         <Stage className="justify-between pt-16 sm:pt-8">
                             <div className='text-center'>
@@ -467,18 +466,18 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                             </div>
                         </Stage>
                     )}
+                    {/* THE FIX: Entire block for ritualStep 5 has been updated */}
                     {ritualStep === 5 && generatedSpell && (
-                         <Stage className="justify-center">
-                            <div className="relative w-full h-full">
-                                <Image src={`${ASSET_PATH}/wicca_charge_ingredient_template.png`} fill style={{ objectFit: 'contain' }} alt="Charge Ingredient" />
-                                <p className="absolute top-[20%] left-1/2 -translate-x-1/2 w-full text-center font-serif text-2xl">
+                         <Stage className="justify-center pt-16 sm:pt-8">
+                            <div className="relative w-full h-full flex flex-col items-center justify-center">
+                                <p className="font-serif text-2xl mb-4">
                                     {isChargeComplete ? 'Component Charged!' : `Hold to Charge the ${generatedSpell.symbolic_ingredients[chargingIndex].name}`}
                                 </p>
                                 
                                 <div
                                     onMouseDown={handleChargeStart} onMouseUp={handleChargeEnd} onMouseLeave={handleChargeEnd}
                                     onTouchStart={handleChargeStart} onTouchEnd={handleChargeEnd}
-                                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 grid place-items-center cursor-pointer select-none"
+                                    className="relative w-40 h-40 grid place-items-center cursor-pointer select-none"
                                 >
                                     <div className={`absolute inset-0 w-full h-full transition-transform duration-300 ${isCharging ? 'scale-110' : 'scale-100'}`}>
                                         {(() => {
@@ -498,11 +497,13 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                                     </svg>
                                 </div>
                                 
-                                {isChargeComplete && (
-                                    <RitualButton onClick={handleAdvanceAfterCharge} className="absolute bottom-[15%] left-1/2 -translate-x-1/2 animate-pulse">
-                                        {chargingIndex < 4 ? 'Charge Next Component' : 'Continue to Incantation'}
-                                    </RitualButton>
-                                )}
+                                <div className="absolute bottom-10">
+                                    {isChargeComplete && (
+                                        <RitualButton onClick={handleAdvanceAfterCharge} className="animate-pulse">
+                                            {chargingIndex < 4 ? 'Charge Next Component' : 'Continue to Incantation'}
+                                        </RitualButton>
+                                    )}
+                                </div>
                             </div>
                         </Stage>
                     )}
