@@ -321,7 +321,8 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
 
         return (
             <AnimatePresence mode="wait">
-                <div key={ritualStep} className="w-full h-full">
+                 {/* THE FIX: Changed h-[85vh] to h-full to respect parent's height */}
+                <div key={ritualStep} className="relative w-full h-full">
                     {ritualStep === 0 && (
                         <Stage className="justify-center">
                             <div className="w-full grow flex flex-col items-center justify-center">
@@ -451,8 +452,8 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                                 </p>
                                 
                                 <div
-                                    onMouseDown={handleChargeStart} onMouseUp={handleChargeEnd} onMouseLeave={handleChargeEnd}
-                                    onTouchStart={handleChargeStart} onTouchEnd={handleChargeEnd}
+                                    onMouseDown={handleChargeStart} onMouseUp={handleHoldEnd} onMouseLeave={handleHoldEnd}
+                                    onTouchStart={handleChargeStart} onTouchEnd={handleHoldEnd}
                                     className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 grid place-items-center cursor-pointer select-none"
                                 >
                                     <div className={`absolute inset-0 w-full h-full transition-transform duration-300 ${isCharging ? 'scale-110' : 'scale-100'}`}>
@@ -565,11 +566,10 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
 
     return (
         <div className="w-full h-full flex flex-col items-center">
-            {/* THE FIX: Dedicated header to prevent overlap */}
-            <h1 className="text-4xl md:text-5xl font-serif text-purple-200 py-4 md:py-8 shrink-0" style={{ textShadow: '0 0 10px rgba(192, 132, 252, 0.5)' }}>
+            {/* THE FIX: Added relative and z-10 to ensure title is on top */}
+            <h1 className="relative z-10 text-4xl md:text-5xl font-serif text-purple-200 py-4 md:py-8 shrink-0" style={{ textShadow: '0 0 10px rgba(192, 132, 252, 0.5)' }}>
                 Wicca & Witchcraft
             </h1>
-            {/* THE FIX: Wrapper for content that fills remaining space */}
             <div className="w-full grow relative">
                 {renderContent()}
             </div>
