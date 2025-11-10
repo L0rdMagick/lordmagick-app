@@ -376,7 +376,6 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                             <RitualButton onClick={() => setRitualStep(2)} disabled={!intention} className="shrink-0 mb-4 relative z-10">Seal My Intention</RitualButton>
                         </Stage>
                     )}
-                     {/* THE FIX: Entire block for ritualStep 2 has been updated */}
                      {ritualStep === 2 && (
                         <Stage className="justify-between pt-16 sm:pt-12">
                             <div className="w-full grow flex flex-col items-center">
@@ -406,27 +405,30 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                              )}
                         </Stage>
                     )}
+                    {/* THE FIX: Entire block for ritualStep 3 has been updated */}
                     {ritualStep === 3 && (
-                        <Stage className="justify-center">
-                            <h3 className="text-3xl font-serif text-amber-200 mb-8">Invoke a Guiding Deity or Force</h3>
-                            <div className="w-full max-w-4xl flex flex-col md:flex-row items-center justify-center gap-8">
-                                {[
-                                    { name: 'Triple Goddess', img: 'wicca_deity_triple_goddess.png' }, { name: 'Horned God', img: 'wicca_deity_horned_god.png' },
-                                    { name: 'Divine Source', img: 'wicca_deity_divine_source.png' }
-                                ].map(deity => {
-                                    const isSelected = selectedDeities.includes(deity.name);
-                                    return (
-                                        <div key={deity.name} onClick={() => handleDeityToggle(deity.name)} className="text-center cursor-pointer group">
-                                            <div className={`relative w-48 h-48 transition-all duration-300 transform ${isSelected ? 'scale-110' : 'group-hover:scale-105'}`}>
-                                                <Image src={`${ASSET_PATH}/${deity.img}`} fill style={{ objectFit: 'contain' }} alt={deity.name} className={`transition-all duration-300 ${isSelected ? 'brightness-110' : 'brightness-75 group-hover:brightness-100'}`} />
-                                                <div className={`absolute inset-0 rounded-full ring-2 transition-all duration-300 ${isSelected ? 'ring-purple-400 ring-offset-4 ring-offset-black/20' : 'ring-transparent'}`} />
+                        <Stage className="justify-between pt-16 sm:pt-8">
+                            <div className="w-full flex flex-col items-center">
+                                <h3 className="text-3xl font-serif text-amber-200 mb-6 text-center">Invoke a Guiding Deity or Force</h3>
+                                <div className="w-full max-w-4xl flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8">
+                                    {[
+                                        { name: 'Triple Goddess', img: 'wicca_deity_triple_goddess.png' }, { name: 'Horned God', img: 'wicca_deity_horned_god.png' },
+                                        { name: 'Divine Source', img: 'wicca_deity_divine_source.png' }
+                                    ].map(deity => {
+                                        const isSelected = selectedDeities.includes(deity.name);
+                                        return (
+                                            <div key={deity.name} onClick={() => handleDeityToggle(deity.name)} className="text-center cursor-pointer group">
+                                                <div className={`relative w-36 h-36 sm:w-48 sm:h-48 transition-all duration-300 transform ${isSelected ? 'scale-110' : 'group-hover:scale-105'}`}>
+                                                    <Image src={`${ASSET_PATH}/${deity.img}`} fill style={{ objectFit: 'contain' }} alt={deity.name} className={`transition-all duration-300 ${isSelected ? 'brightness-110' : 'brightness-75 group-hover:brightness-100'}`} />
+                                                    <div className={`absolute inset-0 rounded-full ring-2 transition-all duration-300 ${isSelected ? 'ring-purple-400 ring-offset-4 ring-offset-black/20' : 'ring-transparent'}`} />
+                                                </div>
+                                                <p className={`mt-2 text-lg font-serif transition-colors duration-300 ${isSelected ? 'text-purple-300' : 'text-gray-400 group-hover:text-white'}`}>{deity.name}</p>
                                             </div>
-                                            <p className={`mt-2 text-lg font-serif transition-colors duration-300 ${isSelected ? 'text-purple-300' : 'text-gray-400 group-hover:text-white'}`}>{deity.name}</p>
-                                        </div>
-                                    )
-                                })}
+                                        )
+                                    })}
+                                </div>
                             </div>
-                            <div className="mt-12 flex flex-col sm:flex-row gap-4">
+                            <div className="flex flex-col sm:flex-row gap-4 pb-10">
                                 <RitualButton onClick={handleGenerateSpell}>
                                     Confirm Invocation
                                 </RitualButton>
