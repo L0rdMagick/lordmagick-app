@@ -336,22 +336,22 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
             <AnimatePresence mode="wait">
                 <div key={ritualStep} className="w-full h-full">
                     {ritualStep === 0 && (
-                        <Stage>
-                            {/* THE FIX: Simplified image container to ensure it renders */}
-                            <div className="w-full grow relative">
+                        // THE FIX: Corrected structure for full-page image backgrounds
+                        <Stage className="p-0">
+                            <div className="w-full h-full relative">
                                 <Image src={`${ASSET_PATH}/wicca_intro_instructions.png`} fill style={{ objectFit: 'contain' }} alt="Wicca Instructions" priority />
-                                <div className="absolute flex items-center justify-center text-center pointer-events-none" style={{ left: '50%', top: '12%', width: '60%', height: '10%', transform: 'translateX(-50%)' }}>
-                                    <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-serif text-purple-200" style={{ textShadow: '0 0 10px rgba(192, 132, 252, 0.5)' }}>
-                                        Wiccan Spellcraft
-                                    </h2>
-                                </div>
-                                <div className="absolute text-center pointer-events-none flex items-center justify-center p-4" style={{ left: '50%', top: '45%', width: '65%', height: '40%', transform: 'translate(-50%, -50%)' }}>
-                                    <p className="text-sm sm:text-base md:text-lg lg:text-xl text-gray-300 leading-relaxed">
-                                        Work with nature, the moon, and ancient energies to manifest your will.
-                                    </p>
+                                <div className="absolute inset-0 flex flex-col items-center justify-center p-4">
+                                    <div className="w-full grow flex flex-col items-center justify-center text-center">
+                                        <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-serif text-purple-200" style={{ textShadow: '0 0 10px rgba(192, 132, 252, 0.5)' }}>
+                                            Wiccan Spellcraft
+                                        </h2>
+                                        <p className="mt-4 text-sm sm:text-base md:text-lg lg:text-xl text-gray-300 leading-relaxed max-w-md">
+                                            Work with nature, the moon, and ancient energies to manifest your will.
+                                        </p>
+                                    </div>
+                                    <div className="shrink-0 pb-12"><RitualButton onClick={() => setRitualStep(1)}>Continue</RitualButton></div>
                                 </div>
                             </div>
-                            <div className="shrink-0 pt-4"><RitualButton onClick={() => setRitualStep(1)}>Continue</RitualButton></div>
                         </Stage>
                     )}
                     {ritualStep === 1 && (
@@ -373,11 +373,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                             <h3 className="text-2xl font-serif text-amber-200 text-center shrink-0">Hold each symbol and speak its incantation to invoke.</h3>
                             <div className="relative w-full max-w-md aspect-square grow">
                                 {['Spirit', 'Air', 'Fire', 'Earth', 'Water'].map((el, i) => {
-                                    const positions = [
-                                        { top: '5%', left: '50%', transform: 'translate(-50%, -50%)' }, { top: '40%', left: '95%', transform: 'translate(-50%, -50%)' },
-                                        { top: '90%', left: '80%', transform: 'translate(-50%, -50%)' }, { top: '90%', left: '20%', transform: 'translate(-50%, -50%)' },
-                                        { top: '40%', left: '5%', transform: 'translate(-50%, -50%)' },
-                                    ];
+                                    const positions = [ { top: '5%', left: '50%', transform: 'translate(-50%, -50%)' }, { top: '40%', left: '95%', transform: 'translate(-50%, -50%)' }, { top: '90%', left: '80%', transform: 'translate(-50%, -50%)' }, { top: '90%', left: '20%', transform: 'translate(-50%, -50%)' }, { top: '40%', left: '5%', transform: 'translate(-50%, -50%)' } ];
                                     return <ChargingElement key={el} name={el} isCharged={chargedElements.includes(el)} incantation={ELEMENT_INCANTATIONS[el]} onChargeComplete={handleElementChargeComplete} style={positions[i]} />;
                                 })}
                             </div>
@@ -402,7 +398,6 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                         </Stage>
                     )}
                     {ritualStep === 4 && generatedSpell && (
-                        // THE FIX: Added pt-8 to the stage to push content down from the title
                         <Stage className="justify-start pt-8">
                             <div className='text-center w-full shrink-0'>
                                 <h3 className="text-2xl font-serif text-amber-200 mb-2">The Spirits Guide Your Choice</h3>
@@ -426,10 +421,9 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                         </Stage>
                     )}
                     {ritualStep === 5 && generatedSpell && (
-                         <Stage className="justify-center">
+                         <Stage className="p-0">
                              <div className="relative w-full h-full">
                                  <Image src={`${ASSET_PATH}/wicca_charge_ingredient_template.png`} fill style={{ objectFit: 'contain' }} alt="Charge Ingredient" />
-                                 {/* THE FIX: Raised text position to avoid button overlap */}
                                  <div className='absolute top-[15%] left-1/2 -translate-x-1/2 w-full px-4 text-center'>
                                       <p className="font-serif text-lg text-gray-300">Recite the incantation as you hold to charge.</p>
                                       <p className="font-serif text-xl text-amber-200 mt-2 h-12">{!isChargeComplete && `"${INGREDIENT_INCANTATIONS[chargingIndex]}"`}</p>
@@ -439,22 +433,22 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                                      <div className={`absolute inset-0 w-full h-full transition-transform duration-300 ${isCharging ? 'scale-110' : 'scale-100'}`}>{(() => { const i = generatedSpell.symbolic_ingredients[chargingIndex]; const d = findSprite(i.name); if (!d) return null; return <Sprite sheetPath={d.sheet.path} x={d.itemInfo.x} y={d.itemInfo.y} spriteWidth={d.sheet.spriteSize.width} spriteHeight={d.sheet.spriteSize.height} sheetWidth={d.sheet.sheetSize.width} sheetHeight={d.sheet.sheetSize.height} />; })()}</div>
                                      <svg width={SVG_SIZE} height={SVG_SIZE} className="absolute inset-0 transform -rotate-90 pointer-events-none"><circle cx={SVG_SIZE/2} cy={SVG_SIZE/2} r={RADIUS} stroke="rgba(192, 132, 252, 0.2)" strokeWidth={STROKE_WIDTH} fill="transparent" /><circle cx={SVG_SIZE/2} cy={SVG_SIZE/2} r={RADIUS} stroke="white" strokeWidth={STROKE_WIDTH} fill="transparent" strokeDasharray={CIRCUMFERENCE} strokeDashoffset={strokeDashoffset} strokeLinecap="round" className={`transition-opacity duration-300 ${isChargeComplete || !isCharging ? 'opacity-0' : 'opacity-100'}`}/></svg>
                                  </div>
-                                 {/* THE FIX: Moved button lower to avoid sprite overlap */}
                                  {isChargeComplete && <RitualButton onClick={handleAdvanceAfterCharge} className="absolute bottom-[22%] left-1/2 -translate-x-1/2 animate-pulse">{chargingIndex < 4 ? 'Charge Next Component' : 'Continue to Incantation'}</RitualButton>}
                              </div>
                          </Stage>
                     )}
                     {ritualStep === 6 && generatedSpell && (
-                        <Stage>
-                            {/* THE FIX: Simplified image container to ensure it renders */}
-                            <div className="w-full grow relative">
+                        <Stage className="p-0">
+                             <div className="w-full h-full relative">
                                 <Image src={`${ASSET_PATH}/wicca_incantation_scroll.png`} fill style={{ objectFit: 'contain' }} alt="Incantation" />
-                                <div className="absolute text-center flex flex-col justify-center items-center" style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '60%', height: '50%' }}>
-                                    <h3 className="font-serif text-xl sm:text-2xl text-[#4a2e1c] mb-4">Recite the Incantation</h3>
-                                    <p className="font-serif text-lg sm:text-2xl text-[#4a2e1c] whitespace-pre-line leading-relaxed">{generatedSpell.central_chant}</p>
+                                <div className="absolute inset-0 flex flex-col items-center justify-center p-4">
+                                    <div className="w-full grow flex flex-col items-center justify-center text-center text-[#4a2e1c]" style={{ paddingTop: '10%', paddingBottom: '10%' }}>
+                                        <h3 className="font-serif text-xl sm:text-2xl mb-4">Recite the Incantation</h3>
+                                        <p className="font-serif text-lg sm:text-2xl whitespace-pre-line leading-relaxed">{generatedSpell.central_chant}</p>
+                                    </div>
+                                    <div className="shrink-0 pb-16"><RitualButton onClick={() => setRitualStep(7)}>Ready to Cast</RitualButton></div>
                                 </div>
                             </div>
-                            <div className="shrink-0 pt-4"><RitualButton onClick={() => setRitualStep(7)}>Ready to Cast</RitualButton></div>
                         </Stage>
                     )}
                     {ritualStep === 7 && generatedSpell && (
@@ -473,15 +467,16 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                         </Stage>
                     )}
                     {ritualStep === 8 && generatedSpell && (
-                         <Stage>
-                            {/* THE FIX: Simplified image container to ensure it renders */}
-                            <div className="w-full grow relative">
+                         <Stage className="p-0">
+                            <div className="w-full h-full relative">
                                <Image src={`${ASSET_PATH}/wicca_spell_manifestation.png`} fill style={{ objectFit: 'contain' }} alt="Spell Manifestation" />
-                               <div className="absolute text-center text-white font-serif flex items-center justify-center p-4" style={{ left: '50%', top: '50%', width: '55%', height: '50%', transform: 'translate(-50%, -50%)' }}>
-                                   <p className="text-2xl sm:text-3xl md:text-4xl">{generatedSpell.affirmation}</p>
+                               <div className="absolute inset-0 flex flex-col items-center justify-center p-4">
+                                   <div className="w-full grow flex items-center justify-center text-center text-white p-8">
+                                       <p className="text-2xl sm:text-3xl md:text-4xl font-serif">{generatedSpell.affirmation}</p>
+                                   </div>
+                                   <div className="shrink-0 pb-16"><RitualButton onClick={onBack}>Return to Spell Room</RitualButton></div>
                                </div>
                             </div>
-                           <div className="shrink-0 pt-4"><RitualButton onClick={onBack}>Return to Spell Room</RitualButton></div>
                          </Stage>
                     )}
                 </div>
