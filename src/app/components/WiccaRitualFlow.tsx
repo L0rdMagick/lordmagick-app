@@ -324,12 +324,9 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                 <div key={ritualStep} className="relative w-full h-full">
                     {ritualStep === 0 && (
                         <Stage className="justify-between">
-                            {/* Top Content: A container with padding to position the scroll correctly below the external header. */}
                             <div className="w-full flex justify-center pt-16 sm:pt-8">
                                 <div className="relative w-full max-w-lg aspect-4/5">
                                     <Image src={`${ASSET_PATH}/wicca_intro_instructions.png`} fill style={{ objectFit: 'contain' }} alt="Wicca Instructions" priority />
-                                    
-                                    {/* Overlay for "Wiccan Spellcraft" title, styled to match the image */}
                                     <div
                                         className="absolute flex items-center justify-center text-center pointer-events-none"
                                         style={{
@@ -340,8 +337,6 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                                             Wiccan Spellcraft
                                         </h2>
                                     </div>
-                                    
-                                    {/* Overlay for the descriptive paragraph, styled to match the image */}
                                     <div
                                         className="absolute text-center pointer-events-none flex items-center justify-center p-4"
                                         style={{
@@ -354,8 +349,6 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                                     </div>
                                 </div>
                             </div>
-                            
-                            {/* Bottom Content: A container with padding to position the button at the very bottom. */}
                             <div className="w-full flex justify-center pb-10">
                                 <RitualButton onClick={() => setRitualStep(1)}>Continue</RitualButton>
                             </div>
@@ -383,25 +376,34 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                             <RitualButton onClick={() => setRitualStep(2)} disabled={!intention} className="shrink-0 mb-4 relative z-10">Seal My Intention</RitualButton>
                         </Stage>
                     )}
+                     {/* THE FIX: Entire block for ritualStep 2 has been updated */}
                      {ritualStep === 2 && (
-                        <Stage className="justify-center">
-                            <h3 className="text-2xl font-serif text-amber-200 mb-4">Hold Each Symbol to Invoke</h3>
-                            <div className="relative w-full max-w-md aspect-square">
-                                {['Spirit', 'Air', 'Fire', 'Earth', 'Water'].map((el, i) => {
-                                    const positions = [
-                                        { top: '5%', left: '50%', transform: 'translate(-50%, -50%)' }, { top: '40%', left: '95%', transform: 'translate(-50%, -50%)' },
-                                        { top: '90%', left: '80%', transform: 'translate(-50%, -50%)' }, { top: '90%', left: '20%', transform: 'translate(-50%, -50%)' },
-                                        { top: '40%', left: '5%', transform: 'translate(-50%, -50%)' },
-                                    ];
-                                    return (
-                                        <ChargingElement 
-                                            key={el} name={el} isCharged={chargedElements.includes(el)}
-                                            onChargeComplete={handleElementChargeComplete} style={positions[i]}
-                                        />
-                                    );
-                                })}
+                        <Stage className="justify-between pt-16 sm:pt-12">
+                            <div className="w-full grow flex flex-col items-center">
+                                <h3 className="text-2xl font-serif text-amber-200 mb-4 shrink-0">Hold Each Symbol to Invoke</h3>
+                                <div className="relative w-full max-w-md aspect-square grow">
+                                    {['Spirit', 'Air', 'Fire', 'Earth', 'Water'].map((el, i) => {
+                                        const positions = [
+                                            { top: '10%', left: '50%', transform: 'translate(-50%, -50%)' }, 
+                                            { top: '45%', left: '90%', transform: 'translate(-50%, -50%)' },
+                                            { top: '85%', left: '75%', transform: 'translate(-50%, -50%)' }, 
+                                            { top: '85%', left: '25%', transform: 'translate(-50%, -50%)' },
+                                            { top: '45%', left: '10%', transform: 'translate(-50%, -50%)' },
+                                        ];
+                                        return (
+                                            <ChargingElement 
+                                                key={el} name={el} isCharged={chargedElements.includes(el)}
+                                                onChargeComplete={handleElementChargeComplete} style={positions[i]}
+                                            />
+                                        );
+                                    })}
+                                </div>
                             </div>
-                             {chargedElements.length === 5 && <RitualButton onClick={() => setRitualStep(3)} className="mt-8 animate-pulse">Continue</RitualButton>}
+                             {chargedElements.length === 5 && (
+                                <div className="w-full flex justify-center pb-10">
+                                    <RitualButton onClick={() => setRitualStep(3)} className="animate-pulse">Continue</RitualButton>
+                                </div>
+                             )}
                         </Stage>
                     )}
                     {ritualStep === 3 && (
