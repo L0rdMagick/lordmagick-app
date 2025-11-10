@@ -466,38 +466,42 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                             </div>
                         </Stage>
                     )}
-                    {/* THE FIX: Entire block for ritualStep 5 has been updated for correct layout and visibility */}
+                    {/* THE FIX: Re-structured entire block for ritualStep 5 */}
                     {ritualStep === 5 && generatedSpell && (
-                         <Stage className="justify-center pt-24 sm:pt-16">
-                            <div className="relative flex flex-col items-center justify-center">
-                                <p className="font-serif text-2xl text-amber-200 mb-6 text-center">
-                                    {isChargeComplete ? 'Component Charged!' : `Hold to Charge the ${generatedSpell.symbolic_ingredients[chargingIndex].name}`}
-                                </p>
-                                
-                                <div
-                                    onMouseDown={handleChargeStart} onMouseUp={handleChargeEnd} onMouseLeave={handleChargeEnd}
-                                    onTouchStart={handleChargeStart} onTouchEnd={handleChargeEnd}
-                                    className="relative w-40 h-40 grid place-items-center cursor-pointer select-none"
-                                >
-                                    <div className={`absolute inset-0 w-full h-full transition-transform duration-300 ${isCharging ? 'scale-110' : 'scale-100'}`}>
-                                        {(() => {
-                                            const ingredient = generatedSpell.symbolic_ingredients[chargingIndex];
-                                            const spriteData = findSprite(ingredient.name);
-                                            if (!spriteData) return null;
-                                            return <Sprite 
-                                                sheetPath={spriteData.sheet.path} x={spriteData.itemInfo.x} y={spriteData.itemInfo.y}
-                                                spriteWidth={spriteData.sheet.spriteSize.width} spriteHeight={spriteData.sheet.spriteSize.height}
-                                                sheetWidth={spriteData.sheet.sheetSize.width} sheetHeight={spriteData.sheet.sheetSize.height}
-                                            />;
-                                        })()}
+                        <Stage className="justify-between pt-16 sm:pt-8">
+                            <div className="w-full flex flex-col items-center">
+                                <div className="relative w-full max-w-lg aspect-4/5">
+                                    <Image src={`${ASSET_PATH}/wicca_charge_ingredient_template.png`} fill style={{ objectFit: 'contain' }} alt="Charge Ingredient" />
+                                    <p className="absolute top-[22%] left-1/2 -translate-x-1/2 w-full text-center font-serif text-xl sm:text-2xl text-amber-200">
+                                        {isChargeComplete ? 'Component Charged!' : `Hold to Charge the ${generatedSpell.symbolic_ingredients[chargingIndex].name}`}
+                                    </p>
+                                    
+                                    <div
+                                        onMouseDown={handleChargeStart} onMouseUp={handleChargeEnd} onMouseLeave={handleChargeEnd}
+                                        onTouchStart={handleChargeStart} onTouchEnd={handleChargeEnd}
+                                        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 grid place-items-center cursor-pointer select-none"
+                                    >
+                                        <div className={`absolute inset-0 w-full h-full transition-transform duration-300 ${isCharging ? 'scale-110' : 'scale-100'}`}>
+                                            {(() => {
+                                                const ingredient = generatedSpell.symbolic_ingredients[chargingIndex];
+                                                const spriteData = findSprite(ingredient.name);
+                                                if (!spriteData) return null;
+                                                return <Sprite 
+                                                    sheetPath={spriteData.sheet.path} x={spriteData.itemInfo.x} y={spriteData.itemInfo.y}
+                                                    spriteWidth={spriteData.sheet.spriteSize.width} spriteHeight={spriteData.sheet.spriteSize.height}
+                                                    sheetWidth={spriteData.sheet.sheetSize.width} sheetHeight={spriteData.sheet.sheetSize.height}
+                                                />;
+                                            })()}
+                                        </div>
+                                        <svg width={SVG_SIZE} height={SVG_SIZE} className="absolute inset-0 transform -rotate-90 pointer-events-none">
+                                            <circle cx={SVG_SIZE/2} cy={SVG_SIZE/2} r={RADIUS} stroke="rgba(192, 132, 252, 0.2)" strokeWidth={STROKE_WIDTH} fill="transparent" />
+                                            <circle cx={SVG_SIZE/2} cy={SVG_SIZE/2} r={RADIUS} stroke="white" strokeWidth={STROKE_WIDTH} fill="transparent" strokeDasharray={CIRCUMFERENCE} strokeDashoffset={strokeDashoffset} strokeLinecap="round" className={`transition-opacity duration-300 ${isChargeComplete || !isCharging ? 'opacity-0' : 'opacity-100'}`}/>
+                                        </svg>
                                     </div>
-                                    <svg width={SVG_SIZE} height={SVG_SIZE} className="absolute inset-0 transform -rotate-90 pointer-events-none">
-                                        <circle cx={SVG_SIZE/2} cy={SVG_SIZE/2} r={RADIUS} stroke="rgba(192, 132, 252, 0.2)" strokeWidth={STROKE_WIDTH} fill="transparent" />
-                                        <circle cx={SVG_SIZE/2} cy={SVG_SIZE/2} r={RADIUS} stroke="white" strokeWidth={STROKE_WIDTH} fill="transparent" strokeDasharray={CIRCUMFERENCE} strokeDashoffset={strokeDashoffset} strokeLinecap="round" className={`transition-opacity duration-300 ${isChargeComplete || !isCharging ? 'opacity-0' : 'opacity-100'}`}/>
-                                    </svg>
                                 </div>
                             </div>
-                            <div className="absolute bottom-10">
+                            
+                            <div className="w-full flex justify-center pb-10">
                                 {isChargeComplete && (
                                     <RitualButton onClick={handleAdvanceAfterCharge} className="animate-pulse">
                                         {chargingIndex < 4 ? 'Charge Next Component' : 'Continue to Incantation'}
