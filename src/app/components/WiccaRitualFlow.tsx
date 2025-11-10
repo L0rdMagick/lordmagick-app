@@ -509,7 +509,6 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                             </div>
                         </Stage>
                     )}
-                    {/* THE FIX: Entire block for ritualStep 6 has been updated */}
                     {ritualStep === 6 && generatedSpell && (
                         <Stage className="justify-between pt-16 sm:pt-8">
                              <div className="w-full flex flex-col items-center">
@@ -531,41 +530,40 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                             </div>
                         </Stage>
                     )}
+                    {/* THE FIX: Entire block for ritualStep 7 has been updated */}
                     {ritualStep === 7 && generatedSpell && (
-                        <Stage className="justify-center">
-                            <div className="w-full grow flex flex-col items-center justify-center">
-                               <div
-                                    onMouseDown={handleCastHold} onMouseUp={handleCastRelease} onMouseLeave={handleCastRelease}
-                                    onTouchStart={handleCastHold} onTouchEnd={handleCastRelease}
-                                    className="relative w-full max-w-md aspect-square cursor-pointer flex items-center justify-center"
-                                >
-                                    <Image src={`${ASSET_PATH}/wicca_pentagram_ready_to_cast.png`} fill style={{ objectFit: 'contain' }} alt="Cast the Spell" />
-                                    <PentagramIcon className="absolute w-full h-full text-white pointer-events-none" isTracing={isCasting} />
-                                    {generatedSpell.symbolic_ingredients.map((ing, i) => {
-                                        const spriteData = findSprite(ing.name);
-                                        if(!spriteData) return null;
-                                        const positions = [
-                                            { top: '0%', left: '50%', transform: 'translate(-50%, -50%)' }, { top: '34.5%', left: '97.5%', transform: 'translate(-50%, -50%)' },
-                                            { top: '90.4%', left: '79.3%', transform: 'translate(-50%, -50%)' }, { top: '90.4%', left: '20.6%', transform: 'translate(-50%, -50%)' },
-                                            { top: '34.5%', left: '2.5%', transform: 'translate(-50%, -50%)' },
-                                        ];
-                                        return <div key={i} className="absolute w-16 h-16 pointer-events-none" style={positions[i]}>
-                                            <Sprite 
-                                                sheetPath={spriteData.sheet.path} x={spriteData.itemInfo.x} y={spriteData.itemInfo.y}
-                                                spriteWidth={spriteData.sheet.spriteSize.width} spriteHeight={spriteData.sheet.spriteSize.height}
-                                                sheetWidth={spriteData.sheet.sheetSize.width} sheetHeight={spriteData.sheet.sheetSize.height}
-                                            />
-                                        </div>
-                                    })}
-                                    {isCasting && castCountdown > 0 && (
-                                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                            <span className="text-7xl font-bold text-white animate-ping" style={{ textShadow: '0 0 20px white', animationIterationCount: '1', animationDelay: `${(castCountdown - 1) % 1}s` }}>
-                                                {castCountdown}
-                                            </span>
-                                        </div>
-                                    )}
-                                    <p className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-5 font-serif text-xl pointer-events-none text-center">Hold to Focus Your Will and Cast the Spell</p>
-                                </div>
+                        <Stage className="justify-center pt-16 sm:pt-8">
+                           <div
+                                onMouseDown={handleCastHold} onMouseUp={handleCastRelease} onMouseLeave={handleCastRelease}
+                                onTouchStart={handleCastHold} onTouchEnd={handleCastRelease}
+                                className="relative w-full max-w-lg aspect-square cursor-pointer flex items-center justify-center"
+                            >
+                                <Image src={`${ASSET_PATH}/wicca_pentagram_ready_to_cast.png`} fill style={{ objectFit: 'contain' }} alt="Cast the Spell" />
+                                <PentagramIcon className="absolute w-full h-full text-white pointer-events-none" isTracing={isCasting} />
+                                {generatedSpell.symbolic_ingredients.map((ing, i) => {
+                                    const spriteData = findSprite(ing.name);
+                                    if(!spriteData) return null;
+                                    const positions = [
+                                        { top: '0%', left: '50%', transform: 'translate(-50%, -50%)' }, { top: '34.5%', left: '97.5%', transform: 'translate(-50%, -50%)' },
+                                        { top: '90.4%', left: '79.3%', transform: 'translate(-50%, -50%)' }, { top: '90.4%', left: '20.6%', transform: 'translate(-50%, -50%)' },
+                                        { top: '34.5%', left: '2.5%', transform: 'translate(-50%, -50%)' },
+                                    ];
+                                    return <div key={i} className="absolute w-16 h-16 pointer-events-none" style={positions[i]}>
+                                        <Sprite 
+                                            sheetPath={spriteData.sheet.path} x={spriteData.itemInfo.x} y={spriteData.itemInfo.y}
+                                            spriteWidth={spriteData.sheet.spriteSize.width} spriteHeight={spriteData.sheet.spriteSize.height}
+                                            sheetWidth={spriteData.sheet.sheetSize.width} sheetHeight={spriteData.sheet.sheetSize.height}
+                                        />
+                                    </div>
+                                })}
+                                {isCasting && castCountdown > 0 && (
+                                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                        <span className="text-7xl font-bold text-white animate-ping" style={{ textShadow: '0 0 20px white', animationIterationCount: '1', animationDelay: `${(castCountdown - 1) % 1}s` }}>
+                                            {castCountdown}
+                                        </span>
+                                    </div>
+                                )}
+                                 <p className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-5 font-serif text-xl pointer-events-none text-center">Hold to Focus Your Will and<br/>Cast the Spell</p>
                             </div>
                         </Stage>
                     )}
