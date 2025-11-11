@@ -336,7 +336,6 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                     {ritualStep === 0 && (
                         <Stage>
                             <StageTitle>&nbsp;</StageTitle>
-                            {/* THE DEFINITIVE FIX: This container grows to fill the space and is relative for the Image child */}
                             <div className="w-full grow min-h-0 relative">
                                 <Image src={`${ASSET_PATH}/wicca_intro_instructions.png`} fill style={{ objectFit: 'contain' }} alt="Wicca Instructions" priority />
                                 <div className="absolute flex items-center justify-center text-center pointer-events-none" style={{ left: '50%', top: '30%', width: '60%', height: '15%', transform: 'translateX(-50%)' }}>
