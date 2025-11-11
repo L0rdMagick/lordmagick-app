@@ -513,7 +513,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                                 </div>
                              </div>
                              <div className="w-full flex justify-center pb-10">
-                                <RitualButton onClick={onBack}>Return to Spell Room</RitualButton>
+                                <RitualButton onClick={onBack}>Return to  Spell Room</RitualButton>
                             </div>
                          </Stage>
                     )}
