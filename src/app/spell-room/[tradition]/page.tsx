@@ -131,27 +131,22 @@ export default function SpellTraditionPage() {
     >
       <div className="absolute inset-0 bg-black/50" />
       
-      {/* THE FIX: Header is now fully responsive */}
       <header className="relative z-20 w-full p-4 md:p-6">
         <div className="flex justify-between items-center flex-wrap w-full max-w-7xl mx-auto">
-          {/* Left Item: Always first */}
           <div className="order-1">
             <MagickalBackLink href="/spell-room" text="All Traditions" />
           </div>
-
-          {/* Right Item: Second on mobile, third on desktop */}
           <div className="order-2 md:order-3">
             <RoomsButton />
           </div>
-
-          {/* Centered Title: Third on mobile (new line), second on desktop */}
           <h1 className="w-full text-center order-3 md:w-auto md:order-2 text-4xl md:text-5xl font-serif text-purple-300 mt-2 md:mt-0" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
             {traditionName}
           </h1>
         </div>
       </header>
 
-      <div className="relative z-10 grow w-full">
+      {/* THE FIX: This container now correctly defines the "safe area" for content. */}
+      <div className="relative z-10 grow w-full flex flex-col">
         {renderContent()}
       </div>
 

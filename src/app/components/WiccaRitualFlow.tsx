@@ -181,8 +181,14 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
         chargingSoundRef.current?.pause();
     }, [chargingIndex, ritualStep]);
 
+    // THE FIX: Corrected the ref name and added a null check
     const animateIngredientCharge = useCallback((timestamp: number) => {
-        if (!chargeStartTimeRef.current) chargeStartTimeRef.current = timestamp;
+        if (!chargeStartTimeRef.current) {
+            chargeStartTimeRef.current = timestamp;
+        }
+
+        if (chargeStartTimeRef.current === null) return; // Guard clause
+
         const elapsedTime = timestamp - chargeStartTimeRef.current;
         const progress = Math.min(elapsedTime / CHARGE_DURATION_INGREDIENT, 1);
         setChargeProgress(progress * 100);
