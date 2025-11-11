@@ -144,7 +144,7 @@ export default function SpellTraditionPage() {
           </h1>
         </div>
       </header>
-      
+
       <div className="relative z-10 grow w-full flex flex-col">
         {renderContent()}
       </div>
