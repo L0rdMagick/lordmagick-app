@@ -523,10 +523,8 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
     };
 
     return (
-        <div className="w-full h-full pt-24 md:pt-28 flex flex-col">
-            <div className="w-full grow relative">
-                {renderContent()}
-            </div>
+        <div className="w-full h-full">
+            {renderContent()}
         </div>
     );
 };
