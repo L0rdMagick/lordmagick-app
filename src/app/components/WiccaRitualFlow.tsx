@@ -1,3 +1,5 @@
+// --- START OF FILE src/app/components/WiccaRitualFlow.tsx ---
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -332,7 +334,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
             <AnimatePresence mode="wait">
                 <div key={ritualStep} className="relative w-full h-full">
                     {ritualStep === 0 && (
-                        <Stage className="justify-between">
+                        <Stage>
                             <div className="w-full grow min-h-0 flex items-center justify-center">
                                 <div className="relative w-full max-w-lg aspect-4/5">
                                     <Image src={`${ASSET_PATH}/wicca_intro_instructions.png`} fill style={{ objectFit: 'contain' }} alt="Wicca Instructions" priority />
@@ -354,7 +356,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                         </Stage>
                     )}
                     {ritualStep === 1 && (
-                        <Stage className="justify-between">
+                        <Stage>
                             <div className="w-full grow min-h-0 flex flex-col items-center justify-center">
                                 <StageTitle>State Your True Will</StageTitle>
                                 <div className="relative w-full max-w-lg aspect-4/5">
@@ -370,7 +372,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                         </Stage>
                     )}
                      {ritualStep === 2 && (
-                        <Stage className="justify-between">
+                        <Stage>
                             <div className="w-full grow min-h-0 flex flex-col items-center">
                                 <StageTitle>Call the Elemental Guardians</StageTitle>
                                 <div className="relative w-full max-w-md aspect-square grow">
@@ -384,7 +386,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                         </Stage>
                     )}
                     {ritualStep === 3 && (
-                        <Stage className="justify-between">
+                        <Stage>
                             <div className="w-full grow min-h-0 flex flex-col items-center justify-center">
                                 <StageTitle>Summon a Divine Guide</StageTitle>
                                 <div className="w-full max-w-4xl flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8">
@@ -409,23 +411,25 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                         </Stage>
                     )}
                     {ritualStep === 4 && generatedSpell && (
-                        <Stage className="justify-between">
-                            <div className='text-center'>
-                                <StageTitle>The Fated Components</StageTitle>
-                                <p className="text-gray-300 mb-6">These items have been chosen for your intention.</p>
-                                <div className="grid grid-cols-3 sm:grid-cols-5 gap-4 bg-black/30 p-4 rounded-lg">
-                                    {generatedSpell.symbolic_ingredients.map(ingredient => {
-                                        const spriteData = findSprite(ingredient.name);
-                                        if (!spriteData) return <div key={ingredient.name} className="w-20 h-20 sm:w-24 sm:h-24 border border-dashed border-gray-600 rounded-md flex items-center justify-center text-xs text-center text-gray-400">Missing: <br/>{ingredient.name}</div>;
-                                        return (
-                                            <div key={ingredient.name} className="flex flex-col items-center gap-2">
-                                                <div className="w-20 h-20 sm:w-24 sm:h-24 bg-white/5 rounded-lg p-1">
-                                                    <Sprite sheetPath={spriteData.sheet.path} x={spriteData.itemInfo.x} y={spriteData.itemInfo.y} spriteWidth={spriteData.sheet.spriteSize.width} spriteHeight={spriteData.sheet.spriteSize.height} sheetWidth={spriteData.sheet.sheetSize.width} sheetHeight={spriteData.sheet.sheetSize.height} />
+                        <Stage>
+                             <div className="w-full grow min-h-0 flex flex-col items-center justify-center">
+                                <div className='text-center'>
+                                    <StageTitle>The Fated Components</StageTitle>
+                                    <p className="text-gray-300 mb-6">These items have been chosen for your intention.</p>
+                                    <div className="grid grid-cols-3 sm:grid-cols-5 gap-4 bg-black/30 p-4 rounded-lg">
+                                        {generatedSpell.symbolic_ingredients.map(ingredient => {
+                                            const spriteData = findSprite(ingredient.name);
+                                            if (!spriteData) return <div key={ingredient.name} className="w-20 h-20 sm:w-24 sm:h-24 border border-dashed border-gray-600 rounded-md flex items-center justify-center text-xs text-center text-gray-400">Missing: <br/>{ingredient.name}</div>;
+                                            return (
+                                                <div key={ingredient.name} className="flex flex-col items-center gap-2">
+                                                    <div className="w-20 h-20 sm:w-24 sm:h-24 bg-white/5 rounded-lg p-1">
+                                                        <Sprite sheetPath={spriteData.sheet.path} x={spriteData.itemInfo.x} y={spriteData.itemInfo.y} spriteWidth={spriteData.sheet.spriteSize.width} spriteHeight={spriteData.sheet.spriteSize.height} sheetWidth={spriteData.sheet.sheetSize.width} sheetHeight={spriteData.sheet.sheetSize.height} />
+                                                    </div>
+                                                    <p className="text-sm text-center font-semibold text-purple-300">{ingredient.name}</p>
                                                 </div>
-                                                <p className="text-sm text-center font-semibold text-purple-300">{ingredient.name}</p>
-                                            </div>
-                                        );
-                                    })}
+                                            );
+                                        })}
+                                    </div>
                                 </div>
                             </div>
                             <div className="w-full flex justify-center pb-10 shrink-0">
@@ -434,7 +438,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                         </Stage>
                     )}
                     {ritualStep === 5 && generatedSpell && (
-                         <Stage className="justify-between">
+                         <Stage>
                             <div className="w-full grow min-h-0 flex flex-col items-center justify-center">
                                 <StageTitle>Imbue with Aether</StageTitle>
                                 <div className="relative w-full max-w-lg aspect-4/5">
@@ -464,7 +468,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                         </Stage>
                     )}
                     {ritualStep === 6 && generatedSpell && (
-                        <Stage className="justify-between">
+                        <Stage>
                              <div className="w-full grow min-h-0 flex flex-col items-center justify-center">
                                 <StageTitle>Speak the Words of Power</StageTitle>
                                 <div className="relative w-full max-w-lg aspect-4/5">
@@ -503,7 +507,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                         </Stage>
                     )}
                     {ritualStep === 8 && generatedSpell && (
-                         <Stage className="justify-between">
+                         <Stage>
                             <div className="w-full grow min-h-0 flex flex-col items-center justify-center">
                                 <StageTitle>Witness the Manifestation</StageTitle>
                                 <div className="relative w-full max-w-2xl aspect-square">

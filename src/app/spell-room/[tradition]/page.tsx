@@ -144,8 +144,7 @@ export default function SpellTraditionPage() {
           </h1>
         </div>
       </header>
-
-      {/* THE FIX: This container now correctly defines the "safe area" for content. */}
+      
       <div className="relative z-10 grow w-full flex flex-col">
         {renderContent()}
       </div>
