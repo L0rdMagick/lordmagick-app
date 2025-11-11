@@ -1,5 +1,3 @@
-// --- START OF FILE src/app/components/WiccaRitualFlow.tsx ---
-
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -181,13 +179,12 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
         chargingSoundRef.current?.pause();
     }, [chargingIndex, ritualStep]);
 
-    // THE FIX: Corrected the ref name and added a null check
     const animateIngredientCharge = useCallback((timestamp: number) => {
         if (!chargeStartTimeRef.current) {
             chargeStartTimeRef.current = timestamp;
         }
 
-        if (chargeStartTimeRef.current === null) return; // Guard clause
+        if (chargeStartTimeRef.current === null) return;
 
         const elapsedTime = timestamp - chargeStartTimeRef.current;
         const progress = Math.min(elapsedTime / CHARGE_DURATION_INGREDIENT, 1);
