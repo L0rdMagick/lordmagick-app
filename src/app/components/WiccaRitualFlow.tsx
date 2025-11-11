@@ -599,12 +599,9 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
         );
     };
 
-    // THE FIX: This is the main architectural container that creates the "safe area" for all content.
     return (
-        <div className="w-full h-full pt-24 md:pt-20 flex flex-col">
-            <h1 className="text-4xl md:text-5xl font-serif text-purple-200 text-center shrink-0" style={{ textShadow: '0 0 10px rgba(192, 132, 252, 0.5)' }}>
-                Wicca & Witchcraft
-            </h1>
+        <div className="w-full h-full pt-24 md:pt-28 flex flex-col">
+            {/* The main page title is now part of the parent layout, not this component */}
             <div className="w-full grow relative">
                 {renderContent()}
             </div>
