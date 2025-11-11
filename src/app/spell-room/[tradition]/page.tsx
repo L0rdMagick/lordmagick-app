@@ -95,7 +95,6 @@ export default function SpellTraditionPage() {
           return <PageComponent />;
         }
         
-        // Let WiccaSpellGenerator control its own full-page layout
         if (PageComponent === WiccaSpellGenerator) {
             return (
                  <PageComponent 
@@ -106,7 +105,6 @@ export default function SpellTraditionPage() {
             );
         }
 
-        // Other spell generators can keep their centered box layout
         return (
           <div className="flex items-center justify-center h-full">
             <div className="w-full max-w-2xl bg-black/60 backdrop-blur-md p-8 rounded-lg border border-white/10">
@@ -133,25 +131,26 @@ export default function SpellTraditionPage() {
     >
       <div className="absolute inset-0 bg-black/50" />
       
-      {/* THE FIX: A single, unified header */}
-      <header className="relative z-20 w-full p-6">
-        <div className="flex justify-between items-center w-full max-w-7xl mx-auto">
-          {/* Left Item */}
-          <MagickalBackLink href="/spell-room" text="All Traditions" />
-
-          {/* Centered Title */}
-          <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex justify-center items-center pointer-events-none">
-             <h1 className="text-4xl md:text-5xl font-serif text-purple-300 text-center" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
-                {traditionName}
-             </h1>
+      {/* THE FIX: Header is now fully responsive */}
+      <header className="relative z-20 w-full p-4 md:p-6">
+        <div className="flex justify-between items-center flex-wrap w-full max-w-7xl mx-auto">
+          {/* Left Item: Always first */}
+          <div className="order-1">
+            <MagickalBackLink href="/spell-room" text="All Traditions" />
           </div>
 
-          {/* Right Item */}
-          <RoomsButton />
+          {/* Right Item: Second on mobile, third on desktop */}
+          <div className="order-2 md:order-3">
+            <RoomsButton />
+          </div>
+
+          {/* Centered Title: Third on mobile (new line), second on desktop */}
+          <h1 className="w-full text-center order-3 md:w-auto md:order-2 text-4xl md:text-5xl font-serif text-purple-300 mt-2 md:mt-0" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
+            {traditionName}
+          </h1>
         </div>
       </header>
 
-      {/* THE FIX: Content area now has no extra containers or spacing */}
       <div className="relative z-10 grow w-full">
         {renderContent()}
       </div>
