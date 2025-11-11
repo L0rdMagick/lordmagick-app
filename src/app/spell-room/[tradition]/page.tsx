@@ -81,10 +81,10 @@ export default function SpellTraditionPage() {
 
   const renderContent = () => {
     if (loading) {
-      return <div className="bg-black/50 p-8 rounded-lg"><LoadingSpinner /></div>;
+      return <div className="flex items-center justify-center h-full"><LoadingSpinner /></div>;
     }
     if (!session) {
-      return <div className="bg-black/50 backdrop-blur-sm p-8 rounded-lg border border-white/10 w-full max-w-lg"><AuthPage /></div>;
+        return <div className="flex items-center justify-center h-full"><div className="bg-black/50 backdrop-blur-sm p-8 rounded-lg border border-white/10 w-full max-w-lg"><AuthPage /></div></div>;
     }
     if (session && profile !== undefined) {
       const tradition = traditionDetails[traditionSlug];
@@ -95,6 +95,7 @@ export default function SpellTraditionPage() {
           return <PageComponent />;
         }
         
+        // Let WiccaSpellGenerator control its own full-page layout
         if (PageComponent === WiccaSpellGenerator) {
             return (
                  <PageComponent 
@@ -105,19 +106,22 @@ export default function SpellTraditionPage() {
             );
         }
 
+        // Other spell generators can keep their centered box layout
         return (
-          <div className="w-full max-w-2xl bg-black/60 backdrop-blur-md p-8 rounded-lg border border-white/10">
-            <PageComponent 
-              session={session} 
-              isSubscribed={profile?.is_subscribed || false} 
-              onBack={handleBack} 
-            />
+          <div className="flex items-center justify-center h-full">
+            <div className="w-full max-w-2xl bg-black/60 backdrop-blur-md p-8 rounded-lg border border-white/10">
+              <PageComponent 
+                session={session} 
+                isSubscribed={profile?.is_subscribed || false} 
+                onBack={handleBack} 
+              />
+            </div>
           </div>
         );
       }
-      return <div className="text-white">Tradition not found. Please return to the Spell Room.</div>;
+      return <div className="flex items-center justify-center h-full text-white">Tradition not found.</div>;
     }
-    return <div className="bg-black/50 p-8 rounded-lg"><LoadingSpinner /></div>;
+    return <div className="flex items-center justify-center h-full"><LoadingSpinner /></div>;
   };
 
   const traditionName = traditionDetails[traditionSlug]?.name || "Spell Crafter";
@@ -129,21 +133,29 @@ export default function SpellTraditionPage() {
     >
       <div className="absolute inset-0 bg-black/50" />
       
-      <header className="relative z-20 w-full p-6 shrink-0">
+      {/* THE FIX: A single, unified header */}
+      <header className="relative z-20 w-full p-6">
         <div className="flex justify-between items-center w-full max-w-7xl mx-auto">
+          {/* Left Item */}
           <MagickalBackLink href="/spell-room" text="All Traditions" />
+
+          {/* Centered Title */}
+          <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex justify-center items-center pointer-events-none">
+             <h1 className="text-4xl md:text-5xl font-serif text-purple-300 text-center" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
+                {traditionName}
+             </h1>
+          </div>
+
+          {/* Right Item */}
           <RoomsButton />
         </div>
       </header>
 
-      <div className="relative z-10 grow flex flex-col items-center justify-start container mx-auto px-4 w-full">
-        <h1 className="shrink-0 text-4xl md:text-5xl font-serif text-purple-300 text-center mb-4 md:mb-8" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
-          {traditionName}
-        </h1>
-        <div className="w-full grow flex flex-col">
-          {renderContent()}
-        </div>
+      {/* THE FIX: Content area now has no extra containers or spacing */}
+      <div className="relative z-10 grow w-full">
+        {renderContent()}
       </div>
+
     </main>
   );
 }
