@@ -522,8 +522,10 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
         );
     };
 
+    // THE FIX: The main container is simplified, with no internal title.
+    // It now only provides the global "safe area" padding and the relative context for its children.
     return (
-        <div className="w-full h-full">
+        <div className="w-full h-full pt-24 md:pt-28 relative">
             {renderContent()}
         </div>
     );
