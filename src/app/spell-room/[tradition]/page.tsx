@@ -134,7 +134,7 @@ export default function SpellTraditionPage() {
       <header className="relative z-20 w-full p-4 md:p-6">
         <div className="flex justify-between items-center flex-wrap w-full max-w-7xl mx-auto">
           <div className="order-1">
-            <MagickalBackLink href="/spell-room" text="All  Traditions" />
+            <MagickalBackLink href="/spell-room" text="All Traditions" />
           </div>
           <div className="order-2 md:order-3">
             <RoomsButton />
