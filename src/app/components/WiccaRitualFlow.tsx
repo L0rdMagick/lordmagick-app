@@ -573,8 +573,8 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                         </Stage>
                     )}
                     {ritualStep === 8 && generatedSpell && (
-                         <Stage className="justify-center">
-                             <div className="w-full grow flex flex-col items-center justify-center">
+                         <Stage className="justify-between">
+                            <div className="w-full grow flex flex-col items-center justify-center">
                                 <div className="relative w-full max-w-2xl aspect-square">
                                     <Image src={`${ASSET_PATH}/wicca_spell_manifestation.png`} fill style={{ objectFit: 'contain' }} alt="Spell Manifestation" />
                                     <div 
@@ -589,7 +589,9 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                                     </div>
                                 </div>
                              </div>
-                            <RitualButton onClick={onBack} className="shrink-0 mb-4 relative z-10">Return to Spell Room</RitualButton>
+                             <div className="w-full flex justify-center pb-10">
+                                <RitualButton onClick={onBack}>Return to Spell Room</RitualButton>
+                            </div>
                          </Stage>
                     )}
                 </div>
@@ -597,9 +599,12 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
         );
     };
 
-    // THE FIX: The main architectural change is here. This wrapper creates a "safe area" for all content.
+    // THE FIX: This is the main architectural container that creates the "safe area" for all content.
     return (
-        <div className="w-full h-full pt-24 md:pt-28 flex flex-col">
+        <div className="w-full h-full pt-24 md:pt-20 flex flex-col">
+            <h1 className="text-4xl md:text-5xl font-serif text-purple-200 text-center shrink-0" style={{ textShadow: '0 0 10px rgba(192, 132, 252, 0.5)' }}>
+                Wicca & Witchcraft
+            </h1>
             <div className="w-full grow relative">
                 {renderContent()}
             </div>
