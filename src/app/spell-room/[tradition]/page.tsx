@@ -17,7 +17,6 @@ import ComingSoon from '@/app/components/ComingSoon';
 
 const traditionDetails: { [key: string]: { name: string; component: React.FC<any> } } = {
   'chaos-magick-spells-app': { name: 'Chaos Magick', component: SpellGenerator },
-  'wicca-witchcraft-spells-app': { name: 'Wicca & Witchcraft', component: WiccaMagick },
   'ceremonial-magick-spells-app': { name: 'Ceremonial Magick', component: ComingSoon },
   'folk-magick-spells-app': { name: 'Folk Magick', component: ComingSoon },
   'hoodoo-rootwork-spells-app': { name: 'Hoodoo (Rootwork)', component: ComingSoon },
