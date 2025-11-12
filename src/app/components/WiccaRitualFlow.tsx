@@ -334,11 +334,14 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
             <AnimatePresence mode="wait">
                 <div key={ritualStep} className="relative w-full h-full">
                     {ritualStep === 0 && (
+                        // THE FIX: Added justify-between to the Stage component
                         <Stage className="gap-4 justify-between">
-                            <div/>
+                            <div /> {/* Spacer for top alignment */}
                             <div className="w-full grow min-h-0 flex items-center justify-center">
+                                {/* THE FIX: Aspect-ratio container */}
                                 <div className="relative w-full max-w-lg aspect-500/625">
                                     <Image src={`${ASSET_PATH}/wicca_intro_instructions.png`} alt="Wicca Instructions" priority fill style={{objectFit: 'contain'}} />
+                                    {/* THE FIX: Re-adjusted overlay positions */}
                                     <div className="absolute flex items-center justify-center text-center pointer-events-none" style={{ left: '50%', top: '32%', width: '60%', height: '15%', transform: 'translateX(-50%)' }}>
                                         <h2 className="text-xl sm:text-2xl md:text-3xl font-serif text-gray-200" style={{ textShadow: '0 0 8px rgba(0, 0, 0, 0.5)' }}>
                                             Wiccan Spellcraft
