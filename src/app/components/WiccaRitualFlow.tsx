@@ -34,14 +34,14 @@ const Stage: React.FC<{ children: React.ReactNode; className?: string }> = ({ ch
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
         transition={{ duration: 0.7, ease: "easeInOut" }}
-        className={`absolute inset-0 flex flex-col items-center p-4 ${className}`}
+        className={`absolute inset-0 flex flex-col items-center justify-center p-4 ${className}`}
     >
         {children}
     </motion.div>
 );
 
 const StageTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <h3 className="text-3xl font-serif text-amber-200/90 mb-4 text-center shrink-0" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
+    <h3 className="text-3xl font-serif text-amber-200/90 text-center shrink-0" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
         {children}
     </h3>
 );
@@ -334,8 +334,8 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
             <AnimatePresence mode="wait">
                 <div key={ritualStep} className="relative w-full h-full">
                     {ritualStep === 0 && (
-                        <Stage>
-                            <StageTitle>&nbsp;</StageTitle>
+                        <Stage className="gap-4">
+                            <div className="shrink-0" />
                             <div className="w-full grow min-h-0 flex items-center justify-center">
                                 <div className="relative w-full max-w-lg">
                                     <Image src={`${ASSET_PATH}/wicca_intro_instructions.png`} width={500} height={625} alt="Wicca Instructions" priority className="w-full h-auto max-h-full object-contain" />
@@ -351,13 +351,13 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                                     </div>
                                 </div>
                             </div>
-                            <div className="w-full flex justify-center py-4 shrink-0">
+                            <div className="w-full flex justify-center shrink-0">
                                 <RitualButton onClick={() => setRitualStep(1)}>Continue</RitualButton>
                             </div>
                         </Stage>
                     )}
                     {ritualStep === 1 && (
-                        <Stage>
+                        <Stage className="gap-4">
                             <StageTitle>State Your True Will</StageTitle>
                             <div className="w-full grow min-h-0 flex items-center justify-center">
                                 <div className="relative w-full max-w-lg">
@@ -367,13 +367,13 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                                     </div>
                                 </div>
                             </div>
-                            <div className="w-full flex justify-center py-4 shrink-0">
+                            <div className="w-full flex justify-center shrink-0">
                                 <RitualButton onClick={() => setRitualStep(2)} disabled={!intention}>Seal My Intention</RitualButton>
                             </div>
                         </Stage>
                     )}
                      {ritualStep === 2 && (
-                        <Stage>
+                        <Stage className="gap-4">
                             <StageTitle>Call the Elemental Guardians</StageTitle>
                             <div className="w-full grow min-h-0 flex items-center justify-center">
                                 <div className="relative w-full max-w-md aspect-square">
@@ -383,11 +383,11 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                                     })}
                                 </div>
                             </div>
-                             {chargedElements.length === 5 && ( <div className="w-full flex justify-center py-4 shrink-0"> <RitualButton onClick={() => setRitualStep(3)} className="animate-pulse">Continue</RitualButton> </div> )}
+                             {chargedElements.length === 5 ? ( <div className="w-full flex justify-center shrink-0"> <RitualButton onClick={() => setRitualStep(3)} className="animate-pulse">Continue</RitualButton> </div> ) : <div className="shrink-0 h-[52px]" />}
                         </Stage>
                     )}
                     {ritualStep === 3 && (
-                        <Stage>
+                        <Stage className="gap-6">
                             <StageTitle>Summon a Divine Guide</StageTitle>
                             <div className="w-full grow min-h-0 flex items-center justify-center">
                                 <div className="w-full max-w-4xl flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8">
@@ -405,14 +405,14 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                                     })}
                                 </div>
                             </div>
-                            <div className="flex flex-col sm:flex-row gap-4 py-4 shrink-0">
+                            <div className="flex flex-col sm:flex-row gap-4 shrink-0">
                                 <RitualButton onClick={handleGenerateSpell}> Confirm Invocation </RitualButton>
                                 <RitualButton onClick={handleGenerateSpell} className="bg-black/20 border-gray-600/50 hover:bg-gray-800/50"> Continue without Deity </RitualButton>
                             </div>
                         </Stage>
                     )}
                     {ritualStep === 4 && generatedSpell && (
-                        <Stage>
+                        <Stage className="gap-6">
                             <StageTitle>The Fated Components</StageTitle>
                              <div className="w-full grow min-h-0 flex items-center justify-center">
                                 <div className='text-center'>
@@ -433,13 +433,13 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                                     </div>
                                 </div>
                             </div>
-                            <div className="w-full flex justify-center py-4 shrink-0">
+                            <div className="w-full flex justify-center shrink-0">
                                 <RitualButton onClick={() => setRitualStep(5)}>Prepare Components</RitualButton>
                             </div>
                         </Stage>
                     )}
                     {ritualStep === 5 && generatedSpell && (
-                         <Stage>
+                         <Stage className="gap-4">
                             <StageTitle>Imbue with Aether</StageTitle>
                             <div className="w-full grow min-h-0 flex items-center justify-center">
                                 <div className="relative w-full max-w-lg">
@@ -463,13 +463,13 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                                     </div>
                                 </div>
                             </div>
-                            <div className="w-full flex justify-center py-4 shrink-0">
+                            <div className="w-full flex justify-center shrink-0 h-[52px]">
                                 {isChargeComplete && ( <RitualButton onClick={handleAdvanceAfterCharge} className="animate-pulse"> {chargingIndex < 4 ? 'Charge Next Component' : 'Continue to Incantation'} </RitualButton> )}
                             </div>
                         </Stage>
                     )}
                     {ritualStep === 6 && generatedSpell && (
-                        <Stage>
+                        <Stage className="gap-4">
                              <StageTitle>Speak the Words of Power</StageTitle>
                              <div className="w-full grow min-h-0 flex items-center justify-center">
                                 <div className="relative w-full max-w-lg">
@@ -479,13 +479,13 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                                     </div>
                                 </div>
                             </div>
-                            <div className="w-full flex justify-center py-4 shrink-0">
+                            <div className="w-full flex justify-center shrink-0">
                                 <RitualButton onClick={() => setRitualStep(7)}>Ready to Cast</RitualButton>
                             </div>
                         </Stage>
                     )}
                     {ritualStep === 7 && generatedSpell && (
-                        <Stage>
+                        <Stage className="gap-4">
                             <StageTitle>Unleash the Magick</StageTitle>
                             <div className="w-full grow min-h-0 flex items-center justify-center">
                                <div onMouseDown={handleCastHold} onMouseUp={handleCastRelease} onMouseLeave={handleCastRelease} onTouchStart={handleCastHold} onTouchEnd={handleCastRelease} className="relative w-full max-w-2xl aspect-square cursor-pointer flex items-center justify-center">
@@ -505,10 +505,11 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                                     <p className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-5 font-serif text-xl sm:text-2xl pointer-events-none text-center text-white" style={{ textShadow: '0 0 10px rgba(0,0,0,0.7)' }}> Hold to Focus Your Will and<br/>Cast the Spell </p>
                                 </div>
                             </div>
+                            <div className="shrink-0 h-[52px]" />
                         </Stage>
                     )}
                     {ritualStep === 8 && generatedSpell && (
-                         <Stage>
+                         <Stage className="gap-4">
                             <StageTitle>Witness the Manifestation</StageTitle>
                             <div className="w-full grow min-h-0 flex items-center justify-center">
                                 <div className="relative w-full max-w-2xl">
@@ -520,7 +521,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                                     </div>
                                 </div>
                              </div>
-                             <div className="w-full flex justify-center py-4 shrink-0">
+                             <div className="w-full flex justify-center shrink-0">
                                 <RitualButton onClick={onBack}>Return to Spell Room</RitualButton>
                             </div>
                          </Stage>
