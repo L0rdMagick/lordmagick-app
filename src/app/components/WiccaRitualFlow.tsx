@@ -57,7 +57,7 @@ const RitualButton: React.FC<{ onClick: () => void; children: React.ReactNode; c
         <button
             onClick={handleClick}
             disabled={disabled}
-            className={`px-8 py-3 bg-black/40 text-white font-serif rounded-lg border-2 border-purple-400/50 backdrop-blur-sm hover:bg-purple-900/50 hover:border-purple-300 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
+            className={`px-8 py-3 bg-black/40 text-white font-serif rounded-lg border-2 border-purple-400/50 backdrop-blur-sm hover:bg-purple-900/50 hover:border-purple-300 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shrink-0 ${className}`}
         >
             {children}
         </button>
@@ -336,6 +336,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                     {ritualStep === 0 && (
                         <Stage className="gap-4">
                             <div />
+                            {/* THE FIX: Added grow and min-h-0 to allow this div to fill available space */}
                             <div className="w-full grow min-h-0 flex items-center justify-center">
                                 <div className="relative w-full max-w-lg">
                                     <Image src={`${ASSET_PATH}/wicca_intro_instructions.png`} width={500} height={625} alt="Wicca Instructions" priority className="w-full h-auto max-h-full object-contain" />
@@ -359,6 +360,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                     {ritualStep === 1 && (
                         <Stage className="gap-4">
                             <StageTitle>State Your True Will</StageTitle>
+                            {/* THE FIX: Added grow and min-h-0 */}
                             <div className="w-full grow min-h-0 flex items-center justify-center">
                                 <div className="relative w-full max-w-lg">
                                     <Image src={`${ASSET_PATH}/wicca_scroll_intention.png`} width={500} height={625} alt="Inscribe Intention" className="w-full h-auto max-h-full object-contain"/>
@@ -375,6 +377,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                      {ritualStep === 2 && (
                         <Stage className="gap-4">
                             <StageTitle>Call the Elemental Guardians</StageTitle>
+                            {/* THE FIX: Added grow and min-h-0 */}
                             <div className="w-full grow min-h-0 flex items-center justify-center">
                                 <div className="relative w-full max-w-md aspect-square">
                                     {['Spirit', 'Air', 'Fire', 'Earth', 'Water'].map((el, i) => {
@@ -389,6 +392,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                     {ritualStep === 3 && (
                         <Stage className="gap-6">
                             <StageTitle>Summon a Divine Guide</StageTitle>
+                            {/* THE FIX: Added grow and min-h-0 */}
                             <div className="w-full grow min-h-0 flex items-center justify-center">
                                 <div className="w-full max-w-4xl flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8">
                                     {[{ name: 'Triple Goddess', img: 'wicca_deity_triple_goddess.png' }, { name: 'Horned God', img: 'wicca_deity_horned_god.png' }, { name: 'Divine Source', img: 'wicca_deity_divine_source.png' }].map(deity => {
@@ -414,6 +418,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                     {ritualStep === 4 && generatedSpell && (
                         <Stage className="gap-6">
                             <StageTitle>The Fated Components</StageTitle>
+                             {/* THE FIX: Added grow and min-h-0 */}
                              <div className="w-full grow min-h-0 flex items-center justify-center">
                                 <div className='text-center'>
                                     <p className="text-gray-300 mb-6">These items have been chosen for your intention.</p>
@@ -441,6 +446,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                     {ritualStep === 5 && generatedSpell && (
                          <Stage className="gap-4">
                             <StageTitle>Imbue with Aether</StageTitle>
+                            {/* THE FIX: Added grow and min-h-0 */}
                             <div className="w-full grow min-h-0 flex items-center justify-center">
                                 <div className="relative w-full max-w-lg">
                                     <Image src={`${ASSET_PATH}/wicca_charge_ingredient_template.png`} width={500} height={625} alt="Charge Ingredient" className="w-full h-auto max-h-full object-contain" />
@@ -471,6 +477,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                     {ritualStep === 6 && generatedSpell && (
                         <Stage className="gap-4">
                              <StageTitle>Speak the Words of Power</StageTitle>
+                             {/* THE FIX: Added grow and min-h-0 */}
                              <div className="w-full grow min-h-0 flex items-center justify-center">
                                 <div className="relative w-full max-w-lg">
                                     <Image src={`${ASSET_PATH}/wicca_incantation_scroll.png`} width={500} height={625} alt="Incantation" className="w-full h-auto max-h-full object-contain" />
@@ -487,6 +494,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                     {ritualStep === 7 && (
                         <Stage className="gap-4">
                             <StageTitle>Unleash the Magick</StageTitle>
+                            {/* THE FIX: Added grow and min-h-0 */}
                             <div className="w-full grow min-h-0 flex items-center justify-center">
                                <div onMouseDown={handleCastHold} onMouseUp={handleCastRelease} onMouseLeave={handleCastRelease} onTouchStart={handleCastHold} onTouchEnd={handleCastRelease} className="relative w-full max-w-2xl aspect-square cursor-pointer flex items-center justify-center">
                                     <Image src={`${ASSET_PATH}/wicca_pentagram_ready_to_cast.png`} fill style={{ objectFit: 'contain' }} alt="Cast the Spell" />
@@ -511,6 +519,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                     {ritualStep === 8 && generatedSpell && (
                          <Stage className="gap-4">
                             <StageTitle>Witness the Manifestation</StageTitle>
+                            {/* THE FIX: Added grow and min-h-0 */}
                             <div className="w-full grow min-h-0 flex items-center justify-center">
                                 <div className="relative w-full max-w-2xl">
                                     <Image src={`${ASSET_PATH}/wicca_spell_manifestation.png`} width={800} height={800} alt="Spell Manifestation" className="w-full h-auto max-h-full object-contain" />

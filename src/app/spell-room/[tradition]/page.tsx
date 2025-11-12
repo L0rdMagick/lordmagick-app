@@ -131,7 +131,7 @@ export default function SpellTraditionPage() {
     >
       <div className="absolute inset-0 bg-black/50" />
       
-      <header className="relative z-20 w-full p-4 md:p-6">
+      <header className="relative z-20 w-full p-4 md:p-6 shrink-0">
         <div className="flex justify-between items-center flex-wrap w-full max-w-7xl mx-auto">
           <div className="order-1">
             <MagickalBackLink href="/spell-room" text="All Traditions" />
@@ -145,8 +145,12 @@ export default function SpellTraditionPage() {
         </div>
       </header>
 
-      <div className="relative z-10 grow w-full flex flex-col">
-        {renderContent()}
+      {/* THE FIX: Added flex-grow and overflow-hidden to constrain the content area */}
+      <div className="relative z-10 grow w-full flex flex-col overflow-hidden">
+        {/* THE FIX: Added a new wrapper to provide a stable height for the child component */}
+        <div className="relative w-full h-full">
+          {renderContent()}
+        </div>
       </div>
 
     </main>
