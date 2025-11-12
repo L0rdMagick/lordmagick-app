@@ -2,7 +2,7 @@
 
 import React from 'react';
 import type { Session } from '@/lib/types';
-import { WiccaRitualFlow } from './WiccaRitualFlow'; 
+import { WiccaRitualFlow } from './dep-WiccaRitualFlow'; 
 
 interface WiccaSpellGeneratorProps {
   session: Session;

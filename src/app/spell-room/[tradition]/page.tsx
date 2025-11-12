@@ -8,7 +8,7 @@ import { createBrowserClient } from '@supabase/ssr';
 import type { Session } from '@/lib/types';
 
 import SpellGenerator from '@/app/components/SpellGenerator';
-import WiccaSpellGenerator from '@/app/components/WiccaSpellGenerator';
+import WiccaMagick from '@/app/components/WiccaMagick';
 import AuthPage from '@/app/components/AuthPage';
 import LoadingSpinner from '@/app/components/LoadingSpinner';
 import RoomsButton from '@/app/components/RoomsButton';
@@ -17,7 +17,7 @@ import ComingSoon from '@/app/components/ComingSoon';
 
 const traditionDetails: { [key: string]: { name: string; component: React.FC<any> } } = {
   'chaos-magick-spells-app': { name: 'Chaos Magick', component: SpellGenerator },
-  'wicca-witchcraft-spells-app': { name: 'Wicca & Witchcraft', component: WiccaSpellGenerator },
+  'wicca-witchcraft-spells-app': { name: 'Wicca & Witchcraft', component: WiccaMagick },
   'ceremonial-magick-spells-app': { name: 'Ceremonial Magick', component: ComingSoon },
   'folk-magick-spells-app': { name: 'Folk Magick', component: ComingSoon },
   'hoodoo-rootwork-spells-app': { name: 'Hoodoo (Rootwork)', component: ComingSoon },
@@ -95,15 +95,14 @@ export default function SpellTraditionPage() {
           return <PageComponent />;
         }
         
-        if (PageComponent === WiccaSpellGenerator) {
-            return (
-                 <PageComponent 
-                    session={session} 
-                    isSubscribed={profile?.is_subscribed || false} 
-                    onBack={handleBack} 
-                />
-            );
-        }
+if (traditionSlug === 'wicca-witchcraft-spells-app') { // Check against the slug
+    return (
+         <WiccaMagick 
+            session={session} 
+            isSubscribed={profile?.is_subscribed || false}
+        />
+    );
+}
 
         return (
           <div className="flex items-center justify-center h-full">
