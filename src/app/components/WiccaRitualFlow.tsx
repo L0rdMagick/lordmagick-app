@@ -334,10 +334,10 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
             <AnimatePresence mode="wait">
                 <div key={ritualStep} className="relative w-full h-full">
                     {ritualStep === 0 && (
-                        <Stage className="gap-4">
-                            <div className="grow min-h-0 flex items-center justify-center">
-                                <div className="relative w-full max-w-lg h-full">
-                                    <Image src={`${ASSET_PATH}/wicca_intro_instructions.png`} width={500} height={625} alt="Wicca Instructions" priority className="w-full h-full object-contain" />
+                        <Stage className="gap-4 justify-center">
+                            <div className="w-full max-w-lg flex flex-col items-center gap-4">
+                                <div className="relative w-full">
+                                    <Image src={`${ASSET_PATH}/wicca_intro_instructions.png`} width={500} height={625} alt="Wicca Instructions" priority className="w-full h-auto object-contain" />
                                     <div className="absolute flex items-center justify-center text-center pointer-events-none" style={{ left: '50%', top: '30%', width: '60%', height: '15%', transform: 'translateX(-50%)' }}>
                                         <h2 className="text-xl sm:text-2xl md:text-3xl font-serif text-gray-200" style={{ textShadow: '0 0 8px rgba(0, 0, 0, 0.5)' }}>
                                             Wiccan Spellcraft
@@ -349,8 +349,6 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                                         </p>
                                     </div>
                                 </div>
-                            </div>
-                            <div className="w-full flex justify-center shrink-0">
                                 <RitualButton onClick={() => setRitualStep(1)}>Continue</RitualButton>
                             </div>
                         </Stage>
