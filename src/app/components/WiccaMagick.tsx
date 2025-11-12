@@ -16,9 +16,9 @@ import { findSprite } from '@/lib/spriteLibrary';
 
 // --- Configuration ---
 const ASSET_PATH = "/images/Spells/Wicca Tradition General";
-const CHARGE_DURATION_ELEMENT = 3000; // Faster charging
+const CHARGE_DURATION_ELEMENT = 3000;
 const CHARGE_DURATION_INGREDIENT = 3000;
-const CAST_DURATION = 10000; // Faster casting
+const CAST_DURATION = 10000;
 
 // --- Sound Utility ---
 const playSound = (src: string, volume: number = 0.5, loop: boolean = false): HTMLAudioElement | null => {
@@ -35,8 +35,6 @@ const WiccaMagick: React.FC<{ session: Session; isSubscribed: boolean }> = ({ se
     const [ritualStep, setRitualStep] = useState(0);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-
-    // Form & Spell Data
     const [intention, setIntention] = useState('');
     const [chargedElements, setChargedElements] = useState<string[]>([]);
     const [selectedDeities, setSelectedDeities] = useState<string[]>([]);
@@ -240,6 +238,7 @@ const Step4_Components: React.FC<{ spell: GeneratedWiccanSpell, onNext: () => vo
 
 const Step5_ChargeComponent: React.FC<{ spell: GeneratedWiccanSpell, chargingIndex: number, onNext: () => void }> = ({ spell, chargingIndex, onNext }) => {
     const [isComplete, setIsComplete] = useState(false);
+    useEffect(() => { setIsComplete(false); }, [chargingIndex]);
     const handleChargeComplete = () => setIsComplete(true);
 
     return (
@@ -291,7 +290,7 @@ const Step7_Cast: React.FC<{ spell: GeneratedWiccanSpell, onNext: () => void }> 
     }, [isCasting, onNext]);
 
     return (
-        <StepContainer stageTitle="Unleash the Magick">
+        <StepContainer stageTitle="Unleash the Magick" button={<div/>}>
             <div onMouseDown={() => setIsCasting(true)} onMouseUp={() => setIsCasting(false)} onMouseLeave={() => setIsCasting(false)} onTouchStart={() => setIsCasting(true)} onTouchEnd={() => setIsCasting(false)} className="relative w-full max-w-2xl aspect-square cursor-pointer">
                 <Image src={`${ASSET_PATH}/wicca_pentagram_ready_to_cast.png`} layout="fill" objectFit="contain" alt="Cast the Spell" />
                 <PentagramIcon className="absolute w-full h-full text-white pointer-events-none" isTracing={isCasting} />
@@ -321,10 +320,27 @@ const Step8_Manifestation: React.FC<{ spell: GeneratedWiccanSpell }> = ({ spell 
 // --- Helper components for complex interactions ---
 
 const IngredientCharger: React.FC<{ children: React.ReactNode, onChargeComplete: () => void, isComplete: boolean }> = ({ children, onChargeComplete, isComplete }) => {
-    // This is a simplified visual component. Full charging logic can be re-added here.
+    const [isHolding, setIsHolding] = useState(false);
+    const chargeSoundRef = useRef<HTMLAudioElement | null>(null);
+
+    useEffect(() => {
+        let timer: NodeJS.Timeout;
+        if(isHolding && !isComplete) {
+            chargeSoundRef.current = playSound('/audio/sfx-chaos-hold.mp3', 0.3, true);
+            timer = setTimeout(() => {
+                onChargeComplete();
+                playSound('/audio/sfx-chaos-activate.mp3', 0.4);
+            }, CHARGE_DURATION_INGREDIENT)
+        }
+        return () => {
+            clearTimeout(timer);
+            chargeSoundRef.current?.pause();
+        }
+    }, [isHolding, isComplete, onChargeComplete]);
+    
     return (
-        <div onMouseDown={onChargeComplete} onTouchStart={onChargeComplete} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 grid place-items-center cursor-pointer">
-            <div className={`transition-transform duration-300 ${isComplete ? 'scale-110' : 'scale-100'}`}>{children}</div>
+        <div onMouseDown={() => setIsHolding(true)} onMouseUp={() => setIsHolding(false)} onMouseLeave={() => setIsHolding(false)} onTouchStart={() => setIsHolding(true)} onTouchEnd={() => setIsHolding(false)} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 grid place-items-center cursor-pointer">
+            <div className={`transition-transform duration-300 ${isHolding || isComplete ? 'scale-110' : 'scale-100'}`}>{children}</div>
         </div>
     );
 };
@@ -352,6 +368,7 @@ const ChargingElement: React.FC<{ name: string, isCharged: boolean, onChargeComp
             <button
                 onMouseDown={() => setIsHolding(true)} onMouseUp={() => setIsHolding(false)} onMouseLeave={() => setIsHolding(false)}
                 onTouchStart={() => setIsHolding(true)} onTouchEnd={() => setIsHolding(false)}
+                disabled={isCharged}
                 className={`relative w-24 h-24 rounded-full transition-all duration-300 flex items-center justify-center ${isCharged ? 'bg-purple-500/50 ring-2 ring-white shadow-lg shadow-purple-500/50' : 'bg-white/10 hover:bg-white/20'}`}
             >
                 <span className="text-white font-serif text-lg">{name}</span>

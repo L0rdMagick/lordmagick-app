@@ -1,10 +1,10 @@
-// --- START OF FILE src/components/SpellRoom.tsx ---
+// --- START OF FILE src/app/components/SpellRoom.tsx ---
 
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 
-type Tradition = "Chaos Magick" | "Wicca & Witchcraft" | "Ceremonial Magick" | "Folk Magick" | "Hoodoo (Rootwork)";
+type Tradition = "Chaos Magick" | "Wicca Magick" | "Ceremonial Magick" | "Folk Magick" | "Hoodoo (Rootwork)";
 
 interface TraditionInfo {
   name: Tradition;
@@ -16,7 +16,7 @@ interface TraditionInfo {
 
 const traditions: TraditionInfo[] = [
   {
-    name: "Wicca & Witchcraft",
+    name: "Wicca Magick", // THE FIX: Updated name
     image: "/images/spell-room/wicca-witchcraft-magick-button.png",
     isAvailable: true,
     positionClasses: "md:absolute md:top-[1%] md:left-1/2 md:-translate-x-1/2",
@@ -91,7 +91,6 @@ const TraditionButton: React.FC<TraditionButtonProps> = ({ tradition }) => {
 
     const wrapperClasses = `${tradition.positionClasses} ${tradition.widthClasses} mx-auto md:mx-0 group`;
     
-    // All buttons are links now, but we could add a disabled state back if needed
     return (
         <Link href={href} className={wrapperClasses}>
             {buttonContent}

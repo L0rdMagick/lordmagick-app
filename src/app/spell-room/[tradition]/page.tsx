@@ -17,7 +17,7 @@ import ComingSoon from '@/app/components/ComingSoon';
 
 const traditionDetails: { [key: string]: { name: string; component: React.FC<any> } } = {
   'chaos-magick-spells-app': { name: 'Chaos Magick', component: SpellGenerator },
-  'wicca-witchcraft-spells-app': { name: 'Wicca & Witchcraft', component: WiccaMagick },
+  'wicca-magick-spells-app': { name: 'Wicca Magick', component: WiccaMagick }, // THE FIX: Updated slug and name
   'ceremonial-magick-spells-app': { name: 'Ceremonial Magick', component: ComingSoon },
   'folk-magick-spells-app': { name: 'Folk Magick', component: ComingSoon },
   'hoodoo-rootwork-spells-app': { name: 'Hoodoo (Rootwork)', component: ComingSoon },
@@ -75,43 +75,39 @@ export default function SpellTraditionPage() {
     return () => subscription.unsubscribe();
   }, [supabase, fetchProfile]);
 
+  // --- THE FIX: This logic now runs BEFORE the main layout is rendered ---
+  if (traditionSlug === 'wicca-magick-spells-app') {
+    const FullScreenWrapper: React.FC<{children: React.ReactNode}> = ({ children }) => (
+        <div className="relative min-h-screen w-full bg-black bg-cover bg-center flex items-center justify-center" style={{ backgroundImage: "url('/images/spell-room/spell-room-background.png')" }}>
+            {children}
+        </div>
+    );
+    if (loading) return <FullScreenWrapper><LoadingSpinner /></FullScreenWrapper>;
+    if (!session) return <FullScreenWrapper><div className="bg-black/50 backdrop-blur-sm p-8 rounded-lg border border-white/10 w-full max-w-lg"><AuthPage /></div></FullScreenWrapper>;
+    
+    // Render ONLY the self-contained WiccaMagick component
+    return <WiccaMagick session={session} isSubscribed={profile?.is_subscribed || false} />;
+  }
+  // --- END FIX ---
+
+
   const handleBack = () => {
     router.push('/spell-room');
   };
 
   const renderContent = () => {
-    if (loading) {
-      return <div className="flex items-center justify-center h-full"><LoadingSpinner /></div>;
-    }
-    if (!session) {
-        return <div className="flex items-center justify-center h-full"><div className="bg-black/50 backdrop-blur-sm p-8 rounded-lg border border-white/10 w-full max-w-lg"><AuthPage /></div></div>;
-    }
+    if (loading) return <div className="flex items-center justify-center h-full"><LoadingSpinner /></div>;
+    if (!session) return <div className="flex items-center justify-center h-full"><div className="bg-black/50 backdrop-blur-sm p-8 rounded-lg border border-white/10 w-full max-w-lg"><AuthPage /></div></div>;
     if (session && profile !== undefined) {
       const tradition = traditionDetails[traditionSlug];
       if (tradition) {
         const PageComponent = tradition.component;
+        if (PageComponent === ComingSoon) return <PageComponent />;
         
-        if (PageComponent === ComingSoon) {
-          return <PageComponent />;
-        }
-        
-if (traditionSlug === 'wicca-witchcraft-spells-app') { // Check against the slug
-    return (
-         <WiccaMagick 
-            session={session} 
-            isSubscribed={profile?.is_subscribed || false}
-        />
-    );
-}
-
         return (
           <div className="flex items-center justify-center h-full">
             <div className="w-full max-w-2xl bg-black/60 backdrop-blur-md p-8 rounded-lg border border-white/10">
-              <PageComponent 
-                session={session} 
-                isSubscribed={profile?.is_subscribed || false} 
-                onBack={handleBack} 
-              />
+              <PageComponent session={session} isSubscribed={profile?.is_subscribed || false} onBack={handleBack} />
             </div>
           </div>
         );
@@ -123,13 +119,13 @@ if (traditionSlug === 'wicca-witchcraft-spells-app') { // Check against the slug
 
   const traditionName = traditionDetails[traditionSlug]?.name || "Spell Crafter";
 
+  // This layout will now ONLY be used for traditions that are NOT 'wicca-magick-spells-app'
   return (
     <main 
       className="relative min-h-screen w-full bg-black bg-cover bg-center flex flex-col"
       style={{ backgroundImage: "url('/images/spell-room/spell-room-background.png')" }}
     >
       <div className="absolute inset-0 bg-black/50" />
-      
       <header className="relative z-20 w-full p-4 md:p-6 shrink-0">
         <div className="flex justify-between items-center flex-wrap w-full max-w-7xl mx-auto">
           <div className="order-1">
@@ -143,15 +139,11 @@ if (traditionSlug === 'wicca-witchcraft-spells-app') { // Check against the slug
           </h1>
         </div>
       </header>
-
-      {/* THE FIX: Added flex-grow and overflow-hidden to constrain the content area */}
       <div className="relative z-10 grow w-full flex flex-col overflow-hidden">
-        {/* THE FIX: Added a new wrapper to provide a stable height for the child component */}
         <div className="relative w-full h-full">
           {renderContent()}
         </div>
       </div>
-
     </main>
   );
 }
