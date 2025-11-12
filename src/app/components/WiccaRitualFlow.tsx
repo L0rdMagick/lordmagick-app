@@ -34,7 +34,7 @@ const Stage: React.FC<{ children: React.ReactNode; className?: string }> = ({ ch
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
         transition={{ duration: 0.7, ease: "easeInOut" }}
-        className={`absolute inset-0 flex flex-col items-center justify-center p-4 ${className}`}
+        className={`absolute inset-0 flex flex-col items-center p-4 ${className}`}
     >
         {children}
     </motion.div>
@@ -334,9 +334,8 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
             <AnimatePresence mode="wait">
                 <div key={ritualStep} className="relative w-full h-full">
                     {ritualStep === 0 && (
-                        <Stage className="gap-4 justify-between">
-                            <div className="h-8 shrink-0" /> {/* Top Spacer */}
-                            <div className="w-full grow min-h-0 flex items-center justify-center">
+                        <Stage className="gap-4">
+                            <div className="grow min-h-0 flex items-center justify-center">
                                 <div className="relative w-full max-w-lg h-full">
                                     <Image src={`${ASSET_PATH}/wicca_intro_instructions.png`} width={500} height={625} alt="Wicca Instructions" priority className="w-full h-full object-contain" />
                                     <div className="absolute flex items-center justify-center text-center pointer-events-none" style={{ left: '50%', top: '30%', width: '60%', height: '15%', transform: 'translateX(-50%)' }}>
@@ -357,7 +356,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                         </Stage>
                     )}
                     {ritualStep === 1 && (
-                        <Stage className="gap-4 justify-between">
+                        <Stage className="gap-4">
                             <StageTitle>State Your True Will</StageTitle>
                             <div className="w-full grow min-h-0 flex items-center justify-center">
                                 <div className="relative w-full max-w-lg h-full">
@@ -373,7 +372,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                         </Stage>
                     )}
                      {ritualStep === 2 && (
-                        <Stage className="gap-4 justify-between">
+                        <Stage className="gap-4">
                             <StageTitle>Call the Elemental Guardians</StageTitle>
                             <div className="w-full grow min-h-0 flex items-center justify-center">
                                 <div className="relative w-full max-w-md aspect-square">
@@ -389,7 +388,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                         </Stage>
                     )}
                     {ritualStep === 3 && (
-                        <Stage className="gap-6 justify-between">
+                        <Stage className="gap-6">
                             <StageTitle>Summon a Divine Guide</StageTitle>
                             <div className="w-full grow min-h-0 flex items-center justify-center">
                                 <div className="w-full max-w-4xl flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8">
@@ -414,7 +413,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                         </Stage>
                     )}
                     {ritualStep === 4 && generatedSpell && (
-                        <Stage className="gap-6 justify-between">
+                        <Stage className="gap-6">
                             <StageTitle>The Fated Components</StageTitle>
                              <div className="w-full grow min-h-0 flex items-center justify-center">
                                 <div className='text-center'>
@@ -441,7 +440,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                         </Stage>
                     )}
                     {ritualStep === 5 && generatedSpell && (
-                         <Stage className="gap-4 justify-between">
+                         <Stage className="gap-4">
                             <StageTitle>Imbue with Aether</StageTitle>
                             <div className="w-full grow min-h-0 flex items-center justify-center">
                                 <div className="relative w-full max-w-lg h-full">
@@ -471,7 +470,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                         </Stage>
                     )}
                     {ritualStep === 6 && generatedSpell && (
-                        <Stage className="gap-4 justify-between">
+                        <Stage className="gap-4">
                              <StageTitle>Speak the Words of Power</StageTitle>
                              <div className="w-full grow min-h-0 flex items-center justify-center">
                                 <div className="relative w-full max-w-lg h-full">
@@ -487,7 +486,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                         </Stage>
                     )}
                     {ritualStep === 7 && (
-                        <Stage className="gap-4 justify-between">
+                        <Stage className="gap-4">
                             <StageTitle>Unleash the Magick</StageTitle>
                             <div className="w-full grow min-h-0 flex items-center justify-center">
                                <div onMouseDown={handleCastHold} onMouseUp={handleCastRelease} onMouseLeave={handleCastRelease} onTouchStart={handleCastHold} onTouchEnd={handleCastRelease} className="relative w-full max-w-2xl aspect-square cursor-pointer flex items-center justify-center">
@@ -511,7 +510,7 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                         </Stage>
                     )}
                     {ritualStep === 8 && generatedSpell && (
-                         <Stage className="gap-4 justify-between">
+                         <Stage className="gap-4">
                             <StageTitle>Witness the Manifestation</StageTitle>
                             <div className="w-full grow min-h-0 flex items-center justify-center">
                                 <div className="relative w-full max-w-2xl h-full">
