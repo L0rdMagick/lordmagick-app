@@ -336,10 +336,12 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                     {ritualStep === 0 && (
                         <Stage className="gap-4">
                             <div />
+                            {/* THE FIX: The content area now correctly fills vertical space. */}
                             <div className="w-full grow min-h-0 flex items-center justify-center">
-                                <div className="relative w-full h-full max-w-lg">
-                                    {/* THE FIX: Replaced h-auto with h-full */}
-                                    <Image src={`${ASSET_PATH}/wicca_intro_instructions.png`} width={500} height={625} alt="Wicca Instructions" priority className="w-full h-full object-contain" />
+                                {/* THE FIX: This wrapper becomes the boundary for the fill Image. */}
+                                <div className="relative w-full h-full">
+                                    {/* THE FIX: `fill` prop with `object-contain` is the correct approach. Removed width/height. */}
+                                    <Image src={`${ASSET_PATH}/wicca_intro_instructions.png`} alt="Wicca Instructions" priority fill style={{objectFit: 'contain'}} />
                                     <div className="absolute flex items-center justify-center text-center pointer-events-none" style={{ left: '50%', top: '30%', width: '60%', height: '15%', transform: 'translateX(-50%)' }}>
                                         <h2 className="text-xl sm:text-2xl md:text-3xl font-serif text-gray-200" style={{ textShadow: '0 0 8px rgba(0, 0, 0, 0.5)' }}>
                                             Wiccan Spellcraft
@@ -361,9 +363,8 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                         <Stage className="gap-4">
                             <StageTitle>State Your True Will</StageTitle>
                             <div className="w-full grow min-h-0 flex items-center justify-center">
-                                <div className="relative w-full h-full max-w-lg">
-                                    {/* THE FIX: Replaced h-auto with h-full */}
-                                    <Image src={`${ASSET_PATH}/wicca_scroll_intention.png`} width={500} height={625} alt="Inscribe Intention" className="w-full h-full object-contain"/>
+                                <div className="relative w-full h-full">
+                                    <Image src={`${ASSET_PATH}/wicca_scroll_intention.png`} alt="Inscribe Intention" fill style={{objectFit: 'contain'}}/>
                                     <div className="absolute flex flex-col items-center justify-center text-center p-4" style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '60%', height: '55%' }}>
                                         <textarea value={intention} onChange={(e) => setIntention(e.target.value)} placeholder="e.g. To find clarity on my career path" className="w-full h-3/5 bg-transparent text-center text-[#4a2e1c] text-base sm:text-lg md:text-xl font-serif focus:outline-none resize-none" />
                                     </div>
@@ -444,9 +445,8 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                          <Stage className="gap-4">
                             <StageTitle>Imbue with Aether</StageTitle>
                             <div className="w-full grow min-h-0 flex items-center justify-center">
-                                <div className="relative w-full h-full max-w-lg">
-                                    {/* THE FIX: Replaced h-auto with h-full */}
-                                    <Image src={`${ASSET_PATH}/wicca_charge_ingredient_template.png`} width={500} height={625} alt="Charge Ingredient" className="w-full h-full object-contain" />
+                                <div className="relative w-full h-full">
+                                    <Image src={`${ASSET_PATH}/wicca_charge_ingredient_template.png`} alt="Charge Ingredient" fill style={{objectFit: 'contain'}} />
                                     <p className="absolute top-[22%] left-1/2 -translate-x-1/2 w-full text-center font-serif text-xl sm:text-2xl text-amber-200">
                                         {isChargeComplete ? 'Component Charged!' : `Hold to Charge the ${generatedSpell.symbolic_ingredients[chargingIndex].name}`}
                                     </p>
@@ -475,9 +475,8 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                         <Stage className="gap-4">
                              <StageTitle>Speak the Words of Power</StageTitle>
                              <div className="w-full grow min-h-0 flex items-center justify-center">
-                                <div className="relative w-full h-full max-w-lg">
-                                    {/* THE FIX: Replaced h-auto with h-full */}
-                                    <Image src={`${ASSET_PATH}/wicca_incantation_scroll.png`} width={500} height={625} alt="Incantation" className="w-full h-full object-contain" />
+                                <div className="relative w-full h-full">
+                                    <Image src={`${ASSET_PATH}/wicca_incantation_scroll.png`} alt="Incantation" fill style={{objectFit: 'contain'}} />
                                     <div className="absolute text-center flex flex-col justify-center items-center p-4" style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '65%', height: '50%' }}>
                                         <p className="font-serif text-base sm:text-xl text-[#4a2e1c] whitespace-pre-line leading-relaxed">{generatedSpell.central_chant}</p>
                                     </div>
@@ -516,9 +515,8 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                          <Stage className="gap-4">
                             <StageTitle>Witness the Manifestation</StageTitle>
                             <div className="w-full grow min-h-0 flex items-center justify-center">
-                                <div className="relative w-full h-full max-w-2xl">
-                                    {/* THE FIX: Replaced h-auto with h-full */}
-                                    <Image src={`${ASSET_PATH}/wicca_spell_manifestation.png`} width={800} height={800} alt="Spell Manifestation" className="w-full h-full object-contain" />
+                                <div className="relative w-full h-full">
+                                    <Image src={`${ASSET_PATH}/wicca_spell_manifestation.png`} alt="Spell Manifestation" fill style={{objectFit: 'contain'}} />
                                     <div className="absolute text-center text-white font-serif flex items-center justify-center p-4" style={{ left: '50%', top: '55%', width: '45%', height: '40%', transform: 'translate(-50%, -50%)' }}>
                                         <p className="text-2xl sm:text-3xl md:text-4xl">
                                             {generatedSpell.affirmation}
