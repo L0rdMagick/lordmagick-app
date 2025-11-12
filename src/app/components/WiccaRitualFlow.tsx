@@ -335,18 +335,17 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                 <div key={ritualStep} className="relative w-full h-full">
                     {ritualStep === 0 && (
                         <Stage className="gap-4">
-                            <div />
+                            {/* THE FIX: Removed the empty spacer div */}
                             <div className="w-full grow min-h-0 flex items-center justify-center">
-                                {/* THE FIX: Added max-h-full to constrain the container's height */}
                                 <div className="relative w-full max-w-lg max-h-full">
-                                    {/* THE FIX: Use width/height for aspect ratio and className for responsive sizing */}
                                     <Image src={`${ASSET_PATH}/wicca_intro_instructions.png`} alt="Wicca Instructions" priority width={500} height={625} className="w-full h-full object-contain" />
-                                    <div className="absolute flex items-center justify-center text-center pointer-events-none" style={{ left: '50%', top: '30%', width: '60%', height: '15%', transform: 'translateX(-50%)' }}>
+                                    {/* THE FIX: Adjusted positioning and sizing percentages for overlays */}
+                                    <div className="absolute flex items-center justify-center text-center pointer-events-none" style={{ left: '50%', top: '32%', width: '60%', height: '15%', transform: 'translateX(-50%)' }}>
                                         <h2 className="text-xl sm:text-2xl md:text-3xl font-serif text-gray-200" style={{ textShadow: '0 0 8px rgba(0, 0, 0, 0.5)' }}>
                                             Wiccan Spellcraft
                                         </h2>
                                     </div>
-                                    <div className="absolute text-center pointer-events-none flex items-center justify-center p-4" style={{ left: '50%', top: '58%', width: '65%', height: '40%', transform: 'translate(-50%, -50%)' }}>
+                                    <div className="absolute text-center pointer-events-none flex items-center justify-center p-4" style={{ left: '50%', top: '55%', width: '65%', height: '35%', transform: 'translate(-50%, -50%)' }}>
                                         <p className="text-sm sm:text-base md:text-lg text-gray-300 leading-relaxed">
                                             Work with nature, the moon, and ancient energies to manifest your will. Follow the steps to craft your spell.
                                         </p>
@@ -364,7 +363,8 @@ export const WiccaRitualFlow: React.FC<{ session: Session; isSubscribed: boolean
                             <div className="w-full grow min-h-0 flex items-center justify-center">
                                 <div className="relative w-full max-w-lg max-h-full">
                                     <Image src={`${ASSET_PATH}/wicca_scroll_intention.png`} alt="Inscribe Intention" width={500} height={625} className="w-full h-full object-contain"/>
-                                    <div className="absolute flex flex-col items-center justify-center text-center p-4" style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '60%', height: '55%' }}>
+                                    {/* THE FIX: Adjusted positioning and sizing percentages for overlays */}
+                                    <div className="absolute flex flex-col items-center justify-center text-center p-4" style={{ top: '48%', left: '50%', transform: 'translate(-50%, -50%)', width: '60%', height: '40%' }}>
                                         <textarea value={intention} onChange={(e) => setIntention(e.target.value)} placeholder="e.g. To find clarity on my career path" className="w-full h-3/5 bg-transparent text-center text-[#4a2e1c] text-base sm:text-lg md:text-xl font-serif focus:outline-none resize-none" />
                                     </div>
                                 </div>
