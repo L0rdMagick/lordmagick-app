@@ -146,7 +146,7 @@ export default function SpellTraditionPage() {
       </header>
 
       {/* THE FIX: Added flex-grow and overflow-hidden to constrain the content area */}
-      <div className="relative z-10 grow w-full flex flex-col overflow-hidden">
+      <div className="relative z-10 flex-grow w-full flex flex-col overflow-hidden">
         {/* THE FIX: Added a new wrapper to provide a stable height for the child component */}
         <div className="relative w-full h-full">
           {renderContent()}
