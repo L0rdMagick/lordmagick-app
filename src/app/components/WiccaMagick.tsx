@@ -68,7 +68,7 @@ const WiccaMagick: React.FC<{ session: Session; isSubscribed: boolean }> = ({ se
         playSound('/audio/sfx-library-portal.mp3', 0.2);
         setSelectedDeities(prev => 
             prev.includes(deityName) 
-                ? prev.filter(d => d !== deityName)
+                ? [] 
                 : [deityName] // Only allow one selection
         );
     };
@@ -139,12 +139,14 @@ const RitualButton: React.FC<{ onClick: () => void; children: React.ReactNode; c
 );
 
 const StepContainer: React.FC<{ stageTitle?: string; children: React.ReactNode; button?: React.ReactNode; }> = ({ stageTitle, children, button }) => (
-    <div className="w-full h-full flex flex-col items-center justify-between gap-4 py-2">
-        <h2 className="text-3xl font-serif text-amber-200/90 text-center shrink-0">{stageTitle}</h2>
+    <div className="w-full h-full flex flex-col items-center justify-between gap-2 py-2">
+        <div className="shrink-0 py-2">
+             {stageTitle && <h2 className="text-3xl font-serif text-amber-200/90 text-center">{stageTitle}</h2>}
+        </div>
         <div className="w-full grow min-h-0 flex items-center justify-center">
             {children}
         </div>
-        <div className="h-[52px] shrink-0 flex items-center justify-center">
+        <div className="h-[60px] shrink-0 flex items-center justify-center">
             {button}
         </div>
     </div>
@@ -184,45 +186,40 @@ const Step1_Intention: React.FC<{ intention: string; setIntention: (val: string)
 );
 
 const Step2_Elements: React.FC<{ chargedElements: string[], onChargeComplete: (name: string) => void, onNext: () => void }> = ({ chargedElements, onChargeComplete, onNext }) => (
-    <div className="w-full h-full flex flex-col items-center justify-center gap-4">
-        <h2 className="text-3xl font-serif text-amber-200/90 text-center shrink-0">Call the Elemental Guardians</h2>
-        <div className="w-full grow min-h-0 flex items-center justify-center">
-             <div className="relative w-full max-w-md aspect-square">
-                {['Spirit', 'Air', 'Fire', 'Earth', 'Water'].map((el, i) => {
-                    const positions = [ { top: '10%', left: '50%'}, { top: '45%', left: '90%'}, { top: '85%', left: '75%'},  { top: '85%', left: '25%'}, { top: '45%', left: '10%'} ];
-                    return ( <ChargingElement key={el} name={el} isCharged={chargedElements.includes(el)} onChargeComplete={onChargeComplete} style={{...positions[i], transform: 'translate(-50%, -50%)'}} /> );
-                })}
-            </div>
+    <StepContainer stageTitle="Call the Elemental Guardians" button={chargedElements.length === 5 ? <RitualButton onClick={onNext} className="animate-pulse">Continue</RitualButton> : <div/>}>
+        <div className="relative w-full max-w-lg aspect-square">
+            {['Spirit', 'Air', 'Fire', 'Earth', 'Water'].map((el, i) => {
+                const positions = [ { top: '10%', left: '50%'}, { top: '45%', left: '95%'}, { top: '90%', left: '80%'},  { top: '90%', left: '20%'}, { top: '45%', left: '5%'} ];
+                return ( <ChargingElement key={el} name={el} isCharged={chargedElements.includes(el)} onChargeComplete={onChargeComplete} style={{...positions[i], transform: 'translate(-50%, -50%)'}} /> );
+            })}
         </div>
-        <div className="h-[52px] shrink-0 flex items-center justify-center">
-            {chargedElements.length === 5 && <RitualButton onClick={onNext} className="animate-pulse">Continue</RitualButton>}
-        </div>
-    </div>
+    </StepContainer>
 );
 
 const Step3_Deities: React.FC<{ selectedDeities: string[], onToggle: (name: string) => void, onNext: () => void }> = ({ selectedDeities, onToggle, onNext }) => (
-    <div className="w-full h-full flex flex-col items-center justify-center gap-6 py-4">
-        <h2 className="text-3xl lg:text-4xl font-serif text-amber-200/90 text-center shrink-0">Invoke a Guiding Deity or Force</h2>
-        <div className="w-full grow min-h-0 flex items-center justify-center">
-             <div className="w-full max-w-4xl flex flex-col md:flex-row items-center justify-center gap-4 md:gap-8">
-                {[{ name: 'Triple Goddess', img: 'wicca_deity_triple_goddess.png' }, { name: 'Horned God', img: 'wicca_deity_horned_god.png' }, { name: 'Divine Source', img: 'wicca_deity_divine_source.png' }].map(deity => {
-                    const isSelected = selectedDeities.includes(deity.name);
-                    return (
-                        <div key={deity.name} onClick={() => onToggle(deity.name)} className="text-center cursor-pointer group p-2 flex flex-col items-center">
-                            <div className={`relative w-28 h-28 md:w-36 md:h-36 lg:w-48 lg:h-48 transition-all duration-300 transform ${isSelected ? 'scale-110' : 'group-hover:scale-105'}`}>
-                                <Image src={`${ASSET_PATH}/${deity.img}`} layout="fill" objectFit="contain" alt={deity.name} className={`transition-all duration-300 ${isSelected ? 'brightness-125 drop-shadow-[0_0_10px_rgba(255,255,255,0.7)]' : 'brightness-75 group-hover:brightness-100'}`} />
-                            </div>
-                            <p className={`mt-2 text-lg font-serif transition-colors duration-300 ${isSelected ? 'text-purple-300' : 'text-gray-400 group-hover:text-white'}`}>{deity.name}</p>
-                        </div>
-                    );
-                })}
+    <StepContainer 
+        stageTitle="Invoke a Guiding Deity or Force" 
+        button={
+            <div className="flex flex-col sm:flex-row gap-4">
+                <RitualButton onClick={onNext}>Confirm Invocation</RitualButton>
+                <RitualButton onClick={onNext} className="bg-black/20 border-gray-600/50 hover:bg-gray-800/50">Continue without Deity</RitualButton>
             </div>
+        }
+    >
+        <div className="w-full max-w-4xl flex flex-col md:flex-row items-center justify-around gap-4">
+            {[{ name: 'Triple Goddess', img: 'wicca_deity_triple_goddess.png' }, { name: 'Horned God', img: 'wicca_deity_horned_god.png' }, { name: 'Divine Source', img: 'wicca_deity_divine_source.png' }].map(deity => {
+                const isSelected = selectedDeities.includes(deity.name);
+                return (
+                    <div key={deity.name} onClick={() => onToggle(deity.name)} className="text-center cursor-pointer group p-2 flex flex-col items-center">
+                        <div className={`relative w-28 h-28 md:w-36 md:h-36 lg:w-48 lg:h-48 transition-all duration-300 transform ${isSelected ? 'scale-110' : 'group-hover:scale-105'}`}>
+                            <Image src={`${ASSET_PATH}/${deity.img}`} layout="fill" objectFit="contain" alt={deity.name} className={`transition-all duration-300 ${isSelected ? 'brightness-125 drop-shadow-[0_0_10px_rgba(255,255,255,0.7)]' : 'brightness-75 group-hover:brightness-100'}`} />
+                        </div>
+                        <p className={`mt-2 text-lg font-serif transition-colors duration-300 ${isSelected ? 'text-purple-300' : 'text-gray-400 group-hover:text-white'}`}>{deity.name}</p>
+                    </div>
+                );
+            })}
         </div>
-        <div className="flex flex-col sm:flex-row gap-4 shrink-0">
-            <RitualButton onClick={onNext}>Confirm Invocation</RitualButton>
-            <RitualButton onClick={onNext} className="bg-black/20 border-gray-600/50 hover:bg-gray-800/50">Continue without Deity</RitualButton>
-        </div>
-    </div>
+    </StepContainer>
 );
 
 const Step4_Components: React.FC<{ spell: GeneratedWiccanSpell, onNext: () => void }> = ({ spell, onNext }) => (
@@ -256,9 +253,9 @@ const Step5_ChargeComponent: React.FC<{ spell: GeneratedWiccanSpell, chargingInd
             stageTitle="Imbue with Aether" 
             button={isComplete ? <RitualButton onClick={onNext} className="animate-pulse">{chargingIndex < 4 ? "Charge Next Component" : "Continue to Incantation"}</RitualButton> : <div/>}
         >
-            <div className="relative w-full max-w-md h-full">
+            <div className="relative w-full max-w-lg h-full">
                 <Image src={`${ASSET_PATH}/wicca_charge_ingredient_template.png`} alt="Charge Component" layout="fill" objectFit="contain" />
-                <div className="absolute top-[20%] left-0 right-0 text-center px-8">
+                <div className="absolute top-[25%] left-0 right-0 text-center px-8 pointer-events-none">
                      <p className="font-serif text-2xl text-amber-200">{isComplete ? "Component Charged!" : `Hold to Charge the ${currentIngredient.name}`}</p>
                 </div>
                  <IngredientCharger onChargeComplete={handleChargeComplete} isComplete={isComplete}>
@@ -314,7 +311,7 @@ const Step7_Cast: React.FC<{ spell: GeneratedWiccanSpell, onNext: () => void }> 
                     const positions = [ { top: '0%', left: '50%'}, { top: '34.5%', left: '97.5%'}, { top: '90.4%', left: '79.3%'}, { top: '90.4%', left: '20.6%'}, { top: '34.5%', left: '2.5%'} ];
                     return <div key={i} className="absolute w-16 h-16 pointer-events-none" style={{...positions[i], transform: 'translate(-50%, -50%)'}}> <Sprite sheetPath={spriteData.sheet.path} x={spriteData.itemInfo.x} y={spriteData.itemInfo.y} spriteWidth={spriteData.sheet.spriteSize.width} spriteHeight={spriteData.sheet.spriteSize.height} sheetWidth={spriteData.sheet.sheetSize.width} sheetHeight={spriteData.sheet.sheetSize.height} /> </div>
                 })}
-                <p className="absolute top-1/2 left-1/2 -translate-x-1/2 font-serif text-2xl pointer-events-none text-center text-white" style={{ textShadow: '0 0 10px black' }}>Hold to Focus Your Will and<br/>Cast the Spell</p>
+                <p className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 font-serif text-2xl pointer-events-none text-center text-white" style={{ textShadow: '0 0 10px black' }}>Hold to Focus Your Will and<br/>Cast the Spell</p>
             </div>
         </StepContainer>
     );
@@ -324,7 +321,7 @@ const Step8_Manifestation: React.FC<{ spell: GeneratedWiccanSpell }> = ({ spell 
      <StepContainer stageTitle="Witness the Manifestation" button={<RitualButton onClick={() => window.location.href = '/spell-room'}>Return to Spell Room</RitualButton>}>
         <div className="relative w-full max-w-2xl h-full">
             <Image src={`${ASSET_PATH}/wicca_spell_manifestation.png`} alt="Spell Manifestation" layout="fill" objectFit="contain" />
-            <div className="absolute w-[45%] h-[40%] top-[55%] left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center p-4">
+            <div className="absolute w-[50%] h-[40%] top-[55%] left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center p-4">
                 <p className="text-center text-white font-serif" style={{fontSize: 'clamp(1.5rem, 5vw, 3rem)'}}>{spell.affirmation}</p>
             </div>
         </div>
@@ -353,7 +350,7 @@ const IngredientCharger: React.FC<{ children: React.ReactNode, onChargeComplete:
     }, [isHolding, isComplete, onChargeComplete]);
     
     return (
-        <div onMouseDown={() => setIsHolding(true)} onMouseUp={() => setIsHolding(false)} onMouseLeave={() => setIsHolding(false)} onTouchStart={() => setIsHolding(true)} onTouchEnd={() => setIsHolding(false)} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 grid place-items-center cursor-pointer">
+        <div onMouseDown={() => setIsHolding(true)} onMouseUp={() => setIsHolding(false)} onMouseLeave={() => setIsHolding(false)} onTouchStart={() => setIsHolding(true)} onTouchEnd={() => setIsHolding(false)} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[40%] grid place-items-center cursor-pointer">
             <div className={`transition-transform duration-300 ${isHolding || isComplete ? 'scale-110' : 'scale-100'}`}>{children}</div>
         </div>
     );
