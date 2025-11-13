@@ -139,15 +139,15 @@ const RitualButton: React.FC<{ onClick: () => void; children: React.ReactNode; c
 );
 
 const StepContainer: React.FC<{ stageTitle?: string; stageSubtitle?: string; children: React.ReactNode; button?: React.ReactNode; }> = ({ stageTitle, stageSubtitle, children, button }) => (
-    <div className="w-full h-full flex flex-col items-center justify-between gap-2 py-1">
-        <div className="shrink-0 h-16 flex flex-col items-center justify-center text-center px-4">
+    <div className="w-full h-full flex flex-col items-center justify-center">
+        <div className="shrink-0 flex flex-col items-center justify-center text-center p-2 md:p-4">
              {stageTitle && <h2 className="text-3xl font-serif text-amber-200/90">{stageTitle}</h2>}
              {stageSubtitle && <h3 className="text-xl font-serif text-amber-100/80 mt-1">{stageSubtitle}</h3>}
         </div>
-        <div className="w-full grow min-h-0 relative flex items-center justify-center">
+        <div className="w-full grow min-h-0 relative flex items-center justify-center py-2">
             {children}
         </div>
-        <div className="h-[60px] shrink-0 flex items-center justify-center">
+        <div className="shrink-0 flex items-center justify-center p-2 md:p-4">
             {button}
         </div>
     </div>
@@ -159,13 +159,13 @@ const Step0_Intro: React.FC<{ onNext: () => void }> = ({ onNext }) => (
     <StepContainer button={<RitualButton onClick={onNext}>Continue</RitualButton>}>
         <div className="relative w-full h-full max-w-md">
             <Image src={`${ASSET_PATH}/wicca_intro_instructions.png`} alt="Instructions" layout="fill" objectFit="contain" priority />
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-8 pointer-events-none">
-                <div style={{ flexBasis: '28%' }} />
-                <div className="w-full">
-                    <h3 className="text-3xl font-serif text-gray-200" style={{ textShadow: '0 0 8px black' }}>Wiccan Spellcraft</h3>
-                    <p className="w-[55%] mx-auto text-lg text-gray-300 leading-relaxed mt-4">Enter this realm to do a Wicca-influenced magick spell.</p>
-                </div>
-                <div style={{ flexBasis: '60%' }} />
+            <div className="absolute w-[60%] h-[40%] top-1/2 left-1/2 -translate-x-1/2 -translate-y-[45%] flex flex-col items-center justify-center text-center pointer-events-none gap-2 p-4">
+                <h3 className="font-serif text-gray-200" style={{ textShadow: '0 0 8px black', fontSize: 'clamp(1.5rem, 5vw, 2.25rem)' }}>
+                    Wiccan Spellcraft
+                </h3>
+                <p className="text-gray-300 leading-relaxed" style={{ fontSize: 'clamp(0.9rem, 2.5vw, 1.1rem)' }}>
+                    Enter this realm to do a Wicca-influenced magick spell.
+                </p>
             </div>
         </div>
     </StepContainer>
@@ -316,8 +316,8 @@ const Step8_Manifestation: React.FC<{ spell: GeneratedWiccanSpell }> = ({ spell 
      <StepContainer stageTitle="Witness the Manifestation" button={<RitualButton onClick={() => window.location.href = '/spell-room'}>Return to Spell Room</RitualButton>}>
         <div className="relative w-full h-full max-w-2xl">
             <Image src={`${ASSET_PATH}/wicca_spell_manifestation.png`} alt="Spell Manifestation" layout="fill" objectFit="contain" />
-            <div className="absolute w-[50%] h-[40%] top-[55%] left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center p-4">
-                <p className="text-center text-white font-serif" style={{fontSize: 'clamp(1.5rem, 5vw, 3rem)'}}>{spell.affirmation}</p>
+            <div className="absolute w-[60%] h-[40%] top-[55%] left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center p-4">
+                <p className="text-center text-white font-serif" style={{fontSize: 'clamp(1.5rem, 4vw, 2.75rem)'}}>{spell.affirmation}</p>
             </div>
         </div>
     </StepContainer>
