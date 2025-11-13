@@ -69,7 +69,7 @@ const WiccaMagick: React.FC<{ session: Session; isSubscribed: boolean }> = ({ se
         setSelectedDeities(prev => 
             prev.includes(deityName) 
                 ? [] 
-                : [deityName] // Only allow one selection
+                : [deityName]
         );
     };
 
@@ -251,7 +251,7 @@ const Step5_ChargeComponent: React.FC<{ spell: GeneratedWiccanSpell, chargingInd
             stageSubtitle={isComplete ? "Component Charged!" : `Hold to Charge the ${currentIngredient.name}`}
             button={isComplete ? <RitualButton onClick={onNext} className="animate-pulse">{chargingIndex < 4 ? "Charge Next Component" : "Continue to Incantation"}</RitualButton> : <div/>}
         >
-            <div className="relative w-full h-full max-w-lg">
+            <div className="relative w-full max-w-lg h-full">
                 <Image src={`${ASSET_PATH}/wicca_charge_ingredient_template.png`} alt="Charge Component" layout="fill" objectFit="contain" />
                  <IngredientCharger onChargeComplete={handleChargeComplete} isComplete={isComplete}>
                     {(() => {
