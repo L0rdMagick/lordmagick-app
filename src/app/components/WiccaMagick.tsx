@@ -163,7 +163,7 @@ const Step0_Intro: React.FC<{ onNext: () => void }> = ({ onNext }) => (
                 <div style={{ flexBasis: '28%' }} />
                 <div className="w-full">
                     <h3 className="text-3xl font-serif text-gray-200" style={{ textShadow: '0 0 8px black' }}>Wiccan Spellcraft</h3>
-                    <p className="w-[65%] mx-auto text-lg text-gray-300 leading-relaxed mt-4">Enter this realm to do a Wicca-influenced magick spell.</p>
+                    <p className="w-[55%] mx-auto text-lg text-gray-300 leading-relaxed mt-4">Enter this realm to do a Wicca-influenced magick spell.</p>
                 </div>
                 <div style={{ flexBasis: '60%' }} />
             </div>
@@ -184,9 +184,9 @@ const Step1_Intention: React.FC<{ intention: string; setIntention: (val: string)
 
 const Step2_Elements: React.FC<{ chargedElements: string[], onChargeComplete: (name: string) => void, onNext: () => void }> = ({ chargedElements, onChargeComplete, onNext }) => (
     <StepContainer stageTitle="Call the Elemental Guardians" button={chargedElements.length === 5 ? <RitualButton onClick={onNext} className="animate-pulse">Continue</RitualButton> : <div/>}>
-        <div className="relative w-full max-w-lg aspect-square">
+        <div className="relative w-full max-w-md aspect-square">
             {['Spirit', 'Air', 'Fire', 'Earth', 'Water'].map((el, i) => {
-                const positions = [ { top: '10%', left: '50%'}, { top: '45%', left: '95%'}, { top: '90%', left: '80%'},  { top: '90%', left: '20%'}, { top: '45%', left: '5%'} ];
+                const positions = [ { top: '10%', left: '50%'}, { top: '45%', left: '90%'}, { top: '90%', left: '75%'},  { top: '90%', left: '25%'}, { top: '45%', left: '10%'} ];
                 return ( <ChargingElement key={el} name={el} isCharged={chargedElements.includes(el)} onChargeComplete={onChargeComplete} style={{...positions[i], transform: 'translate(-50%, -50%)'}} /> );
             })}
         </div>
