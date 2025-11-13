@@ -138,10 +138,11 @@ const RitualButton: React.FC<{ onClick: () => void; children: React.ReactNode; c
     </button>
 );
 
-const StepContainer: React.FC<{ stageTitle?: string; children: React.ReactNode; button?: React.ReactNode; }> = ({ stageTitle, children, button }) => (
+const StepContainer: React.FC<{ stageTitle?: string; stageSubtitle?: string; children: React.ReactNode; button?: React.ReactNode; }> = ({ stageTitle, stageSubtitle, children, button }) => (
     <div className="w-full h-full flex flex-col items-center justify-between gap-2 py-1">
-        <div className="shrink-0 h-12 flex items-center justify-center">
-             {stageTitle && <h2 className="text-3xl font-serif text-amber-200/90 text-center">{stageTitle}</h2>}
+        <div className="shrink-0 h-16 flex flex-col items-center justify-center text-center">
+             {stageTitle && <h2 className="text-3xl font-serif text-amber-200/90">{stageTitle}</h2>}
+             {stageSubtitle && <h3 className="text-xl font-serif text-amber-100/80 mt-1">{stageSubtitle}</h3>}
         </div>
         <div className="w-full grow min-h-0 relative flex items-center justify-center">
             {children}
@@ -246,14 +247,12 @@ const Step5_ChargeComponent: React.FC<{ spell: GeneratedWiccanSpell, chargingInd
 
     return (
         <StepContainer 
-            stageTitle="Imbue with Aether" 
+            stageTitle="Imbue with Aether"
+            stageSubtitle={isComplete ? "Component Charged!" : `Hold to Charge the ${currentIngredient.name}`}
             button={isComplete ? <RitualButton onClick={onNext} className="animate-pulse">{chargingIndex < 4 ? "Charge Next Component" : "Continue to Incantation"}</RitualButton> : <div/>}
         >
-            <div className="relative w-full max-w-lg h-full">
+            <div className="relative w-full h-full max-w-lg">
                 <Image src={`${ASSET_PATH}/wicca_charge_ingredient_template.png`} alt="Charge Component" layout="fill" objectFit="contain" />
-                <div className="absolute top-[25%] left-0 right-0 text-center px-8 pointer-events-none">
-                     <p className="font-serif text-2xl text-amber-200">{isComplete ? "Component Charged!" : `Hold to Charge the ${currentIngredient.name}`}</p>
-                </div>
                  <IngredientCharger onChargeComplete={handleChargeComplete} isComplete={isComplete}>
                     {(() => {
                         const spriteData = findSprite(currentIngredient.name);
@@ -268,7 +267,7 @@ const Step5_ChargeComponent: React.FC<{ spell: GeneratedWiccanSpell, chargingInd
 
 const Step6_Incantation: React.FC<{ spell: GeneratedWiccanSpell, onNext: () => void }> = ({ spell, onNext }) => (
     <StepContainer stageTitle="Speak the Words of Power" button={<RitualButton onClick={onNext}>Ready to Cast</RitualButton>}>
-        <div className="relative w-full max-w-md h-full">
+        <div className="relative w-full h-full max-w-md">
             <Image src={`${ASSET_PATH}/wicca_incantation_scroll.png`} alt="Incantation Scroll" layout="fill" objectFit="contain" />
             <div className="absolute w-[60%] h-[45%] top-1/2 left-1/2 -translate-x-1/2 -translate-y-[45%] flex items-center justify-center p-4">
                 <p className="font-serif text-[#4a2e1c] text-center whitespace-pre-line leading-relaxed" style={{fontSize: 'clamp(1rem, 3.5vw, 1.75rem)'}}>{spell.central_chant}</p>
@@ -315,7 +314,7 @@ const Step7_Cast: React.FC<{ spell: GeneratedWiccanSpell, onNext: () => void }> 
 
 const Step8_Manifestation: React.FC<{ spell: GeneratedWiccanSpell }> = ({ spell }) => (
      <StepContainer stageTitle="Witness the Manifestation" button={<RitualButton onClick={() => window.location.href = '/spell-room'}>Return to Spell Room</RitualButton>}>
-        <div className="relative w-full max-w-2xl h-full">
+        <div className="relative w-full h-full max-w-2xl">
             <Image src={`${ASSET_PATH}/wicca_spell_manifestation.png`} alt="Spell Manifestation" layout="fill" objectFit="contain" />
             <div className="absolute w-[50%] h-[40%] top-[55%] left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center p-4">
                 <p className="text-center text-white font-serif" style={{fontSize: 'clamp(1.5rem, 5vw, 3rem)'}}>{spell.affirmation}</p>
