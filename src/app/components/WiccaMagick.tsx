@@ -382,8 +382,8 @@ const Step8_Manifestation: React.FC<{ spell: GeneratedWiccanSpell }> = ({ spell 
      <StepContainer stageTitle="Witness the Manifestation" button={<RitualButton onClick={() => window.location.href = '/spell-room'}>Return to Spell Room</RitualButton>}>
         <div className="relative w-full h-full max-w-2xl">
             <Image src={`${ASSET_PATH}/wicca_spell_manifestation.png`} alt="Spell Manifestation" layout="fill" objectFit="contain" />
-            <div className="absolute w-[55%] h-[42%] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center p-4">
-                <p className="text-center text-white font-serif" style={{fontSize: 'clamp(1.1rem, 3vw, 2rem)'}}>{spell.affirmation}</p>
+            <div className="absolute w-[55%] h-[45%] top-[55%] left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center p-4">
+                <p className="text-center text-white font-serif" style={{fontSize: 'clamp(1.1rem, 3vw, 1.8rem)'}}>{spell.affirmation}</p>
             </div>
         </div>
     </StepContainer>
@@ -441,7 +441,7 @@ const ChargingElement: React.FC<ChargingElementProps> = ({ name, isCharged, onCh
                 onMouseDown={() => setIsHolding(true)} onMouseUp={() => setIsHolding(false)} onMouseLeave={() => setIsHolding(false)}
                 onTouchStart={() => setIsHolding(true)} onTouchEnd={() => setIsHolding(false)}
                 disabled={isCharged}
-                className={`relative w-24 h-24 rounded-full transition-all duration-300 flex items-center justify-center ${isCharged ? 'bg-purple-500/50 ring-2 ring-white shadow-lg shadow-purple-500/50' : 'bg-white/10 hover:bg-white/20'}`}
+                className={`relative w-[22%] h-[22%] rounded-full transition-all duration-300 flex items-center justify-center ${isCharged ? 'bg-purple-500/50 ring-2 ring-white shadow-lg shadow-purple-500/50' : 'bg-white/10 hover:bg-white/20'}`}
             >
                 <span className="text-white font-serif text-lg">{name}</span>
             </button>
