@@ -84,7 +84,7 @@ const WiccaMagick: React.FC<{ session: Session; isSubscribed: boolean }> = ({ se
     
     const renderStep = () => {
         if (loading) return <div className="flex items-center justify-center h-full"><LoadingSpinner title="Weaving the Magick..." /></div>;
-        if (error) return <div className="text-center text-red-400 p-4 bg-red-900/50 rounded-lg"><p>{error}</p><button onClick={() => setError(null)} className="mt-2 underline font-bold">Try Again</button></div>;
+        if (error) return <div className="flex items-center justify-center h-full"><div className="text-center text-red-400 p-4 bg-red-900/50 rounded-lg"><p>{error}</p><button onClick={() => setError(null)} className="mt-2 underline font-bold">Try Again</button></div></div>;
 
         switch (ritualStep) {
             case 0: return <Step0_Intro onNext={() => setRitualStep(1)} />;
@@ -139,11 +139,11 @@ const RitualButton: React.FC<{ onClick: () => void; children: React.ReactNode; c
 );
 
 const StepContainer: React.FC<{ stageTitle?: string; children: React.ReactNode; button?: React.ReactNode; }> = ({ stageTitle, children, button }) => (
-    <div className="w-full h-full flex flex-col items-center justify-between gap-2 py-2">
-        <div className="shrink-0 py-2">
+    <div className="w-full h-full flex flex-col items-center justify-between gap-2 py-1">
+        <div className="shrink-0 h-12 flex items-center justify-center">
              {stageTitle && <h2 className="text-3xl font-serif text-amber-200/90 text-center">{stageTitle}</h2>}
         </div>
-        <div className="w-full grow min-h-0 flex items-center justify-center">
+        <div className="w-full grow min-h-0 relative flex items-center justify-center">
             {children}
         </div>
         <div className="h-[60px] shrink-0 flex items-center justify-center">
@@ -155,34 +155,30 @@ const StepContainer: React.FC<{ stageTitle?: string; children: React.ReactNode; 
 // --- Individual Step Components ---
 
 const Step0_Intro: React.FC<{ onNext: () => void }> = ({ onNext }) => (
-    <div className="w-full h-full flex flex-col items-center justify-center">
-        <div className="relative w-full max-w-md aspect-500/625">
+    <StepContainer button={<RitualButton onClick={onNext}>Continue</RitualButton>}>
+        <div className="relative w-full h-full max-w-md">
             <Image src={`${ASSET_PATH}/wicca_intro_instructions.png`} alt="Instructions" layout="fill" objectFit="contain" priority />
-            <div className="absolute inset-0 flex flex-col items-center justify-start text-center p-8 pointer-events-none">
-                <div className="h-[28%]" />
-                <h3 className="text-3xl font-serif text-gray-200" style={{ textShadow: '0 0 8px black' }}>Wiccan Spellcraft</h3>
-                <p className="w-[60%] mx-auto text-lg text-gray-300 leading-relaxed mt-4">Enter this realm to do a Wicca-influenced magick spell.</p>
-            </div>
-            <div className="absolute bottom-[10%] left-1/2 -translate-x-1/2">
-                 <RitualButton onClick={onNext}>Continue</RitualButton>
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-8 pointer-events-none">
+                <div style={{ flexBasis: '28%' }} />
+                <div className="w-full">
+                    <h3 className="text-3xl font-serif text-gray-200" style={{ textShadow: '0 0 8px black' }}>Wiccan Spellcraft</h3>
+                    <p className="w-[65%] mx-auto text-lg text-gray-300 leading-relaxed mt-4">Enter this realm to do a Wicca-influenced magick spell.</p>
+                </div>
+                <div style={{ flexBasis: '60%' }} />
             </div>
         </div>
-    </div>
+    </StepContainer>
 );
 
 const Step1_Intention: React.FC<{ intention: string; setIntention: (val: string) => void; onNext: () => void }> = ({ intention, setIntention, onNext }) => (
-     <div className="w-full h-full flex flex-col items-center justify-center">
-        <h2 className="text-3xl font-serif text-amber-200/90 text-center shrink-0 mb-4">State Your True Will</h2>
-        <div className="relative w-full max-w-md aspect-500/625">
+    <StepContainer stageTitle="State Your True Will" button={<RitualButton onClick={onNext} disabled={!intention}>Seal My Intention</RitualButton>}>
+        <div className="relative w-full h-full max-w-md">
             <Image src={`${ASSET_PATH}/wicca_scroll_intention.png`} alt="Inscribe your intention" layout="fill" objectFit="contain" />
-            <div className="absolute w-[60%] h-[45%] top-[52%] left-1/2 -translate-x-1/2 -translate-y-1/2 p-4">
+            <div className="absolute w-[60%] h-[40%] top-1/2 left-1/2 -translate-x-1/2 -translate-y-[40%] p-4">
                 <textarea value={intention} onChange={(e) => setIntention(e.target.value)} placeholder="e.g., To find clarity on my career path" className="w-full h-full bg-transparent text-center text-[#4a2e1c] text-xl font-serif focus:outline-none resize-none" />
             </div>
         </div>
-        <div className="h-[52px] shrink-0 flex items-center justify-center mt-4">
-            <RitualButton onClick={onNext} disabled={!intention}>Seal My Intention</RitualButton>
-        </div>
-    </div>
+    </StepContainer>
 );
 
 const Step2_Elements: React.FC<{ chargedElements: string[], onChargeComplete: (name: string) => void, onNext: () => void }> = ({ chargedElements, onChargeComplete, onNext }) => (
@@ -226,14 +222,14 @@ const Step4_Components: React.FC<{ spell: GeneratedWiccanSpell, onNext: () => vo
     <StepContainer stageTitle="The Fated Components" button={<RitualButton onClick={onNext}>Prepare Components</RitualButton>}>
         <div className='text-center'>
             <p className="text-gray-300 mb-6">These items have been chosen for your intention.</p>
-            <div className="grid grid-cols-5 gap-4 bg-black/30 p-4 rounded-lg">
+            <div className="grid grid-cols-5 gap-2 sm:gap-4 bg-black/30 p-4 rounded-lg">
                 {spell.symbolic_ingredients.map(ingredient => {
                     const spriteData = findSprite(ingredient.name);
-                    if (!spriteData) return <div key={ingredient.name} className="w-20 h-20 sm:w-24 sm:h-24 border border-dashed border-gray-600 rounded-md flex items-center justify-center text-xs text-center text-gray-400">Missing:<br/>{ingredient.name}</div>;
+                    if (!spriteData) return <div key={ingredient.name} className="w-16 h-16 sm:w-24 sm:h-24 border border-dashed border-gray-600 rounded-md flex items-center justify-center text-xs text-center text-gray-400">Missing:<br/>{ingredient.name}</div>;
                     return (
                         <div key={ingredient.name} className="flex flex-col items-center gap-2">
-                            <div className="w-20 h-20 sm:w-24 sm:h-24 bg-white/5 rounded-lg p-1"><Sprite sheetPath={spriteData.sheet.path} x={spriteData.itemInfo.x} y={spriteData.itemInfo.y} spriteWidth={spriteData.sheet.spriteSize.width} spriteHeight={spriteData.sheet.spriteSize.height} sheetWidth={spriteData.sheet.sheetSize.width} sheetHeight={spriteData.sheet.sheetSize.height} /></div>
-                            <p className="text-sm text-center font-semibold text-purple-300">{ingredient.name}</p>
+                            <div className="w-16 h-16 sm:w-24 sm:h-24 bg-white/5 rounded-lg p-1"><Sprite sheetPath={spriteData.sheet.path} x={spriteData.itemInfo.x} y={spriteData.itemInfo.y} spriteWidth={spriteData.sheet.spriteSize.width} spriteHeight={spriteData.sheet.spriteSize.height} sheetWidth={spriteData.sheet.sheetSize.width} sheetHeight={spriteData.sheet.sheetSize.height} /></div>
+                            <p className="text-xs sm:text-sm text-center font-semibold text-purple-300">{ingredient.name}</p>
                         </div>
                     );
                 })}
