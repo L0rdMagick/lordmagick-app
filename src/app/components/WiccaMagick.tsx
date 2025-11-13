@@ -246,11 +246,13 @@ const Step1_Intention: React.FC<Step1Props> = ({ intention, setIntention, onNext
 
 const Step2_Elements: React.FC<Step2Props> = ({ chargedElements, onChargeComplete, onNext }) => (
     <StepContainer stageTitle="Call the Elemental Guardians" button={chargedElements.length === 5 ? <RitualButton onClick={onNext} className="animate-pulse">Continue</RitualButton> : <div/>}>
-        <div className="relative w-full max-w-md aspect-square">
-            {['Spirit', 'Air', 'Fire', 'Earth', 'Water'].map((el, i) => {
-                const positions = [ { top: '10%', left: '50%'}, { top: '45%', left: '90%'}, { top: '90%', left: '75%'},  { top: '90%', left: '25%'}, { top: '45%', left: '10%'} ];
-                return ( <ChargingElement key={el} name={el} isCharged={chargedElements.includes(el)} onChargeComplete={onChargeComplete} style={{...positions[i], transform: 'translate(-50%, -50%)'}} /> );
-            })}
+        <div className="relative w-full h-full flex items-center justify-center p-2">
+            <div className="relative h-full aspect-square max-w-full">
+                {['Spirit', 'Air', 'Fire', 'Earth', 'Water'].map((el, i) => {
+                    const positions = [ { top: '10%', left: '50%'}, { top: '45%', left: '90%'}, { top: '90%', left: '75%'},  { top: '90%', left: '25%'}, { top: '45%', left: '10%'} ];
+                    return ( <ChargingElement key={el} name={el} isCharged={chargedElements.includes(el)} onChargeComplete={onChargeComplete} style={{...positions[i], transform: 'translate(-50%, -50%)'}} /> );
+                })}
+            </div>
         </div>
     </StepContainer>
 );
