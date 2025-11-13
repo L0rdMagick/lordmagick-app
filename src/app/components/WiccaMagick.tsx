@@ -139,15 +139,15 @@ const RitualButton: React.FC<{ onClick: () => void; children: React.ReactNode; c
 );
 
 const StepContainer: React.FC<{ stageTitle?: string; stageSubtitle?: string; children: React.ReactNode; button?: React.ReactNode; }> = ({ stageTitle, stageSubtitle, children, button }) => (
-    <div className="w-full h-full flex flex-col items-center justify-center">
-        <div className="shrink-0 flex flex-col items-center justify-center text-center p-2 md:p-4">
+    <div className="w-full h-full flex flex-col items-center justify-around gap-2">
+        <div className="shrink-0 flex flex-col items-center justify-center text-center px-4">
              {stageTitle && <h2 className="text-3xl font-serif text-amber-200/90">{stageTitle}</h2>}
              {stageSubtitle && <h3 className="text-xl font-serif text-amber-100/80 mt-1">{stageSubtitle}</h3>}
         </div>
-        <div className="w-full grow min-h-0 relative flex items-center justify-center py-2">
+        <div className="w-full grow min-h-0 relative flex items-center justify-center overflow-y-auto">
             {children}
         </div>
-        <div className="shrink-0 flex items-center justify-center p-2 md:p-4">
+        <div className="h-[60px] shrink-0 flex items-center justify-center">
             {button}
         </div>
     </div>
@@ -203,7 +203,7 @@ const Step3_Deities: React.FC<{ selectedDeities: string[], onToggle: (name: stri
             </div>
         }
     >
-        <div className="w-full max-w-4xl flex flex-col md:flex-row items-center justify-around gap-4">
+        <div className="w-full max-w-4xl flex flex-col md:flex-row items-center justify-around gap-4 p-4">
             {[{ name: 'Triple Goddess', img: 'wicca_deity_triple_goddess.png' }, { name: 'Horned God', img: 'wicca_deity_horned_god.png' }, { name: 'Divine Source', img: 'wicca_deity_divine_source.png' }].map(deity => {
                 const isSelected = selectedDeities.includes(deity.name);
                 return (
@@ -269,8 +269,8 @@ const Step6_Incantation: React.FC<{ spell: GeneratedWiccanSpell, onNext: () => v
     <StepContainer stageTitle="Speak the Words of Power" button={<RitualButton onClick={onNext}>Ready to Cast</RitualButton>}>
         <div className="relative w-full h-full max-w-md">
             <Image src={`${ASSET_PATH}/wicca_incantation_scroll.png`} alt="Incantation Scroll" layout="fill" objectFit="contain" />
-            <div className="absolute w-[60%] h-[45%] top-1/2 left-1/2 -translate-x-1/2 -translate-y-[45%] flex items-center justify-center p-4">
-                <p className="font-serif text-[#4a2e1c] text-center whitespace-pre-line leading-relaxed" style={{fontSize: 'clamp(1rem, 3.5vw, 1.75rem)'}}>{spell.central_chant}</p>
+            <div className="absolute w-[60%] h-[50%] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center p-4">
+                <p className="font-serif text-[#4a2e1c] text-center whitespace-pre-line leading-relaxed" style={{fontSize: 'clamp(1rem, 3vw, 1.6rem)'}}>{spell.central_chant}</p>
             </div>
         </div>
     </StepContainer>
@@ -297,16 +297,18 @@ const Step7_Cast: React.FC<{ spell: GeneratedWiccanSpell, onNext: () => void }> 
 
     return (
         <StepContainer stageTitle="Unleash the Magick" button={<div/>}>
-            <div onMouseDown={() => setIsCasting(true)} onMouseUp={() => setIsCasting(false)} onMouseLeave={() => setIsCasting(false)} onTouchStart={() => setIsCasting(true)} onTouchEnd={() => setIsCasting(false)} className="relative w-full max-w-2xl aspect-square cursor-pointer">
-                <Image src={`${ASSET_PATH}/wicca_pentagram_ready_to_cast.png`} layout="fill" objectFit="contain" alt="Cast the Spell" />
-                <PentagramIcon className="absolute w-full h-full text-white pointer-events-none" isTracing={isCasting} />
-                {spell.symbolic_ingredients.map((ing, i) => {
-                    const spriteData = findSprite(ing.name);
-                    if(!spriteData) return null;
-                    const positions = [ { top: '0%', left: '50%'}, { top: '34.5%', left: '97.5%'}, { top: '90.4%', left: '79.3%'}, { top: '90.4%', left: '20.6%'}, { top: '34.5%', left: '2.5%'} ];
-                    return <div key={i} className="absolute w-16 h-16 pointer-events-none" style={{...positions[i], transform: 'translate(-50%, -50%)'}}> <Sprite sheetPath={spriteData.sheet.path} x={spriteData.itemInfo.x} y={spriteData.itemInfo.y} spriteWidth={spriteData.sheet.spriteSize.width} spriteHeight={spriteData.sheet.spriteSize.height} sheetWidth={spriteData.sheet.sheetSize.width} sheetHeight={spriteData.sheet.sheetSize.height} /> </div>
-                })}
-                <p className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 font-serif text-2xl pointer-events-none text-center text-white" style={{ textShadow: '0 0 10px black' }}>Hold to Focus Your Will and<br/>Cast the Spell</p>
+             <div className="relative w-full max-w-2xl max-h-full p-4">
+                <div onMouseDown={() => setIsCasting(true)} onMouseUp={() => setIsCasting(false)} onMouseLeave={() => setIsCasting(false)} onTouchStart={() => setIsCasting(true)} onTouchEnd={() => setIsCasting(false)} className="relative w-full aspect-square cursor-pointer">
+                    <Image src={`${ASSET_PATH}/wicca_pentagram_ready_to_cast.png`} layout="fill" objectFit="contain" alt="Cast the Spell" />
+                    <PentagramIcon className="absolute w-full h-full text-white pointer-events-none" isTracing={isCasting} />
+                    {spell.symbolic_ingredients.map((ing, i) => {
+                        const spriteData = findSprite(ing.name);
+                        if(!spriteData) return null;
+                        const positions = [ { top: '0%', left: '50%'}, { top: '34.5%', left: '97.5%'}, { top: '90.4%', left: '79.3%'}, { top: '90.4%', left: '20.6%'}, { top: '34.5%', left: '2.5%'} ];
+                        return <div key={i} className="absolute w-16 h-16 pointer-events-none" style={{...positions[i], transform: 'translate(-50%, -50%)'}}> <Sprite sheetPath={spriteData.sheet.path} x={spriteData.itemInfo.x} y={spriteData.itemInfo.y} spriteWidth={spriteData.sheet.spriteSize.width} spriteHeight={spriteData.sheet.spriteSize.height} sheetWidth={spriteData.sheet.sheetSize.width} sheetHeight={spriteData.sheet.sheetSize.height} /> </div>
+                    })}
+                    <p className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 font-serif text-2xl pointer-events-none text-center text-white" style={{ textShadow: '0 0 10px black' }}>Hold to Focus Your Will and<br/>Cast the Spell</p>
+                </div>
             </div>
         </StepContainer>
     );
@@ -316,8 +318,8 @@ const Step8_Manifestation: React.FC<{ spell: GeneratedWiccanSpell }> = ({ spell 
      <StepContainer stageTitle="Witness the Manifestation" button={<RitualButton onClick={() => window.location.href = '/spell-room'}>Return to Spell Room</RitualButton>}>
         <div className="relative w-full h-full max-w-2xl">
             <Image src={`${ASSET_PATH}/wicca_spell_manifestation.png`} alt="Spell Manifestation" layout="fill" objectFit="contain" />
-            <div className="absolute w-[60%] h-[40%] top-[55%] left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center p-4">
-                <p className="text-center text-white font-serif" style={{fontSize: 'clamp(1.5rem, 4vw, 2.75rem)'}}>{spell.affirmation}</p>
+            <div className="absolute w-[55%] h-[40%] top-[55%] left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center p-4">
+                <p className="text-center text-white font-serif" style={{fontSize: 'clamp(1.2rem, 3vw, 2.25rem)'}}>{spell.affirmation}</p>
             </div>
         </div>
     </StepContainer>
