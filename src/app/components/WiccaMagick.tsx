@@ -222,10 +222,10 @@ const Step0_Intro: React.FC<StepProps> = ({ onNext }) => (
         <div className="relative w-full h-full max-w-md">
             <Image src={`${ASSET_PATH}/wicca_intro_instructions.png`} alt="Instructions" layout="fill" objectFit="contain" priority />
             <div className="absolute w-[60%] h-[40%] top-1/2 left-1/2 -translate-x-1/2 -translate-y-[45%] flex flex-col items-center justify-center text-center pointer-events-none gap-2 p-4">
-                <h3 className="font-serif text-gray-200" style={{ textShadow: '0 0 8px black', fontSize: 'clamp(1.2rem, 4vw, 2rem)' }}>
+                <h3 className="font-serif text-gray-200" style={{ textShadow: '0 0 8px black', fontSize: 'clamp(1.5rem, 5vw, 2.25rem)' }}>
                     Wiccan Spellcraft
                 </h3>
-                <p className="text-gray-300 leading-relaxed" style={{ fontSize: 'clamp(0.8rem, 2vw, 1rem)' }}>
+                <p className="text-gray-300 leading-relaxed" style={{ fontSize: 'clamp(0.9rem, 2.5vw, 1.1rem)' }}>
                     Enter this realm to do a Wicca-influenced magick spell.
                 </p>
             </div>
@@ -246,11 +246,13 @@ const Step1_Intention: React.FC<Step1Props> = ({ intention, setIntention, onNext
 
 const Step2_Elements: React.FC<Step2Props> = ({ chargedElements, onChargeComplete, onNext }) => (
     <StepContainer stageTitle="Call the Elemental Guardians" button={chargedElements.length === 5 ? <RitualButton onClick={onNext} className="animate-pulse">Continue</RitualButton> : <div/>}>
-        <div className="relative w-full max-w-md aspect-square">
-            {['Spirit', 'Air', 'Fire', 'Earth', 'Water'].map((el, i) => {
-                const positions = [ { top: '10%', left: '50%'}, { top: '45%', left: '90%'}, { top: '90%', left: '75%'},  { top: '90%', left: '25%'}, { top: '45%', left: '10%'} ];
-                return ( <ChargingElement key={el} name={el} isCharged={chargedElements.includes(el)} onChargeComplete={onChargeComplete} style={{...positions[i], transform: 'translate(-50%, -50%)'}} /> );
-            })}
+        <div className="relative w-full h-full flex items-center justify-center p-2">
+            <div className="relative h-full aspect-square max-w-full">
+                {['Spirit', 'Air', 'Fire', 'Earth', 'Water'].map((el, i) => {
+                    const positions = [ { top: '10%', left: '50%'}, { top: '45%', left: '90%'}, { top: '90%', left: '75%'},  { top: '90%', left: '25%'}, { top: '45%', left: '10%'} ];
+                    return ( <ChargingElement key={el} name={el} isCharged={chargedElements.includes(el)} onChargeComplete={onChargeComplete} style={{...positions[i], transform: 'translate(-50%, -50%)'}} /> );
+                })}
+            </div>
         </div>
     </StepContainer>
 );
@@ -380,8 +382,8 @@ const Step8_Manifestation: React.FC<{ spell: GeneratedWiccanSpell }> = ({ spell 
      <StepContainer stageTitle="Witness the Manifestation" button={<RitualButton onClick={() => window.location.href = '/spell-room'}>Return to Spell Room</RitualButton>}>
         <div className="relative w-full h-full max-w-2xl">
             <Image src={`${ASSET_PATH}/wicca_spell_manifestation.png`} alt="Spell Manifestation" layout="fill" objectFit="contain" />
-            <div className="absolute w-[55%] h-[45%] top-[55%] left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center p-4">
-                <p className="text-center text-white font-serif" style={{fontSize: 'clamp(1rem, 2.5vw, 1.8rem)'}}>{spell.affirmation}</p>
+            <div className="absolute w-[55%] h-[42%] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center p-4">
+                <p className="text-center text-white font-serif" style={{fontSize: 'clamp(1.1rem, 3vw, 2rem)'}}>{spell.affirmation}</p>
             </div>
         </div>
     </StepContainer>
