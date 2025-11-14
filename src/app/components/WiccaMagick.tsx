@@ -265,37 +265,28 @@ const Step2_Elements: React.FC<Step2Props> = ({ chargedElements, onChargeComplet
         { name: 'Water', spriteName: 'Amethyst', sound: '/audio/water.mp3', incantation: "I call the fertile Water\nto make my magic flow and grow." },
     ], []);
 
-    const defaultInstruction = "Summon the ancient guardians. Press, hold, and speak the incantation to awaken each sigil's power.";
-    const finalInstruction = "The circle is cast. The guardians have answered your call.";
-    
-    const [instructionText, setInstructionText] = useState(defaultInstruction);
+    const [activeIncantation, setActiveIncantation] = useState<string | null>(null);
 
-    const handleHoldStart = (incantation: string) => {
-        setInstructionText(incantation);
-    };
+    const getInstructionText = () => {
+        const defaultInstruction = "Summon the ancient guardians. Press, hold, and speak the incantation to awaken each sigil's power.";
+        const finalInstruction = "The circle is cast. The guardians have answered your call.";
 
-    const handleHoldEnd = () => {
+        if (activeIncantation) {
+            return activeIncantation;
+        }
         if (chargedElements.length === 5) {
-            setInstructionText(finalInstruction);
-        } else if (chargedElements.length > 0) {
+            return finalInstruction;
+        }
+        if (chargedElements.length > 0) {
             const lastChargedName = chargedElements[chargedElements.length - 1];
             const lastChargedElementData = elementsData.find(el => el.name === lastChargedName);
-            if (lastChargedElementData) {
-                setInstructionText(lastChargedElementData.incantation);
-            }
-        } else {
-            setInstructionText(defaultInstruction);
+            return lastChargedElementData?.incantation || defaultInstruction;
         }
+        return defaultInstruction;
     };
 
-    useEffect(() => {
-        // This effect ensures the instruction updates if a charge completes without a mouseUp/touchEnd event firing correctly
-        handleHoldEnd();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [chargedElements]);
-
     return (
-        <StepContainer stageTitle="Call the Elemental Guardians" instruction={instructionText} button={chargedElements.length === 5 ? <RitualButton onClick={onNext} className="animate-pulse">Continue</RitualButton> : <div/>}>
+        <StepContainer stageTitle="Call the Elemental Guardians" instruction={getInstructionText()} button={chargedElements.length === 5 ? <RitualButton onClick={onNext} className="animate-pulse">Continue</RitualButton> : <div/>}>
             <div className="relative w-full h-full flex items-center justify-center p-2">
                 <div className="relative h-full aspect-square max-w-full">
                     {elementsData.map((el, i) => {
@@ -313,8 +304,8 @@ const Step2_Elements: React.FC<Step2Props> = ({ chargedElements, onChargeComplet
                                     style={{...positions[i], transform: 'translate(-50%, -50%)'}} 
                                     spriteData={spriteData} 
                                     soundSrc={el.sound} 
-                                    onHoldStart={() => handleHoldStart(el.incantation)}
-                                    onHoldEnd={handleHoldEnd}
+                                    onHoldStart={() => setActiveIncantation(el.incantation)}
+                                    onHoldEnd={() => setActiveIncantation(null)}
                                 /> );
                     })}
                 </div>
@@ -569,8 +560,10 @@ const ChargingElement: React.FC<ChargingElementProps> = ({ name, isCharged, onCh
     };
 
     const handleRelease = () => {
-        setIsHolding(false);
-        onHoldEnd();
+        if (isHolding) {
+            setIsHolding(false);
+            onHoldEnd();
+        }
     };
 
     return (
