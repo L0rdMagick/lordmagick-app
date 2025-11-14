@@ -207,7 +207,7 @@ const RitualButton: React.FC<RitualButtonProps> = ({ onClick, children, classNam
 
 const StepContainer: React.FC<StepContainerProps> = ({ stageTitle, stageSubtitle, instruction, children, button }) => (
     <div className="w-full h-full flex flex-col items-center justify-between gap-2 py-1">
-        <div className="shrink-0 flex flex-col items-center justify-center text-center px-4 min-h-[6rem] h-auto py-2 z-20 relative">
+        <div className="shrink-0 flex flex-col items-center justify-center text-center px-4 min-h-24 h-auto py-2 z-20 relative">
              {stageTitle && <h2 className="text-3xl font-serif text-amber-200/90">{stageTitle}</h2>}
              {stageSubtitle && <h3 className="text-xl font-serif text-amber-100/80 mt-1">{stageSubtitle}</h3>}
              {instruction && <p className="text-base text-purple-200/80 mt-2 italic font-light max-w-2xl leading-tight" style={{textShadow: '1px 1px 2px rgba(0,0,0,0.7)'}}>{instruction}</p>}
