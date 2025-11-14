@@ -435,6 +435,10 @@ const Step7_Cast: React.FC<SpellStepProps> = ({ spell, onNext }) => {
         };
     }, [isCasting, onNext]);
 
+    const interactionStyle: React.CSSProperties = {
+        WebkitTouchCallout: 'none',
+    };
+
     return (
         <StepContainer 
             stageTitle="Unleash the Magick" 
@@ -449,6 +453,7 @@ const Step7_Cast: React.FC<SpellStepProps> = ({ spell, onNext }) => {
                     onTouchStart={() => setIsCasting(true)} 
                     onTouchEnd={() => setIsCasting(false)} 
                     onContextMenu={(e) => e.preventDefault()}
+                    style={interactionStyle}
                     className="relative w-full max-w-full max-h-full aspect-square cursor-pointer select-none"
                 >
                     <Image src={`${ASSET_PATH}/wicca_pentagram_ready_to_cast.png`} layout="fill" objectFit="contain" alt="Cast the Spell" />
@@ -502,6 +507,10 @@ const IngredientCharger: React.FC<IngredientChargerProps> = ({ children, onCharg
         }
     }, [isHolding, isComplete, onChargeComplete]);
     
+    const interactionStyle: React.CSSProperties = {
+        WebkitTouchCallout: 'none',
+    };
+
     return (
         <div 
             onMouseDown={() => setIsHolding(true)} 
@@ -510,6 +519,7 @@ const IngredientCharger: React.FC<IngredientChargerProps> = ({ children, onCharg
             onTouchStart={() => setIsHolding(true)} 
             onTouchEnd={() => setIsHolding(false)} 
             onContextMenu={(e) => e.preventDefault()}
+            style={interactionStyle}
             className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[40%] grid place-items-center cursor-pointer select-none"
         >
             <div className={`transition-transform duration-300 ${isHolding || isComplete ? 'scale-110' : 'scale-100'}`}>{children}</div>
@@ -543,6 +553,7 @@ const ChargingElement: React.FC<ChargingElementProps> = ({ name, isCharged, onCh
         backgroundImage: `url(${sheet.path})`,
         backgroundSize: `${sheet.sheetSize.width * scale}px ${sheet.sheetSize.height * scale}px`,
         backgroundPosition: `${itemInfo.x * scale}px ${itemInfo.y * scale}px`,
+        WebkitTouchCallout: 'none',
     };
 
     const circleVariants = {
