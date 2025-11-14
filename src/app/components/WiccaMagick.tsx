@@ -96,6 +96,8 @@ interface IngredientChargerProps {
     children: React.ReactNode;
     onChargeComplete: () => void;
     isComplete: boolean;
+    onHoldStart: () => void;
+    onHoldEnd: () => void;
 }
 
 
@@ -367,25 +369,42 @@ const Step4_Components: React.FC<SpellStepProps> = ({ spell, onNext }) => (
 
 const Step5_ChargeComponent: React.FC<Step5Props> = ({ spell, chargingIndex, onNext }) => {
     const [isComplete, setIsComplete] = useState(false);
+    const [isHolding, setIsHolding] = useState(false);
     useEffect(() => { setIsComplete(false); }, [chargingIndex]);
-    const handleChargeComplete = () => setIsComplete(true);
+
+    const handleChargeComplete = () => {
+        setIsComplete(true);
+        setIsHolding(false); // Ensure holding state is reset on completion
+    };
+
     const currentIngredient = spell.symbolic_ingredients[chargingIndex];
+    const spriteData = findSprite(currentIngredient.name);
+
+    const getInstruction = () => {
+        if (isComplete) return `The ${currentIngredient.name} is charged with aether.`;
+        if (isHolding) return spriteData?.itemInfo.incantation || `Charging the ${currentIngredient.name}...`;
+        return `Press, hold, and speak the incantation to imbue the ${currentIngredient.name} with your will.`;
+    };
 
     return (
         <StepContainer 
             stageTitle="Imbue with Aether"
-            stageSubtitle={isComplete ? "Component Charged!" : `Hold to Charge the ${currentIngredient.name}`}
-            instruction="Focus your will. Press and hold the component to imbue it with your personal energy."
+            instruction={getInstruction()}
             button={isComplete ? <RitualButton onClick={onNext} className="animate-pulse">{chargingIndex < 4 ? "Charge Next Component" : "Continue to Incantation"}</RitualButton> : <div/>}
         >
             <div className="relative w-full max-w-lg h-full">
                 <Image src={`${ASSET_PATH}/wicca_charge_ingredient_template.png`} alt="Charge Component" layout="fill" objectFit="contain" />
-                 <IngredientCharger onChargeComplete={handleChargeComplete} isComplete={isComplete}>
-                    {(() => {
-                        const spriteData = findSprite(currentIngredient.name);
-                        if (!spriteData) return null;
-                        return <div className="w-40 h-40"><Sprite sheetPath={spriteData.sheet.path} x={spriteData.itemInfo.x} y={spriteData.itemInfo.y} spriteWidth={spriteData.sheet.spriteSize.width} spriteHeight={spriteData.sheet.spriteSize.height} sheetWidth={spriteData.sheet.sheetSize.width} sheetHeight={spriteData.sheet.sheetSize.height} /></div>;
-                    })()}
+                 <IngredientCharger 
+                    onChargeComplete={handleChargeComplete} 
+                    isComplete={isComplete}
+                    onHoldStart={() => setIsHolding(true)}
+                    onHoldEnd={() => setIsHolding(false)}
+                >
+                    {spriteData && (
+                        <div className="w-40 h-40">
+                            <Sprite sheetPath={spriteData.sheet.path} x={spriteData.itemInfo.x} y={spriteData.itemInfo.y} spriteWidth={spriteData.sheet.spriteSize.width} spriteHeight={spriteData.sheet.spriteSize.height} sheetWidth={spriteData.sheet.sheetSize.width} sheetHeight={spriteData.sheet.sheetSize.height} />
+                        </div>
+                    )}
                 </IngredientCharger>
             </div>
         </StepContainer>
@@ -479,7 +498,7 @@ const Step8_Manifestation: React.FC<{ spell: GeneratedWiccanSpell }> = ({ spell 
 
 // --- Helper components for complex interactions ---
 
-const IngredientCharger: React.FC<IngredientChargerProps> = ({ children, onChargeComplete, isComplete }) => {
+const IngredientCharger: React.FC<IngredientChargerProps> = ({ children, onChargeComplete, isComplete, onHoldStart, onHoldEnd }) => {
     const [isHolding, setIsHolding] = useState(false);
     const chargeSoundRef = useRef<HTMLAudioElement | null>(null);
 
@@ -489,7 +508,6 @@ const IngredientCharger: React.FC<IngredientChargerProps> = ({ children, onCharg
             chargeSoundRef.current = playSound('/audio/sfx-chaos-hold.mp3', 0.3, true);
             timer = setTimeout(() => {
                 onChargeComplete();
-                playSound('/audio/sfx-chaos-activate.mp3', 0.4);
             }, CHARGE_DURATION_INGREDIENT)
         }
         return () => {
@@ -502,13 +520,27 @@ const IngredientCharger: React.FC<IngredientChargerProps> = ({ children, onCharg
         WebkitTouchCallout: 'none',
     };
 
+    const handlePress = () => {
+        if (!isComplete) {
+            setIsHolding(true);
+            onHoldStart();
+        }
+    };
+
+    const handleRelease = () => {
+        if (isHolding) {
+            setIsHolding(false);
+            onHoldEnd();
+        }
+    };
+
     return (
         <div 
-            onMouseDown={() => setIsHolding(true)} 
-            onMouseUp={() => setIsHolding(false)} 
-            onMouseLeave={() => setIsHolding(false)} 
-            onTouchStart={() => setIsHolding(true)} 
-            onTouchEnd={() => setIsHolding(false)} 
+            onMouseDown={handlePress} 
+            onMouseUp={handleRelease} 
+            onMouseLeave={handleRelease} 
+            onTouchStart={handlePress} 
+            onTouchEnd={handleRelease} 
             onContextMenu={(e) => e.preventDefault()}
             style={interactionStyle}
             className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[40%] grid place-items-center cursor-pointer select-none"
