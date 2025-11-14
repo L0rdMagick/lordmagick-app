@@ -16,7 +16,7 @@ import { findSprite } from '@/lib/spriteLibrary';
 
 // --- Configuration ---
 const ASSET_PATH = "/images/Spells/Wicca Tradition General";
-const CHARGE_DURATION_ELEMENT = 5000; // Increased to 5 seconds
+const CHARGE_DURATION_ELEMENT = 7000; // Increased to 7 seconds
 const CHARGE_DURATION_INGREDIENT = 3000;
 const CAST_DURATION = 10000;
 
@@ -212,7 +212,7 @@ const StepContainer: React.FC<StepContainerProps> = ({ stageTitle, stageSubtitle
         <div className="shrink-0 flex flex-col items-center justify-center text-center px-4 min-h-24 h-auto py-2 z-20 relative">
              {stageTitle && <h2 className="text-3xl font-serif text-amber-200/90">{stageTitle}</h2>}
              {stageSubtitle && <h3 className="text-xl font-serif text-amber-100/80 mt-1">{stageSubtitle}</h3>}
-             {instruction && <p className="text-base text-purple-200/80 mt-2 italic font-light max-w-2xl leading-tight" style={{textShadow: '1px 1px 2px rgba(0,0,0,0.7)'}}>{instruction}</p>}
+             {instruction && <p className="text-base text-purple-200/80 mt-2 italic font-light max-w-2xl leading-tight whitespace-pre-line" style={{textShadow: '1px 1px 2px rgba(0,0,0,0.7)'}}>{instruction}</p>}
         </div>
         <div className="w-full grow min-h-0 relative flex items-center justify-center z-10">
             {children}
@@ -257,19 +257,45 @@ const Step1_Intention: React.FC<Step1Props> = ({ intention, setIntention, onNext
 );
 
 const Step2_Elements: React.FC<Step2Props> = ({ chargedElements, onChargeComplete, onNext }) => {
-    const defaultInstruction = "Summon the ancient guardians. Press and hold each sigil to awaken its power.";
-    const [activeInstruction, setActiveInstruction] = useState(defaultInstruction);
+    const elementsData = React.useMemo(() => [
+        { name: 'Spirit', spriteName: 'Wand', sound: '/audio/spirit.mp3', incantation: "I call the Spirit, the cosmic sea\nNow bind this magic and make it be." },
+        { name: 'Air', spriteName: 'Athame', sound: '/audio/air.mp3', incantation: "I command the subtle Air\nto carry this spell everywhere." },
+        { name: 'Fire', spriteName: 'Bowl of Fire', sound: '/audio/fire.mp3', incantation: "I call vibrant Fire\nTo charge this spell with pure desire." },
+        { name: 'Earth', spriteName: 'Sacred Stone', sound: '/audio/earth.mp3', incantation: "I command the ancient Earth\nto give my magic solid worth." },
+        { name: 'Water', spriteName: 'Amethyst', sound: '/audio/water.mp3', incantation: "I call the fertile Water\nto make my magic flow and grow." },
+    ], []);
 
-    const elementsData = [
-        { name: 'Spirit', spriteName: 'Wand', sound: '/audio/spirit.mp3', incantation: "I command the eternal Spirit to bind these elements as I have decreed and hallow this working, so mote it be." },
-        { name: 'Air', spriteName: 'Athame', sound: '/audio/air.mp3', incantation: "I summon clever Air to give this spell true breath and carry my sharp intent directly to its mark." },
-        { name: 'Fire', spriteName: 'Bowl of Fire', sound: '/audio/fire.mp3', incantation: "I invoke sovereign Fire to charge this rite with solar might and ignite this spell with my unbending will." },
-        { name: 'Earth', spriteName: 'Sacred Stone', sound: '/audio/earth.mp3', incantation: "I command the ancient Earth to bind this magic to its core and shield this working with steadfast law." },
-        { name: 'Water', spriteName: 'Amethyst', sound: '/audio/water.mp3', incantation: "I call hallowed Water to cleanse this space of all despair and enchant this magic to flow and repair." },
-    ];
+    const defaultInstruction = "Summon the ancient guardians. Press, hold, and speak the incantation to awaken each sigil's power.";
+    const finalInstruction = "The circle is cast. The guardians have answered your call.";
+    
+    const [instructionText, setInstructionText] = useState(defaultInstruction);
+
+    const handleHoldStart = (incantation: string) => {
+        setInstructionText(incantation);
+    };
+
+    const handleHoldEnd = () => {
+        if (chargedElements.length === 5) {
+            setInstructionText(finalInstruction);
+        } else if (chargedElements.length > 0) {
+            const lastChargedName = chargedElements[chargedElements.length - 1];
+            const lastChargedElementData = elementsData.find(el => el.name === lastChargedName);
+            if (lastChargedElementData) {
+                setInstructionText(lastChargedElementData.incantation);
+            }
+        } else {
+            setInstructionText(defaultInstruction);
+        }
+    };
+
+    useEffect(() => {
+        // This effect ensures the instruction updates if a charge completes without a mouseUp/touchEnd event firing correctly
+        handleHoldEnd();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [chargedElements]);
 
     return (
-        <StepContainer stageTitle="Call the Elemental Guardians" instruction={activeInstruction} button={chargedElements.length === 5 ? <RitualButton onClick={onNext} className="animate-pulse">Continue</RitualButton> : <div/>}>
+        <StepContainer stageTitle="Call the Elemental Guardians" instruction={instructionText} button={chargedElements.length === 5 ? <RitualButton onClick={onNext} className="animate-pulse">Continue</RitualButton> : <div/>}>
             <div className="relative w-full h-full flex items-center justify-center p-2">
                 <div className="relative h-full aspect-square max-w-full">
                     {elementsData.map((el, i) => {
@@ -287,8 +313,8 @@ const Step2_Elements: React.FC<Step2Props> = ({ chargedElements, onChargeComplet
                                     style={{...positions[i], transform: 'translate(-50%, -50%)'}} 
                                     spriteData={spriteData} 
                                     soundSrc={el.sound} 
-                                    onHoldStart={() => setActiveInstruction(el.incantation)}
-                                    onHoldEnd={() => setActiveInstruction(defaultInstruction)}
+                                    onHoldStart={() => handleHoldStart(el.incantation)}
+                                    onHoldEnd={handleHoldEnd}
                                 /> );
                     })}
                 </div>
