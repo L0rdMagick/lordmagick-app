@@ -16,7 +16,7 @@ import { findSprite } from '@/lib/spriteLibrary';
 
 // --- Configuration ---
 const ASSET_PATH = "/images/Spells/Wicca Tradition General";
-const CHARGE_DURATION_ELEMENT = 3000;
+const CHARGE_DURATION_ELEMENT = 5000; // Increased to 5 seconds
 const CHARGE_DURATION_INGREDIENT = 3000;
 const CAST_DURATION = 10000;
 
@@ -79,12 +79,14 @@ interface Step5Props extends StepProps {
     chargingIndex: number;
 }
 
+type SpriteData = NonNullable<ReturnType<typeof findSprite>>;
+
 interface ChargingElementProps {
     name: string;
     isCharged: boolean;
     onChargeComplete: (name: string) => void;
     style: React.CSSProperties;
-    imageSrc: string;
+    spriteData: SpriteData;
     soundSrc: string;
 }
 
@@ -205,15 +207,15 @@ const RitualButton: React.FC<RitualButtonProps> = ({ onClick, children, classNam
 
 const StepContainer: React.FC<StepContainerProps> = ({ stageTitle, stageSubtitle, instruction, children, button }) => (
     <div className="w-full h-full flex flex-col items-center justify-between gap-2 py-1">
-        <div className="shrink-0 h-24 flex flex-col items-center justify-center text-center px-4">
+        <div className="shrink-0 flex flex-col items-center justify-center text-center px-4 min-h-[6rem] h-auto py-2 z-20 relative">
              {stageTitle && <h2 className="text-3xl font-serif text-amber-200/90">{stageTitle}</h2>}
              {stageSubtitle && <h3 className="text-xl font-serif text-amber-100/80 mt-1">{stageSubtitle}</h3>}
-             {instruction && <p className="text-base text-purple-200/80 mt-2 italic font-light max-w-2xl" style={{textShadow: '1px 1px 2px rgba(0,0,0,0.7)'}}>{instruction}</p>}
+             {instruction && <p className="text-base text-purple-200/80 mt-2 italic font-light max-w-2xl leading-tight" style={{textShadow: '1px 1px 2px rgba(0,0,0,0.7)'}}>{instruction}</p>}
         </div>
-        <div className="w-full grow min-h-0 relative flex items-center justify-center">
+        <div className="w-full grow min-h-0 relative flex items-center justify-center z-10">
             {children}
         </div>
-        <div className="h-[60px] shrink-0 flex items-center justify-center">
+        <div className="h-[60px] shrink-0 flex items-center justify-center z-20">
             {button}
         </div>
     </div>
@@ -243,22 +245,24 @@ const Step1_Intention: React.FC<Step1Props> = ({ intention, setIntention, onNext
         instruction="Inscribe your deepest desire upon this sacred scroll. What is it you truly seek?"
         button={<RitualButton onClick={onNext} disabled={!intention}>Seal My Intention</RitualButton>}
     >
-        <div className="relative w-full h-full max-w-md">
+        <div className="relative w-full h-full max-w-md @container">
             <Image src={`${ASSET_PATH}/wicca_scroll_intention.png`} alt="Inscribe your intention" layout="fill" objectFit="contain" />
-            <div className="absolute w-[60%] h-[40%] top-1/2 left-1/2 -translate-x-1/2 -translate-y-[40%] p-4">
-                <textarea value={intention} onChange={(e) => setIntention(e.target.value)} placeholder="e.g., To find clarity on my career path" className="w-full h-full bg-transparent text-center text-[#4a2e1c] text-xl font-serif focus:outline-none resize-none" />
+            <div className="absolute w-[60%] h-[40%] top-1/2 left-1/2 -translate-x-1/2 -translate-y-[40%] p-2">
+                <textarea value={intention} onChange={(e) => setIntention(e.target.value)} placeholder="e.g., To find clarity on my career path" className="w-full h-full bg-transparent text-center text-[#4a2e1c] font-serif focus:outline-none resize-none" style={{ fontSize: 'clamp(0.9rem, 4cqmin, 1.5rem)' }} />
             </div>
         </div>
     </StepContainer>
 );
 
 const Step2_Elements: React.FC<Step2Props> = ({ chargedElements, onChargeComplete, onNext }) => {
+    // Mapping Elements to Sprites as requested:
+    // Spirit -> Wand, Air -> Athame, Fire -> Bowl of Fire, Earth -> Sacred Stone, Water -> Amethyst
     const elementsData = [
-        { name: 'Spirit', image: 'spirit.png', sound: '/audio/spirit.mp3' },
-        { name: 'Air', image: 'aire.png', sound: '/audio/air.mp3' },
-        { name: 'Fire', image: 'fire.png', sound: '/audio/fire.mp3' },
-        { name: 'Earth', image: 'earth.png', sound: '/audio/earth.mp3' },
-        { name: 'Water', image: 'water.png', sound: '/audio/water.mp3' },
+        { name: 'Spirit', spriteName: 'Wand', sound: '/audio/spirit.mp3' },
+        { name: 'Air', spriteName: 'Athame', sound: '/audio/air.mp3' },
+        { name: 'Fire', spriteName: 'Bowl of Fire', sound: '/audio/fire.mp3' },
+        { name: 'Earth', spriteName: 'Sacred Stone', sound: '/audio/earth.mp3' },
+        { name: 'Water', spriteName: 'Amethyst', sound: '/audio/water.mp3' },
     ];
     const instructionText = "Summon the ancient guardians. Press and hold each sigil to awaken its power.";
 
@@ -267,8 +271,14 @@ const Step2_Elements: React.FC<Step2Props> = ({ chargedElements, onChargeComplet
             <div className="relative w-full h-full flex items-center justify-center p-2">
                 <div className="relative h-full aspect-square max-w-full">
                     {elementsData.map((el, i) => {
+                        const spriteData = findSprite(el.spriteName);
+                        if (!spriteData) {
+                            console.warn(`Sprite for element '${el.name}' (mapped to ${el.spriteName}) not found.`);
+                            return <div key={el.name} className="absolute text-xs text-red-400">Missing: {el.spriteName}</div>;
+                        }
+                        // Positions in a pentagram shape
                         const positions = [ { top: '10%', left: '50%'}, { top: '45%', left: '90%'}, { top: '90%', left: '75%'},  { top: '90%', left: '25%'}, { top: '45%', left: '10%'} ];
-                        return ( <ChargingElement key={el.name} name={el.name} isCharged={chargedElements.includes(el.name)} onChargeComplete={onChargeComplete} style={{...positions[i], transform: 'translate(-50%, -50%)'}} imageSrc={`${ASSET_PATH}/${el.image}`} soundSrc={el.sound} /> );
+                        return ( <ChargingElement key={el.name} name={el.name} isCharged={chargedElements.includes(el.name)} onChargeComplete={onChargeComplete} style={{...positions[i], transform: 'translate(-50%, -50%)'}} spriteData={spriteData} soundSrc={el.sound} /> );
                     })}
                 </div>
             </div>
@@ -360,10 +370,10 @@ const Step6_Incantation: React.FC<SpellStepProps> = ({ spell, onNext }) => (
         instruction="Read aloud or in your heart. Let these words resonate with your soul's intent."
         button={<RitualButton onClick={onNext}>Ready to Cast</RitualButton>}
     >
-        <div className="relative w-full h-full max-w-md">
+        <div className="relative w-full h-full max-w-md @container">
             <Image src={`${ASSET_PATH}/wicca_incantation_scroll.png`} alt="Incantation Scroll" layout="fill" objectFit="contain" />
-            <div className="absolute w-[60%] h-[45%] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center p-4">
-                <p className="font-serif text-[#4a2e1c] text-center whitespace-pre-line leading-relaxed" style={{fontSize: 'clamp(1rem, 3.5vw, 1.75rem)'}}>{spell.central_chant}</p>
+            <div className="absolute w-[70%] h-[55%] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center p-4">
+                <p className="font-serif text-[#4a2e1c] text-center whitespace-pre-line leading-relaxed" style={{fontSize: 'clamp(0.9rem, 4.5cqmin, 1.75rem)'}}>{spell.central_chant}</p>
             </div>
         </div>
     </StepContainer>
@@ -419,8 +429,8 @@ const Step8_Manifestation: React.FC<{ spell: GeneratedWiccanSpell }> = ({ spell 
     >
         <div className="relative w-full h-full max-w-2xl @container">
             <Image src={`${ASSET_PATH}/wicca_spell_manifestation.png`} alt="Spell Manifestation" layout="fill" objectFit="contain" />
-            <div className="absolute w-[50cqmin] h-[65cqmin] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center p-4">
-                <p className="text-center text-white font-serif" style={{fontSize: 'clamp(1.1rem, 2.5cqmin, 2rem)'}}>{spell.affirmation}</p>
+            <div className="absolute w-[48cqmin] h-[60cqmin] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center p-4">
+                <p className="text-center text-white font-serif" style={{fontSize: 'clamp(1.1rem, 3cqmin, 2rem)'}}>{spell.affirmation}</p>
             </div>
         </div>
     </StepContainer>
@@ -454,7 +464,7 @@ const IngredientCharger: React.FC<IngredientChargerProps> = ({ children, onCharg
     );
 };
 
-const ChargingElement: React.FC<ChargingElementProps> = ({ name, isCharged, onChargeComplete, style, imageSrc, soundSrc }) => {
+const ChargingElement: React.FC<ChargingElementProps> = ({ name, isCharged, onChargeComplete, style, spriteData, soundSrc }) => {
     const [isHolding, setIsHolding] = useState(false);
     const chargeSoundRef = useRef<HTMLAudioElement | null>(null);
 
@@ -472,6 +482,12 @@ const ChargingElement: React.FC<ChargingElementProps> = ({ name, isCharged, onCh
         };
     }, [isHolding, isCharged, name, onChargeComplete, soundSrc]);
 
+    // Scale factor calculation:
+    // Sprite sheet items are 256x256.
+    // Button container is w-24 h-24 (96px).
+    // 96 / 256 = 0.375. We use 0.38 to be safe and fill nicely.
+    const scaleStyle = { transform: 'scale(0.38)', transformOrigin: 'center' };
+
     return (
         <div className="absolute grid place-items-center" style={style}>
             <div
@@ -485,13 +501,19 @@ const ChargingElement: React.FC<ChargingElementProps> = ({ name, isCharged, onCh
                 aria-pressed={isHolding}
                 className={`relative w-24 h-24 cursor-pointer transition-all duration-500 group ${isCharged ? 'pointer-events-none' : ''}`}
             >
-                <Image
-                    src={imageSrc}
-                    alt={name}
-                    layout="fill"
-                    objectFit="contain"
-                    className={`transition-all duration-500 ${isCharged ? 'brightness-125 saturate-150 drop-shadow-[0_0_10px_rgba(192,132,252,0.7)]' : 'brightness-75 group-hover:brightness-100'}`}
-                />
+                <div className={`w-full h-full flex items-center justify-center transition-all duration-500 ${isCharged ? 'brightness-125 saturate-150 drop-shadow-[0_0_10px_rgba(192,132,252,0.7)]' : 'brightness-75 group-hover:brightness-100'}`}>
+                    <div style={scaleStyle}>
+                        <Sprite
+                            sheetPath={spriteData.sheet.path}
+                            x={spriteData.itemInfo.x}
+                            y={spriteData.itemInfo.y}
+                            spriteWidth={spriteData.sheet.spriteSize.width}
+                            spriteHeight={spriteData.sheet.spriteSize.height}
+                            sheetWidth={spriteData.sheet.sheetSize.width}
+                            sheetHeight={spriteData.sheet.sheetSize.height}
+                        />
+                    </div>
+                </div>
                 
                 <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg) scale(1.05)' }}>
                     <circle cx="50" cy="50" r="48" stroke="rgba(255,255,255,0.15)" strokeWidth="3" fill="transparent" />
