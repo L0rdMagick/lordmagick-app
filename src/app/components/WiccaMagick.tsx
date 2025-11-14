@@ -46,6 +46,7 @@ interface RitualButtonProps {
 interface StepContainerProps {
     stageTitle?: string;
     stageSubtitle?: string;
+    instruction?: string;
     children: React.ReactNode;
     button?: React.ReactNode;
 }
@@ -83,6 +84,8 @@ interface ChargingElementProps {
     isCharged: boolean;
     onChargeComplete: (name: string) => void;
     style: React.CSSProperties;
+    imageSrc: string;
+    soundSrc: string;
 }
 
 interface IngredientChargerProps {
@@ -200,11 +203,12 @@ const RitualButton: React.FC<RitualButtonProps> = ({ onClick, children, classNam
     </button>
 );
 
-const StepContainer: React.FC<StepContainerProps> = ({ stageTitle, stageSubtitle, children, button }) => (
+const StepContainer: React.FC<StepContainerProps> = ({ stageTitle, stageSubtitle, instruction, children, button }) => (
     <div className="w-full h-full flex flex-col items-center justify-between gap-2 py-1">
-        <div className="shrink-0 h-16 flex flex-col items-center justify-center text-center px-4">
+        <div className="shrink-0 h-24 flex flex-col items-center justify-center text-center px-4">
              {stageTitle && <h2 className="text-3xl font-serif text-amber-200/90">{stageTitle}</h2>}
              {stageSubtitle && <h3 className="text-xl font-serif text-amber-100/80 mt-1">{stageSubtitle}</h3>}
+             {instruction && <p className="text-base text-purple-200/80 mt-2 italic font-light max-w-2xl" style={{textShadow: '1px 1px 2px rgba(0,0,0,0.7)'}}>{instruction}</p>}
         </div>
         <div className="w-full grow min-h-0 relative flex items-center justify-center">
             {children}
@@ -218,7 +222,7 @@ const StepContainer: React.FC<StepContainerProps> = ({ stageTitle, stageSubtitle
 // --- Individual Step Components ---
 
 const Step0_Intro: React.FC<StepProps> = ({ onNext }) => (
-    <StepContainer button={<RitualButton onClick={onNext}>Continue</RitualButton>}>
+    <StepContainer instruction="Cross the threshold and begin your journey into the craft." button={<RitualButton onClick={onNext}>Begin</RitualButton>}>
         <div className="relative w-full h-full max-w-md @container">
             <Image src={`${ASSET_PATH}/wicca_intro_instructions.png`} alt="Instructions" layout="fill" objectFit="contain" priority />
             <div className="absolute w-[55cqmin] h-[45cqmin] top-1/2 left-1/2 -translate-x-1/2 -translate-y-[45%] flex flex-col items-center justify-center text-center pointer-events-none gap-2 p-4">
@@ -234,7 +238,11 @@ const Step0_Intro: React.FC<StepProps> = ({ onNext }) => (
 );
 
 const Step1_Intention: React.FC<Step1Props> = ({ intention, setIntention, onNext }) => (
-    <StepContainer stageTitle="State Your True Will" button={<RitualButton onClick={onNext} disabled={!intention}>Seal My Intention</RitualButton>}>
+    <StepContainer 
+        stageTitle="State Your True Will" 
+        instruction="Inscribe your deepest desire upon this sacred scroll. What is it you truly seek?"
+        button={<RitualButton onClick={onNext} disabled={!intention}>Seal My Intention</RitualButton>}
+    >
         <div className="relative w-full h-full max-w-md">
             <Image src={`${ASSET_PATH}/wicca_scroll_intention.png`} alt="Inscribe your intention" layout="fill" objectFit="contain" />
             <div className="absolute w-[60%] h-[40%] top-1/2 left-1/2 -translate-x-1/2 -translate-y-[40%] p-4">
@@ -244,22 +252,34 @@ const Step1_Intention: React.FC<Step1Props> = ({ intention, setIntention, onNext
     </StepContainer>
 );
 
-const Step2_Elements: React.FC<Step2Props> = ({ chargedElements, onChargeComplete, onNext }) => (
-    <StepContainer stageTitle="Call the Elemental Guardians" button={chargedElements.length === 5 ? <RitualButton onClick={onNext} className="animate-pulse">Continue</RitualButton> : <div/>}>
-        <div className="relative w-full h-full flex items-center justify-center p-2">
-            <div className="relative h-full aspect-square max-w-full">
-                {['Spirit', 'Air', 'Fire', 'Earth', 'Water'].map((el, i) => {
-                    const positions = [ { top: '10%', left: '50%'}, { top: '45%', left: '90%'}, { top: '90%', left: '75%'},  { top: '90%', left: '25%'}, { top: '45%', left: '10%'} ];
-                    return ( <ChargingElement key={el} name={el} isCharged={chargedElements.includes(el)} onChargeComplete={onChargeComplete} style={{...positions[i], transform: 'translate(-50%, -50%)'}} /> );
-                })}
+const Step2_Elements: React.FC<Step2Props> = ({ chargedElements, onChargeComplete, onNext }) => {
+    const elementsData = [
+        { name: 'Spirit', image: 'spirit.png', sound: '/audio/spirit.mp3' },
+        { name: 'Air', image: 'aire.png', sound: '/audio/air.mp3' },
+        { name: 'Fire', image: 'fire.png', sound: '/audio/fire.mp3' },
+        { name: 'Earth', image: 'earth.png', sound: '/audio/earth.mp3' },
+        { name: 'Water', image: 'water.png', sound: '/audio/water.mp3' },
+    ];
+    const instructionText = "Summon the ancient guardians. Press and hold each sigil to awaken its power.";
+
+    return (
+        <StepContainer stageTitle="Call the Elemental Guardians" instruction={instructionText} button={chargedElements.length === 5 ? <RitualButton onClick={onNext} className="animate-pulse">Continue</RitualButton> : <div/>}>
+            <div className="relative w-full h-full flex items-center justify-center p-2">
+                <div className="relative h-full aspect-square max-w-full">
+                    {elementsData.map((el, i) => {
+                        const positions = [ { top: '10%', left: '50%'}, { top: '45%', left: '90%'}, { top: '90%', left: '75%'},  { top: '90%', left: '25%'}, { top: '45%', left: '10%'} ];
+                        return ( <ChargingElement key={el.name} name={el.name} isCharged={chargedElements.includes(el.name)} onChargeComplete={onChargeComplete} style={{...positions[i], transform: 'translate(-50%, -50%)'}} imageSrc={`${ASSET_PATH}/${el.image}`} soundSrc={el.sound} /> );
+                    })}
+                </div>
             </div>
-        </div>
-    </StepContainer>
-);
+        </StepContainer>
+    );
+};
 
 const Step3_Deities: React.FC<Step3Props> = ({ selectedDeities, onToggle, onNext }) => (
     <StepContainer 
-        stageTitle="Invoke a Guiding Deity or Force" 
+        stageTitle="Invoke a Guiding Deity or Force"
+        instruction="Choose a divine presence to guide your work, or proceed with the universal energies."
         button={
             <div className="flex flex-col sm:flex-row gap-4">
                 <RitualButton onClick={onNext}>Confirm Invocation</RitualButton>
@@ -284,7 +304,11 @@ const Step3_Deities: React.FC<Step3Props> = ({ selectedDeities, onToggle, onNext
 );
 
 const Step4_Components: React.FC<SpellStepProps> = ({ spell, onNext }) => (
-    <StepContainer stageTitle="The Fated Components" button={<RitualButton onClick={onNext}>Prepare Components</RitualButton>}>
+    <StepContainer 
+        stageTitle="The Fated Components" 
+        instruction="The universe provides. These are the catalysts for your magick."
+        button={<RitualButton onClick={onNext}>Prepare Components</RitualButton>}
+    >
         <div className='text-center'>
             <p className="text-gray-300 mb-6">These items have been chosen for your intention.</p>
             <div className="grid grid-cols-5 gap-2 sm:gap-4 bg-black/30 p-4 rounded-lg">
@@ -313,6 +337,7 @@ const Step5_ChargeComponent: React.FC<Step5Props> = ({ spell, chargingIndex, onN
         <StepContainer 
             stageTitle="Imbue with Aether"
             stageSubtitle={isComplete ? "Component Charged!" : `Hold to Charge the ${currentIngredient.name}`}
+            instruction="Focus your will. Press and hold the component to imbue it with your personal energy."
             button={isComplete ? <RitualButton onClick={onNext} className="animate-pulse">{chargingIndex < 4 ? "Charge Next Component" : "Continue to Incantation"}</RitualButton> : <div/>}
         >
             <div className="relative w-full max-w-lg h-full">
@@ -330,7 +355,11 @@ const Step5_ChargeComponent: React.FC<Step5Props> = ({ spell, chargingIndex, onN
 };
 
 const Step6_Incantation: React.FC<SpellStepProps> = ({ spell, onNext }) => (
-    <StepContainer stageTitle="Speak the Words of Power" button={<RitualButton onClick={onNext}>Ready to Cast</RitualButton>}>
+    <StepContainer 
+        stageTitle="Speak the Words of Power" 
+        instruction="Read aloud or in your heart. Let these words resonate with your soul's intent."
+        button={<RitualButton onClick={onNext}>Ready to Cast</RitualButton>}
+    >
         <div className="relative w-full h-full max-w-md">
             <Image src={`${ASSET_PATH}/wicca_incantation_scroll.png`} alt="Incantation Scroll" layout="fill" objectFit="contain" />
             <div className="absolute w-[60%] h-[45%] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center p-4">
@@ -360,7 +389,11 @@ const Step7_Cast: React.FC<SpellStepProps> = ({ spell, onNext }) => {
     }, [isCasting, onNext]);
 
     return (
-        <StepContainer stageTitle="Unleash the Magick" button={<div/>}>
+        <StepContainer 
+            stageTitle="Unleash the Magick" 
+            instruction="The moment is now. Gather your will and release the spell into the aether."
+            button={<div/>}
+        >
             <div className="relative w-full max-w-2xl h-full flex items-center justify-center">
                 <div onMouseDown={() => setIsCasting(true)} onMouseUp={() => setIsCasting(false)} onMouseLeave={() => setIsCasting(false)} onTouchStart={() => setIsCasting(true)} onTouchEnd={() => setIsCasting(false)} className="relative w-full max-w-full max-h-full aspect-square cursor-pointer">
                     <Image src={`${ASSET_PATH}/wicca_pentagram_ready_to_cast.png`} layout="fill" objectFit="contain" alt="Cast the Spell" />
@@ -379,7 +412,11 @@ const Step7_Cast: React.FC<SpellStepProps> = ({ spell, onNext }) => {
 };
 
 const Step8_Manifestation: React.FC<{ spell: GeneratedWiccanSpell }> = ({ spell }) => (
-     <StepContainer stageTitle="Witness the Manifestation" button={<RitualButton onClick={() => window.location.href = '/spell-room'}>Return to Spell Room</RitualButton>}>
+     <StepContainer 
+        stageTitle="Witness the Manifestation" 
+        instruction="So mote it be. Your will is in motion. Trust in the magick you have woven."
+        button={<RitualButton onClick={() => window.location.href = '/spell-room'}>Return to Spell Room</RitualButton>}
+    >
         <div className="relative w-full h-full max-w-2xl @container">
             <Image src={`${ASSET_PATH}/wicca_spell_manifestation.png`} alt="Spell Manifestation" layout="fill" objectFit="contain" />
             <div className="absolute w-[50cqmin] h-[65cqmin] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center p-4">
@@ -417,14 +454,14 @@ const IngredientCharger: React.FC<IngredientChargerProps> = ({ children, onCharg
     );
 };
 
-const ChargingElement: React.FC<ChargingElementProps> = ({ name, isCharged, onChargeComplete, style }) => {
+const ChargingElement: React.FC<ChargingElementProps> = ({ name, isCharged, onChargeComplete, style, imageSrc, soundSrc }) => {
     const [isHolding, setIsHolding] = useState(false);
     const chargeSoundRef = useRef<HTMLAudioElement | null>(null);
 
     useEffect(() => {
         let timer: NodeJS.Timeout;
         if (isHolding && !isCharged) {
-            chargeSoundRef.current = playSound('/audio/sfx-chaos-hold.mp3', 0.3, true);
+            chargeSoundRef.current = playSound(soundSrc, 0.4, true);
             timer = setTimeout(() => {
                 onChargeComplete(name);
             }, CHARGE_DURATION_ELEMENT);
@@ -433,20 +470,50 @@ const ChargingElement: React.FC<ChargingElementProps> = ({ name, isCharged, onCh
             clearTimeout(timer);
             chargeSoundRef.current?.pause();
         };
-    }, [isHolding, isCharged, name, onChargeComplete]);
+    }, [isHolding, isCharged, name, onChargeComplete, soundSrc]);
 
     return (
         <div className="absolute grid place-items-center" style={style}>
-            <button
-                onMouseDown={() => setIsHolding(true)} onMouseUp={() => setIsHolding(false)} onMouseLeave={() => setIsHolding(false)}
-                onTouchStart={() => setIsHolding(true)} onTouchEnd={() => setIsHolding(false)}
-                disabled={isCharged}
-                className={`relative w-24 h-24 rounded-full transition-all duration-300 flex items-center justify-center ${isCharged ? 'bg-purple-500/50 ring-2 ring-white shadow-lg shadow-purple-500/50' : 'bg-white/10 hover:bg-white/20'}`}
+            <div
+                onMouseDown={() => { if (!isCharged) setIsHolding(true); }}
+                onMouseUp={() => setIsHolding(false)}
+                onMouseLeave={() => setIsHolding(false)}
+                onTouchStart={(e) => { if (!isCharged) { e.preventDefault(); setIsHolding(true); } }}
+                onTouchEnd={() => setIsHolding(false)}
+                aria-label={`Charge ${name}`}
+                role="button"
+                aria-pressed={isHolding}
+                className={`relative w-24 h-24 cursor-pointer transition-all duration-500 group ${isCharged ? 'pointer-events-none' : ''}`}
             >
-                <span className="text-white font-serif text-lg">{name}</span>
-            </button>
+                <Image
+                    src={imageSrc}
+                    alt={name}
+                    layout="fill"
+                    objectFit="contain"
+                    className={`transition-all duration-500 ${isCharged ? 'brightness-125 saturate-150 drop-shadow-[0_0_10px_rgba(192,132,252,0.7)]' : 'brightness-75 group-hover:brightness-100'}`}
+                />
+                
+                <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg) scale(1.05)' }}>
+                    <circle cx="50" cy="50" r="48" stroke="rgba(255,255,255,0.15)" strokeWidth="3" fill="transparent" />
+                    <motion.circle
+                        cx="50" cy="50" r="48"
+                        stroke="rgba(255, 255, 255, 1)"
+                        strokeWidth="4"
+                        fill="transparent"
+                        pathLength="1"
+                        strokeDasharray="1"
+                        strokeDashoffset="1"
+                        strokeLinecap="round"
+                        initial={{ pathLength: 1, strokeDashoffset: 1 }}
+                        animate={{ strokeDashoffset: isHolding && !isCharged ? 0 : 1 }}
+                        transition={{ duration: CHARGE_DURATION_ELEMENT / 1000, ease: 'linear' }}
+                    />
+                </svg>
+                {isCharged && <div className="absolute inset-0 rounded-full bg-purple-900/30 animate-pulse" />}
+            </div>
         </div>
     );
 };
+
 
 export default WiccaMagick;
