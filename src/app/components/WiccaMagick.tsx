@@ -482,11 +482,20 @@ const ChargingElement: React.FC<ChargingElementProps> = ({ name, isCharged, onCh
         };
     }, [isHolding, isCharged, name, onChargeComplete, soundSrc]);
 
-    // Scale factor calculation:
-    // Sprite sheet items are 256x256.
-    // Button container is w-24 h-24 (96px).
-    // 96 / 256 = 0.375. We use 0.38 to be safe and fill nicely.
-    const scaleStyle = { transform: 'scale(0.38)', transformOrigin: 'center' };
+    const { sheet, itemInfo } = spriteData;
+    const containerSize = 96; // Corresponds to w-24/h-24
+    const scale = containerSize / sheet.spriteSize.width;
+
+    const spriteStyle: React.CSSProperties = {
+        backgroundImage: `url(${sheet.path})`,
+        backgroundSize: `${sheet.sheetSize.width * scale}px ${sheet.sheetSize.height * scale}px`,
+        backgroundPosition: `${itemInfo.x * scale}px ${itemInfo.y * scale}px`,
+    };
+
+    const circleVariants = {
+        hidden: { strokeDashoffset: 1 },
+        visible: { strokeDashoffset: 0 }
+    };
 
     return (
         <div className="absolute grid place-items-center" style={style}>
@@ -499,38 +508,30 @@ const ChargingElement: React.FC<ChargingElementProps> = ({ name, isCharged, onCh
                 aria-label={`Charge ${name}`}
                 role="button"
                 aria-pressed={isHolding}
-                className={`relative w-24 h-24 cursor-pointer transition-all duration-500 group ${isCharged ? 'pointer-events-none' : ''}`}
+                style={spriteStyle}
+                className={`relative w-24 h-24 cursor-pointer transition-all duration-500 group overflow-hidden rounded-full ${isCharged ? 'pointer-events-none' : ''}`}
             >
-                <div className={`w-full h-full flex items-center justify-center transition-all duration-500 ${isCharged ? 'brightness-125 saturate-150 drop-shadow-[0_0_10px_rgba(192,132,252,0.7)]' : 'brightness-75 group-hover:brightness-100'}`}>
-                    <div style={scaleStyle}>
-                        <Sprite
-                            sheetPath={spriteData.sheet.path}
-                            x={spriteData.itemInfo.x}
-                            y={spriteData.itemInfo.y}
-                            spriteWidth={spriteData.sheet.spriteSize.width}
-                            spriteHeight={spriteData.sheet.spriteSize.height}
-                            sheetWidth={spriteData.sheet.sheetSize.width}
-                            sheetHeight={spriteData.sheet.sheetSize.height}
-                        />
-                    </div>
-                </div>
+                {/* Overlay for brightness/saturation effects */}
+                <div className={`absolute inset-0 w-full h-full transition-all duration-500 ${isCharged ? 'brightness-125 saturate-150' : 'brightness-75 group-hover:brightness-100'}`} />
                 
-                <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg) scale(1.05)' }}>
+                {/* SVG on top for tracing animation */}
+                <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)' }}>
                     <circle cx="50" cy="50" r="48" stroke="rgba(255,255,255,0.15)" strokeWidth="3" fill="transparent" />
                     <motion.circle
                         cx="50" cy="50" r="48"
                         stroke="rgba(255, 255, 255, 1)"
                         strokeWidth="4"
                         fill="transparent"
+                        strokeLinecap="round"
                         pathLength="1"
                         strokeDasharray="1"
-                        strokeDashoffset="1"
-                        strokeLinecap="round"
-                        initial={{ pathLength: 1, strokeDashoffset: 1 }}
-                        animate={{ strokeDashoffset: isHolding && !isCharged ? 0 : 1 }}
+                        variants={circleVariants}
+                        initial="hidden"
+                        animate={isHolding && !isCharged ? "visible" : "hidden"}
                         transition={{ duration: CHARGE_DURATION_ELEMENT / 1000, ease: 'linear' }}
                     />
                 </svg>
+
                 {isCharged && <div className="absolute inset-0 rounded-full bg-purple-900/30 animate-pulse" />}
             </div>
         </div>
