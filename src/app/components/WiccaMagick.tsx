@@ -442,7 +442,15 @@ const Step7_Cast: React.FC<SpellStepProps> = ({ spell, onNext }) => {
             button={<div/>}
         >
             <div className="relative w-full max-w-2xl h-full flex items-center justify-center">
-                <div onMouseDown={() => setIsCasting(true)} onMouseUp={() => setIsCasting(false)} onMouseLeave={() => setIsCasting(false)} onTouchStart={() => setIsCasting(true)} onTouchEnd={() => setIsCasting(false)} className="relative w-full max-w-full max-h-full aspect-square cursor-pointer">
+                <div 
+                    onMouseDown={() => setIsCasting(true)} 
+                    onMouseUp={() => setIsCasting(false)} 
+                    onMouseLeave={() => setIsCasting(false)} 
+                    onTouchStart={() => setIsCasting(true)} 
+                    onTouchEnd={() => setIsCasting(false)} 
+                    onContextMenu={(e) => e.preventDefault()}
+                    className="relative w-full max-w-full max-h-full aspect-square cursor-pointer select-none"
+                >
                     <Image src={`${ASSET_PATH}/wicca_pentagram_ready_to_cast.png`} layout="fill" objectFit="contain" alt="Cast the Spell" />
                     <PentagramIcon className="absolute w-full h-full text-white pointer-events-none" isTracing={isCasting} />
                     {spell.symbolic_ingredients.map((ing, i) => {
@@ -495,7 +503,15 @@ const IngredientCharger: React.FC<IngredientChargerProps> = ({ children, onCharg
     }, [isHolding, isComplete, onChargeComplete]);
     
     return (
-        <div onMouseDown={() => setIsHolding(true)} onMouseUp={() => setIsHolding(false)} onMouseLeave={() => setIsHolding(false)} onTouchStart={() => setIsHolding(true)} onTouchEnd={() => setIsHolding(false)} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[40%] grid place-items-center cursor-pointer">
+        <div 
+            onMouseDown={() => setIsHolding(true)} 
+            onMouseUp={() => setIsHolding(false)} 
+            onMouseLeave={() => setIsHolding(false)} 
+            onTouchStart={() => setIsHolding(true)} 
+            onTouchEnd={() => setIsHolding(false)} 
+            onContextMenu={(e) => e.preventDefault()}
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[40%] grid place-items-center cursor-pointer select-none"
+        >
             <div className={`transition-transform duration-300 ${isHolding || isComplete ? 'scale-110' : 'scale-100'}`}>{children}</div>
         </div>
     );
