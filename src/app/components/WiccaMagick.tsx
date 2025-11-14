@@ -88,6 +88,8 @@ interface ChargingElementProps {
     style: React.CSSProperties;
     spriteData: SpriteData;
     soundSrc: string;
+    onHoldStart: () => void;
+    onHoldEnd: () => void;
 }
 
 interface IngredientChargerProps {
@@ -255,19 +257,19 @@ const Step1_Intention: React.FC<Step1Props> = ({ intention, setIntention, onNext
 );
 
 const Step2_Elements: React.FC<Step2Props> = ({ chargedElements, onChargeComplete, onNext }) => {
-    // Mapping Elements to Sprites as requested:
-    // Spirit -> Wand, Air -> Athame, Fire -> Bowl of Fire, Earth -> Sacred Stone, Water -> Amethyst
+    const defaultInstruction = "Summon the ancient guardians. Press and hold each sigil to awaken its power.";
+    const [activeInstruction, setActiveInstruction] = useState(defaultInstruction);
+
     const elementsData = [
-        { name: 'Spirit', spriteName: 'Wand', sound: '/audio/spirit.mp3' },
-        { name: 'Air', spriteName: 'Athame', sound: '/audio/air.mp3' },
-        { name: 'Fire', spriteName: 'Bowl of Fire', sound: '/audio/fire.mp3' },
-        { name: 'Earth', spriteName: 'Sacred Stone', sound: '/audio/earth.mp3' },
-        { name: 'Water', spriteName: 'Amethyst', sound: '/audio/water.mp3' },
+        { name: 'Spirit', spriteName: 'Wand', sound: '/audio/spirit.mp3', incantation: "I command the eternal Spirit to bind these elements as I have decreed and hallow this working, so mote it be." },
+        { name: 'Air', spriteName: 'Athame', sound: '/audio/air.mp3', incantation: "I summon clever Air to give this spell true breath and carry my sharp intent directly to its mark." },
+        { name: 'Fire', spriteName: 'Bowl of Fire', sound: '/audio/fire.mp3', incantation: "I invoke sovereign Fire to charge this rite with solar might and ignite this spell with my unbending will." },
+        { name: 'Earth', spriteName: 'Sacred Stone', sound: '/audio/earth.mp3', incantation: "I command the ancient Earth to bind this magic to its core and shield this working with steadfast law." },
+        { name: 'Water', spriteName: 'Amethyst', sound: '/audio/water.mp3', incantation: "I call hallowed Water to cleanse this space of all despair and enchant this magic to flow and repair." },
     ];
-    const instructionText = "Summon the ancient guardians. Press and hold each sigil to awaken its power.";
 
     return (
-        <StepContainer stageTitle="Call the Elemental Guardians" instruction={instructionText} button={chargedElements.length === 5 ? <RitualButton onClick={onNext} className="animate-pulse">Continue</RitualButton> : <div/>}>
+        <StepContainer stageTitle="Call the Elemental Guardians" instruction={activeInstruction} button={chargedElements.length === 5 ? <RitualButton onClick={onNext} className="animate-pulse">Continue</RitualButton> : <div/>}>
             <div className="relative w-full h-full flex items-center justify-center p-2">
                 <div className="relative h-full aspect-square max-w-full">
                     {elementsData.map((el, i) => {
@@ -276,9 +278,18 @@ const Step2_Elements: React.FC<Step2Props> = ({ chargedElements, onChargeComplet
                             console.warn(`Sprite for element '${el.name}' (mapped to ${el.spriteName}) not found.`);
                             return <div key={el.name} className="absolute text-xs text-red-400">Missing: {el.spriteName}</div>;
                         }
-                        // Positions in a pentagram shape
                         const positions = [ { top: '10%', left: '50%'}, { top: '45%', left: '90%'}, { top: '90%', left: '75%'},  { top: '90%', left: '25%'}, { top: '45%', left: '10%'} ];
-                        return ( <ChargingElement key={el.name} name={el.name} isCharged={chargedElements.includes(el.name)} onChargeComplete={onChargeComplete} style={{...positions[i], transform: 'translate(-50%, -50%)'}} spriteData={spriteData} soundSrc={el.sound} /> );
+                        return ( <ChargingElement 
+                                    key={el.name} 
+                                    name={el.name} 
+                                    isCharged={chargedElements.includes(el.name)} 
+                                    onChargeComplete={onChargeComplete} 
+                                    style={{...positions[i], transform: 'translate(-50%, -50%)'}} 
+                                    spriteData={spriteData} 
+                                    soundSrc={el.sound} 
+                                    onHoldStart={() => setActiveInstruction(el.incantation)}
+                                    onHoldEnd={() => setActiveInstruction(defaultInstruction)}
+                                /> );
                     })}
                 </div>
             </div>
@@ -464,7 +475,7 @@ const IngredientCharger: React.FC<IngredientChargerProps> = ({ children, onCharg
     );
 };
 
-const ChargingElement: React.FC<ChargingElementProps> = ({ name, isCharged, onChargeComplete, style, spriteData, soundSrc }) => {
+const ChargingElement: React.FC<ChargingElementProps> = ({ name, isCharged, onChargeComplete, style, spriteData, soundSrc, onHoldStart, onHoldEnd }) => {
     const [isHolding, setIsHolding] = useState(false);
     const chargeSoundRef = useRef<HTMLAudioElement | null>(null);
 
@@ -497,19 +508,32 @@ const ChargingElement: React.FC<ChargingElementProps> = ({ name, isCharged, onCh
         visible: { strokeDashoffset: 0 }
     };
 
+    const handlePress = () => {
+        if (!isCharged) {
+            setIsHolding(true);
+            onHoldStart();
+        }
+    };
+
+    const handleRelease = () => {
+        setIsHolding(false);
+        onHoldEnd();
+    };
+
     return (
         <div className="absolute grid place-items-center" style={style}>
             <div
-                onMouseDown={() => { if (!isCharged) setIsHolding(true); }}
-                onMouseUp={() => setIsHolding(false)}
-                onMouseLeave={() => setIsHolding(false)}
-                onTouchStart={(e) => { if (!isCharged) { e.preventDefault(); setIsHolding(true); } }}
-                onTouchEnd={() => setIsHolding(false)}
+                onMouseDown={handlePress}
+                onMouseUp={handleRelease}
+                onMouseLeave={handleRelease}
+                onTouchStart={(e) => { e.preventDefault(); handlePress(); }}
+                onTouchEnd={handleRelease}
+                onContextMenu={(e) => e.preventDefault()}
                 aria-label={`Charge ${name}`}
                 role="button"
                 aria-pressed={isHolding}
                 style={spriteStyle}
-                className={`relative w-24 h-24 cursor-pointer transition-all duration-500 group overflow-hidden rounded-full ${isCharged ? 'pointer-events-none' : ''}`}
+                className={`relative w-24 h-24 cursor-pointer transition-all duration-500 group overflow-hidden rounded-full select-none ${isCharged ? 'pointer-events-none' : ''}`}
             >
                 {/* Overlay for brightness/saturation effects */}
                 <div className={`absolute inset-0 w-full h-full transition-all duration-500 ${isCharged ? 'brightness-125 saturate-150' : 'brightness-75 group-hover:brightness-100'}`} />
@@ -527,8 +551,8 @@ const ChargingElement: React.FC<ChargingElementProps> = ({ name, isCharged, onCh
                         strokeDasharray="1"
                         variants={circleVariants}
                         initial="hidden"
-                        animate={isHolding && !isCharged ? "visible" : "hidden"}
-                        transition={{ duration: CHARGE_DURATION_ELEMENT / 1000, ease: 'linear' }}
+                        animate={isCharged || isHolding ? "visible" : "hidden"}
+                        transition={{ duration: isCharged ? 0 : CHARGE_DURATION_ELEMENT / 1000, ease: 'linear' }}
                     />
                 </svg>
 
