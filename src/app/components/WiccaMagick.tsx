@@ -19,6 +19,7 @@ const ASSET_PATH = "/images/Spells/Wicca Tradition General";
 const CHARGE_DURATION_ELEMENT = 7000; // 7 seconds
 const CHARGE_DURATION_INGREDIENT = 7000; // 7 seconds
 const CAST_DURATION = 13000; // 13 seconds
+const SENDING_DURATION = 3500; // 3.5 seconds for the glitter animation
 
 // --- Sound Utility ---
 const playSound = (src: string, volume: number = 0.5, loop: boolean = false): HTMLAudioElement | null => {
@@ -167,7 +168,8 @@ const WiccaMagick: React.FC<WiccaMagickProps> = ({ session }) => {
             case 5: return generatedSpell && <Step5_ChargeComponent key={`charge-${chargingIndex}`} spell={generatedSpell} chargingIndex={chargingIndex} onNext={handleAdvanceAfterCharge} />;
             case 6: return generatedSpell && <Step6_Incantation spell={generatedSpell} onNext={() => setRitualStep(7)} />;
             case 7: return generatedSpell && <Step7_Cast spell={generatedSpell} onNext={() => setRitualStep(8)} />;
-            case 8: return generatedSpell && <Step8_Manifestation spell={generatedSpell} />;
+            case 8: return <Step8_Sending onNext={() => setRitualStep(9)} />;
+            case 9: return generatedSpell && <Step9_Manifestation spell={generatedSpell} />;
             default: return <Step0_Intro onNext={() => setRitualStep(1)} />;
         }
     };
@@ -530,7 +532,29 @@ const Step7_Cast: React.FC<SpellStepProps> = ({ spell, onNext }) => {
     );
 };
 
-const Step8_Manifestation: React.FC<{ spell: GeneratedWiccanSpell }> = ({ spell }) => (
+const Step8_Sending: React.FC<StepProps> = ({ onNext }) => {
+    useEffect(() => {
+        const timer = setTimeout(onNext, SENDING_DURATION);
+        return () => clearTimeout(timer);
+    }, [onNext]);
+
+    return (
+        <StepContainer stageTitle="The Spell is Cast" instruction="Feel your will reshaping the world.">
+            <div className="relative w-full h-full flex items-center justify-center overflow-hidden">
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.2, y: 50 }}
+                    animate={{ opacity: [0, 1, 0], scale: 1.5, y: -300 }}
+                    transition={{ duration: SENDING_DURATION / 1000, ease: "easeInOut" }}
+                    className="w-full max-w-md"
+                >
+                    <Image src={`${ASSET_PATH}/swirling-glitter.png`} alt="Magickal energy swirling" width={500} height={500} />
+                </motion.div>
+            </div>
+        </StepContainer>
+    );
+};
+
+const Step9_Manifestation: React.FC<{ spell: GeneratedWiccanSpell }> = ({ spell }) => (
      <StepContainer 
         stageTitle="Witness the Manifestation" 
         instruction="So mote it be. Your will is in motion. Trust in the magick you have woven."
