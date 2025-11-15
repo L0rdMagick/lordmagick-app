@@ -269,7 +269,7 @@ const Step1_Intention: React.FC<Step1Props> = ({ intention, setIntention, onNext
                     height: '55.0%',
                 }}
             >
-                <textarea value={intention} onChange={(e) => setIntention(e.target.value)} placeholder="e.g., To find clarity on my career path" className="w-full h-full bg-transparent text-center text-[#4a2e1c] font-serif focus:outline-none resize-none" style={{ fontSize: 'clamp(0.7rem, 4cqw, 1.5rem)' }} />
+                <textarea value={intention} onChange={(e) => setIntention(e.target.value)} placeholder="e.g., To find clarity on my career path" className="w-full h-full bg-transparent text-center text-[#4a2e1c] font-serif focus:outline-none resize-none" style={{ fontSize: 'clamp(0.6rem, 3.5cqw, 1.5rem)' }} />
             </div>
         </div>
     </StepContainer>
@@ -448,7 +448,7 @@ const Step6_Incantation: React.FC<SpellStepProps> = ({ spell, onNext }) => (
                     height: '55.0%',
                 }}
             >
-                <p className="font-serif text-[#4a2e1c] text-center whitespace-pre-line leading-relaxed" style={{fontSize: 'clamp(0.7rem, 4.5cqw, 1.75rem)'}}>{spell.central_chant}</p>
+                <p className="font-serif text-[#4a2e1c] text-center whitespace-pre-line leading-relaxed" style={{fontSize: 'clamp(0.6rem, 4cqw, 1.75rem)'}}>{spell.central_chant}</p>
             </div>
         </div>
     </StepContainer>
@@ -549,7 +549,7 @@ const Step8_Manifestation: React.FC<{ spell: GeneratedWiccanSpell }> = ({ spell 
                     height: '58.0%',
                 }}
             >
-                <p className="text-center text-white font-serif" style={{fontSize: 'clamp(0.7rem, 3cqw, 2rem)'}}>{spell.affirmation}</p>
+                <p className="text-center text-white font-serif" style={{fontSize: 'clamp(0.6rem, 2.5cqw, 2rem)'}}>{spell.affirmation}</p>
             </div>
         </div>
     </StepContainer>
