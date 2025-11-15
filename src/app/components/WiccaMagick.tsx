@@ -230,7 +230,7 @@ const StepContainer: React.FC<StepContainerProps> = ({ stageTitle, stageSubtitle
 
 const Step0_Intro: React.FC<StepProps> = ({ onNext }) => (
     <StepContainer instruction="Cross the threshold and begin your journey into the craft." button={<RitualButton onClick={onNext}>Begin</RitualButton>}>
-        <div className="relative w-full h-full max-w-md @container">
+        <div className="relative w-full h-full max-w-md aspect-square @container mx-auto">
             <Image src={`${ASSET_PATH}/wicca_intro_instructions.png`} alt="Instructions" layout="fill" objectFit="contain" priority />
             <div 
                 className="absolute flex flex-col items-center justify-center text-center pointer-events-none gap-2 p-2"
@@ -259,7 +259,7 @@ const Step1_Intention: React.FC<Step1Props> = ({ intention, setIntention, onNext
         instruction="Inscribe your deepest desire upon this sacred scroll. What is it you truly seek?"
         button={<RitualButton onClick={onNext} disabled={!intention}>Seal My Intention</RitualButton>}
     >
-        <div className="relative w-full h-full max-w-md @container">
+        <div className="relative w-full h-full max-w-md aspect-square @container mx-auto">
             <Image src={`${ASSET_PATH}/wicca_scroll_intention.png`} alt="Inscribe your intention" layout="fill" objectFit="contain" />
             <div 
                 className="absolute p-4"
@@ -412,7 +412,7 @@ const Step5_ChargeComponent: React.FC<Step5Props> = ({ spell, chargingIndex, onN
             instruction={getInstruction()}
             button={isComplete ? <RitualButton onClick={onNext} className="animate-pulse">{chargingIndex < 4 ? "Charge Next Component" : "Continue to Incantation"}</RitualButton> : <div/>}
         >
-            <div className="relative w-full max-w-lg h-full">
+            <div className="relative w-full h-full max-w-lg aspect-square mx-auto">
                 <Image src={`${ASSET_PATH}/wicca_charge_ingredient_template.png`} alt="Charge Component" layout="fill" objectFit="contain" />
                  <IngredientCharger 
                     key={chargingIndex}
@@ -439,7 +439,7 @@ const Step6_Incantation: React.FC<SpellStepProps> = ({ spell, onNext }) => (
         instruction="Read aloud or in your heart. Let these words resonate with your soul's intent."
         button={<RitualButton onClick={onNext}>Ready to Cast</RitualButton>}
     >
-        <div className="relative w-full h-full max-w-md @container">
+        <div className="relative w-full h-full max-w-md aspect-square @container mx-auto">
             <Image src={`${ASSET_PATH}/wicca_incantation_scroll.png`} alt="Incantation Scroll" layout="fill" objectFit="contain" />
             <div 
                 className="absolute flex items-center justify-center p-4"
@@ -541,7 +541,7 @@ const Step8_Manifestation: React.FC<{ spell: GeneratedWiccanSpell }> = ({ spell 
         instruction="So mote it be. Your will is in motion. Trust in the magick you have woven."
         button={<RitualButton onClick={() => window.location.href = '/spell-room'}>Return to Spell Room</RitualButton>}
     >
-        <div className="relative w-full h-full max-w-2xl @container">
+        <div className="relative w-full h-full max-w-2xl aspect-square @container mx-auto">
             <Image src={`${ASSET_PATH}/wicca_spell_manifestation.png`} alt="Spell Manifestation" layout="fill" objectFit="contain" />
             <div 
                 className="absolute flex items-center justify-center p-4"
