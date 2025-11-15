@@ -17,8 +17,8 @@ import { findSprite } from '@/lib/spriteLibrary';
 // --- Configuration ---
 const ASSET_PATH = "/images/Spells/Wicca Tradition General";
 const CHARGE_DURATION_ELEMENT = 7000; // 7 seconds
-const CHARGE_DURATION_INGREDIENT = 7000; // Changed to 7 seconds
-const CAST_DURATION = 13000; // Changed to 13 seconds
+const CHARGE_DURATION_INGREDIENT = 7000; // 7 seconds
+const CAST_DURATION = 13000; // 13 seconds
 
 // --- Sound Utility ---
 const playSound = (src: string, volume: number = 0.5, loop: boolean = false): HTMLAudioElement | null => {
@@ -568,8 +568,8 @@ const IngredientCharger: React.FC<IngredientChargerProps> = ({ children, onCharg
                         strokeDasharray="1"
                         variants={circleVariants}
                         initial="hidden"
-                        animate={isHolding && !isComplete ? "visible" : "hidden"}
-                        transition={{ duration: CHARGE_DURATION_INGREDIENT / 1000, ease: 'linear' }}
+                        animate={isComplete || (isHolding && !isComplete) ? "visible" : "hidden"}
+                        transition={{ duration: isComplete ? 0 : CHARGE_DURATION_INGREDIENT / 1000, ease: 'linear' }}
                     />
                 </svg>
                 {isComplete && <div className="absolute inset-0 rounded-full bg-purple-900/30 animate-pulse" />}
