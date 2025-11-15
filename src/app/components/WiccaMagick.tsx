@@ -164,7 +164,7 @@ const WiccaMagick: React.FC<WiccaMagickProps> = ({ session }) => {
             case 2: return <Step2_Elements chargedElements={chargedElements} onChargeComplete={handleElementChargeComplete} onNext={() => setRitualStep(3)} />;
             case 3: return <Step3_Deities selectedDeities={selectedDeities} onToggle={handleDeityToggle} onNext={handleGenerateSpell} />;
             case 4: return generatedSpell && <Step4_Components spell={generatedSpell} onNext={() => setRitualStep(5)} />;
-            case 5: return generatedSpell && <Step5_ChargeComponent spell={generatedSpell} chargingIndex={chargingIndex} onNext={handleAdvanceAfterCharge} />;
+            case 5: return generatedSpell && <Step5_ChargeComponent key={`charge-${chargingIndex}`} spell={generatedSpell} chargingIndex={chargingIndex} onNext={handleAdvanceAfterCharge} />;
             case 6: return generatedSpell && <Step6_Incantation spell={generatedSpell} onNext={() => setRitualStep(7)} />;
             case 7: return generatedSpell && <Step7_Cast spell={generatedSpell} onNext={() => setRitualStep(8)} />;
             case 8: return generatedSpell && <Step8_Manifestation spell={generatedSpell} />;
@@ -269,7 +269,7 @@ const Step1_Intention: React.FC<Step1Props> = ({ intention, setIntention, onNext
                     height: '55.0%',
                 }}
             >
-                <textarea value={intention} onChange={(e) => setIntention(e.target.value)} placeholder="e.g., To find clarity on my career path" className="w-full h-full bg-transparent text-center text-[#4a2e1c] font-serif focus:outline-none resize-none" style={{ fontSize: 'clamp(0.6rem, 3.5cqw, 1.5rem)' }} />
+                <textarea value={intention} onChange={(e) => setIntention(e.target.value)} placeholder="e.g., To find clarity on my career path" className="w-full h-full bg-transparent text-center text-[#4a2e1c] font-serif focus:outline-none resize-none" style={{ fontSize: 'clamp(0.5rem, 3.5cqw, 1.5rem)' }} />
             </div>
         </div>
     </StepContainer>
@@ -387,7 +387,6 @@ const Step4_Components: React.FC<SpellStepProps> = ({ spell, onNext }) => (
 const Step5_ChargeComponent: React.FC<Step5Props> = ({ spell, chargingIndex, onNext }) => {
     const [isComplete, setIsComplete] = useState(false);
     const [isHolding, setIsHolding] = useState(false);
-    useEffect(() => { setIsComplete(false); }, [chargingIndex]);
 
     const handleChargeComplete = () => {
         setIsComplete(true);
@@ -413,7 +412,6 @@ const Step5_ChargeComponent: React.FC<Step5Props> = ({ spell, chargingIndex, onN
             <div className="relative w-full h-full max-w-lg aspect-square mx-auto">
                 <Image src={`${ASSET_PATH}/wicca_charge_ingredient_template.png`} alt="Charge Component" layout="fill" objectFit="contain" />
                  <IngredientCharger 
-                    key={chargingIndex}
                     onChargeComplete={handleChargeComplete} 
                     isComplete={isComplete}
                     onHoldStart={() => setIsHolding(true)}
@@ -549,7 +547,7 @@ const Step8_Manifestation: React.FC<{ spell: GeneratedWiccanSpell }> = ({ spell 
                     height: '58.0%',
                 }}
             >
-                <p className="text-center text-white font-serif" style={{fontSize: 'clamp(0.6rem, 2.5cqw, 2rem)'}}>{spell.affirmation}</p>
+                <p className="text-center text-white font-serif" style={{fontSize: 'clamp(0.5rem, 2.5cqw, 2rem)'}}>{spell.affirmation}</p>
             </div>
         </div>
     </StepContainer>
