@@ -16,9 +16,9 @@ import { findSprite } from '@/lib/spriteLibrary';
 
 // --- Configuration ---
 const ASSET_PATH = "/images/Spells/Wicca Tradition General";
-const CHARGE_DURATION_ELEMENT = 7000; // Increased to 7 seconds
-const CHARGE_DURATION_INGREDIENT = 3000;
-const CAST_DURATION = 10000;
+const CHARGE_DURATION_ELEMENT = 7000; // 7 seconds
+const CHARGE_DURATION_INGREDIENT = 7000; // Changed to 7 seconds
+const CAST_DURATION = 13000; // Changed to 13 seconds
 
 // --- Sound Utility ---
 const playSound = (src: string, volume: number = 0.5, loop: boolean = false): HTMLAudioElement | null => {
@@ -98,6 +98,7 @@ interface IngredientChargerProps {
     isComplete: boolean;
     onHoldStart: () => void;
     onHoldEnd: () => void;
+    isHolding: boolean;
 }
 
 
@@ -374,15 +375,16 @@ const Step5_ChargeComponent: React.FC<Step5Props> = ({ spell, chargingIndex, onN
 
     const handleChargeComplete = () => {
         setIsComplete(true);
-        setIsHolding(false); // Ensure holding state is reset on completion
+        setIsHolding(false); 
     };
 
     const currentIngredient = spell.symbolic_ingredients[chargingIndex];
     const spriteData = findSprite(currentIngredient.name);
 
     const getInstruction = () => {
-        if (isComplete) return `The ${currentIngredient.name} is charged with aether.`;
-        if (isHolding) return spriteData?.itemInfo.incantation || `Charging the ${currentIngredient.name}...`;
+        const incantation = spriteData?.itemInfo.incantation;
+        if (isComplete) return incantation;
+        if (isHolding) return incantation;
         return `Press, hold, and speak the incantation to imbue the ${currentIngredient.name} with your will.`;
     };
 
@@ -399,6 +401,7 @@ const Step5_ChargeComponent: React.FC<Step5Props> = ({ spell, chargingIndex, onN
                     isComplete={isComplete}
                     onHoldStart={() => setIsHolding(true)}
                     onHoldEnd={() => setIsHolding(false)}
+                    isHolding={isHolding}
                 >
                     {spriteData && (
                         <div className="w-40 h-40">
@@ -428,12 +431,16 @@ const Step6_Incantation: React.FC<SpellStepProps> = ({ spell, onNext }) => (
 
 const Step7_Cast: React.FC<SpellStepProps> = ({ spell, onNext }) => {
     const [isCasting, setIsCasting] = useState(false);
+    const [count, setCount] = useState(0);
     const castSoundRef = useRef<HTMLAudioElement | null>(null);
 
     useEffect(() => {
         let timer: NodeJS.Timeout;
+        let counter: NodeJS.Timeout;
         if (isCasting) {
             castSoundRef.current = playSound('/audio/sfx-chaos-hold.mp3', 0.4, true);
+            setCount(1); // Start count at 1
+            counter = setInterval(() => setCount(prev => prev < 13 ? prev + 1 : 13), 1000);
             timer = setTimeout(() => {
                 playSound('/audio/sfx-chaos-explosion.mp3', 0.5);
                 onNext();
@@ -441,6 +448,8 @@ const Step7_Cast: React.FC<SpellStepProps> = ({ spell, onNext }) => {
         }
         return () => {
             clearTimeout(timer);
+            clearInterval(counter);
+            setCount(0);
             castSoundRef.current?.pause();
         };
     }, [isCasting, onNext]);
@@ -474,7 +483,24 @@ const Step7_Cast: React.FC<SpellStepProps> = ({ spell, onNext }) => {
                         const positions = [ { top: '0%', left: '50%'}, { top: '34.5%', left: '97.5%'}, { top: '90.4%', left: '79.3%'}, { top: '90.4%', left: '20.6%'}, { top: '34.5%', left: '2.5%'} ];
                         return <div key={i} className="absolute w-16 h-16 pointer-events-none" style={{...positions[i], transform: 'translate(-50%, -50%)'}}> <Sprite sheetPath={spriteData.sheet.path} x={spriteData.itemInfo.x} y={spriteData.itemInfo.y} spriteWidth={spriteData.sheet.spriteSize.width} spriteHeight={spriteData.sheet.spriteSize.height} sheetWidth={spriteData.sheet.sheetSize.width} sheetHeight={spriteData.sheet.sheetSize.height} /> </div>
                     })}
-                    <p className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 font-serif text-2xl pointer-events-none text-center text-white" style={{ textShadow: '0 0 10px black' }}>Hold to Focus Your Will and<br/>Cast the Spell</p>
+                    
+                    <AnimatePresence>
+                    {isCasting && count > 0 ? (
+                        <motion.div 
+                            key="counter"
+                            initial={{ opacity: 0, scale: 0.5 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.5 }}
+                            className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                        >
+                            <span className="font-serif text-8xl text-white" style={{ textShadow: '0 0 15px rgba(255, 255, 255, 0.8), 0 0 25px rgba(192, 132, 252, 0.6)' }}>
+                                {count}
+                            </span>
+                        </motion.div>
+                    ) : (
+                        <p className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 font-serif text-2xl pointer-events-none text-center text-white" style={{ textShadow: '0 0 10px black' }}>Hold to Focus Your Will and<br/>Cast the Spell</p>
+                    )}
+                    </AnimatePresence>
                 </div>
             </div>
         </StepContainer>
@@ -498,8 +524,7 @@ const Step8_Manifestation: React.FC<{ spell: GeneratedWiccanSpell }> = ({ spell 
 
 // --- Helper components for complex interactions ---
 
-const IngredientCharger: React.FC<IngredientChargerProps> = ({ children, onChargeComplete, isComplete, onHoldStart, onHoldEnd }) => {
-    const [isHolding, setIsHolding] = useState(false);
+const IngredientCharger: React.FC<IngredientChargerProps> = ({ children, onChargeComplete, isComplete, onHoldStart, onHoldEnd, isHolding }) => {
     const chargeSoundRef = useRef<HTMLAudioElement | null>(null);
 
     useEffect(() => {
@@ -516,36 +541,39 @@ const IngredientCharger: React.FC<IngredientChargerProps> = ({ children, onCharg
         }
     }, [isHolding, isComplete, onChargeComplete]);
     
-    const interactionStyle: React.CSSProperties = {
-        WebkitTouchCallout: 'none',
-    };
-
-    const handlePress = () => {
-        if (!isComplete) {
-            setIsHolding(true);
-            onHoldStart();
-        }
-    };
-
-    const handleRelease = () => {
-        if (isHolding) {
-            setIsHolding(false);
-            onHoldEnd();
-        }
-    };
+    const interactionStyle: React.CSSProperties = { WebkitTouchCallout: 'none' };
+    const circleVariants = { hidden: { strokeDashoffset: 1 }, visible: { strokeDashoffset: 0 } };
 
     return (
         <div 
-            onMouseDown={handlePress} 
-            onMouseUp={handleRelease} 
-            onMouseLeave={handleRelease} 
-            onTouchStart={handlePress} 
-            onTouchEnd={handleRelease} 
+            onMouseDown={onHoldStart} 
+            onMouseUp={onHoldEnd} 
+            onMouseLeave={onHoldEnd} 
+            onTouchStart={onHoldStart} 
+            onTouchEnd={onHoldEnd} 
             onContextMenu={(e) => e.preventDefault()}
             style={interactionStyle}
             className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[40%] grid place-items-center cursor-pointer select-none"
         >
-            <div className={`transition-transform duration-300 ${isHolding || isComplete ? 'scale-110' : 'scale-100'}`}>{children}</div>
+            <div className={`relative transition-transform duration-300 ${isHolding || isComplete ? 'scale-110' : 'scale-100'}`}>
+                {children}
+                <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg) scale(1.2)' }}>
+                    <motion.circle
+                        cx="50" cy="50" r="48"
+                        stroke="rgba(255, 255, 255, 1)"
+                        strokeWidth="4"
+                        fill="transparent"
+                        strokeLinecap="round"
+                        pathLength="1"
+                        strokeDasharray="1"
+                        variants={circleVariants}
+                        initial="hidden"
+                        animate={isHolding && !isComplete ? "visible" : "hidden"}
+                        transition={{ duration: CHARGE_DURATION_INGREDIENT / 1000, ease: 'linear' }}
+                    />
+                </svg>
+                {isComplete && <div className="absolute inset-0 rounded-full bg-purple-900/30 animate-pulse" />}
+            </div>
         </div>
     );
 };
