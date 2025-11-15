@@ -261,7 +261,16 @@ const Step1_Intention: React.FC<Step1Props> = ({ intention, setIntention, onNext
     >
         <div className="relative w-full h-full max-w-md @container">
             <Image src={`${ASSET_PATH}/wicca_scroll_intention.png`} alt="Inscribe your intention" layout="fill" objectFit="contain" />
-            <div className="absolute w-[65%] h-[45%] top-[47%] left-1/2 -translate-x-1/2 -translate-y-1/2 p-2">
+            <div 
+                className="absolute p-4"
+                style={{
+                    // Calculated from image dimensions (1000x1000) and text box (x:195, y:259, w:598, h:550)
+                    left: '19.5%',
+                    top: '25.9%',
+                    width: '59.8%',
+                    height: '55.0%',
+                }}
+            >
                 <textarea value={intention} onChange={(e) => setIntention(e.target.value)} placeholder="e.g., To find clarity on my career path" className="w-full h-full bg-transparent text-center text-[#4a2e1c] font-serif focus:outline-none resize-none" style={{ fontSize: 'clamp(0.9rem, 4cqmin, 1.5rem)' }} />
             </div>
         </div>
@@ -432,7 +441,16 @@ const Step6_Incantation: React.FC<SpellStepProps> = ({ spell, onNext }) => (
     >
         <div className="relative w-full h-full max-w-md @container">
             <Image src={`${ASSET_PATH}/wicca_incantation_scroll.png`} alt="Incantation Scroll" layout="fill" objectFit="contain" />
-            <div className="absolute w-[68%] h-[50%] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center p-4">
+            <div 
+                className="absolute flex items-center justify-center p-4"
+                style={{
+                    // Calculated from image dimensions (1000x1000) and text box (x:195, y:259, w:598, h:550)
+                    left: '19.5%',
+                    top: '25.9%',
+                    width: '59.8%',
+                    height: '55.0%',
+                }}
+            >
                 <p className="font-serif text-[#4a2e1c] text-center whitespace-pre-line leading-relaxed" style={{fontSize: 'clamp(0.9rem, 4.5cqmin, 1.75rem)'}}>{spell.central_chant}</p>
             </div>
         </div>
@@ -525,7 +543,16 @@ const Step8_Manifestation: React.FC<{ spell: GeneratedWiccanSpell }> = ({ spell 
     >
         <div className="relative w-full h-full max-w-2xl @container">
             <Image src={`${ASSET_PATH}/wicca_spell_manifestation.png`} alt="Spell Manifestation" layout="fill" objectFit="contain" />
-            <div className="absolute w-[45cqmin] h-[55cqmin] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center p-4">
+            <div 
+                className="absolute flex items-center justify-center p-4"
+                style={{
+                    // Calculated from image dimensions (1000x1000) and text box (x:318, y:280, w:364, h:580)
+                    left: '31.8%',
+                    top: '28.0%',
+                    width: '36.4%',
+                    height: '58.0%',
+                }}
+            >
                 <p className="text-center text-white font-serif" style={{fontSize: 'clamp(1.1rem, 3cqmin, 2rem)'}}>{spell.affirmation}</p>
             </div>
         </div>
