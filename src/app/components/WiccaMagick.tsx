@@ -2,7 +2,7 @@
 
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Session, GeneratedWiccanSpell } from '@/lib/types';
@@ -19,7 +19,7 @@ const ASSET_PATH = "/images/Spells/Wicca Tradition General";
 const CHARGE_DURATION_ELEMENT = 7000; // 7 seconds
 const CHARGE_DURATION_INGREDIENT = 7000; // 7 seconds
 const CAST_DURATION = 13000; // 13 seconds
-const SENDING_DURATION = 3500; // 3.5 seconds for the glitter animation
+const SENDING_DURATION = 4000; // 4 seconds for the particle animation
 
 // --- Sound Utility ---
 const playSound = (src: string, volume: number = 0.5, loop: boolean = false): HTMLAudioElement | null => {
@@ -278,7 +278,7 @@ const Step1_Intention: React.FC<Step1Props> = ({ intention, setIntention, onNext
 );
 
 const Step2_Elements: React.FC<Step2Props> = ({ chargedElements, onChargeComplete, onNext }) => {
-    const elementsData = React.useMemo(() => [
+    const elementsData = useMemo(() => [
         { name: 'Spirit', spriteName: 'Wand', sound: '/audio/spirit.mp3', incantation: "I call the Spirit, the cosmic sea\nNow bind this magic and make it be." },
         { name: 'Air', spriteName: 'Athame', sound: '/audio/air.mp3', incantation: "I command the subtle Air\nto carry this spell everywhere." },
         { name: 'Fire', spriteName: 'Bowl of Fire', sound: '/audio/fire.mp3', incantation: "I call vibrant Fire\nTo charge this spell with pure desire." },
@@ -467,7 +467,6 @@ const Step7_Cast: React.FC<SpellStepProps> = ({ spell, onNext }) => {
             setCount(1); // Start count at 1
             counter = setInterval(() => setCount(prev => prev < 13 ? prev + 1 : 13), 1000);
             timer = setTimeout(() => {
-                playSound('/audio/sfx-chaos-explosion.mp3', 0.5);
                 onNext();
             }, CAST_DURATION);
         }
@@ -534,21 +533,68 @@ const Step7_Cast: React.FC<SpellStepProps> = ({ spell, onNext }) => {
 
 const Step8_Sending: React.FC<StepProps> = ({ onNext }) => {
     useEffect(() => {
+        playSound('/audio/sfx-chaos-explosion.mp3', 0.5);
         const timer = setTimeout(onNext, SENDING_DURATION);
         return () => clearTimeout(timer);
     }, [onNext]);
 
+    const particles = useMemo(() => Array.from({ length: 150 }).map((_, i) => {
+        const angle = Math.random() * 2 * Math.PI;
+        const radius = 300 + Math.random() * 400;
+        const duration = 2 + Math.random() * 2;
+        const delay = Math.random() * 1;
+        const size = 3 + Math.random() * 4;
+        const colors = ['#FFFFFF', '#FFD700', '#C0C0C0'];
+        const color = colors[Math.floor(Math.random() * colors.length)];
+
+        return {
+            id: i,
+            x: radius * Math.cos(angle),
+            y: radius * Math.sin(angle),
+            size,
+            duration,
+            delay,
+            color,
+            rotate: Math.random() * 360,
+        };
+    }), []);
+
     return (
-        <StepContainer stageTitle="The Spell is Cast" instruction="Feel your will reshaping the world.">
+        <StepContainer>
             <div className="relative w-full h-full flex items-center justify-center overflow-hidden">
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.2, y: 50 }}
-                    animate={{ opacity: [0, 1, 0], scale: 1.5, y: -300 }}
-                    transition={{ duration: SENDING_DURATION / 1000, ease: "easeInOut" }}
-                    className="w-full max-w-md"
+                <motion.p
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: [0, 1, 1, 0], y: 0 }}
+                    transition={{ duration: SENDING_DURATION / 1000, times: [0, 0.2, 0.8, 1] }}
+                    className="text-3xl font-serif text-amber-200/90 z-10"
                 >
-                    <Image src={`${ASSET_PATH}/swirling-glitter.png`} alt="Magickal energy swirling" width={500} height={500} />
-                </motion.div>
+                    The Spell is Sent
+                </motion.p>
+                {particles.map(p => (
+                    <motion.div
+                        key={p.id}
+                        className="absolute rounded-full"
+                        style={{
+                            width: p.size,
+                            height: p.size,
+                            backgroundColor: p.color,
+                            boxShadow: `0 0 ${p.size * 2}px ${p.color}`,
+                        }}
+                        initial={{ opacity: 0, scale: 0.5, x: 0, y: 0 }}
+                        animate={{
+                            opacity: [0, 1, 1, 0],
+                            scale: [0.5, 1, 0.8, 0],
+                            x: [0, p.x * 0.3, p.x],
+                            y: [0, p.y * 0.5, p.y],
+                            rotate: p.rotate,
+                        }}
+                        transition={{
+                            duration: p.duration,
+                            delay: p.delay,
+                            ease: "easeOut",
+                        }}
+                    />
+                ))}
             </div>
         </StepContainer>
     );
