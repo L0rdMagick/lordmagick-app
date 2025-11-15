@@ -232,7 +232,16 @@ const Step0_Intro: React.FC<StepProps> = ({ onNext }) => (
     <StepContainer instruction="Cross the threshold and begin your journey into the craft." button={<RitualButton onClick={onNext}>Begin</RitualButton>}>
         <div className="relative w-full h-full max-w-md @container">
             <Image src={`${ASSET_PATH}/wicca_intro_instructions.png`} alt="Instructions" layout="fill" objectFit="contain" priority />
-            <div className="absolute w-[55cqmin] h-[45cqmin] top-1/2 left-1/2 -translate-x-1/2 -translate-y-[45%] flex flex-col items-center justify-center text-center pointer-events-none gap-2 p-4">
+            <div 
+                className="absolute flex flex-col items-center justify-center text-center pointer-events-none gap-2 p-2"
+                style={{
+                    // Calculated from image dimensions (1000x1000) and text box (x:297, y:148, w:422, h:688)
+                    left: '29.7%',
+                    top: '14.8%',
+                    width: '42.2%',
+                    height: '68.8%',
+                }}
+            >
                 <h3 className="font-serif text-gray-200" style={{ textShadow: '0 0 8px black', fontSize: 'clamp(1.5rem, 4.5cqmin, 2.25rem)' }}>
                     Wiccan Spellcraft
                 </h3>
