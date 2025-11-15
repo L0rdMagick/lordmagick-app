@@ -235,17 +235,16 @@ const Step0_Intro: React.FC<StepProps> = ({ onNext }) => (
             <div 
                 className="absolute flex flex-col items-center justify-center text-center pointer-events-none gap-2 p-2"
                 style={{
-                    // Calculated from image dimensions (1000x1000) and text box (x:297, y:148, w:422, h:688)
                     left: '29.7%',
                     top: '14.8%',
                     width: '42.2%',
                     height: '68.8%',
                 }}
             >
-                <h3 className="font-serif text-gray-200" style={{ textShadow: '0 0 8px black', fontSize: 'clamp(1.5rem, 4.5cqmin, 2.25rem)' }}>
+                <h3 className="font-serif text-gray-200" style={{ textShadow: '0 0 8px black', fontSize: 'clamp(0.8rem, 6cqw, 2.25rem)' }}>
                     Wiccan Spellcraft
                 </h3>
-                <p className="text-gray-300 leading-relaxed" style={{ fontSize: 'clamp(0.9rem, 2.5cqmin, 1.1rem)' }}>
+                <p className="text-gray-300 leading-relaxed" style={{ fontSize: 'clamp(0.6rem, 3.5cqw, 1.1rem)' }}>
                     Enter this realm to do a Wicca-influenced magick spell.
                 </p>
             </div>
@@ -264,14 +263,13 @@ const Step1_Intention: React.FC<Step1Props> = ({ intention, setIntention, onNext
             <div 
                 className="absolute p-4"
                 style={{
-                    // Calculated from image dimensions (1000x1000) and text box (x:195, y:259, w:598, h:550)
                     left: '19.5%',
                     top: '25.9%',
                     width: '59.8%',
                     height: '55.0%',
                 }}
             >
-                <textarea value={intention} onChange={(e) => setIntention(e.target.value)} placeholder="e.g., To find clarity on my career path" className="w-full h-full bg-transparent text-center text-[#4a2e1c] font-serif focus:outline-none resize-none" style={{ fontSize: 'clamp(0.9rem, 4cqmin, 1.5rem)' }} />
+                <textarea value={intention} onChange={(e) => setIntention(e.target.value)} placeholder="e.g., To find clarity on my career path" className="w-full h-full bg-transparent text-center text-[#4a2e1c] font-serif focus:outline-none resize-none" style={{ fontSize: 'clamp(0.7rem, 4cqw, 1.5rem)' }} />
             </div>
         </div>
     </StepContainer>
@@ -444,14 +442,13 @@ const Step6_Incantation: React.FC<SpellStepProps> = ({ spell, onNext }) => (
             <div 
                 className="absolute flex items-center justify-center p-4"
                 style={{
-                    // Calculated from image dimensions (1000x1000) and text box (x:195, y:259, w:598, h:550)
                     left: '19.5%',
                     top: '25.9%',
                     width: '59.8%',
                     height: '55.0%',
                 }}
             >
-                <p className="font-serif text-[#4a2e1c] text-center whitespace-pre-line leading-relaxed" style={{fontSize: 'clamp(0.9rem, 4.5cqmin, 1.75rem)'}}>{spell.central_chant}</p>
+                <p className="font-serif text-[#4a2e1c] text-center whitespace-pre-line leading-relaxed" style={{fontSize: 'clamp(0.7rem, 4.5cqw, 1.75rem)'}}>{spell.central_chant}</p>
             </div>
         </div>
     </StepContainer>
@@ -546,14 +543,13 @@ const Step8_Manifestation: React.FC<{ spell: GeneratedWiccanSpell }> = ({ spell 
             <div 
                 className="absolute flex items-center justify-center p-4"
                 style={{
-                    // Calculated from image dimensions (1000x1000) and text box (x:318, y:280, w:364, h:580)
                     left: '31.8%',
                     top: '28.0%',
                     width: '36.4%',
                     height: '58.0%',
                 }}
             >
-                <p className="text-center text-white font-serif" style={{fontSize: 'clamp(1.1rem, 3cqmin, 2rem)'}}>{spell.affirmation}</p>
+                <p className="text-center text-white font-serif" style={{fontSize: 'clamp(0.7rem, 3cqw, 2rem)'}}>{spell.affirmation}</p>
             </div>
         </div>
     </StepContainer>
