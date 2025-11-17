@@ -40,7 +40,8 @@ Deno.serve(async (req: Request) => {
         const accessToken = (await client.getAccessToken()).token;
         if (!accessToken) { throw new Error("Failed to retrieve access token."); }
 
-        const apiUrl = `https://${GCP_REGION}-aiplatform.googleapis.com/v1/projects/${GCP_PROJECT_ID}/locations/${GCP_REGION}/publishers/google/models/gemini-1.5-flash:generateContent`;
+        // THE FIX: Updated the model name to a stable, available version.
+        const apiUrl = `https://${GCP_REGION}-aiplatform.googleapis.com/v1/projects/${GCP_PROJECT_ID}/locations/${GCP_REGION}/publishers/google/models/gemini-2.5-flash:generateContent`;
         
         let prompt = '';
 
@@ -48,11 +49,9 @@ Deno.serve(async (req: Request) => {
         if (path === 'hoodoo') {
             switch(step) {
                 case 3: // Find Your Verse
-                    // THE FIX: Properly format the array as a string with quoted elements for the AI.
                     prompt = `A user's petition is: "${payload.petition}". From the following list of Psalms, select the THREE most spiritually aligned with this goal. Return a valid JSON object with a single key "selections" which is an array of three strings. List: [${PSALM_OPTIONS.map(p => `"${p}"`).join(", ")}]`;
                     break;
                 case 4: // Gather Your Materia
-                    // THE FIX: Properly format the array as a string with quoted elements for the AI.
                     prompt = `For a Hoodoo jar spell with the petition "${payload.petition}", select the FIVE to SEVEN most appropriate ingredients from this list. Return a valid JSON object with a single key "selections" which is an array of strings. List: [${HOODOO_MATERIA.map(i => `"${i}"`).join(", ")}]`;
                     break;
                 case 7: // The Work is Done (Affirmation)
@@ -62,11 +61,9 @@ Deno.serve(async (req: Request) => {
         } else if (path === 'voodoo') {
              switch(step) {
                 case 3: // Serve the Lwa
-                    // This case was missing from the previous switch, but it's good practice to ensure all lists are formatted correctly.
                     prompt = `A user's petition is: "${payload.petition}". From the following list of Lwa, select the ONE most appropriate to handle this need. Return a valid JSON object with a single key "selection". List: [${LWA_OPTIONS.map(l => `"${l}"`).join(", ")}]`;
                     break;
                 case 4: // Prepare the Offering
-                    // THE FIX: Properly format the array as a string with quoted elements for the AI.
                     prompt = `For serving the Lwa ${payload.lwa} with the petition "${payload.petition}", select FIVE to SEVEN appropriate offerings from this list. Return a valid JSON object with a single key "selections". List: [${VOODOO_OFFERINGS.map(o => `"${o}"`).join(", ")}]`;
                     break;
                 case 7: // The Lwa is Served (Affirmation)
