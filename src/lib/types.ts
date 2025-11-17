@@ -1,4 +1,4 @@
-// --- START OF FILE src/types.ts ---
+// --- START OF FILE src/lib/types.ts ---
 
 import type { Session } from '@supabase/supabase-js';
 
@@ -65,7 +65,7 @@ export interface Spell {
     element: string;
 }
 
-// --- UPDATED WICCAN SPELL TYPES ---
+// --- Wiccan Spell Types ---
 export interface WiccanSpellFormData {
   intention: string;
   focalPoint: string;
@@ -74,7 +74,9 @@ export interface WiccanSpellFormData {
 
 export interface WiccanIngredient {
   name: string;
-  activation_phrase: string;
+  // This property was specific to an older design and is not used in the final version.
+  // It can be kept for type consistency or removed if refactoring.
+  activation_phrase?: string; 
 }
 
 export interface GeneratedWiccanSpell {
@@ -84,7 +86,32 @@ export interface GeneratedWiccanSpell {
   central_chant: string;
   affirmation: string;
 }
-// --- END UPDATED WICCAN SPELL TYPES ---
+
+// --- NEW HOODOO & VOODOO TYPES ---
+export interface HoodooVoodooPetition {
+  petition: string;
+}
+
+export interface HoodooVoodooPsalmResponse {
+  selections: string[];
+}
+
+export interface HoodooVoodooMateriaResponse {
+  selections: string[];
+}
+
+export interface HoodooVoodooLwaResponse {
+  selection: string;
+}
+
+export interface HoodooVoodooOfferingResponse {
+  selections: string[];
+}
+
+export interface HoodooVoodooAffirmationResponse {
+  affirmation: string;
+}
+// --- END NEW HOODOO & VOODOO TYPES ---
 
 
 export type AppView = 
@@ -95,3 +122,4 @@ export type AppView =
   | { type: 'spell_room' };
 
 export type { Session };
+// --- END OF FILE ---
