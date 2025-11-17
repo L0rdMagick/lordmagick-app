@@ -542,7 +542,7 @@ const Step7_Manifestation: React.FC<{ affirmation: string, path: RitualPath, onF
     return (
         <StepContainer stageTitle={path === 'hoodoo' ? "The Work is Done" : "The Lwa is Served"} button={<RitualButton onClick={onFinish}>Return</RitualButton>}>
             <div className="flex flex-col md:flex-row items-center justify-center gap-8 w-full max-w-4xl">
-                {/* THE FIX: Main Scene Container */}
+                {/* THE FIX: Main Scene Container with scoped particles */}
                 <div className="relative w-72 h-80 md:w-96 md:h-[420px]">
                     <Image src={`${ASSET_PATH}/${finalImage}`} alt="Final Manifestation" layout="fill" objectFit="contain" />
                     {path === 'voodoo' && (
@@ -557,10 +557,10 @@ const Step7_Manifestation: React.FC<{ affirmation: string, path: RitualPath, onF
                 </div>
 
                 {/* THE FIX: Affirmation Plaque Container */}
-                <div className="relative w-64 h-40 @container">
+                <div className="relative w-72 h-48 @container">
                     <Image src={`${ASSET_PATH}/ui-affirmation-plaque.png`} alt="Affirmation Plaque" layout="fill" objectFit="contain"/>
-                    <div className="absolute inset-0 flex items-center justify-center p-[12%]">
-                        <p className="text-center text-[#4a2e1c] font-serif" style={{fontSize: 'clamp(0.7rem, 4cqw, 1.1rem)'}}>{affirmation}</p>
+                    <div className="absolute inset-0 flex items-center justify-center p-[15%]">
+                        <p className="text-center text-[#3a291c] font-serif font-semibold" style={{fontSize: 'clamp(0.75rem, 3.5cqw, 1.2rem)'}}>{affirmation}</p>
                     </div>
                 </div>
             </div>
