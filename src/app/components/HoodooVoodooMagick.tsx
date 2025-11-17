@@ -505,7 +505,6 @@ const VoodooStep5_MakeOffering: React.FC<{ onNext: () => void, selections: strin
 const VoodooStep6_PresentOffering: React.FC<{ onNext: () => void; lwa: string; }> = ({ onNext, lwa }) => {
     const [isPresented, setIsPresented] = useState(false);
     
-    // THE FIX: Add a safeguard to prevent rendering with an invalid `lwa` prop.
     if (!lwa) {
         return <StepContainer stageTitle="Error"><p className="text-red-400">No Lwa was selected. Please restart the ritual.</p></StepContainer>;
     }
@@ -542,23 +541,26 @@ const Step7_Manifestation: React.FC<{ affirmation: string, path: RitualPath, onF
 
     return (
         <StepContainer stageTitle={path === 'hoodoo' ? "The Work is Done" : "The Lwa is Served"} button={<RitualButton onClick={onFinish}>Return</RitualButton>}>
-            <div className="relative w-full h-full max-w-2xl aspect-square @container mx-auto">
-                 <Image src={`${ASSET_PATH}/${finalImage}`} alt="Final Manifestation" layout="fill" objectFit="contain" />
-                 {path === 'voodoo' && (
-                     <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                         {particles.map(p => (
-                             <motion.div key={p.id} initial={{opacity: 0, y: 0}} animate={{opacity: [0, 0.8, 0], y: p.y}} transition={{duration: p.duration, delay: p.delay, repeat: Infinity, repeatType: "loop"}} style={{x: p.x}} className="absolute top-1/2 left-1/2 w-12 h-12">
+            <div className="flex flex-col md:flex-row items-center justify-center gap-8 w-full max-w-4xl">
+                {/* THE FIX: Main Scene Container */}
+                <div className="relative w-72 h-80 md:w-96 md:h-[420px]">
+                    <Image src={`${ASSET_PATH}/${finalImage}`} alt="Final Manifestation" layout="fill" objectFit="contain" />
+                    {path === 'voodoo' && (
+                        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                            {particles.map(p => (
+                                <motion.div key={p.id} initial={{opacity: 0, y: 0}} animate={{opacity: [0, 0.8, 0], y: p.y}} transition={{duration: p.duration, delay: p.delay, repeat: Infinity, repeatType: "loop"}} style={{x: p.x}} className="absolute top-1/2 left-1/2 w-12 h-12">
                                 <Image src={`${ASSET_PATH}/ui-particle-spirit.png`} alt="spirit particle" layout="fill" />
-                             </motion.div>
-                         ))}
-                     </div>
-                 )}
-                <div className="absolute flex items-center justify-center p-4" style={{left: '30%', top: '40%', width: '40%', height: '20%'}}>
-                    <div className="relative w-full h-full">
-                        <Image src={`${ASSET_PATH}/ui-affirmation-plaque.png`} alt="Affirmation Plaque" layout="fill" objectFit="contain"/>
-                        <div className="absolute inset-0 flex items-center justify-center p-2">
-                             <p className="text-center text-[#4a2e1c] font-serif" style={{fontSize: 'clamp(0.5rem, 2.5cqw, 1rem)'}}>{affirmation}</p>
+                                </motion.div>
+                            ))}
                         </div>
+                    )}
+                </div>
+
+                {/* THE FIX: Affirmation Plaque Container */}
+                <div className="relative w-64 h-40 @container">
+                    <Image src={`${ASSET_PATH}/ui-affirmation-plaque.png`} alt="Affirmation Plaque" layout="fill" objectFit="contain"/>
+                    <div className="absolute inset-0 flex items-center justify-center p-[12%]">
+                        <p className="text-center text-[#4a2e1c] font-serif" style={{fontSize: 'clamp(0.7rem, 4cqw, 1.1rem)'}}>{affirmation}</p>
                     </div>
                 </div>
             </div>
