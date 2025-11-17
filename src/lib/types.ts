@@ -74,8 +74,6 @@ export interface WiccanSpellFormData {
 
 export interface WiccanIngredient {
   name: string;
-  // This property was specific to an older design and is not used in the final version.
-  // It can be kept for type consistency or removed if refactoring.
   activation_phrase?: string; 
 }
 
@@ -87,7 +85,7 @@ export interface GeneratedWiccanSpell {
   affirmation: string;
 }
 
-// --- NEW HOODOO & VOODOO TYPES ---
+// --- HOODOO & VOODOO TYPES (UPDATED) ---
 export interface HoodooVoodooPetition {
   petition: string;
 }
@@ -97,7 +95,7 @@ export interface HoodooVoodooPsalmResponse {
 }
 
 export interface HoodooVoodooMateriaResponse {
-  selections: string[];
+  selections: Array<{ name: string; incantation: string; }>;
 }
 
 export interface HoodooVoodooLwaResponse {
@@ -105,14 +103,12 @@ export interface HoodooVoodooLwaResponse {
 }
 
 export interface HoodooVoodooOfferingResponse {
-  selections: string[];
+  selections: Array<{ name: string; incantation: string; }>;
 }
 
 export interface HoodooVoodooAffirmationResponse {
   affirmation: string;
 }
-// --- END NEW HOODOO & VOODOO TYPES ---
-
 
 export type AppView = 
   | { type: 'dashboard' }

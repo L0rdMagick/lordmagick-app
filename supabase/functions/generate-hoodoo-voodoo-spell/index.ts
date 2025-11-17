@@ -40,7 +40,6 @@ Deno.serve(async (req: Request) => {
         const accessToken = (await client.getAccessToken()).token;
         if (!accessToken) { throw new Error("Failed to retrieve access token."); }
 
-        // THE FIX: Updated the model name to a stable, available version.
         const apiUrl = `https://${GCP_REGION}-aiplatform.googleapis.com/v1/projects/${GCP_PROJECT_ID}/locations/${GCP_REGION}/publishers/google/models/gemini-2.5-flash:generateContent`;
         
         let prompt = '';
@@ -52,7 +51,8 @@ Deno.serve(async (req: Request) => {
                     prompt = `A user's petition is: "${payload.petition}". From the following list of Psalms, select the THREE most spiritually aligned with this goal. Return a valid JSON object with a single key "selections" which is an array of three strings. List: [${PSALM_OPTIONS.map(p => `"${p}"`).join(", ")}]`;
                     break;
                 case 4: // Gather Your Materia
-                    prompt = `For a Hoodoo jar spell with the petition "${payload.petition}", select the FIVE to SEVEN most appropriate ingredients from this list. Return a valid JSON object with a single key "selections" which is an array of strings. List: [${HOODOO_MATERIA.map(i => `"${i}"`).join(", ")}]`;
+                    // THE FIX: Updated prompt to ask for an object with name and incantation.
+                    prompt = `For a Hoodoo jar spell with the petition "${payload.petition}", select the FIVE to SEVEN most appropriate ingredients from this list: [${HOODOO_MATERIA.map(i => `"${i}"`).join(", ")}]. For each selected ingredient, also write a short, one-sentence activation incantation. Return a valid JSON object with a single key "selections" which is an array of objects, where each object has a "name" and "incantation" key. Example: { "name": "Rosemary", "incantation": "Spirit of Rosemary, clear the path for this work." }`;
                     break;
                 case 7: // The Work is Done (Affirmation)
                      prompt = `Based on the Hoodoo petition "${payload.petition}", write a single, powerful, past-tense affirmation to be displayed on a plaque, confirming the work is done. Example: "My path to prosperity is now cleared and blessed." The output should be a valid JSON object with a single key "affirmation".`;
@@ -64,7 +64,8 @@ Deno.serve(async (req: Request) => {
                     prompt = `A user's petition is: "${payload.petition}". From the following list of Lwa, select the ONE most appropriate to handle this need. Return a valid JSON object with a single key "selection". List: [${LWA_OPTIONS.map(l => `"${l}"`).join(", ")}]`;
                     break;
                 case 4: // Prepare the Offering
-                    prompt = `For serving the Lwa ${payload.lwa} with the petition "${payload.petition}", select FIVE to SEVEN appropriate offerings from this list. Return a valid JSON object with a single key "selections". List: [${VOODOO_OFFERINGS.map(o => `"${o}"`).join(", ")}]`;
+                    // THE FIX: Updated prompt to ask for an object with name and incantation.
+                    prompt = `For serving the Lwa ${payload.lwa} with the petition "${payload.petition}", select FIVE to SEVEN appropriate offerings from this list: [${VOODOO_OFFERINGS.map(o => `"${o}"`).join(", ")}]. For each selected offering, also write a short, one-sentence activation incantation to present it. Return a valid JSON object with a single key "selections" which is an array of objects, where each object has a "name" and "incantation" key. Example: { "name": "Rum", "incantation": "I offer this rum to honor your spirit and enliven my request." }`;
                     break;
                 case 7: // The Lwa is Served (Affirmation)
                     prompt = `Based on the Voodoo petition "${payload.petition}" made to the Lwa ${payload.lwa}, write a single, powerful, respectful, past-tense affirmation to be displayed on a plaque, confirming the Lwa has been served. Example: "Erzulie Freda has received her gifts and blesses my heart with love." The output must be a valid JSON object with a single key "affirmation".`;

@@ -38,6 +38,7 @@ interface StepComponentProps { onNext: () => void; }
 interface StepContainerProps { stageTitle?: string; instruction?: string; children: React.ReactNode; button?: React.ReactNode; }
 interface RitualButtonProps { onClick: () => void; children: React.ReactNode; className?: string; disabled?: boolean; }
 type SpriteData = NonNullable<ReturnType<typeof findSprite>>;
+type MateriaSelection = { name: string; incantation: string; };
 
 // --- Main Component ---
 const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }> = ({ session }) => {
@@ -51,9 +52,9 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
     const [petition, setPetition] = useState('');
     const [hoodooPsalmSelections, setHoodooPsalmSelections] = useState<string[]>([]);
     const [selectedPsalm, setSelectedPsalm] = useState<string>('');
-    const [hoodooMateriaSelections, setHoodooMateriaSelections] = useState<string[]>([]);
+    const [hoodooMateriaSelections, setHoodooMateriaSelections] = useState<MateriaSelection[]>([]);
     const [selectedLwa, setSelectedLwa] = useState<string>('');
-    const [voodooOfferingSelections, setVoodooOfferingSelections] = useState<string[]>([]);
+    const [voodooOfferingSelections, setVoodooOfferingSelections] = useState<MateriaSelection[]>([]);
     const [finalAffirmation, setFinalAffirmation] = useState('');
     const [chargingIndex, setChargingIndex] = useState(0);
 
@@ -350,16 +351,16 @@ const HoodooStep3_FindVerse: React.FC<{ selections: string[]; selectedPsalm: str
     </StepContainer>
 );
 
-const HoodooStep4_GatherMateria: React.FC<{ selections: string[]; onNext: () => void; }> = ({ selections, onNext }) => (
+const HoodooStep4_GatherMateria: React.FC<{ selections: MateriaSelection[]; onNext: () => void; }> = ({ selections, onNext }) => (
      <StepContainer stageTitle="Gather Your Materia" instruction="These ingredients have been chosen for your petition." button={<RitualButton onClick={onNext}>Fix the Jar</RitualButton>}>
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 gap-4 bg-black/30 p-4 rounded-lg">
             {selections.map(item => {
-                const spriteData = findSprite(item);
-                if (!spriteData) return <div key={item} className="text-xs text-red-400">Missing:<br/>{item}</div>;
+                const spriteData = findSprite(item.name);
+                if (!spriteData) return <div key={item.name} className="text-xs text-red-400">Missing:<br/>{item.name}</div>;
                 return (
-                    <div key={item} className="flex flex-col items-center gap-2">
+                    <div key={item.name} className="flex flex-col items-center gap-2">
                         <div className="w-20 h-20 bg-white/5 rounded-lg p-1"><Sprite sheetPath={spriteData.sheet.path} x={spriteData.itemInfo.x} y={spriteData.itemInfo.y} spriteWidth={spriteData.sheet.spriteSize.width} spriteHeight={spriteData.sheet.spriteSize.height} sheetWidth={spriteData.sheet.sheetSize.width} sheetHeight={spriteData.sheet.sheetSize.height} /></div>
-                        <p className="text-xs text-center font-semibold text-amber-200">{item}</p>
+                        <p className="text-xs text-center font-semibold text-amber-200">{item.name}</p>
                     </div>
                 );
             })}
@@ -367,22 +368,25 @@ const HoodooStep4_GatherMateria: React.FC<{ selections: string[]; onNext: () => 
     </StepContainer>
 );
 
-const HoodooStep5_FixJar: React.FC<{ onNext: () => void, selections: string[], index: number }> = ({ onNext, selections, index }) => {
+const HoodooStep5_FixJar: React.FC<{ onNext: () => void, selections: MateriaSelection[], index: number }> = ({ onNext, selections, index }) => {
     const [isCharged, setIsCharged] = useState(false);
     const currentMateria = selections[index];
-    const spriteData = findSprite(currentMateria);
+    const spriteData = findSprite(currentMateria.name);
 
     return (
-        <StepContainer stageTitle="Fix the Jar" instruction={`Charge the ${currentMateria} with your intention.`} button={isCharged ? <RitualButton onClick={onNext} className="animate-pulse">{index < selections.length - 1 ? "Next Ingredient" : "Set the Light"}</RitualButton> : <div/>}>
-            <div className="relative w-full h-full max-w-md aspect-square mx-auto">
-                <Image src={`${ASSET_PATH}/hoodoo-jar-empty.png`} alt="Empty Spell Jar" layout="fill" objectFit="contain" />
-                {Array.from({length: index + 1}).map((_, i) => (
-                    <Image key={i} src={`${ASSET_PATH}/hoodoo-jar-layer-0${i + 1}.png`} alt={`Layer ${i+1}`} layout="fill" objectFit="contain" className={isCharged && i === index ? 'opacity-100' : (i < index ? 'opacity-100' : 'opacity-0')} />
-                ))}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-2/3">
-                    <ChargingComponent onCharge={() => setIsCharged(true)} isCharged={isCharged}>
-                         {spriteData && <div className="w-24 h-24"><Sprite sheetPath={spriteData.sheet.path} x={spriteData.itemInfo.x} y={spriteData.itemInfo.y} spriteWidth={spriteData.sheet.spriteSize.width} spriteHeight={spriteData.sheet.spriteSize.height} sheetWidth={spriteData.sheet.sheetSize.width} sheetHeight={spriteData.sheet.sheetSize.height} /></div>}
-                    </ChargingComponent>
+        <StepContainer stageTitle="Fix the Jar" instruction={`Charge the ${currentMateria.name} with your intention.`} button={isCharged ? <RitualButton onClick={onNext} className="animate-pulse">{index < selections.length - 1 ? "Next Ingredient" : "Set the Light"}</RitualButton> : <div/>}>
+             <div className="flex flex-col items-center justify-center gap-4">
+                <p className="text-xl text-center text-amber-100 font-serif h-12">Now say: <span className="italic">"{currentMateria.incantation}"</span></p>
+                <div className="relative w-full h-full max-w-md aspect-square mx-auto">
+                    <Image src={`${ASSET_PATH}/hoodoo-jar-empty.png`} alt="Empty Spell Jar" layout="fill" objectFit="contain" />
+                    {Array.from({length: index + 1}).map((_, i) => (
+                        <Image key={i} src={`${ASSET_PATH}/hoodoo-jar-layer-0${i + 1}.png`} alt={`Layer ${i+1}`} layout="fill" objectFit="contain" className={isCharged && i === index ? 'opacity-100' : (i < index ? 'opacity-100' : 'opacity-0')} />
+                    ))}
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-2/3">
+                        <ChargingComponent onCharge={() => setIsCharged(true)} isCharged={isCharged}>
+                            {spriteData && <div className="w-24 h-24"><Sprite sheetPath={spriteData.sheet.path} x={spriteData.itemInfo.x} y={spriteData.itemInfo.y} spriteWidth={spriteData.sheet.spriteSize.width} spriteHeight={spriteData.sheet.spriteSize.height} sheetWidth={spriteData.sheet.sheetSize.width} sheetHeight={spriteData.sheet.sheetSize.height} /></div>}
+                        </ChargingComponent>
+                    </div>
                 </div>
             </div>
         </StepContainer>
@@ -463,16 +467,16 @@ const VoodooStep3_ServeLwa: React.FC<{ selectedLwa: string; onSelect: (lwa: stri
     );
 };
 
-const VoodooStep4_PrepareOffering: React.FC<{ selections: string[]; onNext: () => void; }> = ({ selections, onNext }) => (
+const VoodooStep4_PrepareOffering: React.FC<{ selections: MateriaSelection[]; onNext: () => void; }> = ({ selections, onNext }) => (
      <StepContainer stageTitle="Prepare the Offering" instruction="These gifts have been chosen for the Lwa you serve." button={<RitualButton onClick={onNext}>Make the Offering</RitualButton>}>
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 gap-4 bg-black/30 p-4 rounded-lg">
             {selections.map(item => {
-                const spriteData = findSprite(item);
-                if (!spriteData) return <div key={item} className="text-xs text-red-400">Missing:<br/>{item}</div>;
+                const spriteData = findSprite(item.name);
+                if (!spriteData) return <div key={item.name} className="text-xs text-red-400">Missing:<br/>{item.name}</div>;
                 return (
-                    <div key={item} className="flex flex-col items-center gap-2">
+                    <div key={item.name} className="flex flex-col items-center gap-2">
                         <div className="w-20 h-20 bg-white/5 rounded-lg p-1"><Sprite sheetPath={spriteData.sheet.path} x={spriteData.itemInfo.x} y={spriteData.itemInfo.y} spriteWidth={spriteData.sheet.spriteSize.width} spriteHeight={spriteData.sheet.spriteSize.height} sheetWidth={spriteData.sheet.sheetSize.width} sheetHeight={spriteData.sheet.sheetSize.height} /></div>
-                        <p className="text-xs text-center font-semibold text-amber-200">{item}</p>
+                        <p className="text-xs text-center font-semibold text-amber-200">{item.name}</p>
                     </div>
                 );
             })}
@@ -480,22 +484,25 @@ const VoodooStep4_PrepareOffering: React.FC<{ selections: string[]; onNext: () =
     </StepContainer>
 );
 
-const VoodooStep5_MakeOffering: React.FC<{ onNext: () => void, selections: string[], index: number }> = ({ onNext, selections, index }) => {
+const VoodooStep5_MakeOffering: React.FC<{ onNext: () => void, selections: MateriaSelection[], index: number }> = ({ onNext, selections, index }) => {
     const [isCharged, setIsCharged] = useState(false);
     const currentOffering = selections[index];
-    const spriteData = findSprite(currentOffering);
+    const spriteData = findSprite(currentOffering.name);
 
     return (
-        <StepContainer stageTitle="Make the Offering" instruction={`Prepare the ${currentOffering} for the Lwa.`} button={isCharged ? <RitualButton onClick={onNext} className="animate-pulse">{index < selections.length - 1 ? "Next Offering" : "Present to Lwa"}</RitualButton> : <div/>}>
-             <div className="relative w-full h-full max-w-md aspect-square mx-auto">
-                <Image src={`${ASSET_PATH}/voodoo-offering-bottle.png`} alt="Empty Offering Bottle" layout="fill" objectFit="contain" />
-                {Array.from({length: index + 1}).map((_, i) => (
-                    <Image key={i} src={`${ASSET_PATH}/voodoo-offering-layer-0${i + 1}.png`} alt={`Layer ${i+1}`} layout="fill" objectFit="contain" className={isCharged && i === index ? 'opacity-100' : (i < index ? 'opacity-100' : 'opacity-0')} />
-                ))}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-2/3">
-                    <ChargingComponent onCharge={() => setIsCharged(true)} isCharged={isCharged}>
-                         {spriteData && <div className="w-24 h-24"><Sprite sheetPath={spriteData.sheet.path} x={spriteData.itemInfo.x} y={spriteData.itemInfo.y} spriteWidth={spriteData.sheet.spriteSize.width} spriteHeight={spriteData.sheet.spriteSize.height} sheetWidth={spriteData.sheet.sheetSize.width} sheetHeight={spriteData.sheet.sheetSize.height} /></div>}
-                    </ChargingComponent>
+        <StepContainer stageTitle="Make the Offering" instruction={`Prepare the ${currentOffering.name} for the Lwa.`} button={isCharged ? <RitualButton onClick={onNext} className="animate-pulse">{index < selections.length - 1 ? "Next Offering" : "Present to Lwa"}</RitualButton> : <div/>}>
+            <div className="flex flex-col items-center justify-center gap-4">
+                 <p className="text-xl text-center text-amber-100 font-serif h-12">Now say: <span className="italic">"{currentOffering.incantation}"</span></p>
+                <div className="relative w-full h-full max-w-md aspect-square mx-auto">
+                    <Image src={`${ASSET_PATH}/voodoo-offering-bottle.png`} alt="Empty Offering Bottle" layout="fill" objectFit="contain" />
+                    {Array.from({length: index + 1}).map((_, i) => (
+                        <Image key={i} src={`${ASSET_PATH}/voodoo-offering-layer-0${i + 1}.png`} alt={`Layer ${i+1}`} layout="fill" objectFit="contain" className={isCharged && i === index ? 'opacity-100' : (i < index ? 'opacity-100' : 'opacity-0')} />
+                    ))}
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-2/3">
+                        <ChargingComponent onCharge={() => setIsCharged(true)} isCharged={isCharged}>
+                            {spriteData && <div className="w-24 h-24"><Sprite sheetPath={spriteData.sheet.path} x={spriteData.itemInfo.x} y={spriteData.itemInfo.y} spriteWidth={spriteData.sheet.spriteSize.width} spriteHeight={spriteData.sheet.spriteSize.height} sheetWidth={spriteData.sheet.sheetSize.width} sheetHeight={spriteData.sheet.sheetSize.height} /></div>}
+                        </ChargingComponent>
+                    </div>
                 </div>
             </div>
         </StepContainer>
@@ -542,8 +549,8 @@ const Step7_Manifestation: React.FC<{ affirmation: string, path: RitualPath, onF
     return (
         <StepContainer stageTitle={path === 'hoodoo' ? "The Work is Done" : "The Lwa is Served"} button={<RitualButton onClick={onFinish}>Return</RitualButton>}>
             <div className="flex flex-col md:flex-row items-center justify-center gap-8 w-full max-w-4xl">
-                {/* THE FIX: Main Scene Container with scoped particles */}
-                <div className="relative w-72 h-80 md:w-96 md:h-[420px]">
+                {/* Main Scene Container */}
+                <div className="relative w-full md:w-1/2 aspect-square">
                     <Image src={`${ASSET_PATH}/${finalImage}`} alt="Final Manifestation" layout="fill" objectFit="contain" />
                     {path === 'voodoo' && (
                         <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -556,11 +563,11 @@ const Step7_Manifestation: React.FC<{ affirmation: string, path: RitualPath, onF
                     )}
                 </div>
 
-                {/* THE FIX: Affirmation Plaque Container */}
-                <div className="relative w-72 h-48 @container">
-                    <Image src={`${ASSET_PATH}/ui-affirmation-plaque.png`} alt="Affirmation Plaque" layout="fill" objectFit="contain"/>
-                    <div className="absolute inset-0 flex items-center justify-center p-[15%]">
-                        <p className="text-center text-[#3a291c] font-serif font-semibold" style={{fontSize: 'clamp(0.75rem, 3.5cqw, 1.2rem)'}}>{affirmation}</p>
+                {/* Affirmation Parchment Container */}
+                <div className="relative w-full md:w-1/2 aspect-square @container">
+                    <Image src={`${ASSET_PATH}/hoodoo-petition-paper.png`} alt="Affirmation Parchment" layout="fill" objectFit="contain"/>
+                    <div className="absolute inset-0 flex items-center justify-center p-[22%]">
+                        <p className="text-center text-[#3a291c] font-serif font-semibold" style={{fontSize: 'clamp(0.7rem, 4.5cqw, 1.2rem)'}}>{affirmation}</p>
                     </div>
                 </div>
             </div>
