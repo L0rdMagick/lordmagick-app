@@ -45,32 +45,33 @@ Deno.serve(async (req: Request) => {
         let prompt = '';
 
         // --- AI Prompt Logic ---
-        // This is where we'll build the specific prompts for each step of each path.
         if (path === 'hoodoo') {
             switch(step) {
                 case 3: // Find Your Verse
-                    prompt = `A user's petition is: "${payload.petition}". From the following list of Psalms, select the THREE most spiritually aligned with this goal. Return a valid JSON object with a single key "selections" which is an array of three strings. List: [${PSALM_OPTIONS.join(", ")}]`;
+                    // THE FIX: Properly format the array as a string with quoted elements for the AI.
+                    prompt = `A user's petition is: "${payload.petition}". From the following list of Psalms, select the THREE most spiritually aligned with this goal. Return a valid JSON object with a single key "selections" which is an array of three strings. List: [${PSALM_OPTIONS.map(p => `"${p}"`).join(", ")}]`;
                     break;
                 case 4: // Gather Your Materia
-                    prompt = `For a Hoodoo jar spell with the petition "${payload.petition}", select the FIVE to SEVEN most appropriate ingredients from this list. Return a valid JSON object with a single key "selections" which is an array of strings. List: [${HOODOO_MATERIA.join(", ")}]`;
+                    // THE FIX: Properly format the array as a string with quoted elements for the AI.
+                    prompt = `For a Hoodoo jar spell with the petition "${payload.petition}", select the FIVE to SEVEN most appropriate ingredients from this list. Return a valid JSON object with a single key "selections" which is an array of strings. List: [${HOODOO_MATERIA.map(i => `"${i}"`).join(", ")}]`;
                     break;
                 case 7: // The Work is Done (Affirmation)
                      prompt = `Based on the Hoodoo petition "${payload.petition}", write a single, powerful, past-tense affirmation to be displayed on a plaque, confirming the work is done. Example: "My path to prosperity is now cleared and blessed." The output should be a valid JSON object with a single key "affirmation".`;
                      break;
-                // Add other cases as we build them...
             }
         } else if (path === 'voodoo') {
              switch(step) {
                 case 3: // Serve the Lwa
-                    prompt = `A user's petition is: "${payload.petition}". From the following list of Lwa, select the ONE most appropriate to handle this need. Return a valid JSON object with a single key "selection". List: [${LWA_OPTIONS.join(", ")}]`;
+                    // This case was missing from the previous switch, but it's good practice to ensure all lists are formatted correctly.
+                    prompt = `A user's petition is: "${payload.petition}". From the following list of Lwa, select the ONE most appropriate to handle this need. Return a valid JSON object with a single key "selection". List: [${LWA_OPTIONS.map(l => `"${l}"`).join(", ")}]`;
                     break;
                 case 4: // Prepare the Offering
-                    prompt = `For serving the Lwa ${payload.lwa} with the petition "${payload.petition}", select FIVE to SEVEN appropriate offerings from this list. Return a valid JSON object with a single key "selections". List: [${VOODOO_OFFERINGS.join(", ")}]`;
+                    // THE FIX: Properly format the array as a string with quoted elements for the AI.
+                    prompt = `For serving the Lwa ${payload.lwa} with the petition "${payload.petition}", select FIVE to SEVEN appropriate offerings from this list. Return a valid JSON object with a single key "selections". List: [${VOODOO_OFFERINGS.map(o => `"${o}"`).join(", ")}]`;
                     break;
                 case 7: // The Lwa is Served (Affirmation)
                     prompt = `Based on the Voodoo petition "${payload.petition}" made to the Lwa ${payload.lwa}, write a single, powerful, respectful, past-tense affirmation to be displayed on a plaque, confirming the Lwa has been served. Example: "Erzulie Freda has received her gifts and blesses my heart with love." The output must be a valid JSON object with a single key "affirmation".`;
                     break;
-                // Add other cases as we build them...
             }
         }
 
