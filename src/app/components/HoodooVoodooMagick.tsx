@@ -141,7 +141,7 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
             switch (step) {
                 case 1: return <HoodooStep1_Ancestors onNext={advanceStep} />;
                 case 2: return <HoodooStep2_Petition petition={petition} setPetition={setPetition} onNext={handleHoodooPsalmSearch} />;
-                case 3: return <HoodooStep3_FindVerse selections={hoodooPsalmSelections} onSelect={setSelectedPsalm} onNext={handleHoodooMateriaSearch} />;
+                case 3: return <HoodooStep3_FindVerse selections={hoodooPsalmSelections} selectedPsalm={selectedPsalm} onSelect={setSelectedPsalm} onNext={handleHoodooMateriaSearch} />;
                 case 4: return <HoodooStep4_GatherMateria selections={hoodooMateriaSelections} onNext={advanceStep} />;
                 case 5: return <HoodooStep5_FixJar key={`charge-hoodoo-${chargingIndex}`} onNext={handleChargeNext} selections={hoodooMateriaSelections} index={chargingIndex} />;
                 case 6: return <HoodooStep6_SetLight onNext={handleHoodooFinalStep} petition={petition} />;
@@ -241,13 +241,13 @@ const ChargingComponent: React.FC<{onCharge: () => void, children: React.ReactNo
     const handleHoldEnd = () => {
         if (intervalRef.current) clearInterval(intervalRef.current);
         soundRef.current.stop();
-        setProgress(0);
+        if (!isCharged) setProgress(0);
     };
 
     return (
         <div onMouseDown={handleHoldStart} onMouseUp={handleHoldEnd} onMouseLeave={handleHoldEnd} onTouchStart={handleHoldStart} onTouchEnd={handleHoldEnd} className="relative grid place-items-center cursor-pointer select-none">
             <div className={`transition-transform duration-300 ${progress > 0 || isCharged ? 'scale-110' : ''}`}>{children}</div>
-            <svg className="absolute w-full h-full -rotate-90" viewBox="0 0 100 100" style={{transform: 'rotate(-90deg) scale(1.2)'}}>
+            <svg className="absolute w-full h-full" viewBox="0 0 100 100" style={{transform: 'rotate(-90deg) scale(1.2)'}}>
                 <motion.circle cx="50" cy="50" r="48" stroke="rgba(251, 191, 36, 1)" strokeWidth="4" fill="transparent" strokeLinecap="round" pathLength="1" strokeDasharray="1" initial={{strokeDashoffset: 1}} animate={{strokeDashoffset: isCharged ? 0 : 1 - (progress/100)}} transition={{duration: 0.05}}/>
             </svg>
         </div>
@@ -298,7 +298,7 @@ const HoodooStep1_Ancestors: React.FC<StepComponentProps> = ({ onNext }) => {
     const handleHoldEnd = () => {
         if (holdInterval.current) clearInterval(holdInterval.current);
         fireSound.stop();
-        setHoldProgress(0);
+        if(!isLit) setHoldProgress(0);
     };
 
     return (
@@ -335,14 +335,14 @@ const HoodooStep2_Petition: React.FC<{ petition: string; setPetition: (val: stri
     </StepContainer>
 );
 
-const HoodooStep3_FindVerse: React.FC<{ selections: string[]; onSelect: (val: string) => void; onNext: () => void; }> = ({ selections, onSelect, onNext }) => (
-    <StepContainer stageTitle="Find Your Verse" instruction="The spirits have guided you to these scriptures. Choose one to anchor your Work." button={<RitualButton onClick={onNext}>Gather Your Materia</RitualButton>}>
+const HoodooStep3_FindVerse: React.FC<{ selections: string[]; selectedPsalm: string; onSelect: (val: string) => void; onNext: () => void; }> = ({ selections, selectedPsalm, onSelect, onNext }) => (
+    <StepContainer stageTitle="Find Your Verse" instruction="The spirits have guided you to these scriptures. Choose one to anchor your Work." button={<RitualButton onClick={onNext} disabled={!selectedPsalm}>Gather Your Materia</RitualButton>}>
         <div className="w-full max-w-4xl flex flex-col md:flex-row items-center justify-around gap-4">
             {selections.map(psalm => (
-                <div key={psalm} onClick={() => onSelect(psalm)} className="relative w-64 aspect-4/3 cursor-pointer group">
+                <div key={psalm} onClick={() => onSelect(psalm)} className={`relative w-64 aspect-4/3 cursor-pointer group transition-transform duration-300 ${selectedPsalm === psalm ? 'scale-105' : 'scale-100'}`}>
                     <Image src={`${ASSET_PATH}/ui-psalm-book.png`} alt="Book of Psalms" layout="fill" objectFit="contain" />
-                    <div className="absolute inset-0 flex items-center justify-center p-8">
-                        <p className="text-center font-serif text-xl text-gray-800 group-hover:text-black">{psalm}</p>
+                    <div className={`absolute inset-0 flex items-center justify-center p-8 rounded-lg ${selectedPsalm === psalm ? 'bg-amber-300/20' : ''}`}>
+                        <p className={`text-center font-serif text-xl group-hover:text-black ${selectedPsalm === psalm ? 'text-black font-bold' : 'text-gray-800'}`}>{psalm}</p>
                     </div>
                 </div>
             ))}
@@ -448,7 +448,7 @@ const VoodooStep3_ServeLwa: React.FC<{ selectedLwa: string; onSelect: (lwa: stri
         { name: 'Baron Samedi', img: 'voodoo-veve-baron-samedi.png'},
     ];
     return (
-        <StepContainer stageTitle="Serve the Lwa" instruction="Choose the Lwa whose domain aligns with your need." button={<RitualButton onClick={onNext}>Prepare Offerings</RitualButton>}>
+        <StepContainer stageTitle="Serve the Lwa" instruction="Choose the Lwa whose domain aligns with your need." button={<RitualButton onClick={onNext} disabled={!selectedLwa}>Prepare Offerings</RitualButton>}>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {lwas.map(lwa => (
                     <div key={lwa.name} onClick={() => onSelect(lwa.name)} className="flex flex-col items-center gap-2 cursor-pointer group p-2">
@@ -504,7 +504,14 @@ const VoodooStep5_MakeOffering: React.FC<{ onNext: () => void, selections: strin
 
 const VoodooStep6_PresentOffering: React.FC<{ onNext: () => void; lwa: string; }> = ({ onNext, lwa }) => {
     const [isPresented, setIsPresented] = useState(false);
+    
+    // THE FIX: Add a safeguard to prevent rendering with an invalid `lwa` prop.
+    if (!lwa) {
+        return <StepContainer stageTitle="Error"><p className="text-red-400">No Lwa was selected. Please restart the ritual.</p></StepContainer>;
+    }
+
     const lwaVeveImg = `voodoo-veve-${lwa.toLowerCase().replace(' ', '-')}.png`;
+    
     return (
         <StepContainer stageTitle="Present the Offering" instruction="Present your gifts and petition to the Lwa.">
             <div className="flex flex-col md:flex-row items-center justify-center gap-8">
