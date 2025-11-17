@@ -16,8 +16,8 @@ interface TraditionInfo {
 
 const traditions: TraditionInfo[] = [
   {
-    name: "Wicca Magick", // THE FIX: Updated name
-    image: "/images/spell-room/wicca-witchcraft-magick-button.png",
+    name: "Hoodoo (Rootwork)", // THE FIX: Added the new tradition
+    image: "/images/spell-room/hoodoo-magick-button.png",
     isAvailable: true,
     positionClasses: "md:absolute md:top-[1%] md:left-1/2 md:-translate-x-1/2",
     widthClasses: "w-4/5 md:w-[26%] lg:w-[22%]",
@@ -30,22 +30,22 @@ const traditions: TraditionInfo[] = [
     widthClasses: "w-4/5 md:w-[25%] lg:w-[21%]",
   },
   {
-    name: "Ceremonial Magick",
-    image: "/images/spell-room/ceremonial-magick-button.png",
+    name: "Wicca Magick",
+    image: "/images/spell-room/wicca-witchcraft-magick-button.png",
     isAvailable: true,
     positionClasses: "md:absolute md:top-[33%] md:right-[1%] lg:right-[4%]",
     widthClasses: "w-4/5 md:w-[25%] lg:w-[21%]",
   },
   {
-    name: "Folk Magick",
-    image: "/images/spell-room/folk-magick-button.png",
-    isAvailable: true,
+    name: "Ceremonial Magick",
+    image: "/images/spell-room/ceremonial-magick-button.png",
+    isAvailable: true, // Assuming it's available for selection
     positionClasses: "md:absolute md:bottom-[1%] md:left-[15%] lg:left-[22%]",
     widthClasses: "w-4/5 md:w-[26%] lg:w-[23%]",
   },
   {
-    name: "Hoodoo (Rootwork)",
-    image: "/images/spell-room/hoodoo-magick-button.png",
+    name: "Folk Magick", // THE FIX: Replaced old Hoodoo with Folk Magick
+    image: "/images/spell-room/folk-magick-button.png",
     isAvailable: true,
     positionClasses: "md:absolute md:bottom-[1%] md:right-[15%] lg:right-[22%]",
     widthClasses: "w-4/5 md:w-[26%] lg:w-[23%]",
@@ -115,3 +115,4 @@ const SpellRoom: React.FC = () => {
 };
 
 export default SpellRoom;
+// --- END OF FILE ---

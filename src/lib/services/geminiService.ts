@@ -80,7 +80,7 @@ export const generateSpellAndSigil = async (formData: SpellFormData): Promise<Ge
     return data as GeneratedSpell;
 };
 
-// --- NEW WICCAN SPELL FUNCTION ---
+// --- Wiccan Spell Function ---
 export const generateWiccanSpell = async (formData: WiccanSpellFormData): Promise<GeneratedWiccanSpell> => {
     const { data, error } = await supabase.functions.invoke('generate-wiccan-spell', {
         body: formData,
@@ -91,7 +91,19 @@ export const generateWiccanSpell = async (formData: WiccanSpellFormData): Promis
     }
     return data as GeneratedWiccanSpell;
 };
-// --- END NEW WICCAN SPELL FUNCTION ---
+
+// --- NEW HOODOO/VOODOO FUNCTION ---
+export const generateHoodooVoodooWork = async (path: 'hoodoo' | 'voodoo', step: number, payload: any): Promise<any> => {
+    const { data, error } = await supabase.functions.invoke('generate-hoodoo-voodoo-spell', {
+        body: { path, step, payload },
+    });
+    if (error) {
+        console.error(`Error invoking generate-hoodoo-voodoo-spell function (path: ${path}, step: ${step}):`, error);
+        throw new Error(error.message || "Failed to get a response from the spirits.");
+    }
+    return data;
+};
+// --- END NEW HOODOO/VOODOO FUNCTION ---
 
 
 // --- Utility and Storage Functions ---
@@ -168,3 +180,4 @@ export const getTodaysSpellCount = async (userId: string): Promise<number> => {
     
     return count || 0;
 }
+// --- END OF FILE ---

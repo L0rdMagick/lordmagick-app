@@ -9,6 +9,7 @@ import type { Session } from '@/lib/types';
 
 import SpellGenerator from '@/app/components/SpellGenerator';
 import WiccaMagick from '@/app/components/WiccaMagick';
+import HoodooVoodooMagick from '@/app/components/HoodooVoodooMagick'; // THE FIX: Import the new component
 import AuthPage from '@/app/components/AuthPage';
 import LoadingSpinner from '@/app/components/LoadingSpinner';
 import RoomsButton from '@/app/components/RoomsButton';
@@ -17,10 +18,10 @@ import ComingSoon from '@/app/components/ComingSoon';
 
 const traditionDetails: { [key: string]: { name: string; component: React.FC<any> } } = {
   'chaos-magick-spells-app': { name: 'Chaos Magick', component: SpellGenerator },
-  'wicca-magick-spells-app': { name: 'Wicca Magick', component: WiccaMagick }, // THE FIX: Updated slug and name
+  'wicca-magick-spells-app': { name: 'Wicca Magick', component: WiccaMagick },
+  'hoodoo-rootwork-spells-app': { name: 'Hoodoo (Rootwork)', component: HoodooVoodooMagick }, // THE FIX: Add new tradition route
   'ceremonial-magick-spells-app': { name: 'Ceremonial Magick', component: ComingSoon },
   'folk-magick-spells-app': { name: 'Folk Magick', component: ComingSoon },
-  'hoodoo-rootwork-spells-app': { name: 'Hoodoo (Rootwork)', component: ComingSoon },
 };
 
 export default function SpellTraditionPage() {
@@ -75,21 +76,29 @@ export default function SpellTraditionPage() {
     return () => subscription.unsubscribe();
   }, [supabase, fetchProfile]);
 
-  // --- THE FIX: This logic now runs BEFORE the main layout is rendered ---
-  if (traditionSlug === 'wicca-magick-spells-app') {
+  // --- THE FIX: This logic now handles BOTH full-screen, independent components ---
+  const isFullScreenTradition = traditionSlug === 'wicca-magick-spells-app' || traditionSlug === 'hoodoo-rootwork-spells-app';
+
+  if (isFullScreenTradition) {
+    const backgroundImageUrl = traditionSlug === 'wicca-magick-spells-app' 
+      ? "/images/spell-room/spell-room-background.png" 
+      : "/images/Spells/HooDoo Voo Doo/background-shack-interior.png";
+
     const FullScreenWrapper: React.FC<{children: React.ReactNode}> = ({ children }) => (
-        <div className="relative min-h-screen w-full bg-black bg-cover bg-center flex items-center justify-center" style={{ backgroundImage: "url('/images/spell-room/spell-room-background.png')" }}>
+        <div className="relative min-h-screen w-full bg-black bg-cover bg-center flex items-center justify-center" style={{ backgroundImage: `url('${backgroundImageUrl}')` }}>
             {children}
         </div>
     );
+
     if (loading) return <FullScreenWrapper><LoadingSpinner /></FullScreenWrapper>;
     if (!session) return <FullScreenWrapper><div className="bg-black/50 backdrop-blur-sm p-8 rounded-lg border border-white/10 w-full max-w-lg"><AuthPage /></div></FullScreenWrapper>;
     
-    // Render ONLY the self-contained WiccaMagick component
-    return <WiccaMagick session={session} isSubscribed={profile?.is_subscribed || false} />;
+    const Component = traditionDetails[traditionSlug]?.component;
+    if (!Component) return <FullScreenWrapper><div>Tradition component not found.</div></FullScreenWrapper>;
+
+    return <Component session={session} isSubscribed={profile?.is_subscribed || false} />;
   }
   // --- END FIX ---
-
 
   const handleBack = () => {
     router.push('/spell-room');
@@ -119,7 +128,6 @@ export default function SpellTraditionPage() {
 
   const traditionName = traditionDetails[traditionSlug]?.name || "Spell Crafter";
 
-  // This layout will now ONLY be used for traditions that are NOT 'wicca-magick-spells-app'
   return (
     <main 
       className="relative min-h-screen w-full bg-black bg-cover bg-center flex flex-col"
@@ -147,3 +155,4 @@ export default function SpellTraditionPage() {
     </main>
   );
 }
+// --- END OF FILE ---

@@ -19,7 +19,7 @@ const generateGrid = (rows: number, cols: number, spriteWidth: number, spriteHei
     for (let c = 0; c < cols; c++) {
       const index = r * cols + c;
       if (index < names.length) {
-        const key = names[index].toLowerCase().replace(/ & /g, '-').replace(/ /g, '-');
+        const key = names[index].toLowerCase().replace(/ & /g, '-').replace(/ /g, '-').replace(/\(|\)/g, ''); // Added replace for parenthesis
         items[key] = { 
             x: -c * spriteWidth, 
             y: -r * spriteHeight,
@@ -122,15 +122,37 @@ const offerings2 = generateGrid(4, 4, 256, 256,
     ]
 );
 
+const hoodooMateria1 = generateGrid(4, 4, 256, 256,
+    [
+        "Alfalfa", "Rosemary", "High John Root", "Bay Leaf",
+        "Lodestone", "Pyrite", "Magnetic Sand", "Silver Dime",
+        "Goofer Dust", "Salt", "Sulfur", "Brick Dust",
+        "Lavender", "Cinnamon Stick", "Personal Concern (Hair)", "Snake Shed"
+    ],
+    Array(16).fill("The work is grounded.") // Placeholder incantations
+);
+
+const voodooOfferings1 = generateGrid(4, 4, 256, 256,
+    [
+        "Rum", "Cigar", "Sweet Coffee", "Candy",
+        "Pink Rose", "Perfume Bottle", "Mirror", "Champagne",
+        "Machete (mini)", "Iron Nail", "Red Candle", "Coconut",
+        "White Egg", "White Cloth", "Snake Icon", "Top Hat"
+    ],
+    Array(16).fill("A gift is given.") // Placeholder incantations
+);
+
 export const spriteLibrary: Record<string, SpriteSheet> = {
   herbs1: { path: '/images/sprite-sheets/herbs1.png', spriteSize: SIZE_256, sheetSize: SHEET_SIZE_1024, items: herbs1 },
   crystals1: { path: '/images/sprite-sheets/crystals1.png', spriteSize: SIZE_256, sheetSize: SHEET_SIZE_1024, items: crystals1 },
   tools1: { path: '/images/sprite-sheets/tools1.png', spriteSize: SIZE_256, sheetSize: SHEET_SIZE_1024, items: tools1 },
   offerings2: { path: '/images/sprite-sheets/offerings2.png', spriteSize: SIZE_256, sheetSize: SHEET_SIZE_1024, items: offerings2 },
+  hoodooMateria1: { path: '/images/sprite-sheets/hoodoo-materia-spritesheet.png', spriteSize: SIZE_256, sheetSize: SHEET_SIZE_1024, items: hoodooMateria1 },
+  voodooOfferings1: { path: '/images/sprite-sheets/voodoo-offering-spritesheet.png', spriteSize: SIZE_256, sheetSize: SHEET_SIZE_1024, items: voodooOfferings1 },
 };
 
 export const findSprite = (itemName: string): { sheet: SpriteSheet; itemInfo: SpriteInfo; } | null => {
-  const normalizedItemName = itemName.toLowerCase().replace(/ & /g, '-').replace(/ /g, '-');
+  const normalizedItemName = itemName.toLowerCase().replace(/ & /g, '-').replace(/ /g, '-').replace(/\(|\)/g, '');
   for (const sheetKey in spriteLibrary) {
     const sheet = spriteLibrary[sheetKey];
     if (sheet.items[normalizedItemName]) {
@@ -143,3 +165,4 @@ export const findSprite = (itemName: string): { sheet: SpriteSheet; itemInfo: Sp
   console.warn(`Sprite item "${itemName}" not found in any sheet.`);
   return null;
 };
+// --- END OF FILE ---
