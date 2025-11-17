@@ -372,6 +372,10 @@ const HoodooStep5_FixJar: React.FC<{ onNext: () => void, selections: MateriaSele
     const [isCharged, setIsCharged] = useState(false);
     const currentMateria = selections[index];
     const spriteData = findSprite(currentMateria.name);
+    
+    // THE FIX: Smart layer mapping logic
+    const totalSelections = selections.length;
+    const numLayersToShow = Math.ceil(((index + 1) / totalSelections) * 5);
 
     return (
         <StepContainer stageTitle="Fix the Jar" instruction={`Charge the ${currentMateria.name} with your intention.`} button={isCharged ? <RitualButton onClick={onNext} className="animate-pulse">{index < selections.length - 1 ? "Next Ingredient" : "Set the Light"}</RitualButton> : <div/>}>
@@ -379,8 +383,9 @@ const HoodooStep5_FixJar: React.FC<{ onNext: () => void, selections: MateriaSele
                 <p className="text-xl text-center text-amber-100 font-serif h-12">Now say: <span className="italic">"{currentMateria.incantation}"</span></p>
                 <div className="relative w-full h-full max-w-md aspect-square mx-auto">
                     <Image src={`${ASSET_PATH}/hoodoo-jar-empty.png`} alt="Empty Spell Jar" layout="fill" objectFit="contain" />
-                    {Array.from({length: index + 1}).map((_, i) => (
-                        <Image key={i} src={`${ASSET_PATH}/hoodoo-jar-layer-0${i + 1}.png`} alt={`Layer ${i+1}`} layout="fill" objectFit="contain" className={isCharged && i === index ? 'opacity-100' : (i < index ? 'opacity-100' : 'opacity-0')} />
+                    {/* THE FIX: Loop through all 5 possible layers and show them conditionally */}
+                    {Array.from({length: 5}).map((_, i) => (
+                        <Image key={i} src={`${ASSET_PATH}/hoodoo-jar-layer-0${i + 1}.png`} alt={`Layer ${i+1}`} layout="fill" objectFit="contain" className={`transition-opacity duration-500 ${i < numLayersToShow ? 'opacity-100' : 'opacity-0'}`} />
                     ))}
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-2/3">
                         <ChargingComponent onCharge={() => setIsCharged(true)} isCharged={isCharged}>
@@ -422,7 +427,6 @@ const HoodooStep6_SetLight: React.FC<{ onNext: () => void, petition: string }> =
 
 // --- Voodoo Path Components ---
 const VoodooStep1_OpenGate: React.FC<StepComponentProps> = ({ onNext }) => {
-    // Placeholder - will add tracing/glowing logic later
     useEffect(() => { const timer = setTimeout(onNext, 2000); return () => clearTimeout(timer); }, [onNext]);
     return (
         <StepContainer stageTitle="Open the Gate" instruction="Honor Papa Legba and open the way to the spirit world.">
@@ -489,14 +493,19 @@ const VoodooStep5_MakeOffering: React.FC<{ onNext: () => void, selections: Mater
     const currentOffering = selections[index];
     const spriteData = findSprite(currentOffering.name);
 
+    // THE FIX: Smart layer mapping logic
+    const totalSelections = selections.length;
+    const numLayersToShow = Math.ceil(((index + 1) / totalSelections) * 5);
+
     return (
         <StepContainer stageTitle="Make the Offering" instruction={`Prepare the ${currentOffering.name} for the Lwa.`} button={isCharged ? <RitualButton onClick={onNext} className="animate-pulse">{index < selections.length - 1 ? "Next Offering" : "Present to Lwa"}</RitualButton> : <div/>}>
             <div className="flex flex-col items-center justify-center gap-4">
                  <p className="text-xl text-center text-amber-100 font-serif h-12">Now say: <span className="italic">"{currentOffering.incantation}"</span></p>
                 <div className="relative w-full h-full max-w-md aspect-square mx-auto">
                     <Image src={`${ASSET_PATH}/voodoo-offering-bottle.png`} alt="Empty Offering Bottle" layout="fill" objectFit="contain" />
-                    {Array.from({length: index + 1}).map((_, i) => (
-                        <Image key={i} src={`${ASSET_PATH}/voodoo-offering-layer-0${i + 1}.png`} alt={`Layer ${i+1}`} layout="fill" objectFit="contain" className={isCharged && i === index ? 'opacity-100' : (i < index ? 'opacity-100' : 'opacity-0')} />
+                    {/* THE FIX: Loop through all 5 possible layers and show them conditionally */}
+                    {Array.from({length: 5}).map((_, i) => (
+                        <Image key={i} src={`${ASSET_PATH}/voodoo-offering-layer-0${i + 1}.png`} alt={`Layer ${i+1}`} layout="fill" objectFit="contain" className={`transition-opacity duration-500 ${i < numLayersToShow ? 'opacity-100' : 'opacity-0'}`} />
                     ))}
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-2/3">
                         <ChargingComponent onCharge={() => setIsCharged(true)} isCharged={isCharged}>
