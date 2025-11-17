@@ -37,6 +37,7 @@ type RitualPath = 'hoodoo' | 'voodoo' | null;
 interface StepComponentProps { onNext: () => void; }
 interface StepContainerProps { stageTitle?: string; instruction?: string; children: React.ReactNode; button?: React.ReactNode; }
 interface RitualButtonProps { onClick: () => void; children: React.ReactNode; className?: string; disabled?: boolean; }
+type SpriteData = NonNullable<ReturnType<typeof findSprite>>;
 
 // --- Main Component ---
 const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }> = ({ session }) => {
@@ -54,17 +55,12 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
     const [selectedLwa, setSelectedLwa] = useState<string>('');
     const [voodooOfferingSelections, setVoodooOfferingSelections] = useState<string[]>([]);
     const [finalAffirmation, setFinalAffirmation] = useState('');
+    const [chargingIndex, setChargingIndex] = useState(0);
 
     const resetState = () => {
-        setStep(0);
-        setPath(null);
-        setPetition('');
-        setHoodooPsalmSelections([]);
-        setSelectedPsalm('');
-        setHoodooMateriaSelections([]);
-        setSelectedLwa('');
-        setVoodooOfferingSelections([]);
-        setFinalAffirmation('');
+        setStep(0); setPath(null); setPetition(''); setHoodooPsalmSelections([]);
+        setSelectedPsalm(''); setHoodooMateriaSelections([]); setSelectedLwa('');
+        setVoodooOfferingSelections([]); setFinalAffirmation(''); setChargingIndex(0);
     };
 
     const selectPath = (chosenPath: RitualPath) => {
@@ -97,6 +93,15 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
             advanceStep();
         } catch (err: any) { setError(err.message); } finally { setLoading(false); }
     };
+    
+    const handleHoodooFinalStep = async () => {
+        setLoading(true); setLoadingMessage("Sealing the Work...");
+        try {
+            const result = await generateHoodooVoodooWork('hoodoo', 7, { petition });
+            setFinalAffirmation(result.affirmation);
+            advanceStep();
+        } catch(err: any) { setError(err.message); } finally { setLoading(false); }
+    };
 
     const handleVoodooOfferingSearch = async () => {
         if (!selectedLwa) { setError("You must serve a Lwa."); return; }
@@ -106,6 +111,24 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
             setVoodooOfferingSelections(result.selections);
             advanceStep();
         } catch (err: any) { setError(err.message); } finally { setLoading(false); }
+    };
+
+    const handleVoodooFinalStep = async () => {
+        setLoading(true); setLoadingMessage("Presenting the offering...");
+        try {
+            const result = await generateHoodooVoodooWork('voodoo', 7, { petition, lwa: selectedLwa });
+            setFinalAffirmation(result.affirmation);
+            advanceStep();
+        } catch(err: any) { setError(err.message); } finally { setLoading(false); }
+    };
+
+    const handleChargeNext = () => {
+        const limit = path === 'hoodoo' ? hoodooMateriaSelections.length : voodooOfferingSelections.length;
+        if (chargingIndex < limit - 1) {
+            setChargingIndex(prev => prev + 1);
+        } else {
+            advanceStep();
+        }
     };
 
     const renderContent = () => {
@@ -120,9 +143,9 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
                 case 2: return <HoodooStep2_Petition petition={petition} setPetition={setPetition} onNext={handleHoodooPsalmSearch} />;
                 case 3: return <HoodooStep3_FindVerse selections={hoodooPsalmSelections} onSelect={setSelectedPsalm} onNext={handleHoodooMateriaSearch} />;
                 case 4: return <HoodooStep4_GatherMateria selections={hoodooMateriaSelections} onNext={advanceStep} />;
-                case 5: return <div>Hoodoo Step 5: Fix the Jar</div>;
-                case 6: return <div>Hoodoo Step 6: Set the Light</div>;
-                case 7: return <div>Hoodoo Step 7: The Work is Done</div>;
+                case 5: return <HoodooStep5_FixJar key={`charge-hoodoo-${chargingIndex}`} onNext={handleChargeNext} selections={hoodooMateriaSelections} index={chargingIndex} />;
+                case 6: return <HoodooStep6_SetLight onNext={handleHoodooFinalStep} petition={petition} />;
+                case 7: return <Step7_Manifestation affirmation={finalAffirmation} path={path} onFinish={resetState} />;
                 default: return <div onClick={resetState}>Invalid Step</div>;
             }
         }
@@ -131,11 +154,11 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
             switch (step) {
                 case 1: return <VoodooStep1_OpenGate onNext={advanceStep} />;
                 case 2: return <VoodooStep2_StateNeed petition={petition} setPetition={setPetition} onNext={advanceStep} />;
-                case 3: return <VoodooStep3_ServeLwa onSelect={setSelectedLwa} onNext={handleVoodooOfferingSearch} />;
+                case 3: return <VoodooStep3_ServeLwa selectedLwa={selectedLwa} onSelect={setSelectedLwa} onNext={handleVoodooOfferingSearch} />;
                 case 4: return <VoodooStep4_PrepareOffering selections={voodooOfferingSelections} onNext={advanceStep} />;
-                case 5: return <div>Voodoo Step 5: Make the Offering</div>;
-                case 6: return <div>Voodoo Step 6: Present the Offering</div>;
-                case 7: return <div>Voodoo Step 7: The Lwa is Served</div>;
+                case 5: return <VoodooStep5_MakeOffering key={`charge-voodoo-${chargingIndex}`} onNext={handleChargeNext} selections={voodooOfferingSelections} index={chargingIndex} />;
+                case 6: return <VoodooStep6_PresentOffering onNext={handleVoodooFinalStep} lwa={selectedLwa} />;
+                case 7: return <Step7_Manifestation affirmation={finalAffirmation} path={path} onFinish={resetState} />;
                 default: return <div onClick={resetState}>Invalid Step</div>;
             }
         }
@@ -179,7 +202,7 @@ const RitualButton: React.FC<RitualButtonProps> = ({ onClick, children, classNam
 );
 
 const StepContainer: React.FC<StepContainerProps> = ({ stageTitle, instruction, children, button }) => (
-    <div className="w-full h-full flex flex-col items-center justify-between gap-2 py-1">
+    <div className="w-full h-full flex flex-col items-center justify-center gap-2 py-1">
         <div className="shrink-0 flex flex-col items-center justify-center text-center px-4 min-h-24 h-auto py-2 z-20 relative">
              {stageTitle && <h2 className="text-3xl font-serif text-amber-200/90">{stageTitle}</h2>}
              {instruction && <p className="text-base text-amber-100/80 mt-2 italic font-light max-w-2xl leading-tight whitespace-pre-line" style={{textShadow: '1px 1px 2px rgba(0,0,0,0.7)'}}>{instruction}</p>}
@@ -192,6 +215,44 @@ const StepContainer: React.FC<StepContainerProps> = ({ stageTitle, instruction, 
         </div>
     </div>
 );
+
+// --- CHARGING COMPONENT ---
+const ChargingComponent: React.FC<{onCharge: () => void, children: React.ReactNode, isCharged: boolean}> = ({ onCharge, children, isCharged }) => {
+    const [progress, setProgress] = useState(0);
+    const intervalRef = useRef<NodeJS.Timeout|null>(null);
+    const soundRef = useRef(playSound('/audio/sfx-chaos-hold.mp3', 0.2, true));
+
+    const handleHoldStart = () => {
+        if (isCharged) return;
+        soundRef.current.play();
+        const startTime = Date.now();
+        intervalRef.current = setInterval(() => {
+            const elapsedTime = Date.now() - startTime;
+            const currentProgress = Math.min((elapsedTime / CHARGE_DURATION) * 100, 100);
+            setProgress(currentProgress);
+            if (currentProgress >= 100) {
+                clearInterval(intervalRef.current!);
+                soundRef.current.stop();
+                playSound('/audio/sfx-chaos-activate.mp3', 0.3).play();
+                onCharge();
+            }
+        }, 50);
+    };
+    const handleHoldEnd = () => {
+        if (intervalRef.current) clearInterval(intervalRef.current);
+        soundRef.current.stop();
+        setProgress(0);
+    };
+
+    return (
+        <div onMouseDown={handleHoldStart} onMouseUp={handleHoldEnd} onMouseLeave={handleHoldEnd} onTouchStart={handleHoldStart} onTouchEnd={handleHoldEnd} className="relative grid place-items-center cursor-pointer select-none">
+            <div className={`transition-transform duration-300 ${progress > 0 || isCharged ? 'scale-110' : ''}`}>{children}</div>
+            <svg className="absolute w-full h-full -rotate-90" viewBox="0 0 100 100" style={{transform: 'rotate(-90deg) scale(1.2)'}}>
+                <motion.circle cx="50" cy="50" r="48" stroke="rgba(251, 191, 36, 1)" strokeWidth="4" fill="transparent" strokeLinecap="round" pathLength="1" strokeDasharray="1" initial={{strokeDashoffset: 1}} animate={{strokeDashoffset: isCharged ? 0 : 1 - (progress/100)}} transition={{duration: 0.05}}/>
+            </svg>
+        </div>
+    );
+};
 
 
 // --- Step 0: Path Selection ---
@@ -306,6 +367,55 @@ const HoodooStep4_GatherMateria: React.FC<{ selections: string[]; onNext: () => 
     </StepContainer>
 );
 
+const HoodooStep5_FixJar: React.FC<{ onNext: () => void, selections: string[], index: number }> = ({ onNext, selections, index }) => {
+    const [isCharged, setIsCharged] = useState(false);
+    const currentMateria = selections[index];
+    const spriteData = findSprite(currentMateria);
+
+    return (
+        <StepContainer stageTitle="Fix the Jar" instruction={`Charge the ${currentMateria} with your intention.`} button={isCharged ? <RitualButton onClick={onNext} className="animate-pulse">{index < selections.length - 1 ? "Next Ingredient" : "Set the Light"}</RitualButton> : <div/>}>
+            <div className="relative w-full h-full max-w-md aspect-square mx-auto">
+                <Image src={`${ASSET_PATH}/hoodoo-jar-empty.png`} alt="Empty Spell Jar" layout="fill" objectFit="contain" />
+                {Array.from({length: index + 1}).map((_, i) => (
+                    <Image key={i} src={`${ASSET_PATH}/hoodoo-jar-layer-0${i + 1}.png`} alt={`Layer ${i+1}`} layout="fill" objectFit="contain" className={isCharged && i === index ? 'opacity-100' : (i < index ? 'opacity-100' : 'opacity-0')} />
+                ))}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-2/3">
+                    <ChargingComponent onCharge={() => setIsCharged(true)} isCharged={isCharged}>
+                         {spriteData && <div className="w-24 h-24"><Sprite sheetPath={spriteData.sheet.path} x={spriteData.itemInfo.x} y={spriteData.itemInfo.y} spriteWidth={spriteData.sheet.spriteSize.width} spriteHeight={spriteData.sheet.spriteSize.height} sheetWidth={spriteData.sheet.sheetSize.width} sheetHeight={spriteData.sheet.sheetSize.height} /></div>}
+                    </ChargingComponent>
+                </div>
+            </div>
+        </StepContainer>
+    );
+};
+
+const HoodooStep6_SetLight: React.FC<{ onNext: () => void, petition: string }> = ({ onNext, petition }) => {
+    const [isLit, setIsLit] = useState(false);
+    return(
+        <StepContainer stageTitle="Set the Light" instruction="Light the candle to activate the spell and send your intention.">
+            <div className="relative w-72 h-96">
+                <AnimatePresence>
+                {isLit && (
+                    <motion.p initial={{opacity: 0, y: 20}} animate={{opacity: [0, 0.7, 0.7, 0], y: -100}} transition={{duration: 7, ease: 'linear'}} className="absolute -top-12 left-1/2 -translate-x-1/2 w-64 text-center text-amber-100/80 italic whitespace-pre-line z-20">
+                        {petition}
+                    </motion.p>
+                )}
+                </AnimatePresence>
+                <ChargingComponent onCharge={() => { setIsLit(true); setTimeout(onNext, 2000); }} isCharged={isLit}>
+                    <div className="relative w-72 h-96">
+                        <Image src={`${ASSET_PATH}/hoodoo-jar-fixed.png`} alt="Fixed Jar" layout="fill" objectFit="contain" className="z-0"/>
+                        {!isLit ? 
+                            <Image src={`${ASSET_PATH}/hoodoo-vigil-candle-unlit.png`} alt="Unlit Vigil Candle" layout="fill" objectFit="contain" className="z-10" /> :
+                            <Image src={`${ASSET_PATH}/hoodoo-vigil-candle-lit.gif`} alt="Lit Vigil Candle" layout="fill" objectFit="contain" unoptimized className="z-10" />
+                        }
+                    </div>
+                </ChargingComponent>
+            </div>
+        </StepContainer>
+    );
+};
+
+
 // --- Voodoo Path Components ---
 const VoodooStep1_OpenGate: React.FC<StepComponentProps> = ({ onNext }) => {
     // Placeholder - will add tracing/glowing logic later
@@ -330,7 +440,7 @@ const VoodooStep2_StateNeed: React.FC<{ petition: string; setPetition: (val: str
     </StepContainer>
 );
 
-const VoodooStep3_ServeLwa: React.FC<{ onSelect: (lwa: string) => void; onNext: () => void; }> = ({ onSelect, onNext }) => {
+const VoodooStep3_ServeLwa: React.FC<{ selectedLwa: string; onSelect: (lwa: string) => void; onNext: () => void; }> = ({ selectedLwa, onSelect, onNext }) => {
     const lwas = [
         { name: 'Erzulie Freda', img: 'voodoo-veve-erzulie-freda.png'},
         { name: 'Ogun', img: 'voodoo-veve-ogun.png'},
@@ -342,10 +452,10 @@ const VoodooStep3_ServeLwa: React.FC<{ onSelect: (lwa: string) => void; onNext: 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {lwas.map(lwa => (
                     <div key={lwa.name} onClick={() => onSelect(lwa.name)} className="flex flex-col items-center gap-2 cursor-pointer group p-2">
-                        <div className="relative w-28 h-28 md:w-36 md:h-36 bg-black/20 p-2 rounded-full border-2 border-transparent group-hover:border-amber-300 transition-colors">
-                             <Image src={`${ASSET_PATH}/${lwa.img}`} alt={lwa.name} layout="fill" objectFit="contain" className="brightness-75 group-hover:brightness-125 transition-all"/>
+                        <div className={`relative w-28 h-28 md:w-36 md:h-36 bg-black/20 p-2 rounded-full border-2 transition-colors ${selectedLwa === lwa.name ? 'border-amber-300' : 'border-transparent group-hover:border-amber-300/50'}`}>
+                             <Image src={`${ASSET_PATH}/${lwa.img}`} alt={lwa.name} layout="fill" objectFit="contain" className={`transition-all ${selectedLwa === lwa.name ? 'brightness-125' : 'brightness-75 group-hover:brightness-110'}`}/>
                         </div>
-                        <p className="font-serif text-gray-300 group-hover:text-amber-200">{lwa.name}</p>
+                        <p className={`font-serif transition-colors ${selectedLwa === lwa.name ? 'text-amber-200' : 'text-gray-300 group-hover:text-white'}`}>{lwa.name}</p>
                     </div>
                 ))}
             </div>
@@ -369,6 +479,85 @@ const VoodooStep4_PrepareOffering: React.FC<{ selections: string[]; onNext: () =
         </div>
     </StepContainer>
 );
+
+const VoodooStep5_MakeOffering: React.FC<{ onNext: () => void, selections: string[], index: number }> = ({ onNext, selections, index }) => {
+    const [isCharged, setIsCharged] = useState(false);
+    const currentOffering = selections[index];
+    const spriteData = findSprite(currentOffering);
+
+    return (
+        <StepContainer stageTitle="Make the Offering" instruction={`Prepare the ${currentOffering} for the Lwa.`} button={isCharged ? <RitualButton onClick={onNext} className="animate-pulse">{index < selections.length - 1 ? "Next Offering" : "Present to Lwa"}</RitualButton> : <div/>}>
+             <div className="relative w-full h-full max-w-md aspect-square mx-auto">
+                <Image src={`${ASSET_PATH}/voodoo-offering-bottle.png`} alt="Empty Offering Bottle" layout="fill" objectFit="contain" />
+                {Array.from({length: index + 1}).map((_, i) => (
+                    <Image key={i} src={`${ASSET_PATH}/voodoo-offering-layer-0${i + 1}.png`} alt={`Layer ${i+1}`} layout="fill" objectFit="contain" className={isCharged && i === index ? 'opacity-100' : (i < index ? 'opacity-100' : 'opacity-0')} />
+                ))}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-2/3">
+                    <ChargingComponent onCharge={() => setIsCharged(true)} isCharged={isCharged}>
+                         {spriteData && <div className="w-24 h-24"><Sprite sheetPath={spriteData.sheet.path} x={spriteData.itemInfo.x} y={spriteData.itemInfo.y} spriteWidth={spriteData.sheet.spriteSize.width} spriteHeight={spriteData.sheet.spriteSize.height} sheetWidth={spriteData.sheet.sheetSize.width} sheetHeight={spriteData.sheet.sheetSize.height} /></div>}
+                    </ChargingComponent>
+                </div>
+            </div>
+        </StepContainer>
+    );
+};
+
+const VoodooStep6_PresentOffering: React.FC<{ onNext: () => void; lwa: string; }> = ({ onNext, lwa }) => {
+    const [isPresented, setIsPresented] = useState(false);
+    const lwaVeveImg = `voodoo-veve-${lwa.toLowerCase().replace(' ', '-')}.png`;
+    return (
+        <StepContainer stageTitle="Present the Offering" instruction="Present your gifts and petition to the Lwa.">
+            <div className="flex flex-col md:flex-row items-center justify-center gap-8">
+                <div className="relative w-48 h-64">
+                    <Image src={`${ASSET_PATH}/voodoo-offering-bottle-filled.png`} alt="Filled Offering Bottle" layout="fill" objectFit="contain" />
+                </div>
+                <ChargingComponent onCharge={() => { setIsPresented(true); setTimeout(onNext, 2000); }} isCharged={isPresented}>
+                     <div className="relative w-48 h-48">
+                        <Image src={`${ASSET_PATH}/${lwaVeveImg}`} alt={`${lwa} Vèvè`} layout="fill" objectFit="contain" className="brightness-75" />
+                        {isPresented && <Image src={`${ASSET_PATH}/ui-veve-glow.gif`} alt="Vèvè Glowing" layout="fill" objectFit="contain" unoptimized />}
+                    </div>
+                </ChargingComponent>
+            </div>
+        </StepContainer>
+    );
+};
+
+// --- Final Step Component (Shared) ---
+const Step7_Manifestation: React.FC<{ affirmation: string, path: RitualPath, onFinish: () => void }> = ({ affirmation, path, onFinish }) => {
+    const finalImage = path === 'hoodoo' ? 'hoodoo-manifestation-final.png' : 'voodoo-manifestation-final.png';
+    const particles = useMemo(() => Array.from({ length: 20 }).map((_, i) => ({
+        id: i,
+        x: (Math.random() - 0.5) * 400,
+        y: Math.random() * -500 - 50,
+        duration: 5 + Math.random() * 5,
+        delay: Math.random() * 7
+    })), []);
+
+    return (
+        <StepContainer stageTitle={path === 'hoodoo' ? "The Work is Done" : "The Lwa is Served"} button={<RitualButton onClick={onFinish}>Return</RitualButton>}>
+            <div className="relative w-full h-full max-w-2xl aspect-square @container mx-auto">
+                 <Image src={`${ASSET_PATH}/${finalImage}`} alt="Final Manifestation" layout="fill" objectFit="contain" />
+                 {path === 'voodoo' && (
+                     <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                         {particles.map(p => (
+                             <motion.div key={p.id} initial={{opacity: 0, y: 0}} animate={{opacity: [0, 0.8, 0], y: p.y}} transition={{duration: p.duration, delay: p.delay, repeat: Infinity, repeatType: "loop"}} style={{x: p.x}} className="absolute top-1/2 left-1/2 w-12 h-12">
+                                <Image src={`${ASSET_PATH}/ui-particle-spirit.png`} alt="spirit particle" layout="fill" />
+                             </motion.div>
+                         ))}
+                     </div>
+                 )}
+                <div className="absolute flex items-center justify-center p-4" style={{left: '30%', top: '40%', width: '40%', height: '20%'}}>
+                    <div className="relative w-full h-full">
+                        <Image src={`${ASSET_PATH}/ui-affirmation-plaque.png`} alt="Affirmation Plaque" layout="fill" objectFit="contain"/>
+                        <div className="absolute inset-0 flex items-center justify-center p-2">
+                             <p className="text-center text-[#4a2e1c] font-serif" style={{fontSize: 'clamp(0.5rem, 2.5cqw, 1rem)'}}>{affirmation}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </StepContainer>
+    );
+};
 
 export default HoodooVoodooMagick;
 // --- END OF FILE ---
