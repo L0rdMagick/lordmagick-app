@@ -165,8 +165,12 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
         }
     };
 
+    const currentBackground = step === 0 
+        ? `${ASSET_PATH}/ui-crossroads-backdrop.png` 
+        : `${ASSET_PATH}/background-shack-interior.png`;
+
     return (
-        <main className="relative h-screen w-screen bg-black bg-cover bg-center flex flex-col" style={{ backgroundImage: `url('${ASSET_PATH}/background-shack-interior.png')` }}>
+        <main className="relative h-screen w-screen bg-black bg-cover bg-center flex flex-col transition-all duration-1000" style={{ backgroundImage: `url('${currentBackground}')` }}>
             <div className="absolute inset-0 bg-black/40" />
             <header className="relative z-20 w-full p-4 md:p-6 shrink-0">
                  <div className="flex justify-between items-center flex-wrap w-full max-w-7xl mx-auto">
@@ -258,7 +262,7 @@ const ChargingComponent: React.FC<{onCharge: () => void, children: React.ReactNo
 
 // --- Step 0: Path Selection ---
 const Step0_Crossroads: React.FC<{ onSelectPath: (path: RitualPath) => void }> = ({ onSelectPath }) => (
-    <div className="relative w-full h-full flex flex-col items-center justify-center" style={{ backgroundImage: `url('${ASSET_PATH}/ui-crossroads-backdrop.png')`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
+    <div className="relative w-full h-full flex flex-col items-center justify-center">
         <div className="absolute inset-0 bg-black/50" />
         <div className="relative z-10 flex flex-col md:flex-row items-center justify-center gap-8 md:gap-16">
             <button onClick={() => onSelectPath('hoodoo')} className="relative w-48 h-64 md:w-64 md:h-80 transition-transform duration-300 hover:scale-105 active:scale-95">
@@ -373,7 +377,6 @@ const HoodooStep5_FixJar: React.FC<{ onNext: () => void, selections: MateriaSele
     const currentMateria = selections[index];
     const spriteData = findSprite(currentMateria.name);
     
-    // THE FIX: Smart layer mapping logic
     const totalSelections = selections.length;
     const numLayersToShow = Math.ceil(((index + 1) / totalSelections) * 5);
 
@@ -383,7 +386,6 @@ const HoodooStep5_FixJar: React.FC<{ onNext: () => void, selections: MateriaSele
                 <p className="text-xl text-center text-amber-100 font-serif h-12">Now say: <span className="italic">"{currentMateria.incantation}"</span></p>
                 <div className="relative w-full h-full max-w-md aspect-square mx-auto">
                     <Image src={`${ASSET_PATH}/hoodoo-jar-empty.png`} alt="Empty Spell Jar" layout="fill" objectFit="contain" />
-                    {/* THE FIX: Loop through all 5 possible layers and show them conditionally */}
                     {Array.from({length: 5}).map((_, i) => (
                         <Image key={i} src={`${ASSET_PATH}/hoodoo-jar-layer-0${i + 1}.png`} alt={`Layer ${i+1}`} layout="fill" objectFit="contain" className={`transition-opacity duration-500 ${i < numLayersToShow ? 'opacity-100' : 'opacity-0'}`} />
                     ))}
@@ -493,7 +495,6 @@ const VoodooStep5_MakeOffering: React.FC<{ onNext: () => void, selections: Mater
     const currentOffering = selections[index];
     const spriteData = findSprite(currentOffering.name);
 
-    // THE FIX: Smart layer mapping logic
     const totalSelections = selections.length;
     const numLayersToShow = Math.ceil(((index + 1) / totalSelections) * 5);
 
@@ -503,7 +504,6 @@ const VoodooStep5_MakeOffering: React.FC<{ onNext: () => void, selections: Mater
                  <p className="text-xl text-center text-amber-100 font-serif h-12">Now say: <span className="italic">"{currentOffering.incantation}"</span></p>
                 <div className="relative w-full h-full max-w-md aspect-square mx-auto">
                     <Image src={`${ASSET_PATH}/voodoo-offering-bottle.png`} alt="Empty Offering Bottle" layout="fill" objectFit="contain" />
-                    {/* THE FIX: Loop through all 5 possible layers and show them conditionally */}
                     {Array.from({length: 5}).map((_, i) => (
                         <Image key={i} src={`${ASSET_PATH}/voodoo-offering-layer-0${i + 1}.png`} alt={`Layer ${i+1}`} layout="fill" objectFit="contain" className={`transition-opacity duration-500 ${i < numLayersToShow ? 'opacity-100' : 'opacity-0'}`} />
                     ))}
