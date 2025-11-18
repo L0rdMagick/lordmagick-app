@@ -17,7 +17,7 @@ import { findSprite } from '@/lib/spriteLibrary';
 const ASSET_PATH = "/images/Spells/HooDoo Voo Doo";
 const CHARGE_DURATION = 3000; // 3 seconds
 const FADE_DURATION = 0.8;
-const SENDING_DURATION = 5000; // 5 seconds for the mystical swirl
+const SENDING_DURATION = 5000; // 5 seconds for the sending animation
 
 // --- Data ---
 const PSALM_DATABASE: Record<string, string> = {
@@ -97,7 +97,7 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
     };
 
     const handleHoodooMateriaSearch = async () => {
-        if (!selectedPsalm || !isPsalmLit) { setError("You must select and bless a Psalm verse."); return; }
+        if (!selectedPsalm || !isPsalmLit) { setError("You must select and fix a Psalm verse."); return; }
         setLoading(true); setLoadingMessage("Gathering your materia...");
         try {
             const result = await generateHoodooVoodooWork('hoodoo', 4, { petition });
@@ -156,8 +156,8 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
                 case 3: return <HoodooStep3_FindVerse selections={hoodooPsalmSelections} selectedPsalm={selectedPsalm} isPsalmLit={isPsalmLit} setSelectedPsalm={setSelectedPsalm} setPsalmLit={setIsPsalmLit} onNext={handleHoodooMateriaSearch} />;
                 case 4: return <HoodooStep4_GatherMateria selections={hoodooMateriaSelections} onNext={advanceStep} />;
                 case 5: return <HoodooStep5_FixJar key={`charge-hoodoo-${chargingIndex}`} onNext={handleChargeNext} selections={hoodooMateriaSelections} index={chargingIndex} />;
-                case 6: return <HoodooStep6_SetLight onNext={advanceStep} />;
-                case 7: return <Step7_Sending onNext={handleHoodooFinalStep} />;
+                case 6: return <HoodooStep6_SetLight onNext={advanceStep} petition={petition} />;
+                case 7: return <Step7_Sending onNext={handleHoodooFinalStep} petition={petition} />;
                 case 8: return <Step8_Manifestation affirmation={finalAffirmation} path={path} onFinish={resetState} />;
                 default: return <div onClick={resetState}>Invalid Step</div>;
             }
@@ -354,11 +354,6 @@ const HoodooStep2_Petition: React.FC<{ petition: string; setPetition: (val: stri
 const HoodooStep3_FindVerse: React.FC<{ selections: string[]; selectedPsalm: string; isPsalmLit: boolean; setSelectedPsalm: (val: string) => void; setPsalmLit: (val: boolean) => void; onNext: () => void; }> = ({ selections, selectedPsalm, isPsalmLit, setSelectedPsalm, setPsalmLit, onNext }) => {
     const [psalmReaderOpen, setPsalmReaderOpen] = useState(false);
     
-    const handleSelect = (psalm: string) => {
-        setSelectedPsalm(psalm);
-        setPsalmReaderOpen(true);
-    };
-
     const handleBless = () => {
         setPsalmLit(true);
         setPsalmReaderOpen(false);
@@ -367,10 +362,10 @@ const HoodooStep3_FindVerse: React.FC<{ selections: string[]; selectedPsalm: str
     return (
         <>
             <PsalmReader isOpen={psalmReaderOpen} onClose={() => setPsalmReaderOpen(false)} psalmName={selectedPsalm} psalmText={PSALM_DATABASE[selectedPsalm] || ""} onBless={handleBless}/>
-            <StepContainer stageTitle="Find Your Verse" instruction="The spirits have guided you to these scriptures. Choose one to read and bless for your Work." button={<RitualButton onClick={onNext} disabled={!isPsalmLit}>Gather Your Materia</RitualButton>}>
-                <div className="w-full max-w-4xl flex flex-col md:flex-row items-center justify-around gap-4">
+            <StepContainer stageTitle="Find Your Verse" instruction="The spirits have guided you to these scriptures. Choose one to read and fix for your Work." button={<RitualButton onClick={isPsalmLit ? onNext : () => setPsalmReaderOpen(true)} disabled={!selectedPsalm}>{isPsalmLit ? 'Gather Your Materia' : 'Read & Fix Verse'}</RitualButton>}>
+                <div className="w-full max-w-4xl flex flex-col items-center justify-start gap-4 h-full max-h-[50vh] md:max-h-none overflow-y-auto md:overflow-visible md:flex-row md:justify-around">
                     {selections.map(psalm => (
-                        <div key={psalm} onClick={() => handleSelect(psalm)} className={`relative w-64 aspect-4/3 cursor-pointer group transition-all duration-300 ${selectedPsalm === psalm ? 'scale-105' : 'scale-100'}`}>
+                        <div key={psalm} onClick={() => {setSelectedPsalm(psalm); setPsalmLit(false);}} className={`relative w-64 aspect-4/3 cursor-pointer group transition-all duration-300 shrink-0 ${selectedPsalm === psalm ? 'scale-105' : 'scale-100'}`}>
                             <Image src={`${ASSET_PATH}/ui-psalm-book.png`} alt="Book of Psalms" layout="fill" objectFit="contain" />
                             <div className={`absolute inset-0 flex items-center justify-center p-8 rounded-lg transition-colors ${selectedPsalm === psalm ? 'bg-amber-300/20' : ''}`}>
                                 <p className={`text-center font-serif text-xl group-hover:text-black ${selectedPsalm === psalm ? 'text-black font-bold' : 'text-gray-800'}`}>{psalm}</p>
@@ -409,10 +404,15 @@ const HoodooStep5_FixJar: React.FC<{ onNext: () => void, selections: MateriaSele
     const totalSelections = selections.length;
     const numLayersToShow = Math.ceil(((index + 1) / totalSelections) * 5);
 
+    const instructionText = `Charge the ${currentMateria.name} with your intention.`;
+    const incantationText = `Now say: "${currentMateria.incantation}"`;
+
     return (
-        <StepContainer stageTitle="Fix the Jar" instruction={`Charge the ${currentMateria.name} with your intention.`} button={isCharged ? <RitualButton onClick={onNext} className="animate-pulse">{index < selections.length - 1 ? "Next Ingredient" : "Set the Light"}</RitualButton> : <div/>}>
+        <StepContainer stageTitle="Fix the Jar" instruction={isCharged ? incantationText : instructionText} button={isCharged ? <RitualButton onClick={onNext} className="animate-pulse">{index < selections.length - 1 ? "Next Ingredient" : "Set the Light"}</RitualButton> : <div/>}>
              <div className="flex flex-col items-center justify-center gap-4">
-                <p className="text-xl text-center text-amber-100 font-serif h-12">Now say: <span className="italic">"{currentMateria.incantation}"</span></p>
+                <AnimatePresence mode="wait">
+                    <motion.p key={incantationText} initial={{opacity: 0}} animate={{opacity: 1}} exit={{opacity: 0}} className="text-xl text-center text-amber-100 font-serif h-12 italic">{isCharged ? "" : incantationText}</motion.p>
+                </AnimatePresence>
                 <div className="relative w-full h-full max-w-md aspect-square mx-auto">
                     <Image src={`${ASSET_PATH}/hoodoo-jar-empty.png`} alt="Empty Spell Jar" layout="fill" objectFit="contain" />
                     {Array.from({length: 5}).map((_, i) => (
@@ -429,14 +429,14 @@ const HoodooStep5_FixJar: React.FC<{ onNext: () => void, selections: MateriaSele
     );
 };
 
-const HoodooStep6_SetLight: React.FC<{ onNext: () => void }> = ({ onNext }) => {
+const HoodooStep6_SetLight: React.FC<{ onNext: () => void, petition: string }> = ({ onNext }) => {
     const [isLit, setIsLit] = useState(false);
     const incantation = "With this flame, I set the light; make my work burn ever bright.";
     
     return(
         <StepContainer stageTitle="Set the Light" instruction={isLit ? incantation : "Light the candle to activate the spell and send your intention."} button={isLit && <RitualButton onClick={onNext} className="animate-pulse">Set the Work in Motion</RitualButton>}>
             <div className="relative w-72 h-96">
-                <ChargingComponent onCharge={() => setIsLit(true)} isCharged={isLit}>
+                <ChargingComponent onCharge={() => { setIsLit(true); }} isCharged={isLit}>
                     <div className="relative w-72 h-96">
                         <Image src={`${ASSET_PATH}/hoodoo-jar-fixed.png`} alt="Fixed Jar" layout="fill" objectFit="contain" className="z-0"/>
                         {!isLit ? 
@@ -522,10 +522,15 @@ const VoodooStep5_MakeOffering: React.FC<{ onNext: () => void, selections: Mater
     const totalSelections = selections.length;
     const numLayersToShow = Math.ceil(((index + 1) / totalSelections) * 5);
 
+    const instructionText = `Prepare the ${currentOffering.name} for the Lwa.`;
+    const incantationText = `Now say: "${currentOffering.incantation}"`;
+
     return (
-        <StepContainer stageTitle="Make the Offering" instruction={`Prepare the ${currentOffering.name} for the Lwa.`} button={isCharged ? <RitualButton onClick={onNext} className="animate-pulse">{index < selections.length - 1 ? "Next Offering" : "Present to Lwa"}</RitualButton> : <div/>}>
+        <StepContainer stageTitle="Make the Offering" instruction={isCharged ? incantationText : instructionText} button={isCharged ? <RitualButton onClick={onNext} className="animate-pulse">{index < selections.length - 1 ? "Next Offering" : "Present to Lwa"}</RitualButton> : <div/>}>
             <div className="flex flex-col items-center justify-center gap-4">
-                 <p className="text-xl text-center text-amber-100 font-serif h-12">Now say: <span className="italic">"{currentOffering.incantation}"</span></p>
+                 <AnimatePresence mode="wait">
+                    <motion.p key={incantationText} initial={{opacity: 0}} animate={{opacity: 1}} exit={{opacity: 0}} className="text-xl text-center text-amber-100 font-serif h-12 italic">{isCharged ? "" : incantationText}</motion.p>
+                </AnimatePresence>
                 <div className="relative w-full h-full max-w-md aspect-square mx-auto">
                     <Image src={`${ASSET_PATH}/voodoo-offering-bottle.png`} alt="Empty Offering Bottle" layout="fill" objectFit="contain" />
                     {Array.from({length: 5}).map((_, i) => (
@@ -570,34 +575,21 @@ const VoodooStep6_PresentOffering: React.FC<{ onNext: () => void; lwa: string; }
 
 // --- NEW/REFACTORED FINAL STEPS ---
 
-const Step7_Sending: React.FC<{onNext: () => void}> = ({ onNext }) => {
+const Step7_Sending: React.FC<{onNext: () => void, petition: string}> = ({ onNext, petition }) => {
     useEffect(() => {
         const timer = setTimeout(onNext, SENDING_DURATION);
         return () => clearTimeout(timer);
     }, [onNext]);
     
     return(
-        <StepContainer stageTitle="Your Work is in Motion" instruction="The spirits carry your will forth into the tapestry of fate.">
-            <div className="w-96 h-96 relative">
-                 {Array.from({ length: 15 }).map((_, i) => (
-                    <motion.div
-                        key={i}
-                        className="absolute top-1/2 left-1/2 w-1.5 h-1.5 bg-amber-200 rounded-full"
-                        initial={{ scale: 0, opacity: 0, rotate: Math.random() * 360 }}
-                        animate={{
-                            scale: [0, 1 + Math.random() * 1.5, 0],
-                            opacity: [0, 1, 0],
-                            x: (Math.random() - 0.5) * 500,
-                            y: (Math.random() - 0.5) * 500,
-                        }}
-                        transition={{
-                            duration: 2 + Math.random() * 3,
-                            ease: "easeInOut",
-                            delay: Math.random() * (SENDING_DURATION / 1000 - 2),
-                        }}
-                    />
-                ))}
-                <motion.div initial={{opacity:0, scale: 0.5}} animate={{opacity: 1, scale: 1}} transition={{duration: 1, delay: 0.5}} className="w-full h-full border-4 border-amber-300/50 rounded-full animate-pulse"/>
+        <StepContainer stageTitle="Sending the Work" instruction="Your desire is loosed upon the currents of reality, finding its path to manifestation.">
+            <div className="w-96 h-96 relative flex items-center justify-center">
+                <Image src={`${ASSET_PATH}/hoodoo-manifestation-final.png`} alt="Final Manifestation" layout="fill" objectFit="contain" />
+                <AnimatePresence>
+                    <motion.p initial={{opacity: 0, y: 50}} animate={{opacity: [0, 0.7, 0.7, 0], y: -150}} transition={{duration: SENDING_DURATION/1000, ease: 'linear', repeat: Infinity}} className="absolute w-64 text-center text-amber-100/80 italic whitespace-pre-line z-20">
+                        {petition}
+                    </motion.p>
+                </AnimatePresence>
             </div>
         </StepContainer>
     );
@@ -616,7 +608,6 @@ const Step8_Manifestation: React.FC<{ affirmation: string, path: RitualPath, onF
     return (
         <StepContainer stageTitle={path === 'hoodoo' ? "The Work is Done" : "The Lwa is Served"} button={<RitualButton onClick={onFinish}>Return</RitualButton>}>
             <div className="flex flex-col md:flex-row items-center justify-center gap-8 w-full max-w-4xl">
-                {/* Main Scene Container */}
                 <div className="relative w-full md:w-1/2 aspect-square">
                     <Image src={`${ASSET_PATH}/${finalImage}`} alt="Final Manifestation" layout="fill" objectFit="contain" />
                     {path === 'voodoo' && (
@@ -629,8 +620,6 @@ const Step8_Manifestation: React.FC<{ affirmation: string, path: RitualPath, onF
                         </div>
                     )}
                 </div>
-
-                {/* Affirmation Parchment Container */}
                 <div className="relative w-full md:w-1/2 aspect-square @container">
                     <Image src={`${ASSET_PATH}/hoodoo-petition-paper.png`} alt="Affirmation Parchment" layout="fill" objectFit="contain"/>
                     <div className="absolute inset-0 flex items-center justify-center p-[22%]">
@@ -646,24 +635,33 @@ const Step8_Manifestation: React.FC<{ affirmation: string, path: RitualPath, onF
 // --- NEW PSALM READER COMPONENT ---
 const PsalmReader: React.FC<{isOpen: boolean; onClose: () => void; psalmName: string; psalmText: string; onBless: () => void;}> = ({isOpen, onClose, psalmName, psalmText, onBless}) => {
     const [isBlessed, setIsBlessed] = useState(false);
+    
+    useEffect(() => {
+        // Reset bless state when a new psalm is opened
+        if (isOpen) {
+            setIsBlessed(false);
+        }
+    }, [isOpen]);
+
     if (!isOpen) return null;
 
     return (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
             <motion.div initial={{opacity: 0, scale: 0.8}} animate={{opacity: 1, scale: 1}} className="relative w-full max-w-2xl bg-[#fdf9e8] bg-[url('/images/books/parchment-bg.png')] text-black p-8 rounded-lg shadow-2xl">
                 <h3 className="text-3xl font-serif text-center mb-4">{psalmName}</h3>
-                <p className="text-lg text-center leading-relaxed max-h-[50vh] overflow-y-auto mb-6">{psalmText}</p>
+                <p className="text-sm italic text-center text-gray-700 mb-4">Read the verse aloud or in a bold inner voice, then fix the word when you are done.</p>
+                <p className="text-lg text-center leading-relaxed max-h-[40vh] overflow-y-auto mb-6 p-2 border-y border-gray-400/50">{psalmText}</p>
                 <div className="flex flex-col items-center justify-center gap-4">
                     <ChargingComponent onCharge={() => setIsBlessed(true)} isCharged={isBlessed}>
-                        <div className="w-24 h-24 rounded-full bg-linear-to-br from-red-700 to-yellow-500 flex items-center justify-center text-white font-bold text-lg shadow-lg">
-                            BLESS
+                        <div className="w-24 h-24 rounded-full bg-linear-to-br from-red-800 to-yellow-600 flex items-center justify-center text-white font-bold text-lg shadow-lg tracking-wider">
+                            FIX THE WORD
                         </div>
                     </ChargingComponent>
                     <RitualButton onClick={onBless} disabled={!isBlessed} className="bg-yellow-600/50 border-yellow-400/50 hover:bg-yellow-500/50">
                         Seal the Verse
                     </RitualButton>
                 </div>
-                <button onClick={onClose} className="absolute top-2 right-2 text-black/50 hover:text-black text-2xl">&times;</button>
+                <button onClick={onClose} className="absolute top-2 right-2 text-black/50 hover:text-black text-3xl font-sans">&times;</button>
             </motion.div>
         </div>
     );
