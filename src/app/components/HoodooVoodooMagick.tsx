@@ -427,20 +427,28 @@ const HoodooStep5_FixJar: React.FC<{ onNext: () => void, selections: MateriaSele
     const incantationText = `Now say: "${currentMateria.incantation}"`;
 
     return (
-        <StepContainer stageTitle="Fix the Jar" instruction={isCharged ? incantationText : instructionText} button={isCharged ? <RitualButton onClick={onNext} className="animate-pulse">{index < selections.length - 1 ? "Next Ingredient" : "Set the Light"}</RitualButton> : <div/>}>
+        <StepContainer 
+            stageTitle="Fix the Jar" 
+            instruction={isCharged ? incantationText : instructionText} 
+            button={isCharged ? <RitualButton onClick={onNext} className="animate-pulse">{index < selections.length - 1 ? "Next Ingredient" : "Set the Light"}</RitualButton> : <div/>}
+        >
              <div className="flex flex-col items-center justify-center gap-4">
                 <AnimatePresence mode="wait">
                     <motion.p key={incantationText} initial={{opacity: 0}} animate={{opacity: 1}} exit={{opacity: 0}} className="text-xl text-center text-amber-100 font-serif h-12 italic">{isCharged ? "" : incantationText}</motion.p>
                 </AnimatePresence>
                 <div className="relative w-full h-full max-w-md aspect-square mx-auto">
-                    <Image src={`${ASSET_PATH}/hoodoo-jar-empty.png`} alt="Empty Spell Jar" layout="fill" objectFit="contain" />
-                    {Array.from({length: 5}).map((_, i) => (
-                        <Image key={i} src={`${ASSET_PATH}/hoodoo-jar-layer-0${i + 1}.png`} alt={`Layer ${i+1}`} layout="fill" objectFit="contain" className={`transition-opacity duration-500 ${i < numLayersToShow ? 'opacity-100' : 'opacity-0'}`} />
+                    {Array.from({ length: 5 }).map((_, i) => (
+                        <div key={i} className={`absolute inset-0 z-0 transition-opacity duration-500 ${ i < numLayersToShow ? 'opacity-100' : 'opacity-0' }`} >
+                            <Image src={`${ASSET_PATH}/hoodoo-jar-layer-0${i + 1}.png`} alt={`Layer ${i + 1}`} layout="fill" objectFit="contain" />
+                        </div>
                     ))}
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-2/3">
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-2/3 z-5">
                         <ChargingComponent onCharge={() => setIsCharged(true)} isCharged={isCharged}>
                             {spriteData && <div className="w-24 h-24"><Sprite sheetPath={spriteData.sheet.path} x={spriteData.itemInfo.x} y={spriteData.itemInfo.y} spriteWidth={spriteData.sheet.spriteSize.width} spriteHeight={spriteData.sheet.spriteSize.height} sheetWidth={spriteData.sheet.sheetSize.width} sheetHeight={spriteData.sheet.sheetSize.height} /></div>}
                         </ChargingComponent>
+                    </div>
+                    <div className="absolute inset-0 z-10 pointer-events-none">
+                        <Image src={`${ASSET_PATH}/hoodoo-jar-empty.png`} alt="Empty Spell Jar" layout="fill" objectFit="contain" />
                     </div>
                 </div>
             </div>
@@ -547,23 +555,20 @@ const VoodooStep5_MakeOffering: React.FC<{ onNext: () => void, selections: Mater
     return (
         <StepContainer stageTitle="Make the Offering" instruction={isCharged ? incantationText : instructionText} button={isCharged ? <RitualButton onClick={onNext} className="animate-pulse">{index < selections.length - 1 ? "Next Offering" : "Present to Lwa"}</RitualButton> : <div/>}>
             <div className="flex flex-col items-center justify-center gap-4">
-                 <div className="text-xl text-center text-amber-100 font-serif h-12 italic"></div>
+                 <AnimatePresence mode="wait">
+                    <motion.p key={incantationText} initial={{opacity: 0}} animate={{opacity: 1}} exit={{opacity: 0}} className="text-xl text-center text-amber-100 font-serif h-12 italic">{isCharged ? "" : incantationText}</motion.p>
+                </AnimatePresence>
                 <div className="relative w-full h-full max-w-md aspect-square mx-auto">
-                    {/* Layers (at the back) */}
                     {Array.from({ length: 5 }).map((_, i) => (
-                        <div key={i} className={`absolute inset-0 z-0 transition-opacity duration-500 ${ i < numLayersToShow ? 'opacity-100' : 'opacity-0' }`}>
+                        <div key={i} className={`absolute inset-0 z-0 transition-opacity duration-500 ${ i < numLayersToShow ? 'opacity-100' : 'opacity-0' }`} >
                             <Image src={`${ASSET_PATH}/voodoo-offering-layer-0${i + 1}.png`} alt={`Layer ${i + 1}`} layout="fill" objectFit="contain" />
                         </div>
                     ))}
-
-                    {/* Charging Component (in the middle) */}
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-2/3 z-5">
                         <ChargingComponent onCharge={() => setIsCharged(true)} isCharged={isCharged}>
                             {spriteData && <div className="w-24 h-24"><Sprite sheetPath={spriteData.sheet.path} x={spriteData.itemInfo.x} y={spriteData.itemInfo.y} spriteWidth={spriteData.sheet.spriteSize.width} spriteHeight={spriteData.sheet.spriteSize.height} sheetWidth={spriteData.sheet.sheetSize.width} sheetHeight={spriteData.sheet.sheetSize.height} /></div>}
                         </ChargingComponent>
                     </div>
-                    
-                    {/* Bottle Outline (on top) */}
                     <div className="absolute inset-0 z-10 pointer-events-none">
                         <Image src={`${ASSET_PATH}/voodoo-offering-bottle.png`} alt="Empty Offering Bottle" layout="fill" objectFit="contain" />
                     </div>
@@ -598,8 +603,6 @@ const VoodooStep6_PresentOffering: React.FC<{ onNext: () => void; lwa: string; }
         </StepContainer>
     );
 };
-
-// --- NEW/REFACTORED FINAL STEPS ---
 
 const Step7_Sending: React.FC<{onNext: () => void, petition: string}> = ({ onNext, petition }) => {
     useEffect(() => {
