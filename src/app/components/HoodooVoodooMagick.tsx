@@ -69,12 +69,11 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
     const [finalAffirmation, setFinalAffirmation] = useState('');
     const [chargingIndex, setChargingIndex] = useState(0);
     
-    // THE FIX: State for Psalm Reader modal moved to parent component for correct layering
     const [psalmReaderOpen, setPsalmReaderOpen] = useState(false);
 
     const handleOpenPsalmReader = (psalm: string) => {
         setSelectedPsalm(psalm);
-        setIsPsalmLit(false); // Always reset lit status when opening a new psalm
+        setIsPsalmLit(false);
         setPsalmReaderOpen(true);
     };
 
@@ -192,7 +191,6 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
 
     return (
         <>
-            {/* THE FIX: PsalmReader is now at the top level to ensure it renders above all other content */}
             <PsalmReader 
                 isOpen={psalmReaderOpen} 
                 onClose={() => setPsalmReaderOpen(false)} 
@@ -202,7 +200,7 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
             />
             <main className="relative h-screen w-screen bg-black bg-cover bg-center flex flex-col transition-all duration-1000" style={{ backgroundImage: `url('${currentBackground}')` }}>
                 <div className="absolute inset-0 bg-black/40" />
-                <header className="relative z-20 w-full p-4 md:p-6 shrink-0">
+                <header className={`relative z-20 w-full p-4 md:p-6 shrink-0 transition-opacity duration-500 ${psalmReaderOpen ? 'opacity-0' : 'opacity-100'}`}>
                     <div className="flex justify-between items-center flex-wrap w-full max-w-7xl mx-auto">
                         <div className="order-1"><MagickalBackLink href="/spell-room" text="All Traditions" /></div>
                         <div className="order-2 md:order-3"><RoomsButton /></div>
@@ -211,7 +209,7 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
                         </h1>
                     </div>
                 </header>
-                <div className="relative z-10 grow w-full flex flex-col items-center justify-center overflow-hidden p-4">
+                <div className={`relative z-10 grow w-full flex flex-col items-center justify-center overflow-hidden p-4 transition-opacity duration-500 ${psalmReaderOpen ? 'opacity-0' : 'opacity-100'}`}>
                     <AnimatePresence mode="wait">
                         <motion.div
                             key={`${path}-${step}`}
@@ -287,7 +285,7 @@ const ChargingComponent: React.FC<{onCharge: () => void, children: React.ReactNo
             onMouseLeave={handleHoldEnd} 
             onTouchStart={handleHoldStart} 
             onTouchEnd={handleHoldEnd} 
-            onContextMenu={(e) => e.preventDefault()} // THE FIX: Prevent browser context menu
+            onContextMenu={(e) => e.preventDefault()}
             className="relative grid place-items-center cursor-pointer select-none"
         >
             <div className={`transition-transform duration-300 ${progress > 0 || isCharged ? 'scale-110' : ''}`}>{children}</div>
@@ -378,8 +376,7 @@ const HoodooStep2_Petition: React.FC<{ petition: string; setPetition: (val: stri
     </StepContainer>
 );
 
-const HoodooStep3_FindVerse: React.FC<{ onOpenReader: (psalm: string) => void, selections: string[]; selectedPsalm: string; isPsalmLit: boolean; onNext: () => void; }> = ({ onOpenReader, selections, selectedPsalm, isPsalmLit, onNext }) => {
-    
+const HoodooStep3_FindVerse: React.FC<{ onOpenReader: (psalm: string) => void; selections: string[]; selectedPsalm: string; isPsalmLit: boolean; onNext: () => void; }> = ({ onOpenReader, selections, selectedPsalm, isPsalmLit, onNext }) => {
     return (
         <StepContainer 
             stageTitle="Find Your Verse" 
@@ -435,16 +432,25 @@ const HoodooStep5_FixJar: React.FC<{ onNext: () => void, selections: MateriaSele
             instruction={isCharged ? incantationText : instructionText} 
             button={isCharged ? <RitualButton onClick={onNext} className="animate-pulse">{index < selections.length - 1 ? "Next Ingredient" : "Set the Light"}</RitualButton> : <div/>}
         >
-             <div className="flex flex-col items-center justify-center gap-4">
+            <div className="flex flex-col items-center justify-center gap-4">
                 <div className="relative w-full h-full max-w-md aspect-square mx-auto">
-                    <Image src={`${ASSET_PATH}/hoodoo-jar-empty.png`} alt="Empty Spell Jar" layout="fill" objectFit="contain" className="z-0" />
-                    {Array.from({length: 5}).map((_, i) => (
-                        <Image key={i} src={`${ASSET_PATH}/hoodoo-jar-layer-0${i + 1}.png`} alt={`Layer ${i+1}`} layout="fill" objectFit="contain" className={`transition-opacity duration-500 z-1 ${i < numLayersToShow ? 'opacity-100' : 'opacity-0'}`} />
+                    {/* Layers (at the back) */}
+                    {Array.from({ length: 5 }).map((_, i) => (
+                        <div key={i} className={`absolute inset-0 z-0 transition-opacity duration-500 ${ i < numLayersToShow ? 'opacity-100' : 'opacity-0' }`} >
+                            <Image src={`${ASSET_PATH}/hoodoo-jar-layer-0${i + 1}.png`} alt={`Layer ${i + 1}`} layout="fill" objectFit="contain" />
+                        </div>
                     ))}
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-2/3 z-10">
+
+                    {/* Charging Component (in the middle) */}
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-2/3 z-5">
                         <ChargingComponent onCharge={() => setIsCharged(true)} isCharged={isCharged}>
                             {spriteData && <div className="w-24 h-24"><Sprite sheetPath={spriteData.sheet.path} x={spriteData.itemInfo.x} y={spriteData.itemInfo.y} spriteWidth={spriteData.sheet.spriteSize.width} spriteHeight={spriteData.sheet.spriteSize.height} sheetWidth={spriteData.sheet.sheetSize.width} sheetHeight={spriteData.sheet.sheetSize.height} /></div>}
                         </ChargingComponent>
+                    </div>
+
+                    {/* Jar Outline (on top) */}
+                    <div className="absolute inset-0 z-10 pointer-events-none">
+                        <Image src={`${ASSET_PATH}/hoodoo-jar-empty.png`} alt="Empty Spell Jar" layout="fill" objectFit="contain" />
                     </div>
                 </div>
             </div>
@@ -553,14 +559,23 @@ const VoodooStep5_MakeOffering: React.FC<{ onNext: () => void, selections: Mater
             <div className="flex flex-col items-center justify-center gap-4">
                  <div className="text-xl text-center text-amber-100 font-serif h-12 italic"></div>
                 <div className="relative w-full h-full max-w-md aspect-square mx-auto">
-                    <Image src={`${ASSET_PATH}/voodoo-offering-bottle.png`} alt="Empty Offering Bottle" layout="fill" objectFit="contain" className="z-0" />
-                    {Array.from({length: 5}).map((_, i) => (
-                        <Image key={i} src={`${ASSET_PATH}/voodoo-offering-layer-0${i + 1}.png`} alt={`Layer ${i+1}`} layout="fill" objectFit="contain" className={`transition-opacity duration-500 z-1 ${i < numLayersToShow ? 'opacity-100' : 'opacity-0'}`} />
+                    {/* Layers (at the back) */}
+                    {Array.from({ length: 5 }).map((_, i) => (
+                        <div key={i} className={`absolute inset-0 z-0 transition-opacity duration-500 ${ i < numLayersToShow ? 'opacity-100' : 'opacity-0' }`}>
+                            <Image src={`${ASSET_PATH}/voodoo-offering-layer-0${i + 1}.png`} alt={`Layer ${i + 1}`} layout="fill" objectFit="contain" />
+                        </div>
                     ))}
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-2/3 z-10">
+
+                    {/* Charging Component (in the middle) */}
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-2/3 z-5">
                         <ChargingComponent onCharge={() => setIsCharged(true)} isCharged={isCharged}>
                             {spriteData && <div className="w-24 h-24"><Sprite sheetPath={spriteData.sheet.path} x={spriteData.itemInfo.x} y={spriteData.itemInfo.y} spriteWidth={spriteData.sheet.spriteSize.width} spriteHeight={spriteData.sheet.spriteSize.height} sheetWidth={spriteData.sheet.sheetSize.width} sheetHeight={spriteData.sheet.sheetSize.height} /></div>}
                         </ChargingComponent>
+                    </div>
+                    
+                    {/* Bottle Outline (on top) */}
+                    <div className="absolute inset-0 z-10 pointer-events-none">
+                        <Image src={`${ASSET_PATH}/voodoo-offering-bottle.png`} alt="Empty Offering Bottle" layout="fill" objectFit="contain" />
                     </div>
                 </div>
             </div>
@@ -653,13 +668,11 @@ const Step8_Manifestation: React.FC<{ affirmation: string, path: RitualPath, onF
 };
 
 
-// --- THE FIX: NEW PSALM READER COMPONENT WITH IMPROVED FLOW ---
 const PsalmReader: React.FC<{isOpen: boolean; onClose: () => void; psalmName: string; psalmText: string; onBless: () => void;}> = ({isOpen, onClose, psalmName, psalmText, onBless}) => {
     const [stage, setStage] = useState<'read' | 'fix'>('read');
     const [isBlessed, setIsBlessed] = useState(false);
     
     useEffect(() => {
-        // Reset state when the modal is opened for a new psalm
         if (isOpen) {
             setStage('read');
             setIsBlessed(false);
@@ -695,7 +708,7 @@ const PsalmReader: React.FC<{isOpen: boolean; onClose: () => void; psalmName: st
                      <div className="flex flex-col items-center justify-center gap-4">
                         <p className="text-sm italic text-center text-gray-700 mb-2">Read the verse outloud or in a bold inner voice, then press and hold to fix the word.</p>
                         <ChargingComponent onCharge={() => setIsBlessed(true)} isCharged={isBlessed} duration={13000}>
-                            <div className="w-24 h-24 rounded-full bg-linear-to-br from-red-800 to-yellow-600 flex items-center justify-center text-center text-white font-bold text-lg shadow-lg tracking-wider">
+                            <div className="w-24 h-24 rounded-full bg-linear-to-br from-red-800 to-yellow-600 flex items-center justify-center text-center text-white font-bold text-lg shadow-lg tracking-wider p-2">
                                 FIX THE WORD
                             </div>
                         </ChargingComponent>
