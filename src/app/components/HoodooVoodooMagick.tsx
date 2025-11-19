@@ -470,6 +470,7 @@ const HoodooStep5_FixJar: React.FC<{ onNext: () => void, selections: MateriaSele
     return (
         <StepContainer stageTitle="Fix the Jar" instruction={instructionText} button={isCharged ? <RitualButton onClick={onNext} className="animate-pulse">{index < selections.length - 1 ? "Next Ingredient" : "Set the Light"}</RitualButton> : <div/>}>
             <div className="relative w-full h-full max-w-md aspect-square mx-auto">
+                
                 <div className="absolute pointer-events-none z-10" style={HOODOO_CONTAINER_STYLE}>
                     {chargedItems.map((item, i) => {
                         const itemSprite = findSprite(item.name);
@@ -480,35 +481,31 @@ const HoodooStep5_FixJar: React.FC<{ onNext: () => void, selections: MateriaSele
                             </div>
                         );
                     })}
-                    <AnimatePresence>
-                        {isCharged && (
-                            <motion.div
-                                key={`current-${index}`}
-                                className="absolute w-[35%]"
-                                style={itemPositions[index]}
-                                initial={{ y: -200, opacity: 0, scale: 1.5 }}
-                                animate={{ y: 0, opacity: 1, scale: 1 }}
-                                transition={{ type: 'spring', stiffness: 100, damping: 10 }}
-                            >
-                                {spriteData && <Sprite sheetPath={spriteData.sheet.path} x={spriteData.itemInfo.x} y={spriteData.itemInfo.y} spriteWidth={spriteData.sheet.spriteSize.width} spriteHeight={spriteData.sheet.spriteSize.height} sheetWidth={spriteData.sheet.sheetSize.width} sheetHeight={spriteData.sheet.sheetSize.height} />}
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
+                    {isCharged && (
+                         <motion.div
+                            key={`current-${index}`}
+                            className="absolute w-[35%]"
+                            style={{...itemPositions[index], zIndex: 99}}
+                            initial={{ opacity: 0, scale: 3, y: -200 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            transition={{ type: 'spring', stiffness: 100, damping: 10, delay: 0.1 }}
+                        >
+                            {spriteData && <Sprite sheetPath={spriteData.sheet.path} x={spriteData.itemInfo.x} y={spriteData.itemInfo.y} spriteWidth={spriteData.sheet.spriteSize.width} spriteHeight={spriteData.sheet.spriteSize.height} sheetWidth={spriteData.sheet.sheetSize.width} sheetHeight={spriteData.sheet.sheetSize.height} />}
+                        </motion.div>
+                    )}
                 </div>
                 
                 <Image src={`${ASSET_PATH}/hoodoo-jar-empty.png`} alt="Empty Spell Jar" layout="fill" objectFit="contain" className="relative z-0 pointer-events-none" />
                 
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-2/3 z-20">
-                    <AnimatePresence>
-                    {!isCharged && (
-                        <motion.div exit={{ scale: 0.5, opacity: 0 }}>
-                            <ChargingComponent onCharge={() => setIsCharged(true)} isCharged={isCharged}>
-                                {spriteData && <div className="w-24 h-24"><Sprite sheetPath={spriteData.sheet.path} x={spriteData.itemInfo.x} y={spriteData.itemInfo.y} spriteWidth={spriteData.sheet.spriteSize.width} spriteHeight={spriteData.sheet.spriteSize.height} sheetWidth={spriteData.sheet.sheetSize.width} sheetHeight={spriteData.sheet.sheetSize.height} /></div>}
-                            </ChargingComponent>
-                        </motion.div>
-                    )}
-                    </AnimatePresence>
-                </div>
+                <motion.div 
+                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-2/3 z-20"
+                    animate={{ opacity: isCharged ? 0 : 1, scale: isCharged ? 0.5 : 1 }}
+                    transition={{ duration: 0.5 }}
+                >
+                    <ChargingComponent onCharge={() => setIsCharged(true)} isCharged={isCharged}>
+                        {spriteData && <div className="w-24 h-24"><Sprite sheetPath={spriteData.sheet.path} x={spriteData.itemInfo.x} y={spriteData.itemInfo.y} spriteWidth={spriteData.sheet.spriteSize.width} spriteHeight={spriteData.sheet.spriteSize.height} sheetWidth={spriteData.sheet.sheetSize.width} sheetHeight={spriteData.sheet.sheetSize.height} /></div>}
+                    </ChargingComponent>
+                </motion.div>
             </div>
         </StepContainer>
     );
@@ -653,35 +650,31 @@ const VoodooStep5_MakeOffering: React.FC<{ onNext: () => void, selections: Mater
                             </div>
                         );
                     })}
-                    <AnimatePresence>
-                        {isCharged && (
-                            <motion.div
-                                key={`current-voodoo-${index}`}
-                                className="absolute w-[35%]"
-                                style={itemPositions[index]}
-                                initial={{ y: -200, opacity: 0, scale: 1.5 }}
-                                animate={{ y: 0, opacity: 1, scale: 1 }}
-                                transition={{ type: 'spring', stiffness: 100, damping: 10 }}
-                            >
-                                {spriteData && <Sprite sheetPath={spriteData.sheet.path} x={spriteData.itemInfo.x} y={spriteData.itemInfo.y} spriteWidth={spriteData.sheet.spriteSize.width} spriteHeight={spriteData.sheet.spriteSize.height} sheetWidth={spriteData.sheet.sheetSize.width} sheetHeight={spriteData.sheet.sheetSize.height} />}
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
+                     {isCharged && (
+                        <motion.div
+                            key={`current-voodoo-${index}`}
+                            className="absolute w-[35%]"
+                            style={{...itemPositions[index], zIndex: 99}}
+                            initial={{ opacity: 0, scale: 3, y: -200 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            transition={{ type: 'spring', stiffness: 100, damping: 10, delay: 0.1 }}
+                        >
+                            {spriteData && <Sprite sheetPath={spriteData.sheet.path} x={spriteData.itemInfo.x} y={spriteData.itemInfo.y} spriteWidth={spriteData.sheet.spriteSize.width} spriteHeight={spriteData.sheet.spriteSize.height} sheetWidth={spriteData.sheet.sheetSize.width} sheetHeight={spriteData.sheet.sheetSize.height} />}
+                        </motion.div>
+                    )}
                 </div>
                 
                 <Image src={`${ASSET_PATH}/voodoo-offering-bottle.png`} alt="Empty Offering Bottle" layout="fill" objectFit="contain" className="relative z-0 pointer-events-none" />
 
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-2/3 z-20">
-                     <AnimatePresence>
-                    {!isCharged && (
-                        <motion.div exit={{ scale: 0.5, opacity: 0 }}>
-                            <ChargingComponent onCharge={() => setIsCharged(true)} isCharged={isCharged}>
-                                {spriteData && <div className="w-24 h-24"><Sprite sheetPath={spriteData.sheet.path} x={spriteData.itemInfo.x} y={spriteData.itemInfo.y} spriteWidth={spriteData.sheet.spriteSize.width} spriteHeight={spriteData.sheet.spriteSize.height} sheetWidth={spriteData.sheet.sheetSize.width} sheetHeight={spriteData.sheet.sheetSize.height} /></div>}
-                            </ChargingComponent>
-                        </motion.div>
-                    )}
-                    </AnimatePresence>
-                </div>
+                <motion.div 
+                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-2/3 z-20"
+                    animate={{ opacity: isCharged ? 0 : 1, scale: isCharged ? 0.5 : 1 }}
+                    transition={{ duration: 0.5 }}
+                >
+                     <ChargingComponent onCharge={() => setIsCharged(true)} isCharged={isCharged}>
+                        {spriteData && <div className="w-24 h-24"><Sprite sheetPath={spriteData.sheet.path} x={spriteData.itemInfo.x} y={spriteData.itemInfo.y} spriteWidth={spriteData.sheet.spriteSize.width} spriteHeight={spriteData.sheet.spriteSize.height} sheetWidth={spriteData.sheet.sheetSize.width} sheetHeight={spriteData.sheet.sheetSize.height} /></div>}
+                    </ChargingComponent>
+                </motion.div>
             </div>
         </StepContainer>
     );
