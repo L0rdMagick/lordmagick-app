@@ -17,7 +17,7 @@ import { findSprite } from '@/lib/spriteLibrary';
 const ASSET_PATH = "/images/Spells/HooDoo Voo Doo";
 const CHARGE_DURATION = 3000; // 3 seconds
 const FADE_DURATION = 0.8;
-const SENDING_DURATION = 5000; // 5 seconds for the sending animation
+const SENDING_DURATION = 7000; // 7 seconds for the sending animation
 
 // --- Data ---
 const PSALM_DATABASE: Record<string, string> = {
@@ -300,11 +300,11 @@ const ChargingComponent: React.FC<{onCharge: () => void, children: React.ReactNo
 // --- Step 0: Path Selection ---
 const Step0_Crossroads: React.FC<{ onSelectPath: (path: RitualPath) => void }> = ({ onSelectPath }) => (
     <div className="relative w-full h-full flex flex-col items-center justify-center">
-        <div className="relative z-10 flex flex-col md:flex-row items-center justify-center gap-8 md:gap-16">
-            <button onClick={() => onSelectPath('hoodoo')} className="relative w-48 h-64 md:w-64 md:h-80 transition-transform duration-300 hover:scale-105 active:scale-95">
+        <div className="relative z-10 flex flex-row items-center justify-center gap-4 md:gap-16">
+            <button onClick={() => onSelectPath('hoodoo')} className="relative w-40 h-56 md:w-64 md:h-80 transition-transform duration-300 hover:scale-105 active:scale-95">
                 <Image src={`${ASSET_PATH}/ui-button-hoodoo-path.png`} alt="Hoodoo Rootwork Path" layout="fill" objectFit="contain" />
             </button>
-            <button onClick={() => onSelectPath('voodoo')} className="relative w-48 h-64 md:w-64 md:h-80 transition-transform duration-300 hover:scale-105 active:scale-95">
+            <button onClick={() => onSelectPath('voodoo')} className="relative w-40 h-56 md:w-64 md:h-80 transition-transform duration-300 hover:scale-105 active:scale-95">
                 <Image src={`${ASSET_PATH}/ui-button-voodoo-path.png`} alt="Voodoo Lwa Service Path" layout="fill" objectFit="contain" />
             </button>
         </div>
@@ -343,7 +343,7 @@ const HoodooStep1_Ancestors: React.FC<StepComponentProps> = ({ onNext }) => {
     };
 
     return (
-        <StepContainer stageTitle="Honor the Ancestors" instruction={holdProgress > 0 || isLit ? incantation : "Press and hold the candle to light it, asking for their guidance and protection."} button={isLit && <RitualButton onClick={onNext} className="animate-pulse">Continue</RitualButton>}>
+        <StepContainer stageTitle="Honor the Ancestors" instruction={holdProgress > 0 || isLit ? incantation : "Press and hold the candle to light it, and say the conjuration on the screen as you do."} button={isLit && <RitualButton onClick={onNext} className="animate-pulse">Continue</RitualButton>}>
             <div onMouseDown={handleHoldStart} onMouseUp={handleHoldEnd} onMouseLeave={handleHoldEnd} onTouchStart={handleHoldStart} onTouchEnd={handleHoldEnd} onContextMenu={(e) => e.preventDefault()} className="relative w-64 h-80 mx-auto cursor-pointer select-none">
                 <Image src={`${ASSET_PATH}/hoodoo-altar-base.png`} alt="Ancestor Altar" layout="fill" objectFit="contain" />
                 <AnimatePresence>
@@ -424,8 +424,8 @@ const HoodooStep5_FixJar: React.FC<{ onNext: () => void, selections: MateriaSele
     const numLayersToShow = index > 0 ? Math.ceil((index / totalSelections) * 5) : 0;
 
     const instructionText = isCharged 
-        ? `The ${currentMateria.name} is charged. "${currentMateria.incantation}"`
-        : `Charge the ${currentMateria.name}, speaking its incantation: "${currentMateria.incantation}"`;
+        ? `The ${currentMateria.name} is charged.\n"${currentMateria.incantation}"`
+        : `Charge the ${currentMateria.name}, speaking its incantation:\n"${currentMateria.incantation}"`;
 
     return (
         <StepContainer stageTitle="Fix the Jar" instruction={instructionText} button={isCharged ? <RitualButton onClick={onNext} className="animate-pulse">{index < selections.length - 1 ? "Next Ingredient" : "Set the Light"}</RitualButton> : <div/>}>
@@ -446,20 +446,57 @@ const HoodooStep5_FixJar: React.FC<{ onNext: () => void, selections: MateriaSele
 
 const HoodooStep6_SetLight: React.FC<{ onNext: () => void, petition: string }> = ({ onNext }) => {
     const [isLit, setIsLit] = useState(false);
+    const [holdProgress, setHoldProgress] = useState(0);
+    const holdInterval = useRef<NodeJS.Timeout | null>(null);
+    const fireSound = useMemo(() => playSound('/audio/fire.mp3', 0.3, true), []);
     const incantation = "With this flame, I set the light; make my work burn ever bright.";
+
+    const handleHoldStart = () => {
+        if (isLit) return;
+        fireSound.play();
+        const startTime = Date.now();
+        holdInterval.current = setInterval(() => {
+            const elapsedTime = Date.now() - startTime;
+            const progress = Math.min((elapsedTime / CHARGE_DURATION) * 100, 100);
+            setHoldProgress(progress);
+            if (progress >= 100) {
+                clearInterval(holdInterval.current!);
+                fireSound.stop();
+                setIsLit(true);
+                playSound('/audio/sfx-chaos-activate.mp3', 0.4).play();
+            }
+        }, 50);
+    };
+
+    const handleHoldEnd = () => {
+        if (holdInterval.current) clearInterval(holdInterval.current);
+        fireSound.stop();
+        if (!isLit) setHoldProgress(0);
+    };
+
+    const instructionText = (holdProgress > 0 || isLit) ? incantation : "Light the candle to activate the spell and send your intention.";
     
     return(
-        <StepContainer stageTitle="Set the Light" instruction={isLit ? incantation : "Light the candle to activate the spell and send your intention."} button={isLit && <RitualButton onClick={onNext} className="animate-pulse">Set the Work in Motion</RitualButton>}>
-            <div className="relative w-72 h-96">
-                <ChargingComponent onCharge={() => { setIsLit(true); }} isCharged={isLit}>
-                    <div className="relative w-72 h-96">
-                        <Image src={`${ASSET_PATH}/hoodoo-jar-fixed.png`} alt="Fixed Jar" layout="fill" objectFit="contain" className="z-0"/>
-                        {!isLit ? 
-                            <Image src={`${ASSET_PATH}/hoodoo-vigil-candle-unlit.png`} alt="Unlit Vigil Candle" layout="fill" objectFit="contain" className="z-10" /> :
-                            <Image src={`${ASSET_PATH}/hoodoo-vigil-candle-lit.gif`} alt="Lit Vigil Candle" layout="fill" objectFit="contain" unoptimized className="z-10" />
-                        }
-                    </div>
-                </ChargingComponent>
+        <StepContainer stageTitle="Set the Light" instruction={instructionText} button={isLit && <RitualButton onClick={onNext} className="animate-pulse">Set the Work in Motion</RitualButton>}>
+            <div 
+                onMouseDown={handleHoldStart} onMouseUp={handleHoldEnd} onMouseLeave={handleHoldEnd} 
+                onTouchStart={handleHoldStart} onTouchEnd={handleHoldEnd} 
+                onContextMenu={(e) => e.preventDefault()}
+                className="relative w-72 h-96 cursor-pointer select-none"
+            >
+                <div className="relative w-72 h-96">
+                    <Image src={`${ASSET_PATH}/hoodoo-jar-fixed.png`} alt="Fixed Jar" layout="fill" objectFit="contain" className="z-0"/>
+                    {!isLit ? 
+                        (<>
+                            <Image src={`${ASSET_PATH}/hoodoo-vigil-candle-unlit.png`} alt="Unlit Vigil Candle" layout="fill" objectFit="contain" className="z-10" />
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 w-3/4 h-2 bg-black/30 rounded-full overflow-hidden z-20">
+                                <motion.div className="h-full bg-amber-400" initial={{width: '0%'}} animate={{width: `${holdProgress}%`}} transition={{duration: 0.05}}/>
+                            </div>
+                        </>)
+                        :
+                        <Image src={`${ASSET_PATH}/hoodoo-vigil-candle-lit.gif`} alt="Lit Vigil Candle" layout="fill" objectFit="contain" unoptimized className="z-10" />
+                    }
+                </div>
             </div>
         </StepContainer>
     );
@@ -591,7 +628,7 @@ const Step7_Sending: React.FC<{onNext: () => void, petition: string}> = ({ onNex
     }, [onNext]);
     
     return(
-        <StepContainer stageTitle="Sending the Work" instruction="Your desire is loosed upon the currents of reality, finding its path to manifestation.">
+        <StepContainer stageTitle="Sending the Work" instruction="Your spell is being sent by a great magick into the essence of the all.">
             <div className="w-96 h-96 relative flex items-center justify-center">
                 <Image src={`${ASSET_PATH}/hoodoo-manifestation-final.png`} alt="Final Manifestation" layout="fill" objectFit="contain" />
                 <AnimatePresence>
@@ -616,8 +653,8 @@ const Step8_Manifestation: React.FC<{ affirmation: string, path: RitualPath, onF
 
     return (
         <StepContainer stageTitle={path === 'hoodoo' ? "The Work is Done" : "The Lwa is Served"} button={<RitualButton onClick={onFinish}>Return</RitualButton>}>
-            <div className="flex flex-col md:flex-row items-center justify-center gap-8 w-full max-w-4xl">
-                <div className="relative w-full md:w-1/2 aspect-square">
+            <div className="flex flex-row items-center justify-center gap-2 md:gap-8 w-full max-w-4xl">
+                <div className="relative w-1/2 aspect-square">
                     <Image src={`${ASSET_PATH}/${finalImage}`} alt="Final Manifestation" layout="fill" objectFit="contain" />
                     {path === 'voodoo' && (
                         <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -629,7 +666,7 @@ const Step8_Manifestation: React.FC<{ affirmation: string, path: RitualPath, onF
                         </div>
                     )}
                 </div>
-                <div className="relative w-full md:w-1/2 aspect-square @container">
+                <div className="relative w-1/2 aspect-square @container">
                     <Image src={`${ASSET_PATH}/hoodoo-petition-paper.png`} alt="Affirmation Parchment" layout="fill" objectFit="contain"/>
                     <div className="absolute inset-0 flex items-center justify-center p-[22%]">
                         <p className="text-center text-[#3a291c] font-serif font-semibold" style={{fontSize: 'clamp(0.7rem, 4.5cqw, 1.2rem)'}}>{affirmation}</p>
