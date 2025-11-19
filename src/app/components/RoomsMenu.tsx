@@ -1,3 +1,4 @@
+// --- START OF FILE RoomsMenu.tsx ---
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -60,12 +61,21 @@ export default function RoomsMenu() {
       />
       <div
         className={`fixed top-0 right-0 bottom-0 z-50 h-full w-full max-w-sm md:max-w-md transition-transform duration-500 ease-in-out overflow-hidden ${
-          // THE FIX: Changed from '-translate-x-full' to 'translate-x-full'
-          // This ensures the menu hides off-screen to the RIGHT.
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
         <div className="relative w-full h-full">
+          {/* THE FIX: Added the close button */}
+          <button 
+            onClick={closeMenu}
+            aria-label="Close menu"
+            className="absolute top-8 left-12 z-10 flex items-center justify-center w-12 h-12 rounded-full border-2 border-amber-400/50 bg-black/30 text-amber-300 hover:bg-amber-900/50 hover:border-amber-300 transition-all active:scale-90"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+
           <Image
             src="/images/door.png"
             alt="Navigation Door"
@@ -115,3 +125,4 @@ export default function RoomsMenu() {
     </>
   );
 }
+// --- END OF FILE ---
