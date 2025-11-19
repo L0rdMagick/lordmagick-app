@@ -423,15 +423,13 @@ const HoodooStep5_FixJar: React.FC<{ onNext: () => void, selections: MateriaSele
     const totalSelections = selections.length;
     const numLayersToShow = Math.ceil(((index + 1) / totalSelections) * 5);
 
-    const instructionText = `Charge the ${currentMateria.name} with your intention.`;
-    const incantationText = `Now say: "${currentMateria.incantation}"`;
+    const instructionText = isCharged 
+        ? `The ${currentMateria.name} is charged. "${currentMateria.incantation}"`
+        : `Charge the ${currentMateria.name}, speaking its incantation: "${currentMateria.incantation}"`;
 
     return (
-        <StepContainer stageTitle="Fix the Jar" instruction={isCharged ? incantationText : instructionText} button={isCharged ? <RitualButton onClick={onNext} className="animate-pulse">{index < selections.length - 1 ? "Next Ingredient" : "Set the Light"}</RitualButton> : <div/>}>
+        <StepContainer stageTitle="Fix the Jar" instruction={instructionText} button={isCharged ? <RitualButton onClick={onNext} className="animate-pulse">{index < selections.length - 1 ? "Next Ingredient" : "Set the Light"}</RitualButton> : <div/>}>
              <div className="flex flex-col items-center justify-center gap-4">
-                <AnimatePresence mode="wait">
-                    <motion.p key={incantationText} initial={{opacity: 0}} animate={{opacity: 1}} exit={{opacity: 0}} className="text-xl text-center text-amber-100 font-serif h-12 italic">{isCharged ? "" : incantationText}</motion.p>
-                </AnimatePresence>
                 <div className="relative w-full h-full max-w-md aspect-square mx-auto">
                     <Image src={`${ASSET_PATH}/hoodoo-jar-empty.png`} alt="Empty Spell Jar" layout="fill" objectFit="contain" />
                     {Array.from({length: 5}).map((_, i) => (
@@ -541,15 +539,13 @@ const VoodooStep5_MakeOffering: React.FC<{ onNext: () => void, selections: Mater
     const totalSelections = selections.length;
     const numLayersToShow = Math.ceil(((index + 1) / totalSelections) * 5);
 
-    const instructionText = `Prepare the ${currentOffering.name} for the Lwa.`;
-    const incantationText = `Now say: "${currentOffering.incantation}"`;
+    const instructionText = isCharged
+        ? `The ${currentOffering.name} is prepared. "${currentOffering.incantation}"`
+        : `Prepare the ${currentOffering.name}, speaking its incantation: "${currentOffering.incantation}"`;
 
     return (
-        <StepContainer stageTitle="Make the Offering" instruction={isCharged ? incantationText : instructionText} button={isCharged ? <RitualButton onClick={onNext} className="animate-pulse">{index < selections.length - 1 ? "Next Offering" : "Present to Lwa"}</RitualButton> : <div/>}>
+        <StepContainer stageTitle="Make the Offering" instruction={instructionText} button={isCharged ? <RitualButton onClick={onNext} className="animate-pulse">{index < selections.length - 1 ? "Next Offering" : "Present to Lwa"}</RitualButton> : <div/>}>
             <div className="flex flex-col items-center justify-center gap-4">
-                 <AnimatePresence mode="wait">
-                    <motion.p key={incantationText} initial={{opacity: 0}} animate={{opacity: 1}} exit={{opacity: 0}} className="text-xl text-center text-amber-100 font-serif h-12 italic">{isCharged ? "" : incantationText}</motion.p>
-                </AnimatePresence>
                 <div className="relative w-full h-full max-w-md aspect-square mx-auto">
                     <Image src={`${ASSET_PATH}/voodoo-offering-bottle.png`} alt="Empty Offering Bottle" layout="fill" objectFit="contain" />
                     {Array.from({length: 5}).map((_, i) => (
