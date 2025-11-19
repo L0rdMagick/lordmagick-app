@@ -17,7 +17,8 @@ import { findSprite } from '@/lib/spriteLibrary';
 const ASSET_PATH = "/images/Spells/HooDoo Voo Doo";
 const CHARGE_DURATION = 3000; // 3 seconds
 const FADE_DURATION = 0.8;
-const SENDING_DURATION = 7000; // 7 seconds for the sending animation
+// THE FIX: Changed sending duration to 13 seconds
+const SENDING_DURATION = 13000; // 13 seconds for the sending animation
 
 // --- Data ---
 const PSALM_DATABASE: Record<string, string> = {
@@ -251,13 +252,22 @@ const StepContainer: React.FC<StepContainerProps> = ({ stageTitle, instruction, 
 );
 
 // --- CHARGING COMPONENT ---
-const ChargingComponent: React.FC<{onCharge: () => void, children: React.ReactNode, isCharged: boolean, duration?: number}> = ({ onCharge, children, isCharged, duration = CHARGE_DURATION }) => {
+// THE FIX: Added onHoldStart and onHoldEnd optional props
+const ChargingComponent: React.FC<{
+    onCharge: () => void, 
+    children: React.ReactNode, 
+    isCharged: boolean, 
+    duration?: number,
+    onHoldStart?: () => void,
+    onHoldEnd?: () => void
+}> = ({ onCharge, children, isCharged, duration = CHARGE_DURATION, onHoldStart, onHoldEnd }) => {
     const [progress, setProgress] = useState(0);
     const intervalRef = useRef<NodeJS.Timeout|null>(null);
     const soundRef = useRef(playSound('/audio/sfx-chaos-hold.mp3', 0.2, true));
 
     const handleHoldStart = () => {
         if (isCharged) return;
+        if (onHoldStart) onHoldStart();
         soundRef.current.play();
         const startTime = Date.now();
         intervalRef.current = setInterval(() => {
@@ -273,6 +283,7 @@ const ChargingComponent: React.FC<{onCharge: () => void, children: React.ReactNo
         }, 50);
     };
     const handleHoldEnd = () => {
+        if (onHoldEnd) onHoldEnd();
         if (intervalRef.current) clearInterval(intervalRef.current);
         soundRef.current.stop();
         if (!isCharged) setProgress(0);
@@ -300,6 +311,7 @@ const ChargingComponent: React.FC<{onCharge: () => void, children: React.ReactNo
 // --- Step 0: Path Selection ---
 const Step0_Crossroads: React.FC<{ onSelectPath: (path: RitualPath) => void }> = ({ onSelectPath }) => (
     <div className="relative w-full h-full flex flex-col items-center justify-center">
+        {/* THE FIX: Changed to flex-row and adjusted sizes for mobile */}
         <div className="relative z-10 flex flex-row items-center justify-center gap-4 md:gap-16">
             <button onClick={() => onSelectPath('hoodoo')} className="relative w-40 h-56 md:w-64 md:h-80 transition-transform duration-300 hover:scale-105 active:scale-95">
                 <Image src={`${ASSET_PATH}/ui-button-hoodoo-path.png`} alt="Hoodoo Rootwork Path" layout="fill" objectFit="contain" />
@@ -318,6 +330,7 @@ const HoodooStep1_Ancestors: React.FC<StepComponentProps> = ({ onNext }) => {
     const [holdProgress, setHoldProgress] = useState(0);
     const holdInterval = useRef<NodeJS.Timeout | null>(null);
     const fireSound = useMemo(() => playSound('/audio/fire.mp3', 0.3, true), []);
+    // THE FIX: Updated instruction text
     const incantation = "I call to my ancestors, known and unknown, to witness and bless this sacred working.";
 
     const handleHoldStart = () => {
@@ -423,6 +436,7 @@ const HoodooStep5_FixJar: React.FC<{ onNext: () => void, selections: MateriaSele
     const totalSelections = selections.length;
     const numLayersToShow = index > 0 ? Math.ceil((index / totalSelections) * 5) : 0;
 
+    // THE FIX: Updated instruction text layout
     const instructionText = isCharged 
         ? `The ${currentMateria.name} is charged.\n"${currentMateria.incantation}"`
         : `Charge the ${currentMateria.name}, speaking its incantation:\n"${currentMateria.incantation}"`;
@@ -444,59 +458,33 @@ const HoodooStep5_FixJar: React.FC<{ onNext: () => void, selections: MateriaSele
     );
 };
 
+// THE FIX: Reworked this component to use ChargingComponent correctly and display the incantation as requested.
 const HoodooStep6_SetLight: React.FC<{ onNext: () => void, petition: string }> = ({ onNext }) => {
     const [isLit, setIsLit] = useState(false);
-    const [holdProgress, setHoldProgress] = useState(0);
-    const holdInterval = useRef<NodeJS.Timeout | null>(null);
-    const fireSound = useMemo(() => playSound('/audio/fire.mp3', 0.3, true), []);
+    const [isHolding, setIsHolding] = useState(false);
     const incantation = "With this flame, I set the light; make my work burn ever bright.";
-
-    const handleHoldStart = () => {
-        if (isLit) return;
-        fireSound.play();
-        const startTime = Date.now();
-        holdInterval.current = setInterval(() => {
-            const elapsedTime = Date.now() - startTime;
-            const progress = Math.min((elapsedTime / CHARGE_DURATION) * 100, 100);
-            setHoldProgress(progress);
-            if (progress >= 100) {
-                clearInterval(holdInterval.current!);
-                fireSound.stop();
-                setIsLit(true);
-                playSound('/audio/sfx-chaos-activate.mp3', 0.4).play();
-            }
-        }, 50);
-    };
-
-    const handleHoldEnd = () => {
-        if (holdInterval.current) clearInterval(holdInterval.current);
-        fireSound.stop();
-        if (!isLit) setHoldProgress(0);
-    };
-
-    const instructionText = (holdProgress > 0 || isLit) ? incantation : "Light the candle to activate the spell and send your intention.";
+    
+    const instructionText = (isHolding || isLit)
+        ? incantation
+        : "Light the candle to activate the spell and send your intention.";
     
     return(
         <StepContainer stageTitle="Set the Light" instruction={instructionText} button={isLit && <RitualButton onClick={onNext} className="animate-pulse">Set the Work in Motion</RitualButton>}>
-            <div 
-                onMouseDown={handleHoldStart} onMouseUp={handleHoldEnd} onMouseLeave={handleHoldEnd} 
-                onTouchStart={handleHoldStart} onTouchEnd={handleHoldEnd} 
-                onContextMenu={(e) => e.preventDefault()}
-                className="relative w-72 h-96 cursor-pointer select-none"
-            >
-                <div className="relative w-72 h-96">
-                    <Image src={`${ASSET_PATH}/hoodoo-jar-fixed.png`} alt="Fixed Jar" layout="fill" objectFit="contain" className="z-0"/>
-                    {!isLit ? 
-                        (<>
-                            <Image src={`${ASSET_PATH}/hoodoo-vigil-candle-unlit.png`} alt="Unlit Vigil Candle" layout="fill" objectFit="contain" className="z-10" />
-                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 w-3/4 h-2 bg-black/30 rounded-full overflow-hidden z-20">
-                                <motion.div className="h-full bg-amber-400" initial={{width: '0%'}} animate={{width: `${holdProgress}%`}} transition={{duration: 0.05}}/>
-                            </div>
-                        </>)
-                        :
-                        <Image src={`${ASSET_PATH}/hoodoo-vigil-candle-lit.gif`} alt="Lit Vigil Candle" layout="fill" objectFit="contain" unoptimized className="z-10" />
-                    }
-                </div>
+            <div className="relative w-72 h-96">
+                <ChargingComponent 
+                    onCharge={() => setIsLit(true)} 
+                    isCharged={isLit}
+                    onHoldStart={() => setIsHolding(true)}
+                    onHoldEnd={() => setIsHolding(false)}
+                >
+                    <div className="relative w-72 h-96">
+                        <Image src={`${ASSET_PATH}/hoodoo-jar-fixed.png`} alt="Fixed Jar" layout="fill" objectFit="contain" className="z-0"/>
+                        {!isLit ? 
+                            <Image src={`${ASSET_PATH}/hoodoo-vigil-candle-unlit.png`} alt="Unlit Vigil Candle" layout="fill" objectFit="contain" className="z-10" /> :
+                            <Image src={`${ASSET_PATH}/hoodoo-vigil-candle-lit.gif`} alt="Lit Vigil Candle" layout="fill" objectFit="contain" unoptimized className="z-10" />
+                        }
+                    </div>
+                </ChargingComponent>
             </div>
         </StepContainer>
     );
@@ -628,6 +616,7 @@ const Step7_Sending: React.FC<{onNext: () => void, petition: string}> = ({ onNex
     }, [onNext]);
     
     return(
+        // THE FIX: Updated instruction text
         <StepContainer stageTitle="Sending the Work" instruction="Your spell is being sent by a great magick into the essence of the all.">
             <div className="w-96 h-96 relative flex items-center justify-center">
                 <Image src={`${ASSET_PATH}/hoodoo-manifestation-final.png`} alt="Final Manifestation" layout="fill" objectFit="contain" />
@@ -653,6 +642,7 @@ const Step8_Manifestation: React.FC<{ affirmation: string, path: RitualPath, onF
 
     return (
         <StepContainer stageTitle={path === 'hoodoo' ? "The Work is Done" : "The Lwa is Served"} button={<RitualButton onClick={onFinish}>Return</RitualButton>}>
+             {/* THE FIX: Changed to flex-row and gap-2 for mobile */}
             <div className="flex flex-row items-center justify-center gap-2 md:gap-8 w-full max-w-4xl">
                 <div className="relative w-1/2 aspect-square">
                     <Image src={`${ASSET_PATH}/${finalImage}`} alt="Final Manifestation" layout="fill" objectFit="contain" />
