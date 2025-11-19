@@ -470,10 +470,8 @@ const HoodooStep5_FixJar: React.FC<{ onNext: () => void, selections: MateriaSele
     return (
         <StepContainer stageTitle="Fix the Jar" instruction={instructionText} button={isCharged ? <RitualButton onClick={onNext} className="animate-pulse">{index < selections.length - 1 ? "Next Ingredient" : "Set the Light"}</RitualButton> : <div/>}>
             <div className="relative w-full h-full max-w-md aspect-square mx-auto">
-                {/* THE FIX: Set jar image to z-0, the bottom layer. */}
-                <Image src={`${ASSET_PATH}/hoodoo-jar-empty.png`} alt="Empty Spell Jar" layout="fill" objectFit="contain" className="z-0" />
+                <Image src={`${ASSET_PATH}/hoodoo-jar-empty.png`} alt="Empty Spell Jar" layout="fill" objectFit="contain" className="z-20 pointer-events-none" />
                 
-                {/* THE FIX: Set ingredient container to z-10, above the jar. */}
                 <div className="absolute pointer-events-none z-10" style={HOODOO_CONTAINER_STYLE}>
                     {chargedItems.map((item, i) => {
                         const itemSprite = findSprite(item.name);
@@ -500,8 +498,7 @@ const HoodooStep5_FixJar: React.FC<{ onNext: () => void, selections: MateriaSele
                     </AnimatePresence>
                 </div>
 
-                {/* THE FIX: Set charging component to z-20, the top interactive layer. */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-2/3 z-20">
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-2/3 z-30">
                     <AnimatePresence>
                     {!isCharged && (
                         <motion.div exit={{ scale: 0.5, opacity: 0 }}>
@@ -535,11 +532,9 @@ const HoodooStep6_SetLight: React.FC<{ onNext: () => void; petition: string; sel
                     onHoldEnd={() => setIsHolding(false)}
                 >
                     <div className="relative w-72 h-96">
-                        {/* THE FIX: Jar is z-10 */}
-                        <Image src={`${ASSET_PATH}/hoodoo-jar-fixed.png`} alt="Fixed Jar" layout="fill" objectFit="contain" className="z-10"/>
+                        <Image src={`${ASSET_PATH}/hoodoo-jar-fixed.png`} alt="Fixed Jar" layout="fill" objectFit="contain" className="z-10 pointer-events-none"/>
 
-                        {/* THE FIX: Ingredients are z-20, above jar contents */}
-                        <div className="absolute pointer-events-none z-20" style={HOODOO_CONTAINER_STYLE}>
+                        <div className="absolute pointer-events-none z-0" style={HOODOO_CONTAINER_STYLE}>
                              {selections.map((item, i) => {
                                 const itemSprite = findSprite(item.name);
                                 if (!itemSprite) return null;
@@ -551,10 +546,9 @@ const HoodooStep6_SetLight: React.FC<{ onNext: () => void; petition: string; sel
                             })}
                         </div>
                         
-                        {/* THE FIX: Candle is z-30, on top of everything */}
                         {!isLit ? 
-                            <Image src={`${ASSET_PATH}/hoodoo-vigil-candle-unlit.png`} alt="Unlit Vigil Candle" layout="fill" objectFit="contain" className="z-30" /> :
-                            <Image src={`${ASSET_PATH}/hoodoo-vigil-candle-lit.gif`} alt="Lit Vigil Candle" layout="fill" objectFit="contain" unoptimized className="z-30" />
+                            <Image src={`${ASSET_PATH}/hoodoo-vigil-candle-unlit.png`} alt="Unlit Vigil Candle" layout="fill" objectFit="contain" className="z-20 pointer-events-none" /> :
+                            <Image src={`${ASSET_PATH}/hoodoo-vigil-candle-lit.gif`} alt="Lit Vigil Candle" layout="fill" objectFit="contain" unoptimized className="z-20 pointer-events-none" />
                         }
                     </div>
                 </ChargingComponent>
@@ -640,7 +634,7 @@ const VoodooStep5_MakeOffering: React.FC<{ onNext: () => void, selections: Mater
     const chargedItems = useMemo(() => selections.slice(0, index), [selections, index]);
     const itemPositions = useIngredientPositions(selections.length);
 
-    const instructionText = isCharged 
+    const instructionText = isCharged
         ? `The ${currentMateria.name} is prepared.\n"${currentMateria.incantation}"`
         : `Prepare the ${currentMateria.name}, speaking its incantation:\n"${currentMateria.incantation}"`;
 
@@ -648,7 +642,7 @@ const VoodooStep5_MakeOffering: React.FC<{ onNext: () => void, selections: Mater
         <StepContainer stageTitle="Make the Offering" instruction={instructionText} button={isCharged ? <RitualButton onClick={onNext} className="animate-pulse">{index < selections.length - 1 ? "Next Offering" : "Present to Lwa"}</RitualButton> : <div/>}>
             <div className="relative w-full h-full max-w-md aspect-square mx-auto">
                 {/* THE FIX: Set bottle image to z-0 */}
-                <Image src={`${ASSET_PATH}/voodoo-offering-bottle.png`} alt="Empty Offering Bottle" layout="fill" objectFit="contain" className="z-0" />
+                <Image src={`${ASSET_PATH}/voodoo-offering-bottle.png`} alt="Empty Offering Bottle" layout="fill" objectFit="contain" className="z-20 pointer-events-none" />
                 
                 {/* THE FIX: Set ingredient container to z-10 */}
                 <div className="absolute pointer-events-none z-10" style={VOODOO_CONTAINER_STYLE}>
@@ -677,8 +671,8 @@ const VoodooStep5_MakeOffering: React.FC<{ onNext: () => void, selections: Mater
                     </AnimatePresence>
                 </div>
 
-                {/* THE FIX: Set charging component to z-20 */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-2/3 z-20">
+                {/* THE FIX: Set charging component to z-30 */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-2/3 z-30">
                      <AnimatePresence>
                     {!isCharged && (
                         <motion.div exit={{ scale: 0.5, opacity: 0 }}>
@@ -708,10 +702,10 @@ const VoodooStep6_PresentOffering: React.FC<{ onNext: () => void; lwa: string; s
         <StepContainer stageTitle="Present the Offering" instruction="Present your gifts and petition to the Lwa.">
             <div className="flex flex-col md:flex-row items-center justify-center gap-8">
                 <div className="relative w-64 h-64">
-                    {/* THE FIX: Set bottle image to z-0 */}
-                    <Image src={`${ASSET_PATH}/voodoo-offering-bottle-filled.png`} alt="Filled Offering Bottle" layout="fill" objectFit="contain" className="z-0" />
-                    {/* THE FIX: Set ingredient container to z-10 */}
-                    <div className="absolute inset-0 pointer-events-none z-10">
+                    {/* THE FIX: Bottle is z-10 */}
+                    <Image src={`${ASSET_PATH}/voodoo-offering-bottle-filled.png`} alt="Filled Offering Bottle" layout="fill" objectFit="contain" className="z-10" />
+                    {/* THE FIX: Ingredients are z-0 */}
+                    <div className="absolute inset-0 pointer-events-none z-0">
                         <div className="absolute" style={VOODOO_CONTAINER_STYLE}>
                             {selections.map((item, i) => {
                                 const itemSprite = findSprite(item.name);
