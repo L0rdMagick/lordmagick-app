@@ -470,7 +470,7 @@ const HoodooStep5_FixJar: React.FC<{ onNext: () => void, selections: MateriaSele
     return (
         <StepContainer stageTitle="Fix the Jar" instruction={instructionText} button={isCharged ? <RitualButton onClick={onNext} className="animate-pulse">{index < selections.length - 1 ? "Next Ingredient" : "Set the Light"}</RitualButton> : <div/>}>
             <div className="relative w-full h-full max-w-md aspect-square mx-auto">
-                <div className="absolute inset-0 z-10 pointer-events-none" style={HOODOO_CONTAINER_STYLE}>
+                <div className="absolute pointer-events-none z-10" style={HOODOO_CONTAINER_STYLE}>
                     {chargedItems.map((item, i) => {
                         const itemSprite = findSprite(item.name);
                         if (!itemSprite) return null;
@@ -701,7 +701,7 @@ const VoodooStep6_PresentOffering: React.FC<{ onNext: () => void; lwa: string; s
         <StepContainer stageTitle="Present the Offering" instruction="Present your gifts and petition to the Lwa.">
             <div className="flex flex-col md:flex-row items-center justify-center gap-8">
                 <div className="relative w-64 h-64">
-                    <div className="absolute inset-0 z-10 pointer-events-none">
+                    <div className="absolute inset-0 pointer-events-none z-10">
                         <div className="absolute" style={VOODOO_CONTAINER_STYLE}>
                             {selections.map((item, i) => {
                                 const itemSprite = findSprite(item.name);
