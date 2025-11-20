@@ -216,4 +216,16 @@ export const getTodaysSpellCount = async (userId: string): Promise<number> => {
     
     return count || 0;
 }
+
+export const generateElectricNeuralLink = async (target: string, intention: string): Promise<string> => {
+    const { data, error } = await supabase.functions.invoke('generate-electric-spell', {
+        body: { action: 'neural_link', target, intention },
+    });
+    if (error) {
+        console.error("Error invoking generate-electric-spell (neural_link):", error);
+        return "LINK ESTABLISHED. PACKET DELIVERED VIA BACKUP PROTOCOL."; 
+    }
+    return data.result;
+};
+
 // --- END OF FILE ---

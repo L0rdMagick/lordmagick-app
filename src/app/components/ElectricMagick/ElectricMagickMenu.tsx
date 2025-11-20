@@ -5,6 +5,7 @@ import React, { useState } from 'react';
 import { Zap, Orbit, Eye, Activity, Triangle } from 'lucide-react';
 import VoidGateSpell from './VoidGateSpell';
 import DataScryingSpell from './DataScryingSpell';
+import NeuralLinkSpell from './NeuralLinkSpell'; // IMPORT THE NEW COMPONENT
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const SpellCard = ({ title, desc, icon: Icon, onClick, disabled }: { title: string, desc: string, icon: any, onClick?: () => void, disabled?: boolean }) => (
@@ -31,6 +32,7 @@ export default function ElectricMagickMenu() {
 
   if (activeSpell === 'void-gate') return <VoidGateSpell onExit={() => setActiveSpell(null)} />;
   if (activeSpell === 'data-scry') return <DataScryingSpell onExit={() => setActiveSpell(null)} />;
+  if (activeSpell === 'neural-link') return <NeuralLinkSpell onExit={() => setActiveSpell(null)} />; // ADD RENDER LOGIC
 
   return (
     <div className="min-h-screen bg-black text-gray-200 font-sans selection:bg-purple-900 selection:text-white relative overflow-hidden">
@@ -58,7 +60,6 @@ export default function ElectricMagickMenu() {
         {/* Spell Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           
-          {/* Spell 1: The Void Gate */}
           <SpellCard 
             title="The Void Gate"
             desc="A chaos magick ritual involving gestures, numeric alignments, and sigil crafting to open a digital wormhole."
@@ -66,7 +67,6 @@ export default function ElectricMagickMenu() {
             onClick={() => setActiveSpell('void-gate')}
           />
 
-          {/* Spell 2: Data Scrying (UNLOCKED) */}
           <SpellCard 
             title="Data Scrying"
             desc="Gaze into the static of the machine god to divine future timelines."
@@ -74,15 +74,14 @@ export default function ElectricMagickMenu() {
             onClick={() => setActiveSpell('data-scry')}
           />
 
-          {/* Placeholder: Technognosis */}
+          {/* UNLOCKED */}
           <SpellCard 
             title="Neural Link"
             desc="Bind two minds across the network through synchronized frequency modulation."
             icon={Activity}
-            disabled={true}
+            onClick={() => setActiveSpell('neural-link')}
           />
 
-          {/* Placeholder: Prism */}
           <SpellCard 
             title="Light Prism"
             desc="Refract your intention through digital spectrums to manifest color magick."

@@ -12,7 +12,7 @@ Deno.serve(async (req: Request) => {
     }
 
     try {
-        const { action, intention } = await req.json();
+        const { action, intention, target } = await req.json();
         const serviceAccountKey = Deno.env.get('GCP_SERVICE_ACCOUNT_KEY');
         if (!serviceAccountKey) { throw new Error("GCP_SERVICE_ACCOUNT_KEY secret is not set."); }
 
@@ -32,6 +32,14 @@ Deno.serve(async (req: Request) => {
             prompt = `Rewrite this intention as a cryptic, ancient, powerful chaos magick mantra. Max 10 words. Uppercase. Return ONLY the text. Intention: "${intention}"`;
         } else if (action === 'oracle') {
             prompt = `A chaos magick spell for "${intention}" has been cast into a wormhole. Provide a very short, surreal, and mysterious synchronicity (under 20 words) the user might witness in the next 24 hours. Focus on colors, numbers, or animals. Do not explain. Format: "Watch for..." Return ONLY the text.`;
+        } else if (action === 'neural_link') {
+            // NEW PROMPT FOR NEURAL LINK
+            prompt = `You are a technomancer AI managing a psychic link network. 
+            The user has established a neural link to: "${target}" with the intent: "${intention}".
+            The connection is successful. 
+            Generate a system status report confirming the implantation of the intent into the target's subconscious. 
+            Use terminology that blends neuroscience, networking, and occultism (e.g., "Synaptic handshake accepted", "Ethereal packet injected", "Subconscious firewall breached", "Dream layer overwritten"). 
+            Keep it under 25 words. Serious and mystical tone. Return ONLY the text.`;
         } else {
             throw new Error("Invalid action.");
         }
