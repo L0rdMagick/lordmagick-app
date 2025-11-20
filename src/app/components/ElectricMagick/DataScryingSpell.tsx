@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { 
-  Eye, X, Fingerprint, Radio, Binary
+  Eye, X, Fingerprint, Radio, Binary, ChevronUp, ChevronDown
 } from 'lucide-react';
 import { generateDataScrying } from '@/lib/services/geminiService';
 import { useAudioEngine, useParticleSystem, getMagickalNumber } from './hooks';
@@ -19,7 +19,6 @@ const DataScryingSpell = ({ onExit }: { onExit: () => void }) => {
         const [progress, setProgress] = useState(0);
         const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-        // THE FIX: Added React.MouseEvent to the type definition
         const handleStart = (e: React.MouseEvent | React.TouchEvent | React.PointerEvent) => {
             e.preventDefault();
             initAudio();
@@ -47,11 +46,11 @@ const DataScryingSpell = ({ onExit }: { onExit: () => void }) => {
         };
 
         return (
-            <div className="flex flex-col items-center justify-center h-full w-full select-none">
+            <div className="flex flex-col items-center justify-center h-full w-full select-none touch-none">
                 <h2 className="text-2xl font-serif text-cyan-400 mb-12 tracking-[0.3em] uppercase animate-pulse">Bio-Sync Required</h2>
                 
                 <div 
-                    className="relative w-32 h-32 flex items-center justify-center"
+                    className="relative w-32 h-32 flex items-center justify-center cursor-pointer active:scale-95 transition-transform"
                     onMouseDown={handleStart}
                     onMouseUp={handleEnd}
                     onMouseLeave={handleEnd}
@@ -71,10 +70,10 @@ const DataScryingSpell = ({ onExit }: { onExit: () => void }) => {
                     
                     {/* Glow */}
                     <div className="absolute inset-0 bg-cyan-500 blur-xl rounded-full transition-opacity duration-200"
-                         style={{ opacity: progress / 150 }}></div>
+                         style={{ opacity: progress / 100 }}></div>
                 </div>
                 
-                <p className="mt-12 text-cyan-700 text-[10px] font-mono tracking-widest">
+                <p className="mt-12 text-cyan-700 text-[10px] font-mono tracking-widest animate-pulse">
                     HOLD TO INTEGRATE NERVOUS SYSTEM
                 </p>
             </div>
@@ -84,8 +83,10 @@ const DataScryingSpell = ({ onExit }: { onExit: () => void }) => {
     // --- STAGE 2: TUNING (The Stream) ---
     const TuningStage = () => {
         const [tuning, setTuning] = useState(50); // 0-100
-        const target = useRef(getMagickalNumber(20, 80)); // Random sweet spot
+        // Wider sweet spot range to make it easier
+        const target = useRef(getMagickalNumber(15, 85)); 
         const [signalStrength, setSignalStrength] = useState(0);
+        const [isLocked, setIsLocked] = useState(false);
         
         useEffect(() => {
             playDrone(true, 110); // Base drone
@@ -94,37 +95,60 @@ const DataScryingSpell = ({ onExit }: { onExit: () => void }) => {
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const handleMove = (e: any) => {
-            const clientY = e.touches ? e.touches[0].clientX : e.clientX;
-            const percent = 100 - (clientY / window.innerHeight) * 100;
+            // THE FIX: Explicitly get clientY (vertical), not clientX
+            const clientY = e.touches ? e.touches[0].clientY : e.clientX; // Fallback to X only if Y undefined (rare mouse edge case), but standard MouseEvent has Y
+            const y = e.touches ? e.touches[0].clientY : e.clientY;
+
+            // Invert logic: Top of screen = 100%, Bottom = 0%
+            const percent = 100 - (y / window.innerHeight) * 100;
             const clamped = Math.min(100, Math.max(0, percent));
             setTuning(clamped);
 
             // Calculate closeness to target
             const distance = Math.abs(clamped - target.current);
-            const strength = Math.max(0, 100 - (distance * 5)); // Range of ~20%
+            
+            // Wider tolerance: within 15% you start hearing/seeing it
+            const strength = Math.max(0, 100 - (distance * 6)); 
             setSignalStrength(strength);
 
             // Audio feedback
-            modulateFilter(100 + (strength * 20)); // Open filter as signal gets stronger
+            modulateFilter(100 + (strength * 25)); // Open filter as signal gets stronger
             
-            // Haptic/Audio blip on perfect match
-            if (strength > 95 && Math.random() > 0.9) {
-                 playTone(880, 'sine', 0.1, 0.1);
-            }
-
-            if (strength > 98) {
-                 setTimeout(() => {
-                     playTone(1200, 'sine', 2, 0.5);
-                     setStage(3);
-                 }, 1500); // Must hold for 1.5s
+            // Success Threshold
+            if (strength > 90 && !isLocked) {
+                 // Only lock if holding briefly (handled by debounce visual, but triggering logic here)
+                 if (Math.random() > 0.92) {
+                     playTone(880, 'sine', 0.1, 0.1); // Geiger counter effect
+                 }
+                 
+                 // If extremely close, trigger next stage
+                 if (strength > 96) {
+                    setIsLocked(true);
+                    playTone(1200, 'sine', 2, 0.5);
+                    setTimeout(() => {
+                        setStage(3);
+                    }, 1000);
+                 }
             }
         };
 
         return (
-            <div className="flex flex-col items-center justify-center h-full w-full select-none overflow-hidden"
-                 onTouchMove={handleMove} onMouseMove={(e) => e.buttons === 1 && handleMove(e)}>
+            <div className="flex flex-col items-center justify-center h-full w-full select-none overflow-hidden touch-none"
+                 onTouchMove={handleMove} 
+                 onMouseMove={(e) => e.buttons === 1 && handleMove(e)}
+                 onMouseDown={handleMove} // Allow click-jump
+            >
                 
-                {/* Background Matrix Rain Effect (Simplified via CSS/DOM for now) */}
+                {/* Instructions Overlay (Fades out when finding signal) */}
+                <div className={`absolute top-24 text-center transition-opacity duration-500 ${signalStrength > 20 ? 'opacity-0' : 'opacity-100'}`}>
+                     <div className="flex flex-col items-center text-cyan-800 animate-bounce">
+                        <ChevronUp size={24} />
+                        <span className="text-[10px] font-mono tracking-widest my-2">SLIDE VERTICALLY TO TUNE</span>
+                        <ChevronDown size={24} />
+                     </div>
+                </div>
+
+                {/* Background Matrix Rain Effect */}
                 <div className="absolute inset-0 pointer-events-none flex justify-between px-4 opacity-30">
                      {Array.from({length: 10}).map((_, i) => (
                          <div key={i} className="text-[10px] text-cyan-900 font-mono writing-vertical-rl text-orientation-upright animate-pulse"
@@ -134,39 +158,56 @@ const DataScryingSpell = ({ onExit }: { onExit: () => void }) => {
                      ))}
                 </div>
 
-                <div className="z-20 text-center space-y-8">
+                <div className="z-20 text-center space-y-8 pointer-events-none">
                     <div className="text-cyan-400 font-mono text-xs tracking-widest mb-4">
-                        FREQUENCY: {tuning.toFixed(2)} Hz
+                        FREQUENCY: {tuning.toFixed(2)} MHz
                     </div>
 
-                    {/* Visualizer */}
-                    <div className="relative w-64 h-16 border border-cyan-900 bg-black/50 rounded overflow-hidden">
-                        {/* Noise */}
-                        <div className="absolute inset-0 bg-repeat opacity-20" 
-                             style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='${2 - (signalStrength/50)}' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E")` }}>
+                    {/* Visualizer Box */}
+                    <div className={`relative w-64 h-32 border-2 ${isLocked ? 'border-cyan-400 bg-cyan-900/20' : 'border-cyan-900 bg-black/50'} rounded-lg overflow-hidden transition-colors duration-300`}>
+                        {/* Static Noise Layer */}
+                        <div className="absolute inset-0 bg-repeat opacity-40" 
+                             style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='${2 - (signalStrength/60)}' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E")` }}>
                         </div>
-                        {/* Signal Wave */}
+                        
+                        {/* Signal Wave (Appears when close) */}
                         <div className="absolute inset-0 flex items-center justify-center">
-                             <div className="w-full h-1 bg-cyan-500 shadow-[0_0_10px_#06b6d4]" 
+                             <div className="w-full h-1 bg-cyan-400 shadow-[0_0_15px_#06b6d4] transition-all duration-100" 
                                   style={{ 
-                                      transform: `scaleY(${1 + (signalStrength/10)})`,
+                                      transform: `scaleY(${1 + (signalStrength/5)}) scaleX(${signalStrength/100})`,
                                       opacity: signalStrength / 100
                                   }}></div>
                         </div>
+
+                        {isLocked && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-cyan-500/20">
+                                <span className="text-cyan-100 font-bold tracking-widest animate-pulse">LOCKED</span>
+                            </div>
+                        )}
                     </div>
 
-                    <div className="flex items-center justify-center gap-4 text-cyan-600">
-                        <Radio className={signalStrength > 50 ? "animate-ping" : ""} />
+                    <div className={`flex items-center justify-center gap-4 ${isLocked ? 'text-white' : 'text-cyan-700'}`}>
+                        <Radio className={isLocked ? "animate-ping text-cyan-400" : ""} />
                         <span className="text-xs font-serif uppercase tracking-widest">
-                            {signalStrength > 90 ? "SIGNAL LOCKED" : "SCANNING ETHER..."}
+                            {isLocked ? "DOWNLOADING..." : "SCANNING ETHER..."}
                         </span>
                     </div>
                 </div>
 
-                {/* Slider Thumb Graphic */}
-                <div className="absolute right-4 w-1 h-64 bg-gray-800 rounded-full">
-                    <div className="absolute w-4 h-4 bg-cyan-500 rounded-full -left-1.5 shadow-[0_0_10px_#06b6d4]"
-                         style={{ bottom: `${tuning}%` }}></div>
+                {/* Right Side Slider Graphic (Interactive Area) */}
+                <div className="absolute right-0 top-0 bottom-0 w-16 flex items-center justify-center bg-gradient-to-l from-cyan-900/20 to-transparent">
+                    {/* Track */}
+                    <div className="w-1 h-3/4 bg-cyan-900/50 rounded-full relative">
+                        {/* Target Hint (Subtle) */}
+                        <div className="absolute w-2 h-2 bg-cyan-900/0 left-1/2 -translate-x-1/2" 
+                             style={{ bottom: `${target.current}%` }}></div>
+                        
+                        {/* Thumb */}
+                        <div className="absolute w-6 h-6 bg-cyan-500 rounded-full left-1/2 -translate-x-1/2 shadow-[0_0_15px_#06b6d4] transition-all duration-75 ease-out"
+                             style={{ bottom: `${tuning}%` }}>
+                             <div className="absolute inset-0 bg-white rounded-full animate-ping opacity-30"></div>     
+                        </div>
+                    </div>
                 </div>
             </div>
         );
@@ -179,7 +220,7 @@ const DataScryingSpell = ({ onExit }: { onExit: () => void }) => {
         useEffect(() => {
             playDrone(true, 220); // Higher frequency drone
             
-            // Simulate fetching data while they gaze
+            // Trigger the AI generation
             generateDataScrying().then(text => setDecodedMessage(text));
 
             const interval = setInterval(() => {
@@ -190,9 +231,9 @@ const DataScryingSpell = ({ onExit }: { onExit: () => void }) => {
                         setTimeout(() => setStage(4), 2000);
                         return 100;
                     }
-                    return prev + 0.5; // Takes ~5 seconds
+                    return prev + 0.5; // Takes ~4 seconds to decode
                 });
-            }, 50);
+            }, 40);
             
             return () => {
                 clearInterval(interval);
@@ -201,12 +242,12 @@ const DataScryingSpell = ({ onExit }: { onExit: () => void }) => {
         }, [playDrone, playTone]);
 
         return (
-            <div className="flex flex-col items-center justify-center h-full w-full bg-black">
+            <div className="flex flex-col items-center justify-center h-full w-full bg-black animate-fade-in">
                 <div className="relative">
                     <div className="absolute inset-0 bg-cyan-500 blur-[100px] opacity-20 animate-pulse"></div>
                     
                     {/* The Eye */}
-                    <div className="relative z-10 transition-all duration-5000ms" style={{ transform: `scale(${1 + gazeTime/50})` }}>
+                    <div className="relative z-10 transition-all duration-[5000ms]" style={{ transform: `scale(${1 + gazeTime/50})` }}>
                         <Eye size={120} className="text-cyan-200" strokeWidth={0.5} />
                         <div className="absolute inset-0 flex items-center justify-center">
                              <div className="w-2 h-2 bg-white rounded-full animate-ping"></div>
@@ -224,15 +265,15 @@ const DataScryingSpell = ({ onExit }: { onExit: () => void }) => {
     // --- STAGE 4: REVEAL (The Message) ---
     const RevealStage = () => {
         return (
-            <div className="flex flex-col items-center justify-center h-full w-full px-8 text-center">
+            <div className="flex flex-col items-center justify-center h-full w-full px-8 text-center animate-fade-in">
                 <Binary className="text-cyan-700 mb-8 animate-bounce" size={48} />
                 
-                <div className="border-l-2 border-cyan-500 pl-6 py-4">
+                <div className="border-l-2 border-cyan-500 pl-6 py-4 bg-black/50 backdrop-blur-sm rounded-r-lg">
                     <h3 className="text-cyan-900 text-xs font-mono uppercase mb-4 text-left">
                         DAEMON.LOG // {new Date().toLocaleTimeString()}
                     </h3>
                     <p className="text-xl md:text-3xl font-serif text-cyan-100 leading-relaxed drop-shadow-[0_0_8px_rgba(6,182,212,0.8)]">
-                        {decodedMessage || "PACKET LOSS DETECTED."}
+                        {decodedMessage || "PACKET LOSS DETECTED. RETRY."}
                     </p>
                 </div>
 
