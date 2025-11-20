@@ -195,7 +195,8 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
                 case 3: return <VoodooStep3_ServeLwa selectedLwa={selectedLwa} onSelect={setSelectedLwa} onNext={handleVoodooOfferingSearch} />;
                 case 4: return <VoodooStep4_PrepareOffering selections={voodooOfferingSelections} onNext={advanceStep} />;
                 case 5: return <VoodooStep5_MakeOffering key={`charge-voodoo-${chargingIndex}`} onNext={handleChargeNext} selections={voodooOfferingSelections} index={chargingIndex} />;
-                case 6: return <VoodooStep6_SealBottle onNext={advanceStep} selections={voodooOfferingSelections} lwa={selectedLwa} />;
+                // THE FIX: Changed onNext from advanceStep to handleVoodooFinalStep to ensure the text is generated before the next screen
+                case 6: return <VoodooStep6_SealBottle onNext={handleVoodooFinalStep} selections={voodooOfferingSelections} lwa={selectedLwa} />;
                 case 7: return <Step8_Manifestation affirmation={finalAffirmation} path={path} onFinish={resetState} />;
                 default: return <div onClick={resetState}>Invalid Step</div>;
             }
@@ -295,7 +296,7 @@ const FilledContainer: React.FC<{
                 const col = idx % 2;
                 const row = Math.floor(idx / 2);
                 
-                // Larger size for realistic pile
+                // Larger size for realistic pile (55% of container width)
                 const size = '55%'; 
 
                 // Random jitter
@@ -531,7 +532,6 @@ const HoodooStep5_FixJar: React.FC<{ onNext: () => void, selections: MateriaSele
                 <Image src={`${ASSET_PATH}/hoodoo-jar-empty.png`} alt="Empty Spell Jar" layout="fill" objectFit="contain" priority />
                 
                 {/* Layer for ingredients already placed inside the jar */}
-                {/* The logic is: if isCharged is true, we show 'index + 1' items. If false, we show 'index' items. */}
                 <FilledContainer 
                     type="hoodoo" 
                     items={selections} 
@@ -562,9 +562,7 @@ const HoodooStep6_SealJar: React.FC<{ onNext: () => void, selections: MateriaSel
     const handleSeal = () => {
         setIsSealed(true);
         playSound('/audio/sfx-chaos-explosion.mp3', 0.5).play();
-        // Trigger the visual "sending" effect
         setIsSent(true);
-        // Move to next step after animation
         setTimeout(onNext, 2500);
     };
 
@@ -581,11 +579,11 @@ const HoodooStep6_SealJar: React.FC<{ onNext: () => void, selections: MateriaSel
                     } : {}}
                     transition={{ duration: 2, ease: "easeInOut" }}
                  >
-                    {/* Closed Jar Image */}
-                    <Image src={`${ASSET_PATH}/hoodoo-jar-fixed.png`} alt="Fixed Jar" layout="fill" objectFit="contain" className="z-10"/>
+                    {/* Closed Jar Image (Background) */}
+                    <Image src={`${ASSET_PATH}/hoodoo-jar-fixed.png`} alt="Fixed Jar" layout="fill" objectFit="contain" className="z-0"/>
                     
-                    {/* Ingredients inside */}
-                    <div className="absolute inset-0 z-0">
+                    {/* Ingredients (Foreground - to appear visible "in" or "on" the closed jar) */}
+                    <div className="absolute inset-0 z-10">
                         <FilledContainer type="hoodoo" items={selections} count={selections.length} />
                     </div>
 
@@ -730,15 +728,15 @@ const VoodooStep6_SealBottle: React.FC<{ onNext: () => void; selections: Materia
                     } : {}}
                     transition={{ duration: 2, ease: "easeInOut" }}
                 >
-                    {/* Closed Bottle */}
-                    <Image src={`${ASSET_PATH}/voodoo-offering-bottle-filled.png`} alt="Filled Offering Bottle" layout="fill" objectFit="contain" className="z-10" />
+                    {/* Closed Bottle (Background) */}
+                    <Image src={`${ASSET_PATH}/voodoo-offering-bottle-filled.png`} alt="Filled Offering Bottle" layout="fill" objectFit="contain" className="z-0" />
                      
-                     {/* Ingredients visible inside */}
-                    <div className="absolute inset-0 z-0">
+                     {/* Ingredients (Foreground) */}
+                    <div className="absolute inset-0 z-10">
                         <FilledContainer type="voodoo" items={selections} count={selections.length} />
                     </div>
 
-                    {/* Interaction */}
+                    {/* Interaction Overlay */}
                     {!isSealed && (
                         <div className="absolute inset-0 z-20 flex items-center justify-center">
                             <ChargingComponent onCharge={handleSeal} isCharged={isSealed} duration={5000}>
