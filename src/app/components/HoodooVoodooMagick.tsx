@@ -181,7 +181,7 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
                 case 3: return <HoodooStep3_FindVerse onOpenReader={handleOpenPsalmReader} selections={hoodooPsalmSelections} selectedPsalm={selectedPsalm} isPsalmLit={isPsalmLit} onNext={handleHoodooMateriaSearch} />;
                 case 4: return <HoodooStep4_GatherMateria selections={hoodooMateriaSelections} onNext={advanceStep} />;
                 case 5: return <HoodooStep5_FixJar key={`charge-hoodoo-${chargingIndex}`} onNext={handleChargeNext} selections={hoodooMateriaSelections} index={chargingIndex} />;
-                case 6: return <HoodooStep6_SetLight onNext={advanceStep} selections={hoodooMateriaSelections} />;
+                case 6: return <HoodooStep6_SealJar onNext={advanceStep} selections={hoodooMateriaSelections} />;
                 case 7: return <Step7_Sending onNext={handleHoodooFinalStep} petition={petition} />;
                 case 8: return <Step8_Manifestation affirmation={finalAffirmation} path={path} onFinish={resetState} />;
                 default: return <div onClick={resetState}>Invalid Step</div>;
@@ -195,7 +195,7 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
                 case 3: return <VoodooStep3_ServeLwa selectedLwa={selectedLwa} onSelect={setSelectedLwa} onNext={handleVoodooOfferingSearch} />;
                 case 4: return <VoodooStep4_PrepareOffering selections={voodooOfferingSelections} onNext={advanceStep} />;
                 case 5: return <VoodooStep5_MakeOffering key={`charge-voodoo-${chargingIndex}`} onNext={handleChargeNext} selections={voodooOfferingSelections} index={chargingIndex} />;
-                case 6: return <VoodooStep6_PresentOffering onNext={handleVoodooFinalStep} selections={voodooOfferingSelections} lwa={selectedLwa} />;
+                case 6: return <VoodooStep6_SealBottle onNext={advanceStep} selections={voodooOfferingSelections} lwa={selectedLwa} />;
                 case 7: return <Step8_Manifestation affirmation={finalAffirmation} path={path} onFinish={resetState} />;
                 default: return <div onClick={resetState}>Invalid Step</div>;
             }
@@ -525,7 +525,7 @@ const HoodooStep5_FixJar: React.FC<{ onNext: () => void, selections: MateriaSele
         : `Charge the ${currentMateria.name}, speaking its incantation:\n"${currentMateria.incantation}"`;
 
     return (
-        <StepContainer stageTitle="Fix the Jar" instruction={instructionText} button={isCharged ? <RitualButton onClick={onNext} className="animate-pulse">{index < selections.length - 1 ? "Next Ingredient" : "Set the Light"}</RitualButton> : <div/>}>
+        <StepContainer stageTitle="Fix the Jar" instruction={instructionText} button={isCharged ? <RitualButton onClick={onNext} className="animate-pulse">{index < selections.length - 1 ? "Next Ingredient" : "Seal the Jar"}</RitualButton> : <div/>}>
             <div className="relative w-full h-full max-w-md aspect-square mx-auto">
                 {/* Background Jar (Lid Off) */}
                 <Image src={`${ASSET_PATH}/hoodoo-jar-empty.png`} alt="Empty Spell Jar" layout="fill" objectFit="contain" priority />
@@ -553,40 +553,51 @@ const HoodooStep5_FixJar: React.FC<{ onNext: () => void, selections: MateriaSele
     );
 };
 
-const HoodooStep6_SetLight: React.FC<{ onNext: () => void, selections: MateriaSelection[] }> = ({ onNext, selections }) => {
-    const [isLit, setIsLit] = useState(false);
-    const [isHolding, setIsHolding] = useState(false);
-    const incantation = "With this flame, I set the light; make my work burn ever bright.";
+// --- NEW STEP: Seal and Charge the Jar (Hoodoo) ---
+const HoodooStep6_SealJar: React.FC<{ onNext: () => void, selections: MateriaSelection[] }> = ({ onNext, selections }) => {
+    const [isSealed, setIsSealed] = useState(false);
+    const [isSent, setIsSent] = useState(false);
+    const instructionText = "I seal this work in the name of the Father, Son, and Holy Ghost. Awake and do my bidding.";
     
-    const instructionText = (isHolding || isLit)
-        ? incantation
-        : "Light the candle to activate the spell and send your intention.";
-    
-    return(
-        <StepContainer stageTitle="Set the Light" instruction={instructionText} button={isLit && <RitualButton onClick={onNext} className="animate-pulse">Set the Work in Motion</RitualButton>}>
-            <div className="relative w-72 h-96">
-                <ChargingComponent 
-                    onCharge={() => setIsLit(true)} 
-                    isCharged={isLit}
-                    onHoldStart={() => setIsHolding(true)}
-                    onHoldEnd={() => setIsHolding(false)}
-                >
-                    <div className="relative w-72 h-96">
-                         {/* Main Jar Image: Swaps to Fixed (Lid On) */}
-                        <Image src={`${ASSET_PATH}/hoodoo-jar-fixed.png`} alt="Fixed Jar" layout="fill" objectFit="contain" className="z-0"/>
-                        
-                        {/* Ensure ingredients are still visible inside the closed jar */}
-                        <div className="absolute inset-0 z-0">
-                            <FilledContainer type="hoodoo" items={selections} count={selections.length} />
-                        </div>
+    const handleSeal = () => {
+        setIsSealed(true);
+        playSound('/audio/sfx-chaos-explosion.mp3', 0.5).play();
+        // Trigger the visual "sending" effect
+        setIsSent(true);
+        // Move to next step after animation
+        setTimeout(onNext, 2500);
+    };
 
-                        {/* Candle overlay */}
-                        {!isLit ? 
-                            <Image src={`${ASSET_PATH}/hoodoo-vigil-candle-unlit.png`} alt="Unlit Vigil Candle" layout="fill" objectFit="contain" className="z-10" /> :
-                            <Image src={`${ASSET_PATH}/hoodoo-vigil-candle-lit.gif`} alt="Lit Vigil Candle" layout="fill" objectFit="contain" unoptimized className="z-10" />
-                        }
+    return(
+        <StepContainer stageTitle="Seal the Work" instruction={instructionText}>
+            <div className="relative w-full h-full max-w-md aspect-square mx-auto flex items-center justify-center">
+                 <motion.div 
+                    className="relative w-full h-full"
+                    animate={isSent ? { 
+                        scale: [1, 1.2, 0], 
+                        opacity: [1, 1, 0], 
+                        filter: ["brightness(1)", "brightness(2)", "brightness(10)"],
+                        y: [0, -50, -500]
+                    } : {}}
+                    transition={{ duration: 2, ease: "easeInOut" }}
+                 >
+                    {/* Closed Jar Image */}
+                    <Image src={`${ASSET_PATH}/hoodoo-jar-fixed.png`} alt="Fixed Jar" layout="fill" objectFit="contain" className="z-10"/>
+                    
+                    {/* Ingredients inside */}
+                    <div className="absolute inset-0 z-0">
+                        <FilledContainer type="hoodoo" items={selections} count={selections.length} />
                     </div>
-                </ChargingComponent>
+
+                    {/* Interaction Overlay */}
+                    {!isSealed && (
+                        <div className="absolute inset-0 z-20 flex items-center justify-center">
+                            <ChargingComponent onCharge={handleSeal} isCharged={isSealed} duration={5000}>
+                                <div className="w-48 h-48 rounded-full border-4 border-amber-400/30 animate-pulse bg-black/20" />
+                            </ChargingComponent>
+                        </div>
+                    )}
+                 </motion.div>
             </div>
         </StepContainer>
     );
@@ -666,7 +677,7 @@ const VoodooStep5_MakeOffering: React.FC<{ onNext: () => void, selections: Mater
         : `Prepare the ${currentOffering.name}, speaking its incantation: "${currentOffering.incantation}"`;
 
     return (
-        <StepContainer stageTitle="Make the Offering" instruction={instructionText} button={isCharged ? <RitualButton onClick={onNext} className="animate-pulse">{index < selections.length - 1 ? "Next Offering" : "Present to Lwa"}</RitualButton> : <div/>}>
+        <StepContainer stageTitle="Make the Offering" instruction={instructionText} button={isCharged ? <RitualButton onClick={onNext} className="animate-pulse">{index < selections.length - 1 ? "Next Offering" : "Seal the Offering"}</RitualButton> : <div/>}>
             <div className="relative w-full h-full max-w-md aspect-square mx-auto">
                 {/* Background Bottle (Open) */}
                 <Image src={`${ASSET_PATH}/voodoo-offering-bottle.png`} alt="Empty Offering Bottle" layout="fill" objectFit="contain" priority />
@@ -693,32 +704,49 @@ const VoodooStep5_MakeOffering: React.FC<{ onNext: () => void, selections: Mater
     );
 };
 
-const VoodooStep6_PresentOffering: React.FC<{ onNext: () => void; selections: MateriaSelection[]; lwa: string; }> = ({ onNext, selections, lwa }) => {
-    const [isPresented, setIsPresented] = useState(false);
+// --- NEW STEP: Seal and Charge the Bottle (Voodoo) ---
+const VoodooStep6_SealBottle: React.FC<{ onNext: () => void; selections: MateriaSelection[]; lwa: string; }> = ({ onNext, selections, lwa }) => {
+    const [isSealed, setIsSealed] = useState(false);
+    const [isSent, setIsSent] = useState(false);
+    const instructionText = `I seal this gift for ${lwa}. Accept this offering and open the way.`;
     
-    if (!lwa) {
-        return <StepContainer stageTitle="Error"><p className="text-red-400">No Lwa was selected. Please restart the ritual.</p></StepContainer>;
-    }
-
-    const lwaVeveImg = `voodoo-veve-${lwa.toLowerCase().replace(' ', '-')}.png`;
+    const handleSeal = () => {
+        setIsSealed(true);
+        playSound('/audio/sfx-chaos-explosion.mp3', 0.5).play();
+        setIsSent(true);
+        setTimeout(onNext, 2500);
+    };
     
     return (
-        <StepContainer stageTitle="Present the Offering" instruction="Present your gifts and petition to the Lwa.">
-            <div className="flex flex-col md:flex-row items-center justify-center gap-8">
-                <div className="relative w-48 h-64">
+        <StepContainer stageTitle="Consecrate the Vessel" instruction={instructionText}>
+             <div className="relative w-full h-full max-w-md aspect-square mx-auto flex items-center justify-center">
+                <motion.div 
+                    className="relative w-full h-full"
+                    animate={isSent ? { 
+                        scale: [1, 1.2, 0], 
+                        opacity: [1, 1, 0], 
+                        filter: ["brightness(1)", "brightness(2)", "brightness(10)"],
+                        y: [0, -50, -500]
+                    } : {}}
+                    transition={{ duration: 2, ease: "easeInOut" }}
+                >
                     {/* Closed Bottle */}
                     <Image src={`${ASSET_PATH}/voodoo-offering-bottle-filled.png`} alt="Filled Offering Bottle" layout="fill" objectFit="contain" className="z-10" />
-                     {/* Ensure ingredients are still visible inside the closed bottle */}
+                     
+                     {/* Ingredients visible inside */}
                     <div className="absolute inset-0 z-0">
                         <FilledContainer type="voodoo" items={selections} count={selections.length} />
                     </div>
-                </div>
-                <ChargingComponent onCharge={() => { setIsPresented(true); setTimeout(onNext, 2000); }} isCharged={isPresented}>
-                     <div className="relative w-48 h-48">
-                        <Image src={`${ASSET_PATH}/${lwaVeveImg}`} alt={`${lwa} Vèvè`} layout="fill" objectFit="contain" className="brightness-75" />
-                        {isPresented && <Image src={`${ASSET_PATH}/ui-veve-glow.gif`} alt="Vèvè Glowing" layout="fill" objectFit="contain" unoptimized />}
-                    </div>
-                </ChargingComponent>
+
+                    {/* Interaction */}
+                    {!isSealed && (
+                        <div className="absolute inset-0 z-20 flex items-center justify-center">
+                            <ChargingComponent onCharge={handleSeal} isCharged={isSealed} duration={5000}>
+                                <div className="w-48 h-48 rounded-full border-4 border-amber-400/30 animate-pulse bg-black/20" />
+                            </ChargingComponent>
+                        </div>
+                    )}
+                </motion.div>
             </div>
         </StepContainer>
     );
