@@ -286,19 +286,29 @@ const FilledContainer: React.FC<{
                 const spriteData = findSprite(item.name);
                 if (!spriteData) return null;
                 
-                // Calculate Grid Position (3 items per row)
-                const itemsPerRow = 3;
-                const col = idx % itemsPerRow;
-                const row = Math.floor(idx / itemsPerRow);
-                
-                // Add some random jitter for realism
-                const randomX = Math.sin(idx * 123) * 10; // deterministic random
-                const randomY = Math.cos(idx * 321) * 5;
-                const randomRot = Math.sin(idx * 999) * 15;
+                // Use deterministic math based on name/index for "random" positioning that persists
+                const seed = item.name.charCodeAt(0) + idx * 50;
+                const rand1 = Math.sin(seed) * 1000; 
+                const rand2 = Math.cos(seed) * 1000;
 
-                const leftPos = `${(col * 30) + 5 + randomX}%`;
-                // Stack from bottom up
-                const bottomPos = `${(row * 15) + 2 + randomY}%`;
+                // 2 items per row
+                const col = idx % 2;
+                const row = Math.floor(idx / 2);
+                
+                // Larger size for realistic pile
+                const size = '55%'; 
+
+                // Random jitter
+                const randomX = (rand1 % 10); // +/- 10%
+                const randomY = (rand2 % 5);  // +/- 5%
+                const randomRot = (rand1 % 30) - 15; // -15 to 15 deg
+
+                // Basic grid positions with randomness added
+                // Col 0 starts near 5%, Col 1 starts near 45%
+                const leftPos = `${(col === 0 ? 5 : 45) + randomX}%`;
+                
+                // Stack from bottom up, overlapping
+                const bottomPos = `${(row * 12) + 2 + randomY}%`;
 
                 return (
                     <motion.div 
@@ -306,8 +316,9 @@ const FilledContainer: React.FC<{
                         initial={{ opacity: 0, scale: 0, y: -50 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         transition={{ duration: 0.5, type: 'spring' }}
-                        className="absolute w-[35%] aspect-square"
+                        className="absolute aspect-square"
                         style={{ 
+                            width: size,
                             left: leftPos,
                             bottom: bottomPos,
                             zIndex: 10 + idx, // Newer items on top
