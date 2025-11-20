@@ -9,7 +9,8 @@ import type { Session } from '@/lib/types';
 
 import SpellGenerator from '@/app/components/SpellGenerator';
 import WiccaMagick from '@/app/components/WiccaMagick';
-import HoodooVoodooMagick from '@/app/components/HoodooVoodooMagick'; // THE FIX: Import the new component
+import HoodooVoodooMagick from '@/app/components/HoodooVoodooMagick'; 
+import ElectricMagick from '@/app/components/ElectricMagick'; 
 import AuthPage from '@/app/components/AuthPage';
 import LoadingSpinner from '@/app/components/LoadingSpinner';
 import RoomsButton from '@/app/components/RoomsButton';
@@ -19,9 +20,10 @@ import ComingSoon from '@/app/components/ComingSoon';
 const traditionDetails: { [key: string]: { name: string; component: React.FC<any> } } = {
   'chaos-magick-spells-app': { name: 'Chaos Magick', component: SpellGenerator },
   'wicca-magick-spells-app': { name: 'Wicca Magick', component: WiccaMagick },
-  'hoodoo-rootwork-spells-app': { name: 'Hoodoo (Rootwork)', component: HoodooVoodooMagick }, // THE FIX: Add new tradition route
+  'hoodoo-rootwork-spells-app': { name: 'Hoodoo (Rootwork)', component: HoodooVoodooMagick }, 
   'ceremonial-magick-spells-app': { name: 'Ceremonial Magick', component: ComingSoon },
   'folk-magick-spells-app': { name: 'Folk Magick', component: ComingSoon },
+  'electric-magick-spells-app': { name: 'Electric Magick', component: ElectricMagick },
 };
 
 export default function SpellTraditionPage() {
@@ -77,7 +79,7 @@ export default function SpellTraditionPage() {
   }, [supabase, fetchProfile]);
 
   // --- THE FIX: This logic now handles BOTH full-screen, independent components ---
-  const isFullScreenTradition = traditionSlug === 'wicca-magick-spells-app' || traditionSlug === 'hoodoo-rootwork-spells-app';
+  const isFullScreenTradition = traditionSlug === 'wicca-magick-spells-app' || traditionSlug === 'hoodoo-rootwork-spells-app' || traditionSlug === 'electric-magick-spells-app';
 
   if (isFullScreenTradition) {
     const backgroundImageUrl = traditionSlug === 'wicca-magick-spells-app' 

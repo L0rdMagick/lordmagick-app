@@ -4,7 +4,7 @@ import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 
-type Tradition = "Chaos Magick" | "Wicca Magick" | "Ceremonial Magick" | "Folk Magick" | "Hoodoo (Rootwork)";
+type Tradition = "Chaos Magick" | "Wicca Magick" | "Ceremonial Magick" | "Folk Magick" | "Hoodoo (Rootwork)" | "Electric Magick";
 
 interface TraditionInfo {
   name: Tradition;
@@ -16,7 +16,7 @@ interface TraditionInfo {
 
 const traditions: TraditionInfo[] = [
   {
-    name: "Hoodoo (Rootwork)", // THE FIX: Added the new tradition
+    name: "Hoodoo (Rootwork)",
     image: "/images/spell-room/hoodoo-magick-button.png",
     isAvailable: true,
     positionClasses: "md:absolute md:top-[1%] md:left-1/2 md:-translate-x-1/2",
@@ -39,16 +39,25 @@ const traditions: TraditionInfo[] = [
   {
     name: "Ceremonial Magick",
     image: "/images/spell-room/ceremonial-magick-button.png",
-    isAvailable: true, // Assuming it's available for selection
+    isAvailable: true,
     positionClasses: "md:absolute md:bottom-[1%] md:left-[15%] lg:left-[22%]",
     widthClasses: "w-4/5 md:w-[26%] lg:w-[23%]",
   },
   {
-    name: "Folk Magick", // THE FIX: Replaced old Hoodoo with Folk Magick
+    name: "Folk Magick",
     image: "/images/spell-room/folk-magick-button.png",
     isAvailable: true,
     positionClasses: "md:absolute md:bottom-[1%] md:right-[15%] lg:right-[22%]",
     widthClasses: "w-4/5 md:w-[26%] lg:w-[23%]",
+  },
+  // 2. ADD THIS NEW ENTRY
+  {
+    name: "Electric Magick",
+    image: "/images/spell-room/electric-magick-button.png", // Ensure this image exists
+    isAvailable: true,
+    // Position: Centered at the bottom
+    positionClasses: "md:absolute md:bottom-[5%] md:left-1/2 md:-translate-x-1/2",
+    widthClasses: "w-4/5 md:w-[26%] lg:w-[22%]",
   },
 ];
 
