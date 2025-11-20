@@ -29,17 +29,27 @@ Deno.serve(async (req: Request) => {
         let prompt = '';
 
         if (action === 'ensorcell') {
+            // Void Gate: Intention Enhancement
             prompt = `Rewrite this intention as a cryptic, ancient, powerful chaos magick mantra. Max 10 words. Uppercase. Return ONLY the text. Intention: "${intention}"`;
         } else if (action === 'oracle') {
+            // Void Gate: Final Message
             prompt = `A chaos magick spell for "${intention}" has been cast into a wormhole. Provide a very short, surreal, and mysterious synchronicity (under 20 words) the user might witness in the next 24 hours. Focus on colors, numbers, or animals. Do not explain. Format: "Watch for..." Return ONLY the text.`;
         } else if (action === 'neural_link') {
-            // NEW PROMPT FOR NEURAL LINK
+            // Neural Link: Transmission Confirmation
             prompt = `You are a technomancer AI managing a psychic link network. 
             The user has established a neural link to: "${target}" with the intent: "${intention}".
             The connection is successful. 
             Generate a system status report confirming the implantation of the intent into the target's subconscious. 
             Use terminology that blends neuroscience, networking, and occultism (e.g., "Synaptic handshake accepted", "Ethereal packet injected", "Subconscious firewall breached", "Dream layer overwritten"). 
             Keep it under 25 words. Serious and mystical tone. Return ONLY the text.`;
+        } else if (action === 'light_prism') {
+            // Light Prism: Chromancy Decree
+            prompt = `You are a Chromatic Archmage speaking through a digital prism. 
+            The user has refracted the White Light into the ${target} Ray (Intention: ${intention}).
+            The ritual is complete. The screen is flooding with this color.
+            Generate a short, powerful, vibrant decree confirming that this specific color frequency has rewritten the local reality. 
+            Use words related to light, optics, saturation, and frequency.
+            Keep it under 20 words. Poetic and absolute. Return ONLY the text.`;
         } else {
             throw new Error("Invalid action.");
         }
@@ -70,3 +80,4 @@ Deno.serve(async (req: Request) => {
         return new Response(JSON.stringify({ error: errorMessage }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 });
+// --- END OF FILE ---

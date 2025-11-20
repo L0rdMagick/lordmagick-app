@@ -228,4 +228,15 @@ export const generateElectricNeuralLink = async (target: string, intention: stri
     return data.result;
 };
 
+export const generateElectricLightPrism = async (colorName: string, intention: string): Promise<string> => {
+    const { data, error } = await supabase.functions.invoke('generate-electric-spell', {
+        body: { action: 'light_prism', target: colorName, intention },
+    });
+    if (error) {
+        console.error("Error invoking generate-electric-spell (light_prism):", error);
+        return "THE SPECTRUM IS STABLE. REALITY SHIFT DETECTED."; 
+    }
+    return data.result;
+};
+
 // --- END OF FILE ---

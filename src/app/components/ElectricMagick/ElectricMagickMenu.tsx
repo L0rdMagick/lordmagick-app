@@ -5,7 +5,8 @@ import React, { useState } from 'react';
 import { Zap, Orbit, Eye, Activity, Triangle } from 'lucide-react';
 import VoidGateSpell from './VoidGateSpell';
 import DataScryingSpell from './DataScryingSpell';
-import NeuralLinkSpell from './NeuralLinkSpell'; // IMPORT THE NEW COMPONENT
+import NeuralLinkSpell from './NeuralLinkSpell'; 
+import LightPrismSpell from './LightPrismSpell'; 
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const SpellCard = ({ title, desc, icon: Icon, onClick, disabled }: { title: string, desc: string, icon: any, onClick?: () => void, disabled?: boolean }) => (
@@ -33,6 +34,7 @@ export default function ElectricMagickMenu() {
   if (activeSpell === 'void-gate') return <VoidGateSpell onExit={() => setActiveSpell(null)} />;
   if (activeSpell === 'data-scry') return <DataScryingSpell onExit={() => setActiveSpell(null)} />;
   if (activeSpell === 'neural-link') return <NeuralLinkSpell onExit={() => setActiveSpell(null)} />; // ADD RENDER LOGIC
+  if (activeSpell === 'light-prism') return <LightPrismSpell onExit={() => setActiveSpell(null)} />;
 
   return (
     <div className="min-h-screen bg-black text-gray-200 font-sans selection:bg-purple-900 selection:text-white relative overflow-hidden">
@@ -82,11 +84,12 @@ export default function ElectricMagickMenu() {
             onClick={() => setActiveSpell('neural-link')}
           />
 
+          {/* UNLOCKED */}
           <SpellCard 
             title="Light Prism"
             desc="Refract your intention through digital spectrums to manifest color magick."
             icon={Triangle}
-            disabled={true}
+            onClick={() => setActiveSpell('light-prism')} 
           />
           
         </div>
