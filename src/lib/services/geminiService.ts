@@ -180,4 +180,29 @@ export const getTodaysSpellCount = async (userId: string): Promise<number> => {
     
     return count || 0;
 }
+
+// --- Electric Magick Functions ---
+export const generateElectricEnsorcellment = async (intention: string): Promise<string> => {
+    const { data, error } = await supabase.functions.invoke('generate-electric-spell', {
+        body: { action: 'ensorcell', intention },
+    });
+    if (error) {
+        console.error("Error invoking generate-electric-spell (ensorcell):", error);
+        throw new Error("The signal was lost in the void.");
+    }
+    return data.result;
+};
+
+export const generateElectricOracle = async (intention: string): Promise<string> => {
+    const { data, error } = await supabase.functions.invoke('generate-electric-spell', {
+        body: { action: 'oracle', intention },
+    });
+    if (error) {
+        console.error("Error invoking generate-electric-spell (oracle):", error);
+        // Fallback message if the AI fails, to keep immersion
+        return "The static speaks: Look for the number 33."; 
+    }
+    return data.result;
+};
+
 // --- END OF FILE ---

@@ -7,6 +7,8 @@ import {
   ArrowUp, Sun, Moon, Orbit, Zap, Activity, 
   Triangle, Eye, X 
 } from 'lucide-react';
+// THE FIX: Import the new production-ready service functions
+import { generateElectricEnsorcellment, generateElectricOracle } from '@/lib/services/geminiService';
 
 // ==========================================
 // 1. THE "VOID GATE" SPELL
@@ -21,35 +23,6 @@ const getMagickalNumber = (min: number, max: number): number => {
   return valid.length > 0 
     ? valid[Math.floor(Math.random() * valid.length)] 
     : Math.floor(Math.random() * (max - min + 1)) + min;
-};
-
-/**
- * ORACLE ENGINE (The Ghost in the Machine)
- * Replaces the direct API call with a simulated digital oracle
- * to ensure the spell works immediately without backend setup.
- */
-const getOracleMessage = async (intention: string): Promise<string> => {
-  // Simulate network/processing delay for immersion
-  await new Promise(resolve => setTimeout(resolve, 2000));
-
-  const synchronicities = [
-    "Watch for the number 33 on a digital clock.",
-    "A glitch in a stranger's audio stream will speak to you.",
-    "Follow the next flash of electric violet light you see.",
-    "The static between stations holds your answer.",
-    "A bird on a power line will point the direction.",
-    "Look for the pattern of three blinking lights.",
-    "Your answer lies in a corrupted file name.",
-    "Seek the neon sign that flickers.",
-    "A sudden drop in signal strength marks the spot.",
-    "The next song on shuffle is the key.",
-    "Watch for a blue screen; it is a window, not an error.",
-    "Binary code in an unexpected place: 101."
-  ];
-
-  // Use a pseudo-random seed based on the intention length to make it feel "connected"
-  const seed = intention.length + Math.floor(Math.random() * 100);
-  return synchronicities[seed % synchronicities.length];
 };
 
 /**
@@ -459,25 +432,23 @@ const VoidGateSpell = ({ onExit }: { onExit: () => void }) => {
       }
     };
 
-    // Simple "Enhancement" since we aren't calling Gemini here for this small step
-    // to avoid unnecessary complexity. It just adds some "magickal" characters.
+    // THE FIX: Use the real backend function for Ensorcelling
     const handleEnsorcell = async (e: React.MouseEvent) => {
       e.preventDefault();
       if (!intention || isEnhancing) return;
       setIsEnhancing(true);
       playTone(880, 'sine', 0.5, 0.05);
       
-      // Simulate processing
-      await new Promise(r => setTimeout(r, 800));
-      
-      // Append a random rune-like character or uppercase it
-      const runes = ['†', '‡', '∆', '∇', '∞', '≈', '◊'];
-      const randomRune = runes[Math.floor(Math.random() * runes.length)];
-      const enhancedText = `${randomRune} ${intention.toUpperCase()} ${randomRune}`;
-      
-      setIntention(enhancedText);
-      spawnExplosion(window.innerWidth/2, window.innerHeight/2, '#d8b4fe', 30);
-      playTone(523.25, 'sine', 1, 0.2);
+      try {
+          const enhancedText = await generateElectricEnsorcellment(intention);
+          if (enhancedText) {
+            setIntention(enhancedText);
+            spawnExplosion(window.innerWidth/2, window.innerHeight/2, '#d8b4fe', 30);
+            playTone(523.25, 'sine', 1, 0.2);
+          }
+      } catch (error) {
+          console.error(error);
+      }
       
       setIsEnhancing(false);
     };
@@ -652,7 +623,8 @@ const VoidGateSpell = ({ onExit }: { onExit: () => void }) => {
 
     useEffect(() => {
         const fetchOracle = async () => {
-            const response = await getOracleMessage(intention);
+            // THE FIX: Use the real backend function for the Oracle message
+            const response = await generateElectricOracle(intention);
             setOracleMessage(response);
             setLoading(false);
         };
