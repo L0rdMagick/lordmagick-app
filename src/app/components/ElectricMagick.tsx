@@ -24,33 +24,32 @@ const getMagickalNumber = (min: number, max: number): number => {
 };
 
 /**
- * GEMINI API HELPER
+ * ORACLE ENGINE (The Ghost in the Machine)
+ * Replaces the direct API call with a simulated digital oracle
+ * to ensure the spell works immediately without backend setup.
  */
-const callGemini = async (prompt: string): Promise<string | null> => {
-  const apiKey = ""; // TODO: Add your API Key here or use env var
-  
-  if (!apiKey) {
-    console.warn("Gemini API Key is missing.");
-    return "The void whispers silently... (Add API Key)";
-  }
+const getOracleMessage = async (intention: string): Promise<string> => {
+  // Simulate network/processing delay for immersion
+  await new Promise(resolve => setTimeout(resolve, 2000));
 
-  try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-        }),
-      }
-    );
-    const data = await response.json();
-    return data.candidates?.[0]?.content?.parts?.[0]?.text || null;
-  } catch (error) {
-    console.error("Gemini API Error:", error);
-    return null;
-  }
+  const synchronicities = [
+    "Watch for the number 33 on a digital clock.",
+    "A glitch in a stranger's audio stream will speak to you.",
+    "Follow the next flash of electric violet light you see.",
+    "The static between stations holds your answer.",
+    "A bird on a power line will point the direction.",
+    "Look for the pattern of three blinking lights.",
+    "Your answer lies in a corrupted file name.",
+    "Seek the neon sign that flickers.",
+    "A sudden drop in signal strength marks the spot.",
+    "The next song on shuffle is the key.",
+    "Watch for a blue screen; it is a window, not an error.",
+    "Binary code in an unexpected place: 101."
+  ];
+
+  // Use a pseudo-random seed based on the intention length to make it feel "connected"
+  const seed = intention.length + Math.floor(Math.random() * 100);
+  return synchronicities[seed % synchronicities.length];
 };
 
 /**
@@ -460,19 +459,26 @@ const VoidGateSpell = ({ onExit }: { onExit: () => void }) => {
       }
     };
 
+    // Simple "Enhancement" since we aren't calling Gemini here for this small step
+    // to avoid unnecessary complexity. It just adds some "magickal" characters.
     const handleEnsorcell = async (e: React.MouseEvent) => {
       e.preventDefault();
       if (!intention || isEnhancing) return;
       setIsEnhancing(true);
       playTone(880, 'sine', 0.5, 0.05);
-      const enhancedText = await callGemini(
-        `Rewrite this intention as a cryptic, ancient, powerful chaos magick mantra. Max 10 words. Uppercase. Intention: "${intention}"`
-      );
-      if (enhancedText) {
-        setIntention(enhancedText.replace(/['"]+/g, ''));
-        spawnExplosion(window.innerWidth/2, window.innerHeight/2, '#d8b4fe', 30);
-        playTone(523.25, 'sine', 1, 0.2);
-      }
+      
+      // Simulate processing
+      await new Promise(r => setTimeout(r, 800));
+      
+      // Append a random rune-like character or uppercase it
+      const runes = ['†', '‡', '∆', '∇', '∞', '≈', '◊'];
+      const randomRune = runes[Math.floor(Math.random() * runes.length)];
+      const enhancedText = `${randomRune} ${intention.toUpperCase()} ${randomRune}`;
+      
+      setIntention(enhancedText);
+      spawnExplosion(window.innerWidth/2, window.innerHeight/2, '#d8b4fe', 30);
+      playTone(523.25, 'sine', 1, 0.2);
+      
       setIsEnhancing(false);
     };
 
@@ -646,16 +652,12 @@ const VoidGateSpell = ({ onExit }: { onExit: () => void }) => {
 
     useEffect(() => {
         const fetchOracle = async () => {
-            const response = await callGemini(
-                `A chaos magick spell for "${intention}" has been cast into a wormhole. 
-                Provide a very short, surreal, and mysterious synchronicity (under 20 words) the user might witness in the next 24 hours. 
-                Focus on colors, numbers, or animals. Do not explain. Format: "Watch for..."`
-            );
-            setOracleMessage(response || "The silence of the void is your answer.");
+            const response = await getOracleMessage(intention);
+            setOracleMessage(response);
             setLoading(false);
         };
         fetchOracle();
-    }, []);
+    }, [intention]);
 
     return (
     <div className="flex flex-col items-center justify-center h-full animate-fade-in px-8 text-center relative z-20">
