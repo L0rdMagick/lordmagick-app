@@ -19,7 +19,8 @@ const DataScryingSpell = ({ onExit }: { onExit: () => void }) => {
         const [progress, setProgress] = useState(0);
         const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-        const handleStart = (e: React.PointerEvent | React.TouchEvent) => {
+        // THE FIX: Added React.MouseEvent to the type definition
+        const handleStart = (e: React.MouseEvent | React.TouchEvent | React.PointerEvent) => {
             e.preventDefault();
             initAudio();
             playDrone(true, 60); 
@@ -28,7 +29,7 @@ const DataScryingSpell = ({ onExit }: { onExit: () => void }) => {
                     const next = prev + 2; // Takes ~2.5 seconds
                     playTone(200 + next * 5, 'sawtooth', 0.1, 0.05); // Climbing pitch
                     if (next >= 100) {
-                        clearInterval(intervalRef.current!);
+                        if (intervalRef.current) clearInterval(intervalRef.current);
                         spawnExplosion(window.innerWidth/2, window.innerHeight/2, '#06b6d4', 50);
                         playTone(800, 'sine', 1, 0.5);
                         setTimeout(() => setStage(2), 1000);
@@ -205,7 +206,7 @@ const DataScryingSpell = ({ onExit }: { onExit: () => void }) => {
                     <div className="absolute inset-0 bg-cyan-500 blur-[100px] opacity-20 animate-pulse"></div>
                     
                     {/* The Eye */}
-                    <div className="relative z-10 transition-all duration-[5000ms]" style={{ transform: `scale(${1 + gazeTime/50})` }}>
+                    <div className="relative z-10 transition-all duration-5000ms" style={{ transform: `scale(${1 + gazeTime/50})` }}>
                         <Eye size={120} className="text-cyan-200" strokeWidth={0.5} />
                         <div className="absolute inset-0 flex items-center justify-center">
                              <div className="w-2 h-2 bg-white rounded-full animate-ping"></div>
@@ -268,3 +269,4 @@ const DataScryingSpell = ({ onExit }: { onExit: () => void }) => {
 };
 
 export default DataScryingSpell;
+// --- END OF FILE ---
