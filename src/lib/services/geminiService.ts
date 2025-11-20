@@ -3,13 +3,13 @@
 import { createBrowserClient } from '@supabase/ssr';
 import type { FormData, HumanDesignChart, Report, SpellFormData, GeneratedSpell, Spell, WiccanSpellFormData, GeneratedWiccanSpell } from '../types';
 
-// THE FIX: Use the Next.js Supabase client initialized for browser components
+// Initialize the Supabase client for browser usage
 const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-// --- Human Design Report Functions (Now calling Supabase Edge Functions) ---
+// --- Human Design Report Functions ---
 
 export const calculateHumanDesignChart = async (formData: FormData): Promise<HumanDesignChart> => {
     const { data, error } = await supabase.functions.invoke('generate-human-design', {
@@ -59,12 +59,11 @@ export const getThisMonthsReportCount = async (userId: string): Promise<number> 
 
     if (error && error.code !== '42P01') {
          console.error("Error fetching this month's report count:", error);
-         return 0; // Fail safe
+         return 0; 
     }
     
     return count || 0;
 };
-
 
 // --- Chaos Magick Spell Function ---
 export const generateSpellAndSigil = async (formData: SpellFormData): Promise<GeneratedSpell> => {
@@ -92,7 +91,7 @@ export const generateWiccanSpell = async (formData: WiccanSpellFormData): Promis
     return data as GeneratedWiccanSpell;
 };
 
-// --- NEW HOODOO/VOODOO FUNCTION ---
+// --- Hoodoo / Voodoo Functions ---
 export const generateHoodooVoodooWork = async (path: 'hoodoo' | 'voodoo', step: number, payload: any): Promise<any> => {
     const { data, error } = await supabase.functions.invoke('generate-hoodoo-voodoo-spell', {
         body: { path, step, payload },
@@ -103,10 +102,47 @@ export const generateHoodooVoodooWork = async (path: 'hoodoo' | 'voodoo', step: 
     }
     return data;
 };
-// --- END NEW HOODOO/VOODOO FUNCTION ---
+
+// --- Electric Magick Functions ---
+
+export const generateElectricEnsorcellment = async (intention: string): Promise<string> => {
+    const { data, error } = await supabase.functions.invoke('generate-electric-spell', {
+        body: { action: 'ensorcell', intention },
+    });
+    if (error) {
+        console.error("Error invoking generate-electric-spell (ensorcell):", error);
+        throw new Error("The signal was lost in the void.");
+    }
+    return data.result;
+};
+
+export const generateElectricOracle = async (intention: string): Promise<string> => {
+    const { data, error } = await supabase.functions.invoke('generate-electric-spell', {
+        body: { action: 'oracle', intention },
+    });
+    if (error) {
+        console.error("Error invoking generate-electric-spell (oracle):", error);
+        // Fallback message to maintain immersion if API fails
+        return "The static speaks: Look for the number 33."; 
+    }
+    return data.result;
+};
+
+export const generateDataScrying = async (): Promise<string> => {
+    // This calls the dedicated scrying function
+    const { data, error } = await supabase.functions.invoke('generate-data-scry', {
+        body: { }, // No specific payload needed for general scrying
+    });
+    if (error) {
+        console.error("Error invoking generate-data-scry:", error);
+        return "ERROR: SIGNAL CORRUPTED. REBOOT SYSTEM.";
+    }
+    return data.result;
+};
 
 
 // --- Utility and Storage Functions ---
+
 export const uploadBase64Image = async (base64: string, path: string): Promise<string> => {
     const byteCharacters = atob(base64);
     const byteNumbers = new Array(byteCharacters.length);
@@ -116,7 +152,7 @@ export const uploadBase64Image = async (base64: string, path: string): Promise<s
     const byteArray = new Uint8Array(byteNumbers);
     const blob = new Blob([byteArray], { type: 'image/png' });
 
-    const { data, error } = await supabase.storage
+    const { error } = await supabase.storage
         .from('sigils')
         .upload(path, blob, {
             cacheControl: '3600',
@@ -153,7 +189,7 @@ export const getSpells = async (userId: string): Promise<Spell[]> => {
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
     
-    if (error && error.code !== '42P01') { // Ignore error if table doesn't exist
+    if (error && error.code !== '42P01') { // Ignore error if table doesn't exist yet
         console.error("Error fetching spells:", error);
         throw new Error("Could not fetch your Book of Shadows.");
     }
@@ -175,34 +211,9 @@ export const getTodaysSpellCount = async (userId: string): Promise<number> => {
 
     if (error && error.code !== '42P01') {
          console.error("Error fetching today's spell count:", error);
-         return 0; // Fail safe
+         return 0; 
     }
     
     return count || 0;
 }
-
-// --- Electric Magick Functions ---
-export const generateElectricEnsorcellment = async (intention: string): Promise<string> => {
-    const { data, error } = await supabase.functions.invoke('generate-electric-spell', {
-        body: { action: 'ensorcell', intention },
-    });
-    if (error) {
-        console.error("Error invoking generate-electric-spell (ensorcell):", error);
-        throw new Error("The signal was lost in the void.");
-    }
-    return data.result;
-};
-
-export const generateElectricOracle = async (intention: string): Promise<string> => {
-    const { data, error } = await supabase.functions.invoke('generate-electric-spell', {
-        body: { action: 'oracle', intention },
-    });
-    if (error) {
-        console.error("Error invoking generate-electric-spell (oracle):", error);
-        // Fallback message if the AI fails, to keep immersion
-        return "The static speaks: Look for the number 33."; 
-    }
-    return data.result;
-};
-
 // --- END OF FILE ---

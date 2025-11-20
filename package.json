@@ -14,7 +14,8 @@
     "deploy:spell": "supabase functions deploy generate-spell --import-map ./supabase/import_map.json",
     "deploy:webhook": "supabase functions deploy stripe-webhook --import-map ./supabase/import_map.json",
     "deploy:hoodoo": "supabase functions deploy generate-hoodoo-voodoo-spell --import-map ./supabase/import_map.json",
-    "deploy:electric": "supabase functions deploy generate-electric-spell --import-map ./supabase/import_map.json"
+    "deploy:electric": "supabase functions deploy generate-electric-spell --import-map ./supabase/import_map.json",
+    "deploy:scry": "supabase functions deploy generate-data-scry --import-map ./supabase/import_map.json"
   },
   "dependencies": {
     "@supabase/auth-ui-react": "^0.4.7",

@@ -4,6 +4,7 @@
     "npm:@supabase/auth-ui-react@~0.4.7": "0.4.7_@supabase+supabase-js@2.80.0_react@18.3.1",
     "npm:@supabase/auth-ui-shared@~0.1.8": "0.1.8_@supabase+supabase-js@2.80.0",
     "npm:@supabase/ssr@0.7": "0.7.0_@supabase+supabase-js@2.80.0",
+    "npm:@supabase/supabase-js@*": "2.80.0",
     "npm:@supabase/supabase-js@^2.44.4": "2.80.0",
     "npm:@supabase/supabase-js@^2.78.0": "2.80.0",
     "npm:@tailwindcss/postcss@^4.1.16": "4.1.16",
@@ -17,14 +18,17 @@
     "npm:eslint-config-next@^16.0.1": "16.0.1_eslint@9.39.1_typescript@5.9.3_eslint-plugin-import@2.32.0__eslint@9.39.1",
     "npm:eslint@9": "9.39.1",
     "npm:framer-motion@^12.23.24": "12.23.24_react@19.2.0_react-dom@19.2.0__react@19.2.0",
+    "npm:google-auth-library@*": "9.15.1",
     "npm:google-auth-library@^10.5.0": "10.5.0",
     "npm:google-auth-library@^9.11.0": "9.15.1",
     "npm:gray-matter@^4.0.3": "4.0.3",
+    "npm:lucide-react@0.469": "0.469.0_react@19.2.0",
     "npm:next@^16.0.1": "16.0.1_react@19.2.0_react-dom@19.2.0__react@19.2.0",
     "npm:react-dom@19.2.0": "19.2.0_react@19.2.0",
     "npm:react@19.2.0": "19.2.0",
     "npm:remark-html@^16.0.1": "16.0.1",
     "npm:remark@^15.0.1": "15.0.1",
+    "npm:stripe@*": "16.12.0",
     "npm:stripe@^16.2.0": "16.12.0",
     "npm:stripe@^19.3.0": "19.3.0_@types+node@20.19.24",
     "npm:supabase@2.54.11": "2.54.11",
@@ -2470,6 +2474,12 @@
         "yallist@3.1.1"
       ]
     },
+    "lucide-react@0.469.0_react@19.2.0": {
+      "integrity": "sha512-28vvUnnKQ/dBwiCQtwJw7QauYnE7yd2Cyp4tTTJpvglX4EMpbflcdBgrgToX2j71B3YvugK/NH3BGUk+E/p/Fw==",
+      "dependencies": [
+        "react@19.2.0"
+      ]
+    },
     "magic-string@0.30.21": {
       "integrity": "sha512-vd2F4YUyEXKGcLHoq+TEyCjxueSeHnFxyyjNp80yg0XV4vUhnDer/lvvlqM/arB5bXQN5K2/3oinyCRyx8T2CQ==",
       "dependencies": [
@@ -3816,6 +3826,7 @@
         "npm:framer-motion@^12.23.24",
         "npm:google-auth-library@^10.5.0",
         "npm:gray-matter@^4.0.3",
+        "npm:lucide-react@0.469",
         "npm:next@^16.0.1",
         "npm:react-dom@19.2.0",
         "npm:react@19.2.0",
