@@ -17,8 +17,24 @@ import { findSprite } from '@/lib/spriteLibrary';
 const ASSET_PATH = "/images/Spells/HooDoo Voo Doo";
 const CHARGE_DURATION = 3000; // 3 seconds
 const FADE_DURATION = 0.8;
-// THE FIX: Changed sending duration to 13 seconds
-const SENDING_DURATION = 13000; // 13 seconds for the sending animation
+const SENDING_DURATION = 13000; // 13 seconds
+
+// --- Geometry Configuration for Ingredients ---
+// Based on 1024x1024 source images
+const CONTAINER_GEOMETRY = {
+    hoodoo: {
+        left: '35.84%',  // 367 / 1024
+        top: '35.55%',   // 364 / 1024
+        width: '24.22%', // 248 / 1024
+        height: '38.38%' // 393 / 1024
+    },
+    voodoo: {
+        left: '31.64%',  // 324 / 1024
+        top: '39.75%',   // 407 / 1024
+        width: '29.98%', // 307 / 1024
+        height: '41.50%' // 425 / 1024
+    }
+};
 
 // --- Data ---
 const PSALM_DATABASE: Record<string, string> = {
@@ -165,7 +181,7 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
                 case 3: return <HoodooStep3_FindVerse onOpenReader={handleOpenPsalmReader} selections={hoodooPsalmSelections} selectedPsalm={selectedPsalm} isPsalmLit={isPsalmLit} onNext={handleHoodooMateriaSearch} />;
                 case 4: return <HoodooStep4_GatherMateria selections={hoodooMateriaSelections} onNext={advanceStep} />;
                 case 5: return <HoodooStep5_FixJar key={`charge-hoodoo-${chargingIndex}`} onNext={handleChargeNext} selections={hoodooMateriaSelections} index={chargingIndex} />;
-                case 6: return <HoodooStep6_SetLight onNext={advanceStep} petition={petition} />;
+                case 6: return <HoodooStep6_SetLight onNext={advanceStep} selections={hoodooMateriaSelections} />;
                 case 7: return <Step7_Sending onNext={handleHoodooFinalStep} petition={petition} />;
                 case 8: return <Step8_Manifestation affirmation={finalAffirmation} path={path} onFinish={resetState} />;
                 default: return <div onClick={resetState}>Invalid Step</div>;
@@ -179,7 +195,7 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
                 case 3: return <VoodooStep3_ServeLwa selectedLwa={selectedLwa} onSelect={setSelectedLwa} onNext={handleVoodooOfferingSearch} />;
                 case 4: return <VoodooStep4_PrepareOffering selections={voodooOfferingSelections} onNext={advanceStep} />;
                 case 5: return <VoodooStep5_MakeOffering key={`charge-voodoo-${chargingIndex}`} onNext={handleChargeNext} selections={voodooOfferingSelections} index={chargingIndex} />;
-                case 6: return <VoodooStep6_PresentOffering onNext={handleVoodooFinalStep} lwa={selectedLwa} />;
+                case 6: return <VoodooStep6_PresentOffering onNext={handleVoodooFinalStep} selections={voodooOfferingSelections} lwa={selectedLwa} />;
                 case 7: return <Step8_Manifestation affirmation={finalAffirmation} path={path} onFinish={resetState} />;
                 default: return <div onClick={resetState}>Invalid Step</div>;
             }
@@ -251,8 +267,70 @@ const StepContainer: React.FC<StepContainerProps> = ({ stageTitle, instruction, 
     </div>
 );
 
+// --- Helper Component: FilledContainer (Handles placement of placed items) ---
+const FilledContainer: React.FC<{
+    type: 'hoodoo' | 'voodoo';
+    items: MateriaSelection[];
+    count: number; // How many items to show
+}> = ({ type, items, count }) => {
+    const geometry = CONTAINER_GEOMETRY[type];
+
+    return (
+        <div className="absolute pointer-events-none overflow-hidden" style={{
+            left: geometry.left,
+            top: geometry.top,
+            width: geometry.width,
+            height: geometry.height,
+        }}>
+            {items.slice(0, count).map((item, idx) => {
+                const spriteData = findSprite(item.name);
+                if (!spriteData) return null;
+                
+                // Calculate Grid Position (3 items per row)
+                const itemsPerRow = 3;
+                const col = idx % itemsPerRow;
+                const row = Math.floor(idx / itemsPerRow);
+                
+                // Add some random jitter for realism
+                const randomX = Math.sin(idx * 123) * 10; // deterministic random
+                const randomY = Math.cos(idx * 321) * 5;
+                const randomRot = Math.sin(idx * 999) * 15;
+
+                const leftPos = `${(col * 30) + 5 + randomX}%`;
+                // Stack from bottom up
+                const bottomPos = `${(row * 15) + 2 + randomY}%`;
+
+                return (
+                    <motion.div 
+                        key={`${item.name}-${idx}`}
+                        initial={{ opacity: 0, scale: 0, y: -50 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        transition={{ duration: 0.5, type: 'spring' }}
+                        className="absolute w-[35%] aspect-square"
+                        style={{ 
+                            left: leftPos,
+                            bottom: bottomPos,
+                            zIndex: 10 + idx, // Newer items on top
+                            rotate: `${randomRot}deg`
+                        }}
+                    >
+                         <Sprite 
+                            sheetPath={spriteData.sheet.path} 
+                            x={spriteData.itemInfo.x} 
+                            y={spriteData.itemInfo.y} 
+                            spriteWidth={spriteData.sheet.spriteSize.width} 
+                            spriteHeight={spriteData.sheet.spriteSize.height} 
+                            sheetWidth={spriteData.sheet.sheetSize.width} 
+                            sheetHeight={spriteData.sheet.sheetSize.height} 
+                        />
+                    </motion.div>
+                )
+            })}
+        </div>
+    );
+};
+
 // --- CHARGING COMPONENT ---
-// THE FIX: Added onHoldStart and onHoldEnd optional props
 const ChargingComponent: React.FC<{
     onCharge: () => void, 
     children: React.ReactNode, 
@@ -311,7 +389,6 @@ const ChargingComponent: React.FC<{
 // --- Step 0: Path Selection ---
 const Step0_Crossroads: React.FC<{ onSelectPath: (path: RitualPath) => void }> = ({ onSelectPath }) => (
     <div className="relative w-full h-full flex flex-col items-center justify-center">
-        {/* THE FIX: Changed to flex-row and adjusted sizes for mobile */}
         <div className="relative z-10 flex flex-row items-center justify-center gap-4 md:gap-16">
             <button onClick={() => onSelectPath('hoodoo')} className="relative w-40 h-56 md:w-64 md:h-80 transition-transform duration-300 hover:scale-105 active:scale-95">
                 <Image src={`${ASSET_PATH}/ui-button-hoodoo-path.png`} alt="Hoodoo Rootwork Path" layout="fill" objectFit="contain" />
@@ -330,7 +407,6 @@ const HoodooStep1_Ancestors: React.FC<StepComponentProps> = ({ onNext }) => {
     const [holdProgress, setHoldProgress] = useState(0);
     const holdInterval = useRef<NodeJS.Timeout | null>(null);
     const fireSound = useMemo(() => playSound('/audio/fire.mp3', 0.3, true), []);
-    // THE FIX: Updated instruction text
     const incantation = "I call to my ancestors, known and unknown, to witness and bless this sacred working.";
 
     const handleHoldStart = () => {
@@ -433,33 +509,40 @@ const HoodooStep5_FixJar: React.FC<{ onNext: () => void, selections: MateriaSele
     const currentMateria = selections[index];
     const spriteData = findSprite(currentMateria.name);
     
-    const totalSelections = selections.length;
-    const numLayersToShow = index > 0 ? Math.ceil((index / totalSelections) * 5) : 0;
-
-    // THE FIX: Updated instruction text layout
     const instructionText = isCharged 
-        ? `The ${currentMateria.name} is charged.\n"${currentMateria.incantation}"`
+        ? `The ${currentMateria.name} is added to the jar.\n"${currentMateria.incantation}"`
         : `Charge the ${currentMateria.name}, speaking its incantation:\n"${currentMateria.incantation}"`;
 
     return (
         <StepContainer stageTitle="Fix the Jar" instruction={instructionText} button={isCharged ? <RitualButton onClick={onNext} className="animate-pulse">{index < selections.length - 1 ? "Next Ingredient" : "Set the Light"}</RitualButton> : <div/>}>
             <div className="relative w-full h-full max-w-md aspect-square mx-auto">
-                <Image src={`${ASSET_PATH}/hoodoo-jar-empty.png`} alt="Empty Spell Jar" layout="fill" objectFit="contain" />
-                {Array.from({length: 5}).map((_, i) => (
-                    <Image key={i} src={`${ASSET_PATH}/hoodoo-jar-layer-0${i + 1}.png`} alt={`Layer ${i+1}`} layout="fill" objectFit="contain" className={`transition-opacity duration-500 ${i < numLayersToShow ? 'opacity-100' : 'opacity-0'}`} />
-                ))}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-2/3">
-                    <ChargingComponent onCharge={() => setIsCharged(true)} isCharged={isCharged}>
-                        {spriteData && <div className="w-24 h-24"><Sprite sheetPath={spriteData.sheet.path} x={spriteData.itemInfo.x} y={spriteData.itemInfo.y} spriteWidth={spriteData.sheet.spriteSize.width} spriteHeight={spriteData.sheet.spriteSize.height} sheetWidth={spriteData.sheet.sheetSize.width} sheetHeight={spriteData.sheet.sheetSize.height} /></div>}
-                    </ChargingComponent>
-                </div>
+                {/* Background Jar (Lid Off) */}
+                <Image src={`${ASSET_PATH}/hoodoo-jar-empty.png`} alt="Empty Spell Jar" layout="fill" objectFit="contain" priority />
+                
+                {/* Layer for ingredients already placed inside the jar */}
+                {/* The logic is: if isCharged is true, we show 'index + 1' items. If false, we show 'index' items. */}
+                <FilledContainer 
+                    type="hoodoo" 
+                    items={selections} 
+                    count={isCharged ? index + 1 : index} 
+                />
+
+                {/* The "Active" Charging Ingredient - disappears when charged */}
+                {!isCharged && spriteData && (
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-2/3 z-20">
+                        <ChargingComponent onCharge={() => setIsCharged(true)} isCharged={isCharged}>
+                            <div className="w-24 h-24 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
+                                <Sprite sheetPath={spriteData.sheet.path} x={spriteData.itemInfo.x} y={spriteData.itemInfo.y} spriteWidth={spriteData.sheet.spriteSize.width} spriteHeight={spriteData.sheet.spriteSize.height} sheetWidth={spriteData.sheet.sheetSize.width} sheetHeight={spriteData.sheet.sheetSize.height} />
+                            </div>
+                        </ChargingComponent>
+                    </div>
+                )}
             </div>
         </StepContainer>
     );
 };
 
-// THE FIX: Reworked this component to use ChargingComponent correctly and display the incantation as requested.
-const HoodooStep6_SetLight: React.FC<{ onNext: () => void, petition: string }> = ({ onNext }) => {
+const HoodooStep6_SetLight: React.FC<{ onNext: () => void, selections: MateriaSelection[] }> = ({ onNext, selections }) => {
     const [isLit, setIsLit] = useState(false);
     const [isHolding, setIsHolding] = useState(false);
     const incantation = "With this flame, I set the light; make my work burn ever bright.";
@@ -478,7 +561,15 @@ const HoodooStep6_SetLight: React.FC<{ onNext: () => void, petition: string }> =
                     onHoldEnd={() => setIsHolding(false)}
                 >
                     <div className="relative w-72 h-96">
+                         {/* Main Jar Image: Swaps to Fixed (Lid On) */}
                         <Image src={`${ASSET_PATH}/hoodoo-jar-fixed.png`} alt="Fixed Jar" layout="fill" objectFit="contain" className="z-0"/>
+                        
+                        {/* Ensure ingredients are still visible inside the closed jar */}
+                        <div className="absolute inset-0 z-0">
+                            <FilledContainer type="hoodoo" items={selections} count={selections.length} />
+                        </div>
+
+                        {/* Candle overlay */}
                         {!isLit ? 
                             <Image src={`${ASSET_PATH}/hoodoo-vigil-candle-unlit.png`} alt="Unlit Vigil Candle" layout="fill" objectFit="contain" className="z-10" /> :
                             <Image src={`${ASSET_PATH}/hoodoo-vigil-candle-lit.gif`} alt="Lit Vigil Candle" layout="fill" objectFit="contain" unoptimized className="z-10" />
@@ -559,31 +650,39 @@ const VoodooStep5_MakeOffering: React.FC<{ onNext: () => void, selections: Mater
     const currentOffering = selections[index];
     const spriteData = findSprite(currentOffering.name);
 
-    const totalSelections = selections.length;
-    const numLayersToShow = index > 0 ? Math.ceil((index / totalSelections) * 5) : 0;
-
     const instructionText = isCharged
-        ? `The ${currentOffering.name} is prepared. "${currentOffering.incantation}"`
+        ? `The ${currentOffering.name} is added to the offering bottle. "${currentOffering.incantation}"`
         : `Prepare the ${currentOffering.name}, speaking its incantation: "${currentOffering.incantation}"`;
 
     return (
         <StepContainer stageTitle="Make the Offering" instruction={instructionText} button={isCharged ? <RitualButton onClick={onNext} className="animate-pulse">{index < selections.length - 1 ? "Next Offering" : "Present to Lwa"}</RitualButton> : <div/>}>
             <div className="relative w-full h-full max-w-md aspect-square mx-auto">
-                <Image src={`${ASSET_PATH}/voodoo-offering-bottle.png`} alt="Empty Offering Bottle" layout="fill" objectFit="contain" />
-                {Array.from({length: 5}).map((_, i) => (
-                    <Image key={i} src={`${ASSET_PATH}/voodoo-offering-layer-0${i + 1}.png`} alt={`Layer ${i+1}`} layout="fill" objectFit="contain" className={`transition-opacity duration-500 ${i < numLayersToShow ? 'opacity-100' : 'opacity-0'}`} />
-                ))}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-2/3">
-                    <ChargingComponent onCharge={() => setIsCharged(true)} isCharged={isCharged}>
-                        {spriteData && <div className="w-24 h-24"><Sprite sheetPath={spriteData.sheet.path} x={spriteData.itemInfo.x} y={spriteData.itemInfo.y} spriteWidth={spriteData.sheet.spriteSize.width} spriteHeight={spriteData.sheet.spriteSize.height} sheetWidth={spriteData.sheet.sheetSize.width} sheetHeight={spriteData.sheet.sheetSize.height} /></div>}
-                    </ChargingComponent>
-                </div>
+                {/* Background Bottle (Open) */}
+                <Image src={`${ASSET_PATH}/voodoo-offering-bottle.png`} alt="Empty Offering Bottle" layout="fill" objectFit="contain" priority />
+                
+                {/* Layer for placed offerings */}
+                <FilledContainer 
+                    type="voodoo" 
+                    items={selections} 
+                    count={isCharged ? index + 1 : index} 
+                />
+
+                {/* Active Charging Ingredient */}
+                {!isCharged && spriteData && (
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-2/3 z-20">
+                        <ChargingComponent onCharge={() => setIsCharged(true)} isCharged={isCharged}>
+                             <div className="w-24 h-24 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
+                                <Sprite sheetPath={spriteData.sheet.path} x={spriteData.itemInfo.x} y={spriteData.itemInfo.y} spriteWidth={spriteData.sheet.spriteSize.width} spriteHeight={spriteData.sheet.spriteSize.height} sheetWidth={spriteData.sheet.sheetSize.width} sheetHeight={spriteData.sheet.sheetSize.height} />
+                            </div>
+                        </ChargingComponent>
+                    </div>
+                )}
             </div>
         </StepContainer>
     );
 };
 
-const VoodooStep6_PresentOffering: React.FC<{ onNext: () => void; lwa: string; }> = ({ onNext, lwa }) => {
+const VoodooStep6_PresentOffering: React.FC<{ onNext: () => void; selections: MateriaSelection[]; lwa: string; }> = ({ onNext, selections, lwa }) => {
     const [isPresented, setIsPresented] = useState(false);
     
     if (!lwa) {
@@ -596,7 +695,12 @@ const VoodooStep6_PresentOffering: React.FC<{ onNext: () => void; lwa: string; }
         <StepContainer stageTitle="Present the Offering" instruction="Present your gifts and petition to the Lwa.">
             <div className="flex flex-col md:flex-row items-center justify-center gap-8">
                 <div className="relative w-48 h-64">
-                    <Image src={`${ASSET_PATH}/voodoo-offering-bottle-filled.png`} alt="Filled Offering Bottle" layout="fill" objectFit="contain" />
+                    {/* Closed Bottle */}
+                    <Image src={`${ASSET_PATH}/voodoo-offering-bottle-filled.png`} alt="Filled Offering Bottle" layout="fill" objectFit="contain" className="z-10" />
+                     {/* Ensure ingredients are still visible inside the closed bottle */}
+                    <div className="absolute inset-0 z-0">
+                        <FilledContainer type="voodoo" items={selections} count={selections.length} />
+                    </div>
                 </div>
                 <ChargingComponent onCharge={() => { setIsPresented(true); setTimeout(onNext, 2000); }} isCharged={isPresented}>
                      <div className="relative w-48 h-48">
@@ -616,7 +720,6 @@ const Step7_Sending: React.FC<{onNext: () => void, petition: string}> = ({ onNex
     }, [onNext]);
     
     return(
-        // THE FIX: Updated instruction text
         <StepContainer stageTitle="Sending the Work" instruction="Your spell is being sent by a great magick into the essence of the all.">
             <div className="w-96 h-96 relative flex items-center justify-center">
                 <Image src={`${ASSET_PATH}/hoodoo-manifestation-final.png`} alt="Final Manifestation" layout="fill" objectFit="contain" />
@@ -642,7 +745,6 @@ const Step8_Manifestation: React.FC<{ affirmation: string, path: RitualPath, onF
 
     return (
         <StepContainer stageTitle={path === 'hoodoo' ? "The Work is Done" : "The Lwa is Served"} button={<RitualButton onClick={onFinish}>Return</RitualButton>}>
-             {/* THE FIX: Changed to flex-row and gap-2 for mobile */}
             <div className="flex flex-row items-center justify-center gap-2 md:gap-8 w-full max-w-4xl">
                 <div className="relative w-1/2 aspect-square">
                     <Image src={`${ASSET_PATH}/${finalImage}`} alt="Final Manifestation" layout="fill" objectFit="contain" />
