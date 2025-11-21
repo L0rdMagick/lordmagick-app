@@ -1,468 +1,937 @@
 // --- START OF FILE src/app/components/ElectricMagick/RealityPatchSpell.tsx ---
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { 
-  Fingerprint, 
-  ShieldAlert, 
-  Terminal, 
-  Activity,
-  Lock, 
-  X,
-  Wifi
+  Heart, DollarSign, Sun, Shield, Star, Fingerprint, Activity, Check, Eye, X,
+  Moon, Triangle, Hexagon 
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useAudioEngine, useParticleSystem } from './hooks';
 
-// --- GLITCH TEXT COMPONENT ---
-const GlitchText = ({ text, active = false }: { text: string, active?: boolean }) => {
-  if (!active) return <span className="font-mono">{text}</span>;
-  return (
-    <div className="relative inline-block">
-      <span className="relative z-10">{text}</span>
-      <span className="absolute top-0 left-0 -z-10 translate-x-[2px] text-red-500 opacity-70 animate-pulse">{text}</span>
-      <span className="absolute top-0 left-0 -z-10 -translate-x-[2px] text-cyan-500 opacity-70 animate-pulse delay-75">{text}</span>
-    </div>
-  );
-};
+// --- AUDIO ENGINE (Procedural Sound Generation) ---
+const useAudioEngine = () => {
+  const ctxRef = useRef<AudioContext | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const oscRef = useRef<any>(null); 
+  const gainRef = useRef<GainNode | null>(null);
 
-// --- STAGE 1: BIO-AUTHORIZATION (The Handshake) ---
-const BioAuthStage = ({ onComplete, playTone }: { onComplete: () => void, playTone: any }) => {
-  const [scanProgress, setScanProgress] = useState(0);
-  const [isScanning, setIsScanning] = useState(false);
-  
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (isScanning) {
-      playTone(100 + (scanProgress * 5), 'sawtooth', 0.1, 0.1);
-      interval = setInterval(() => {
-        setScanProgress(prev => {
-          if (prev >= 100) {
-            clearInterval(interval);
-            onComplete();
-            return 100;
-          }
-          return prev + 1.5; 
-        });
-      }, 50);
-    } else {
-      setScanProgress(0);
+  const initAudio = useCallback(() => {
+    if (typeof window !== 'undefined' && !ctxRef.current) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+      if (AudioContext) ctxRef.current = new AudioContext();
     }
-    return () => clearInterval(interval);
-  }, [isScanning, scanProgress, onComplete, playTone]);
-
-  return (
-    <div className="flex flex-col items-center justify-center h-full w-full px-6 select-none">
-      <div className="mb-12 text-center space-y-2">
-        <ShieldAlert className="w-16 h-16 text-red-500 mx-auto animate-pulse" />
-        <h2 className="text-red-500 font-mono text-xs tracking-[0.2em]">SECURITY PROTOCOL: ACTIVE</h2>
-        <h1 className="text-2xl md:text-4xl font-black text-white tracking-tighter uppercase">
-          <GlitchText text="REALITY PATCH v9.0" active={true} />
-        </h1>
-      </div>
-
-      <div 
-        className="relative w-64 h-64 border border-gray-800 bg-black/50 rounded-lg overflow-hidden cursor-pointer active:border-red-500 transition-colors duration-300 group"
-        onMouseDown={() => setIsScanning(true)}
-        onMouseUp={() => setIsScanning(false)}
-        onMouseLeave={() => setIsScanning(false)}
-        onTouchStart={(e) => { e.preventDefault(); setIsScanning(true); }}
-        onTouchEnd={() => setIsScanning(false)}
-      >
-        {/* Grid Background */}
-        <div className="absolute inset-0 opacity-20" 
-             style={{ backgroundImage: 'linear-gradient(#333 1px, transparent 1px), linear-gradient(90deg, #333 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
-        </div>
-
-        {/* Fingerprint Icon */}
-        <div className="absolute inset-0 flex items-center justify-center">
-          <Fingerprint 
-            size={100} 
-            className={`transition-all duration-200 ${isScanning ? 'text-red-500 scale-110' : 'text-gray-700 scale-100'}`} 
-          />
-        </div>
-
-        {/* Scanning Beam */}
-        {isScanning && (
-          <motion.div 
-            className="absolute left-0 right-0 h-2 bg-red-500 shadow-[0_0_20px_rgba(239,68,68,0.8)] z-10"
-            initial={{ top: 0 }}
-            animate={{ top: '100%' }}
-            transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
-          />
-        )}
-
-        {/* Progress Overlay */}
-        <div className="absolute bottom-0 left-0 h-1 bg-red-600 transition-all duration-75 ease-linear" style={{ width: `${scanProgress}%` }} />
-      </div>
-
-      <p className="mt-8 text-gray-500 font-mono text-[10px] uppercase tracking-widest animate-pulse">
-        {isScanning ? "VERIFYING BIO-SIGNATURE..." : "TOUCH AND HOLD TO AUTHORIZE"}
-      </p>
-    </div>
-  );
-};
-
-// --- STAGE 2: CODE INJECTION (The Word) ---
-const InjectionStage = ({ onComplete, playTone, setIntention }: { onComplete: () => void, playTone: any, setIntention: (s: string) => void }) => {
-  const [input, setInput] = useState("");
-  const [hexStream, setHexStream] = useState<string[]>([]);
-  
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setHexStream(prev => {
-        const next = [Math.random().toString(16).substr(2, 8).toUpperCase(), ...prev];
-        if (next.length > 12) next.pop();
-        return next;
-      });
-    }, 100);
-    return () => clearInterval(interval);
+    if (ctxRef.current && ctxRef.current.state === 'suspended') {
+      ctxRef.current.resume();
+    }
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (input.length > 3) {
-      playTone(800, 'square', 0.5);
-      setIntention(input);
-      onComplete();
+  // 1. CLICK / INTERACT SOUNDS
+  const playClick = useCallback((type = 'standard') => {
+    if (!ctxRef.current) initAudio();
+    const ctx = ctxRef.current!;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    if (type === 'heavy') {
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(100, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(10, ctx.currentTime + 0.1);
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.1);
+    } else if (type === 'metallic') {
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(2000, ctx.currentTime);
+      gain.gain.setValueAtTime(0.1, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.05);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.05);
+    } else {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(800, ctx.currentTime);
+      gain.gain.setValueAtTime(0.05, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.05);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.05);
     }
+  }, [initAudio]);
+
+  // 2. CONTINUOUS LOOPS
+  const startLoop = useCallback((type: string) => {
+    if (!ctxRef.current) initAudio();
+    const ctx = ctxRef.current!;
+
+    if (oscRef.current) {
+      try { 
+          if(oscRef.current.stop) oscRef.current.stop(); 
+      } catch(e){ /**/ }
+      oscRef.current = null;
+    }
+
+    const masterGain = ctx.createGain();
+    masterGain.connect(ctx.destination);
+    gainRef.current = masterGain;
+
+    if (type === 'drone') {
+      const osc = ctx.createOscillator();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(40, ctx.currentTime);
+      
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(100, ctx.currentTime);
+
+      osc.connect(filter);
+      filter.connect(masterGain);
+      
+      masterGain.gain.setValueAtTime(0, ctx.currentTime);
+      masterGain.gain.linearRampToValueAtTime(0.2, ctx.currentTime + 1); 
+      
+      osc.start();
+      oscRef.current = osc;
+    } 
+    else if (type === 'breath') {
+      const bufferSize = ctx.sampleRate * 2;
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = Math.random() * 2 - 1;
+      }
+
+      const noise = ctx.createBufferSource();
+      noise.buffer = buffer;
+      noise.loop = true;
+
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.Q.value = 5;
+      filter.frequency.setValueAtTime(200, ctx.currentTime); 
+
+      noise.connect(filter);
+      filter.connect(masterGain);
+      
+      masterGain.gain.value = 0.15;
+      noise.start();
+      
+      oscRef.current = { stop: () => noise.stop(), filter: filter };
+    }
+    else if (type === 'burn') {
+      const osc = ctx.createOscillator();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(50, ctx.currentTime);
+      
+      const lfo = ctx.createOscillator();
+      lfo.type = 'square';
+      lfo.frequency.value = 20; 
+      
+      const lfoGain = ctx.createGain();
+      lfoGain.gain.value = 500;
+      
+      lfo.connect(lfoGain);
+      lfoGain.connect(osc.frequency);
+      lfo.start();
+
+      osc.connect(masterGain);
+      masterGain.gain.setValueAtTime(0.1, ctx.currentTime);
+      
+      osc.start();
+      oscRef.current = { stop: () => { osc.stop(); lfo.stop(); } };
+    }
+    else if (type === 'chant') {
+      const osc1 = ctx.createOscillator();
+      const osc2 = ctx.createOscillator();
+      osc1.type = 'sine'; osc2.type = 'triangle';
+      osc1.frequency.value = 100; osc2.frequency.value = 200; 
+
+      const tremolo = ctx.createOscillator();
+      tremolo.frequency.value = 4; 
+      const tremoloGain = ctx.createGain();
+      tremoloGain.gain.value = 0.5;
+      tremolo.connect(tremoloGain);
+      tremoloGain.connect(masterGain.gain);
+      
+      osc1.connect(masterGain);
+      osc2.connect(masterGain);
+      
+      osc1.start(); osc2.start(); tremolo.start();
+      masterGain.gain.setValueAtTime(0.1, ctx.currentTime);
+      
+      oscRef.current = { stop: () => { osc1.stop(); osc2.stop(); tremolo.stop(); } };
+    }
+    else if (type === 'charge') {
+      const osc = ctx.createOscillator();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(100, ctx.currentTime); 
+      
+      osc.connect(masterGain);
+      masterGain.gain.value = 0.1;
+      osc.start();
+      
+      oscRef.current = osc;
+    }
+  }, [initAudio]);
+
+  // 3. MODULATE LOOPS
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const updateLoop = useCallback((progress: any, type: string) => {
+    if (!ctxRef.current || !oscRef.current) return;
+    const ctx = ctxRef.current;
+
+    if (type === 'drone') {
+      if (oscRef.current.frequency) {
+        oscRef.current.frequency.setTargetAtTime(40 + (progress * 2), ctx.currentTime, 0.1);
+      }
+    }
+    else if (type === 'breath') {
+       let freq;
+       if (progress === 'INHALE') freq = 800;
+       else if (progress === 'HOLD') freq = 800;
+       else freq = 200;
+       
+       oscRef.current.filter.frequency.setTargetAtTime(freq, ctx.currentTime, 2);
+    }
+    else if (type === 'charge') {
+       if (oscRef.current.frequency) {
+           oscRef.current.frequency.setTargetAtTime(100 + (progress * 10), ctx.currentTime, 0.1);
+           if(gainRef.current) gainRef.current.gain.setTargetAtTime(0.1 + (progress/200), ctx.currentTime, 0.1);
+       }
+    }
+  }, []);
+
+  const stopLoop = useCallback(() => {
+    if (gainRef.current && ctxRef.current) {
+      gainRef.current.gain.setTargetAtTime(0, ctxRef.current.currentTime, 0.1);
+      setTimeout(() => {
+        if (oscRef.current) {
+            try { 
+                if(oscRef.current.stop) oscRef.current.stop(); 
+            } catch(e){ /**/ }
+            oscRef.current = null;
+        }
+      }, 200);
+    }
+  }, []);
+
+  // 4. ONE-SHOT FX
+  const playSuccess = useCallback(() => {
+      if (!ctxRef.current) initAudio();
+      const ctx = ctxRef.current!;
+      
+      [261.63, 329.63, 392.00, 523.25].forEach((freq, i) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.value = freq;
+          
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          
+          gain.gain.setValueAtTime(0, ctx.currentTime);
+          gain.gain.linearRampToValueAtTime(0.1, ctx.currentTime + 0.1 + (i*0.05));
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 3);
+          
+          osc.start();
+          osc.stop(ctx.currentTime + 3.5);
+      });
+  }, [initAudio]);
+
+  const playCastBoom = useCallback(() => {
+      if (!ctxRef.current) initAudio();
+      const ctx = ctxRef.current!;
+      
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(150, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(30, ctx.currentTime + 1);
+      
+      gain.gain.setValueAtTime(1, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.5);
+      
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 1.5);
+
+      const bufferSize = ctx.sampleRate * 1.5; 
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = Math.random() * 2 - 1;
+      }
+      const noise = ctx.createBufferSource();
+      noise.buffer = buffer;
+      const noiseGain = ctx.createGain();
+      noiseGain.gain.setValueAtTime(0.5, ctx.currentTime);
+      noiseGain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1);
+      
+      noise.connect(noiseGain);
+      noiseGain.connect(ctx.destination);
+      noise.start();
+  }, [initAudio]);
+
+  return { playClick, startLoop, updateLoop, stopLoop, playSuccess, playCastBoom };
+};
+
+
+// --- UTILITY & CONSTANTS ---
+
+const ARCHETYPES = {
+  LOVE: { color: 'text-rose-500', border: 'border-rose-500', glow: 'shadow-rose-500', icon: Heart, theme: 'VENUS' },
+  MONEY: { color: 'text-emerald-400', border: 'border-emerald-400', glow: 'shadow-emerald-400', icon: DollarSign, theme: 'JUPITER' },
+  POWER: { color: 'text-amber-500', border: 'border-amber-500', glow: 'shadow-amber-500', icon: Sun, theme: 'SOL' },
+  PROTECT: { color: 'text-blue-500', border: 'border-blue-500', glow: 'shadow-blue-500', icon: Shield, theme: 'MARS' },
+  UNK: { color: 'text-cyan-400', border: 'border-cyan-400', glow: 'shadow-cyan-400', icon: Star, theme: 'AETHER' }
+};
+
+const detectArchetype = (text: string) => {
+  const t = text.toUpperCase();
+  if (t.includes('LOVE') || t.includes('HEART') || t.includes('PARTNER')) return ARCHETYPES.LOVE;
+  if (t.includes('MONEY') || t.includes('WEALTH') || t.includes('JOB')) return ARCHETYPES.MONEY;
+  if (t.includes('POWER') || t.includes('CONTROL') || t.includes('STRENGTH')) return ARCHETYPES.POWER;
+  if (t.includes('PROTECT') || t.includes('SAFE') || t.includes('GUARD')) return ARCHETYPES.PROTECT;
+  return ARCHETYPES.UNK;
+};
+
+// --- BACKGROUND EFFECTS ---
+
+const WarpBackground = ({ intensity }: { intensity: number }) => (
+  <div className="fixed inset-0 z-0 bg-black overflow-hidden pointer-events-none">
+    <div className="absolute inset-0 opacity-30 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')]" />
+    <svg className="absolute inset-0 w-full h-full opacity-30 mix-blend-screen">
+      <filter id="warpFilter">
+        <feTurbulence type="fractalNoise" baseFrequency={0.01 + (intensity / 5000)} numOctaves="2" result="noise" />
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale={intensity} />
+      </filter>
+      <rect width="100%" height="100%" filter="url(#warpFilter)" fill="indigo" />
+    </svg>
+    <div className="absolute inset-0 bg-linear-to-b from-black via-transparent to-slate-950 opacity-90" />
+  </div>
+);
+
+const GlitchOverlay = ({ active }: { active: boolean }) => {
+  if (!active) return null;
+  return (
+    <div className="fixed inset-0 z-50 pointer-events-none mix-blend-difference animate-pulse bg-white/10">
+      <div className="absolute top-1/4 left-0 w-full h-2 bg-cyan-500/50 blur-sm transform -skew-x-12" />
+      <div className="absolute bottom-1/3 left-0 w-full h-4 bg-purple-500/50 blur-md transform skew-x-12" />
+    </div>
+  );
+};
+
+// --- SUB-COMPONENTS ---
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const Consecration = ({ setPhase, archetype, audio }: any) => {
+  const [progress, setProgress] = useState(0);
+  const [isHolding, setIsHolding] = useState(false);
+
+  useEffect(() => {
+    if (isHolding) {
+      audio.startLoop('drone');
+    } else {
+      audio.stopLoop();
+    }
+    return () => audio.stopLoop();
+  }, [isHolding, audio]);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isHolding && progress < 100) {
+      interval = setInterval(() => {
+        setProgress((prev) => {
+          const next = prev >= 100 ? 100 : prev + 0.5;
+          audio.updateLoop(next, 'drone'); 
+          return next;
+        });
+        if (navigator.vibrate) navigator.vibrate(5);
+      }, 30);
+    } else if (!isHolding && progress > 0 && progress < 100) {
+      setProgress(0); 
+    }
+    
+    if (progress >= 100) {
+      if (navigator.vibrate) navigator.vibrate([50, 50, 50]);
+      audio.stopLoop();
+      audio.playSuccess(); 
+      const timeout = setTimeout(() => setPhase('GROUNDING'), 1000);
+      return () => clearTimeout(timeout);
+    }
+    
+    return () => clearInterval(interval);
+  }, [isHolding, progress, setPhase, audio]);
+
+  const ArchetypeIcon = archetype.icon;
+
+  return (
+    <div className="flex flex-col items-center justify-center h-full space-y-8 animate-in fade-in duration-1000 relative z-10">
+      <div className="relative w-72 h-72 flex items-center justify-center">
+        <div className={`absolute inset-0 border border-dashed ${archetype.border} rounded-full opacity-30 ${isHolding ? 'animate-spin-slow' : ''}`} />
+        <div className={`absolute inset-4 border border-dotted ${archetype.border} rounded-full opacity-50 ${isHolding ? 'animate-spin-reverse-slower' : ''}`} />
+        <svg className="w-full h-full -rotate-90 transform drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
+          <circle cx="144" cy="144" r="130" stroke="currentColor" strokeWidth="1" fill="transparent" className="text-slate-800" />
+          <circle cx="144" cy="144" r="130" stroke="currentColor" strokeWidth="2" fill="transparent" 
+            strokeDasharray={816} strokeDashoffset={816 - (816 * progress) / 100}
+            className={`${archetype.color} transition-all duration-75 ease-linear`}
+          />
+        </svg>
+        <div className={`absolute inset-0 flex items-center justify-center transition-opacity duration-500 ${isHolding ? 'opacity-100' : 'opacity-30'}`}>
+            <ArchetypeIcon className={`w-16 h-16 ${archetype.color}`} />
+        </div>
+      </div>
+      <div className="text-center space-y-2">
+        <h2 className={`${archetype.color} font-serif italic text-xl tracking-[0.2em] drop-shadow-md`}>
+            {progress >= 100 ? "SEALED." : "CONSECRATE"}
+        </h2>
+        <p className="text-slate-500 font-mono text-[10px] uppercase tracking-widest">Hold to banish mundane forces</p>
+      </div>
+      <button 
+        className={`w-32 h-32 rounded-full bg-black/50 border ${archetype.border} shadow-[0_0_30px_rgba(0,0,0,0.5)] active:scale-95 transition-all flex items-center justify-center group`}
+        onMouseDown={() => setIsHolding(true)}
+        onMouseUp={() => setIsHolding(false)}
+        onMouseLeave={() => setIsHolding(false)}
+        onTouchStart={(e) => { e.preventDefault(); setIsHolding(true); }}
+        onTouchEnd={() => setIsHolding(false)}
+      >
+        <Fingerprint className={`${archetype.color} w-12 h-12 group-hover:scale-110 transition-transform`} />
+      </button>
+    </div>
+  );
+};
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const Grounding = ({ setPhase, audio }: any) => {
+  const [cycle, setCycle] = useState(0);
+  const [breathState, setBreathState] = useState('INHALE');
+  const TOTAL_CYCLES = 3;
+
+  useEffect(() => {
+      audio.startLoop('breath');
+      return () => audio.stopLoop();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+    const runBreathCycle = async () => {
+      if (cycle >= TOTAL_CYCLES) {
+        if (isMounted) {
+            audio.playSuccess();
+            setTimeout(() => setPhase('INTENTION'), 1000);
+        }
+        return;
+      }
+      
+      if (!isMounted) return;
+      setBreathState('INHALE');
+      audio.updateLoop('INHALE', 'breath'); 
+      await new Promise(r => setTimeout(r, 4000));
+      
+      if (!isMounted) return;
+      setBreathState('HOLD');
+      audio.updateLoop('HOLD', 'breath');
+      await new Promise(r => setTimeout(r, 2000));
+      
+      if (!isMounted) return;
+      setBreathState('EXHALE');
+      audio.updateLoop('EXHALE', 'breath'); 
+      await new Promise(r => setTimeout(r, 4000));
+      
+      if (isMounted) setCycle(c => c + 1);
+    };
+    runBreathCycle();
+    return () => { isMounted = false; };
+  }, [cycle, setPhase, audio]);
+
+  const guideStyle = {
+    transform: breathState === 'INHALE' ? 'scale(1.5)' : breathState === 'EXHALE' ? 'scale(0.8)' : 'scale(1.5)',
+    opacity: breathState === 'INHALE' ? 1 : breathState === 'EXHALE' ? 0.4 : 0.8,
+    transition: breathState === 'HOLD' ? 'none' : 'all 4s ease-in-out',
   };
 
   return (
-    <div className="flex flex-col items-center justify-center h-full w-full px-4 relative overflow-hidden">
-      <div className="absolute inset-0 pointer-events-none opacity-10 flex justify-between text-[10px] font-mono text-green-500">
-        {Array.from({length: 6}).map((_, i) => (
-          <div key={i} className="flex flex-col">
-            {hexStream.map((h, j) => <span key={j}>{h}</span>)}
-          </div>
-        ))}
-      </div>
-
-      <div className="z-10 w-full max-w-md bg-black/80 border border-green-900 p-6 rounded-sm backdrop-blur-md shadow-[0_0_30px_rgba(22,163,74,0.1)]">
-        <div className="flex items-center gap-2 mb-6 border-b border-green-900/50 pb-2">
-          <Terminal size={16} className="text-green-500" />
-          <span className="text-green-500 font-mono text-xs">ROOT_ACCESS_GRANTED</span>
+    <div className="flex flex-col items-center justify-center h-full space-y-12 relative z-10">
+      <h2 className="text-cyan-500 font-mono text-sm tracking-widest animate-pulse">
+        {cycle >= TOTAL_CYCLES ? 'BIO-SYNC COMPLETE' : 'SYNCHRONIZE BREATH'}
+      </h2>
+      <div className="relative">
+        <div className="w-32 h-32 bg-cyan-900/20 border border-cyan-500/30 rounded-full blur-xl absolute inset-0" style={guideStyle} />
+        <div className="w-32 h-32 border-2 border-cyan-400 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(34,211,238,0.2)]" style={guideStyle}>
+          <div className="w-2 h-2 bg-white rounded-full" />
         </div>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-2">
-            <label className="block text-green-700 font-mono text-[10px] tracking-[0.2em]">DEFINE PARAMETER CHANGE</label>
-            <input 
-              autoFocus
-              type="text" 
-              value={input}
-              onChange={(e) => {
-                setInput(e.target.value);
-                playTone(400 + (e.target.value.length * 20), 'sine', 0.05);
-              }}
-              className="w-full bg-transparent border-b-2 border-green-800 text-green-400 font-mono text-xl py-2 focus:outline-none focus:border-green-400 transition-colors placeholder:text-green-900 uppercase"
-              placeholder="ENTER COMMAND..."
-            />
-          </div>
-          
-          <button 
-            type="submit"
-            disabled={input.length < 3}
-            className="w-full py-4 bg-green-900/20 border border-green-800 text-green-500 font-mono text-xs tracking-[0.3em] hover:bg-green-500 hover:text-black transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
-          >
-            <span className="group-hover:hidden">&gt; INJECT_CODE</span>
-            <span className="hidden group-hover:inline font-bold">EXECUTE</span>
-          </button>
-        </form>
+      </div>
+      <div className="font-mono text-cyan-200 text-xl tracking-widest">{breathState}</div>
+      <div className="w-64 h-1 bg-slate-800 rounded-full overflow-hidden">
+        <div className="h-full bg-cyan-600 transition-all duration-1000" style={{ width: `${(cycle / TOTAL_CYCLES) * 100}%` }} />
       </div>
     </div>
   );
 };
 
-// --- STAGE 3: SIGNAL STABILIZATION (The Focus) ---
-const StabilizationStage = ({ onComplete, playTone, modulateFilter }: { onComplete: () => void, playTone: any, modulateFilter: any }) => {
-    const [stability, setStability] = useState(50);
-    const [target, setTarget] = useState(50);
-    const [lockedTime, setLockedTime] = useState(0);
-    const [noise, setNoise] = useState(0);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const Inscription = ({ setIntention, setArchetype, setPhase, archetype, audio }: any) => {
+  const [text, setText] = useState('');
+  const [isLocked, setIsLocked] = useState(false);
+  const [burnProgress, setBurnProgress] = useState(0);
+  const [isInscribing, setIsInscribing] = useState(false);
+  const [sigilPath, setSigilPath] = useState("");
+  const [hasCompleted, setHasCompleted] = useState(false);
 
-    // Generate random target movement (The Universe resisting)
-    useEffect(() => {
-        const interval = setInterval(() => {
-            const jitter = (Math.random() - 0.5) * 30;
-            setTarget(prev => Math.min(90, Math.max(10, prev + jitter)));
-            setNoise(Math.random() * 10);
-        }, 500);
-        return () => clearInterval(interval);
-    }, []);
-
-    // Check lock
-    useEffect(() => {
-        const dist = Math.abs(stability - target);
-        modulateFilter(100 + (100 - dist) * 10); // Filter opens as you get closer
-
-        if (dist < 15) {
-            setLockedTime(prev => {
-                const next = prev + 1;
-                if (next > 100) onComplete();
-                return next;
-            });
-            if (Math.random() > 0.8) playTone(880, 'sine', 0.1, 0.05);
-        } else {
-            setLockedTime(prev => Math.max(0, prev - 2)); // Decay if lost
+  useEffect(() => {
+    if (isLocked) {
+        let hash = 0;
+        for (let i = 0; i < text.length; i++) hash = text.charCodeAt(i) + ((hash << 5) - hash);
+        const points = [];
+        for (let i = 0; i < 5; i++) {
+            const x = 50 + Math.abs((hash * (i + 1)) % 100);
+            const y = 50 + Math.abs((hash * (i + 2)) % 100);
+            points.push(`${x},${y}`);
         }
-    }, [stability, target, onComplete, playTone, modulateFilter]);
+        setSigilPath(`M100,20 L${points.join(' L')} Z M50,100 L150,100 M100,50 L100,150`);
+    }
+  }, [isLocked, text]);
 
-    const handleSlide = (e: any) => {
-        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        const width = window.innerWidth;
-        const percent = (clientX / width) * 100;
-        setStability(percent);
+  useEffect(() => {
+      if (isInscribing && !hasCompleted) {
+          audio.startLoop('burn');
+      } else {
+          audio.stopLoop();
+      }
+  }, [isInscribing, hasCompleted, audio]);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    
+    if (burnProgress >= 100 && !hasCompleted) {
+        setHasCompleted(true);
+        audio.playSuccess();
+        if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+        setTimeout(() => setPhase('SYMBOLISM'), 1500);
+        return;
+    }
+
+    if (!hasCompleted) {
+        if (isInscribing && burnProgress < 100) {
+            interval = setInterval(() => {
+                setBurnProgress(p => {
+                    if (p >= 100) return 100;
+                    return p + 0.5;
+                });
+                if (navigator.vibrate) navigator.vibrate(10);
+            }, 20);
+        } else if (!isInscribing && burnProgress > 0 && burnProgress < 100) {
+            setBurnProgress(0); 
+        }
+    }
+    return () => clearInterval(interval);
+  }, [isInscribing, burnProgress, setPhase, hasCompleted, audio]);
+
+  if (!isLocked) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full px-8 space-y-8 relative z-10 animate-in slide-in-from-bottom duration-1000">
+         <Eye className="w-12 h-12 text-slate-700 animate-pulse mb-4" />
+         <h2 className="text-slate-400 font-mono text-xs tracking-[0.5em]">DECLARE INTENTION</h2>
+         <input 
+           type="text" 
+           value={text}
+           onChange={(e) => setText(e.target.value.toUpperCase())}
+           placeholder="I DESIRE..."
+           className="w-full bg-transparent border-b border-slate-800 text-center text-3xl font-serif italic text-white focus:outline-none focus:border-white transition-colors placeholder-slate-800 pb-4"
+         />
+         {text.length > 3 && (
+           <button 
+             onClick={() => { 
+                audio.playClick('heavy');
+                const arch = detectArchetype(text);
+                setArchetype(arch);
+                setIntention(text); 
+                setIsLocked(true); 
+             }}
+             className="mt-12 px-8 py-3 border border-slate-700 text-slate-400 font-mono text-[10px] tracking-widest hover:bg-white hover:text-black transition-all"
+           >
+             [ CRYSTALLIZE ]
+           </button>
+         )}
+      </div>
+    );
+  }
+  
+  return (
+    <div className="flex flex-col items-center justify-center h-full space-y-8 relative z-10">
+      <div className="relative w-72 h-72 bg-black/50 border border-slate-800 backdrop-blur-sm">
+        <svg viewBox="0 0 200 200" className="w-full h-full p-8 drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]">
+           <defs>
+             <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+               <feGaussianBlur stdDeviation="2" result="blur" />
+               <feComposite in="SourceGraphic" in2="blur" operator="over" />
+             </filter>
+           </defs>
+           <path d={sigilPath} stroke="#334155" strokeWidth="2" fill="none" />
+           <path d={sigilPath} stroke={archetype?.color ? "currentColor" : "white"} strokeWidth="3" fill="none"
+            className={`${archetype.color} transition-all duration-100`}
+            strokeDasharray="1000" strokeDashoffset={1000 - (1000 * burnProgress) / 100}
+            filter="url(#glow)"
+          />
+        </svg>
+      </div>
+      <div className="text-center space-y-2">
+         <h2 className={`${archetype.color} font-mono text-xs tracking-widest`}>
+           {hasCompleted ? "SIGIL BOUND." : "ETCHING SIGIL INTO AETHER..."}
+         </h2>
+      </div>
+      <button
+        className={`w-full max-w-xs py-8 border text-xs font-mono tracking-widest transition-all select-none ${hasCompleted ? 'border-white text-white bg-white/10' : 'border-slate-800 text-slate-500 hover:text-white hover:border-white active:bg-white/10'}`}
+        onMouseDown={() => setIsInscribing(true)}
+        onMouseUp={() => setIsInscribing(false)}
+        onMouseLeave={() => setIsInscribing(false)}
+        onTouchStart={(e) => { e.preventDefault(); setIsInscribing(true); }}
+        onTouchEnd={() => setIsInscribing(false)}
+        disabled={hasCompleted}
+      >
+        {hasCompleted ? "[ COMPLETE ]" : "[ HOLD TO BURN ]"}
+      </button>
+    </div>
+  );
+};
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const SymbolicAlignment = ({ setPhase, archetype, audio }: any) => {
+    const [alignedCount, setAlignedCount] = useState(0);
+    const [positions, setPositions] = useState([0, 0, 0, 0]); 
+    
+    const toggleRune = (index: number) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if ((positions as any)[index] === 'LOCKED') return;
+        audio.playClick('metallic'); 
+        setPositions(prev => {
+            const newPos = [...prev] as any;
+            newPos[index] = 'LOCKED';
+            return newPos;
+        });
+        setAlignedCount(c => c + 1);
+        if (navigator.vibrate) navigator.vibrate(50);
     };
 
+    useEffect(() => {
+        if (alignedCount >= 4) {
+            audio.playSuccess(); 
+            setTimeout(() => setPhase('CHANT'), 1000);
+        }
+    }, [alignedCount, setPhase, audio]);
+
+    const Runes = [Star, Moon, Triangle, Hexagon];
+
     return (
-        <div 
-            className="flex flex-col items-center justify-center h-full w-full bg-black select-none touch-none"
-            onTouchMove={handleSlide}
-            onMouseMove={(e) => e.buttons === 1 && handleSlide(e)}
-            onMouseDown={handleSlide}
-        >
-            <h2 className="text-cyan-500 font-mono text-xs tracking-[0.3em] mb-12 animate-pulse">
-                MANUAL OVERRIDE: STABILIZE SIGNAL
+        <div className="flex flex-col items-center justify-center h-full space-y-12 relative z-10">
+            <h2 className={`${archetype.color} font-serif italic text-2xl tracking-widest animate-pulse`}>
+                Align the Constants
             </h2>
-
-            <div className="relative w-full max-w-md h-32 border-x border-cyan-900/50">
-                {/* Target Zone */}
-                <div 
-                    className="absolute top-0 bottom-0 w-16 bg-cyan-900/30 border-x border-cyan-500/50 transition-all duration-500"
-                    style={{ left: `calc(${target}% - 32px)` }}
-                >
-                    <div className="absolute top-0 left-0 w-full h-full animate-pulse opacity-20 bg-cyan-400"></div>
-                </div>
-
-                {/* User Cursor */}
-                <div 
-                    className="absolute top-0 bottom-0 w-1 bg-white shadow-[0_0_15px_white] transition-all duration-75"
-                    style={{ left: `${stability}%` }}
-                />
-
-                {/* Noise Visuals */}
-                <div className="absolute inset-0 flex items-center justify-center opacity-30 pointer-events-none">
-                    <Activity size={64} className="text-cyan-700" style={{ transform: `scaleY(${1 + noise/5})` }} />
-                </div>
+            
+            <div className="flex gap-4 h-64 items-center relative">
+                <div className="absolute w-full h-16 border-y border-dashed border-slate-700 bg-white/5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                
+                {Runes.map((Rune, i) => (
+                    <button 
+                        key={i}
+                        onClick={() => toggleRune(i)}
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        disabled={(positions as any)[i] === 'LOCKED'}
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        className={`w-16 h-32 flex items-center justify-center transition-all duration-1000 relative border ${(positions as any)[i] === 'LOCKED' ? archetype.border : 'border-slate-800'}`}
+                    >
+                         <Rune 
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                            className={`w-8 h-8 ${(positions as any)[i] === 'LOCKED' ? archetype.color + ' drop-shadow-[0_0_10px_currentColor]' : 'text-slate-600'} transition-all`}
+                            style={{
+                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                transform: (positions as any)[i] === 'LOCKED' ? 'scale(1.5)' : `translateY(${Math.sin(Date.now() / 200 + i) * 20}px)`
+                            }}
+                         />
+                         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                         {(positions as any)[i] !== 'LOCKED' && (
+                             <div className="absolute inset-0 animate-pulse bg-white/5" />
+                         )}
+                    </button>
+                ))}
             </div>
-
-            {/* Lock Progress */}
-            <div className="w-64 h-2 bg-gray-900 mt-8 rounded-full overflow-hidden border border-gray-800">
-                <div 
-                    className="h-full bg-cyan-400 transition-all duration-75"
-                    style={{ width: `${lockedTime}%`, boxShadow: '0 0 10px #22d3ee' }}
-                />
-            </div>
-            <p className="text-cyan-800 font-mono text-[10px] mt-4">
-                {lockedTime > 0 ? `LOCKING: ${lockedTime}%` : "SEARCHING..."}
+            
+            <p className="font-mono text-[10px] text-slate-500">
+                TAP SYMBOLS TO LOCK FREQUENCY
             </p>
         </div>
     );
 };
 
-// --- STAGE 4: ENTROPY BATTLE (The Force) ---
-const EntropyStage = ({ onComplete, playTone, spawnExplosion, intention }: { onComplete: () => void, playTone: any, spawnExplosion: any, intention: string }) => {
-  const [integrity, setIntegrity] = useState(15); // Start low
-  const [decayRate, setDecayRate] = useState(0.6);
-  const [glitchActive, setGlitchActive] = useState(false);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const VocalChant = ({ setPhase, archetype, audio }: any) => {
+    const [charge, setCharge] = useState(0);
+    const [chanting, setChanting] = useState(false);
 
-  // The Decay Loop
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setIntegrity(prev => {
-        // Decay gets stronger as you get closer to 100% (Resistance)
-        const currentDecay = decayRate + (prev / 150); 
-        return Math.max(0, prev - currentDecay);
-      });
-    }, 30);
-    return () => clearInterval(interval);
-  }, [decayRate]);
-
-  useEffect(() => {
-    if (integrity > 85) setGlitchActive(true);
-    else setGlitchActive(false);
-  }, [integrity]);
-
-  const handleStabilize = (e: any) => {
-    e.preventDefault(); // Prevent zoom/scroll
-    
-    const boost = 7; 
-    setIntegrity(prev => {
-      const next = Math.min(100, prev + boost);
-      
-      // Feedback
-      const freq = 150 + (next * 6); 
-      playTone(freq, 'sawtooth', 0.1, 0.2);
-      
-      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-      spawnExplosion(clientX || window.innerWidth/2, clientY || window.innerHeight/2, '#a855f7', 5);
-
-      if (next >= 100) {
-        onComplete();
-        playTone(100, 'square', 2, 0.5); // Boom
-      }
-      return next;
-    });
-  };
-
-  return (
-    <div className="flex flex-col items-center justify-center h-full w-full select-none touch-none overflow-hidden relative">
-      {/* Chaos Background */}
-      <div className={`absolute inset-0 bg-purple-900/10 transition-all duration-100 ${glitchActive ? 'bg-white/10 invert' : ''}`} />
-      
-      <div className="z-10 text-center space-y-8 w-full max-w-md px-6">
-        <div className="space-y-2">
-          <h2 className="text-purple-400 font-mono text-xs tracking-widest animate-pulse">REALITY INTEGRITY CRITICAL</h2>
-          <div className="font-mono text-white text-sm border border-purple-500/30 p-2 bg-black/50 backdrop-blur truncate">
-            TARGET: {intention}
-          </div>
-        </div>
-
-        {/* The Meter */}
-        <div className="relative w-full h-64 bg-black border-2 border-purple-900 rounded-lg overflow-hidden shadow-[0_0_50px_rgba(88,28,135,0.3)]">
-          {/* Grid Lines */}
-          <div className="absolute inset-0 flex flex-col justify-between py-4 px-2 opacity-30 pointer-events-none">
-            {[...Array(5)].map((_, i) => <div key={i} className="w-full h-px bg-purple-500" />)}
-          </div>
-
-          {/* The Fill */}
-          <div 
-            className="absolute bottom-0 left-0 right-0 bg-purple-600 transition-all duration-75 ease-linear shadow-[0_0_50px_rgba(168,85,247,0.8)]"
-            style={{ height: `${integrity}%` }}
-          />
-          
-          {/* The Percentage */}
-          <div className="absolute inset-0 flex items-center justify-center mix-blend-difference">
-            <span className="text-6xl font-black text-white font-mono">
-              {Math.floor(integrity)}%
-            </span>
-          </div>
-        </div>
-
-        {/* The Button */}
-        <button
-          className="w-full h-24 bg-purple-900/20 border-2 border-purple-500 text-purple-300 font-black text-2xl tracking-[0.2em] hover:bg-purple-500 hover:text-white transition-all active:scale-95 active:bg-white active:text-black shadow-[0_0_30px_rgba(168,85,247,0.2)]"
-          onMouseDown={handleStabilize}
-          onTouchStart={handleStabilize}
-        >
-          OVERWRITE
-        </button>
-        
-        <p className="text-purple-500/50 font-mono text-[10px] uppercase text-center">
-          RAPIDLY TAP TO OVERCOME RESISTANCE
-        </p>
-      </div>
-    </div>
-  );
-};
-
-// --- STAGE 5: REBOOT (Success) ---
-const RebootStage = ({ intention, onExit }: { intention: string, onExit: () => void }) => {
-  const [bootLog, setBootLog] = useState<string[]>([]);
-
-  useEffect(() => {
-    const logs = [
-      "STOPPING DAEMONS...",
-      "FLUSHING CACHE...",
-      "REWRITING KERNEL...",
-      `INJECTING: ${intention}...`,
-      "SUCCESS.",
-      "REBOOTING REALITY..."
-    ];
-
-    let i = 0;
-    const interval = setInterval(() => {
-      if (i < logs.length) {
-        setBootLog(prev => [...prev, logs[i]]);
-        i++;
-      } else {
-        clearInterval(interval);
-      }
-    }, 800);
-
-    return () => clearInterval(interval);
-  }, [intention]);
-
-  return (
-    <div className="flex flex-col items-center justify-center h-full w-full bg-black text-green-500 font-mono text-sm p-8">
-      <div className="w-full max-w-lg space-y-2">
-        {bootLog.map((log, i) => (
-          <div key={i} className="border-b border-green-900/30 pb-1">
-            <span className="mr-4 opacity-50">[{new Date().toLocaleTimeString()}]</span>
-            {log}
-          </div>
-        ))}
-        {bootLog.length >= 6 && (
-          <motion.div 
-            initial={{ opacity: 0 }} 
-            animate={{ opacity: 1 }} 
-            className="mt-12 text-center"
-          >
-            <div className="text-4xl mb-4 text-white font-bold">OK</div>
-            <p className="text-gray-500 text-xs mb-8">PATCH APPLIED SUCCESSFULLY</p>
-            <button 
-              onClick={onExit}
-              className="px-8 py-3 border border-green-800 text-green-500 hover:bg-green-900/20 transition-colors uppercase text-xs tracking-widest"
-            >
-              Return to System
-            </button>
-          </motion.div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-// --- MAIN ORCHESTRATOR ---
-const RealityPatchSpell = ({ onExit }: { onExit: () => void }) => {
-  const [stage, setStage] = useState(0); // 0: Auth, 1: Inject, 2: Stabilize, 3: Entropy, 4: Reboot
-  const [intention, setIntention] = useState("");
-  const { initAudio, playTone, playDrone, modulateFilter } = useAudioEngine();
-  const { canvasRef, spawnExplosion } = useParticleSystem();
-
-  useEffect(() => {
-    initAudio();
-    playDrone(true, 50); // Low rumble start
-    return () => playDrone(false);
-  }, [initAudio, playDrone]);
-
-  const renderStage = () => {
-    switch (stage) {
-      case 0: return <BioAuthStage onComplete={() => setStage(1)} playTone={playTone} />;
-      case 1: return <InjectionStage onComplete={() => setStage(2)} playTone={playTone} setIntention={setIntention} />;
-      case 2: return <StabilizationStage onComplete={() => setStage(3)} playTone={playTone} modulateFilter={modulateFilter} />;
-      case 3: return <EntropyStage onComplete={() => setStage(4)} playTone={playTone} spawnExplosion={spawnExplosion} intention={intention} />;
-      case 4: return <RebootStage intention={intention} onExit={onExit} />;
-      default: return null;
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black text-white overflow-hidden font-sans z-50">
-      <button onClick={onExit} className="absolute top-6 right-6 z-50 text-gray-700 hover:text-white transition-colors"><X size={24}/></button>
-      
-      {/* Global Particle Layer */}
-      <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none z-0" style={{ mixBlendMode: 'screen' }} />
-      
-      {/* CRT Scanline Effect */}
-      <div className="absolute inset-0 pointer-events-none z-50 opacity-10 bg-[url('https://media.giphy.com/media/3o7qE1YN7aQfV9k1So/giphy.gif')] bg-cover mix-blend-overlay" />
-      <div className="absolute inset-0 pointer-events-none z-50 bg-linear-to-b from-transparent via-white/5 to-transparent h-1 w-full animate-[scan_2s_linear_infinite]" />
-
-      <div className="relative z-10 h-full w-full">
-        {renderStage()}
-      </div>
-
-      <style jsx global>{`
-        @keyframes scan {
-          from { top: -10%; }
-          to { top: 110%; }
+    useEffect(() => {
+        if (chanting) {
+            audio.startLoop('chant');
+        } else {
+            audio.stopLoop();
         }
-      `}</style>
-    </div>
-  );
+        return () => audio.stopLoop();
+    }, [chanting, audio]);
+
+    const getChant = () => {
+        if (archetype.theme === 'VENUS') return ["AMOR", "VINCIT", "OMNIA", "ET", "NOS", "CEDAMUS", "AMORI"];
+        if (archetype.theme === 'JUPITER') return ["ABUNDANTIA", "FLUIT", "AD", "ME", "SICUT", "FLUMEN", "AUREUM"];
+        if (archetype.theme === 'MARS') return ["SCUTUM", "FERREUM", "CUSTODIT", "ANIMAM", "MEAM", "IN", "AETERNUM"];
+        return ["IGNIS", "AER", "AQUA", "TERRA", "SPIRITUS", "SANCTUS", "EST"];
+    };
+    
+    const words = useMemo(() => getChant(), [archetype]);
+
+    useEffect(() => {
+        let interval: NodeJS.Timeout;
+        if (chanting && charge < words.length * 100) {
+            interval = setInterval(() => {
+                setCharge(c => c + 2);
+                if (navigator.vibrate && charge % 50 === 0) navigator.vibrate(20);
+            }, 50);
+        } else if (!chanting && charge > 0) {
+            setCharge(0); 
+        }
+
+        if (charge >= words.length * 100) {
+            audio.playSuccess();
+            if (navigator.vibrate) navigator.vibrate([100, 100, 100]);
+            setTimeout(() => setPhase('CHARGE'), 1000);
+        }
+        return () => clearInterval(interval);
+    }, [chanting, charge, setPhase, words, audio]);
+
+    const currentWordIndex = Math.min(Math.floor(charge / 100), words.length - 1);
+
+    return (
+        <div className="flex flex-col items-center justify-center h-full space-y-16 relative z-10">
+            <div className="h-32 flex flex-col items-center justify-center">
+                {words.map((word, i) => (
+                    <h1 key={i} 
+                        className={`text-3xl font-black tracking-[0.5em] transition-all duration-300 ${
+                            i === currentWordIndex && chanting 
+                            ? `${archetype.color} scale-150 blur-[1px] translate-x-${Math.random()*4} translate-y-${Math.random()*4}` 
+                            : i < currentWordIndex ? 'text-slate-800 scale-75' : 'text-slate-900 blur-sm'
+                        }`}
+                        style={{ display: Math.abs(i - currentWordIndex) > 1 ? 'none' : 'block' }}
+                    >
+                        {word}
+                    </h1>
+                ))}
+            </div>
+
+            <div className="relative w-48 h-48">
+                 {chanting && (
+                    <>
+                        <div className={`absolute inset-0 rounded-full border ${archetype.border} opacity-20 animate-ping`} />
+                        <div className={`absolute inset-4 rounded-full border ${archetype.border} opacity-40 animate-ping animation-delay-200`} />
+                        <div className={`absolute inset-8 rounded-full border ${archetype.border} opacity-60 animate-ping animation-delay-500`} />
+                    </>
+                 )}
+                 
+                 <button
+                    className={`w-full h-full rounded-full border-2 ${archetype.border} flex items-center justify-center relative overflow-hidden bg-black`}
+                    onMouseDown={() => setChanting(true)}
+                    onMouseUp={() => setChanting(false)}
+                    onMouseLeave={() => setChanting(false)}
+                    onTouchStart={(e) => { e.preventDefault(); setChanting(true); }}
+                    onTouchEnd={() => setChanting(false)}
+                 >
+                     <div className={`absolute bottom-0 left-0 w-full bg-white/10 transition-all duration-75`} 
+                          style={{ height: `${(charge / (words.length * 100)) * 100}%` }} />
+                     <Activity className={`${archetype.color} w-12 h-12 ${chanting ? 'animate-bounce' : ''}`} />
+                 </button>
+            </div>
+            
+            <p className="font-mono text-[10px] text-slate-500 uppercase">
+                Hold and Recite the Incantation
+            </p>
+        </div>
+    );
 };
 
-export default RealityPatchSpell;
-// --- END OF FILE ---
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const ChargeAndCast = ({ setPhase, setGlitchActive, archetype, audio }: any) => {
+   const [charge, setCharge] = useState(0);
+   const [shaking, setShaking] = useState(false);
+
+   useEffect(() => {
+       if (shaking && charge < 100) {
+           audio.startLoop('charge');
+       } else {
+           audio.stopLoop();
+       }
+       return () => audio.stopLoop();
+   }, [shaking, charge, audio]);
+
+   useEffect(() => {
+     let interval: NodeJS.Timeout;
+     if (shaking && charge < 100) {
+       interval = setInterval(() => {
+         setCharge(c => {
+            const next = c >= 100 ? 100 : c + 0.2;
+            audio.updateLoop(next, 'charge'); 
+            return next;
+         });
+         if (navigator.vibrate && Math.random() > 0.7) navigator.vibrate(10); 
+       }, 20);
+     } else if (!shaking && charge > 0 && charge < 100) {
+       interval = setInterval(() => {
+         setCharge(c => Math.max(0, c - 2));
+       }, 30);
+     }
+     return () => clearInterval(interval);
+   }, [shaking, charge, audio]);
+
+   useEffect(() => {
+     if (charge >= 100) {
+        audio.playCastBoom(); 
+        if (navigator.vibrate) navigator.vibrate([500, 200, 500, 200, 1000]);
+        setGlitchActive(true);
+        const timeout = setTimeout(() => setPhase('CAST'), 3000);
+        return () => clearTimeout(timeout);
+     }
+   }, [charge, setPhase, setGlitchActive, audio]);
+
+   return (
+       <div className={`flex flex-col items-center justify-center h-full space-y-12 relative z-10`}
+            style={{ 
+                transform: shaking ? `translate(${Math.random()*10 - 5}px, ${Math.random()*10 - 5}px)` : 'none' 
+            }}
+       >
+           <div className="relative w-80 h-80">
+               <div className={`absolute inset-0 rounded-full bg-linear-to-tr from-black via-transparent to-${archetype.theme === 'VENUS' ? 'rose' : 'cyan'}-900 animate-spin-slow blur-xl opacity-80`} />
+               
+               <div className="absolute inset-0 flex items-center justify-center">
+                   <archetype.icon 
+                      className={`text-white drop-shadow-[0_0_30px_currentColor] transition-all duration-100`}
+                      style={{ 
+                          width: `${60 + charge}px`, 
+                          height: `${60 + charge}px`,
+                          opacity: 0.5 + (charge/200),
+                          filter: `blur(${shaking ? 0 : 5}px)`
+                      }} 
+                   />
+               </div>
+               
+               {shaking && (
+                  <>
+                   {[...Array(6)].map((_, i) => (
+                      <div key={i} className={`absolute w-1 h-1 bg-white shadow-[0_0_20px_white] rounded-full top-1/2 left-1/2`}
+                           style={{
+                               transform: `rotate(${i * 60}deg) translateX(${150 - charge}px)`
+                           }}
+                      />
+                   ))}
+                  </>
+               )}
+           </div>
+           
+           <div className="w-64 space-y-4 z-20">
+               <div className="h-1 bg-slate-900 w-full mx-auto overflow-hidden">
+                   <div className={`h-full bg-white shadow-[0_0_20px_white] transition-all duration-75 ease-linear`} style={{ width: `${charge}%` }} />
+               </div>
+               <p className={`${archetype.color} text-center font-serif italic text-xl tracking-widest animate-pulse`}>
+                   {charge < 100 ? 'CHANNEL THE SOURCE' : 'REALITY BREACH'}
+               </p>
+           </div>
+           
+           <button className="w-full h-full absolute inset-0 opacity-0 cursor-pointer z-30"
+              onMouseDown={() => setShaking(true)} onMouseUp={() => setShaking(false)} onMouseLeave={() => setShaking(false)}
+              onTouchStart={(e) => { e.preventDefault(); setShaking(true); }} onTouchEnd={() => setShaking(false)}
+           />
+       </div>
+   );
+};
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const FinalCast = ({ intention, archetype, audio, onExit }: any) => (
+    <div className="flex flex-col items-center justify-center h-full animate-in zoom-in duration-[3000ms] relative z-10">
+        <div className="relative mb-12">
+            <div className={`absolute inset-0 ${archetype.color.replace('text', 'bg')} blur-[100px] opacity-40 animate-pulse`} />
+            <Check className={`w-48 h-48 ${archetype.color} drop-shadow-[0_0_50px_currentColor]`} />
+        </div>
+        <h1 className="text-4xl font-serif italic text-white tracking-widest mb-6 drop-shadow-lg">SO MOTE IT BE</h1>
+        <p className={`${archetype.color} font-mono text-xs tracking-[0.5em] uppercase`}>Target: {intention}</p>
+        <p className="text-slate-600 font-mono text-[10px] mt-24 animate-pulse">The universe has been recompiled.</p>
+        <button 
+          onClick={onExit}
+          onMouseEnter={() => audio.playClick('standard')}
+          className="mt-12 text-slate-600 hover:text-white font-mono text-xs border-b border-transparent hover:border-white transition-all">
+          [ CLOSE SESSION ]
+        </button>
+    </div>
+);
+
+// --- MAIN COMPONENT ---
+
+export default function RealityPatchSpell({ onExit }: { onExit: () => void }) {
+  const [phase, setPhase] = useState('CONSECRATE'); 
+  const [intention, setIntention] = useState('');
+  const [archetype, setArchetype] = useState(ARCHETYPES.UNK);
+  const [glitchActive, setGlitchActive] = useState(false);
+  
+  const audio = useAudioEngine();
+
+  const getWarpIntensity = () => {
+      switch(phase) {
+          case 'CONSECRATE': return 10;
+          case 'GROUNDING': return 20;
+          case 'INTENTION': return 30;
+          case 'SYMBOLISM': return 50;
+          case 'CHANT': return 80;
+          case 'CHARGE': return 150;
+          case 'CAST': return 500;
+          default: return 0;
+      }
+  };
+
+  const styles = `
+    @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .animate-spin-slow { animation: spin-slow 20s linear infinite; }
+    @keyframes spin-reverse-slower { from { transform: rotate(360deg); } to { transform: rotate(0deg); } }
+    .animate-spin-reverse-slower { animation: spin-reverse-slower 30s linear infinite; }
+  `;
+
+  return (
+    <div className="fixed inset-0 w-full h-screen bg-black text-slate-200 overflow-hidden select-none touch-none font-sans z-50">
+      <style>{styles}</style>
+      <button onClick={onExit} className="absolute top-6 right-6 z-50 text-slate-600 hover:text-white transition-colors">
+        <X size={24}/>
+      </button>
+
+      <WarpBackground intensity={getWarpIntensity()} />
+      <GlitchOverlay active={glitchActive} />
+      
+      <div className="relative z-10 w-full h-full max-w-md mx-auto">
+        <div className="absolute top-0 left-0 w-full p-6 flex justify-between items-start opacity-50 z-20">
+            <div className="flex flex-col font-mono text-[10px] text-slate-500">
+                <span>{new Date().toLocaleTimeString()}</span>
+                <span className={archetype.color}>TYPE: {archetype.theme}</span>
+            </div>
+            <div className="flex flex-col font-mono text-[10px] text-right text-slate-500">
+                <span>PHASE: {phase}</span>
+                <span>STABILITY: {Math.floor(Math.random() * 30) + 70}%</span>
+            </div>
+        </div>
+        
+        <main className="w-full h-full relative z-10">
+            {phase === 'CONSECRATE' && <Consecration setPhase={setPhase} archetype={archetype} audio={audio} />}
+            {phase === 'GROUNDING' && <Grounding setPhase={setPhase} audio={audio} />}
+            {phase === 'INTENTION' && <Inscription setIntention={setIntention} setArchetype={setArchetype} setPhase={setPhase} archetype={archetype} audio={audio} />}
+            {phase === 'SYMBOLISM' && <SymbolicAlignment setPhase={setPhase} archetype={archetype} audio={audio} />}
+            {phase === 'CHANT' && <VocalChant setPhase={setPhase} archetype={archetype} audio={audio} />}
+            {phase === 'CHARGE' && <ChargeAndCast setPhase={setPhase} setGlitchActive={setGlitchActive} archetype={archetype} audio={audio} />}
+            {phase === 'CAST' && <FinalCast intention={intention} archetype={archetype} audio={audio} onExit={onExit} />}
+        </main>
+      </div>
+    </div>
+  );
+}
