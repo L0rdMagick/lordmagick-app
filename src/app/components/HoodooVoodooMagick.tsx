@@ -20,19 +20,49 @@ const FADE_DURATION = 0.8;
 const SENDING_DURATION = 13000; // 13 seconds
 
 // --- Geometry Configuration for Ingredients ---
-// UPDATED: Tightened margins to ensure ingredients stay visually "inside" the glass walls.
+// Calculated based on 1024x1024 source images provided by user
 const CONTAINER_GEOMETRY = {
-    hoodoo: {
-        left: '36.8%',  // Pushed in from left
-        top: '36.5%',   // Pushed down from top
-        width: '22.2%', // Narrower width
-        height: '36.4%' // Shorter height
+    // Hoodoo Jar Empty: W 412, H 578.5, X 315, Y 312.8
+    hoodoo_empty: { 
+        left: '30.76%', 
+        top: '30.55%', 
+        width: '40.23%', 
+        height: '56.49%' 
     },
-    voodoo: {
-        left: '32.6%',  // Pushed in
-        top: '40.7%',   // Pushed down
-        width: '28.0%', // Narrower
-        height: '39.5%' // Shorter
+    // Hoodoo Jar Fixed: W 412, H 578.5, X 315, Y 317.8
+    hoodoo_fixed: { 
+        left: '30.76%', 
+        top: '31.04%', 
+        width: '40.23%', 
+        height: '56.49%' 
+    },
+    // Hoodoo Manifestation: W 292.3, H 410.5, X 372.2, Y 519.3
+    hoodoo_manifestation: { 
+        left: '36.35%', 
+        top: '50.71%', 
+        width: '28.54%', 
+        height: '40.09%' 
+    },
+    // Voodoo Bottle Empty: W 318, H 468.5, X 358.4, Y 472.6
+    voodoo_empty: { 
+        left: '35.00%', 
+        top: '46.15%', 
+        width: '31.05%', 
+        height: '45.75%' 
+    },
+    // Voodoo Bottle Filled: W 282, H 398.5, X 371, Y 394.6
+    voodoo_filled: { 
+        left: '36.23%', 
+        top: '38.54%', 
+        width: '27.54%', 
+        height: '38.92%' 
+    },
+    // Voodoo Manifestation: Using same dims as filled based on visual similarity
+    voodoo_manifestation: { 
+        left: '36.23%', 
+        top: '38.54%', 
+        width: '27.54%', 
+        height: '38.92%' 
     }
 };
 
@@ -66,6 +96,8 @@ interface StepContainerProps { stageTitle?: string; instruction?: string; childr
 interface RitualButtonProps { onClick: () => void; children: React.ReactNode; className?: string; disabled?: boolean; }
 type SpriteData = NonNullable<ReturnType<typeof findSprite>>;
 type MateriaSelection = { name: string; incantation: string; };
+// Geometry keys for the container mapping
+type GeometryVariant = keyof typeof CONTAINER_GEOMETRY;
 
 // --- Main Component ---
 const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }> = ({ session }) => {
@@ -182,7 +214,7 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
                 case 4: return <HoodooStep4_GatherMateria selections={hoodooMateriaSelections} onNext={advanceStep} />;
                 case 5: return <HoodooStep5_FixJar key={`charge-hoodoo-${chargingIndex}`} onNext={handleChargeNext} selections={hoodooMateriaSelections} index={chargingIndex} />;
                 case 6: return <HoodooStep6_SealJar onNext={handleHoodooFinalStep} selections={hoodooMateriaSelections} />;
-                case 7: return <Step7_Sending onNext={handleHoodooFinalStep} petition={petition} />;
+                case 7: return <Step7_Sending onNext={handleHoodooFinalStep} petition={petition} selections={hoodooMateriaSelections} variant="hoodoo_manifestation" image="hoodoo-manifestation-final.png" />;
                 case 8: return <Step8_Manifestation affirmation={finalAffirmation} path={path} onFinish={resetState} />;
                 default: return <div onClick={resetState}>Invalid Step</div>;
             }
@@ -196,7 +228,8 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
                 case 4: return <VoodooStep4_PrepareOffering selections={voodooOfferingSelections} onNext={advanceStep} />;
                 case 5: return <VoodooStep5_MakeOffering key={`charge-voodoo-${chargingIndex}`} onNext={handleChargeNext} selections={voodooOfferingSelections} index={chargingIndex} />;
                 case 6: return <VoodooStep6_SealBottle onNext={handleVoodooFinalStep} selections={voodooOfferingSelections} lwa={selectedLwa} />;
-                case 7: return <Step8_Manifestation affirmation={finalAffirmation} path={path} onFinish={resetState} />;
+                case 7: return <Step7_Sending onNext={handleHoodooFinalStep} petition={petition} selections={voodooOfferingSelections} variant="voodoo_manifestation" image="voodoo-manifestation-final.png" />;
+                case 8: return <Step8_Manifestation affirmation={finalAffirmation} path={path} onFinish={resetState} />;
                 default: return <div onClick={resetState}>Invalid Step</div>;
             }
         }
@@ -268,13 +301,13 @@ const StepContainer: React.FC<StepContainerProps> = ({ stageTitle, instruction, 
 );
 
 // --- Helper Component: FilledContainer ---
-// Uses optimized geometry to prevent ingredient clipping against the invisible box boundaries
+// UPDATED: Accepts 'variant' to pull specific geometry
 const FilledContainer: React.FC<{
-    type: 'hoodoo' | 'voodoo';
+    variant: GeometryVariant;
     items: MateriaSelection[];
     count: number; // How many items to show
-}> = ({ type, items, count }) => {
-    const geometry = CONTAINER_GEOMETRY[type];
+}> = ({ variant, items, count }) => {
+    const geometry = CONTAINER_GEOMETRY[variant];
 
     return (
         <div className="absolute pointer-events-none overflow-hidden" style={{
@@ -296,7 +329,7 @@ const FilledContainer: React.FC<{
                 const col = idx % 2;
                 const row = Math.floor(idx / 2);
                 
-                // Larger size for realistic pile
+                // Larger size for realistic pile (55% of container width)
                 const size = '55%'; 
 
                 // Random jitter
@@ -527,7 +560,12 @@ const HoodooStep5_FixJar: React.FC<{ onNext: () => void, selections: MateriaSele
             <div className="relative w-full h-full max-w-md aspect-square mx-auto">
                 <Image src={`${ASSET_PATH}/hoodoo-jar-empty.png`} alt="Empty Spell Jar" layout="fill" objectFit="contain" priority />
                 
-                <FilledContainer type="hoodoo" items={selections} count={isCharged ? index + 1 : index} />
+                {/* UPDATED: Uses specific 'hoodoo_empty' geometry */}
+                <FilledContainer 
+                    variant="hoodoo_empty" 
+                    items={selections} 
+                    count={isCharged ? index + 1 : index} 
+                />
 
                 {!isCharged && spriteData && (
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-2/3 z-20">
@@ -571,7 +609,8 @@ const HoodooStep6_SealJar: React.FC<{ onNext: () => void, selections: MateriaSel
                     <Image src={`${ASSET_PATH}/hoodoo-jar-fixed.png`} alt="Fixed Jar" layout="fill" objectFit="contain" className="z-0"/>
                     
                     <div className="absolute inset-0 z-10">
-                        <FilledContainer type="hoodoo" items={selections} count={selections.length} />
+                        {/* UPDATED: Uses specific 'hoodoo_fixed' geometry */}
+                        <FilledContainer variant="hoodoo_fixed" items={selections} count={selections.length} />
                     </div>
 
                     {!isSealed && (
@@ -665,7 +704,12 @@ const VoodooStep5_MakeOffering: React.FC<{ onNext: () => void, selections: Mater
             <div className="relative w-full h-full max-w-md aspect-square mx-auto">
                 <Image src={`${ASSET_PATH}/voodoo-offering-bottle.png`} alt="Empty Offering Bottle" layout="fill" objectFit="contain" priority />
                 
-                <FilledContainer type="voodoo" items={selections} count={isCharged ? index + 1 : index} />
+                {/* UPDATED: Uses specific 'voodoo_empty' geometry */}
+                <FilledContainer 
+                    variant="voodoo_empty" 
+                    items={selections} 
+                    count={isCharged ? index + 1 : index} 
+                />
 
                 {!isCharged && spriteData && (
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-2/3 z-20">
@@ -709,7 +753,8 @@ const VoodooStep6_SealBottle: React.FC<{ onNext: () => void; selections: Materia
                     <Image src={`${ASSET_PATH}/voodoo-offering-bottle-filled.png`} alt="Filled Offering Bottle" layout="fill" objectFit="contain" className="z-0" />
                      
                     <div className="absolute inset-0 z-10">
-                        <FilledContainer type="voodoo" items={selections} count={selections.length} />
+                        {/* UPDATED: Uses specific 'voodoo_filled' geometry */}
+                        <FilledContainer variant="voodoo_filled" items={selections} count={selections.length} />
                     </div>
 
                     {!isSealed && (
@@ -725,7 +770,8 @@ const VoodooStep6_SealBottle: React.FC<{ onNext: () => void; selections: Materia
     );
 };
 
-const Step7_Sending: React.FC<{onNext: () => void, petition: string}> = ({ onNext, petition }) => {
+// Updated Step7_Sending to include the ingredient container persistence
+const Step7_Sending: React.FC<{onNext: () => void, petition: string, selections: MateriaSelection[], variant: GeometryVariant, image: string}> = ({ onNext, petition, selections, variant, image }) => {
     useEffect(() => {
         const timer = setTimeout(onNext, SENDING_DURATION);
         return () => clearTimeout(timer);
@@ -734,7 +780,13 @@ const Step7_Sending: React.FC<{onNext: () => void, petition: string}> = ({ onNex
     return(
         <StepContainer stageTitle="Sending the Work" instruction="Your spell is being sent by a great magick into the essence of the all.">
             <div className="w-96 h-96 relative flex items-center justify-center">
-                <Image src={`${ASSET_PATH}/hoodoo-manifestation-final.png`} alt="Final Manifestation" layout="fill" objectFit="contain" />
+                <Image src={`${ASSET_PATH}/${image}`} alt="Final Manifestation" layout="fill" objectFit="contain" />
+                
+                {/* Persistence of ingredients into the final sending image */}
+                <div className="absolute inset-0 z-10">
+                    <FilledContainer variant={variant} items={selections} count={selections.length} />
+                </div>
+
                 <AnimatePresence>
                     <motion.p initial={{opacity: 0, y: 50}} animate={{opacity: [0, 0.7, 0.7, 0], y: -150}} transition={{duration: SENDING_DURATION/1000, ease: 'linear', repeat: Infinity}} className="absolute w-64 text-center text-amber-100/80 italic whitespace-pre-line z-20">
                         {petition}
