@@ -214,7 +214,7 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
                 case 4: return <HoodooStep4_GatherMateria selections={hoodooMateriaSelections} onNext={advanceStep} />;
                 case 5: return <HoodooStep5_FixJar key={`charge-hoodoo-${chargingIndex}`} onNext={handleChargeNext} selections={hoodooMateriaSelections} index={chargingIndex} />;
                 case 6: return <HoodooStep6_SealJar onNext={handleHoodooFinalStep} selections={hoodooMateriaSelections} />;
-                case 7: return <Step7_Sending onNext={handleHoodooFinalStep} petition={petition} selections={hoodooMateriaSelections} variant="hoodoo_manifestation" image="hoodoo-manifestation-final.png" />;
+                case 7: return <Step7_Sending onNext={handleHoodooFinalStep} petition={petition} selections={hoodooMateriaSelections} variant="hoodoo_manifestation" image="hoodoo-manifestation-final.gif" />;
                 case 8: return <Step8_Manifestation affirmation={finalAffirmation} path={path} onFinish={resetState} />;
                 default: return <div onClick={resetState}>Invalid Step</div>;
             }
