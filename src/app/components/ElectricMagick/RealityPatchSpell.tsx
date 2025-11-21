@@ -1,4 +1,4 @@
-// --- START OF FILE src/app/components/ElectricMagick/RealityPatchSpell.tsx ---
+// --- START  OF FILE src/app/components/ElectricMagick/RealityPatchSpell.tsx ---
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
