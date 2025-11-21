@@ -798,7 +798,7 @@ const Step7_Sending: React.FC<{onNext: () => void, petition: string, selections:
 };
 
 const Step8_Manifestation: React.FC<{ affirmation: string, path: RitualPath, onFinish: () => void }> = ({ affirmation, path, onFinish }) => {
-    const finalImage = path === 'hoodoo' ? 'hoodoo-manifestation-final.png' : 'voodoo-manifestation-final.png';
+    const finalImage = path === 'hoodoo' ? 'hoodoo-manifestation-final.gif' : 'voodoo-manifestation-final.png';
     const particles = useMemo(() => Array.from({ length: 20 }).map((_, i) => ({
         id: i,
         x: (Math.random() - 0.5) * 400,
