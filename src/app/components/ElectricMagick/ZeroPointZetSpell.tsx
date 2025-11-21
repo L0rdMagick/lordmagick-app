@@ -201,7 +201,7 @@ const StabilizationStage = ({ onComplete, playTone, modulateFilter }: { onComple
         if (dist < 15) {
             // Slower lock accumulation (0.4 per tick instead of 1)
             setLockedTime(prev => {
-                const next = prev + 0.4;
+                const next = prev + 1.1;
                 if (next > 100) onComplete();
                 return next;
             });
