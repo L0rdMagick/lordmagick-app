@@ -1,13 +1,234 @@
-// --- START  OF FILE src/app/components/ElectricMagick/RealityPatchSpell.tsx ---
+// --- START OF FILE src/app/components/ElectricMagick/RealityPatchSpell.tsx ---
 "use client";
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { 
   Heart, DollarSign, Sun, Shield, Star, Fingerprint, Activity, Check, Eye, X,
   Moon, Triangle, Hexagon, Sparkles 
 } from 'lucide-react';
-import { useAudioEngine } from './hooks'; 
 import { generateElectricEnsorcellment } from '@/lib/services/geminiService';
+
+// --- INTERNAL HOOKS (Self-Contained to prevent dependency errors) ---
+
+const useAudioEngine = () => {
+  const ctxRef = useRef<AudioContext | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const oscRef = useRef<any>(null); 
+  const gainRef = useRef<GainNode | null>(null);
+
+  const initAudio = useCallback(() => {
+    if (typeof window !== 'undefined' && !ctxRef.current) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+      if (AudioContext) ctxRef.current = new AudioContext();
+    }
+    if (ctxRef.current && ctxRef.current.state === 'suspended') {
+      ctxRef.current.resume();
+    }
+  }, []);
+
+  const playClick = useCallback((type = 'standard') => {
+    if (!ctxRef.current) initAudio();
+    const ctx = ctxRef.current!;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    if (type === 'heavy') {
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(100, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(10, ctx.currentTime + 0.1);
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.1);
+    } else if (type === 'metallic') {
+      // Reverb blip simulation
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(2000, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(500, ctx.currentTime + 0.1);
+      gain.gain.setValueAtTime(0.1, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.1);
+    } else {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(800, ctx.currentTime);
+      gain.gain.setValueAtTime(0.05, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.05);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.05);
+    }
+  }, [initAudio]);
+
+  const startLoop = useCallback((type: string) => {
+    if (!ctxRef.current) initAudio();
+    const ctx = ctxRef.current!;
+    if (oscRef.current) { try { if(oscRef.current.stop) oscRef.current.stop(); } catch(e){ /**/ } oscRef.current = null; }
+
+    const masterGain = ctx.createGain();
+    masterGain.connect(ctx.destination);
+    gainRef.current = masterGain;
+
+    if (type === 'drone') {
+      const osc = ctx.createOscillator();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(40, ctx.currentTime);
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(100, ctx.currentTime);
+      osc.connect(filter);
+      filter.connect(masterGain);
+      masterGain.gain.setValueAtTime(0, ctx.currentTime);
+      masterGain.gain.linearRampToValueAtTime(0.2, ctx.currentTime + 1); 
+      osc.start();
+      oscRef.current = osc;
+    } else if (type === 'breath') {
+      const bufferSize = ctx.sampleRate * 2;
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+      const noise = ctx.createBufferSource();
+      noise.buffer = buffer;
+      noise.loop = true;
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.Q.value = 5;
+      filter.frequency.setValueAtTime(200, ctx.currentTime); 
+      noise.connect(filter);
+      filter.connect(masterGain);
+      masterGain.gain.value = 0.15;
+      noise.start();
+      oscRef.current = { stop: () => noise.stop(), filter: filter };
+    } else if (type === 'burn') {
+      const osc = ctx.createOscillator();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(50, ctx.currentTime);
+      const lfo = ctx.createOscillator();
+      lfo.type = 'square';
+      lfo.frequency.value = 20; 
+      const lfoGain = ctx.createGain();
+      lfoGain.gain.value = 500;
+      lfo.connect(lfoGain);
+      lfoGain.connect(osc.frequency);
+      lfo.start();
+      osc.connect(masterGain);
+      masterGain.gain.setValueAtTime(0.1, ctx.currentTime);
+      osc.start();
+      oscRef.current = { stop: () => { osc.stop(); lfo.stop(); } };
+    } else if (type === 'chant') {
+      const osc1 = ctx.createOscillator();
+      const osc2 = ctx.createOscillator();
+      osc1.type = 'sine'; osc2.type = 'triangle';
+      osc1.frequency.value = 100; osc2.frequency.value = 200; 
+      const tremolo = ctx.createOscillator();
+      tremolo.frequency.value = 4; 
+      const tremoloGain = ctx.createGain();
+      tremoloGain.gain.value = 0.5;
+      tremolo.connect(tremoloGain);
+      tremoloGain.connect(masterGain.gain);
+      osc1.connect(masterGain);
+      osc2.connect(masterGain);
+      osc1.start(); osc2.start(); tremolo.start();
+      masterGain.gain.setValueAtTime(0.1, ctx.currentTime);
+      oscRef.current = { stop: () => { osc1.stop(); osc2.stop(); tremolo.stop(); } };
+    } else if (type === 'charge') {
+      const osc = ctx.createOscillator();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(100, ctx.currentTime); 
+      osc.connect(masterGain);
+      masterGain.gain.value = 0.1;
+      osc.start();
+      oscRef.current = osc;
+    }
+  }, [initAudio]);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const updateLoop = useCallback((progress: any, type: string) => {
+    if (!ctxRef.current || !oscRef.current) return;
+    const ctx = ctxRef.current;
+
+    if (type === 'drone') {
+      if (oscRef.current.frequency) oscRef.current.frequency.setTargetAtTime(40 + (progress * 2), ctx.currentTime, 0.1);
+    } else if (type === 'breath') {
+       let freq;
+       if (progress === 'INHALE') freq = 800;
+       else if (progress === 'HOLD') freq = 800;
+       else freq = 200;
+       oscRef.current.filter.frequency.setTargetAtTime(freq, ctx.currentTime, 2);
+    } else if (type === 'charge') {
+       if (oscRef.current.frequency) {
+           oscRef.current.frequency.setTargetAtTime(100 + (progress * 10), ctx.currentTime, 0.1);
+           if(gainRef.current) gainRef.current.gain.setTargetAtTime(0.1 + (progress/200), ctx.currentTime, 0.1);
+       }
+    } else if (type === 'burn') {
+       // Increase pitch and LFO rate with progress
+       // Note: Simple pitch shift for the burn effect
+    }
+  }, []);
+
+  const stopLoop = useCallback(() => {
+    if (gainRef.current && ctxRef.current) {
+      gainRef.current.gain.setTargetAtTime(0, ctxRef.current.currentTime, 0.1);
+      setTimeout(() => {
+        if (oscRef.current) {
+            try { if(oscRef.current.stop) oscRef.current.stop(); } catch(e){ /**/ }
+            oscRef.current = null;
+        }
+      }, 200);
+    }
+  }, []);
+
+  const playSuccess = useCallback(() => {
+      if (!ctxRef.current) initAudio();
+      const ctx = ctxRef.current!;
+      [261.63, 329.63, 392.00, 523.25].forEach((freq, i) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.value = freq;
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          gain.gain.setValueAtTime(0, ctx.currentTime);
+          gain.gain.linearRampToValueAtTime(0.1, ctx.currentTime + 0.1 + (i*0.05));
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 3);
+          osc.start();
+          osc.stop(ctx.currentTime + 3.5);
+      });
+  }, [initAudio]);
+
+  const playCastBoom = useCallback(() => {
+      if (!ctxRef.current) initAudio();
+      const ctx = ctxRef.current!;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(150, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(30, ctx.currentTime + 1);
+      gain.gain.setValueAtTime(1, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.5);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 1.5);
+      
+      const bufferSize = ctx.sampleRate * 1.5; 
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+      const noise = ctx.createBufferSource();
+      noise.buffer = buffer;
+      const noiseGain = ctx.createGain();
+      noiseGain.gain.setValueAtTime(0.5, ctx.currentTime);
+      noiseGain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1);
+      noise.connect(noiseGain);
+      noiseGain.connect(ctx.destination);
+      noise.start();
+  }, [initAudio]);
+
+  return { playClick, startLoop, updateLoop, stopLoop, playSuccess, playCastBoom };
+};
 
 // --- UTILITY & CONSTANTS ---
 
@@ -88,7 +309,7 @@ const Consecration = ({ setPhase, archetype, audio }: any) => {
                     // Switch to void stage immediately
                     setStage('void');
                     audio.playSuccess(); // Transition sound
-                    if (navigator.vibrate) navigator.vibrate([50, 50]);
+                    if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate([50, 50]);
                     return 100;
                 }
                 return next;
@@ -101,14 +322,14 @@ const Consecration = ({ setPhase, archetype, audio }: any) => {
                 if (next >= 100) {
                     clearInterval(interval);
                     audio.playCastBoom();
-                    if (navigator.vibrate) navigator.vibrate([200, 100, 500]);
+                    if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate([200, 100, 500]);
                     setPhase('GROUNDING');
                     return 100;
                 }
                 return next;
             });
         }
-        if (navigator.vibrate) navigator.vibrate(stage === 'consecrate' ? 5 : 15);
+        if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(stage === 'consecrate' ? 5 : 15);
       }, 20);
     } else {
         // Decay if let go
@@ -246,7 +467,6 @@ const Grounding = ({ setPhase, audio }: any) => {
       return "EXHALE DEMONS";
   }
 
-  // Fix: Circle starts small on inhale and grows
   const guideStyle = {
     transform: breathState === 'INHALE' ? 'scale(1.5)' : breathState === 'EXHALE' ? 'scale(0.5)' : 'scale(1.5)',
     opacity: breathState === 'INHALE' ? 1 : breathState === 'EXHALE' ? 0.4 : 0.8,
@@ -291,9 +511,6 @@ const Inscription = ({ setIntention, setArchetype, setPhase, archetype, audio, s
       setIntention(text);
 
       try {
-          // Generate custom poetry and latin based on the user's desire
-          // Note: Assuming generateElectricEnsorcellment can handle a custom prompt or we use a generic one.
-          // We will format the prompt to ask for specific structure.
           const prompt = `For a chaos magick spell regarding "${text}", write two things separated by a pipe symbol (|). 
           1. A short, cryptic, mystical poem (4 lines max) about this desire manifesting. 
           2. A short Latin incantation command for this desire. 
@@ -310,7 +527,6 @@ const Inscription = ({ setIntention, setArchetype, setPhase, archetype, audio, s
           setPhase('AGREEMENT');
       } catch (e) {
           console.error(e);
-          // Fallback if AI fails
           setAiData({
               poetry: "The ether shifts to accommodate the will.",
               latin: "Fiat Voluntas Tua"
@@ -379,14 +595,12 @@ const Etching = ({ setPhase, archetype, audio, aiData }: any) => {
   const [isHolding, setIsHolding] = useState(false);
   const [hasFinished, setHasFinished] = useState(false);
   
-  // Derived visuals based on progress
-  const duration = 13000; // 13 seconds
+  const duration = 13000; 
   const colorPalette = ['#ffffff', '#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899'];
   
-  // Calculate dynamic properties
   const colorIndex = Math.floor((progress / 100) * colorPalette.length * 2) % colorPalette.length;
   const currentColor = colorPalette[colorIndex];
-  const rotationSpeed = 2 + (progress / 100) * 10; // Speed increases
+  const rotationSpeed = 2 + (progress / 100) * 10; 
 
   useEffect(() => {
       if (isHolding && !hasFinished) {
@@ -398,21 +612,9 @@ const Etching = ({ setPhase, archetype, audio, aiData }: any) => {
   }, [isHolding, hasFinished, audio]);
 
   useEffect(() => {
-      let startTime: number;
-      let animFrame: number;
-
-      const animate = (time: number) => {
-          if (!startTime) startTime = time;
-          // If we were pausing (not holding), we need to adjust logic to resume, 
-          // but for simplicity in this React effect, we'll just increment a state counter in a setInterval 
-          // to match previous patterns, but scale it to 13s.
-      };
-      
-      // Using interval for consistent state updates matching the requested 13s
       let interval: NodeJS.Timeout;
-      
       if (isHolding && !hasFinished) {
-          const step = 100 / (duration / 20); // progress per 20ms tick
+          const step = 100 / (duration / 20); 
           interval = setInterval(() => {
               setProgress(p => {
                   const next = p + step;
@@ -422,20 +624,16 @@ const Etching = ({ setPhase, archetype, audio, aiData }: any) => {
                   }
                   return next;
               });
-              // Audio modulation based on speed
               audio.updateLoop(progress, 'burn');
           }, 20);
       }
-
       return () => clearInterval(interval);
-  }, [isHolding, hasFinished, progress, audio]);
+  }, [isHolding, hasFinished, progress, audio, duration]);
 
-  // Generate a sigil path
   const sigilPath = "M100,20 L150,120 L50,120 Z M100,150 L100,50 M50,80 L150,80";
 
   return (
     <div className="flex flex-col items-center justify-center h-full space-y-8 relative z-10">
-      {/* Magickal Poetry Display */}
       <div className="absolute top-10 w-full px-4 text-center pointer-events-none">
           <p className={`font-serif text-lg md:text-2xl leading-relaxed transition-all duration-300 ${isHolding ? 'opacity-100 blur-0' : 'opacity-30 blur-sm'}`} 
              style={{ color: currentColor, textShadow: `0 0 10px ${currentColor}` }}>
@@ -449,12 +647,11 @@ const Etching = ({ setPhase, archetype, audio, aiData }: any) => {
            <path d={sigilPath} stroke={currentColor} strokeWidth="3" fill="none"
             className="transition-all duration-75"
             strokeDasharray="1000" 
-            strokeDashoffset={1000 - (1000 * ((progress * 5) % 100) / 100)} // Loops the tracing
+            strokeDashoffset={1000 - (1000 * ((progress * 5) % 100) / 100)} 
             style={{ filter: 'drop-shadow(0 0 5px currentColor)' }}
           />
         </svg>
         
-        {/* Spinning overlay to show velocity */}
         <div className="absolute inset-0 border-2 border-dashed border-white/20 rounded-full"
              style={{ animation: `spin-slow ${15 / rotationSpeed}s linear infinite` }} />
       </div>
@@ -503,15 +700,12 @@ const VocalChant = ({ setPhase, archetype, audio, aiData }: any) => {
         return () => audio.stopLoop();
     }, [chanting, audio]);
 
-    // Use AI Latin
-    const words = useMemo(() => aiData.latin.toUpperCase().split(' '), [aiData.latin]);
-
     useEffect(() => {
         let interval: NodeJS.Timeout;
         if (chanting && charge < 100) {
             interval = setInterval(() => {
-                setCharge(c => c + 0.5); // Slower build up
-                if (navigator.vibrate && charge % 20 === 0) navigator.vibrate(20);
+                setCharge(c => c + 0.5); 
+                if (typeof navigator !== 'undefined' && navigator.vibrate && charge % 20 === 0) navigator.vibrate(20);
             }, 30);
         } else if (!chanting && charge > 0) {
             setCharge(0); 
@@ -519,7 +713,7 @@ const VocalChant = ({ setPhase, archetype, audio, aiData }: any) => {
 
         if (charge >= 100) {
             audio.playSuccess();
-            if (navigator.vibrate) navigator.vibrate([100, 100, 100]);
+            if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate([100, 100, 100]);
             setTimeout(() => setPhase('CHARGE'), 1000);
         }
         return () => clearInterval(interval);
@@ -535,7 +729,6 @@ const VocalChant = ({ setPhase, archetype, audio, aiData }: any) => {
             </div>
 
             <div className="relative w-64 h-64 flex items-center justify-center">
-                 {/* Unique Visual: Pulsating Rune Ring */}
                  <div className={`absolute inset-0 rounded-full border-4 border-double ${archetype.border} opacity-50`} 
                       style={{ transform: `scale(${1 + (charge/200)})` }} />
                  
@@ -584,7 +777,7 @@ const ChargeAndCast = ({ setPhase, setGlitchActive, archetype, audio }: any) => 
             audio.updateLoop(next, 'charge'); 
             return next;
          });
-         if (navigator.vibrate && Math.random() > 0.7) navigator.vibrate(10); 
+         if (typeof navigator !== 'undefined' && navigator.vibrate && Math.random() > 0.7) navigator.vibrate(10); 
        }, 20);
      } else if (!shaking && charge > 0 && charge < 100) {
        interval = setInterval(() => {
@@ -597,12 +790,15 @@ const ChargeAndCast = ({ setPhase, setGlitchActive, archetype, audio }: any) => 
    useEffect(() => {
      if (charge >= 100) {
         audio.playCastBoom(); 
-        if (navigator.vibrate) navigator.vibrate([500, 200, 500, 200, 1000]);
+        if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate([500, 200, 500, 200, 1000]);
         setGlitchActive(true);
         const timeout = setTimeout(() => setPhase('CAST'), 3000);
         return () => clearTimeout(timeout);
      }
    }, [charge, setPhase, setGlitchActive, audio]);
+
+   // THE FIX: Assign the component to a variable before using it in JSX
+   const IconComponent = archetype.icon;
 
    return (
        <div className={`flex flex-col items-center justify-center h-full space-y-12 relative z-10`}
@@ -614,8 +810,7 @@ const ChargeAndCast = ({ setPhase, setGlitchActive, archetype, audio }: any) => 
                <div className={`absolute inset-0 rounded-full bg-linear-to-tr from-black via-transparent to-${archetype.theme === 'VENUS' ? 'rose' : 'cyan'}-900 animate-spin-slow blur-xl opacity-80`} />
                
                <div className="absolute inset-0 flex items-center justify-center">
-                   {/* Center figure matches archetype */}
-                   <archetype.icon 
+                   <IconComponent 
                       className={`text-white drop-shadow-[0_0_30px_currentColor] transition-all duration-100`}
                       style={{ 
                           width: `${60 + charge}px`, 
@@ -731,3 +926,4 @@ export default function RealityPatchSpell({ onExit }: { onExit: () => void }) {
     </div>
   );
 }
+// --- END OF FILE ---
