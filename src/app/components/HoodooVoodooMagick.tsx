@@ -96,7 +96,6 @@ interface StepContainerProps { stageTitle?: string; instruction?: string; childr
 interface RitualButtonProps { onClick: () => void; children: React.ReactNode; className?: string; disabled?: boolean; }
 type SpriteData = NonNullable<ReturnType<typeof findSprite>>;
 type MateriaSelection = { name: string; incantation: string; };
-// Geometry keys for the container mapping
 type GeometryVariant = keyof typeof CONTAINER_GEOMETRY;
 
 // --- Main Component ---
@@ -214,8 +213,8 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
                 case 4: return <HoodooStep4_GatherMateria selections={hoodooMateriaSelections} onNext={advanceStep} />;
                 case 5: return <HoodooStep5_FixJar key={`charge-hoodoo-${chargingIndex}`} onNext={handleChargeNext} selections={hoodooMateriaSelections} index={chargingIndex} />;
                 case 6: return <HoodooStep6_SealJar onNext={handleHoodooFinalStep} selections={hoodooMateriaSelections} />;
-                case 7: return <Step7_Sending onNext={handleHoodooFinalStep} petition={petition} selections={hoodooMateriaSelections} variant="hoodoo_manifestation" image="hoodoo-manifestation-final.gif" />;
-                case 8: return <Step8_Manifestation affirmation={finalAffirmation} path={path} onFinish={resetState} />;
+                case 7: return <Step7_Sending onNext={handleHoodooFinalStep} petition={petition} selections={hoodooMateriaSelections} variant="hoodoo_manifestation" image="hoodoo-manifestation-final.gif" />; // Updated to gif
+                case 8: return <Step8_Manifestation affirmation={finalAffirmation} path={path} selections={hoodooMateriaSelections} onFinish={resetState} />; // Pass selections
                 default: return <div onClick={resetState}>Invalid Step</div>;
             }
         }
@@ -229,7 +228,7 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
                 case 5: return <VoodooStep5_MakeOffering key={`charge-voodoo-${chargingIndex}`} onNext={handleChargeNext} selections={voodooOfferingSelections} index={chargingIndex} />;
                 case 6: return <VoodooStep6_SealBottle onNext={handleVoodooFinalStep} selections={voodooOfferingSelections} lwa={selectedLwa} />;
                 case 7: return <Step7_Sending onNext={handleHoodooFinalStep} petition={petition} selections={voodooOfferingSelections} variant="voodoo_manifestation" image="voodoo-manifestation-final.png" />;
-                case 8: return <Step8_Manifestation affirmation={finalAffirmation} path={path} onFinish={resetState} />;
+                case 8: return <Step8_Manifestation affirmation={finalAffirmation} path={path} selections={voodooOfferingSelections} onFinish={resetState} />; // Pass selections
                 default: return <div onClick={resetState}>Invalid Step</div>;
             }
         }
@@ -780,7 +779,7 @@ const Step7_Sending: React.FC<{onNext: () => void, petition: string, selections:
     return(
         <StepContainer stageTitle="Sending the Work" instruction="Your spell is being sent by a great magick into the essence of the all.">
             <div className="w-96 h-96 relative flex items-center justify-center">
-                <Image src={`${ASSET_PATH}/${image}`} alt="Final Manifestation" layout="fill" objectFit="contain" />
+                <Image src={`${ASSET_PATH}/${image}`} alt="Final Manifestation" layout="fill" objectFit="contain" unoptimized={image.endsWith('.gif')} />
                 
                 {/* Persistence of ingredients into the final sending image */}
                 <div className="absolute inset-0 z-10">
@@ -797,8 +796,9 @@ const Step7_Sending: React.FC<{onNext: () => void, petition: string, selections:
     );
 };
 
-const Step8_Manifestation: React.FC<{ affirmation: string, path: RitualPath, onFinish: () => void }> = ({ affirmation, path, onFinish }) => {
+const Step8_Manifestation: React.FC<{ affirmation: string, path: RitualPath, onFinish: () => void, selections?: MateriaSelection[] }> = ({ affirmation, path, onFinish, selections = [] }) => {
     const finalImage = path === 'hoodoo' ? 'hoodoo-manifestation-final.gif' : 'voodoo-manifestation-final.png';
+    const variant = path === 'hoodoo' ? 'hoodoo_manifestation' : 'voodoo_manifestation';
     const particles = useMemo(() => Array.from({ length: 20 }).map((_, i) => ({
         id: i,
         x: (Math.random() - 0.5) * 400,
@@ -811,7 +811,13 @@ const Step8_Manifestation: React.FC<{ affirmation: string, path: RitualPath, onF
         <StepContainer stageTitle={path === 'hoodoo' ? "The Work is Done" : "The Lwa is Served"} button={<RitualButton onClick={onFinish}>Return</RitualButton>}>
             <div className="flex flex-row items-center justify-center gap-2 md:gap-8 w-full max-w-4xl">
                 <div className="relative w-1/2 aspect-square">
-                    <Image src={`${ASSET_PATH}/${finalImage}`} alt="Final Manifestation" layout="fill" objectFit="contain" />
+                    <Image src={`${ASSET_PATH}/${finalImage}`} alt="Final Manifestation" layout="fill" objectFit="contain" unoptimized={finalImage.endsWith('.gif')} />
+                    
+                    {/* Ingredient Overlay in Final Step */}
+                    <div className="absolute inset-0 z-10">
+                        <FilledContainer variant={variant} items={selections} count={selections.length} />
+                    </div>
+
                     {path === 'voodoo' && (
                         <div className="absolute inset-0 overflow-hidden pointer-events-none">
                             {particles.map(p => (
