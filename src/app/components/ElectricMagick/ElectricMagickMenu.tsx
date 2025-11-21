@@ -2,11 +2,12 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Zap, Orbit, Eye, Activity, Triangle } from 'lucide-react';
+import { Zap, Orbit, Eye, Activity, Triangle, SquareActivity } from 'lucide-react';
 import VoidGateSpell from './VoidGateSpell';
 import DataScryingSpell from './DataScryingSpell';
 import NeuralLinkSpell from './NeuralLinkSpell'; 
-import LightPrismSpell from './LightPrismSpell'; 
+import LightPrismSpell from './LightPrismSpell';
+import RealityPatchSpell from './RealityPatchSpell'; // IMPORT NEW SPELL
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const SpellCard = ({ title, desc, icon: Icon, onClick, disabled }: { title: string, desc: string, icon: any, onClick?: () => void, disabled?: boolean }) => (
@@ -33,8 +34,9 @@ export default function ElectricMagickMenu() {
 
   if (activeSpell === 'void-gate') return <VoidGateSpell onExit={() => setActiveSpell(null)} />;
   if (activeSpell === 'data-scry') return <DataScryingSpell onExit={() => setActiveSpell(null)} />;
-  if (activeSpell === 'neural-link') return <NeuralLinkSpell onExit={() => setActiveSpell(null)} />; // ADD RENDER LOGIC
-  if (activeSpell === 'light-prism') return <LightPrismSpell onExit={() => setActiveSpell(null)} />;
+  if (activeSpell === 'neural-link') return <NeuralLinkSpell onExit={() => setActiveSpell(null)} />;
+  if (activeSpell === 'light-prism') return <LightPrismSpell onExit={() => setActiveSpell(null)} />; 
+  if (activeSpell === 'reality-patch') return <RealityPatchSpell onExit={() => setActiveSpell(null)} />; // RENDER NEW SPELL
 
   return (
     <div className="min-h-screen bg-black text-gray-200 font-sans selection:bg-purple-900 selection:text-white relative overflow-hidden">
@@ -76,7 +78,6 @@ export default function ElectricMagickMenu() {
             onClick={() => setActiveSpell('data-scry')}
           />
 
-          {/* UNLOCKED */}
           <SpellCard 
             title="Neural Link"
             desc="Bind two minds across the network through synchronized frequency modulation."
@@ -84,12 +85,19 @@ export default function ElectricMagickMenu() {
             onClick={() => setActiveSpell('neural-link')}
           />
 
-          {/* UNLOCKED */}
           <SpellCard 
             title="Light Prism"
             desc="Refract your intention through digital spectrums to manifest color magick."
             icon={Triangle}
             onClick={() => setActiveSpell('light-prism')} 
+          />
+
+          {/* THE REALITY PATCH */}
+          <SpellCard 
+            title="The Reality Patch"
+            desc="Inject a new intention directly into the source code of the universe through bio-rhythmic crystallization."
+            icon={SquareActivity}
+            onClick={() => setActiveSpell('reality-patch')} 
           />
           
         </div>
