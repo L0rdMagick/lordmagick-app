@@ -7,7 +7,7 @@ import {
   Moon, Triangle, Hexagon 
 } from 'lucide-react';
 
-// --- AUDIO ENGINE (Procedural Sound Generation) ---
+// --- AUDIO ENGINE (Original Implementation) ---
 const useAudioEngine = () => {
   const ctxRef = useRef<AudioContext | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

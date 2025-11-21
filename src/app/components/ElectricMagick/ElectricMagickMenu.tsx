@@ -2,12 +2,13 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Zap, Orbit, Eye, Activity, Triangle, SquareActivity } from 'lucide-react';
+import { Zap, Orbit, Eye, Activity, Triangle, SquareActivity, Terminal } from 'lucide-react';
 import VoidGateSpell from './VoidGateSpell';
 import DataScryingSpell from './DataScryingSpell';
 import NeuralLinkSpell from './NeuralLinkSpell'; 
 import LightPrismSpell from './LightPrismSpell';
-import RealityPatchSpell from './RealityPatchSpell'; // IMPORT NEW SPELL
+import RealityPatchSpell from './RealityPatchSpell'; 
+import ZeroPointZetSpell from './ZeroPointZetSpell'; // IMPORT NEW SPELL
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const SpellCard = ({ title, desc, icon: Icon, onClick, disabled }: { title: string, desc: string, icon: any, onClick?: () => void, disabled?: boolean }) => (
@@ -36,7 +37,8 @@ export default function ElectricMagickMenu() {
   if (activeSpell === 'data-scry') return <DataScryingSpell onExit={() => setActiveSpell(null)} />;
   if (activeSpell === 'neural-link') return <NeuralLinkSpell onExit={() => setActiveSpell(null)} />;
   if (activeSpell === 'light-prism') return <LightPrismSpell onExit={() => setActiveSpell(null)} />; 
-  if (activeSpell === 'reality-patch') return <RealityPatchSpell onExit={() => setActiveSpell(null)} />; // RENDER NEW SPELL
+  if (activeSpell === 'reality-patch') return <RealityPatchSpell onExit={() => setActiveSpell(null)} />; 
+  if (activeSpell === 'zero-point-zet') return <ZeroPointZetSpell onExit={() => setActiveSpell(null)} />; // RENDER NEW SPELL
 
   return (
     <div className="min-h-screen bg-black text-gray-200 font-sans selection:bg-purple-900 selection:text-white relative overflow-hidden">
@@ -92,12 +94,19 @@ export default function ElectricMagickMenu() {
             onClick={() => setActiveSpell('light-prism')} 
           />
 
-          {/* THE REALITY PATCH */}
           <SpellCard 
             title="The Reality Patch"
             desc="Inject a new intention directly into the source code of the universe through bio-rhythmic crystallization."
             icon={SquareActivity}
             onClick={() => setActiveSpell('reality-patch')} 
+          />
+
+          {/* THE NEW ZER0 P0INT ZET SPELL */}
+          <SpellCard 
+            title="Zer0 P0int Zet"
+            desc="Hack the subatomic layer. A high-intensity, resistance-based ritual to overwrite local reality parameters."
+            icon={Terminal}
+            onClick={() => setActiveSpell('zero-point-zet')} 
           />
           
         </div>
