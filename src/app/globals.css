@@ -35,7 +35,6 @@
 }
 
 .pentagram-path {
-  /* A generous estimation of the SVG path length */
   stroke-dasharray: 1000;
   stroke-dashoffset: 1000;
 }
@@ -47,12 +46,8 @@
 
 
 /* === BEGIN AI TAROT READER STYLES === */
+#vapiAudio { display: none; }
 
-#vapiAudio {
-    display: none;
-}
-
-/* Loading Spinner */
 .loading-container .loading-spinner {
     position: fixed;
     bottom: 20px;
@@ -87,9 +82,7 @@
     color: #333;
     font-weight: bold;
 }
-.loading-container .hidden {
-    display: none;
-}
+.loading-container .hidden { display: none; }
 
 /* Vapi Button Styling */
 #vapi-support-btn {
@@ -105,13 +98,8 @@
     background-color: transparent !important;
 }
 
-#vapi-support-btn > div {
-  background-color: transparent !important;
-}
-
-#vapi-support-btn > div > svg {
-  display: none !important;
-}
+#vapi-support-btn > div { background-color: transparent !important; }
+#vapi-support-btn > div > svg { display: none !important; }
 
 .vapi-overlay {
     position: fixed;
@@ -122,8 +110,6 @@
     animation: wobble 3s infinite ease-in-out;
 }
 
-
-/* Vapi Button Text Styling */
 #vapi-title, #vapi-subtitle {
     background-color: rgba(0, 0, 0, 0.6);
     text-align: center;
@@ -131,10 +117,7 @@
     padding: 8px 12px;
     border-radius: 10px;
 }
-#vapi-subtitle {
-    font-size: 16px !important;
-    margin-top: 5px;
-}
+#vapi-subtitle { font-size: 16px !important; margin-top: 5px; }
 #vapi-title-container {
     display: flex;
     flex-direction: column;
@@ -161,11 +144,7 @@
     padding: 8px !important;
     box-sizing: border-box !important;
 }
-#vapi-icon-container > img {
-    width: 100% !important;
-    height: 100% !important;
-    object-fit: contain !important;
-}
+#vapi-icon-container > img { width: 100% !important; height: 100% !important; object-fit: contain !important; }
 
 /* Card Styles */
 .card-container {
@@ -177,7 +156,7 @@
     justify-content: center !important;
     align-items: center !important;
     box-sizing: border-box !important;
-    aspect-ratio: 2 / 3; /* Maintain tarot card aspect ratio */
+    aspect-ratio: 2 / 3;
 }
 .card-image, .card-cover {
     backface-visibility: hidden !important;
@@ -187,23 +166,10 @@
     height: 100%;
     object-fit: cover;
 }
-.card-cover {
-    position: absolute;
-    opacity: 1;
-}
-.card-image {
-    position: relative;
-    opacity: 0;
-    transform: rotateY(180deg);
-}
-.card-container.flipped .card-cover {
-    transform: rotateY(-180deg);
-    opacity: 0;
-}
-.card-container.flipped .card-image {
-    transform: rotateY(0deg);
-    opacity: 1;
-}
+.card-cover { position: absolute; opacity: 1; }
+.card-image { position: relative; opacity: 0; transform: rotateY(180deg); }
+.card-container.flipped .card-cover { transform: rotateY(-180deg); opacity: 0; }
+.card-container.flipped .card-image { transform: rotateY(0deg); opacity: 1; }
 
 .card-enlarged-backdrop {
   position: fixed;
@@ -239,7 +205,6 @@
   object-fit: contain;
 }
 
-/* Wobble Animation */
 @keyframes wobble {
     0%, 100% { transform: rotate(0deg); }
     20% { transform: rotate(0.7deg); }
@@ -248,7 +213,6 @@
     80% { transform: rotate(-0.3deg); }
 }
 
-/* Modal styles */
 .modal {
     display: none;
     position: fixed;
@@ -286,14 +250,36 @@
     border-radius: 5px;
     transition: background-color 0.2s;
 }
-.modal-content button:hover {
-    background-color: #2980b9;
+.modal-content button:hover { background-color: #2980b9; }
+
+
+/* === SITEWIDE POPUP PREVENTION (THE FIX) === */
+
+/* 1. Prevent long-press menu on images and links */
+img, a {
+  -webkit-touch-callout: none !important; /* iOS Safari */
+  -webkit-user-select: none !important;   /* Safari */
+  -khtml-user-select: none !important;    /* Konqueror HTML */
+  -moz-user-select: none !important;      /* Old Firefox */
+  -ms-user-select: none !important;       /* Internet Explorer/Edge */
+  user-select: none !important;           /* Non-prefixed version */
+  -webkit-user-drag: none !important;     /* Prevent dragging ghost image */
+}
+
+/* 2. Prevent text selection generally (can be overridden on specific inputs) */
+body {
+  -webkit-tap-highlight-color: transparent; /* Remove blue highlight on tap */
+}
+
+/* 3. Utility class to apply strictly to containers if needed */
+.no-context-menu {
+  -webkit-touch-callout: none;
+  user-select: none;
 }
 
 
-/* === FINAL RESPONSIVE LAYOUT === */
+/* === RESPONSIVE LAYOUT === */
 
-/* --- Mobile View (< 768px) --- */
 @media only screen and (max-width: 767px) {
     #vapi-support-btn, .vapi-overlay {
         width: 350px !important;
@@ -302,7 +288,6 @@
         left: 50% !important;
         transform: translateX(-50%) !important;
     }
-
     .tarot-container {
         position: fixed;
         top: calc(305px + 6rem + 20px);
@@ -311,7 +296,6 @@
         bottom: 20px;
         overflow-y: auto;
     }
-
     .tarot-display {
         display: grid !important;
         grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
@@ -320,27 +304,21 @@
     }
 }
 
-
-/* --- Tablet and Desktop View (> 768px) --- */
 @media only screen and (min-width: 768px) {
     #vapi-support-btn, .vapi-overlay {
         width: 300px !important;
         height: 400px !important;
-        /* THE FIX: Changed top position to push avatar below the back link's header. */
         top: 7rem !important;
         left: 50px !important;
     }
-
     .tarot-container {
         position: fixed;
-        /* THE FIX: Matched top position for alignment. */
         top: 7rem !important;
         left: calc(300px + 50px + 20px);
         right: 20px;
         bottom: 20px;
         overflow-y: auto;
     }
-
     .tarot-display {
         display: grid !important;
         grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -349,17 +327,13 @@
     }
 }
 
-/* --- Large Desktop View (> 1280px) --- */
 @media only screen and (min-width: 1280px) {
     #vapi-support-btn, .vapi-overlay {
         height: 500px !important;
-        /* THE FIX: Keep top position consistent. */
         top: 7rem !important;
         left: 150px !important;
     }
-
     .tarot-container {
-        /* THE FIX: Keep top position consistent. */
         top: 7rem !important;
         left: calc(300px + 150px + 20px);
     }

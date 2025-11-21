@@ -213,8 +213,8 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
                 case 4: return <HoodooStep4_GatherMateria selections={hoodooMateriaSelections} onNext={advanceStep} />;
                 case 5: return <HoodooStep5_FixJar key={`charge-hoodoo-${chargingIndex}`} onNext={handleChargeNext} selections={hoodooMateriaSelections} index={chargingIndex} />;
                 case 6: return <HoodooStep6_SealJar onNext={handleHoodooFinalStep} selections={hoodooMateriaSelections} />;
-                case 7: return <Step7_Sending onNext={handleHoodooFinalStep} petition={petition} selections={hoodooMateriaSelections} variant="hoodoo_manifestation" image="hoodoo-manifestation-final.gif" />; // Updated to gif
-                case 8: return <Step8_Manifestation affirmation={finalAffirmation} path={path} selections={hoodooMateriaSelections} onFinish={resetState} />; // Pass selections
+                case 7: return <Step7_Sending onNext={handleHoodooFinalStep} petition={petition} selections={hoodooMateriaSelections} variant="hoodoo_manifestation" image="hoodoo-manifestation-final.gif" />;
+                case 8: return <Step8_Manifestation affirmation={finalAffirmation} path={path} onFinish={resetState} selections={hoodooMateriaSelections} />;
                 default: return <div onClick={resetState}>Invalid Step</div>;
             }
         }
@@ -228,7 +228,7 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
                 case 5: return <VoodooStep5_MakeOffering key={`charge-voodoo-${chargingIndex}`} onNext={handleChargeNext} selections={voodooOfferingSelections} index={chargingIndex} />;
                 case 6: return <VoodooStep6_SealBottle onNext={handleVoodooFinalStep} selections={voodooOfferingSelections} lwa={selectedLwa} />;
                 case 7: return <Step7_Sending onNext={handleHoodooFinalStep} petition={petition} selections={voodooOfferingSelections} variant="voodoo_manifestation" image="voodoo-manifestation-final.png" />;
-                case 8: return <Step8_Manifestation affirmation={finalAffirmation} path={path} selections={voodooOfferingSelections} onFinish={resetState} />; // Pass selections
+                case 8: return <Step8_Manifestation affirmation={finalAffirmation} path={path} onFinish={resetState} selections={voodooOfferingSelections} />;
                 default: return <div onClick={resetState}>Invalid Step</div>;
             }
         }
@@ -247,7 +247,11 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
                 psalmText={PSALM_DATABASE[selectedPsalm] || ""} 
                 onBless={() => { setIsPsalmLit(true); setPsalmReaderOpen(false); }}
             />
-            <main className="relative h-screen w-screen bg-black bg-cover bg-center flex flex-col transition-all duration-1000" style={{ backgroundImage: `url('${currentBackground}')` }}>
+            <main 
+                onContextMenu={(e) => e.preventDefault()}
+                className="relative h-screen w-screen bg-black bg-cover bg-center flex flex-col transition-all duration-1000 select-none" 
+                style={{ backgroundImage: `url('${currentBackground}')` }}
+            >
                 <div className="absolute inset-0 bg-black/40" />
                 <header className={`relative z-20 w-full p-4 md:p-6 shrink-0 transition-opacity duration-500 ${psalmReaderOpen ? 'opacity-0' : 'opacity-100'}`}>
                     <div className="flex justify-between items-center flex-wrap w-full max-w-7xl mx-auto">
@@ -559,12 +563,8 @@ const HoodooStep5_FixJar: React.FC<{ onNext: () => void, selections: MateriaSele
             <div className="relative w-full h-full max-w-md aspect-square mx-auto">
                 <Image src={`${ASSET_PATH}/hoodoo-jar-empty.png`} alt="Empty Spell Jar" layout="fill" objectFit="contain" priority />
                 
-                {/* UPDATED: Uses specific 'hoodoo_empty' geometry */}
-                <FilledContainer 
-                    variant="hoodoo_empty" 
-                    items={selections} 
-                    count={isCharged ? index + 1 : index} 
-                />
+                {/* THE FIX: Removed invalid 'type' prop, only using 'variant' */}
+                <FilledContainer items={selections} count={isCharged ? index + 1 : index} variant="hoodoo_empty" />
 
                 {!isCharged && spriteData && (
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-2/3 z-20">
@@ -608,7 +608,6 @@ const HoodooStep6_SealJar: React.FC<{ onNext: () => void, selections: MateriaSel
                     <Image src={`${ASSET_PATH}/hoodoo-jar-fixed.png`} alt="Fixed Jar" layout="fill" objectFit="contain" className="z-0"/>
                     
                     <div className="absolute inset-0 z-10">
-                        {/* UPDATED: Uses specific 'hoodoo_fixed' geometry */}
                         <FilledContainer variant="hoodoo_fixed" items={selections} count={selections.length} />
                     </div>
 
@@ -703,7 +702,6 @@ const VoodooStep5_MakeOffering: React.FC<{ onNext: () => void, selections: Mater
             <div className="relative w-full h-full max-w-md aspect-square mx-auto">
                 <Image src={`${ASSET_PATH}/voodoo-offering-bottle.png`} alt="Empty Offering Bottle" layout="fill" objectFit="contain" priority />
                 
-                {/* UPDATED: Uses specific 'voodoo_empty' geometry */}
                 <FilledContainer 
                     variant="voodoo_empty" 
                     items={selections} 
@@ -752,7 +750,6 @@ const VoodooStep6_SealBottle: React.FC<{ onNext: () => void; selections: Materia
                     <Image src={`${ASSET_PATH}/voodoo-offering-bottle-filled.png`} alt="Filled Offering Bottle" layout="fill" objectFit="contain" className="z-0" />
                      
                     <div className="absolute inset-0 z-10">
-                        {/* UPDATED: Uses specific 'voodoo_filled' geometry */}
                         <FilledContainer variant="voodoo_filled" items={selections} count={selections.length} />
                     </div>
 
