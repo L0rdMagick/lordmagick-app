@@ -178,70 +178,97 @@ const StabilizationStage = ({ onComplete, playTone, modulateFilter }: { onComple
     const [target, setTarget] = useState(50);
     const [lockedTime, setLockedTime] = useState(0);
     const [noise, setNoise] = useState(0);
+    
+    // Ref to calculate exact width of the interaction area
+    const trackRef = useRef<HTMLDivElement>(null);
 
-    // Generate random target movement (The Universe resisting)
+    // Generate erratic target movement (The Universe resisting)
     useEffect(() => {
         const interval = setInterval(() => {
-            const jitter = (Math.random() - 0.5) * 30;
+            // Faster jitter, more frequent updates (50ms)
+            const jitter = (Math.random() - 0.5) * 40; 
             setTarget(prev => Math.min(90, Math.max(10, prev + jitter)));
             setNoise(Math.random() * 10);
-        }, 500);
+        }, 50); // Very fast updates
         return () => clearInterval(interval);
     }, []);
 
-    // Check lock
+    // Check lock status
     useEffect(() => {
         const dist = Math.abs(stability - target);
         modulateFilter(100 + (100 - dist) * 10); // Filter opens as you get closer
 
         if (dist < 15) {
+            // Slower lock accumulation (0.4 per tick instead of 1)
             setLockedTime(prev => {
-                const next = prev + 1;
+                const next = prev + 0.4;
                 if (next > 100) onComplete();
                 return next;
             });
             if (Math.random() > 0.8) playTone(880, 'sine', 0.1, 0.05);
         } else {
-            setLockedTime(prev => Math.max(0, prev - 2)); // Decay if lost
+            setLockedTime(prev => Math.max(0, prev - 1)); // Fast decay
         }
     }, [stability, target, onComplete, playTone, modulateFilter]);
 
+    // New Handler: Calculates position relative to the track container, not window
     const handleSlide = (e: any) => {
+        if (!trackRef.current) return;
+        
         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        const width = window.innerWidth;
-        const percent = (clientX / width) * 100;
+        const rect = trackRef.current.getBoundingClientRect();
+        
+        // Calculate position within the element
+        let relativeX = clientX - rect.left;
+        
+        // Clamp values
+        relativeX = Math.max(0, Math.min(relativeX, rect.width));
+        
+        const percent = (relativeX / rect.width) * 100;
         setStability(percent);
     };
 
     return (
         <div 
-            className="flex flex-col items-center justify-center h-full w-full bg-black select-none touch-none"
+            className="flex flex-col items-center justify-center h-full w-full bg-black select-none touch-none p-4"
+            // Attach handlers to container so you don't lose drag if you slip off the bar
             onTouchMove={handleSlide}
             onMouseMove={(e) => e.buttons === 1 && handleSlide(e)}
             onMouseDown={handleSlide}
         >
-            <h2 className="text-cyan-500 font-mono text-xs tracking-[0.3em] mb-12 animate-pulse">
+            <h2 className="text-cyan-500 font-mono text-xs tracking-[0.3em] mb-12 animate-pulse text-center">
                 MANUAL OVERRIDE: STABILIZE SIGNAL
             </h2>
 
-            <div className="relative w-full max-w-md h-32 border-x border-cyan-900/50">
-                {/* Target Zone */}
+            {/* The Interaction Track */}
+            <div 
+                ref={trackRef}
+                className="relative w-full max-w-md h-48 border-x border-cyan-900/50 bg-cyan-950/10 cursor-crosshair"
+            >
+                {/* Target Zone (Moving) */}
                 <div 
-                    className="absolute top-0 bottom-0 w-16 bg-cyan-900/30 border-x border-cyan-500/50 transition-all duration-500"
+                    className="absolute top-0 bottom-0 w-16 bg-cyan-900/30 border-x border-cyan-500/50 transition-all duration-75 ease-linear"
                     style={{ left: `calc(${target}% - 32px)` }}
                 >
                     <div className="absolute top-0 left-0 w-full h-full animate-pulse opacity-20 bg-cyan-400"></div>
                 </div>
 
-                {/* User Cursor */}
+                {/* User Cursor (The White Line) */}
                 <div 
-                    className="absolute top-0 bottom-0 w-1 bg-white shadow-[0_0_15px_white] transition-all duration-75"
+                    className="absolute top-0 bottom-0 w-1 bg-white shadow-[0_0_20px_white] transition-transform duration-0"
                     style={{ left: `${stability}%` }}
                 />
 
                 {/* Noise Visuals */}
                 <div className="absolute inset-0 flex items-center justify-center opacity-30 pointer-events-none">
                     <Activity size={64} className="text-cyan-700" style={{ transform: `scaleY(${1 + noise/5})` }} />
+                </div>
+                
+                {/* Helper lines */}
+                <div className="absolute inset-0 pointer-events-none flex justify-between opacity-20">
+                    {[0, 25, 50, 75, 100].map(p => (
+                        <div key={p} className="h-full w-px bg-cyan-500" />
+                    ))}
                 </div>
             </div>
 
@@ -253,7 +280,7 @@ const StabilizationStage = ({ onComplete, playTone, modulateFilter }: { onComple
                 />
             </div>
             <p className="text-cyan-800 font-mono text-[10px] mt-4">
-                {lockedTime > 0 ? `LOCKING: ${lockedTime}%` : "SEARCHING..."}
+                {lockedTime > 0 ? `LOCKING: ${Math.floor(lockedTime)}%` : "SEARCHING..."}
             </p>
         </div>
     );
@@ -463,3 +490,4 @@ const ZeroPointZetSpell = ({ onExit }: { onExit: () => void }) => {
 };
 
 export default ZeroPointZetSpell;
+// --- END OF FILE ---
