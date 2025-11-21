@@ -64,7 +64,6 @@ type RitualPath = 'hoodoo' | 'voodoo' | null;
 interface StepComponentProps { onNext: () => void; }
 interface StepContainerProps { stageTitle?: string; instruction?: string; children: React.ReactNode; button?: React.ReactNode; }
 interface RitualButtonProps { onClick: () => void; children: React.ReactNode; className?: string; disabled?: boolean; }
-type SpriteData = NonNullable<ReturnType<typeof findSprite>>;
 type MateriaSelection = { name: string; incantation: string; };
 
 // --- Main Component ---
@@ -123,7 +122,7 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
 
     const handleHoodooMateriaSearch = async () => {
         if (!selectedPsalm || !isPsalmLit) { setError("You must select and fix a Psalm verse."); return; }
-        setLoading(true); setLoadingMessage("Gathering your materia...");
+        setLoading(true); setLoadingMessage("The spirits are gathering your materia...");
         try {
             const result = await generateHoodooVoodooWork('hoodoo', 4, { petition });
             setHoodooMateriaSelections(result.selections);
@@ -142,7 +141,7 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
 
     const handleVoodooOfferingSearch = async () => {
         if (!selectedLwa) { setError("You must serve a Lwa."); return; }
-        setLoading(true); setLoadingMessage("Preparing your offerings...");
+        setLoading(true); setLoadingMessage("Divining the Lwa's desires...");
         try {
             const result = await generateHoodooVoodooWork('voodoo', 4, { petition, lwa: selectedLwa });
             setVoodooOfferingSelections(result.selections);
@@ -181,8 +180,8 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
                 case 3: return <HoodooStep3_FindVerse onOpenReader={handleOpenPsalmReader} selections={hoodooPsalmSelections} selectedPsalm={selectedPsalm} isPsalmLit={isPsalmLit} onNext={handleHoodooMateriaSearch} />;
                 case 4: return <HoodooStep4_GatherMateria selections={hoodooMateriaSelections} onNext={advanceStep} />;
                 case 5: return <HoodooStep5_FixJar key={`charge-hoodoo-${chargingIndex}`} onNext={handleChargeNext} selections={hoodooMateriaSelections} index={chargingIndex} />;
-                case 6: return <HoodooStep6_SealJar onNext={advanceStep} selections={hoodooMateriaSelections} />;
-                case 7: return <Step7_Sending onNext={handleHoodooFinalStep} petition={petition} />;
+                case 6: return <HoodooStep6_SealJar onNext={handleHoodooFinalStep} selections={hoodooMateriaSelections} />;
+                case 7: return <Step7_Sending onNext={handleHoodooFinalStep} petition={petition} />; // Technically redundant if step 6 calls final step, but keeping for flow safety
                 case 8: return <Step8_Manifestation affirmation={finalAffirmation} path={path} onFinish={resetState} />;
                 default: return <div onClick={resetState}>Invalid Step</div>;
             }
@@ -195,7 +194,6 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
                 case 3: return <VoodooStep3_ServeLwa selectedLwa={selectedLwa} onSelect={setSelectedLwa} onNext={handleVoodooOfferingSearch} />;
                 case 4: return <VoodooStep4_PrepareOffering selections={voodooOfferingSelections} onNext={advanceStep} />;
                 case 5: return <VoodooStep5_MakeOffering key={`charge-voodoo-${chargingIndex}`} onNext={handleChargeNext} selections={voodooOfferingSelections} index={chargingIndex} />;
-                // THE FIX: Changed onNext from advanceStep to handleVoodooFinalStep to ensure the text is generated before the next screen
                 case 6: return <VoodooStep6_SealBottle onNext={handleVoodooFinalStep} selections={voodooOfferingSelections} lwa={selectedLwa} />;
                 case 7: return <Step8_Manifestation affirmation={finalAffirmation} path={path} onFinish={resetState} />;
                 default: return <div onClick={resetState}>Invalid Step</div>;
@@ -268,7 +266,7 @@ const StepContainer: React.FC<StepContainerProps> = ({ stageTitle, instruction, 
     </div>
 );
 
-// --- Helper Component: FilledContainer (Handles placement of placed items) ---
+// --- Helper Component: FilledContainer ---
 const FilledContainer: React.FC<{
     type: 'hoodoo' | 'voodoo';
     items: MateriaSelection[];
@@ -287,28 +285,20 @@ const FilledContainer: React.FC<{
                 const spriteData = findSprite(item.name);
                 if (!spriteData) return null;
                 
-                // Use deterministic math based on name/index for "random" positioning that persists
                 const seed = item.name.charCodeAt(0) + idx * 50;
                 const rand1 = Math.sin(seed) * 1000; 
                 const rand2 = Math.cos(seed) * 1000;
 
-                // 2 items per row
                 const col = idx % 2;
                 const row = Math.floor(idx / 2);
                 
-                // Larger size for realistic pile (55% of container width)
                 const size = '55%'; 
 
-                // Random jitter
-                const randomX = (rand1 % 10); // +/- 10%
-                const randomY = (rand2 % 5);  // +/- 5%
-                const randomRot = (rand1 % 30) - 15; // -15 to 15 deg
+                const randomX = (rand1 % 10); 
+                const randomY = (rand2 % 5); 
+                const randomRot = (rand1 % 30) - 15; 
 
-                // Basic grid positions with randomness added
-                // Col 0 starts near 5%, Col 1 starts near 45%
                 const leftPos = `${(col === 0 ? 5 : 45) + randomX}%`;
-                
-                // Stack from bottom up, overlapping
                 const bottomPos = `${(row * 12) + 2 + randomY}%`;
 
                 return (
@@ -322,7 +312,7 @@ const FilledContainer: React.FC<{
                             width: size,
                             left: leftPos,
                             bottom: bottomPos,
-                            zIndex: 10 + idx, // Newer items on top
+                            zIndex: 10 + idx,
                             rotate: `${randomRot}deg`
                         }}
                     >
@@ -500,7 +490,7 @@ const HoodooStep3_FindVerse: React.FC<{ onOpenReader: (psalm: string) => void; s
 };
 
 const HoodooStep4_GatherMateria: React.FC<{ selections: MateriaSelection[]; onNext: () => void; }> = ({ selections, onNext }) => (
-     <StepContainer stageTitle="Gather Your Materia" instruction="These ingredients have been chosen for your petition." button={<RitualButton onClick={onNext}>Fix the Jar</RitualButton>}>
+     <StepContainer stageTitle="Gather Your Materia" instruction="The spirits have chosen these ingredients for your petition." button={<RitualButton onClick={onNext}>Fix the Jar</RitualButton>}>
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 gap-4 bg-black/30 p-4 rounded-lg">
             {selections.map(item => {
                 const spriteData = findSprite(item.name);
@@ -528,17 +518,10 @@ const HoodooStep5_FixJar: React.FC<{ onNext: () => void, selections: MateriaSele
     return (
         <StepContainer stageTitle="Fix the Jar" instruction={instructionText} button={isCharged ? <RitualButton onClick={onNext} className="animate-pulse">{index < selections.length - 1 ? "Next Ingredient" : "Seal the Jar"}</RitualButton> : <div/>}>
             <div className="relative w-full h-full max-w-md aspect-square mx-auto">
-                {/* Background Jar (Lid Off) */}
                 <Image src={`${ASSET_PATH}/hoodoo-jar-empty.png`} alt="Empty Spell Jar" layout="fill" objectFit="contain" priority />
                 
-                {/* Layer for ingredients already placed inside the jar */}
-                <FilledContainer 
-                    type="hoodoo" 
-                    items={selections} 
-                    count={isCharged ? index + 1 : index} 
-                />
+                <FilledContainer type="hoodoo" items={selections} count={isCharged ? index + 1 : index} />
 
-                {/* The "Active" Charging Ingredient - disappears when charged */}
                 {!isCharged && spriteData && (
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-2/3 z-20">
                         <ChargingComponent onCharge={() => setIsCharged(true)} isCharged={isCharged}>
@@ -553,7 +536,6 @@ const HoodooStep5_FixJar: React.FC<{ onNext: () => void, selections: MateriaSele
     );
 };
 
-// --- NEW STEP: Seal and Charge the Jar (Hoodoo) ---
 const HoodooStep6_SealJar: React.FC<{ onNext: () => void, selections: MateriaSelection[] }> = ({ onNext, selections }) => {
     const [isSealed, setIsSealed] = useState(false);
     const [isSent, setIsSent] = useState(false);
@@ -579,15 +561,12 @@ const HoodooStep6_SealJar: React.FC<{ onNext: () => void, selections: MateriaSel
                     } : {}}
                     transition={{ duration: 2, ease: "easeInOut" }}
                  >
-                    {/* Closed Jar Image (Background) */}
                     <Image src={`${ASSET_PATH}/hoodoo-jar-fixed.png`} alt="Fixed Jar" layout="fill" objectFit="contain" className="z-0"/>
                     
-                    {/* Ingredients (Foreground - to appear visible "in" or "on" the closed jar) */}
                     <div className="absolute inset-0 z-10">
                         <FilledContainer type="hoodoo" items={selections} count={selections.length} />
                     </div>
 
-                    {/* Interaction Overlay */}
                     {!isSealed && (
                         <div className="absolute inset-0 z-20 flex items-center justify-center">
                             <ChargingComponent onCharge={handleSeal} isCharged={isSealed} duration={5000}>
@@ -677,17 +656,10 @@ const VoodooStep5_MakeOffering: React.FC<{ onNext: () => void, selections: Mater
     return (
         <StepContainer stageTitle="Make the Offering" instruction={instructionText} button={isCharged ? <RitualButton onClick={onNext} className="animate-pulse">{index < selections.length - 1 ? "Next Offering" : "Seal the Offering"}</RitualButton> : <div/>}>
             <div className="relative w-full h-full max-w-md aspect-square mx-auto">
-                {/* Background Bottle (Open) */}
                 <Image src={`${ASSET_PATH}/voodoo-offering-bottle.png`} alt="Empty Offering Bottle" layout="fill" objectFit="contain" priority />
                 
-                {/* Layer for placed offerings */}
-                <FilledContainer 
-                    type="voodoo" 
-                    items={selections} 
-                    count={isCharged ? index + 1 : index} 
-                />
+                <FilledContainer type="voodoo" items={selections} count={isCharged ? index + 1 : index} />
 
-                {/* Active Charging Ingredient */}
                 {!isCharged && spriteData && (
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-2/3 z-20">
                         <ChargingComponent onCharge={() => setIsCharged(true)} isCharged={isCharged}>
@@ -702,7 +674,6 @@ const VoodooStep5_MakeOffering: React.FC<{ onNext: () => void, selections: Mater
     );
 };
 
-// --- NEW STEP: Seal and Charge the Bottle (Voodoo) ---
 const VoodooStep6_SealBottle: React.FC<{ onNext: () => void; selections: MateriaSelection[]; lwa: string; }> = ({ onNext, selections, lwa }) => {
     const [isSealed, setIsSealed] = useState(false);
     const [isSent, setIsSent] = useState(false);
@@ -712,6 +683,7 @@ const VoodooStep6_SealBottle: React.FC<{ onNext: () => void; selections: Materia
         setIsSealed(true);
         playSound('/audio/sfx-chaos-explosion.mp3', 0.5).play();
         setIsSent(true);
+        // Move to next step after animation completes (2.5s)
         setTimeout(onNext, 2500);
     };
     
@@ -728,15 +700,12 @@ const VoodooStep6_SealBottle: React.FC<{ onNext: () => void; selections: Materia
                     } : {}}
                     transition={{ duration: 2, ease: "easeInOut" }}
                 >
-                    {/* Closed Bottle (Background) */}
                     <Image src={`${ASSET_PATH}/voodoo-offering-bottle-filled.png`} alt="Filled Offering Bottle" layout="fill" objectFit="contain" className="z-0" />
                      
-                     {/* Ingredients (Foreground) */}
                     <div className="absolute inset-0 z-10">
                         <FilledContainer type="voodoo" items={selections} count={selections.length} />
                     </div>
 
-                    {/* Interaction Overlay */}
                     {!isSealed && (
                         <div className="absolute inset-0 z-20 flex items-center justify-center">
                             <ChargingComponent onCharge={handleSeal} isCharged={isSealed} duration={5000}>

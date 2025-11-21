@@ -6,7 +6,8 @@ import { corsHeaders } from '../_shared/cors.ts';
 const GCP_PROJECT_ID = 'arcane-tools';
 const GCP_REGION = 'us-central1';
 
-// Lists of available items for the AI to choose from
+// These lists match your spriteLibrary.ts EXACTLY.
+// The AI must choose from these to ensure the visual appears in the jar.
 const HOODOO_MATERIA = [
     "Alfalfa", "Rosemary", "High John Root", "Bay Leaf", "Lodestone", 
     "Pyrite", "Magnetic Sand", "Silver Dime", "Goofer Dust", "Salt", 
@@ -20,7 +21,7 @@ const VOODOO_OFFERINGS = [
 ];
 
 const LWA_OPTIONS = [ "Papa Legba", "Erzulie Freda", "Ogun", "Damballah", "Baron Samedi" ];
-const PSALM_OPTIONS = [ "Psalm 23", "Psalm 91", "Psalm 51", "Psalm 37", "Psalm 7" ]; // Example Psalms
+const PSALM_OPTIONS = [ "Psalm 23", "Psalm 91", "Psalm 51", "Psalm 37", "Psalm 7" ]; 
 
 Deno.serve(async (req: Request) => {
     if (req.method === 'OPTIONS') {
@@ -28,7 +29,7 @@ Deno.serve(async (req: Request) => {
     }
 
     try {
-        const { path, step, payload } = await req.json(); // `payload` will contain petition, selections, etc.
+        const { path, step, payload } = await req.json(); 
         const serviceAccountKey = Deno.env.get('GCP_SERVICE_ACCOUNT_KEY');
         if (!serviceAccountKey) { throw new Error("GCP_SERVICE_ACCOUNT_KEY secret is not set."); }
 
@@ -44,38 +45,87 @@ Deno.serve(async (req: Request) => {
         
         let prompt = '';
 
-        // --- AI Prompt Logic ---
+        // --- AI Logic: The Digital Rootworker ---
         if (path === 'hoodoo') {
             switch(step) {
                 case 3: // Find Your Verse
-                    prompt = `A user's petition is: "${payload.petition}". From the following list of Psalms, select the THREE most spiritually aligned with this goal. Return a valid JSON object with a single key "selections" which is an array of three strings. List: [${PSALM_OPTIONS.map(p => `"${p}"`).join(", ")}]`;
+                    prompt = `
+                    You are an elder Hoodoo rootworker. A client has come to you with this petition: "${payload.petition}".
+                    From this list of Biblical Psalms: [${PSALM_OPTIONS.map(p => `"${p}"`).join(", ")}], select the THREE that are most spiritually potent for this specific situation.
+                    Return a JSON object: { "selections": ["Psalm X", "Psalm Y", "Psalm Z"] }
+                    `;
                     break;
                 case 4: // Gather Your Materia
-                    // THE FIX: Updated prompt to ask for an object with name and incantation.
-                    prompt = `For a Hoodoo jar spell with the petition "${payload.petition}", select the FIVE to SEVEN most appropriate ingredients from this list: [${HOODOO_MATERIA.map(i => `"${i}"`).join(", ")}]. For each selected ingredient, also write a short, one-sentence activation incantation. Return a valid JSON object with a single key "selections" which is an array of objects, where each object has a "name" and "incantation" key. Example: { "name": "Rosemary", "incantation": "Spirit of Rosemary, clear the path for this work." }`;
+                    prompt = `
+                    You are an expert Hoodoo rootworker crafting a 'Mojo Hand' or 'Sweet Jar' for a client.
+                    Client Petition: "${payload.petition}"
+                    
+                    Available Ingredients (You MUST choose from this list only): 
+                    [${HOODOO_MATERIA.join(", ")}]
+
+                    Task:
+                    1. Analyze the metaphysical properties of the available ingredients.
+                    2. Select exactly 5 ingredients that best align with the client's petition (e.g., Cinnamon for speed/money, Lavender for peace/love, Sulfur for enemy work/banishing).
+                    3. For each selected ingredient, write a short, 1-sentence activation incantation that commands that specific ingredient to fulfill the petition.
+
+                    Return a JSON object: 
+                    { 
+                      "selections": [
+                        { "name": "Ingredient Name", "incantation": "Spirit of [Name], [Command]." },
+                        ... (5 items)
+                      ] 
+                    }
+                    `;
                     break;
                 case 7: // The Work is Done (Affirmation)
-                     prompt = `Based on the Hoodoo petition "${payload.petition}", write a single, powerful, past-tense affirmation to be displayed on a plaque, confirming the work is done. Example: "My path to prosperity is now cleared and blessed." The output should be a valid JSON object with a single key "affirmation".`;
+                     prompt = `
+                     The Hoodoo work is complete. The petition was: "${payload.petition}".
+                     Write a powerful, past-tense affirmation confirming the result is already manifest. 
+                     Style: Authoritative, Biblical, Folk Magic.
+                     Return a JSON object: { "affirmation": "Your affirmation here." }
+                     `;
                      break;
             }
         } else if (path === 'voodoo') {
              switch(step) {
                 case 3: // Serve the Lwa
-                    prompt = `A user's petition is: "${payload.petition}". From the following list of Lwa, select the ONE most appropriate to handle this need. Return a valid JSON object with a single key "selection". List: [${LWA_OPTIONS.map(l => `"${l}"`).join(", ")}]`;
+                    prompt = `
+                    You are a Voodoo Houngan. A supplicant asks: "${payload.petition}".
+                    Which Lwa governs this request? Choose ONE from: [${LWA_OPTIONS.join(", ")}].
+                    Return a JSON object: { "selection": "Lwa Name" }
+                    `;
                     break;
                 case 4: // Prepare the Offering
-                    // THE FIX: Updated prompt to ask for an object with name and incantation.
-                    prompt = `For serving the Lwa ${payload.lwa} with the petition "${payload.petition}", select FIVE to SEVEN appropriate offerings from this list: [${VOODOO_OFFERINGS.map(o => `"${o}"`).join(", ")}]. For each selected offering, also write a short, one-sentence activation incantation to present it. Return a valid JSON object with a single key "selections" which is an array of objects, where each object has a "name" and "incantation" key. Example: { "name": "Rum", "incantation": "I offer this rum to honor your spirit and enliven my request." }`;
+                    prompt = `
+                    You are preparing a service for the Lwa ${payload.lwa} to grant this request: "${payload.petition}".
+                    
+                    Available Offerings (You MUST choose from this list only):
+                    [${VOODOO_OFFERINGS.join(", ")}]
+
+                    Task:
+                    1. Select exactly 5 offerings that are traditional favorites of ${payload.lwa} OR that align with the petition.
+                    2. For each, write a short sentence presenting the gift to the Lwa.
+
+                    Return a JSON object:
+                    {
+                      "selections": [
+                        { "name": "Offering Name", "incantation": "I offer you [Name] to [Purpose]." },
+                        ... (5 items)
+                      ]
+                    }
+                    `;
                     break;
                 case 7: // The Lwa is Served (Affirmation)
-                    prompt = `Based on the Voodoo petition "${payload.petition}" made to the Lwa ${payload.lwa}, write a single, powerful, respectful, past-tense affirmation to be displayed on a plaque, confirming the Lwa has been served. Example: "Erzulie Freda has received her gifts and blesses my heart with love." The output must be a valid JSON object with a single key "affirmation".`;
+                    prompt = `
+                    The service for ${payload.lwa} regarding "${payload.petition}" is complete.
+                    Write a respectful confirmation that the Lwa has accepted the gifts and the path is open.
+                    Return a JSON object: { "affirmation": "Your affirmation here." }
+                    `;
                     break;
             }
         }
 
-        if (!prompt) {
-            throw new Error("Invalid path or step provided.");
-        }
+        if (!prompt) { throw new Error("Invalid path or step provided."); }
         
         const response = await fetch(apiUrl, {
             method: 'POST',
