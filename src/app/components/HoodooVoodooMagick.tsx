@@ -20,19 +20,19 @@ const FADE_DURATION = 0.8;
 const SENDING_DURATION = 13000; // 13 seconds
 
 // --- Geometry Configuration for Ingredients ---
-// Based on 1024x1024 source images
+// UPDATED: Tightened margins to ensure ingredients stay visually "inside" the glass walls.
 const CONTAINER_GEOMETRY = {
     hoodoo: {
-        left: '35.84%',  // 367 / 1024
-        top: '35.55%',   // 364 / 1024
-        width: '24.22%', // 248 / 1024
-        height: '38.38%' // 393 / 1024
+        left: '36.8%',  // Pushed in from left
+        top: '36.5%',   // Pushed down from top
+        width: '22.2%', // Narrower width
+        height: '36.4%' // Shorter height
     },
     voodoo: {
-        left: '31.64%',  // 324 / 1024
-        top: '39.75%',   // 407 / 1024
-        width: '29.98%', // 307 / 1024
-        height: '41.50%' // 425 / 1024
+        left: '32.6%',  // Pushed in
+        top: '40.7%',   // Pushed down
+        width: '28.0%', // Narrower
+        height: '39.5%' // Shorter
     }
 };
 
@@ -64,6 +64,7 @@ type RitualPath = 'hoodoo' | 'voodoo' | null;
 interface StepComponentProps { onNext: () => void; }
 interface StepContainerProps { stageTitle?: string; instruction?: string; children: React.ReactNode; button?: React.ReactNode; }
 interface RitualButtonProps { onClick: () => void; children: React.ReactNode; className?: string; disabled?: boolean; }
+type SpriteData = NonNullable<ReturnType<typeof findSprite>>;
 type MateriaSelection = { name: string; incantation: string; };
 
 // --- Main Component ---
@@ -181,7 +182,7 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
                 case 4: return <HoodooStep4_GatherMateria selections={hoodooMateriaSelections} onNext={advanceStep} />;
                 case 5: return <HoodooStep5_FixJar key={`charge-hoodoo-${chargingIndex}`} onNext={handleChargeNext} selections={hoodooMateriaSelections} index={chargingIndex} />;
                 case 6: return <HoodooStep6_SealJar onNext={handleHoodooFinalStep} selections={hoodooMateriaSelections} />;
-                case 7: return <Step7_Sending onNext={handleHoodooFinalStep} petition={petition} />; // Technically redundant if step 6 calls final step, but keeping for flow safety
+                case 7: return <Step7_Sending onNext={handleHoodooFinalStep} petition={petition} />;
                 case 8: return <Step8_Manifestation affirmation={finalAffirmation} path={path} onFinish={resetState} />;
                 default: return <div onClick={resetState}>Invalid Step</div>;
             }
@@ -267,6 +268,7 @@ const StepContainer: React.FC<StepContainerProps> = ({ stageTitle, instruction, 
 );
 
 // --- Helper Component: FilledContainer ---
+// Uses optimized geometry to prevent ingredient clipping against the invisible box boundaries
 const FilledContainer: React.FC<{
     type: 'hoodoo' | 'voodoo';
     items: MateriaSelection[];
@@ -285,19 +287,24 @@ const FilledContainer: React.FC<{
                 const spriteData = findSprite(item.name);
                 if (!spriteData) return null;
                 
+                // Use deterministic math based on name/index for "random" positioning that persists
                 const seed = item.name.charCodeAt(0) + idx * 50;
                 const rand1 = Math.sin(seed) * 1000; 
                 const rand2 = Math.cos(seed) * 1000;
 
+                // 2 items per row
                 const col = idx % 2;
                 const row = Math.floor(idx / 2);
                 
+                // Larger size for realistic pile
                 const size = '55%'; 
 
-                const randomX = (rand1 % 10); 
-                const randomY = (rand2 % 5); 
-                const randomRot = (rand1 % 30) - 15; 
+                // Random jitter
+                const randomX = (rand1 % 10); // +/- 10%
+                const randomY = (rand2 % 5);  // +/- 5%
+                const randomRot = (rand1 % 30) - 15; // -15 to 15 deg
 
+                // Basic grid positions with randomness added
                 const leftPos = `${(col === 0 ? 5 : 45) + randomX}%`;
                 const bottomPos = `${(row * 12) + 2 + randomY}%`;
 
@@ -312,7 +319,7 @@ const FilledContainer: React.FC<{
                             width: size,
                             left: leftPos,
                             bottom: bottomPos,
-                            zIndex: 10 + idx,
+                            zIndex: 10 + idx, // Newer items on top
                             rotate: `${randomRot}deg`
                         }}
                     >
@@ -683,7 +690,6 @@ const VoodooStep6_SealBottle: React.FC<{ onNext: () => void; selections: Materia
         setIsSealed(true);
         playSound('/audio/sfx-chaos-explosion.mp3', 0.5).play();
         setIsSent(true);
-        // Move to next step after animation completes (2.5s)
         setTimeout(onNext, 2500);
     };
     
