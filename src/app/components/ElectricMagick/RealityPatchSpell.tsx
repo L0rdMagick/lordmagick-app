@@ -1,21 +1,18 @@
 // --- START OF FILE src/app/components/ElectricMagick/RealityPatchSpell.tsx ---
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Fingerprint, 
-  Cpu, 
   ShieldAlert, 
   Terminal, 
-  Zap, 
-  Wifi, 
+  Activity,
   Lock, 
-  Unlock,
-  X
+  X,
+  Wifi
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAudioEngine, useParticleSystem } from './hooks';
-import { generateElectricEnsorcellment } from '@/lib/services/geminiService';
 
 // --- GLITCH TEXT COMPONENT ---
 const GlitchText = ({ text, active = false }: { text: string, active?: boolean }) => {
@@ -29,16 +26,15 @@ const GlitchText = ({ text, active = false }: { text: string, active?: boolean }
   );
 };
 
-// --- STAGE 1: BIO-AUTHORIZATION ---
+// --- STAGE 1: BIO-AUTHORIZATION (The Handshake) ---
 const BioAuthStage = ({ onComplete, playTone }: { onComplete: () => void, playTone: any }) => {
   const [scanProgress, setScanProgress] = useState(0);
   const [isScanning, setIsScanning] = useState(false);
   
-  // Reset if user lets go
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isScanning) {
-      playTone(100 + (scanProgress * 5), 'sawtooth', 0.1, 0.1); // Rising pitch
+      playTone(100 + (scanProgress * 5), 'sawtooth', 0.1, 0.1);
       interval = setInterval(() => {
         setScanProgress(prev => {
           if (prev >= 100) {
@@ -46,7 +42,7 @@ const BioAuthStage = ({ onComplete, playTone }: { onComplete: () => void, playTo
             onComplete();
             return 100;
           }
-          return prev + 2; // 2.5 seconds to complete
+          return prev + 1.5; 
         });
       }, 50);
     } else {
@@ -107,12 +103,11 @@ const BioAuthStage = ({ onComplete, playTone }: { onComplete: () => void, playTo
   );
 };
 
-// --- STAGE 2: CODE INJECTION ---
+// --- STAGE 2: CODE INJECTION (The Word) ---
 const InjectionStage = ({ onComplete, playTone, setIntention }: { onComplete: () => void, playTone: any, setIntention: (s: string) => void }) => {
   const [input, setInput] = useState("");
   const [hexStream, setHexStream] = useState<string[]>([]);
   
-  // Generate random hex noise
   useEffect(() => {
     const interval = setInterval(() => {
       setHexStream(prev => {
@@ -135,7 +130,6 @@ const InjectionStage = ({ onComplete, playTone, setIntention }: { onComplete: ()
 
   return (
     <div className="flex flex-col items-center justify-center h-full w-full px-4 relative overflow-hidden">
-      {/* Background Matrix Rain (Simplified) */}
       <div className="absolute inset-0 pointer-events-none opacity-10 flex justify-between text-[10px] font-mono text-green-500">
         {Array.from({length: 6}).map((_, i) => (
           <div key={i} className="flex flex-col">
@@ -180,52 +174,134 @@ const InjectionStage = ({ onComplete, playTone, setIntention }: { onComplete: ()
   );
 };
 
-// --- STAGE 3: ENTROPY BATTLE (The Climax) ---
+// --- STAGE 3: SIGNAL STABILIZATION (The Focus) ---
+const StabilizationStage = ({ onComplete, playTone, modulateFilter }: { onComplete: () => void, playTone: any, modulateFilter: any }) => {
+    const [stability, setStability] = useState(50);
+    const [target, setTarget] = useState(50);
+    const [lockedTime, setLockedTime] = useState(0);
+    const [noise, setNoise] = useState(0);
+
+    // Generate random target movement (The Universe resisting)
+    useEffect(() => {
+        const interval = setInterval(() => {
+            const jitter = (Math.random() - 0.5) * 30;
+            setTarget(prev => Math.min(90, Math.max(10, prev + jitter)));
+            setNoise(Math.random() * 10);
+        }, 500);
+        return () => clearInterval(interval);
+    }, []);
+
+    // Check lock
+    useEffect(() => {
+        const dist = Math.abs(stability - target);
+        modulateFilter(100 + (100 - dist) * 10); // Filter opens as you get closer
+
+        if (dist < 15) {
+            setLockedTime(prev => {
+                const next = prev + 1;
+                if (next > 100) onComplete();
+                return next;
+            });
+            if (Math.random() > 0.8) playTone(880, 'sine', 0.1, 0.05);
+        } else {
+            setLockedTime(prev => Math.max(0, prev - 2)); // Decay if lost
+        }
+    }, [stability, target, onComplete, playTone, modulateFilter]);
+
+    const handleSlide = (e: any) => {
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const width = window.innerWidth;
+        const percent = (clientX / width) * 100;
+        setStability(percent);
+    };
+
+    return (
+        <div 
+            className="flex flex-col items-center justify-center h-full w-full bg-black select-none touch-none"
+            onTouchMove={handleSlide}
+            onMouseMove={(e) => e.buttons === 1 && handleSlide(e)}
+            onMouseDown={handleSlide}
+        >
+            <h2 className="text-cyan-500 font-mono text-xs tracking-[0.3em] mb-12 animate-pulse">
+                MANUAL OVERRIDE: STABILIZE SIGNAL
+            </h2>
+
+            <div className="relative w-full max-w-md h-32 border-x border-cyan-900/50">
+                {/* Target Zone */}
+                <div 
+                    className="absolute top-0 bottom-0 w-16 bg-cyan-900/30 border-x border-cyan-500/50 transition-all duration-500"
+                    style={{ left: `calc(${target}% - 32px)` }}
+                >
+                    <div className="absolute top-0 left-0 w-full h-full animate-pulse opacity-20 bg-cyan-400"></div>
+                </div>
+
+                {/* User Cursor */}
+                <div 
+                    className="absolute top-0 bottom-0 w-1 bg-white shadow-[0_0_15px_white] transition-all duration-75"
+                    style={{ left: `${stability}%` }}
+                />
+
+                {/* Noise Visuals */}
+                <div className="absolute inset-0 flex items-center justify-center opacity-30 pointer-events-none">
+                    <Activity size={64} className="text-cyan-700" style={{ transform: `scaleY(${1 + noise/5})` }} />
+                </div>
+            </div>
+
+            {/* Lock Progress */}
+            <div className="w-64 h-2 bg-gray-900 mt-8 rounded-full overflow-hidden border border-gray-800">
+                <div 
+                    className="h-full bg-cyan-400 transition-all duration-75"
+                    style={{ width: `${lockedTime}%`, boxShadow: '0 0 10px #22d3ee' }}
+                />
+            </div>
+            <p className="text-cyan-800 font-mono text-[10px] mt-4">
+                {lockedTime > 0 ? `LOCKING: ${lockedTime}%` : "SEARCHING..."}
+            </p>
+        </div>
+    );
+};
+
+// --- STAGE 4: ENTROPY BATTLE (The Force) ---
 const EntropyStage = ({ onComplete, playTone, spawnExplosion, intention }: { onComplete: () => void, playTone: any, spawnExplosion: any, intention: string }) => {
-  const [integrity, setIntegrity] = useState(20); // Start low
-  const [decayRate, setDecayRate] = useState(0.5);
+  const [integrity, setIntegrity] = useState(15); // Start low
+  const [decayRate, setDecayRate] = useState(0.6);
   const [glitchActive, setGlitchActive] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
 
   // The Decay Loop
   useEffect(() => {
     const interval = setInterval(() => {
       setIntegrity(prev => {
-        // Decay gets stronger as you get closer to 100%
-        const currentDecay = decayRate + (prev / 200); 
+        // Decay gets stronger as you get closer to 100% (Resistance)
+        const currentDecay = decayRate + (prev / 150); 
         return Math.max(0, prev - currentDecay);
       });
-    }, 50);
+    }, 30);
     return () => clearInterval(interval);
   }, [decayRate]);
 
-  // Visual Glitch Effect based on progress
   useEffect(() => {
-    if (integrity > 80) setGlitchActive(true);
+    if (integrity > 85) setGlitchActive(true);
     else setGlitchActive(false);
   }, [integrity]);
 
   const handleStabilize = (e: any) => {
-    // Allow multi-touch or rapid clicking
-    e.preventDefault(); 
+    e.preventDefault(); // Prevent zoom/scroll
     
-    // Calculate boost
-    const boost = 8; // Standard tap boost
+    const boost = 7; 
     setIntegrity(prev => {
       const next = Math.min(100, prev + boost);
       
-      // Audio Feedback
-      const freq = 200 + (next * 8); // Pitch rises with integrity
+      // Feedback
+      const freq = 150 + (next * 6); 
       playTone(freq, 'sawtooth', 0.1, 0.2);
       
-      // Visual Feedback
       const clientX = e.touches ? e.touches[0].clientX : e.clientX;
       const clientY = e.touches ? e.touches[0].clientY : e.clientY;
       spawnExplosion(clientX || window.innerWidth/2, clientY || window.innerHeight/2, '#a855f7', 5);
 
       if (next >= 100) {
         onComplete();
-        playTone(150, 'square', 1.5, 0.5); // Bass drop success
+        playTone(100, 'square', 2, 0.5); // Boom
       }
       return next;
     });
@@ -238,14 +314,14 @@ const EntropyStage = ({ onComplete, playTone, spawnExplosion, intention }: { onC
       
       <div className="z-10 text-center space-y-8 w-full max-w-md px-6">
         <div className="space-y-2">
-          <h2 className="text-purple-400 font-mono text-xs tracking-widest animate-pulse">SYSTEM INSTABILITY DETECTED</h2>
-          <div className="font-mono text-white text-sm border border-purple-500/30 p-2 bg-black/50 backdrop-blur">
-            TARGET: &quot;{intention}&quot;
+          <h2 className="text-purple-400 font-mono text-xs tracking-widest animate-pulse">REALITY INTEGRITY CRITICAL</h2>
+          <div className="font-mono text-white text-sm border border-purple-500/30 p-2 bg-black/50 backdrop-blur truncate">
+            TARGET: {intention}
           </div>
         </div>
 
         {/* The Meter */}
-        <div className="relative w-full h-64 bg-black border-2 border-purple-900 rounded-lg overflow-hidden">
+        <div className="relative w-full h-64 bg-black border-2 border-purple-900 rounded-lg overflow-hidden shadow-[0_0_50px_rgba(88,28,135,0.3)]">
           {/* Grid Lines */}
           <div className="absolute inset-0 flex flex-col justify-between py-4 px-2 opacity-30 pointer-events-none">
             {[...Array(5)].map((_, i) => <div key={i} className="w-full h-px bg-purple-500" />)}
@@ -258,8 +334,8 @@ const EntropyStage = ({ onComplete, playTone, spawnExplosion, intention }: { onC
           />
           
           {/* The Percentage */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-6xl font-black text-white mix-blend-difference font-mono">
+          <div className="absolute inset-0 flex items-center justify-center mix-blend-difference">
+            <span className="text-6xl font-black text-white font-mono">
               {Math.floor(integrity)}%
             </span>
           </div>
@@ -267,33 +343,33 @@ const EntropyStage = ({ onComplete, playTone, spawnExplosion, intention }: { onC
 
         {/* The Button */}
         <button
-          className="w-full h-24 bg-purple-900/20 border-2 border-purple-500 text-purple-300 font-black text-2xl tracking-[0.2em] hover:bg-purple-500 hover:text-white transition-all active:scale-95 active:bg-white active:text-black"
+          className="w-full h-24 bg-purple-900/20 border-2 border-purple-500 text-purple-300 font-black text-2xl tracking-[0.2em] hover:bg-purple-500 hover:text-white transition-all active:scale-95 active:bg-white active:text-black shadow-[0_0_30px_rgba(168,85,247,0.2)]"
           onMouseDown={handleStabilize}
           onTouchStart={handleStabilize}
         >
-          STABILIZE
+          OVERWRITE
         </button>
         
         <p className="text-purple-500/50 font-mono text-[10px] uppercase text-center">
-          RAPIDLY TAP TO OVERCOME ENTROPY
+          RAPIDLY TAP TO OVERCOME RESISTANCE
         </p>
       </div>
     </div>
   );
 };
 
-// --- STAGE 4: REBOOT (Success) ---
+// --- STAGE 5: REBOOT (Success) ---
 const RebootStage = ({ intention, onExit }: { intention: string, onExit: () => void }) => {
   const [bootLog, setBootLog] = useState<string[]>([]);
 
   useEffect(() => {
     const logs = [
-      "STOPPING SERVICES...",
+      "STOPPING DAEMONS...",
       "FLUSHING CACHE...",
       "REWRITING KERNEL...",
       `INJECTING: ${intention}...`,
       "SUCCESS.",
-      "REBOOTING SYSTEM..."
+      "REBOOTING REALITY..."
     ];
 
     let i = 0;
@@ -324,13 +400,13 @@ const RebootStage = ({ intention, onExit }: { intention: string, onExit: () => v
             animate={{ opacity: 1 }} 
             className="mt-12 text-center"
           >
-            <div className="text-4xl mb-4 text-white">OK</div>
+            <div className="text-4xl mb-4 text-white font-bold">OK</div>
             <p className="text-gray-500 text-xs mb-8">PATCH APPLIED SUCCESSFULLY</p>
             <button 
               onClick={onExit}
-              className="px-8 py-3 border border-green-800 text-green-500 hover:bg-green-900/20 transition-colors uppercase text-xs"
+              className="px-8 py-3 border border-green-800 text-green-500 hover:bg-green-900/20 transition-colors uppercase text-xs tracking-widest"
             >
-              Exit Terminal
+              Return to System
             </button>
           </motion.div>
         )}
@@ -341,9 +417,9 @@ const RebootStage = ({ intention, onExit }: { intention: string, onExit: () => v
 
 // --- MAIN ORCHESTRATOR ---
 const RealityPatchSpell = ({ onExit }: { onExit: () => void }) => {
-  const [stage, setStage] = useState(0); // 0: Auth, 1: Inject, 2: Entropy, 3: Reboot
+  const [stage, setStage] = useState(0); // 0: Auth, 1: Inject, 2: Stabilize, 3: Entropy, 4: Reboot
   const [intention, setIntention] = useState("");
-  const { initAudio, playTone, playDrone } = useAudioEngine();
+  const { initAudio, playTone, playDrone, modulateFilter } = useAudioEngine();
   const { canvasRef, spawnExplosion } = useParticleSystem();
 
   useEffect(() => {
@@ -356,8 +432,9 @@ const RealityPatchSpell = ({ onExit }: { onExit: () => void }) => {
     switch (stage) {
       case 0: return <BioAuthStage onComplete={() => setStage(1)} playTone={playTone} />;
       case 1: return <InjectionStage onComplete={() => setStage(2)} playTone={playTone} setIntention={setIntention} />;
-      case 2: return <EntropyStage onComplete={() => setStage(3)} playTone={playTone} spawnExplosion={spawnExplosion} intention={intention} />;
-      case 3: return <RebootStage intention={intention} onExit={onExit} />;
+      case 2: return <StabilizationStage onComplete={() => setStage(3)} playTone={playTone} modulateFilter={modulateFilter} />;
+      case 3: return <EntropyStage onComplete={() => setStage(4)} playTone={playTone} spawnExplosion={spawnExplosion} intention={intention} />;
+      case 4: return <RebootStage intention={intention} onExit={onExit} />;
       default: return null;
     }
   };
