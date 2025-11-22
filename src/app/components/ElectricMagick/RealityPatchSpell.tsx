@@ -8,226 +8,345 @@ import {
 } from 'lucide-react';
 import { generateElectricEnsorcellment } from '@/lib/services/geminiService';
 
-// --- INTERNAL HOOKS (Self-Contained to prevent dependency errors) ---
+// --- ADVANCED AUDIO HOOK ---
 
 const useAudioEngine = () => {
   const ctxRef = useRef<AudioContext | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const oscRef = useRef<any>(null); 
-  const gainRef = useRef<GainNode | null>(null);
+  // We store active nodes here to manipulate them while playing (e.g. changing pitch)
+  const activeNodes = useRef<{
+    osc?: OscillatorNode;
+    osc2?: OscillatorNode;
+    gain?: GainNode;
+    filter?: BiquadFilterNode;
+    lfo?: OscillatorNode;
+    source?: AudioBufferSourceNode;
+  } | null>(null);
+  
+  const masterGainRef = useRef<GainNode | null>(null);
 
+  // Initialize Audio Context (Must happen on user interaction)
   const initAudio = useCallback(() => {
     if (typeof window !== 'undefined' && !ctxRef.current) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-      if (AudioContext) ctxRef.current = new AudioContext();
+      ctxRef.current = new AudioContext();
+      
+      // Master Gain (Volume Control)
+      const master = ctxRef.current.createGain();
+      master.connect(ctxRef.current.destination);
+      masterGainRef.current = master;
     }
     if (ctxRef.current && ctxRef.current.state === 'suspended') {
       ctxRef.current.resume();
     }
   }, []);
 
+  // 1. THE TYPING SOUND (Metallic Reverb Blips)
+  const playTypingBlip = useCallback(() => {
+    if (!ctxRef.current) initAudio();
+    const ctx = ctxRef.current!;
+    const t = ctx.currentTime;
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const filter = ctx.createBiquadFilter();
+    
+    // Create a Delay node for the "Echo/Reverb" effect
+    const delay = ctx.createDelay();
+    const feedback = ctx.createGain();
+
+    // Sound Design: High pitched sine wave with a quick decay
+    osc.type = 'sine';
+    // Randomize pitch slightly for variety
+    osc.frequency.setValueAtTime(800 + Math.random() * 200, t);
+    osc.frequency.exponentialRampToValueAtTime(200, t + 0.1);
+
+    // Filter to make it sound "distant"
+    filter.type = 'highpass';
+    filter.frequency.value = 1000;
+
+    // Envelope
+    gain.gain.setValueAtTime(0.1, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+
+    // Delay Settings (The "Cave" effect)
+    delay.delayTime.value = 0.15; // 150ms echo
+    feedback.gain.value = 0.3; // 30% feedback
+
+    // Wiring: Osc -> Filter -> Gain -> Destination AND Delay Chain
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+    
+    // The Echo Loop
+    gain.connect(delay);
+    delay.connect(feedback);
+    feedback.connect(delay);
+    delay.connect(ctx.destination);
+
+    osc.start(t);
+    osc.stop(t + 1);
+  }, [initAudio]);
+
+  // 2. STANDARD INTERACTION CLICKS
   const playClick = useCallback((type = 'standard') => {
     if (!ctxRef.current) initAudio();
     const ctx = ctxRef.current!;
+    const t = ctx.currentTime;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.connect(gain);
     gain.connect(ctx.destination);
 
     if (type === 'heavy') {
+      // Deep Thud
       osc.type = 'square';
-      osc.frequency.setValueAtTime(100, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(10, ctx.currentTime + 0.1);
-      gain.gain.setValueAtTime(0.3, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.1);
-    } else if (type === 'metallic') {
-      // Reverb blip simulation
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(2000, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(500, ctx.currentTime + 0.1);
-      gain.gain.setValueAtTime(0.1, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.1);
+      osc.frequency.setValueAtTime(100, t);
+      osc.frequency.exponentialRampToValueAtTime(10, t + 0.2);
+      gain.gain.setValueAtTime(0.3, t);
+      gain.gain.linearRampToValueAtTime(0, t + 0.2);
     } else {
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(800, ctx.currentTime);
-      gain.gain.setValueAtTime(0.05, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.05);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.05);
+      // Light Glass Click
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(2000, t);
+      gain.gain.setValueAtTime(0.05, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
     }
+    osc.start(t);
+    osc.stop(t + 0.2);
   }, [initAudio]);
 
+  // 3. CONTINUOUS LOOPS (The Magic Engine)
   const startLoop = useCallback((type: string) => {
     if (!ctxRef.current) initAudio();
     const ctx = ctxRef.current!;
-    if (oscRef.current) { try { if(oscRef.current.stop) oscRef.current.stop(); } catch(e){ /**/ } oscRef.current = null; }
+    
+    // Kill previous loop smoothly
+    if (activeNodes.current?.gain) {
+       activeNodes.current.gain.gain.setTargetAtTime(0, ctx.currentTime, 0.1);
+       const oldNodes = activeNodes.current;
+       setTimeout(() => {
+         try { oldNodes.osc?.stop(); oldNodes.source?.stop(); } catch(e){ /**/ }
+       }, 200);
+    }
 
-    const masterGain = ctx.createGain();
-    masterGain.connect(ctx.destination);
-    gainRef.current = masterGain;
+    const master = ctx.createGain();
+    master.connect(ctx.destination);
+    
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const nodes: any = { gain: master };
 
-    if (type === 'drone') {
+    if (type === 'void_enter') {
+        // THE BLACK HOLE SOUND: Shepard-tone like rising tension
+        const osc1 = ctx.createOscillator();
+        const osc2 = ctx.createOscillator();
+        const lfo = ctx.createOscillator();
+        const lfoGain = ctx.createGain();
+
+        osc1.type = 'sawtooth'; // Gritty
+        osc2.type = 'sine';     // Deep
+
+        // LFO creates a "shaking" texture
+        lfo.type = 'square';
+        lfo.frequency.value = 15; 
+        lfoGain.gain.value = 5;
+        lfo.connect(lfoGain);
+        lfoGain.connect(osc1.frequency);
+
+        osc1.connect(master);
+        osc2.connect(master);
+
+        osc1.start();
+        osc2.start();
+        lfo.start();
+
+        nodes.osc = osc1;
+        nodes.osc2 = osc2; // Store second osc
+        nodes.lfo = lfo;
+        
+        // Start volume low
+        master.gain.setValueAtTime(0, ctx.currentTime);
+        master.gain.linearRampToValueAtTime(0.2, ctx.currentTime + 1);
+
+    } else if (type === 'etching') {
+        // BURNING SOUND: High pitch electric fizz
+        const osc = ctx.createOscillator();
+        osc.type = 'sawtooth';
+        
+        // Lowpass filter to dampen the harshness initially
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.value = 200;
+
+        osc.connect(filter);
+        filter.connect(master);
+        
+        osc.start();
+        nodes.osc = osc;
+        nodes.filter = filter;
+        master.gain.setValueAtTime(0.1, ctx.currentTime);
+
+    } else if (type === 'breath') {
+        // WIND/BREATH: White Noise
+        const bufferSize = ctx.sampleRate * 2;
+        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+        
+        const noise = ctx.createBufferSource();
+        noise.buffer = buffer;
+        noise.loop = true;
+        
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.Q.value = 1; // Wind-like resonance
+
+        noise.connect(filter);
+        filter.connect(master);
+        noise.start();
+        
+        nodes.source = noise;
+        nodes.filter = filter;
+        master.gain.setValueAtTime(0.05, ctx.currentTime);
+    } else if (type === 'drone') {
+      // Standard Drone from previous version but simpler
       const osc = ctx.createOscillator();
       osc.type = 'sawtooth';
       osc.frequency.setValueAtTime(40, ctx.currentTime);
-      const filter = ctx.createBiquadFilter();
-      filter.type = 'lowpass';
-      filter.frequency.setValueAtTime(100, ctx.currentTime);
-      osc.connect(filter);
-      filter.connect(masterGain);
-      masterGain.gain.setValueAtTime(0, ctx.currentTime);
-      masterGain.gain.linearRampToValueAtTime(0.2, ctx.currentTime + 1); 
+      osc.connect(master);
+      master.gain.setValueAtTime(0.1, ctx.currentTime);
       osc.start();
-      oscRef.current = osc;
-    } else if (type === 'breath') {
-      const bufferSize = ctx.sampleRate * 2;
-      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-      const data = buffer.getChannelData(0);
-      for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
-      const noise = ctx.createBufferSource();
-      noise.buffer = buffer;
-      noise.loop = true;
-      const filter = ctx.createBiquadFilter();
-      filter.type = 'lowpass';
-      filter.Q.value = 5;
-      filter.frequency.setValueAtTime(200, ctx.currentTime); 
-      noise.connect(filter);
-      filter.connect(masterGain);
-      masterGain.gain.value = 0.15;
-      noise.start();
-      oscRef.current = { stop: () => noise.stop(), filter: filter };
-    } else if (type === 'burn') {
-      const osc = ctx.createOscillator();
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(50, ctx.currentTime);
-      const lfo = ctx.createOscillator();
-      lfo.type = 'square';
-      lfo.frequency.value = 20; 
-      const lfoGain = ctx.createGain();
-      lfoGain.gain.value = 500;
-      lfo.connect(lfoGain);
-      lfoGain.connect(osc.frequency);
-      lfo.start();
-      osc.connect(masterGain);
-      masterGain.gain.setValueAtTime(0.1, ctx.currentTime);
-      osc.start();
-      oscRef.current = { stop: () => { osc.stop(); lfo.stop(); } };
-    } else if (type === 'chant') {
-      const osc1 = ctx.createOscillator();
-      const osc2 = ctx.createOscillator();
-      osc1.type = 'sine'; osc2.type = 'triangle';
-      osc1.frequency.value = 100; osc2.frequency.value = 200; 
-      const tremolo = ctx.createOscillator();
-      tremolo.frequency.value = 4; 
-      const tremoloGain = ctx.createGain();
-      tremoloGain.gain.value = 0.5;
-      tremolo.connect(tremoloGain);
-      tremoloGain.connect(masterGain.gain);
-      osc1.connect(masterGain);
-      osc2.connect(masterGain);
-      osc1.start(); osc2.start(); tremolo.start();
-      masterGain.gain.setValueAtTime(0.1, ctx.currentTime);
-      oscRef.current = { stop: () => { osc1.stop(); osc2.stop(); tremolo.stop(); } };
+      nodes.osc = osc;
     } else if (type === 'charge') {
       const osc = ctx.createOscillator();
       osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(100, ctx.currentTime); 
-      osc.connect(masterGain);
-      masterGain.gain.value = 0.1;
+      osc.frequency.setValueAtTime(100, ctx.currentTime);
+      osc.connect(master);
+      master.gain.setValueAtTime(0.1, ctx.currentTime);
       osc.start();
-      oscRef.current = osc;
+      nodes.osc = osc;
+    } else if (type === 'chant') {
+      // Chant drone
+      const osc = ctx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(100, ctx.currentTime);
+      osc.connect(master);
+      master.gain.setValueAtTime(0.1, ctx.currentTime);
+      osc.start();
+      nodes.osc = osc;
     }
+
+    activeNodes.current = nodes;
   }, [initAudio]);
 
+  // 4. DYNAMIC AUDIO UPDATES (Controlled by React State/Progress)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updateLoop = useCallback((progress: any, type: string) => {
-    if (!ctxRef.current || !oscRef.current) return;
+    if (!ctxRef.current || !activeNodes.current) return;
     const ctx = ctxRef.current;
+    const nodes = activeNodes.current;
+    const t = ctx.currentTime;
 
-    if (type === 'drone') {
-      if (oscRef.current.frequency) oscRef.current.frequency.setTargetAtTime(40 + (progress * 2), ctx.currentTime, 0.1);
+    if (type === 'void_enter') {
+        // As progress goes 0->100, pitch rises dramatically (The Shepard Effect)
+        const p = typeof progress === 'number' ? progress : 0;
+        
+        // Drone gets deeper
+        if(nodes.osc2) nodes.osc2.frequency.setTargetAtTime(50 - (p * 0.2), t, 0.1);
+        // Scream gets higher
+        if(nodes.osc) nodes.osc.frequency.setTargetAtTime(100 + (p * 10), t, 0.1);
+        // LFO (Shaking) gets faster
+        if(nodes.lfo) nodes.lfo.frequency.setTargetAtTime(15 + (p * 0.5), t, 0.1);
+
+    } else if (type === 'etching') {
+         // Fire burns hotter (filter opens up)
+         const p = typeof progress === 'number' ? progress : 0;
+         if(nodes.filter) nodes.filter.frequency.setTargetAtTime(200 + (p * 50), t, 0.1);
+         // Pitch slight rise
+         if(nodes.osc) nodes.osc.frequency.setTargetAtTime(50 + (p * 2), t, 0.1);
+
     } else if (type === 'breath') {
-       let freq;
-       if (progress === 'INHALE') freq = 800;
-       else if (progress === 'HOLD') freq = 800;
-       else freq = 200;
-       oscRef.current.filter.frequency.setTargetAtTime(freq, ctx.currentTime, 2);
+        if(nodes.filter) {
+            if (progress === 'INHALE') {
+                nodes.filter.frequency.setTargetAtTime(600, t, 4); // Slow rise
+            } else if (progress === 'HOLD') {
+                nodes.filter.frequency.setTargetAtTime(600, t, 0.1); // Stay
+            } else {
+                nodes.filter.frequency.setTargetAtTime(100, t, 4); // Slow fall
+            }
+        }
+    } else if (type === 'drone') {
+       // Basic modulation for generic drone
+       if(nodes.osc) nodes.osc.frequency.setTargetAtTime(40 + (progress * 2), t, 0.1);
     } else if (type === 'charge') {
-       if (oscRef.current.frequency) {
-           oscRef.current.frequency.setTargetAtTime(100 + (progress * 10), ctx.currentTime, 0.1);
-           if(gainRef.current) gainRef.current.gain.setTargetAtTime(0.1 + (progress/200), ctx.currentTime, 0.1);
-       }
-    } else if (type === 'burn') {
-       // Increase pitch and LFO rate with progress
-       // Note: Simple pitch shift for the burn effect
+       if(nodes.osc) nodes.osc.frequency.setTargetAtTime(100 + (progress * 10), t, 0.1);
     }
   }, []);
 
   const stopLoop = useCallback(() => {
-    if (gainRef.current && ctxRef.current) {
-      gainRef.current.gain.setTargetAtTime(0, ctxRef.current.currentTime, 0.1);
+    if (activeNodes.current && activeNodes.current.gain && ctxRef.current) {
+      activeNodes.current.gain.gain.setTargetAtTime(0, ctxRef.current.currentTime, 0.1);
       setTimeout(() => {
-        if (oscRef.current) {
-            try { if(oscRef.current.stop) oscRef.current.stop(); } catch(e){ /**/ }
-            oscRef.current = null;
-        }
+          if (activeNodes.current?.osc) activeNodes.current.osc.stop();
+          if (activeNodes.current?.osc2) activeNodes.current.osc2.stop();
+          if (activeNodes.current?.lfo) activeNodes.current.lfo.stop();
+          if (activeNodes.current?.source) activeNodes.current.source.stop();
+          activeNodes.current = null;
       }, 200);
     }
   }, []);
 
-  const playSuccess = useCallback(() => {
-      if (!ctxRef.current) initAudio();
-      const ctx = ctxRef.current!;
-      [261.63, 329.63, 392.00, 523.25].forEach((freq, i) => {
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc.type = 'sine';
-          osc.frequency.value = freq;
-          osc.connect(gain);
-          gain.connect(ctx.destination);
-          gain.gain.setValueAtTime(0, ctx.currentTime);
-          gain.gain.linearRampToValueAtTime(0.1, ctx.currentTime + 0.1 + (i*0.05));
-          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 3);
-          osc.start();
-          osc.stop(ctx.currentTime + 3.5);
-      });
-  }, [initAudio]);
-
   const playCastBoom = useCallback(() => {
       if (!ctxRef.current) initAudio();
       const ctx = ctxRef.current!;
+      const t = ctx.currentTime;
+
+      // 1. Sub-bass drop
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(150, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(30, ctx.currentTime + 1);
-      gain.gain.setValueAtTime(1, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.5);
+      osc.frequency.setValueAtTime(150, t);
+      osc.frequency.exponentialRampToValueAtTime(0.01, t + 2);
+      gain.gain.setValueAtTime(1, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 2);
       osc.connect(gain);
       gain.connect(ctx.destination);
       osc.start();
-      osc.stop(ctx.currentTime + 1.5);
-      
-      const bufferSize = ctx.sampleRate * 1.5; 
+
+      // 2. White noise explosion
+      const bufferSize = ctx.sampleRate; 
       const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
       const data = buffer.getChannelData(0);
       for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
       const noise = ctx.createBufferSource();
       noise.buffer = buffer;
       const noiseGain = ctx.createGain();
-      noiseGain.gain.setValueAtTime(0.5, ctx.currentTime);
-      noiseGain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1);
+      noiseGain.gain.setValueAtTime(0.5, t);
+      noiseGain.gain.exponentialRampToValueAtTime(0.001, t + 1);
       noise.connect(noiseGain);
       noiseGain.connect(ctx.destination);
       noise.start();
   }, [initAudio]);
 
-  return { playClick, startLoop, updateLoop, stopLoop, playSuccess, playCastBoom };
+  const playSuccess = useCallback(() => {
+     // Used for phase completion (Magical chime)
+     if (!ctxRef.current) initAudio();
+     const ctx = ctxRef.current!;
+     const t = ctx.currentTime;
+     
+     const osc = ctx.createOscillator();
+     const gain = ctx.createGain();
+     osc.type = 'sine';
+     osc.frequency.setValueAtTime(440, t); // A4
+     osc.frequency.exponentialRampToValueAtTime(880, t + 0.1); // Slide up
+     gain.gain.setValueAtTime(0.1, t);
+     gain.gain.exponentialRampToValueAtTime(0.001, t + 1);
+     
+     osc.connect(gain);
+     gain.connect(ctx.destination);
+     osc.start();
+  }, [initAudio]);
+
+  return { playClick, playTypingBlip, startLoop, updateLoop, stopLoop, playCastBoom, playSuccess };
 };
 
 // --- UTILITY & CONSTANTS ---
@@ -288,7 +407,7 @@ const Consecration = ({ setPhase, archetype, audio }: any) => {
   useEffect(() => {
     if (isHolding) {
         // Different drone for void stage
-       audio.startLoop(stage === 'consecrate' ? 'drone' : 'charge'); 
+       audio.startLoop(stage === 'consecrate' ? 'drone' : 'void_enter'); 
     } else {
        audio.stopLoop();
     }
@@ -301,9 +420,9 @@ const Consecration = ({ setPhase, archetype, audio }: any) => {
     if (isHolding) {
       interval = setInterval(() => {
         if (stage === 'consecrate') {
-            // Stage 1: Shrink to Zero
+            // Stage 1: Shrink to Zero - Slowed down (50% slower)
             setProgress(prev => {
-                const next = prev + 1;
+                const next = prev + 0.5; // Was 1
                 audio.updateLoop(next, 'drone');
                 if (next >= 100) {
                     // Switch to void stage immediately
@@ -318,7 +437,7 @@ const Consecration = ({ setPhase, archetype, audio }: any) => {
             // Stage 2: Widen the Void
             setVoidProgress(prev => {
                 const next = prev + 0.5; // Slower expansion
-                audio.updateLoop(next * 1.5, 'charge'); // High intensity audio
+                audio.updateLoop(next, 'void_enter'); // High intensity audio
                 if (next >= 100) {
                     clearInterval(interval);
                     audio.playCastBoom();
@@ -354,10 +473,15 @@ const Consecration = ({ setPhase, archetype, audio }: any) => {
                 {/* Spiral intensifies as progress increases */}
                 <div className={`absolute inset-0 border-2 border-dashed ${archetype.border} rounded-full opacity-50 transition-all duration-75`}
                      style={{ 
-                         transform: `rotate(${progress * 10}deg) scale(${1 - (progress / 100)})`,
+                         transform: `rotate(${progress * 10}deg) scale(${1 - (progress / 100)}) translateX(${isHolding ? (Math.random() * 2 - 1) + 'px' : '0'}) translateY(${isHolding ? (Math.random() * 2 - 1) + 'px' : '0'})`,
                          opacity: 1 - (progress/100) 
                      }} 
                 />
+                {/* Flash Lightning (Random white lines) */}
+                {isHolding && Math.random() > 0.8 && (
+                    <div className="absolute inset-0 border border-white rounded-full scale-110 opacity-50 animate-ping pointer-events-none" />
+                )}
+
                 {/* Outer Spiral */}
                 <div className={`absolute -inset-4 border border-dotted ${archetype.border} rounded-full opacity-30 transition-all duration-75`}
                      style={{ 
@@ -393,7 +517,7 @@ const Consecration = ({ setPhase, archetype, audio }: any) => {
 
       <div className="text-center space-y-2 relative z-30 mix-blend-difference">
         <h2 className={`${archetype.color} font-serif italic text-xl tracking-[0.2em] drop-shadow-md`}>
-            {stage === 'consecrate' ? "CONSECRATE" : "ZERO VOID DIMENSION"}
+            {stage === 'consecrate' ? "CONSECRATE" : "ENTERING ZERO VOID DIMENSION"}
         </h2>
         <p className="text-slate-400 font-mono text-[10px] uppercase tracking-widest max-w-xs mx-auto">
             {stage === 'consecrate' 
@@ -467,6 +591,7 @@ const Grounding = ({ setPhase, audio }: any) => {
       return "EXHALE DEMONS";
   }
 
+  // Fix: Circle starts small on inhale and grows
   const guideStyle = {
     transform: breathState === 'INHALE' ? 'scale(1.5)' : breathState === 'EXHALE' ? 'scale(0.5)' : 'scale(1.5)',
     opacity: breathState === 'INHALE' ? 1 : breathState === 'EXHALE' ? 0.4 : 0.8,
@@ -498,7 +623,7 @@ const Inscription = ({ setIntention, setArchetype, setPhase, archetype, audio, s
   const handleType = (e: React.ChangeEvent<HTMLInputElement>) => {
       setText(e.target.value.toUpperCase());
       // Audio feedback on every keystroke (simulated reverb blip)
-      audio.playClick('metallic'); 
+      audio.playTypingBlip(); 
   };
 
   const handleSubmit = async () => {
@@ -511,6 +636,9 @@ const Inscription = ({ setIntention, setArchetype, setPhase, archetype, audio, s
       setIntention(text);
 
       try {
+          // Generate custom poetry and latin based on the user's desire
+          // Note: Assuming generateElectricEnsorcellment can handle a custom prompt or we use a generic one.
+          // We will format the prompt to ask for specific structure.
           const prompt = `For a chaos magick spell regarding "${text}", write two things separated by a pipe symbol (|). 
           1. A short, cryptic, mystical poem (4 lines max) about this desire manifesting. 
           2. A short Latin incantation command for this desire. 
@@ -527,6 +655,7 @@ const Inscription = ({ setIntention, setArchetype, setPhase, archetype, audio, s
           setPhase('AGREEMENT');
       } catch (e) {
           console.error(e);
+          // Fallback if AI fails
           setAiData({
               poetry: "The ether shifts to accommodate the will.",
               latin: "Fiat Voluntas Tua"
@@ -595,16 +724,18 @@ const Etching = ({ setPhase, archetype, audio, aiData }: any) => {
   const [isHolding, setIsHolding] = useState(false);
   const [hasFinished, setHasFinished] = useState(false);
   
-  const duration = 13000; 
+  // Derived visuals based on progress
+  const duration = 13000; // 13 seconds
   const colorPalette = ['#ffffff', '#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899'];
   
+  // Calculate dynamic properties
   const colorIndex = Math.floor((progress / 100) * colorPalette.length * 2) % colorPalette.length;
   const currentColor = colorPalette[colorIndex];
-  const rotationSpeed = 2 + (progress / 100) * 10; 
+  const rotationSpeed = 2 + (progress / 100) * 10; // Speed increases
 
   useEffect(() => {
       if (isHolding && !hasFinished) {
-          audio.startLoop('burn');
+          audio.startLoop('etching');
       } else {
           audio.stopLoop();
       }
@@ -612,9 +743,11 @@ const Etching = ({ setPhase, archetype, audio, aiData }: any) => {
   }, [isHolding, hasFinished, audio]);
 
   useEffect(() => {
+      // Using interval for consistent state updates matching the requested 13s
       let interval: NodeJS.Timeout;
+      
       if (isHolding && !hasFinished) {
-          const step = 100 / (duration / 20); 
+          const step = 100 / (duration / 20); // progress per 20ms tick
           interval = setInterval(() => {
               setProgress(p => {
                   const next = p + step;
@@ -624,16 +757,20 @@ const Etching = ({ setPhase, archetype, audio, aiData }: any) => {
                   }
                   return next;
               });
-              audio.updateLoop(progress, 'burn');
+              // Audio modulation based on speed
+              audio.updateLoop(progress, 'etching');
           }, 20);
       }
+
       return () => clearInterval(interval);
   }, [isHolding, hasFinished, progress, audio, duration]);
 
+  // Generate a sigil path
   const sigilPath = "M100,20 L150,120 L50,120 Z M100,150 L100,50 M50,80 L150,80";
 
   return (
     <div className="flex flex-col items-center justify-center h-full space-y-8 relative z-10">
+      {/* Magickal Poetry Display */}
       <div className="absolute top-10 w-full px-4 text-center pointer-events-none">
           <p className={`font-serif text-lg md:text-2xl leading-relaxed transition-all duration-300 ${isHolding ? 'opacity-100 blur-0' : 'opacity-30 blur-sm'}`} 
              style={{ color: currentColor, textShadow: `0 0 10px ${currentColor}` }}>
@@ -647,11 +784,12 @@ const Etching = ({ setPhase, archetype, audio, aiData }: any) => {
            <path d={sigilPath} stroke={currentColor} strokeWidth="3" fill="none"
             className="transition-all duration-75"
             strokeDasharray="1000" 
-            strokeDashoffset={1000 - (1000 * ((progress * 5) % 100) / 100)} 
+            strokeDashoffset={1000 - (1000 * ((progress * 5) % 100) / 100)} // Loops the tracing
             style={{ filter: 'drop-shadow(0 0 5px currentColor)' }}
           />
         </svg>
         
+        {/* Spinning overlay to show velocity */}
         <div className="absolute inset-0 border-2 border-dashed border-white/20 rounded-full"
              style={{ animation: `spin-slow ${15 / rotationSpeed}s linear infinite` }} />
       </div>
@@ -704,7 +842,7 @@ const VocalChant = ({ setPhase, archetype, audio, aiData }: any) => {
         let interval: NodeJS.Timeout;
         if (chanting && charge < 100) {
             interval = setInterval(() => {
-                setCharge(c => c + 0.5); 
+                setCharge(c => c + 0.5); // Slower build up
                 if (typeof navigator !== 'undefined' && navigator.vibrate && charge % 20 === 0) navigator.vibrate(20);
             }, 30);
         } else if (!chanting && charge > 0) {
@@ -729,6 +867,7 @@ const VocalChant = ({ setPhase, archetype, audio, aiData }: any) => {
             </div>
 
             <div className="relative w-64 h-64 flex items-center justify-center">
+                 {/* Unique Visual: Pulsating Rune Ring */}
                  <div className={`absolute inset-0 rounded-full border-4 border-double ${archetype.border} opacity-50`} 
                       style={{ transform: `scale(${1 + (charge/200)})` }} />
                  
@@ -926,4 +1065,3 @@ export default function RealityPatchSpell({ onExit }: { onExit: () => void }) {
     </div>
   );
 }
-// --- END OF FILE ---
