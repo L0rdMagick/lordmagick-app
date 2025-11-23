@@ -62,8 +62,6 @@ const useAudioEngine = () => {
     source?: any;
   } | null>(null);
   
-  const masterGainRef = useRef<any>(null);
-
   const initAudio = useCallback(() => {
     // FIX: Safe window access
     const globalAny = globalThis as any;
@@ -74,8 +72,9 @@ const useAudioEngine = () => {
           ctxRef.current = new AudioContextClass();
       }
     }
+    // Resume immediately if suspended (browser policy fix)
     if (ctxRef.current && ctxRef.current.state === 'suspended') {
-      ctxRef.current.resume();
+      ctxRef.current.resume().catch((e: any) => console.error("Audio resume failed", e));
     }
   }, []);
 
@@ -176,12 +175,13 @@ const useAudioEngine = () => {
     if (!ctxRef.current) return;
     const ctx = ctxRef.current;
     
+    // Fade out existing
     if (activeNodes.current?.gain) {
-       activeNodes.current.gain.gain.setTargetAtTime(0, ctx.currentTime, 0.2); 
+       activeNodes.current.gain.gain.setTargetAtTime(0, ctx.currentTime, 0.1); 
        const oldNodes = activeNodes.current;
        setTimeout(() => {
          try { oldNodes.osc?.stop(); oldNodes.osc2?.stop(); oldNodes.lfo?.stop(); oldNodes.source?.stop(); } catch(e){ /**/ }
-       }, 250);
+       }, 200);
     }
 
     const master = ctx.createGain();
@@ -198,15 +198,15 @@ const useAudioEngine = () => {
         const filter = ctx.createBiquadFilter();
 
         osc1.type = 'sawtooth'; // Aggressive, "engine" like
-        osc1.frequency.value = 110; 
+        osc1.frequency.value = 130; 
         
         osc2.type = 'square'; // Hollow, mechanical
-        osc2.frequency.value = 112; 
+        osc2.frequency.value = 65; // Sub-octave
 
-        // Filter starts closed (muffled) and opens up (powering up)
+        // Filter starts OPEN (800Hz) so we can hear it immediately, then we modulate it
         filter.type = 'lowpass';
-        filter.frequency.value = 150; 
-        filter.Q.value = 3; // Add resonance for "whine"
+        filter.frequency.value = 800; 
+        filter.Q.value = 2; 
 
         osc1.connect(filter);
         osc2.connect(filter);
@@ -219,8 +219,9 @@ const useAudioEngine = () => {
         nodes.osc2 = osc2;
         nodes.filter = filter;
         
-        // Start audible immediately
-        master.gain.setValueAtTime(0.15, ctx.currentTime);
+        // Start LOUDER (0.5)
+        master.gain.setValueAtTime(0.0, ctx.currentTime);
+        master.gain.linearRampToValueAtTime(0.5, ctx.currentTime + 0.1); // Quick fade in
 
     } else if (type === 'void_enter') {
         // THE 13 SECOND GROWING VOID
@@ -313,15 +314,15 @@ const useAudioEngine = () => {
 
     if (type === 'drone') {
         // WARP DRIVE MODULATION
-        // Pitch drops deeper (Sinking)
-        if(nodes.osc) nodes.osc.frequency.setTargetAtTime(110 - (progress * 0.7), t, 0.1);
-        if(nodes.osc2) nodes.osc2.frequency.setTargetAtTime(112 - (progress * 0.7), t, 0.1);
+        // Pitch drops deeper (Sinking from 130Hz -> 40Hz)
+        if(nodes.osc) nodes.osc.frequency.setTargetAtTime(130 - (progress * 0.9), t, 0.1);
+        if(nodes.osc2) nodes.osc2.frequency.setTargetAtTime(65 - (progress * 0.35), t, 0.1);
         
-        // Filter opens up aggressively (Powering Up)
-        if(nodes.filter) nodes.filter.frequency.setTargetAtTime(150 + (progress * 30), t, 0.1);
+        // Filter opens up even more aggressively (Powering Up) to reveal harmonics
+        if(nodes.filter) nodes.filter.frequency.setTargetAtTime(800 + (progress * 40), t, 0.1);
         
-        // Volume ramps up
-        if(nodes.gain) nodes.gain.gain.setTargetAtTime(0.15 + (progress * 0.0065), t, 0.1);
+        // Volume holds steady/loud
+        if(nodes.gain) nodes.gain.gain.setTargetAtTime(0.5, t, 0.1);
 
     } else if (type === 'void_enter') {
         const p = typeof progress === 'number' ? progress : 0;
@@ -439,7 +440,7 @@ const useAudioEngine = () => {
      osc.start();
   }, [initAudio]);
 
-  return { playClick, playTypingBlip, startLoop, updateLoop, stopLoop, playCastBoom, playSuccess, playHeartbeat };
+  return { playClick, playTypingBlip, startLoop, updateLoop, stopLoop, playCastBoom, playSuccess, playHeartbeat, initAudio };
 };
 
 // --- UTILITY & CONSTANTS ---
@@ -500,6 +501,18 @@ const Consecration = ({ setPhase, archetype, audio }: any) => {
   
   // For heartbeat animation
   const [scalePulse, setScalePulse] = useState(1);
+
+  // Handlers to ensure audio init
+  const handleHoldStart = useCallback((e: React.SyntheticEvent) => {
+      e.preventDefault();
+      audio.initAudio(); // Force audio resume
+      setIsHolding(true);
+  }, [audio]);
+
+  const handleHoldEnd = useCallback((e: React.SyntheticEvent) => {
+      e.preventDefault();
+      setIsHolding(false);
+  }, []);
 
   useEffect(() => {
     if (isHolding) {
@@ -681,11 +694,11 @@ const Consecration = ({ setPhase, archetype, audio }: any) => {
 
       <button 
         className={`w-32 h-32 rounded-full bg-white/5 border ${archetype.border} shadow-[0_0_30px_rgba(255,255,255,0.1)] active:scale-95 transition-all flex items-center justify-center group z-40`}
-        onMouseDown={() => setIsHolding(true)}
-        onMouseUp={() => setIsHolding(false)}
-        onMouseLeave={() => setIsHolding(false)}
-        onTouchStart={(e) => { e.preventDefault(); setIsHolding(true); }}
-        onTouchEnd={() => setIsHolding(false)}
+        onMouseDown={handleHoldStart}
+        onMouseUp={handleHoldEnd}
+        onMouseLeave={handleHoldEnd}
+        onTouchStart={handleHoldStart}
+        onTouchEnd={handleHoldEnd}
       >
         <Fingerprint className={`${archetype.color} w-12 h-12 group-hover:scale-110 transition-transform`} />
       </button>
