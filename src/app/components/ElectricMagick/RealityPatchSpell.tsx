@@ -154,12 +154,13 @@ const useAudioEngine = () => {
     if (!ctxRef.current) return;
     const ctx = ctxRef.current;
     
+    // Stop any existing loop abruptly if we start a new one
     if (activeNodes.current?.gain) {
-       activeNodes.current.gain.gain.setTargetAtTime(0, ctx.currentTime, 0.5); 
+       activeNodes.current.gain.gain.setTargetAtTime(0, ctx.currentTime, 0.1); 
        const oldNodes = activeNodes.current;
        setTimeout(() => {
          try { oldNodes.osc?.stop(); oldNodes.osc2?.stop(); oldNodes.lfo?.stop(); oldNodes.source?.stop(); } catch(e){ /**/ }
-       }, 600);
+       }, 200);
     }
 
     const master = ctx.createGain();
@@ -169,7 +170,7 @@ const useAudioEngine = () => {
     const nodes: any = { gain: master };
 
     if (type === 'void_enter') {
-        // DEEP VOID DRONE
+        // DEEP VOID DRONE - Dark, ominous, low frequency
         const osc1 = ctx.createOscillator();
         const osc2 = ctx.createOscillator(); // Sub bass
         const filter = ctx.createBiquadFilter();
@@ -206,6 +207,7 @@ const useAudioEngine = () => {
         nodes.filter = filter;
         nodes.lfo = lfo;
         
+        // Ramp up volume as we enter the void
         master.gain.setValueAtTime(0, ctx.currentTime);
         master.gain.linearRampToValueAtTime(0.5, ctx.currentTime + 4);
 
@@ -280,9 +282,10 @@ const useAudioEngine = () => {
 
     if (type === 'void_enter') {
         const p = typeof progress === 'number' ? progress : 0;
+        // Pitch shifts up slightly to build tension
         if (nodes.filter) nodes.filter.frequency.setTargetAtTime(50 + (p * 20), t, 0.1);
         if (nodes.lfo) nodes.lfo.frequency.setTargetAtTime(0.2 + (p * 0.15), t, 0.1);
-        if (nodes.osc2) nodes.osc2.frequency.setTargetAtTime(30 - (p * 0.2), t, 0.1);
+        if (nodes.osc2) nodes.osc2.frequency.setTargetAtTime(30 + (p * 0.2), t, 0.1);
 
     } else if (type === 'etching') {
          const p = typeof progress === 'number' ? progress : 0;
@@ -308,44 +311,74 @@ const useAudioEngine = () => {
 
   const stopLoop = useCallback(() => {
     if (activeNodes.current && activeNodes.current.gain && ctxRef.current) {
-      activeNodes.current.gain.gain.setTargetAtTime(0, ctxRef.current.currentTime, 0.5);
+      // CUT THE SOUND VERY QUICKLY (0.05s) so the Boom can take over
+      activeNodes.current.gain.gain.setTargetAtTime(0, ctxRef.current.currentTime, 0.05);
       setTimeout(() => {
           if (activeNodes.current?.osc) activeNodes.current.osc.stop();
           if (activeNodes.current?.osc2) activeNodes.current.osc2.stop();
           if (activeNodes.current?.lfo) activeNodes.current.lfo.stop();
           if (activeNodes.current?.source) activeNodes.current.source.stop();
           activeNodes.current = null;
-      }, 600);
+      }, 100);
     }
   }, []);
 
+  // --- NEW: THE BIG BOOM (For dramatic endings) ---
   const playCastBoom = useCallback(() => {
       if (!ctxRef.current) initAudio();
       if (!ctxRef.current) return;
       const ctx = ctxRef.current;
       const t = ctx.currentTime;
 
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(150, t);
-      osc.frequency.exponentialRampToValueAtTime(0.01, t + 3); 
-      gain.gain.setValueAtTime(1, t);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 3);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
+      // 1. Sub-Bass Impact (The Body)
+      const subOsc = ctx.createOscillator();
+      const subGain = ctx.createGain();
+      subOsc.type = 'sine';
+      subOsc.frequency.setValueAtTime(150, t);
+      subOsc.frequency.exponentialRampToValueAtTime(30, t + 0.8); // Sharp drop
+      subGain.gain.setValueAtTime(1.0, t);
+      subGain.gain.exponentialRampToValueAtTime(0.01, t + 2.5); // Long rumble
+      subOsc.connect(subGain);
+      subGain.connect(ctx.destination);
+      subOsc.start(t);
+      subOsc.stop(t + 2.5);
 
-      const osc2 = ctx.createOscillator();
-      const gain2 = ctx.createGain();
-      osc2.type = 'sine';
-      osc2.frequency.setValueAtTime(880, t);
-      osc2.frequency.linearRampToValueAtTime(0, t + 0.5);
-      gain2.gain.setValueAtTime(0.5, t);
-      gain2.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
-      osc2.connect(gain2);
-      gain2.connect(ctx.destination);
-      osc2.start();
+      // 2. Noise Burst (The Texture)
+      const bufferSize = ctx.sampleRate * 2;
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        // White noise fading out
+        data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 3);
+      }
+      const noise = ctx.createBufferSource();
+      noise.buffer = buffer;
+      const noiseFilter = ctx.createBiquadFilter();
+      noiseFilter.type = 'lowpass';
+      noiseFilter.frequency.setValueAtTime(3000, t); // Bright start
+      noiseFilter.frequency.exponentialRampToValueAtTime(100, t + 1.0); // Filter closes
+      const noiseGain = ctx.createGain();
+      noiseGain.gain.setValueAtTime(0.8, t);
+      noiseGain.gain.exponentialRampToValueAtTime(0.01, t + 1.5);
+      
+      noise.connect(noiseFilter);
+      noiseFilter.connect(noiseGain);
+      noiseGain.connect(ctx.destination);
+      noise.start(t);
+      noise.stop(t + 1.5);
+
+      // 3. Distortion Grit
+      const gritOsc = ctx.createOscillator();
+      const gritGain = ctx.createGain();
+      gritOsc.type = 'sawtooth';
+      gritOsc.frequency.setValueAtTime(80, t);
+      gritOsc.frequency.linearRampToValueAtTime(20, t + 0.3);
+      gritGain.gain.setValueAtTime(0.5, t);
+      gritGain.gain.exponentialRampToValueAtTime(0.01, t + 0.4);
+      gritOsc.connect(gritGain);
+      gritGain.connect(ctx.destination);
+      gritOsc.start(t);
+      gritOsc.stop(t + 0.4);
 
   }, [initAudio]);
 
@@ -460,14 +493,17 @@ const Consecration = ({ setPhase, archetype, audio }: any) => {
                 return next;
             });
         } else {
-            // Stage 2: Widen the Void - UPDATED SPEED
-            // Was 0.05 (40s wait), now 0.4 (~5s wait)
+            // Stage 2: Widen the Void
+            // THE FIX: Increased speed from 0.05 to 0.4. Now takes ~5 seconds instead of 40s.
             setVoidProgress(prev => {
                 const next = prev + 0.4; 
                 audio.updateLoop(next, 'void_enter'); 
                 if (next >= 100) {
                     clearInterval(interval);
+                    // THE FIX: Stop the drone immediately and play the BOOM
+                    audio.stopLoop();
                     audio.playCastBoom(); 
+                    
                     // FIX: Safe navigator access via globalThis
                     const nav = (globalThis as any).navigator;
                     if (typeof nav !== 'undefined' && nav.vibrate) nav.vibrate([200, 100, 500, 100, 1000]);
@@ -505,7 +541,7 @@ const Consecration = ({ setPhase, archetype, audio }: any) => {
     }
     
     return () => { clearInterval(interval); clearInterval(pulseInterval); };
-  }, [isHolding, stage, setPhase, audio]); // Removed specific state vars from deps to prevent stuttering
+  }, [isHolding, stage, setPhase, audio]); 
 
   const ArchetypeIcon = archetype.icon;
 
@@ -982,6 +1018,7 @@ const ChargeAndCast = ({ setPhase, setGlitchActive, archetype, audio }: any) => 
 
    useEffect(() => {
      if (charge >= 100) {
+        audio.stopLoop();
         audio.playCastBoom(); 
         // FIX: Safe navigator access via globalThis
         const nav = (globalThis as any).navigator;
