@@ -50,7 +50,6 @@ const generateSigilPath = (input: string): string => {
 // --- INTERNAL HOOKS ---
 
 const useAudioEngine = () => {
-  // FIX: Use 'any' to bypass missing AudioContext types in strict environments
   const ctxRef = useRef<any>(null);
   const activeNodes = useRef<{
     osc?: any;
@@ -62,12 +61,8 @@ const useAudioEngine = () => {
     source?: any;
   } | null>(null);
   
-  const masterGainRef = useRef<any>(null);
-
   const initAudio = useCallback(() => {
-    // FIX: Safe window access
     const globalAny = globalThis as any;
-    
     if (typeof globalAny.window !== 'undefined' && !ctxRef.current) {
       const AudioContextClass = globalAny.window.AudioContext || globalAny.window.webkitAudioContext;
       if (AudioContextClass) {
@@ -87,34 +82,19 @@ const useAudioEngine = () => {
 
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
-    const filter = ctx.createBiquadFilter();
-    const delay = ctx.createDelay();
-    const feedback = ctx.createGain();
-
+    
     osc.type = 'sine';
     osc.frequency.setValueAtTime(800 + Math.random() * 200, t);
     osc.frequency.exponentialRampToValueAtTime(200, t + 0.1);
 
-    filter.type = 'highpass';
-    filter.frequency.value = 1000;
-
     gain.gain.setValueAtTime(0.1, t);
-    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
 
-    delay.delayTime.value = 0.15; 
-    feedback.gain.value = 0.3; 
-
-    osc.connect(filter);
-    filter.connect(gain);
+    osc.connect(gain);
     gain.connect(ctx.destination);
-    
-    gain.connect(delay);
-    delay.connect(feedback);
-    feedback.connect(delay);
-    delay.connect(ctx.destination);
 
     osc.start(t);
-    osc.stop(t + 1);
+    osc.stop(t + 0.1);
   }, [initAudio]);
 
   const playClick = useCallback((type = 'standard') => {
@@ -133,12 +113,6 @@ const useAudioEngine = () => {
       osc.frequency.exponentialRampToValueAtTime(10, t + 0.1);
       gain.gain.setValueAtTime(0.3, t);
       gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
-    } else if (type === 'metallic') {
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(2000, t);
-      osc.frequency.exponentialRampToValueAtTime(500, t + 0.1);
-      gain.gain.setValueAtTime(0.1, t);
-      gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
     } else {
       osc.type = 'sine';
       osc.frequency.setValueAtTime(800, t);
@@ -149,12 +123,34 @@ const useAudioEngine = () => {
     osc.stop(t + 0.15);
   }, [initAudio]);
 
+  // New Heartbeat Sound
+  const playHeartbeat = useCallback(() => {
+    if (!ctxRef.current) return;
+    const ctx = ctxRef.current;
+    const t = ctx.currentTime;
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    
+    osc.frequency.setValueAtTime(60, t);
+    osc.frequency.exponentialRampToValueAtTime(40, t + 0.1);
+    
+    gain.gain.setValueAtTime(0.8, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    
+    osc.start(t);
+    osc.stop(t + 0.5);
+  }, []);
+
   const startLoop = useCallback((type: string) => {
     if (!ctxRef.current) initAudio();
     if (!ctxRef.current) return;
     const ctx = ctxRef.current;
     
-    // Stop any existing loop abruptly if we start a new one
+    // Fade out existing
     if (activeNodes.current?.gain) {
        activeNodes.current.gain.gain.setTargetAtTime(0, ctx.currentTime, 0.1); 
        const oldNodes = activeNodes.current;
@@ -169,30 +165,42 @@ const useAudioEngine = () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const nodes: any = { gain: master };
 
-    if (type === 'void_enter') {
-        // DEEP VOID DRONE - Dark, ominous, low frequency
-        const osc1 = ctx.createOscillator();
-        const osc2 = ctx.createOscillator(); // Sub bass
-        const filter = ctx.createBiquadFilter();
+    if (type === 'drone') {
+        // INITIAL SINKING DRONE
+        // Starts mid-low, drops to sub-bass
+        const osc = ctx.createOscillator();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(150, ctx.currentTime); // Start at 150Hz
+        
         const lfo = ctx.createOscillator();
+        lfo.frequency.value = 10; // Fast flutter
         const lfoGain = ctx.createGain();
+        lfoGain.gain.value = 5;
+        lfo.connect(lfoGain);
+        lfoGain.connect(osc.frequency);
+
+        osc.connect(master);
+        master.gain.setValueAtTime(0.05, ctx.currentTime); // Start quiet
+        
+        osc.start();
+        lfo.start();
+        nodes.osc = osc;
+        nodes.lfo = lfo;
+
+    } else if (type === 'void_enter') {
+        // THE GROWING VOID
+        const osc1 = ctx.createOscillator();
+        const osc2 = ctx.createOscillator(); 
+        const filter = ctx.createBiquadFilter();
 
         osc1.type = 'sawtooth';
-        osc1.frequency.value = 60; 
+        osc1.frequency.value = 40; // Deep base
         
         osc2.type = 'sine';
-        osc2.frequency.value = 30; // Sub
+        osc2.frequency.value = 35; // Sub beat
 
         filter.type = 'lowpass';
-        filter.frequency.value = 50; 
-        filter.Q.value = 10; 
-
-        lfo.type = 'sine';
-        lfo.frequency.value = 0.2; 
-        lfoGain.gain.value = 50;
-
-        lfo.connect(lfoGain);
-        lfoGain.connect(filter.frequency);
+        filter.frequency.value = 80; 
 
         osc1.connect(filter);
         osc2.connect(master); 
@@ -200,16 +208,13 @@ const useAudioEngine = () => {
 
         osc1.start();
         osc2.start();
-        lfo.start();
 
         nodes.osc = osc1;
         nodes.osc2 = osc2;
         nodes.filter = filter;
-        nodes.lfo = lfo;
         
-        // Ramp up volume as we enter the void
         master.gain.setValueAtTime(0, ctx.currentTime);
-        master.gain.linearRampToValueAtTime(0.5, ctx.currentTime + 4);
+        master.gain.linearRampToValueAtTime(0.4, ctx.currentTime + 2); // Fade in
 
     } else if (type === 'etching') {
         const osc = ctx.createOscillator();
@@ -242,15 +247,6 @@ const useAudioEngine = () => {
         nodes.filter = filter;
         master.gain.setValueAtTime(0.05, ctx.currentTime);
 
-    } else if (type === 'drone') {
-      const osc = ctx.createOscillator();
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(40, ctx.currentTime);
-      osc.connect(master);
-      master.gain.setValueAtTime(0.1, ctx.currentTime);
-      osc.start();
-      nodes.osc = osc;
-
     } else if (type === 'charge') {
       const osc = ctx.createOscillator();
       osc.type = 'sawtooth';
@@ -280,12 +276,18 @@ const useAudioEngine = () => {
     const nodes = activeNodes.current;
     const t = ctx.currentTime;
 
-    if (type === 'void_enter') {
+    if (type === 'drone') {
+        // SINKING SOUND
+        // Frequency drops from 150Hz -> 40Hz
+        // Volume increases from 0.05 -> 0.3
+        if(nodes.osc) nodes.osc.frequency.setTargetAtTime(150 - (progress * 1.1), t, 0.1);
+        if(nodes.gain) nodes.gain.gain.setTargetAtTime(0.05 + (progress * 0.0025), t, 0.1);
+
+    } else if (type === 'void_enter') {
+        // Growing intensity
         const p = typeof progress === 'number' ? progress : 0;
-        // Pitch shifts up slightly to build tension
-        if (nodes.filter) nodes.filter.frequency.setTargetAtTime(50 + (p * 20), t, 0.1);
-        if (nodes.lfo) nodes.lfo.frequency.setTargetAtTime(0.2 + (p * 0.15), t, 0.1);
-        if (nodes.osc2) nodes.osc2.frequency.setTargetAtTime(30 + (p * 0.2), t, 0.1);
+        if (nodes.filter) nodes.filter.frequency.setTargetAtTime(80 + (p * 5), t, 0.1);
+        if (nodes.osc2) nodes.osc2.frequency.setTargetAtTime(35 + (Math.sin(t)*2), t, 0.1);
 
     } else if (type === 'etching') {
          const p = typeof progress === 'number' ? progress : 0;
@@ -302,8 +304,6 @@ const useAudioEngine = () => {
                 nodes.filter.frequency.setTargetAtTime(100, t, 4);
             }
         }
-    } else if (type === 'drone') {
-       if(nodes.osc) nodes.osc.frequency.setTargetAtTime(40 + (progress * 2), t, 0.1);
     } else if (type === 'charge') {
        if(nodes.osc) nodes.osc.frequency.setTargetAtTime(100 + (progress * 10), t, 0.1);
     }
@@ -311,7 +311,6 @@ const useAudioEngine = () => {
 
   const stopLoop = useCallback(() => {
     if (activeNodes.current && activeNodes.current.gain && ctxRef.current) {
-      // CUT THE SOUND VERY QUICKLY (0.05s) so the Boom can take over
       activeNodes.current.gain.gain.setTargetAtTime(0, ctxRef.current.currentTime, 0.05);
       setTimeout(() => {
           if (activeNodes.current?.osc) activeNodes.current.osc.stop();
@@ -323,40 +322,38 @@ const useAudioEngine = () => {
     }
   }, []);
 
-  // --- NEW: THE BIG BOOM (For dramatic endings) ---
   const playCastBoom = useCallback(() => {
       if (!ctxRef.current) initAudio();
       if (!ctxRef.current) return;
       const ctx = ctxRef.current;
       const t = ctx.currentTime;
 
-      // 1. Sub-Bass Impact (The Body)
+      // 1. Sub-Bass Impact
       const subOsc = ctx.createOscillator();
       const subGain = ctx.createGain();
       subOsc.type = 'sine';
       subOsc.frequency.setValueAtTime(150, t);
-      subOsc.frequency.exponentialRampToValueAtTime(30, t + 0.8); // Sharp drop
+      subOsc.frequency.exponentialRampToValueAtTime(30, t + 0.8); 
       subGain.gain.setValueAtTime(1.0, t);
-      subGain.gain.exponentialRampToValueAtTime(0.01, t + 2.5); // Long rumble
+      subGain.gain.exponentialRampToValueAtTime(0.01, t + 2.5); 
       subOsc.connect(subGain);
       subGain.connect(ctx.destination);
       subOsc.start(t);
       subOsc.stop(t + 2.5);
 
-      // 2. Noise Burst (The Texture)
+      // 2. Noise Burst
       const bufferSize = ctx.sampleRate * 2;
       const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
       const data = buffer.getChannelData(0);
       for (let i = 0; i < bufferSize; i++) {
-        // White noise fading out
         data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 3);
       }
       const noise = ctx.createBufferSource();
       noise.buffer = buffer;
       const noiseFilter = ctx.createBiquadFilter();
       noiseFilter.type = 'lowpass';
-      noiseFilter.frequency.setValueAtTime(3000, t); // Bright start
-      noiseFilter.frequency.exponentialRampToValueAtTime(100, t + 1.0); // Filter closes
+      noiseFilter.frequency.setValueAtTime(3000, t); 
+      noiseFilter.frequency.exponentialRampToValueAtTime(100, t + 1.0);
       const noiseGain = ctx.createGain();
       noiseGain.gain.setValueAtTime(0.8, t);
       noiseGain.gain.exponentialRampToValueAtTime(0.01, t + 1.5);
@@ -366,19 +363,6 @@ const useAudioEngine = () => {
       noiseGain.connect(ctx.destination);
       noise.start(t);
       noise.stop(t + 1.5);
-
-      // 3. Distortion Grit
-      const gritOsc = ctx.createOscillator();
-      const gritGain = ctx.createGain();
-      gritOsc.type = 'sawtooth';
-      gritOsc.frequency.setValueAtTime(80, t);
-      gritOsc.frequency.linearRampToValueAtTime(20, t + 0.3);
-      gritGain.gain.setValueAtTime(0.5, t);
-      gritGain.gain.exponentialRampToValueAtTime(0.01, t + 0.4);
-      gritOsc.connect(gritGain);
-      gritGain.connect(ctx.destination);
-      gritOsc.start(t);
-      gritOsc.stop(t + 0.4);
 
   }, [initAudio]);
 
@@ -401,7 +385,7 @@ const useAudioEngine = () => {
      osc.start();
   }, [initAudio]);
 
-  return { playClick, playTypingBlip, startLoop, updateLoop, stopLoop, playCastBoom, playSuccess };
+  return { playClick, playTypingBlip, startLoop, updateLoop, stopLoop, playCastBoom, playSuccess, playHeartbeat };
 };
 
 // --- UTILITY & CONSTANTS ---
@@ -455,15 +439,18 @@ const GlitchOverlay = ({ active }: { active: boolean }) => {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const Consecration = ({ setPhase, archetype, audio }: any) => {
   const [progress, setProgress] = useState(0);
-  const [voidProgress, setVoidProgress] = useState(0); 
-  const [stage, setStage] = useState<'consecrate' | 'void'>('consecrate');
+  const [voidProgress, setVoidProgress] = useState(0);
+  const [pulseTime, setPulseTime] = useState(0); // Counts milliseconds of pulsing
+  const [stage, setStage] = useState<'consecrate' | 'growing' | 'pulsing'>('consecrate');
   const [isHolding, setIsHolding] = useState(false);
-  const [pulse, setPulse] = useState(0); 
+  
+  // For heartbeat animation
+  const [scalePulse, setScalePulse] = useState(1);
 
   useEffect(() => {
     if (isHolding) {
        if (stage === 'consecrate' && progress === 0) audio.startLoop('drone');
-       if (stage === 'void' && voidProgress === 0) audio.startLoop('void_enter');
+       if (stage === 'growing' && voidProgress === 0) audio.startLoop('void_enter');
     } else {
        audio.stopLoop();
     }
@@ -472,103 +459,109 @@ const Consecration = ({ setPhase, archetype, audio }: any) => {
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    let pulseInterval: NodeJS.Timeout;
     
     if (isHolding) {
       interval = setInterval(() => {
+        
+        // --- STAGE 1: CONSECRATE (Shrink to Dot) ---
         if (stage === 'consecrate') {
-            // Stage 1: Shrink to Zero
             setProgress(prev => {
-                const next = prev + 1.0; // Faster initial phase
+                const next = prev + 1.0; 
                 audio.updateLoop(next, 'drone');
                 if (next >= 100) {
-                    setStage('void');
+                    setStage('growing');
                     audio.stopLoop(); 
                     setTimeout(() => audio.startLoop('void_enter'), 50); 
-                    // FIX: Safe navigator access via globalThis
+                    
                     const nav = (globalThis as any).navigator;
-                    if (typeof nav !== 'undefined' && nav.vibrate) nav.vibrate([50, 50]);
+                    if (typeof nav !== 'undefined' && nav.vibrate) nav.vibrate(50);
                     return 100;
                 }
                 return next;
             });
-        } else {
-            // Stage 2: Widen the Void
-            // THE FIX: Increased speed from 0.05 to 0.4. Now takes ~5 seconds instead of 40s.
+
+        // --- STAGE 2: GROWING (13 Seconds to Full Size) ---
+        } else if (stage === 'growing') {
+            // 13 seconds = 13000ms. Interval is 20ms. 
+            // Total steps = 650. Increment = 100 / 650 approx 0.153
             setVoidProgress(prev => {
-                const next = prev + 0.4; 
+                const next = prev + 0.153; 
                 audio.updateLoop(next, 'void_enter'); 
                 if (next >= 100) {
+                    setStage('pulsing');
+                    
+                    const nav = (globalThis as any).navigator;
+                    if (typeof nav !== 'undefined' && nav.vibrate) nav.vibrate(100);
+                    return 100;
+                }
+                return next;
+            });
+
+        // --- STAGE 3: PULSING (7 Seconds Heartbeat) ---
+        } else if (stage === 'pulsing') {
+            setPulseTime(prev => {
+                const next = prev + 20; // +20ms
+                
+                // Heartbeat Animation (60 BPM = 1 sec per beat)
+                // Simple contraction/expansion using Sine wave based on time
+                const beat = (Math.sin(next * 0.006) + 1) / 2; // 0 to 1
+                setScalePulse(1 + (beat * 0.1)); // Scale between 1.0 and 1.1
+
+                // Trigger audio thumps on the "beat"
+                if (next % 1000 < 25 && next > 50) {
+                    audio.playHeartbeat();
+                    const nav = (globalThis as any).navigator;
+                    if (typeof nav !== 'undefined' && nav.vibrate) nav.vibrate(20);
+                }
+
+                // Finish after 7 seconds
+                if (next >= 7000) {
                     clearInterval(interval);
-                    // THE FIX: Stop the drone immediately and play the BOOM
                     audio.stopLoop();
                     audio.playCastBoom(); 
                     
-                    // FIX: Safe navigator access via globalThis
                     const nav = (globalThis as any).navigator;
                     if (typeof nav !== 'undefined' && nav.vibrate) nav.vibrate([200, 100, 500, 100, 1000]);
+                    
                     setPhase('GROUNDING');
-                    return 100;
+                    return 7000;
                 }
                 return next;
             });
         }
-        
-        // FIX: Safe navigator access via globalThis
-        const nav = (globalThis as any).navigator;
-        if (typeof nav !== 'undefined' && nav.vibrate) {
-            if (stage === 'consecrate') nav.vibrate(5);
-            else {
-                if (Math.random() < (voidProgress / 100)) nav.vibrate(10);
-            }
-        }
       }, 20);
 
-      if (stage === 'void' && voidProgress > 80) {
-          pulseInterval = setInterval(() => {
-              setPulse(p => (p === 0 ? 0.2 : 0)); 
-          }, 300); 
-      }
-
     } else {
-        // Reset logic if user lets go
-        if (stage === 'void' && voidProgress > 0) {
-             setVoidProgress(prev => Math.max(0, prev - 2)); 
-             setPulse(0);
-        } else if (stage === 'consecrate' && progress > 0) {
+        // --- RESET LOGIC: If finger lifts at ANY time, go back to start ---
+        if (stage !== 'consecrate' || progress > 0) {
+             setStage('consecrate');
              setProgress(0);
+             setVoidProgress(0);
+             setPulseTime(0);
+             setScalePulse(1);
+             audio.stopLoop();
         }
     }
     
-    return () => { clearInterval(interval); clearInterval(pulseInterval); };
+    return () => clearInterval(interval);
   }, [isHolding, stage, setPhase, audio]); 
 
   const ArchetypeIcon = archetype.icon;
 
   const getVoidMessage = () => {
-      if (voidProgress < 20) return "TEARING THE VEIL";
-      if (voidProgress < 50) return "DISSOLVING THE EGO";
-      if (voidProgress < 80) return "OPENING THE GATE";
-      return "ENTERING CHAOS POTENTIAL SUBSTANCE SPHERE";
+      if (stage === 'growing') return "OPENING THE GATE...";
+      if (stage === 'pulsing') return "ALIGNING HEARTBEAT...";
+      return "";
   };
+
+  // Calculate Circle Size for Growing Phase
+  // Starts at 10px, grows to ~85% of container width (320px * 0.85 = 272px)
+  const growSize = 10 + (voidProgress / 100) * 260; 
 
   return (
     <div className="flex flex-col items-center justify-center h-full space-y-8 animate-in fade-in duration-1000 relative z-10 select-none">
-      <div className={`absolute inset-0 pointer-events-none transition-opacity duration-5000 ${stage === 'void' ? 'opacity-100' : 'opacity-0'}`}>
-          {[...Array(40)].map((_, i) => (
-              <div key={i} className="absolute bg-white rounded-full animate-pulse"
-                   style={{
-                       top: `${Math.random() * 100}%`,
-                       left: `${Math.random() * 100}%`,
-                       width: `${Math.random() * 2 + 1}px`,
-                       height: `${Math.random() * 2 + 1}px`,
-                       animationDuration: `${Math.random() * 3 + 2}s`,
-                       opacity: Math.random() * 0.5 + 0.2
-                   }}
-              />
-          ))}
-      </div>
-
+      
+      {/* Visual Container */}
       <div className="relative w-80 h-80 flex items-center justify-center">
         
         {stage === 'consecrate' ? (
@@ -589,38 +582,47 @@ const Consecration = ({ setPhase, archetype, audio }: any) => {
             </>
         ) : (
             <div className="absolute inset-0 flex items-center justify-center">
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black rounded-full shadow-[0_0_60px_rgba(255,255,255,0.3)] z-30 transition-transform duration-75" 
+                
+                {/* The Main Black Void Circle */}
+                <div className="bg-black rounded-full shadow-[0_0_60px_rgba(255,255,255,0.2)] z-30 transition-all duration-75" 
                      style={{ 
-                         width: '10px', height: '10px',
-                         transform: `scale(${1 + (voidProgress * (voidProgress > 90 ? 200 : 30)) + (voidProgress > 80 ? pulse * 50 : 0)})`, 
+                         width: `${growSize}px`, 
+                         height: `${growSize}px`,
+                         transform: stage === 'pulsing' ? `scale(${scalePulse})` : 'scale(1)'
                      }}
                 />
                 
-                <div className="absolute w-20 h-20 rounded-full border-2 border-cyan-500/50 blur-[2px] animate-[spin_3s_linear_infinite] z-20 mix-blend-screen transition-opacity duration-500"
-                     style={{
-                         transform: `scale(${1 + (voidProgress * 5)})`,
-                         opacity: Math.max(0, 1 - (voidProgress / 90))
-                     }}
-                />
-                
-                <div className="absolute w-20 h-20 rounded-full border-2 border-purple-500/50 blur-[1px] animate-[spin_4s_linear_infinite_reverse] z-20 mix-blend-screen transition-opacity duration-500"
-                     style={{
-                         transform: `scale(${1 + (voidProgress * 4)})`,
-                         opacity: Math.max(0, 0.8 - (voidProgress / 90))
-                     }}
-                />
+                {/* Outer Ripple Effects during Growth */}
+                {stage === 'growing' && (
+                    <>
+                        <div className="absolute rounded-full border border-cyan-500/30 opacity-50 animate-ping"
+                             style={{ width: `${growSize}px`, height: `${growSize}px`, animationDuration: '3s' }} />
+                    </>
+                )}
+
+                {/* Heartbeat Pulse Visuals */}
+                {stage === 'pulsing' && (
+                    <div className="absolute rounded-full border-2 border-purple-500/50"
+                         style={{ 
+                             width: `${growSize}px`, 
+                             height: `${growSize}px`,
+                             transform: `scale(${scalePulse + 0.2})`,
+                             opacity: 0.5
+                         }} 
+                    />
+                )}
             </div>
         )}
       </div>
 
       <div className="text-center space-y-4 relative z-40 mix-blend-difference h-24">
-        <h2 className={`text-white font-serif italic text-xl tracking-[0.2em] drop-shadow-md transition-all duration-500 ${stage === 'void' ? 'scale-110' : ''}`}>
+        <h2 className={`text-white font-serif italic text-xl tracking-[0.2em] drop-shadow-md transition-all duration-500`}>
             {stage === 'consecrate' ? "CONSECRATE" : getVoidMessage()}
         </h2>
         <p className="text-slate-400 font-mono text-[10px] uppercase tracking-widest max-w-xs mx-auto">
             {stage === 'consecrate' 
                 ? "Hold to collapse reality to a single point" 
-                : "Hold to enter the subatomic void"}
+                : "Do not release the connection"}
         </p>
       </div>
 
