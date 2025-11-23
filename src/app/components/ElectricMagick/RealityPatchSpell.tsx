@@ -446,7 +446,7 @@ const Consecration = ({ setPhase, archetype, audio }: any) => {
         if (stage === 'consecrate') {
             // Stage 1: Shrink to Zero
             setProgress(prev => {
-                const next = prev + 0.5; 
+                const next = prev + 1.0; // Faster initial phase
                 audio.updateLoop(next, 'drone');
                 if (next >= 100) {
                     setStage('void');
@@ -460,9 +460,10 @@ const Consecration = ({ setPhase, archetype, audio }: any) => {
                 return next;
             });
         } else {
-            // Stage 2: Widen the Void - EXTREMELY SLOW
+            // Stage 2: Widen the Void - UPDATED SPEED
+            // Was 0.05 (40s wait), now 0.4 (~5s wait)
             setVoidProgress(prev => {
-                const next = prev + 0.05; 
+                const next = prev + 0.4; 
                 audio.updateLoop(next, 'void_enter'); 
                 if (next >= 100) {
                     clearInterval(interval);
@@ -494,6 +495,7 @@ const Consecration = ({ setPhase, archetype, audio }: any) => {
       }
 
     } else {
+        // Reset logic if user lets go
         if (stage === 'void' && voidProgress > 0) {
              setVoidProgress(prev => Math.max(0, prev - 2)); 
              setPulse(0);
@@ -503,7 +505,7 @@ const Consecration = ({ setPhase, archetype, audio }: any) => {
     }
     
     return () => { clearInterval(interval); clearInterval(pulseInterval); };
-  }, [isHolding, progress, voidProgress, stage, setPhase, audio]);
+  }, [isHolding, stage, setPhase, audio]); // Removed specific state vars from deps to prevent stuttering
 
   const ArchetypeIcon = archetype.icon;
 
