@@ -69,6 +69,9 @@ const useAudioEngine = () => {
     lfo?: any;
     lfoGain?: any;
     extraGains?: any[]; 
+    osc?: any;      // Added
+    osc2?: any;     // Added
+    source?: any;   // Added
   } | null>(null);
 
   // --- SYNTHESIS UTILITIES ---
@@ -280,7 +283,13 @@ const useAudioEngine = () => {
        activeNodes.current.gain.gain.setTargetAtTime(0, ctx.currentTime, 0.1); 
        const oldNodes = activeNodes.current;
        setTimeout(() => {
-         try { oldNodes.osc?.stop(); oldNodes.osc2?.stop(); oldNodes.lfo?.stop(); oldNodes.source?.stop(); } catch(e){ /**/ }
+         try { 
+             if(oldNodes.sources) oldNodes.sources.forEach((s: any) => s.stop());
+             if(oldNodes.osc) oldNodes.osc.stop();
+             if(oldNodes.osc2) oldNodes.osc2.stop();
+             if(oldNodes.lfo) oldNodes.lfo.stop();
+             if(oldNodes.source) oldNodes.source.stop(); 
+         } catch(e){ /**/ }
        }, 200);
     }
 
