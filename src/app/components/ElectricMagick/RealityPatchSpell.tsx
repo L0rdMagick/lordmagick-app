@@ -50,7 +50,6 @@ const generateSigilPath = (input: string): string => {
 // --- INTERNAL HOOKS ---
 
 const useAudioEngine = () => {
-  // FIX: Use 'any' to bypass missing AudioContext types in strict environments
   const ctxRef = useRef<any>(null);
   const activeNodes = useRef<{
     osc?: any;
@@ -63,16 +62,13 @@ const useAudioEngine = () => {
   } | null>(null);
   
   const initAudio = useCallback(() => {
-    // FIX: Safe window access
     const globalAny = globalThis as any;
-    
     if (typeof globalAny.window !== 'undefined' && !ctxRef.current) {
       const AudioContextClass = globalAny.window.AudioContext || globalAny.window.webkitAudioContext;
       if (AudioContextClass) {
           ctxRef.current = new AudioContextClass();
       }
     }
-    // Resume immediately if suspended (browser policy fix)
     if (ctxRef.current && ctxRef.current.state === 'suspended') {
       ctxRef.current.resume().catch((e: any) => console.error("Audio resume failed", e));
     }
@@ -175,13 +171,13 @@ const useAudioEngine = () => {
     if (!ctxRef.current) return;
     const ctx = ctxRef.current;
     
-    // Fade out existing
+    // Fade out existing loop smoothly before stopping
     if (activeNodes.current?.gain) {
-       activeNodes.current.gain.gain.setTargetAtTime(0, ctx.currentTime, 0.1); 
+       activeNodes.current.gain.gain.setTargetAtTime(0, ctx.currentTime, 0.2); 
        const oldNodes = activeNodes.current;
        setTimeout(() => {
          try { oldNodes.osc?.stop(); oldNodes.osc2?.stop(); oldNodes.lfo?.stop(); oldNodes.source?.stop(); } catch(e){ /**/ }
-       }, 200);
+       }, 250);
     }
 
     const master = ctx.createGain();
@@ -514,16 +510,19 @@ const Consecration = ({ setPhase, archetype, audio }: any) => {
       setIsHolding(false);
   }, []);
 
+  // 1. Handle Audio Start/Stop based on Stage/Holding changes ONLY
   useEffect(() => {
     if (isHolding) {
-       if (stage === 'consecrate' && progress === 0) audio.startLoop('drone');
-       if (stage === 'growing' && voidProgress === 0) audio.startLoop('void_enter');
+       if (stage === 'consecrate') audio.startLoop('drone');
+       if (stage === 'growing') audio.startLoop('void_enter');
     } else {
        audio.stopLoop();
     }
+    // Cleanup on unmount or change
     return () => audio.stopLoop();
-  }, [isHolding, audio, stage, progress, voidProgress]);
+  }, [isHolding, stage, audio]); // Removed progress vars from here to prevent cutting out
 
+  // 2. Animation Loop
   useEffect(() => {
     let interval: NodeJS.Timeout;
     
@@ -533,7 +532,7 @@ const Consecration = ({ setPhase, archetype, audio }: any) => {
         // --- STAGE 1: CONSECRATE (Shrink to Dot) ---
         if (stage === 'consecrate') {
             setProgress(prev => {
-                const next = prev + 1.0; 
+                const next = prev + 0.5; // 0.5 per 20ms = 4 seconds duration
                 audio.updateLoop(next, 'drone');
                 if (next >= 100) {
                     setStage('growing');
