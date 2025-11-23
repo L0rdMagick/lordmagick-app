@@ -50,6 +50,7 @@ const generateSigilPath = (input: string): string => {
 // --- INTERNAL HOOKS ---
 
 const useAudioEngine = () => {
+  // FIX: Use 'any' to bypass missing AudioContext types in strict environments
   const ctxRef = useRef<any>(null);
   const activeNodes = useRef<{
     osc?: any;
@@ -61,8 +62,12 @@ const useAudioEngine = () => {
     source?: any;
   } | null>(null);
   
+  const masterGainRef = useRef<any>(null);
+
   const initAudio = useCallback(() => {
+    // FIX: Safe window access
     const globalAny = globalThis as any;
+    
     if (typeof globalAny.window !== 'undefined' && !ctxRef.current) {
       const AudioContextClass = globalAny.window.AudioContext || globalAny.window.webkitAudioContext;
       if (AudioContextClass) {
@@ -82,19 +87,34 @@ const useAudioEngine = () => {
 
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
-    
+    const filter = ctx.createBiquadFilter();
+    const delay = ctx.createDelay();
+    const feedback = ctx.createGain();
+
     osc.type = 'sine';
     osc.frequency.setValueAtTime(800 + Math.random() * 200, t);
     osc.frequency.exponentialRampToValueAtTime(200, t + 0.1);
 
-    gain.gain.setValueAtTime(0.1, t);
-    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+    filter.type = 'highpass';
+    filter.frequency.value = 1000;
 
-    osc.connect(gain);
+    gain.gain.setValueAtTime(0.1, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+
+    delay.delayTime.value = 0.15; 
+    feedback.gain.value = 0.3; 
+
+    osc.connect(filter);
+    filter.connect(gain);
     gain.connect(ctx.destination);
+    
+    gain.connect(delay);
+    delay.connect(feedback);
+    feedback.connect(delay);
+    delay.connect(ctx.destination);
 
     osc.start(t);
-    osc.stop(t + 0.1);
+    osc.stop(t + 1);
   }, [initAudio]);
 
   const playClick = useCallback((type = 'standard') => {
@@ -113,6 +133,12 @@ const useAudioEngine = () => {
       osc.frequency.exponentialRampToValueAtTime(10, t + 0.1);
       gain.gain.setValueAtTime(0.3, t);
       gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+    } else if (type === 'metallic') {
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(2000, t);
+      osc.frequency.exponentialRampToValueAtTime(500, t + 0.1);
+      gain.gain.setValueAtTime(0.1, t);
+      gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
     } else {
       osc.type = 'sine';
       osc.frequency.setValueAtTime(800, t);
@@ -123,26 +149,26 @@ const useAudioEngine = () => {
     osc.stop(t + 0.15);
   }, [initAudio]);
 
-  // New Heartbeat Sound
   const playHeartbeat = useCallback(() => {
     if (!ctxRef.current) return;
     const ctx = ctxRef.current;
     const t = ctx.currentTime;
 
+    // Low Thump
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     
     osc.frequency.setValueAtTime(60, t);
-    osc.frequency.exponentialRampToValueAtTime(40, t + 0.1);
+    osc.frequency.exponentialRampToValueAtTime(30, t + 0.1);
     
     gain.gain.setValueAtTime(0.8, t);
-    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
 
     osc.connect(gain);
     gain.connect(ctx.destination);
     
     osc.start(t);
-    osc.stop(t + 0.5);
+    osc.stop(t + 0.4);
   }, []);
 
   const startLoop = useCallback((type: string) => {
@@ -150,13 +176,12 @@ const useAudioEngine = () => {
     if (!ctxRef.current) return;
     const ctx = ctxRef.current;
     
-    // Fade out existing
     if (activeNodes.current?.gain) {
-       activeNodes.current.gain.gain.setTargetAtTime(0, ctx.currentTime, 0.1); 
+       activeNodes.current.gain.gain.setTargetAtTime(0, ctx.currentTime, 0.2); 
        const oldNodes = activeNodes.current;
        setTimeout(() => {
          try { oldNodes.osc?.stop(); oldNodes.osc2?.stop(); oldNodes.lfo?.stop(); oldNodes.source?.stop(); } catch(e){ /**/ }
-       }, 200);
+       }, 250);
     }
 
     const master = ctx.createGain();
@@ -166,38 +191,48 @@ const useAudioEngine = () => {
     const nodes: any = { gain: master };
 
     if (type === 'drone') {
-        // INITIAL SINKING DRONE
-        // Starts mid-low, drops to sub-bass
-        const osc = ctx.createOscillator();
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(150, ctx.currentTime); // Start at 150Hz
-        
-        const lfo = ctx.createOscillator();
-        lfo.frequency.value = 10; // Fast flutter
-        const lfoGain = ctx.createGain();
-        lfoGain.gain.value = 5;
-        lfo.connect(lfoGain);
-        lfoGain.connect(osc.frequency);
+        // --- WARP DRIVE / SINKING SOUND ---
+        // Two oscillators slightly detuned for texture
+        const osc1 = ctx.createOscillator();
+        const osc2 = ctx.createOscillator();
+        const filter = ctx.createBiquadFilter();
 
-        osc.connect(master);
-        master.gain.setValueAtTime(0.05, ctx.currentTime); // Start quiet
+        osc1.type = 'sawtooth'; // Aggressive, "engine" like
+        osc1.frequency.value = 110; 
         
-        osc.start();
-        lfo.start();
-        nodes.osc = osc;
-        nodes.lfo = lfo;
+        osc2.type = 'square'; // Hollow, mechanical
+        osc2.frequency.value = 112; 
+
+        // Filter starts closed (muffled) and opens up (powering up)
+        filter.type = 'lowpass';
+        filter.frequency.value = 150; 
+        filter.Q.value = 3; // Add resonance for "whine"
+
+        osc1.connect(filter);
+        osc2.connect(filter);
+        filter.connect(master);
+
+        osc1.start();
+        osc2.start();
+
+        nodes.osc = osc1;
+        nodes.osc2 = osc2;
+        nodes.filter = filter;
+        
+        // Start audible immediately
+        master.gain.setValueAtTime(0.15, ctx.currentTime);
 
     } else if (type === 'void_enter') {
-        // THE GROWING VOID
+        // THE 13 SECOND GROWING VOID
         const osc1 = ctx.createOscillator();
         const osc2 = ctx.createOscillator(); 
         const filter = ctx.createBiquadFilter();
 
         osc1.type = 'sawtooth';
-        osc1.frequency.value = 40; // Deep base
+        osc1.frequency.value = 40; // Very deep base
         
         osc2.type = 'sine';
-        osc2.frequency.value = 35; // Sub beat
+        osc2.frequency.value = 38; // Sub interference
 
         filter.type = 'lowpass';
         filter.frequency.value = 80; 
@@ -214,7 +249,7 @@ const useAudioEngine = () => {
         nodes.filter = filter;
         
         master.gain.setValueAtTime(0, ctx.currentTime);
-        master.gain.linearRampToValueAtTime(0.4, ctx.currentTime + 2); // Fade in
+        master.gain.linearRampToValueAtTime(0.5, ctx.currentTime + 4); // Gradual fade in
 
     } else if (type === 'etching') {
         const osc = ctx.createOscillator();
@@ -277,17 +312,22 @@ const useAudioEngine = () => {
     const t = ctx.currentTime;
 
     if (type === 'drone') {
-        // SINKING SOUND
-        // Frequency drops from 150Hz -> 40Hz
-        // Volume increases from 0.05 -> 0.3
-        if(nodes.osc) nodes.osc.frequency.setTargetAtTime(150 - (progress * 1.1), t, 0.1);
-        if(nodes.gain) nodes.gain.gain.setTargetAtTime(0.05 + (progress * 0.0025), t, 0.1);
+        // WARP DRIVE MODULATION
+        // Pitch drops deeper (Sinking)
+        if(nodes.osc) nodes.osc.frequency.setTargetAtTime(110 - (progress * 0.7), t, 0.1);
+        if(nodes.osc2) nodes.osc2.frequency.setTargetAtTime(112 - (progress * 0.7), t, 0.1);
+        
+        // Filter opens up aggressively (Powering Up)
+        if(nodes.filter) nodes.filter.frequency.setTargetAtTime(150 + (progress * 30), t, 0.1);
+        
+        // Volume ramps up
+        if(nodes.gain) nodes.gain.gain.setTargetAtTime(0.15 + (progress * 0.0065), t, 0.1);
 
     } else if (type === 'void_enter') {
-        // Growing intensity
         const p = typeof progress === 'number' ? progress : 0;
-        if (nodes.filter) nodes.filter.frequency.setTargetAtTime(80 + (p * 5), t, 0.1);
-        if (nodes.osc2) nodes.osc2.frequency.setTargetAtTime(35 + (Math.sin(t)*2), t, 0.1);
+        // Pitch shifts up slightly to build tension over 13 seconds
+        if (nodes.filter) nodes.filter.frequency.setTargetAtTime(80 + (p * 2), t, 0.1);
+        if (nodes.osc2) nodes.osc2.frequency.setTargetAtTime(38 + (Math.sin(t)*2), t, 0.1);
 
     } else if (type === 'etching') {
          const p = typeof progress === 'number' ? progress : 0;
@@ -311,6 +351,7 @@ const useAudioEngine = () => {
 
   const stopLoop = useCallback(() => {
     if (activeNodes.current && activeNodes.current.gain && ctxRef.current) {
+      // Fast cut for impact
       activeNodes.current.gain.gain.setTargetAtTime(0, ctxRef.current.currentTime, 0.05);
       setTimeout(() => {
           if (activeNodes.current?.osc) activeNodes.current.osc.stop();
@@ -353,7 +394,7 @@ const useAudioEngine = () => {
       const noiseFilter = ctx.createBiquadFilter();
       noiseFilter.type = 'lowpass';
       noiseFilter.frequency.setValueAtTime(3000, t); 
-      noiseFilter.frequency.exponentialRampToValueAtTime(100, t + 1.0);
+      noiseFilter.frequency.exponentialRampToValueAtTime(100, t + 1.0); 
       const noiseGain = ctx.createGain();
       noiseGain.gain.setValueAtTime(0.8, t);
       noiseGain.gain.exponentialRampToValueAtTime(0.01, t + 1.5);
@@ -363,6 +404,19 @@ const useAudioEngine = () => {
       noiseGain.connect(ctx.destination);
       noise.start(t);
       noise.stop(t + 1.5);
+
+      // 3. Distortion Grit
+      const gritOsc = ctx.createOscillator();
+      const gritGain = ctx.createGain();
+      gritOsc.type = 'sawtooth';
+      gritOsc.frequency.setValueAtTime(80, t);
+      gritOsc.frequency.linearRampToValueAtTime(20, t + 0.3);
+      gritGain.gain.setValueAtTime(0.5, t);
+      gritGain.gain.exponentialRampToValueAtTime(0.01, t + 0.4);
+      gritOsc.connect(gritGain);
+      gritGain.connect(ctx.destination);
+      gritOsc.start(t);
+      gritOsc.stop(t + 0.4);
 
   }, [initAudio]);
 
@@ -440,7 +494,7 @@ const GlitchOverlay = ({ active }: { active: boolean }) => {
 const Consecration = ({ setPhase, archetype, audio }: any) => {
   const [progress, setProgress] = useState(0);
   const [voidProgress, setVoidProgress] = useState(0);
-  const [pulseTime, setPulseTime] = useState(0); // Counts milliseconds of pulsing
+  const [pulseTime, setPulseTime] = useState(0); 
   const [stage, setStage] = useState<'consecrate' | 'growing' | 'pulsing'>('consecrate');
   const [isHolding, setIsHolding] = useState(false);
   
@@ -503,7 +557,6 @@ const Consecration = ({ setPhase, archetype, audio }: any) => {
                 const next = prev + 20; // +20ms
                 
                 // Heartbeat Animation (60 BPM = 1 sec per beat)
-                // Simple contraction/expansion using Sine wave based on time
                 const beat = (Math.sin(next * 0.006) + 1) / 2; // 0 to 1
                 setScalePulse(1 + (beat * 0.1)); // Scale between 1.0 and 1.1
 
@@ -555,7 +608,7 @@ const Consecration = ({ setPhase, archetype, audio }: any) => {
   };
 
   // Calculate Circle Size for Growing Phase
-  // Starts at 10px, grows to ~85% of container width (320px * 0.85 = 272px)
+  // Starts at 10px, grows to ~85% of container width
   const growSize = 10 + (voidProgress / 100) * 260; 
 
   return (
