@@ -47,26 +47,122 @@ const generateSigilPath = (input: string): string => {
   return d;
 };
 
-// --- INTERNAL HOOKS ---
+// --- ADVANCED AUDIO ENGINE ---
 
 const useAudioEngine = () => {
+  // FIX: Using 'any' to prevent TypeScript errors when DOM types are missing
   const ctxRef = useRef<any>(null);
+  const masterGainRef = useRef<any>(null);
+  const reverbNodeRef = useRef<any>(null);
+  
+  // Store references to active nodes for the current loop so we can modulate/stop them
   const activeNodes = useRef<{
-    osc?: any;
-    osc2?: any;
+    sources?: any[];
     gain?: any;
     filter?: any;
+    panner?: any;
+    panners?: any[]; // Added this missing property
     lfo?: any;
     lfoGain?: any;
-    source?: any;
+    extraGains?: any[]; 
   } | null>(null);
-  
+
+  // --- SYNTHESIS UTILITIES ---
+
+  // Generate Pink Noise (1/f) for organic textures (wind, breath, ocean)
+  const createPinkNoise = (ctx: any) => {
+    const bufferSize = ctx.sampleRate * 2; // 2 seconds buffer
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const output = buffer.getChannelData(0);
+    let b0, b1, b2, b3, b4, b5, b6;
+    b0 = b1 = b2 = b3 = b4 = b5 = b6 = 0.0;
+    for (let i = 0; i < bufferSize; i++) {
+        const white = Math.random() * 2 - 1;
+        b0 = 0.99886 * b0 + white * 0.0555179;
+        b1 = 0.99332 * b1 + white * 0.0750759;
+        b2 = 0.96900 * b2 + white * 0.1538520;
+        b3 = 0.86650 * b3 + white * 0.3104856;
+        b4 = 0.55000 * b4 + white * 0.5329522;
+        b5 = -0.7616 * b5 - white * 0.0168980;
+        output[i] = b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362;
+        output[i] *= 0.11; 
+        b6 = white * 0.115926;
+    }
+    const node = ctx.createBufferSource();
+    node.buffer = buffer;
+    node.loop = true;
+    return node;
+  };
+
+  // Procedural Reverb Impulse Response (Cavernous/Cathedral)
+  const createReverb = (ctx: any) => {
+    const duration = 3.0;
+    const decay = 3.0;
+    const sampleRate = ctx.sampleRate;
+    const length = sampleRate * duration;
+    const impulse = ctx.createBuffer(2, length, sampleRate);
+    const impulseL = impulse.getChannelData(0);
+    const impulseR = impulse.getChannelData(1);
+
+    for (let i = 0; i < length; i++) {
+        // Exponential decay noise
+        const n = i / length;
+        const env = Math.pow(1 - n, decay);
+        impulseL[i] = (Math.random() * 2 - 1) * env;
+        impulseR[i] = (Math.random() * 2 - 1) * env;
+    }
+    const convolver = ctx.createConvolver();
+    convolver.buffer = impulse;
+    return convolver;
+  };
+
+  // Distortion Curve for "Grinding/Etching"
+  const makeDistortionCurve = (amount: number) => {
+    const k = typeof amount === 'number' ? amount : 50;
+    const n_samples = 44100;
+    const curve = new Float32Array(n_samples);
+    const deg = Math.PI / 180;
+    for (let i = 0; i < n_samples; ++i) {
+      const x = (i * 2) / n_samples - 1;
+      curve[i] = (3 + k) * x * 20 * deg / (Math.PI + k * Math.abs(x));
+    }
+    return curve;
+  };
+
   const initAudio = useCallback(() => {
+    // FIX: Safe window access
     const globalAny = globalThis as any;
     if (typeof globalAny.window !== 'undefined' && !ctxRef.current) {
       const AudioContextClass = globalAny.window.AudioContext || globalAny.window.webkitAudioContext;
       if (AudioContextClass) {
-          ctxRef.current = new AudioContextClass();
+          const ctx = new AudioContextClass();
+          ctxRef.current = ctx;
+
+          // Master Chain: MasterGain -> Limiter -> Destination
+          //               MasterGain -> Reverb -> Destination (Parallel)
+          
+          const masterGain = ctx.createGain();
+          masterGainRef.current = masterGain;
+          masterGain.gain.value = 0.8;
+
+          // Compressor/Limiter to catch loud transients
+          const limiter = ctx.createDynamicsCompressor();
+          limiter.threshold.value = -10;
+          limiter.ratio.value = 12;
+          limiter.attack.value = 0.003;
+
+          // Reverb
+          const reverb = createReverb(ctx);
+          reverbNodeRef.current = reverb;
+          const reverbGain = ctx.createGain();
+          reverbGain.gain.value = 0.4; // 40% wet mix
+
+          masterGain.connect(limiter);
+          limiter.connect(ctx.destination);
+
+          masterGain.connect(reverb);
+          reverb.connect(reverbGain);
+          reverbGain.connect(ctx.destination);
       }
     }
     if (ctxRef.current && ctxRef.current.state === 'suspended') {
@@ -74,232 +170,286 @@ const useAudioEngine = () => {
     }
   }, []);
 
+  // --- UI SOUNDS ---
+
   const playTypingBlip = useCallback(() => {
     if (!ctxRef.current) initAudio();
-    if (!ctxRef.current) return;
+    if (!ctxRef.current || !masterGainRef.current) return;
     const ctx = ctxRef.current;
     const t = ctx.currentTime;
 
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
-    const filter = ctx.createBiquadFilter();
-    const delay = ctx.createDelay();
-    const feedback = ctx.createGain();
-
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(800 + Math.random() * 200, t);
-    osc.frequency.exponentialRampToValueAtTime(200, t + 0.1);
-
-    filter.type = 'highpass';
-    filter.frequency.value = 1000;
-
-    gain.gain.setValueAtTime(0.1, t);
-    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
-
-    delay.delayTime.value = 0.15; 
-    feedback.gain.value = 0.3; 
-
-    osc.connect(filter);
-    filter.connect(gain);
-    gain.connect(ctx.destination);
     
-    gain.connect(delay);
-    delay.connect(feedback);
-    feedback.connect(delay);
-    delay.connect(ctx.destination);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(1200 + Math.random() * 500, t);
+    osc.frequency.exponentialRampToValueAtTime(200, t + 0.05);
+
+    gain.gain.setValueAtTime(0.05, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+
+    osc.connect(gain);
+    gain.connect(masterGainRef.current);
 
     osc.start(t);
-    osc.stop(t + 1);
+    osc.stop(t + 0.1);
   }, [initAudio]);
 
   const playClick = useCallback((type = 'standard') => {
     if (!ctxRef.current) initAudio();
-    if (!ctxRef.current) return;
+    if (!ctxRef.current || !masterGainRef.current) return;
     const ctx = ctxRef.current;
     const t = ctx.currentTime;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.connect(gain);
-    gain.connect(ctx.destination);
+    gain.connect(masterGainRef.current);
 
     if (type === 'heavy') {
       osc.type = 'square';
-      osc.frequency.setValueAtTime(100, t);
+      osc.frequency.setValueAtTime(50, t);
       osc.frequency.exponentialRampToValueAtTime(10, t + 0.1);
-      gain.gain.setValueAtTime(0.3, t);
-      gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
-    } else if (type === 'metallic') {
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(2000, t);
-      osc.frequency.exponentialRampToValueAtTime(500, t + 0.1);
-      gain.gain.setValueAtTime(0.1, t);
+      gain.gain.setValueAtTime(0.2, t);
       gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
     } else {
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(800, t);
-      gain.gain.setValueAtTime(0.05, t);
-      gain.gain.exponentialRampToValueAtTime(0.01, t + 0.05);
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(2000, t);
+      gain.gain.setValueAtTime(0.02, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
     }
     osc.start(t);
     osc.stop(t + 0.15);
   }, [initAudio]);
 
   const playHeartbeat = useCallback(() => {
-    if (!ctxRef.current) return;
+    if (!ctxRef.current || !masterGainRef.current) return;
     const ctx = ctxRef.current;
     const t = ctx.currentTime;
 
-    // Low Thump
+    // Heavy Sub Thump (40Hz)
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     
-    osc.frequency.setValueAtTime(60, t);
-    osc.frequency.exponentialRampToValueAtTime(30, t + 0.1);
+    osc.frequency.setValueAtTime(50, t);
+    osc.frequency.exponentialRampToValueAtTime(30, t + 0.1); // Pitch drop
     
-    gain.gain.setValueAtTime(0.8, t);
+    gain.gain.setValueAtTime(0.6, t);
     gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
 
     osc.connect(gain);
-    gain.connect(ctx.destination);
+    gain.connect(masterGainRef.current);
     
     osc.start(t);
     osc.stop(t + 0.4);
   }, []);
 
+  // --- LOOP ENGINE ---
+
   const startLoop = useCallback((type: string) => {
     if (!ctxRef.current) initAudio();
-    if (!ctxRef.current) return;
+    if (!ctxRef.current || !masterGainRef.current) return;
     const ctx = ctxRef.current;
     
-    // Fade out existing loop smoothly before stopping
-    if (activeNodes.current?.gain) {
-       activeNodes.current.gain.gain.setTargetAtTime(0, ctx.currentTime, 0.2); 
-       const oldNodes = activeNodes.current;
-       setTimeout(() => {
-         try { oldNodes.osc?.stop(); oldNodes.osc2?.stop(); oldNodes.lfo?.stop(); oldNodes.source?.stop(); } catch(e){ /**/ }
-       }, 250);
-    }
+    // Soft stop previous loop
+    stopLoop();
 
-    const master = ctx.createGain();
-    master.connect(ctx.destination);
+    const loopMasterGain = ctx.createGain();
+    loopMasterGain.connect(masterGainRef.current);
     
+    // We will attach specific nodes to this object to control them in updateLoop
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const nodes: any = { gain: master };
+    const nodes: any = { gain: loopMasterGain };
 
     if (type === 'drone') {
-        // --- WARP DRIVE / SINKING SOUND ---
-        // Two oscillators slightly detuned for texture
-        const osc1 = ctx.createOscillator();
-        const osc2 = ctx.createOscillator();
+        // PHASE 1a: CONSECRATION (The Swell)
+        
+        const oscL = ctx.createOscillator();
+        const oscR = ctx.createOscillator();
+        const pannerL = ctx.createStereoPanner();
+        const pannerR = ctx.createStereoPanner();
         const filter = ctx.createBiquadFilter();
 
-        osc1.type = 'sawtooth'; // Aggressive, "engine" like
-        osc1.frequency.value = 130; 
-        
-        osc2.type = 'square'; // Hollow, mechanical
-        osc2.frequency.value = 65; // Sub-octave
+        oscL.type = 'sawtooth';
+        oscR.type = 'sawtooth';
+        oscL.frequency.value = 60; // Deep drone base
+        oscR.frequency.value = 60;
 
-        // Filter starts OPEN (800Hz) so we can hear it immediately, then we modulate it
+        pannerL.pan.value = -0.5; // Start somewhat centered
+        pannerR.pan.value = 0.5;
+
         filter.type = 'lowpass';
-        filter.frequency.value = 800; 
-        filter.Q.value = 2; 
+        filter.frequency.value = 200; // Start muffled
+        filter.Q.value = 5; // Resonant
 
-        osc1.connect(filter);
-        osc2.connect(filter);
-        filter.connect(master);
+        oscL.connect(pannerL);
+        oscR.connect(pannerR);
+        pannerL.connect(filter);
+        pannerR.connect(filter);
+        filter.connect(loopMasterGain);
 
-        osc1.start();
-        osc2.start();
+        oscL.start();
+        oscR.start();
 
-        nodes.osc = osc1;
-        nodes.osc2 = osc2;
+        nodes.sources = [oscL, oscR];
         nodes.filter = filter;
+        nodes.panners = [pannerL, pannerR];
         
-        // Start LOUDER (0.5)
-        master.gain.setValueAtTime(0.0, ctx.currentTime);
-        master.gain.linearRampToValueAtTime(0.5, ctx.currentTime + 0.1); // Quick fade in
+        // Fade in
+        loopMasterGain.gain.setValueAtTime(0, ctx.currentTime);
+        loopMasterGain.gain.linearRampToValueAtTime(0.4, ctx.currentTime + 1);
 
     } else if (type === 'void_enter') {
-        // THE 13 SECOND GROWING VOID
-        const osc1 = ctx.createOscillator();
-        const osc2 = ctx.createOscillator(); 
-        const filter = ctx.createBiquadFilter();
-
-        osc1.type = 'sawtooth';
-        osc1.frequency.value = 40; // Very deep base
+        // PHASE 1b: THE VOID (Sub-Bass Throb)
         
-        osc2.type = 'sine';
-        osc2.frequency.value = 38; // Sub interference
+        const subOsc = ctx.createOscillator();
+        subOsc.type = 'sine';
+        subOsc.frequency.value = 40; // Stargate hum frequency
 
-        filter.type = 'lowpass';
-        filter.frequency.value = 80; 
+        const lfo = ctx.createOscillator();
+        lfo.type = 'sine';
+        lfo.frequency.value = 4; // 4Hz throb speed
+        const lfoGain = ctx.createGain();
+        lfoGain.gain.value = 0.3; // Modulation depth
 
-        osc1.connect(filter);
-        osc2.connect(master); 
-        filter.connect(master);
+        const subGain = ctx.createGain();
+        subGain.gain.value = 0.6; // Base volume
 
-        osc1.start();
-        osc2.start();
-
-        nodes.osc = osc1;
-        nodes.osc2 = osc2;
-        nodes.filter = filter;
+        lfo.connect(lfoGain);
+        lfoGain.connect(subGain.gain); // AM Synthesis (Tremolo)
         
-        master.gain.setValueAtTime(0, ctx.currentTime);
-        master.gain.linearRampToValueAtTime(0.5, ctx.currentTime + 4); // Gradual fade in
+        subOsc.connect(subGain);
+        subGain.connect(loopMasterGain);
 
-    } else if (type === 'etching') {
-        const osc = ctx.createOscillator();
-        osc.type = 'sawtooth';
-        const filter = ctx.createBiquadFilter();
-        filter.type = 'lowpass';
-        filter.frequency.value = 200;
-        osc.connect(filter);
-        filter.connect(master);
-        osc.start();
-        nodes.osc = osc;
-        nodes.filter = filter;
-        master.gain.setValueAtTime(0.1, ctx.currentTime);
+        subOsc.start();
+        lfo.start();
+
+        nodes.sources = [subOsc, lfo];
+        nodes.gain = loopMasterGain;
+        
+        loopMasterGain.gain.setValueAtTime(0, ctx.currentTime);
+        loopMasterGain.gain.linearRampToValueAtTime(0.8, ctx.currentTime + 2);
 
     } else if (type === 'breath') {
-        const bufferSize = ctx.sampleRate * 2;
-        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-        const data = buffer.getChannelData(0);
-        for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
-        const noise = ctx.createBufferSource();
-        noise.buffer = buffer;
-        noise.loop = true;
+        // PHASE 2: GROUNDING (Oceanic Pink Noise + Binaural Pan)
+        const noise = createPinkNoise(ctx);
+        
         const filter = ctx.createBiquadFilter();
-        filter.type = 'bandpass';
-        filter.Q.value = 1;
-        noise.connect(filter);
-        filter.connect(master);
-        noise.start();
-        nodes.source = noise;
-        nodes.filter = filter;
-        master.gain.setValueAtTime(0.05, ctx.currentTime);
+        filter.type = 'lowpass';
+        filter.frequency.value = 200; // Start closed
+        
+        const panner = ctx.createStereoPanner();
+        panner.pan.value = -1; // Start Left
 
-    } else if (type === 'charge') {
-      const osc = ctx.createOscillator();
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(100, ctx.currentTime);
-      osc.connect(master);
-      master.gain.setValueAtTime(0.1, ctx.currentTime);
-      osc.start();
-      nodes.osc = osc;
+        noise.connect(filter);
+        filter.connect(panner);
+        panner.connect(loopMasterGain);
+        
+        noise.start();
+
+        nodes.sources = [noise];
+        nodes.filter = filter;
+        nodes.panner = panner;
+        
+        loopMasterGain.gain.setValueAtTime(0.2, ctx.currentTime);
+
+    } else if (type === 'etching') {
+        // PHASE 3: ETCHING (Sparks + Grinding)
+        
+        // Layer 1: Grinding (Low Saw + Distortion)
+        const grindOsc = ctx.createOscillator();
+        grindOsc.type = 'sawtooth';
+        grindOsc.frequency.value = 50;
+        const shaper = ctx.createWaveShaper();
+        shaper.curve = makeDistortionCurve(400); // Heavy distortion
+        const grindFilter = ctx.createBiquadFilter();
+        grindFilter.type = 'lowpass';
+        grindFilter.frequency.value = 400;
+        
+        grindOsc.connect(shaper);
+        shaper.connect(grindFilter);
+        grindFilter.connect(loopMasterGain);
+
+        // Layer 2: Sparks (High Random Noise)
+        // We use a highpass filtered noise
+        const sparkNoise = createPinkNoise(ctx);
+        const sparkFilter = ctx.createBiquadFilter();
+        sparkFilter.type = 'highpass';
+        sparkFilter.frequency.value = 3000;
+        const sparkGain = ctx.createGain();
+        sparkGain.gain.value = 0.15;
+
+        sparkNoise.connect(sparkFilter);
+        sparkFilter.connect(sparkGain);
+        sparkGain.connect(loopMasterGain);
+
+        grindOsc.start();
+        sparkNoise.start();
+
+        nodes.sources = [grindOsc, sparkNoise];
+        nodes.filter = grindFilter; // We will modulate the grind filter
+        
+        loopMasterGain.gain.setValueAtTime(0.3, ctx.currentTime);
 
     } else if (type === 'chant') {
-      const osc = ctx.createOscillator();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(100, ctx.currentTime);
-      osc.connect(master);
-      master.gain.setValueAtTime(0.1, ctx.currentTime);
-      osc.start();
-      nodes.osc = osc;
+        // PHASE 4: CHANT (Ghostly Choir)
+        // 3 Oscillators forming a Major chord
+        const root = 110; // A2
+        const freqs = [root, root * 1.25, root * 1.5]; // Root, Major 3rd, 5th
+        
+        const sources: any[] = [];
+        const oscGains: any[] = [];
+
+        // Vibrato LFO
+        const vibrato = ctx.createOscillator();
+        vibrato.frequency.value = 4.0; // Slow vibrato
+        const vibratoGain = ctx.createGain();
+        vibratoGain.gain.value = 2.0; // Pitch variance
+        vibrato.start();
+
+        freqs.forEach(f => {
+            const osc = ctx.createOscillator();
+            osc.type = 'triangle'; // Softer than saw, richer than sine
+            osc.frequency.value = f;
+            
+            // Apply vibrato to frequency
+            vibrato.connect(vibratoGain);
+            vibratoGain.connect(osc.frequency);
+
+            const g = ctx.createGain();
+            g.gain.value = 0.1; // Mix low
+            osc.connect(g);
+            g.connect(loopMasterGain);
+            osc.start();
+            
+            sources.push(osc);
+            oscGains.push(g);
+        });
+        
+        nodes.sources = [...sources, vibrato];
+        nodes.extraGains = oscGains; // To swell volume
+        
+        loopMasterGain.gain.setValueAtTime(0, ctx.currentTime);
+        loopMasterGain.gain.linearRampToValueAtTime(0.5, ctx.currentTime + 2);
+
+    } else if (type === 'charge') {
+       // Generic charge sound (reused drone logic but higher pitch)
+       const osc = ctx.createOscillator();
+       osc.type = 'sawtooth';
+       osc.frequency.value = 100;
+       const filter = ctx.createBiquadFilter();
+       filter.type = 'bandpass';
+       osc.connect(filter);
+       filter.connect(loopMasterGain);
+       osc.start();
+       nodes.sources = [osc];
+       nodes.filter = filter;
+       loopMasterGain.gain.setValueAtTime(0.3, ctx.currentTime);
     }
 
     activeNodes.current = nodes;
   }, [initAudio]);
+
+  // --- MODULATION ENGINE ---
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updateLoop = useCallback((progress: any, type: string) => {
@@ -309,131 +459,157 @@ const useAudioEngine = () => {
     const t = ctx.currentTime;
 
     if (type === 'drone') {
-        // WARP DRIVE MODULATION
-        // Pitch drops deeper (Sinking from 130Hz -> 40Hz)
-        if(nodes.osc) nodes.osc.frequency.setTargetAtTime(130 - (progress * 0.9), t, 0.1);
-        if(nodes.osc2) nodes.osc2.frequency.setTargetAtTime(65 - (progress * 0.35), t, 0.1);
+        // CONSECRATION MODULATION
+        // Progress 0 -> 100
         
-        // Filter opens up even more aggressively (Powering Up) to reveal harmonics
-        if(nodes.filter) nodes.filter.frequency.setTargetAtTime(800 + (progress * 40), t, 0.1);
+        if (nodes.sources && nodes.sources.length === 2) {
+            // Detune oscillators apart for "Super Saw" effect
+            nodes.sources[0].detune.setTargetAtTime(-progress * 2, t, 0.1);
+            nodes.sources[1].detune.setTargetAtTime(progress * 2, t, 0.1);
+        }
         
-        // Volume holds steady/loud
-        if(nodes.gain) nodes.gain.gain.setTargetAtTime(0.5, t, 0.1);
+        if (nodes.panners) {
+            nodes.panners[0].pan.setTargetAtTime(-0.5 - (progress/200), t, 0.1);
+            nodes.panners[1].pan.setTargetAtTime(0.5 + (progress/200), t, 0.1);
+        }
+
+        if (nodes.filter) {
+            // Exponential filter opening 200Hz -> 2000Hz
+            nodes.filter.frequency.setTargetAtTime(200 + (progress * 18), t, 0.1);
+        }
 
     } else if (type === 'void_enter') {
-        const p = typeof progress === 'number' ? progress : 0;
-        // Pitch shifts up slightly to build tension over 13 seconds
-        if (nodes.filter) nodes.filter.frequency.setTargetAtTime(80 + (p * 2), t, 0.1);
-        if (nodes.osc2) nodes.osc2.frequency.setTargetAtTime(38 + (Math.sin(t)*2), t, 0.1);
+        // VOID MODULATION
+        
+        if (nodes.sources && nodes.sources[1]) {
+             // LFO Speed: 4Hz -> 8Hz
+             nodes.sources[1].frequency.setTargetAtTime(4 + (progress/25), t, 0.1);
+        }
 
     } else if (type === 'etching') {
+         // ETCHING MODULATION
          const p = typeof progress === 'number' ? progress : 0;
-         if(nodes.filter) nodes.filter.frequency.setTargetAtTime(200 + (p * 50), t, 0.1);
-         if(nodes.osc) nodes.osc.frequency.setTargetAtTime(50 + (p * 2), t, 0.1);
+         if(nodes.filter) {
+             nodes.filter.frequency.setTargetAtTime(400 + (p * 20), t, 0.1);
+         }
 
     } else if (type === 'breath') {
-        if(nodes.filter) {
+        // BREATH MODULATION
+        if(nodes.filter && nodes.panner) {
             if (progress === 'INHALE') {
-                nodes.filter.frequency.setTargetAtTime(600, t, 4);
+                nodes.filter.frequency.linearRampToValueAtTime(800, t + 4); // Open
+                nodes.panner.pan.linearRampToValueAtTime(0.8, t + 4); // Pan R
             } else if (progress === 'HOLD') {
-                nodes.filter.frequency.setTargetAtTime(600, t, 0.1);
-            } else {
-                nodes.filter.frequency.setTargetAtTime(100, t, 4);
+                nodes.filter.frequency.setTargetAtTime(800, t, 0.1);
+            } else if (progress === 'EXHALE') {
+                nodes.filter.frequency.linearRampToValueAtTime(100, t + 4); // Close
+                nodes.panner.pan.linearRampToValueAtTime(-0.8, t + 4); // Pan L
             }
         }
     } else if (type === 'charge') {
-       if(nodes.osc) nodes.osc.frequency.setTargetAtTime(100 + (progress * 10), t, 0.1);
+       if(nodes.filter) nodes.filter.frequency.setTargetAtTime(100 + (progress * 20), t, 0.1);
     }
   }, []);
 
   const stopLoop = useCallback(() => {
     if (activeNodes.current && activeNodes.current.gain && ctxRef.current) {
-      // Fast cut for impact
-      activeNodes.current.gain.gain.setTargetAtTime(0, ctxRef.current.currentTime, 0.05);
+      // Organic Fade Out (0.5s)
+      const t = ctxRef.current.currentTime;
+      activeNodes.current.gain.gain.cancelScheduledValues(t);
+      activeNodes.current.gain.gain.setValueAtTime(activeNodes.current.gain.gain.value, t);
+      activeNodes.current.gain.gain.linearRampToValueAtTime(0, t + 0.5);
+      
+      const oldNodes = activeNodes.current;
       setTimeout(() => {
-          if (activeNodes.current?.osc) activeNodes.current.osc.stop();
-          if (activeNodes.current?.osc2) activeNodes.current.osc2.stop();
-          if (activeNodes.current?.lfo) activeNodes.current.lfo.stop();
-          if (activeNodes.current?.source) activeNodes.current.source.stop();
+          if (oldNodes.sources) oldNodes.sources.forEach((s: any) => s.stop());
+          if (oldNodes.lfo) oldNodes.lfo.stop();
           activeNodes.current = null;
-      }, 100);
+      }, 550);
     }
   }, []);
 
+  // --- CLIMAX: THE CAST BOOM ---
   const playCastBoom = useCallback(() => {
       if (!ctxRef.current) initAudio();
-      if (!ctxRef.current) return;
+      if (!ctxRef.current || !masterGainRef.current) return;
       const ctx = ctxRef.current;
       const t = ctx.currentTime;
 
-      // 1. Sub-Bass Impact
+      // 1. The "Crack" (Transient Noise Burst)
+      const crackBuffer = ctx.createBuffer(1, ctx.sampleRate * 0.1, ctx.sampleRate);
+      const crackData = crackBuffer.getChannelData(0);
+      for(let i=0; i<crackData.length; i++) crackData[i] = (Math.random() * 2 - 1);
+      const crack = ctx.createBufferSource();
+      crack.buffer = crackBuffer;
+      const crackGain = ctx.createGain();
+      crackGain.gain.setValueAtTime(1.0, t);
+      crackGain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+      crack.connect(crackGain);
+      crackGain.connect(masterGainRef.current);
+      crack.start(t);
+
+      // 2. The "Drop" (Sub Bass Sweep 100Hz -> 30Hz)
       const subOsc = ctx.createOscillator();
       const subGain = ctx.createGain();
       subOsc.type = 'sine';
-      subOsc.frequency.setValueAtTime(150, t);
-      subOsc.frequency.exponentialRampToValueAtTime(30, t + 0.8); 
-      subGain.gain.setValueAtTime(1.0, t);
-      subGain.gain.exponentialRampToValueAtTime(0.01, t + 2.5); 
-      subOsc.connect(subGain);
-      subGain.connect(ctx.destination);
-      subOsc.start(t);
-      subOsc.stop(t + 2.5);
-
-      // 2. Noise Burst
-      const bufferSize = ctx.sampleRate * 2;
-      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-      const data = buffer.getChannelData(0);
-      for (let i = 0; i < bufferSize; i++) {
-        data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 3);
-      }
-      const noise = ctx.createBufferSource();
-      noise.buffer = buffer;
-      const noiseFilter = ctx.createBiquadFilter();
-      noiseFilter.type = 'lowpass';
-      noiseFilter.frequency.setValueAtTime(3000, t); 
-      noiseFilter.frequency.exponentialRampToValueAtTime(100, t + 1.0); 
-      const noiseGain = ctx.createGain();
-      noiseGain.gain.setValueAtTime(0.8, t);
-      noiseGain.gain.exponentialRampToValueAtTime(0.01, t + 1.5);
+      subOsc.frequency.setValueAtTime(120, t);
+      subOsc.frequency.exponentialRampToValueAtTime(30, t + 3.0); // Long drop
       
-      noise.connect(noiseFilter);
-      noiseFilter.connect(noiseGain);
-      noiseGain.connect(ctx.destination);
-      noise.start(t);
-      noise.stop(t + 1.5);
+      subGain.gain.setValueAtTime(1.0, t);
+      subGain.gain.exponentialRampToValueAtTime(0.001, t + 4.0); // Long fade out
+      
+      subOsc.connect(subGain);
+      subGain.connect(masterGainRef.current);
+      subOsc.start(t);
+      subOsc.stop(t + 4.0);
 
-      // 3. Distortion Grit
-      const gritOsc = ctx.createOscillator();
-      const gritGain = ctx.createGain();
-      gritOsc.type = 'sawtooth';
-      gritOsc.frequency.setValueAtTime(80, t);
-      gritOsc.frequency.linearRampToValueAtTime(20, t + 0.3);
-      gritGain.gain.setValueAtTime(0.5, t);
-      gritGain.gain.exponentialRampToValueAtTime(0.01, t + 0.4);
-      gritOsc.connect(gritGain);
-      gritGain.connect(ctx.destination);
-      gritOsc.start(t);
-      gritOsc.stop(t + 0.4);
+      // 3. The "Shimmer" (High-end sparkle tail)
+      const shimmerOsc = ctx.createOscillator();
+      const shimmerGain = ctx.createGain();
+      shimmerOsc.type = 'triangle';
+      shimmerOsc.frequency.setValueAtTime(3000, t);
+      shimmerOsc.frequency.linearRampToValueAtTime(6000, t + 4.0); // Rising pitch into ether
+      
+      shimmerGain.gain.setValueAtTime(0.1, t);
+      shimmerGain.gain.linearRampToValueAtTime(0, t + 4.0);
+      
+      // Send shimmer through reverb for space
+      if (reverbNodeRef.current) {
+          shimmerOsc.connect(shimmerGain);
+          shimmerGain.connect(reverbNodeRef.current);
+      } else {
+          shimmerOsc.connect(shimmerGain);
+          shimmerGain.connect(masterGainRef.current);
+      }
+      
+      shimmerOsc.start(t);
+      shimmerOsc.stop(t + 4.0);
 
   }, [initAudio]);
 
   const playSuccess = useCallback(() => {
      if (!ctxRef.current) initAudio();
-     if (!ctxRef.current) return;
+     if (!ctxRef.current || !masterGainRef.current) return;
      const ctx = ctxRef.current;
      const t = ctx.currentTime;
      
-     const osc = ctx.createOscillator();
-     const gain = ctx.createGain();
-     osc.type = 'sine';
-     osc.frequency.setValueAtTime(440, t);
-     osc.frequency.exponentialRampToValueAtTime(880, t + 0.2);
-     gain.gain.setValueAtTime(0.1, t);
-     gain.gain.exponentialRampToValueAtTime(0.001, t + 1);
-     
-     osc.connect(gain);
-     gain.connect(ctx.destination);
-     osc.start();
+     // Celestial Major Chord
+     const freqs = [523.25, 659.25, 783.99, 1046.50]; // C Major 
+     freqs.forEach((f, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = f;
+        
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(0.1, t + 0.1 + (i*0.05)); // Staggered entry
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 3.0);
+        
+        osc.connect(gain);
+        gain.connect(reverbNodeRef.current || masterGainRef.current);
+        osc.start(t);
+        osc.stop(t + 3.0);
+     });
   }, [initAudio]);
 
   return { playClick, playTypingBlip, startLoop, updateLoop, stopLoop, playCastBoom, playSuccess, playHeartbeat, initAudio };
@@ -501,7 +677,7 @@ const Consecration = ({ setPhase, archetype, audio }: any) => {
   // Handlers to ensure audio init
   const handleHoldStart = useCallback((e: React.SyntheticEvent) => {
       e.preventDefault();
-      audio.initAudio(); // Force audio resume
+      audio.initAudio(); 
       setIsHolding(true);
   }, [audio]);
 
@@ -520,7 +696,7 @@ const Consecration = ({ setPhase, archetype, audio }: any) => {
     }
     // Cleanup on unmount or change
     return () => audio.stopLoop();
-  }, [isHolding, stage, audio]); // Removed progress vars from here to prevent cutting out
+  }, [isHolding, stage, audio]); 
 
   // 2. Animation Loop
   useEffect(() => {
@@ -532,7 +708,7 @@ const Consecration = ({ setPhase, archetype, audio }: any) => {
         // --- STAGE 1: CONSECRATE (Shrink to Dot) ---
         if (stage === 'consecrate') {
             setProgress(prev => {
-                const next = prev + 0.5; // 0.5 per 20ms = 4 seconds duration
+                const next = prev + 0.5; // 4 seconds duration
                 audio.updateLoop(next, 'drone');
                 if (next >= 100) {
                     setStage('growing');
@@ -548,8 +724,6 @@ const Consecration = ({ setPhase, archetype, audio }: any) => {
 
         // --- STAGE 2: GROWING (13 Seconds to Full Size) ---
         } else if (stage === 'growing') {
-            // 13 seconds = 13000ms. Interval is 20ms. 
-            // Total steps = 650. Increment = 100 / 650 approx 0.153
             setVoidProgress(prev => {
                 const next = prev + 0.153; 
                 audio.updateLoop(next, 'void_enter'); 
@@ -566,20 +740,18 @@ const Consecration = ({ setPhase, archetype, audio }: any) => {
         // --- STAGE 3: PULSING (7 Seconds Heartbeat) ---
         } else if (stage === 'pulsing') {
             setPulseTime(prev => {
-                const next = prev + 20; // +20ms
+                const next = prev + 20; 
                 
-                // Heartbeat Animation (60 BPM = 1 sec per beat)
-                const beat = (Math.sin(next * 0.006) + 1) / 2; // 0 to 1
-                setScalePulse(1 + (beat * 0.1)); // Scale between 1.0 and 1.1
+                // Heartbeat Animation
+                const beat = (Math.sin(next * 0.006) + 1) / 2; 
+                setScalePulse(1 + (beat * 0.1)); 
 
-                // Trigger audio thumps on the "beat"
                 if (next % 1000 < 25 && next > 50) {
                     audio.playHeartbeat();
                     const nav = (globalThis as any).navigator;
                     if (typeof nav !== 'undefined' && nav.vibrate) nav.vibrate(20);
                 }
 
-                // Finish after 7 seconds
                 if (next >= 7000) {
                     clearInterval(interval);
                     audio.stopLoop();
