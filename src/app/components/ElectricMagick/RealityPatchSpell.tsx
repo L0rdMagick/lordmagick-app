@@ -1,4 +1,5 @@
 // --- START OF FILE src/app/components/ElectricMagick/RealityPatchSpell.tsx ---
+/// <reference lib="dom" />
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
@@ -9,11 +10,9 @@ import {
 import { generateElectricEnsorcellment } from '@/lib/services/geminiService';
 
 // --- UTILITY: SIGIL GENERATOR ---
-// Converts a string into a unique SVG path based on a 4x4 grid
 const generateSigilPath = (input: string): string => {
   if (!input) return "M100,100 L100,100";
   
-  // Seed the randomizer with the input string
   let seed = 0;
   for (let i = 0; i < input.length; i++) {
     seed = (seed << 5) - seed + input.charCodeAt(i);
@@ -25,28 +24,23 @@ const generateSigilPath = (input: string): string => {
     return x - Math.floor(x);
   };
 
-  // Create 5-8 points
   const numPoints = Math.floor(rng() * 4) + 5;
   const points: {x: number, y: number}[] = [];
   
   for(let i = 0; i < numPoints; i++) {
-    // Map to a 200x200 coordinate space, kept slightly away from edges
     points.push({
       x: Math.floor(rng() * 160) + 20,
       y: Math.floor(rng() * 160) + 20
     });
   }
 
-  // Construct Path
   let d = `M${points[0].x},${points[0].y}`;
   for (let i = 1; i < points.length; i++) {
     d += ` L${points[i].x},${points[i].y}`;
   }
   
-  // Close the loop sometimes
   if (rng() > 0.5) d += " Z";
   
-  // Add a circle or line cross at the end for "locking"
   const last = points[points.length - 1];
   d += ` M${last.x - 10},${last.y} L${last.x + 10},${last.y} M${last.x},${last.y - 10} L${last.x},${last.y + 10}`;
 
@@ -56,25 +50,29 @@ const generateSigilPath = (input: string): string => {
 // --- INTERNAL HOOKS ---
 
 const useAudioEngine = () => {
-  const ctxRef = useRef<AudioContext | null>(null);
-  // We store active nodes here to manipulate them while playing
+  // FIX: Use 'any' to bypass missing AudioContext types in strict environments
+  const ctxRef = useRef<any>(null);
   const activeNodes = useRef<{
-    osc?: OscillatorNode;
-    osc2?: OscillatorNode;
-    gain?: GainNode;
-    filter?: BiquadFilterNode;
-    lfo?: OscillatorNode;
-    lfoGain?: GainNode;
-    source?: AudioBufferSourceNode;
+    osc?: any;
+    osc2?: any;
+    gain?: any;
+    filter?: any;
+    lfo?: any;
+    lfoGain?: any;
+    source?: any;
   } | null>(null);
   
-  const masterGainRef = useRef<GainNode | null>(null);
+  const masterGainRef = useRef<any>(null);
 
   const initAudio = useCallback(() => {
-    if (typeof window !== 'undefined' && !ctxRef.current) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-      if (AudioContext) ctxRef.current = new AudioContext();
+    // FIX: Safe window access
+    const globalAny = globalThis as any;
+    
+    if (typeof globalAny.window !== 'undefined' && !ctxRef.current) {
+      const AudioContextClass = globalAny.window.AudioContext || globalAny.window.webkitAudioContext;
+      if (AudioContextClass) {
+          ctxRef.current = new AudioContextClass();
+      }
     }
     if (ctxRef.current && ctxRef.current.state === 'suspended') {
       ctxRef.current.resume();
@@ -83,7 +81,8 @@ const useAudioEngine = () => {
 
   const playTypingBlip = useCallback(() => {
     if (!ctxRef.current) initAudio();
-    const ctx = ctxRef.current!;
+    if (!ctxRef.current) return;
+    const ctx = ctxRef.current;
     const t = ctx.currentTime;
 
     const osc = ctx.createOscillator();
@@ -120,7 +119,8 @@ const useAudioEngine = () => {
 
   const playClick = useCallback((type = 'standard') => {
     if (!ctxRef.current) initAudio();
-    const ctx = ctxRef.current!;
+    if (!ctxRef.current) return;
+    const ctx = ctxRef.current;
     const t = ctx.currentTime;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
@@ -151,10 +151,11 @@ const useAudioEngine = () => {
 
   const startLoop = useCallback((type: string) => {
     if (!ctxRef.current) initAudio();
-    const ctx = ctxRef.current!;
+    if (!ctxRef.current) return;
+    const ctx = ctxRef.current;
     
     if (activeNodes.current?.gain) {
-       activeNodes.current.gain.gain.setTargetAtTime(0, ctx.currentTime, 0.5); // Slower fade out
+       activeNodes.current.gain.gain.setTargetAtTime(0, ctx.currentTime, 0.5); 
        const oldNodes = activeNodes.current;
        setTimeout(() => {
          try { oldNodes.osc?.stop(); oldNodes.osc2?.stop(); oldNodes.lfo?.stop(); oldNodes.source?.stop(); } catch(e){ /**/ }
@@ -181,21 +182,19 @@ const useAudioEngine = () => {
         osc2.type = 'sine';
         osc2.frequency.value = 30; // Sub
 
-        // Filter starts closed (muffled)
         filter.type = 'lowpass';
-        filter.frequency.value = 100; // Very deep start
-        filter.Q.value = 5; // High resonance for "singing" bowl effect
+        filter.frequency.value = 50; 
+        filter.Q.value = 10; 
 
-        // LFO pulsates the filter (The "Throbbing")
         lfo.type = 'sine';
-        lfo.frequency.value = 0.5; // Slow pulse
-        lfoGain.gain.value = 50; // Depth of pulse
+        lfo.frequency.value = 0.2; 
+        lfoGain.gain.value = 50;
 
         lfo.connect(lfoGain);
         lfoGain.connect(filter.frequency);
 
         osc1.connect(filter);
-        osc2.connect(master); // Sub bypasses filter for constant pressure
+        osc2.connect(master); 
         filter.connect(master);
 
         osc1.start();
@@ -208,7 +207,7 @@ const useAudioEngine = () => {
         nodes.lfo = lfo;
         
         master.gain.setValueAtTime(0, ctx.currentTime);
-        master.gain.linearRampToValueAtTime(0.4, ctx.currentTime + 2); // Slow fade in
+        master.gain.linearRampToValueAtTime(0.5, ctx.currentTime + 4);
 
     } else if (type === 'etching') {
         const osc = ctx.createOscillator();
@@ -281,15 +280,9 @@ const useAudioEngine = () => {
 
     if (type === 'void_enter') {
         const p = typeof progress === 'number' ? progress : 0;
-        
-        // As void expands, filter opens up (Sound becomes brighter/louder)
-        if (nodes.filter) nodes.filter.frequency.setTargetAtTime(100 + (p * 8), t, 0.1);
-        
-        // Pulse gets faster
-        if (nodes.lfo) nodes.lfo.frequency.setTargetAtTime(0.5 + (p * 0.1), t, 0.1);
-        
-        // Sub bass drops LOWER as power increases
-        if (nodes.osc2) nodes.osc2.frequency.setTargetAtTime(30 - (p * 0.1), t, 0.1);
+        if (nodes.filter) nodes.filter.frequency.setTargetAtTime(50 + (p * 20), t, 0.1);
+        if (nodes.lfo) nodes.lfo.frequency.setTargetAtTime(0.2 + (p * 0.15), t, 0.1);
+        if (nodes.osc2) nodes.osc2.frequency.setTargetAtTime(30 - (p * 0.2), t, 0.1);
 
     } else if (type === 'etching') {
          const p = typeof progress === 'number' ? progress : 0;
@@ -328,22 +321,21 @@ const useAudioEngine = () => {
 
   const playCastBoom = useCallback(() => {
       if (!ctxRef.current) initAudio();
-      const ctx = ctxRef.current!;
+      if (!ctxRef.current) return;
+      const ctx = ctxRef.current;
       const t = ctx.currentTime;
 
-      // 1. Sub-bass drop
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = 'triangle';
       osc.frequency.setValueAtTime(150, t);
-      osc.frequency.exponentialRampToValueAtTime(0.01, t + 3); // Long decay
+      osc.frequency.exponentialRampToValueAtTime(0.01, t + 3); 
       gain.gain.setValueAtTime(1, t);
       gain.gain.exponentialRampToValueAtTime(0.001, t + 3);
       osc.connect(gain);
       gain.connect(ctx.destination);
       osc.start();
 
-      // High shimmer
       const osc2 = ctx.createOscillator();
       const gain2 = ctx.createGain();
       osc2.type = 'sine';
@@ -359,7 +351,8 @@ const useAudioEngine = () => {
 
   const playSuccess = useCallback(() => {
      if (!ctxRef.current) initAudio();
-     const ctx = ctxRef.current!;
+     if (!ctxRef.current) return;
+     const ctx = ctxRef.current;
      const t = ctx.currentTime;
      
      const osc = ctx.createOscillator();
@@ -432,11 +425,10 @@ const Consecration = ({ setPhase, archetype, audio }: any) => {
   const [voidProgress, setVoidProgress] = useState(0); 
   const [stage, setStage] = useState<'consecrate' | 'void'>('consecrate');
   const [isHolding, setIsHolding] = useState(false);
-  const [pulse, setPulse] = useState(0); // For rhythmic pulsing at end
+  const [pulse, setPulse] = useState(0); 
 
   useEffect(() => {
     if (isHolding) {
-       // The void_enter sound handles both stages with modulation
        if (stage === 'consecrate' && progress === 0) audio.startLoop('drone');
        if (stage === 'void' && voidProgress === 0) audio.startLoop('void_enter');
     } else {
@@ -452,29 +444,32 @@ const Consecration = ({ setPhase, archetype, audio }: any) => {
     if (isHolding) {
       interval = setInterval(() => {
         if (stage === 'consecrate') {
-            // Stage 1: Shrink to Zero (Slowed down)
+            // Stage 1: Shrink to Zero
             setProgress(prev => {
                 const next = prev + 0.5; 
                 audio.updateLoop(next, 'drone');
                 if (next >= 100) {
                     setStage('void');
-                    audio.stopLoop(); // Briefly stop drone
-                    setTimeout(() => audio.startLoop('void_enter'), 50); // Start void sound
-                    if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate([50, 50]);
+                    audio.stopLoop(); 
+                    setTimeout(() => audio.startLoop('void_enter'), 50); 
+                    // FIX: Safe navigator access via globalThis
+                    const nav = (globalThis as any).navigator;
+                    if (typeof nav !== 'undefined' && nav.vibrate) nav.vibrate([50, 50]);
                     return 100;
                 }
                 return next;
             });
         } else {
             // Stage 2: Widen the Void - EXTREMELY SLOW
-            // 0.05 per 20ms = 100 / 0.05 * 20 = 40 seconds full duration
             setVoidProgress(prev => {
                 const next = prev + 0.05; 
                 audio.updateLoop(next, 'void_enter'); 
                 if (next >= 100) {
                     clearInterval(interval);
-                    audio.playCastBoom(); // Supernova sound
-                    if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate([200, 100, 500, 100, 1000]);
+                    audio.playCastBoom(); 
+                    // FIX: Safe navigator access via globalThis
+                    const nav = (globalThis as any).navigator;
+                    if (typeof nav !== 'undefined' && nav.vibrate) nav.vibrate([200, 100, 500, 100, 1000]);
                     setPhase('GROUNDING');
                     return 100;
                 }
@@ -482,27 +477,25 @@ const Consecration = ({ setPhase, archetype, audio }: any) => {
             });
         }
         
-        // Vibration Logic
-        if (typeof navigator !== 'undefined' && navigator.vibrate) {
-            if (stage === 'consecrate') navigator.vibrate(5);
+        // FIX: Safe navigator access via globalThis
+        const nav = (globalThis as any).navigator;
+        if (typeof nav !== 'undefined' && nav.vibrate) {
+            if (stage === 'consecrate') nav.vibrate(5);
             else {
-                // Vibrate intensity increases with void size
-                if (Math.random() < (voidProgress / 100)) navigator.vibrate(10);
+                if (Math.random() < (voidProgress / 100)) nav.vibrate(10);
             }
         }
       }, 20);
 
-      // Pulsing Effect for large void (>80%)
       if (stage === 'void' && voidProgress > 80) {
           pulseInterval = setInterval(() => {
-              setPulse(p => (p === 0 ? 0.2 : 0)); // Toggle pulse scale modifier
-          }, 300); // Fast pulse
+              setPulse(p => (p === 0 ? 0.2 : 0)); 
+          }, 300); 
       }
 
     } else {
-        // Decay if let go
         if (stage === 'void' && voidProgress > 0) {
-             setVoidProgress(prev => Math.max(0, prev - 2)); // Reverses slowly
+             setVoidProgress(prev => Math.max(0, prev - 2)); 
              setPulse(0);
         } else if (stage === 'consecrate' && progress > 0) {
              setProgress(0);
@@ -523,7 +516,6 @@ const Consecration = ({ setPhase, archetype, audio }: any) => {
 
   return (
     <div className="flex flex-col items-center justify-center h-full space-y-8 animate-in fade-in duration-1000 relative z-10 select-none">
-      {/* Starfield Particle Effect for Void Stage */}
       <div className={`absolute inset-0 pointer-events-none transition-opacity duration-5000 ${stage === 'void' ? 'opacity-100' : 'opacity-0'}`}>
           {[...Array(40)].map((_, i) => (
               <div key={i} className="absolute bg-white rounded-full animate-pulse"
@@ -543,14 +535,12 @@ const Consecration = ({ setPhase, archetype, audio }: any) => {
         
         {stage === 'consecrate' ? (
             <>
-                {/* Shrinking Circle */}
                 <div className={`absolute inset-0 border-2 border-dashed ${archetype.border} rounded-full opacity-50 transition-transform duration-75 ease-linear`}
                      style={{ 
                          transform: `rotate(${progress * 10}deg) scale(${1 - (progress / 100)})`,
                          opacity: 1 - (progress/100) 
                      }} 
                 />
-                {/* Vibration Effect */}
                 <div className={`absolute inset-0 flex items-center justify-center transition-transform duration-75 ease-linear`}
                      style={{ 
                          transform: `scale(${1 - (progress/100)}) translate(${isHolding ? (Math.random() * 2 - 1) + 'px' : '0'}, ${isHolding ? (Math.random() * 2 - 1) + 'px' : '0'})`, 
@@ -560,18 +550,14 @@ const Consecration = ({ setPhase, archetype, audio }: any) => {
                 </div>
             </>
         ) : (
-            /* THE VOID HOLE */
             <div className="absolute inset-0 flex items-center justify-center">
-                {/* The Black Hole Core - Starts Small, Ends Huge */}
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black rounded-full shadow-[0_0_60px_rgba(255,255,255,0.3)] z-30 transition-transform duration-75" 
                      style={{ 
-                         width: '10px', height: '10px', // Base size
-                         // Scale multiplier: Starts at 1, goes to 200 (fills screen)
+                         width: '10px', height: '10px',
                          transform: `scale(${1 + (voidProgress * (voidProgress > 90 ? 200 : 30)) + (voidProgress > 80 ? pulse * 50 : 0)})`, 
                      }}
                 />
                 
-                {/* Accretion Disk 1 - Only visible when small/medium */}
                 <div className="absolute w-20 h-20 rounded-full border-2 border-cyan-500/50 blur-[2px] animate-[spin_3s_linear_infinite] z-20 mix-blend-screen transition-opacity duration-500"
                      style={{
                          transform: `scale(${1 + (voidProgress * 5)})`,
@@ -579,7 +565,6 @@ const Consecration = ({ setPhase, archetype, audio }: any) => {
                      }}
                 />
                 
-                {/* Accretion Disk 2 */}
                 <div className="absolute w-20 h-20 rounded-full border-2 border-purple-500/50 blur-[1px] animate-[spin_4s_linear_infinite_reverse] z-20 mix-blend-screen transition-opacity duration-500"
                      style={{
                          transform: `scale(${1 + (voidProgress * 4)})`,
@@ -666,9 +651,8 @@ const Grounding = ({ setPhase, audio }: any) => {
       return "EXHALE DEMONS";
   }
 
-  // Circle starts small (scale 0.2) and expands to 1.5 on Inhale
   const guideStyle = {
-    transform: breathState === 'INHALE' ? 'scale(1.5)' : breathState === 'EXHALE' ? 'scale(0.2)' : 'scale(1.5)',
+    transform: breathState === 'INHALE' ? 'scale(1.5)' : breathState === 'EXHALE' ? 'scale(0.5)' : 'scale(1.5)',
     opacity: breathState === 'INHALE' ? 1 : breathState === 'EXHALE' ? 0.4 : 0.8,
     transition: breathState === 'HOLD' ? 'none' : 'all 4s ease-in-out',
   };
@@ -689,14 +673,15 @@ const Grounding = ({ setPhase, audio }: any) => {
   );
 };
 
-// 3. INSCRIPTION (Custom AI Generation)
+// 3. INSCRIPTION
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const Inscription = ({ setIntention, setArchetype, setPhase, archetype, audio, setAiData }: any) => {
   const [text, setText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const handleType = (e: React.ChangeEvent<HTMLInputElement>) => {
-      setText(e.target.value.toUpperCase());
+      // FIX: Cast target value safely
+      setText((e.target as any).value.toUpperCase());
       audio.playTypingBlip(); 
   };
 
@@ -829,7 +814,6 @@ const Etching = ({ setPhase, archetype, audio, aiData, intention }: any) => {
       return () => clearInterval(interval);
   }, [isHolding, hasFinished, progress, audio, duration]);
 
-  // Custom Sigil based on intention
   const sigilPath = useMemo(() => generateSigilPath(intention), [intention]);
 
   return (
@@ -905,8 +889,10 @@ const VocalChant = ({ setPhase, archetype, audio, aiData }: any) => {
         let interval: NodeJS.Timeout;
         if (chanting && charge < 100) {
             interval = setInterval(() => {
-                setCharge(c => c + 0.5); // Slower build up
-                if (typeof navigator !== 'undefined' && navigator.vibrate && charge % 20 === 0) navigator.vibrate(20);
+                setCharge(c => c + 0.5); 
+                // FIX: Safe navigator access via globalThis
+                const nav = (globalThis as any).navigator;
+                if (typeof nav !== 'undefined' && nav.vibrate && charge % 20 === 0) nav.vibrate(20);
             }, 30);
         } else if (!chanting && charge > 0) {
             setCharge(0); 
@@ -914,7 +900,9 @@ const VocalChant = ({ setPhase, archetype, audio, aiData }: any) => {
 
         if (charge >= 100) {
             audio.playSuccess();
-            if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate([100, 100, 100]);
+            // FIX: Safe navigator access via globalThis
+            const nav = (globalThis as any).navigator;
+            if (typeof nav !== 'undefined' && nav.vibrate) nav.vibrate([100, 100, 100]);
             setTimeout(() => setPhase('CHARGE'), 1000);
         }
         return () => clearInterval(interval);
@@ -978,7 +966,9 @@ const ChargeAndCast = ({ setPhase, setGlitchActive, archetype, audio }: any) => 
             audio.updateLoop(next, 'charge'); 
             return next;
          });
-         if (typeof navigator !== 'undefined' && navigator.vibrate && Math.random() > 0.7) navigator.vibrate(10); 
+         // FIX: Safe navigator access via globalThis
+         const nav = (globalThis as any).navigator;
+         if (typeof nav !== 'undefined' && nav.vibrate && Math.random() > 0.7) nav.vibrate(10); 
        }, 20);
      } else if (!shaking && charge > 0 && charge < 100) {
        interval = setInterval(() => {
@@ -991,7 +981,9 @@ const ChargeAndCast = ({ setPhase, setGlitchActive, archetype, audio }: any) => 
    useEffect(() => {
      if (charge >= 100) {
         audio.playCastBoom(); 
-        if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate([500, 200, 500, 200, 1000]);
+        // FIX: Safe navigator access via globalThis
+        const nav = (globalThis as any).navigator;
+        if (typeof nav !== 'undefined' && nav.vibrate) nav.vibrate([500, 200, 500, 200, 1000]);
         setGlitchActive(true);
         const timeout = setTimeout(() => setPhase('CAST'), 5500);
         return () => clearTimeout(timeout);
@@ -1041,7 +1033,7 @@ const ChargeAndCast = ({ setPhase, setGlitchActive, archetype, audio }: any) => 
 
 // 8. FINAL CAST
 const FinalCast = ({ intention, archetype, audio, onExit }: any) => (
-    <div className="flex flex-col items-center justify-center h-full animate-in zoom-in duration-[3000ms] relative z-10">
+    <div className="flex flex-col items-center justify-center h-full animate-in zoom-in duration-3000 relative z-10">
         <div className="relative mb-12">
             <div className={`absolute inset-0 ${archetype.bg} blur-[100px] opacity-40 animate-pulse`} />
             <Check className={`w-48 h-48 ${archetype.color} drop-shadow-[0_0_50px_currentColor]`} />

@@ -1,6 +1,8 @@
+/// <reference lib="dom" />
 "use client";
 
-// THE FIX: We need to import CSSProperties to use it for our type assertion.
+// --- START OF FILE src/app/library/BookReader.tsx ---
+
 import { useState, useEffect, useRef, useCallback, CSSProperties } from 'react';
 import { Crimson_Text, Uncial_Antiqua } from 'next/font/google';
 
@@ -20,13 +22,18 @@ export default function BookReader({ title, content, onTocToggle }: BookReaderPr
   const [totalPages, setTotalPages] = useState(1);
   const [fontSizeIndex, setFontSizeIndex] = useState(1);
 
+  // We default refs to null, but will cast them to any during access to bypass strict type checks
   const viewportRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
   const calculatePages = useCallback(() => {
-    if (viewportRef.current && contentRef.current) {
-      const viewportHeight = viewportRef.current.clientHeight;
-      const totalContentHeight = contentRef.current.scrollHeight;
+    // FIX: Cast refs to any to bypass "Property does not exist" errors in strict environments
+    const viewport = viewportRef.current as any;
+    const content = contentRef.current as any;
+
+    if (viewport && content) {
+      const viewportHeight = viewport.clientHeight;
+      const totalContentHeight = content.scrollHeight;
       const calculatedTotalPages = Math.ceil(totalContentHeight / viewportHeight);
       setTotalPages(calculatedTotalPages > 0 ? calculatedTotalPages : 1);
       setCurrentPage(prev => Math.min(prev, (calculatedTotalPages > 0 ? calculatedTotalPages : 1) - 1));
@@ -34,28 +41,45 @@ export default function BookReader({ title, content, onTocToggle }: BookReaderPr
   }, []);
 
   useEffect(() => {
+    // FIX: Safe access to window and ResizeObserver via globalThis
+    const win = (globalThis as any).window;
+    const WinResizeObserver = (globalThis as any).ResizeObserver;
+
     const timer = setTimeout(calculatePages, 200);
-    window.addEventListener('resize', calculatePages);
-    const resizeObserver = new ResizeObserver(calculatePages);
-    if (contentRef.current) {
+    
+    if (win) {
+        win.addEventListener('resize', calculatePages);
+    }
+
+    let resizeObserver: any = null;
+    
+    if (WinResizeObserver && contentRef.current) {
+      resizeObserver = new WinResizeObserver(calculatePages);
       resizeObserver.observe(contentRef.current);
     }
+
     return () => {
-      window.removeEventListener('resize', calculatePages);
+      if (win) {
+          win.removeEventListener('resize', calculatePages);
+      }
       clearTimeout(timer);
-      if (contentRef.current) {
+      if (resizeObserver && contentRef.current) {
         resizeObserver.unobserve(contentRef.current);
       }
     };
   }, [content, fontSizeIndex, calculatePages]);
 
   useEffect(() => {
-    if (viewportRef.current) {
-      const viewportHeight = viewportRef.current.clientHeight;
-      viewportRef.current.scrollTo({
-        top: currentPage * viewportHeight,
-        behavior: 'smooth',
-      });
+    // FIX: Cast viewportRef to any to access clientHeight and scrollTo safely
+    const viewport = viewportRef.current as any;
+    if (viewport) {
+      const viewportHeight = viewport.clientHeight;
+      if (viewport.scrollTo) {
+          viewport.scrollTo({
+            top: currentPage * viewportHeight,
+            behavior: 'smooth',
+          });
+      }
     }
   }, [currentPage]);
 
@@ -69,7 +93,6 @@ export default function BookReader({ title, content, onTocToggle }: BookReaderPr
     setFontSizeIndex(prev => Math.max(prev - 1, 0));
   };
 
-  // THE FIX: We cast our object to CSSProperties to allow the custom variable.
   const contentStyle = {
     '--prose-font-size': fontSizes[fontSizeIndex],
   } as CSSProperties;

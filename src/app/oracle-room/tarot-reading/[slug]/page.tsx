@@ -1,6 +1,7 @@
-// src/app/oracle-room/tarot-reading/[slug]/page.tsx
-
+/// <reference lib="dom" />
 "use client";
+
+// --- START OF FILE src/app/oracle-room/tarot-reading/[slug]/page.tsx ---
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -75,13 +76,18 @@ export default function TarotReaderPage() {
 
   const checkAndRequestMicPermission = useCallback(async () => {
     try {
-      if (!navigator.permissions || !navigator.mediaDevices) {
+      // FIX: Safe access to navigator via globalThis
+      const nav = (globalThis as any).navigator;
+      if (!nav) return false;
+
+      if (!nav.permissions || !nav.mediaDevices) {
         console.warn("Permissions API or MediaDevices API not supported on this browser.");
-        await navigator.mediaDevices.getUserMedia({ audio: true });
+        await nav.mediaDevices.getUserMedia({ audio: true });
         return true;
       }
 
-      const permissionStatus = await navigator.permissions.query({ name: 'microphone' as PermissionName });
+      // FIX: Cast PermissionName to any to avoid build error if DOM types missing
+      const permissionStatus = await nav.permissions.query({ name: 'microphone' as any });
 
       if (permissionStatus.state === 'denied') {
         console.warn('Microphone permission was already denied.');
@@ -89,7 +95,7 @@ export default function TarotReaderPage() {
         return false;
       }
 
-      await navigator.mediaDevices.getUserMedia({ audio: true });
+      await nav.mediaDevices.getUserMedia({ audio: true });
       console.log('Microphone permission granted.');
       setIsPermissionModalOpen(false);
       return true;
@@ -138,12 +144,17 @@ export default function TarotReaderPage() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ action: 'getCards', vapiSessionId: sessionId }),
         });
-        const data = await response.json();
+        // FIX: Cast data to any to avoid 'unknown' type error
+        const data = await response.json() as any;
         if (data.cards && data.cards.length > 0) {
             setCards(data.cards);
             stopPolling();
-            const loadingEl = document.getElementById('loading');
-            if (loadingEl) loadingEl.classList.add('hidden');
+            // FIX: Safe access to document via globalThis
+            const doc = (globalThis as any).document;
+            if (doc) {
+                const loadingEl = doc.getElementById('loading');
+                if (loadingEl) loadingEl.classList.add('hidden');
+            }
         }
     } catch (error) { console.error('Polling error:', error); }
   }, [stopPolling]);
@@ -156,8 +167,13 @@ export default function TarotReaderPage() {
     }
     stopPolling(); 
     pollingAttemptsRef.current = 0;
-    const loadingEl = document.getElementById('loading');
-    if (loadingEl) loadingEl.classList.remove('hidden');
+    
+    // FIX: Safe access to document via globalThis
+    const doc = (globalThis as any).document;
+    if (doc) {
+        const loadingEl = doc.getElementById('loading');
+        if (loadingEl) loadingEl.classList.remove('hidden');
+    }
 
     setTimeout(() => {
         pollForCards(sessionId);
@@ -190,8 +206,14 @@ export default function TarotReaderPage() {
       backgroundImageUrl: readerInfo.profile.backgroundImageUrl
     };
 
-    const originalFetch = window.fetch;
-    window.fetch = async (input, init) => {
+    // FIX: Safe access to window via globalThis
+    const win = (globalThis as any).window;
+    if (!win) return;
+
+    const originalFetch = win.fetch;
+    
+    // FIX: Use 'any' for arguments to avoid "Cannot find name 'RequestInfo'" error
+    win.fetch = async (input: any, init?: any) => {
       const urlString = typeof input === 'string' ? input : (input instanceof Request ? input.url : input.toString());
       
       if (urlString.includes('/rooms/check/vapi/')) {
@@ -219,15 +241,16 @@ export default function TarotReaderPage() {
       return originalFetch(input, init);
     };
 
-    const script = document.createElement('script');
+    const doc = (globalThis as any).document;
+    const script = doc.createElement('script');
     script.src = "https://cdn.jsdelivr.net/gh/VapiAI/html-script-tag@latest/dist/assets/index.js";
     script.async = true;
     script.defer = true;
-    document.body.appendChild(script);
+    doc.body.appendChild(script);
 
     script.onload = () => {
-      if (window.vapiSDK) {
-        const vapiInstance = window.vapiSDK.run({
+      if (win.vapiSDK) {
+        const vapiInstance = win.vapiSDK.run({
           apiKey: process.env.NEXT_PUBLIC_VAPI_API_KEY!,
           assistant: assistantId,
           config: {
@@ -237,7 +260,9 @@ export default function TarotReaderPage() {
         });
         
         setTimeout(() => {
-          const vapiButton = document.getElementById('vapi-support-btn');
+          // FIX: Safe access to document
+          const d = (globalThis as any).document;
+          const vapiButton = d ? d.getElementById('vapi-support-btn') : null;
           if (vapiButton) {
             vapiButton.style.backgroundImage = `url('${buttonConfig.backgroundImageUrl}')`;
           }
@@ -251,7 +276,9 @@ export default function TarotReaderPage() {
         vapiInstance.on('call-end', () => {
           setIsCallActive(false);
           stopPolling();
-          location.reload();
+          // FIX: Safe access to location
+          const w = (globalThis as any).window;
+          if(w) w.location.reload();
         });
 
         vapiInstance.on('error', (e: any) => {
@@ -264,17 +291,23 @@ export default function TarotReaderPage() {
     };
 
     return () => {
-      window.fetch = originalFetch;
-      const vapiButton = document.getElementById('vapi-support-btn');
-      if (vapiButton) vapiButton.remove();
-      if (script.parentNode) {
-        script.parentNode.removeChild(script);
+      if (win) win.fetch = originalFetch;
+      const d = (globalThis as any).document;
+      if (d) {
+          const vapiButton = d.getElementById('vapi-support-btn');
+          if (vapiButton) vapiButton.remove();
+          if (script.parentNode) {
+            script.parentNode.removeChild(script);
+          }
       }
     };
   }, [readerInfo, user, assistantId, duration, readerName, startPollingForCards, stopPolling]);
 
   const showWarningPopup = () => {
-    const modal = document.getElementById('warningModal');
+    // FIX: Safe access to document
+    const doc = (globalThis as any).document;
+    if (!doc) return;
+    const modal = doc.getElementById('warningModal');
     if (modal) modal.style.display = 'block';
   };
 
@@ -289,6 +322,19 @@ export default function TarotReaderPage() {
         <div className="text-center text-amber-200 text-2xl z-10"><div className="animate-spin rounded-full h-16 w-16 border-b-2 border-amber-200 mx-auto mb-4"></div>Authenticating and Loading Oracle...</div>
       </div>
     );
+  }
+
+  const handleReload = () => {
+      const win = (globalThis as any).window;
+      if (win) win.location.reload();
+  }
+
+  const hideModal = () => {
+      const doc = (globalThis as any).document;
+      if (doc) {
+          const modal = doc.getElementById('warningModal'); 
+          if (modal) modal.style.display = 'none'; 
+      }
   }
 
   return (
@@ -311,11 +357,8 @@ export default function TarotReaderPage() {
       <div id="warningModal" className="modal">
         <div className="modal-content">
           <p>Start a new session?</p>
-          <button onClick={() => location.reload()}>Start New Session</button>
-          <button onClick={() => { 
-              const modal = document.getElementById('warningModal'); 
-              if (modal) modal.style.display = 'none'; 
-          }}>Keep Session</button>
+          <button onClick={handleReload}>Start New Session</button>
+          <button onClick={hideModal}>Keep Session</button>
         </div>
       </div>
       

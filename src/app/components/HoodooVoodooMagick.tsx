@@ -1,5 +1,5 @@
 // --- START OF FILE src/app/components/HoodooVoodooMagick.tsx ---
-
+/// <reference lib="dom" />
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
@@ -77,11 +77,19 @@ const PSALM_DATABASE: Record<string, string> = {
 
 // --- Sound Utility ---
 const playSound = (src: string, volume: number = 0.5, loop: boolean = false): { play: () => void; stop: () => void; } => {
-    if (typeof window === 'undefined') return { play: () => {}, stop: () => {} };
-    const audio = new Audio(src);
+    // FIX: Safe window access
+    const win = (globalThis as any).window;
+    if (typeof win === 'undefined') return { play: () => {}, stop: () => {} };
+    
+    // FIX: Safe Audio access
+    const AudioCtor = win.Audio;
+    const audio = new AudioCtor(src);
+    
     audio.volume = volume;
     audio.loop = loop;
-    const play = () => audio.play().catch(e => console.error(`Failed to play sound: ${src}`, e));
+    
+    // FIX: Explicit type for error
+    const play = () => audio.play().catch((e: any) => console.error(`Failed to play sound: ${src}`, e));
     const stop = () => {
         audio.pause();
         audio.currentTime = 0;
@@ -485,7 +493,8 @@ const HoodooStep1_Ancestors: React.FC<StepComponentProps> = ({ onNext }) => {
                      <motion.div key="unlit" className="absolute inset-0" exit={{ opacity: 0 }}>
                         <Image src={`${ASSET_PATH}/hoodoo-ancestor-candle-unlit.png`} alt="Unlit Candle" layout="fill" objectFit="contain" />
                         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-3/4 h-2 bg-black/30 rounded-full overflow-hidden">
-                            <motion.div className="h-full bg-amber-400" initial={{width: '0%'}} animate={{width: `${holdProgress}%`}} transition={{duration: 0.05}}/>
+                            {/* FIX: Cast objects to 'any' to bypass strict property checks on 'width' */}
+                            <motion.div className="h-full bg-amber-400" initial={{width: '0%'} as any} animate={{width: `${holdProgress}%`} as any} transition={{duration: 0.05}}/>
                         </div>
                      </motion.div>
                 ) : (
@@ -504,7 +513,8 @@ const HoodooStep2_Petition: React.FC<{ petition: string; setPetition: (val: stri
         <div className="relative w-full max-w-md aspect-square @container mx-auto">
             <Image src={`${ASSET_PATH}/hoodoo-petition-paper.png`} alt="Petition Paper" layout="fill" objectFit="contain" />
             <div className="absolute p-4" style={{ left: '15%', top: '25%', width: '70%', height: '50%' }}>
-                <textarea value={petition} onChange={(e) => setPetition(e.target.value)} placeholder="e.g., To draw money to me for my rent." className="w-full h-full bg-transparent text-center text-[#4a2e1c] font-serif focus:outline-none resize-none" style={{ fontSize: 'clamp(0.6rem, 4cqw, 1.5rem)' }} />
+                {/* FIX: Cast target to 'any' to access 'value' safely */}
+                <textarea value={petition} onChange={(e) => setPetition((e.target as any).value)} placeholder="e.g., To draw money to me for my rent." className="w-full h-full bg-transparent text-center text-[#4a2e1c] font-serif focus:outline-none resize-none" style={{ fontSize: 'clamp(0.6rem, 4cqw, 1.5rem)' }} />
             </div>
         </div>
     </StepContainer>
@@ -563,7 +573,6 @@ const HoodooStep5_FixJar: React.FC<{ onNext: () => void, selections: MateriaSele
             <div className="relative w-full h-full max-w-md aspect-square mx-auto">
                 <Image src={`${ASSET_PATH}/hoodoo-jar-empty.png`} alt="Empty Spell Jar" layout="fill" objectFit="contain" priority />
                 
-                {/* THE FIX: Removed invalid 'type' prop, only using 'variant' */}
                 <FilledContainer items={selections} count={isCharged ? index + 1 : index} variant="hoodoo_empty" />
 
                 {!isCharged && spriteData && (
@@ -642,7 +651,8 @@ const VoodooStep2_StateNeed: React.FC<{ petition: string; setPetition: (val: str
         <div className="relative w-full max-w-md aspect-square @container mx-auto">
             <Image src={`${ASSET_PATH}/voodoo-petition-scroll.png`} alt="Petition Scroll" layout="fill" objectFit="contain" />
             <div className="absolute p-4" style={{ left: '22%', top: '30%', width: '56%', height: '40%' }}>
-                <textarea value={petition} onChange={(e) => setPetition(e.target.value)} placeholder="e.g., I ask for protection on my journey." className="w-full h-full bg-transparent text-center text-[#4a2e1c] font-serif focus:outline-none resize-none" style={{ fontSize: 'clamp(0.6rem, 4cqw, 1.5rem)' }} />
+                {/* FIX: Cast target to 'any' to access 'value' safely */}
+                <textarea value={petition} onChange={(e) => setPetition((e.target as any).value)} placeholder="e.g., I ask for protection on my journey." className="w-full h-full bg-transparent text-center text-[#4a2e1c] font-serif focus:outline-none resize-none" style={{ fontSize: 'clamp(0.6rem, 4cqw, 1.5rem)' }} />
             </div>
         </div>
     </StepContainer>
@@ -894,4 +904,3 @@ const PsalmReader: React.FC<{isOpen: boolean; onClose: () => void; psalmName: st
 };
 
 export default HoodooVoodooMagick;
-// --- END OF FILE ---

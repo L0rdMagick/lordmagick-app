@@ -16,6 +16,7 @@ const SpellCard = ({ title, desc, icon: Icon, onClick, disabled }: { title: stri
     onClick={!disabled ? onClick : undefined}
     className={`relative group p-6 border border-purple-900/50 bg-gray-950/50 backdrop-blur-sm rounded-lg transition-all duration-300 overflow-hidden ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-purple-500 cursor-pointer hover:shadow-[0_0_30px_rgba(168,85,247,0.15)]'}`}
   >
+    {/* FIX: bg-linear-to-br */}
     <div className={`absolute inset-0 bg-linear-to-br from-purple-900/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
     <div className="relative z-10 flex flex-col items-center text-center space-y-4">
       <div className={`p-3 rounded-full bg-gray-900 border border-gray-800 group-hover:border-purple-500/50 transition-colors duration-300`}>
@@ -54,6 +55,7 @@ export default function ElectricMagickMenu() {
              <span className="text-xs uppercase tracking-[0.5em]">Digital Sorcery</span>
              <Zap size={20} className="animate-pulse" />
           </div>
+          {/* FIX: bg-linear-to-b */}
           <h1 className="text-5xl md:text-7xl font-serif text-transparent bg-clip-text bg-linear-to-b from-white to-gray-600 uppercase tracking-widest drop-shadow-2xl">
             Electric Magick
           </h1>
@@ -118,3 +120,4 @@ export default function ElectricMagickMenu() {
     </div>
   );
 }
+// --- END OF FILE ---

@@ -1,4 +1,5 @@
 // --- START OF FILE src/app/components/ElectricMagick/DataScryingSpell.tsx ---
+/// <reference lib="dom" />
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -29,7 +30,13 @@ const DataScryingSpell = ({ onExit }: { onExit: () => void }) => {
                     playTone(200 + next * 5, 'sawtooth', 0.1, 0.05); // Climbing pitch
                     if (next >= 100) {
                         if (intervalRef.current) clearInterval(intervalRef.current);
-                        spawnExplosion(window.innerWidth/2, window.innerHeight/2, '#06b6d4', 50);
+                        
+                        // FIX: Access window safely via globalThis
+                        const win = (globalThis as any).window;
+                        if (win) {
+                            spawnExplosion(win.innerWidth/2, win.innerHeight/2, '#06b6d4', 50);
+                        }
+                        
                         playTone(800, 'sine', 1, 0.5);
                         setTimeout(() => setStage(2), 1000);
                         return 100;
@@ -95,12 +102,16 @@ const DataScryingSpell = ({ onExit }: { onExit: () => void }) => {
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const handleMove = (e: any) => {
+            // FIX: Access window safely via globalThis
+            const win = (globalThis as any).window;
+            if (!win) return;
+
             // THE FIX: Explicitly get clientY (vertical), not clientX
             const clientY = e.touches ? e.touches[0].clientY : e.clientX; // Fallback to X only if Y undefined (rare mouse edge case), but standard MouseEvent has Y
             const y = e.touches ? e.touches[0].clientY : e.clientY;
 
             // Invert logic: Top of screen = 100%, Bottom = 0%
-            const percent = 100 - (y / window.innerHeight) * 100;
+            const percent = 100 - (y / win.innerHeight) * 100;
             const clamped = Math.min(100, Math.max(0, percent));
             setTuning(clamped);
 
@@ -195,7 +206,8 @@ const DataScryingSpell = ({ onExit }: { onExit: () => void }) => {
                 </div>
 
                 {/* Right Side Slider Graphic (Interactive Area) */}
-                <div className="absolute right-0 top-0 bottom-0 w-16 flex items-center justify-center bg-gradient-to-l from-cyan-900/20 to-transparent">
+                {/* FIX: Updated deprecated 'bg-gradient-to-l' to 'bg-linear-to-l' */}
+                <div className="absolute right-0 top-0 bottom-0 w-16 flex items-center justify-center bg-linear-to-l from-cyan-900/20 to-transparent">
                     {/* Track */}
                     <div className="w-1 h-3/4 bg-cyan-900/50 rounded-full relative">
                         {/* Target Hint (Subtle) */}
@@ -247,7 +259,8 @@ const DataScryingSpell = ({ onExit }: { onExit: () => void }) => {
                     <div className="absolute inset-0 bg-cyan-500 blur-[100px] opacity-20 animate-pulse"></div>
                     
                     {/* The Eye */}
-                    <div className="relative z-10 transition-all duration-[5000ms]" style={{ transform: `scale(${1 + gazeTime/50})` }}>
+                    {/* FIX: Updated deprecated 'duration-[5000ms]' to 'duration-5000' */}
+                    <div className="relative z-10 transition-all duration-5000" style={{ transform: `scale(${1 + gazeTime/50})` }}>
                         <Eye size={120} className="text-cyan-200" strokeWidth={0.5} />
                         <div className="absolute inset-0 flex items-center justify-center">
                              <div className="w-2 h-2 bg-white rounded-full animate-ping"></div>
@@ -310,4 +323,3 @@ const DataScryingSpell = ({ onExit }: { onExit: () => void }) => {
 };
 
 export default DataScryingSpell;
-// --- END OF FILE ---

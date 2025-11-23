@@ -1,3 +1,4 @@
+// --- START OF FILE src/app/components/ImageSlider.tsx ---
 "use client";
 
 import { useState } from 'react';
@@ -44,7 +45,8 @@ export default function ImageSlider({ images }: ImageSliderProps) {
   };
 
   return (
-    <div className="w-full aspect-[3/4] relative overflow-hidden rounded-lg shadow-lg">
+    // FIX: Updated aspect-[3/4] to aspect-3/4 per linter suggestion
+    <div className="w-full aspect-3/4 relative overflow-hidden rounded-lg shadow-lg">
       <AnimatePresence initial={false} custom={direction}>
         <motion.div
           key={page}

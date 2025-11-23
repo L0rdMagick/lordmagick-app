@@ -1,4 +1,5 @@
 // --- START OF FILE src/app/components/ElectricMagick/ZeroPointZetSpell.tsx ---
+/// <reference lib="dom" />
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -18,8 +19,8 @@ const GlitchText = ({ text, active = false }: { text: string, active?: boolean }
   return (
     <div className="relative inline-block">
       <span className="relative z-10">{text}</span>
-      <span className="absolute top-0 left-0 -z-10 translate-x-[2px] text-red-500 opacity-70 animate-pulse">{text}</span>
-      <span className="absolute top-0 left-0 -z-10 -translate-x-[2px] text-cyan-500 opacity-70 animate-pulse delay-75">{text}</span>
+      <span className="absolute top-0 left-0 -z-10 translate-x-0.5 text-red-500 opacity-70 animate-pulse">{text}</span>
+      <span className="absolute top-0 left-0 -z-10 -translate-x-0.5 text-cyan-500 opacity-70 animate-pulse delay-75">{text}</span>
     </div>
   );
 };
@@ -84,8 +85,8 @@ const BioAuthStage = ({ onComplete, playTone }: { onComplete: () => void, playTo
         {isScanning && (
           <motion.div 
             className="absolute left-0 right-0 h-2 bg-red-500 shadow-[0_0_20px_rgba(239,68,68,0.8)] z-10"
-            initial={{ top: 0 }}
-            animate={{ top: '100%' }}
+            initial={{ top: 0 } as any}
+            animate={{ top: '100%' } as any}
             transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
           />
         )}
@@ -149,9 +150,11 @@ const InjectionStage = ({ onComplete, playTone, setIntention }: { onComplete: ()
               autoFocus
               type="text" 
               value={input}
+              // FIX: Cast currentTarget to any to safely access value
               onChange={(e) => {
-                setInput(e.target.value);
-                playTone(400 + (e.target.value.length * 20), 'sine', 0.05);
+                const val = (e.currentTarget as any).value;
+                setInput(val);
+                playTone(400 + (val.length * 20), 'sine', 0.05);
               }}
               className="w-full bg-transparent border-b-2 border-green-800 text-green-400 font-mono text-xl py-2 focus:outline-none focus:border-green-400 transition-colors placeholder:text-green-900 uppercase"
               placeholder="ENTER COMMAND..."
@@ -179,27 +182,24 @@ const StabilizationStage = ({ onComplete, playTone, modulateFilter }: { onComple
     const [lockedTime, setLockedTime] = useState(0);
     const [noise, setNoise] = useState(0);
     
-    // Ref to calculate exact width of the interaction area
     const trackRef = useRef<HTMLDivElement>(null);
 
     // Generate erratic target movement (The Universe resisting)
     useEffect(() => {
         const interval = setInterval(() => {
-            // Faster jitter, more frequent updates (50ms)
             const jitter = (Math.random() - 0.5) * 40; 
             setTarget(prev => Math.min(90, Math.max(10, prev + jitter)));
             setNoise(Math.random() * 10);
-        }, 50); // Very fast updates
+        }, 50); 
         return () => clearInterval(interval);
     }, []);
 
     // Check lock status
     useEffect(() => {
         const dist = Math.abs(stability - target);
-        modulateFilter(100 + (100 - dist) * 10); // Filter opens as you get closer
+        modulateFilter(100 + (100 - dist) * 10); 
 
         if (dist < 15) {
-            // Slower lock accumulation (1.1 per tick instead of 1)
             setLockedTime(prev => {
                 const next = prev + 1.1;
                 if (next > 100) onComplete();
@@ -207,21 +207,17 @@ const StabilizationStage = ({ onComplete, playTone, modulateFilter }: { onComple
             });
             if (Math.random() > 0.8) playTone(880, 'sine', 0.1, 0.05);
         } else {
-            setLockedTime(prev => Math.max(0, prev - 1)); // Fast decay
+            setLockedTime(prev => Math.max(0, prev - 1)); 
         }
     }, [stability, target, onComplete, playTone, modulateFilter]);
 
-    // New Handler: Calculates position relative to the track container, not window
     const handleSlide = (e: any) => {
         if (!trackRef.current) return;
         
         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        const rect = trackRef.current.getBoundingClientRect();
+        const rect = (trackRef.current as any).getBoundingClientRect();
         
-        // Calculate position within the element
         let relativeX = clientX - rect.left;
-        
-        // Clamp values
         relativeX = Math.max(0, Math.min(relativeX, rect.width));
         
         const percent = (relativeX / rect.width) * 100;
@@ -231,7 +227,6 @@ const StabilizationStage = ({ onComplete, playTone, modulateFilter }: { onComple
     return (
         <div 
             className="flex flex-col items-center justify-center h-full w-full bg-black select-none touch-none p-4"
-            // Attach handlers to container so you don't lose drag if you slip off the bar
             onTouchMove={handleSlide}
             onMouseMove={(e) => e.buttons === 1 && handleSlide(e)}
             onMouseDown={handleSlide}
@@ -240,12 +235,10 @@ const StabilizationStage = ({ onComplete, playTone, modulateFilter }: { onComple
                 MANUAL OVERRIDE: STABILIZE SIGNAL
             </h2>
 
-            {/* The Interaction Track */}
             <div 
                 ref={trackRef}
                 className="relative w-full max-w-md h-48 border-x border-cyan-900/50 bg-cyan-950/10 cursor-crosshair"
             >
-                {/* Target Zone (Moving) */}
                 <div 
                     className="absolute top-0 bottom-0 w-16 bg-cyan-900/30 border-x border-cyan-500/50 transition-all duration-75 ease-linear"
                     style={{ left: `calc(${target}% - 32px)` }}
@@ -253,18 +246,15 @@ const StabilizationStage = ({ onComplete, playTone, modulateFilter }: { onComple
                     <div className="absolute top-0 left-0 w-full h-full animate-pulse opacity-20 bg-cyan-400"></div>
                 </div>
 
-                {/* User Cursor (The White Line) */}
                 <div 
                     className="absolute top-0 bottom-0 w-1 bg-white shadow-[0_0_20px_white] transition-transform duration-0"
                     style={{ left: `${stability}%` }}
                 />
 
-                {/* Noise Visuals */}
                 <div className="absolute inset-0 flex items-center justify-center opacity-30 pointer-events-none">
                     <Activity size={64} className="text-cyan-700" style={{ transform: `scaleY(${1 + noise/5})` }} />
                 </div>
                 
-                {/* Helper lines */}
                 <div className="absolute inset-0 pointer-events-none flex justify-between opacity-20">
                     {[0, 25, 50, 75, 100].map(p => (
                         <div key={p} className="h-full w-px bg-cyan-500" />
@@ -272,7 +262,6 @@ const StabilizationStage = ({ onComplete, playTone, modulateFilter }: { onComple
                 </div>
             </div>
 
-            {/* Lock Progress */}
             <div className="w-64 h-2 bg-gray-900 mt-8 rounded-full overflow-hidden border border-gray-800">
                 <div 
                     className="h-full bg-cyan-400 transition-all duration-75"
@@ -288,15 +277,13 @@ const StabilizationStage = ({ onComplete, playTone, modulateFilter }: { onComple
 
 // --- STAGE 4: ENTROPY BATTLE (The Force) ---
 const EntropyStage = ({ onComplete, playTone, spawnExplosion, intention }: { onComplete: () => void, playTone: any, spawnExplosion: any, intention: string }) => {
-  const [integrity, setIntegrity] = useState(15); // Start low
+  const [integrity, setIntegrity] = useState(15); 
   const [decayRate, setDecayRate] = useState(0.6);
   const [glitchActive, setGlitchActive] = useState(false);
 
-  // The Decay Loop
   useEffect(() => {
     const interval = setInterval(() => {
       setIntegrity(prev => {
-        // Decay gets stronger as you get closer to 100% (Resistance)
         const currentDecay = decayRate + (prev / 150); 
         return Math.max(0, prev - currentDecay);
       });
@@ -310,19 +297,23 @@ const EntropyStage = ({ onComplete, playTone, spawnExplosion, intention }: { onC
   }, [integrity]);
 
   const handleStabilize = (e: any) => {
-    e.preventDefault(); // Prevent zoom/scroll
+    e.preventDefault(); 
     
     const boost = 7; 
     setIntegrity(prev => {
       const next = Math.min(100, prev + boost);
       
-      // Feedback
       const freq = 150 + (next * 6); 
       playTone(freq, 'sawtooth', 0.1, 0.2);
       
       const clientX = e.touches ? e.touches[0].clientX : e.clientX;
       const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-      spawnExplosion(clientX || window.innerWidth/2, clientY || window.innerHeight/2, '#a855f7', 5);
+      
+      const win = (globalThis as any).window;
+      const winW = win ? win.innerWidth : 1000;
+      const winH = win ? win.innerHeight : 1000;
+
+      spawnExplosion(clientX || winW/2, clientY || winH/2, '#a855f7', 5);
 
       if (next >= 100) {
         onComplete();
@@ -421,8 +412,8 @@ const RebootStage = ({ intention, onExit }: { intention: string, onExit: () => v
         ))}
         {bootLog.length >= 6 && (
           <motion.div 
-            initial={{ opacity: 0 }} 
-            animate={{ opacity: 1 }} 
+            initial={{ opacity: 0 } as any} 
+            animate={{ opacity: 1 } as any} 
             className="mt-12 text-center"
           >
             <div className="text-4xl mb-4 text-white font-bold">OK</div>
@@ -490,4 +481,3 @@ const ZeroPointZetSpell = ({ onExit }: { onExit: () => void }) => {
 };
 
 export default ZeroPointZetSpell;
-// --- END OF FILE ---

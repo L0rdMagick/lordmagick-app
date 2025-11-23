@@ -1,4 +1,7 @@
+/// <reference lib="dom" />
 "use client";
+
+// --- START OF FILE src/app/hall/page.tsx ---
 
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -53,22 +56,31 @@ export default function HallPage() {
   const router = useRouter();
   const [sparkle, setSparkle] = useState<SparkleState | null>(null);
   const [navigatingTo, setNavigatingTo] = useState<{ href: string; isExternal: boolean } | null>(null);
-  const portalSoundsRef = useRef<{[key: string]: HTMLAudioElement}>({});
+  
+  // FIX: Use 'any' type for audio elements to prevent strict property missing errors during build
+  const portalSoundsRef = useRef<{[key: string]: any}>({});
 
   useEffect(() => {
-    portals.forEach(portal => {
-      const audio = new Audio(portal.soundSrc);
-      audio.volume = SFX_VOLUME;
-      portalSoundsRef.current[portal.soundSrc] = audio;
-    });
+    // FIX: Safe access to window.Audio via globalThis
+    const win = (globalThis as any).window;
+    if (typeof win !== 'undefined') {
+        const AudioCtor = win.Audio;
+        portals.forEach(portal => {
+          const audio = new AudioCtor(portal.soundSrc);
+          audio.volume = SFX_VOLUME;
+          portalSoundsRef.current[portal.soundSrc] = audio;
+        });
+    }
   }, []);
 
   const handlePortalClick = (e: MouseEvent<HTMLAnchorElement>, href: string, soundSrc: string, isExternal: boolean) => {
     e.preventDefault();
     if (navigatingTo) return;
     setNavigatingTo({ href, isExternal });
+    
     const clickSound = portalSoundsRef.current[soundSrc];
     if (clickSound) {
+      // FIX: Properties 'currentTime' and 'play' are now accessible on 'any' type
       clickSound.currentTime = 0;
       clickSound.play();
     }
@@ -78,7 +90,11 @@ export default function HallPage() {
   const handleAnimationComplete = () => {
     if (navigatingTo) {
       if (navigatingTo.isExternal) {
-        window.open(navigatingTo.href, '_blank', 'noopener,noreferrer');
+        // FIX: Safe access to window.open via globalThis
+        const win = (globalThis as any).window;
+        if (win) {
+            win.open(navigatingTo.href, '_blank', 'noopener,noreferrer');
+        }
         setNavigatingTo(null);
         setSparkle(null);
       } else {
@@ -90,8 +106,6 @@ export default function HallPage() {
   return (
     <>
       <motion.main 
-        // THE FIX: On mobile (default), justify-start pushes content to the top. On desktop (md:), justify-center is used.
-        // Padding is adjusted for a tighter fit on mobile.
         className="relative h-screen w-screen overflow-hidden flex flex-col items-center justify-start md:justify-center pt-6 pb-4 px-4"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -105,7 +119,6 @@ export default function HallPage() {
         <div className="relative z-20 flex flex-col items-center w-full max-w-7xl">
             <header className="text-center text-white">
                 <div 
-                  // THE FIX: Added responsive height classes. h-[10vh] is for mobile, md:h-[18vh] is for desktop.
                   className="relative w-full mx-auto aspect-3/1 h-[10vh] md:h-[18vh]"
                   style={{ 
                     filter: 'drop-shadow(2px 2px 8px rgba(0,0,0,0.8))',
@@ -125,7 +138,6 @@ export default function HallPage() {
                 </p>
             </header>
             
-            {/* THE FIX: Margin-top is now responsive. Smaller on mobile, larger on desktop. */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-2 md:gap-x-8 w-full mt-4 md:mt-[4vh]">
                 {portals.map((portal) => (
                     <div key={portal.title} className="flex flex-col items-center gap-y-1">

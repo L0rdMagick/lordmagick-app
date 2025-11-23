@@ -1,3 +1,4 @@
+// --- START OF FILE src/app/marketplace/tarot/[slug]/page.tsx ---
 "use client";
 
 import { useState } from 'react';
@@ -26,13 +27,16 @@ export default function TarotProductPage() {
     }
     
     const handleAddToCart = () => {
-        // TODO: Integrate with Stripe Checkout
         console.log({
             productId: product.id,
             editionId: selectedEdition,
             quantity: quantity,
         });
-        alert(`${quantity} x ${product.name} (${selectedEdition}) added to cart! (Placeholder)`);
+        // FIX: Safe access to alert via globalThis
+        const win = (globalThis as any).window;
+        if (win) {
+            win.alert(`${quantity} x ${product.name} (${selectedEdition}) added to cart! (Placeholder)`);
+        }
     };
 
     const selectedEditionDetails = product.editions.find(e => e.id === selectedEdition);
@@ -66,7 +70,8 @@ export default function TarotProductPage() {
                             <select
                                 id="edition"
                                 value={selectedEdition}
-                                onChange={(e) => setSelectedEdition(e.target.value)}
+                                // FIX: Cast e.target to any to access value
+                                onChange={(e) => setSelectedEdition((e.target as any).value)}
                                 className="w-full bg-black/50 border border-gray-600 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-amber-400"
                             >
                                 {product.editions.map(edition => (
@@ -83,7 +88,8 @@ export default function TarotProductPage() {
                                 type="number"
                                 id="quantity"
                                 value={quantity}
-                                onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value, 10)))}
+                                // FIX: Cast e.target to any to access value
+                                onChange={(e) => setQuantity(Math.max(1, parseInt((e.target as any).value, 10)))}
                                 min="1"
                                 className="w-20 bg-black/50 border border-gray-600 rounded-lg px-3 py-2 text-white text-center"
                             />

@@ -1,4 +1,7 @@
+/// <reference lib="dom" />
 "use client";
+
+// --- START OF FILE src/app/components/TableOfContents.tsx ---
 
 export interface Chapter {
   id: string;
@@ -14,9 +17,13 @@ interface TableOfContentsProps {
 export default function TableOfContents({ chapters, isOpen, onClose }: TableOfContentsProps) {
 
   const handleChapterClick = (chapterId: string) => {
-    const chapterElement = document.getElementById(chapterId);
-    if (chapterElement) {
-      chapterElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // FIX: Safe document access via globalThis to prevent SSR build errors
+    const doc = (globalThis as any).document;
+    if (doc) {
+        const chapterElement = doc.getElementById(chapterId);
+        if (chapterElement) {
+          chapterElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
     }
     onClose();
   };
@@ -33,7 +40,6 @@ export default function TableOfContents({ chapters, isOpen, onClose }: TableOfCo
       
       {/* Sidebar */}
       <div
-        // THE FIX: Changed background to light parchment to match the book
         className={`fixed top-0 left-0 h-full w-72 bg-[#fdf9e8] bg-[url('/images/books/parchment-bg.png')] bg-cover p-6 z-40 transition-transform duration-300 ease-in-out ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
@@ -41,7 +47,6 @@ export default function TableOfContents({ chapters, isOpen, onClose }: TableOfCo
           boxShadow: '4px 0px 15px rgba(0,0,0,0.5)'
         }}
       >
-        {/* THE FIX: Changed text and border to be dark and bold */}
         <h3 className="text-2xl font-bold text-black mb-6 border-b-2 border-gray-500/50 pb-3">
           Contents
         </h3>
@@ -52,7 +57,6 @@ export default function TableOfContents({ chapters, isOpen, onClose }: TableOfCo
               <li key={chapter.id}>
                 <button
                   onClick={() => handleChapterClick(chapter.id)}
-                  // THE FIX: Changed chapter text to be dark and bold
                   className="text-left text-gray-800 hover:text-black font-semibold transition-colors duration-200"
                 >
                   {chapter.title}
@@ -61,7 +65,6 @@ export default function TableOfContents({ chapters, isOpen, onClose }: TableOfCo
             ))}
           </ul>
         ) : (
-          // THE FIX: Adjusted "no chapters" text for the light background
           <p className="text-gray-600">No chapters found.</p>
         )}
       </div>

@@ -1,4 +1,5 @@
 // --- START OF FILE src/app/components/ElectricMagick/LightPrismSpell.tsx ---
+/// <reference lib="dom" />
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -162,7 +163,8 @@ const RefractionStage = ({ targetRay, onNext, playTone, playDrone, modulateFilte
             {/* The Prism Visual */}
             <div className="relative w-full max-w-xs aspect-square flex items-center justify-center mb-12">
                 {/* The Beam Input (White) */}
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2 h-1/2 bg-gradient-to-b from-white to-transparent opacity-50" />
+                {/* FIX: Updated deprecated 'bg-gradient-to-b' to 'bg-linear-to-b' */}
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2 h-1/2 bg-linear-to-b from-white to-transparent opacity-50" />
                 
                 {/* The Crystal */}
                 <div className="relative z-10 transition-transform duration-300" style={{ transform: `rotate(${angle - 50}deg)` }}>
@@ -238,7 +240,12 @@ const ProjectionStage = ({ ray, onExit, playTone, spawnExplosion }: ProjectionSt
 
     useEffect(() => {
         const run = async () => {
-            spawnExplosion(window.innerWidth/2, window.innerHeight/2, ray.color, 100);
+            // FIX: Safe window access via globalThis
+            const win = (globalThis as any).window;
+            if (win) {
+                spawnExplosion(win.innerWidth/2, win.innerHeight/2, ray.color, 100);
+            }
+            
             playTone(ray.freq, 'sine', 3, 0.3); // The Solfeggio freq
             
             const msg = await generateElectricLightPrism(ray.name, ray.intent);
@@ -344,4 +351,3 @@ const LightPrismSpell = ({ onExit }: { onExit: () => void }) => {
 };
 
 export default LightPrismSpell;
-// --- END OF FILE ---

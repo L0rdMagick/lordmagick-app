@@ -1,4 +1,5 @@
 // --- START OF FILE src/app/components/ElectricMagick/NeuralLinkSpell.tsx ---
+/// <reference lib="dom" />
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -9,7 +10,7 @@ import { generateElectricNeuralLink } from '@/lib/services/geminiService';
 import { useAudioEngine, useParticleSystem } from './hooks';
 
 // ==========================================
-// SUB-COMPONENTS (Defined Outside to fix Focus Loss)
+// SUB-COMPONENTS
 // ==========================================
 
 interface TargetStageProps {
@@ -32,7 +33,8 @@ const TargetStage = ({ target, setTarget, intent, setIntent, onNext }: TargetSta
                     <input 
                         type="text" 
                         value={target}
-                        onChange={(e) => setTarget(e.target.value)}
+                        // FIX: Explicitly cast target to any/HTMLInputElement to access value
+                        onChange={(e) => setTarget((e.target as any).value)}
                         className="w-full bg-black/50 border-b border-pink-900/50 p-4 text-pink-100 focus:outline-none focus:border-pink-500 font-serif text-xl text-center placeholder:text-pink-900/30 transition-all"
                         placeholder="WHO ARE WE LINKING TO?"
                         autoFocus
@@ -44,7 +46,8 @@ const TargetStage = ({ target, setTarget, intent, setIntent, onNext }: TargetSta
                     <input 
                         type="text" 
                         value={intent}
-                        onChange={(e) => setIntent(e.target.value)}
+                        // FIX: Explicitly cast target to any/HTMLInputElement to access value
+                        onChange={(e) => setIntent((e.target as any).value)}
                         className="w-full bg-black/50 border-b border-pink-900/50 p-4 text-pink-100 focus:outline-none focus:border-pink-500 font-serif text-xl text-center placeholder:text-pink-900/30 transition-all"
                         placeholder="WHAT IS THE COMMAND?"
                     />
@@ -74,11 +77,10 @@ const CalibrationStage = ({ playDrone, playTone, onNext }: CalibrationStageProps
     const [freq, setFreq] = useState(50);
     const [aligned, setAligned] = useState(false);
     
-    // Random "sweet spot" that moves slightly
     const targetFreq = useRef(Math.floor(Math.random() * 80) + 10);
 
     useEffect(() => {
-        playDrone(true, 100 + freq); // Drone pitch changes with slider
+        playDrone(true, 100 + freq); 
         
         const dist = Math.abs(freq - targetFreq.current);
         if (dist < 5) {
@@ -104,7 +106,6 @@ const CalibrationStage = ({ playDrone, playTone, onNext }: CalibrationStageProps
                 CALIBRATING CARRIER WAVE
              </div>
 
-             {/* Visualizer */}
              <div className={`w-64 h-64 rounded-full border-2 ${aligned ? 'border-pink-400 shadow-[0_0_30px_#ec4899]' : 'border-pink-900/30'} flex items-center justify-center transition-all duration-300`}>
                  <div className={`w-full h-1 bg-pink-500 transition-transform duration-75`} 
                       style={{ transform: `rotate(${freq * 3.6}deg) scale(${aligned ? 1 : 0.5})` }} />
@@ -118,7 +119,8 @@ const CalibrationStage = ({ playDrone, playTone, onNext }: CalibrationStageProps
                 type="range" 
                 min="0" max="100" 
                 value={freq} 
-                onChange={(e) => setFreq(parseInt(e.target.value))}
+                // FIX: Cast to 'any' to access value
+                onChange={(e) => setFreq(parseInt((e.target as any).value))}
                 className="w-64 mt-12 accent-pink-500"
              />
 
@@ -146,21 +148,16 @@ const SyncStage = ({ playTone, spawnExplosion, onNext }: SyncStageProps) => {
     const [power, setPower] = useState(0);
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-    // Isochronic pulse logic
     useEffect(() => {
         const pulseInterval = setInterval(() => {
-            // Play a short pulse tone to simulate isochronic beats
-            // Frequency based on power level (theta -> alpha -> beta)
             const baseFreq = 100 + (power * 2); 
             playTone(baseFreq, 'triangle', 0.1, 0.05);
-        }, 200 - (power * 1.5)); // Gets faster as power increases
+        }, 200 - (power * 1.5));
 
         return () => clearInterval(pulseInterval);
     }, [power, playTone]);
 
     const checkTouches = (e: React.TouchEvent | React.MouseEvent) => {
-        // For mouse, we assume click is 1 touch. For touch, we count length.
-        // Allow single click hold on desktop for accessibility/testing
         const count = 'touches' in e ? e.touches.length : (e.buttons === 1 ? 1 : 0);
         setTouches(count);
 
@@ -171,16 +168,26 @@ const SyncStage = ({ playTone, spawnExplosion, onNext }: SyncStageProps) => {
                         const next = p + 1;
                         if (next >= 100) {
                             if(intervalRef.current) clearInterval(intervalRef.current);
-                            playTone(200, 'sawtooth', 0.5); // Bass drop
-                            setTimeout(() => playTone(880, 'sine', 2, 0), 500); // High ping
-                            spawnExplosion(window.innerWidth/2, window.innerHeight/2, '#ffffff', 100);
+                            playTone(200, 'sawtooth', 0.5);
+                            setTimeout(() => playTone(880, 'sine', 2, 0), 500);
+                            
+                            // FIX: Use safe globalThis cast to access window properties
+                            const win = (globalThis as any).window;
+                            if (win) {
+                                spawnExplosion(win.innerWidth/2, win.innerHeight/2, '#ffffff', 100);
+                            }
+                            
                             onNext();
                             return 100;
                         }
                         return next;
                     });
-                    // Visual feedback
-                    spawnExplosion(window.innerWidth/2, window.innerHeight/2, '#ec4899', 2);
+                    
+                    // FIX: Use safe globalThis cast to access window properties
+                    const win = (globalThis as any).window;
+                    if (win) {
+                        spawnExplosion(win.innerWidth/2, win.innerHeight/2, '#ec4899', 2);
+                    }
                 }, 50);
             }
         } else {
@@ -188,7 +195,7 @@ const SyncStage = ({ playTone, spawnExplosion, onNext }: SyncStageProps) => {
                 clearInterval(intervalRef.current);
                 intervalRef.current = null;
             }
-            setPower(p => Math.max(0, p - 2)); // Decay
+            setPower(p => Math.max(0, p - 2));
         }
     };
 
@@ -209,18 +216,15 @@ const SyncStage = ({ playTone, spawnExplosion, onNext }: SyncStageProps) => {
             </h2>
 
             <div className="relative w-full h-64 flex items-center justify-center gap-8">
-                {/* Node Left */}
                 <div className={`w-24 h-24 rounded-full border-2 ${touches > 0 ? 'border-pink-200 bg-pink-900/50' : 'border-pink-900'} flex items-center justify-center transition-all duration-200`}>
                     <Network className={touches > 0 ? "text-pink-200" : "text-pink-900"} />
                 </div>
                 
-                {/* Connection Beam */}
                 <div className="h-2 flex-1 bg-gray-900 rounded-full overflow-hidden relative">
                     <div className="absolute inset-0 bg-pink-500 transition-all duration-75"
                          style={{ width: `${power}%`, boxShadow: '0 0 20px #ec4899' }}></div>
                 </div>
 
-                {/* Node Right */}
                 <div className={`w-24 h-24 rounded-full border-2 ${touches > 1 ? 'border-pink-200 bg-pink-900/50' : 'border-pink-900'} flex items-center justify-center transition-all duration-200`}>
                      <Network className={touches > 1 ? "text-pink-200" : "text-pink-900"} />
                 </div>
@@ -360,4 +364,3 @@ const NeuralLinkSpell = ({ onExit }: { onExit: () => void }) => {
 };
 
 export default NeuralLinkSpell;
-// --- END OF FILE ---

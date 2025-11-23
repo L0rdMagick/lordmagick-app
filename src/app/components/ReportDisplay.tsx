@@ -1,5 +1,5 @@
 // --- START OF FILE src/app/components/ReportDisplay.tsx ---
-
+/// <reference lib="dom" />
 import React, { useMemo, MouseEvent } from 'react';
 import { BackToTopIcon } from './icons';
 
@@ -50,12 +50,10 @@ const ReportDisplay: React.FC<ReportDisplayProps> = ({ reportContent }) => {
   const { coverData, sections } = useMemo(() => {
     if (!reportContent) return { coverData: {}, sections: [] };
 
-    // --- THE FIX: Correctly split the report into its distinct parts ---
     const parts = reportContent.split('---');
-    if (parts.length < 2) return { coverData: {}, sections: [] }; // Not a valid report format
+    if (parts.length < 2) return { coverData: {}, sections: [] }; 
 
     const coverContent = parts[0] || '';
-    // Everything after the first '---' is considered the body for parsing sections
     const mainBodyContent = parts.slice(1).join('---'); 
 
     const cover: Record<string, string> = {};
@@ -80,11 +78,10 @@ const ReportDisplay: React.FC<ReportDisplayProps> = ({ reportContent }) => {
         const currentSection: ReportSection = { id, title: titleText, content: [], image: imageMap[id] };
         
         for (const line of lines) {
-            const tocItemMatch = line.match(/^\s*-\s*\[(.*?)]\((.*?)\)|\d\.\s*\[(.*?)]\((.*?)\)/); // Handles both bullet and numbered lists
+            const tocItemMatch = line.match(/^\s*-\s*\[(.*?)]\((.*?)\)|\d\.\s*\[(.*?)]\((.*?)\)/); 
             const backToTopMatch = line.match(/\[Back to Top\]\((.*?)\)/);
             
             if (tocItemMatch) {
-                // tocItemMatch will have groups [1, 2] for '-' lists or [3, 4] for '1.' lists
                 currentSection.content.push({ type: 'li', text: tocItemMatch[1] || tocItemMatch[3], href: tocItemMatch[2] || tocItemMatch[4] });
             } else if (backToTopMatch) {
                 currentSection.content.push({ type: 'back-to-top', text: 'Back to Top', href: backToTopMatch[1] });
@@ -98,22 +95,27 @@ const ReportDisplay: React.FC<ReportDisplayProps> = ({ reportContent }) => {
         }
         parsedSections.push(currentSection);
     }
-    // --- END FIX ---
     
     return { coverData: cover, sections: parsedSections };
 
   }, [reportContent]);
 
   const handleInternalLinkClick = (e: MouseEvent<HTMLDivElement>) => {
-    const target = e.target as HTMLElement;
+    // FIX: Cast target to any to access 'closest' safely
+    const target = e.target as any;
     const anchor = target.closest('a');
 
     if (anchor && anchor.getAttribute('href')?.startsWith('#')) {
       e.preventDefault();
       const id = anchor.getAttribute('href')!.substring(1);
-      const element = document.getElementById(id);
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      
+      // FIX: Safe document access via globalThis
+      const doc = (globalThis as any).document;
+      if (doc) {
+          const element = doc.getElementById(id);
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
       }
     }
   };

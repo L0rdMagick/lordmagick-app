@@ -1,3 +1,5 @@
+// --- START OF FILE src/app/marketplace/page.tsx ---
+
 import RoomsButton from '../components/RoomsButton';
 import { tarotProducts } from '@/lib/marketplaceData';
 import Image from 'next/image';
@@ -20,7 +22,8 @@ export default function MarketplacePage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {tarotProducts.map((product) => (
                 <Link key={product.slug} href={`/marketplace/tarot/${product.slug}`} className="group block">
-                    <div className="relative aspect-[3/4] w-full overflow-hidden rounded-lg shadow-2xl shadow-black/50 transform transition-all duration-300 group-hover:scale-105 group-hover:-translate-y-2">
+                    {/* FIX: Updated aspect-[3/4] to canonical aspect-3/4 */}
+                    <div className="relative aspect-3/4 w-full overflow-hidden rounded-lg shadow-2xl shadow-black/50 transform transition-all duration-300 group-hover:scale-105 group-hover:-translate-y-2">
                         <Image 
                             src={product.coverImage}
                             alt={`${product.name} cover`}

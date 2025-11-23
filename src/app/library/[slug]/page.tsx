@@ -1,8 +1,10 @@
+/// <reference lib="dom" />
 "use client";
+
+// --- START OF FILE src/app/library/[slug]/page.tsx ---
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-// THE FIX: Corrected the import path to point to the file in the same directory level.
 import BookReader from '../BookReader';
 import TableOfContents, { Chapter } from '../../components/TableOfContents';
 import MagickalBackLink from '../../components/MagickalBackLink';
@@ -37,22 +39,33 @@ export default function BookPage() {
           setError(null);
           const response = await fetch(`/api/books/${slug}`);
           if (!response.ok) {
-            const errorData = await response.json();
+            // FIX: Cast errorData to any to avoid 'unknown' type error
+            const errorData = await response.json() as any;
             throw new Error(errorData.error || 'The tome could not be found.');
           }
-          const data: BookData = await response.json();
+          // FIX: Cast data to BookData
+          const data = await response.json() as BookData;
 
-          const parser = new DOMParser();
-          const doc = parser.parseFromString(data.content, 'text/html');
-          const headings = Array.from(doc.querySelectorAll('h2'));
-          const chapters: Chapter[] = headings.map((heading, index) => {
-            const id = `chapter-${index}`;
-            heading.id = id;
-            return { id, title: heading.textContent || 'Unnamed Chapter' };
-          });
-          const processedContent = doc.body.innerHTML;
+          // FIX: Safe access to DOMParser via globalThis
+          const WinDOMParser = (globalThis as any).DOMParser;
+          if (WinDOMParser) {
+              const parser = new WinDOMParser();
+              const doc = parser.parseFromString(data.content, 'text/html');
+              const headings = Array.from(doc.querySelectorAll('h2'));
+              
+              // FIX: Explicitly cast heading to any to avoid 'unknown' type error in map
+              const chapters: Chapter[] = headings.map((heading: any, index: number) => {
+                const id = `chapter-${index}`;
+                heading.id = id;
+                return { id, title: heading.textContent || 'Unnamed Chapter' };
+              });
+              const processedContent = doc.body.innerHTML;
 
-          setBookData({ title: data.title, processedContent, chapters });
+              setBookData({ title: data.title, processedContent, chapters });
+          } else {
+              // Fallback if DOMParser isn't available (SSR context or obscure browser)
+              setBookData({ title: data.title, processedContent: data.content, chapters: [] });
+          }
 
         } catch (err: any) {
           setError(err.message);
@@ -65,9 +78,13 @@ export default function BookPage() {
   }, [slug]);
 
   const handleChapterSelect = (chapterId: string) => {
-    const chapterElement = document.getElementById(chapterId);
-    if (chapterElement) {
-        // We will pass this down to the BookReader to handle the scroll
+    // FIX: Safe access to document via globalThis
+    const doc = (globalThis as any).document;
+    if (doc) {
+        const chapterElement = doc.getElementById(chapterId);
+        if (chapterElement) {
+             chapterElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
     }
     setIsTocOpen(false); // Close TOC after selection
   };

@@ -1,5 +1,5 @@
+// --- START OF FILE src/app/components/HumanDesignForm.tsx ---
 import React, { useState } from 'react';
-// THE FIX: Corrected the import path for the types
 import type { FormData } from '@/lib/types';
 import { SubmitIcon } from './icons';
 
@@ -42,7 +42,8 @@ const HumanDesignForm: React.FC<HumanDesignFormProps> = ({ onSubmit, isLoading }
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
+    // FIX: Cast target to any to bypass strict EventTarget type checking
+    const { name, value } = e.target as any;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 

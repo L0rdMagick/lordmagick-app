@@ -1,4 +1,7 @@
+/// <reference lib="dom" />
 "use client";
+
+// --- START OF FILE src/app/library/BookshelfClient.tsx ---
 
 import Image from 'next/image';
 import Link from 'next/link';
@@ -11,7 +14,11 @@ interface BookshelfClientProps {
 
 export default function BookshelfClient({ books }: BookshelfClientProps) {
   useEffect(() => {
-    document.body.style.overflow = 'auto';
+    // FIX: Safe access to document via globalThis to prevent SSR build errors
+    const doc = (globalThis as any).document;
+    if (doc) {
+        doc.body.style.overflow = 'auto';
+    }
   }, []);
   return (
     <div className="relative z-10 mt-12 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-8">

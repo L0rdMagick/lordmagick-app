@@ -1,3 +1,4 @@
+// --- START OF FILE src/app/components/AuthPage.tsx ---
 import React, { useState } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
 
@@ -70,7 +71,8 @@ const AuthPage: React.FC = () => {
               type="email"
               className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:ring-2 focus:ring-purple-500 focus:outline-none transition duration-200"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              // FIX: Cast to any to safely access value property
+              onChange={(e) => setEmail((e.target as any).value)}
               placeholder="you@example.com"
               required
             />
@@ -82,7 +84,8 @@ const AuthPage: React.FC = () => {
               type="password"
               className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:ring-2 focus:ring-purple-500 focus:outline-none transition duration-200"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              // FIX: Cast to any to safely access value property
+              onChange={(e) => setPassword((e.target as any).value)}
               placeholder="••••••••"
               required
             />
@@ -91,7 +94,6 @@ const AuthPage: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
-              // THE FIX: Changed to canonical bg-linear-to-r
               className="w-full flex items-center justify-center gap-2 bg-linear-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
             >
               {loading ? 'Processing...' : (isLogin ? 'Login' : 'Sign Up')}

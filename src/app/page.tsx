@@ -1,3 +1,4 @@
+// --- START OF FILE src/app/page.tsx ---
 "use client";
 
 import { useState, useRef } from 'react';
@@ -5,13 +6,14 @@ import { useRouter } from 'next/navigation';
 
 export default function HomePage() {
   const [isEntering, setIsEntering] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
+  // FIX: Use any for ref to allow property access without strict type checking issues
+  const videoRef = useRef<any>(null);
   const router = useRouter();
 
   const handleEnter = () => {
     setIsEntering(true);
     if (videoRef.current) {
-      // THE FIX: Ensure the video is unmuted before playing.
+      // FIX: Properties now accessible on 'any'
       videoRef.current.muted = false;
       videoRef.current.play();
     }
@@ -28,7 +30,6 @@ export default function HomePage() {
         src="/videos/door-animation.mp4"
         className="absolute inset-0 w-full h-full object-cover z-10"
         playsInline
-        // THE FIX: The video now starts muted but is unmuted on click.
         muted 
         preload="auto"
         poster="/images/video-poster.png"

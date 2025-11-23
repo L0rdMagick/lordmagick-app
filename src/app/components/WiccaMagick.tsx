@@ -1,5 +1,5 @@
 // --- START OF FILE src/app/components/WiccaMagick.tsx ---
-
+/// <reference lib="dom" />
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
@@ -22,12 +22,20 @@ const CAST_DURATION = 13000; // 13 seconds
 const SENDING_DURATION = 4000; // 4 seconds for the particle animation
 
 // --- Sound Utility ---
-const playSound = (src: string, volume: number = 0.5, loop: boolean = false): HTMLAudioElement | null => {
-    if (typeof window === 'undefined') return null;
-    const audio = new Audio(src);
+// FIX: Use 'any' for return type to prevent strict HTMLAudioElement issues in some envs
+const playSound = (src: string, volume: number = 0.5, loop: boolean = false): any => {
+    // FIX: Safe window access
+    const win = (globalThis as any).window;
+    if (typeof win === 'undefined') return null;
+    
+    // FIX: Safe Audio constructor access
+    const AudioCtor = win.Audio;
+    const audio = new AudioCtor(src);
+    
     audio.volume = volume;
     audio.loop = loop;
-    audio.play().catch(e => console.error(`Failed to play sound: ${src}`, e));
+    // FIX: Type error as 'any'
+    audio.play().catch((e: any) => console.error(`Failed to play sound: ${src}`, e));
     return audio;
 };
 
@@ -271,7 +279,8 @@ const Step1_Intention: React.FC<Step1Props> = ({ intention, setIntention, onNext
                     height: '55.0%',
                 }}
             >
-                <textarea value={intention} onChange={(e) => setIntention(e.target.value)} placeholder="e.g., To find clarity on my career path" className="w-full h-full bg-transparent text-center text-[#4a2e1c] font-serif focus:outline-none resize-none" style={{ fontSize: 'clamp(0.5rem, 3.5cqw, 1.5rem)' }} />
+                {/* FIX: Cast target to any to safely access value */}
+                <textarea value={intention} onChange={(e) => setIntention((e.target as any).value)} placeholder="e.g., To find clarity on my career path" className="w-full h-full bg-transparent text-center text-[#4a2e1c] font-serif focus:outline-none resize-none" style={{ fontSize: 'clamp(0.5rem, 3.5cqw, 1.5rem)' }} />
             </div>
         </div>
     </StepContainer>
@@ -457,7 +466,8 @@ const Step6_Incantation: React.FC<SpellStepProps> = ({ spell, onNext }) => (
 const Step7_Cast: React.FC<SpellStepProps> = ({ spell, onNext }) => {
     const [isCasting, setIsCasting] = useState(false);
     const [count, setCount] = useState(0);
-    const castSoundRef = useRef<HTMLAudioElement | null>(null);
+    // FIX: Use any to allow safe property access
+    const castSoundRef = useRef<any>(null);
 
     useEffect(() => {
         let timer: NodeJS.Timeout;
@@ -474,6 +484,7 @@ const Step7_Cast: React.FC<SpellStepProps> = ({ spell, onNext }) => {
             clearTimeout(timer);
             clearInterval(counter);
             setCount(0);
+            // FIX: Optional chaining for safe access
             castSoundRef.current?.pause();
         };
     }, [isCasting, onNext]);
@@ -604,7 +615,7 @@ const Step9_Manifestation: React.FC<{ spell: GeneratedWiccanSpell }> = ({ spell 
      <StepContainer 
         stageTitle="Witness the Manifestation" 
         instruction="So mote it be. Your will is in motion. Trust in the magick you have woven."
-        button={<RitualButton onClick={() => window.location.href = '/spell-room'}>Return to Spell Room</RitualButton>}
+        button={<RitualButton onClick={() => (globalThis as any).window.location.href = '/spell-room'}>Return to Spell Room</RitualButton>}
     >
         <div className="relative w-full h-full max-w-2xl aspect-square @container mx-auto">
             <Image src={`${ASSET_PATH}/wicca_spell_manifestation.png`} alt="Spell Manifestation" layout="fill" objectFit="contain" />
@@ -626,7 +637,8 @@ const Step9_Manifestation: React.FC<{ spell: GeneratedWiccanSpell }> = ({ spell 
 // --- Helper components for complex interactions ---
 
 const IngredientCharger: React.FC<IngredientChargerProps> = ({ children, onChargeComplete, isComplete, onHoldStart, onHoldEnd, isHolding }) => {
-    const chargeSoundRef = useRef<HTMLAudioElement | null>(null);
+    // FIX: Use 'any' to allow safe access
+    const chargeSoundRef = useRef<any>(null);
 
     useEffect(() => {
         let timer: NodeJS.Timeout;
@@ -638,6 +650,7 @@ const IngredientCharger: React.FC<IngredientChargerProps> = ({ children, onCharg
         }
         return () => {
             clearTimeout(timer);
+            // FIX: Optional chaining
             chargeSoundRef.current?.pause();
         }
     }, [isHolding, isComplete, onChargeComplete]);
@@ -681,7 +694,8 @@ const IngredientCharger: React.FC<IngredientChargerProps> = ({ children, onCharg
 
 const ChargingElement: React.FC<ChargingElementProps> = ({ name, isCharged, onChargeComplete, style, spriteData, soundSrc, onHoldStart, onHoldEnd }) => {
     const [isHolding, setIsHolding] = useState(false);
-    const chargeSoundRef = useRef<HTMLAudioElement | null>(null);
+    // FIX: Use 'any' to allow safe access
+    const chargeSoundRef = useRef<any>(null);
 
     useEffect(() => {
         let timer: NodeJS.Timeout;
@@ -693,6 +707,7 @@ const ChargingElement: React.FC<ChargingElementProps> = ({ name, isCharged, onCh
         }
         return () => {
             clearTimeout(timer);
+            // FIX: Optional chaining
             chargeSoundRef.current?.pause();
         };
     }, [isHolding, isCharged, name, onChargeComplete, soundSrc]);
