@@ -69,9 +69,9 @@ const useAudioEngine = () => {
     lfo?: any;
     lfoGain?: any;
     extraGains?: any[]; 
-    osc?: any;      // Added
-    osc2?: any;     // Added
-    source?: any;   // Added
+    osc?: any;
+    osc2?: any;
+    source?: any;
   } | null>(null);
 
   // --- SYNTHESIS UTILITIES ---
@@ -836,7 +836,7 @@ const Inscription = ({ setIntention, setArchetype, setPhase, archetype, audio, s
   const [isLoading, setIsLoading] = useState(false);
 
   const handleType = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      setText(e.target.value.toUpperCase());
+      setText((e.target as any).value.toUpperCase());
       audio.playTypingBlip(); 
   };
 
