@@ -83,8 +83,8 @@ const getScatteredChars = (text: string) => {
 
 // --- PARTICLE SYSTEM HOOK ---
 const useParticleSystem = () => {
-  // FIX: Explicit typing for canvas ref
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  // THE FIX: Use 'any' to avoid strict HTMLCanvasElement type issues
+  const canvasRef = useRef<any>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const particlesRef = useRef<any[]>([]);
 
@@ -110,7 +110,6 @@ const useParticleSystem = () => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     
-    // FIX: Access window safely via globalThis
     const globalAny = globalThis as any;
 
     const resize = () => {
@@ -633,6 +632,7 @@ const useAudioEngine = () => {
         const p = typeof progress === 'number' ? progress : 0;
         const normalized = p / 100;
         
+        // Ramping Tension and Agitation
         if(nodes.sources) {
             // Pitch: 60 -> 800 Hz (Dramatic Sweep)
             nodes.sources[0].frequency.setTargetAtTime(60 + (normalized * 740), t, 0.1);
@@ -682,7 +682,7 @@ const useAudioEngine = () => {
           osc.connect(g); g.connect(masterGainRef.current);
           osc.start(); osc.stop(t + 0.1);
       } else if (type === 'boom') {
-          // RESTORED: Original Boom (Sine Sub + Triangle Shimmer)
+          // RESTORED ORIGINAL SUB-BASS BOOM
           const subOsc = ctx.createOscillator();
           const subGain = ctx.createGain();
           subOsc.type = 'sine';
@@ -693,7 +693,7 @@ const useAudioEngine = () => {
           subOsc.connect(subGain);
           subGain.connect(masterGainRef.current);
           subOsc.start(t);
-          subOsc.stop(t + 3.1); // Strict stop
+          subOsc.stop(t + 3.1);
 
           const shimmer = ctx.createOscillator();
           const shimmerGain = ctx.createGain();
@@ -708,7 +708,7 @@ const useAudioEngine = () => {
           else shimmerGain.connect(masterGainRef.current);
           
           shimmer.start(t);
-          shimmer.stop(t + 2.1); // Strict stop
+          shimmer.stop(t + 2.1);
 
       } else if (type === 'spark') {
           const osc = ctx.createOscillator();
@@ -724,6 +724,9 @@ const useAudioEngine = () => {
 
   return { initAudio, startLoop, updateLoop, stopLoop, playOneShot };
 };
+
+// --- CONSTANTS ---
+// (Duplicates Removed)
 
 // --- SUB-COMPONENTS ---
 
@@ -939,7 +942,7 @@ const Inscription = ({ setIntention, setArchetype, setPhase, archetype, audio, s
   }, [isLoading, audio]);
 
   const handleType = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      // Explicit casting
+      // THE FIX: Explicit casting to any to prevent TypeScript error
       setText((e.target as any).value.toUpperCase());
       audio.playOneShot('type'); 
   };
@@ -1349,7 +1352,7 @@ export default function RealityPatchSpell({ onExit }: { onExit: () => void }) {
   const [aiData, setAiData] = useState({ poetry: '', latin: '' });
   
   const audio = useAudioEngine();
-  const { spawnExplosion } = useParticleSystem(); // Instantiate particle system here
+  const { spawnExplosion } = useParticleSystem(); 
 
   const getWarpIntensity = () => {
       switch(phase) {
