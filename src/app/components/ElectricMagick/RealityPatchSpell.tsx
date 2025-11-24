@@ -1,4 +1,4 @@
-// --- START  OF FILE src/app/components/ElectricMagick/RealityPatchSpell.tsx ---
+// --- START OF FILE src/app/components/ElectricMagick/RealityPatchSpell.tsx ---
 /// <reference lib="dom" />
 "use client";
 
@@ -166,38 +166,28 @@ const useAudioEngine = () => {
     }
   }, []);
 
-  // --- STOP LOGIC WITH HIGH PASS FADE ---
+  // --- STOP LOGIC WITH AGGRESSIVE CLEANUP ---
   const stopLoop = useCallback(() => {
     if (activeNodes.current && activeNodes.current.gain && ctxRef.current) {
       const ctx = ctxRef.current;
       const t = ctx.currentTime;
       const nodes = activeNodes.current;
 
-      // 1. High Pass Filter Fade Out (Sucks the sound away)
-      const fadeFilter = ctx.createBiquadFilter();
-      fadeFilter.type = 'highpass';
-      fadeFilter.frequency.setValueAtTime(0, t);
-      fadeFilter.frequency.exponentialRampToValueAtTime(10000, t + 0.5); // Sweep up
+      // 1. Volume Fade
+      try {
+        nodes.gain.gain.cancelScheduledValues(t);
+        nodes.gain.gain.setValueAtTime(nodes.gain.gain.value, t);
+        nodes.gain.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+      } catch (e) { /**/ }
       
-      // Re-route gain through this filter before disconnecting
-      nodes.gain.disconnect();
-      nodes.gain.connect(fadeFilter);
-      fadeFilter.connect(masterGainRef.current);
-
-      // 2. Volume Fade
-      nodes.gain.gain.cancelScheduledValues(t);
-      nodes.gain.gain.setValueAtTime(nodes.gain.gain.value, t);
-      nodes.gain.gain.linearRampToValueAtTime(0, t + 0.5);
-      
-      // 3. Cleanup
+      // 2. Cleanup after fade
       setTimeout(() => {
-          if (nodes.sources) nodes.sources.forEach((s: any) => { try { s.stop(); } catch(e){} });
-          if (nodes.lfo) { try { nodes.lfo.stop(); } catch(e){} }
-          // Ensure disconnection to prevent zombie nodes
+          if (nodes.sources) nodes.sources.forEach((s: any) => { try { s.stop(); s.disconnect(); } catch(e){} });
+          if (nodes.lfo) { try { nodes.lfo.stop(); nodes.lfo.disconnect(); } catch(e){} }
           try { nodes.gain.disconnect(); } catch(e){}
-          try { fadeFilter.disconnect(); } catch(e){}
+          if (nodes.extraGains) nodes.extraGains.forEach((g: any) => { try { g.disconnect(); } catch(e){} });
           activeNodes.current = null;
-      }, 600);
+      }, 550);
     }
   }, []);
 
@@ -220,26 +210,34 @@ const useAudioEngine = () => {
     const nodes: any = { gain: loopMaster, type };
 
     if (type === 'drone') {
-        // Initial Consecrate Drone
-        const osc = ctx.createOscillator();
-        osc.type = 'triangle';
-        osc.frequency.value = 110; // Low A
-        
+        // RESTORED: Original Dual Oscillator Drone
+        const osc1 = ctx.createOscillator();
+        const osc2 = ctx.createOscillator();
         const filter = ctx.createBiquadFilter();
+
+        osc1.type = 'sawtooth'; 
+        osc1.frequency.value = 130; 
+        osc2.type = 'square'; 
+        osc2.frequency.value = 65; 
+
         filter.type = 'lowpass';
-        filter.frequency.value = 400;
+        filter.frequency.value = 800; 
+        filter.Q.value = 5;
 
-        osc.connect(filter);
+        osc1.connect(filter);
+        osc2.connect(filter);
         filter.connect(loopMaster);
-        osc.start();
 
-        nodes.sources = [osc];
+        osc1.start();
+        osc2.start();
+
+        nodes.sources = [osc1, osc2];
         nodes.filter = filter;
-        loopMaster.gain.setValueAtTime(0, t);
-        loopMaster.gain.linearRampToValueAtTime(0.3, t + 1);
+        loopMaster.gain.setValueAtTime(0.0, t);
+        loopMaster.gain.linearRampToValueAtTime(0.3, t + 0.2); 
 
     } else if (type === 'void_enter') {
-        // RISING DARKNESS DRONE
+        // RISING DARKNESS DRONE (Black hole expanding)
         const osc1 = ctx.createOscillator();
         osc1.type = 'sawtooth';
         osc1.frequency.setValueAtTime(60, t); // Deep start
@@ -398,7 +396,16 @@ const useAudioEngine = () => {
     const nodes = activeNodes.current;
     const t = ctx.currentTime;
 
-    if (type === 'void_enter') {
+    if (type === 'drone') {
+        // RESTORED: Original Drone Modulation
+        if(nodes.sources && nodes.sources.length === 2) {
+            nodes.sources[0].frequency.setTargetAtTime(130 - (progress * 0.9), t, 0.1);
+            nodes.sources[1].frequency.setTargetAtTime(65 - (progress * 0.35), t, 0.1);
+        }
+        if(nodes.filter) nodes.filter.frequency.setTargetAtTime(800 + (progress * 40), t, 0.1);
+        if(nodes.gain) nodes.gain.gain.setTargetAtTime(0.3 + (progress * 0.002), t, 0.1);
+
+    } else if (type === 'void_enter') {
         // RISING TENSION
         const p = typeof progress === 'number' ? progress : 0;
         const normalized = p / 100;
@@ -419,9 +426,18 @@ const useAudioEngine = () => {
         // BREATH CYCLE
         if (progress === 'INHALE') {
             // Rising, Filling
-            if(nodes.filter) nodes.filter.frequency.linearRampToValueAtTime(1200, t + 4); // Open up
-            if(nodes.gain) nodes.gain.gain.linearRampToValueAtTime(0.8, t + 4); // Louder
-            if(nodes.extraGains) nodes.extraGains[0].gain.linearRampToValueAtTime(0, t + 0.5); // Silence drone
+            if(nodes.filter) {
+                nodes.filter.frequency.cancelScheduledValues(t);
+                nodes.filter.frequency.linearRampToValueAtTime(1200, t + 4); // Open up
+            }
+            if(nodes.gain) {
+                nodes.gain.gain.cancelScheduledValues(t);
+                nodes.gain.gain.linearRampToValueAtTime(0.8, t + 4); // Louder
+            }
+            if(nodes.extraGains) {
+                nodes.extraGains[0].gain.cancelScheduledValues(t);
+                nodes.extraGains[0].gain.linearRampToValueAtTime(0, t + 0.5); // Silence drone
+            }
 
         } else if (progress === 'HOLD') {
             // Steady, Calm
@@ -430,10 +446,20 @@ const useAudioEngine = () => {
             if(nodes.extraGains) nodes.extraGains[0].gain.linearRampToValueAtTime(0.15, t + 1); // Fade in smooth drone
 
         } else if (progress === 'EXHALE') {
-            // Release, Distant
-            if(nodes.filter) nodes.filter.frequency.linearRampToValueAtTime(50, t + 4); // Close filter down
-            if(nodes.gain) nodes.gain.gain.linearRampToValueAtTime(0, t + 4); // Fade out
-            if(nodes.extraGains) nodes.extraGains[0].gain.linearRampToValueAtTime(0, t + 2); // Fade drone
+            // Release, Distant (High -> Low sweep)
+            if(nodes.filter) {
+                nodes.filter.frequency.cancelScheduledValues(t);
+                nodes.filter.frequency.setValueAtTime(1500, t); // Jump high
+                nodes.filter.frequency.exponentialRampToValueAtTime(50, t + 4); // Sweep down deep
+            }
+            if(nodes.gain) {
+                nodes.gain.gain.cancelScheduledValues(t);
+                nodes.gain.gain.setValueAtTime(0.6, t); // Little boost at start of exhale
+                nodes.gain.gain.linearRampToValueAtTime(0, t + 4); // Fade out
+            }
+            if(nodes.extraGains) {
+                nodes.extraGains[0].gain.linearRampToValueAtTime(0, t + 2); // Fade drone
+            }
         }
 
     } else if (type === 'etching') {
@@ -547,6 +573,7 @@ const Consecration = ({ setPhase, archetype, audio }: any) => {
         if (stage === 'consecrate') {
             setProgress(prev => {
                 const next = prev + 0.8; 
+                audio.updateLoop(next, 'drone');
                 if (next >= 100) {
                     setStage('growing');
                     audio.stopLoop(); 
@@ -571,9 +598,13 @@ const Consecration = ({ setPhase, archetype, audio }: any) => {
         }
       }, 20);
     } else {
-        if (stage === 'consecrate' && progress > 0) setProgress(0);
+        if (stage === 'consecrate' && progress > 0) {
+            setProgress(0);
+            audio.stopLoop(); // Ensure loop stops on release
+        }
         if (stage === 'growing') {
             setVoidProgress(0); 
+            audio.stopLoop();
         }
     }
     return () => clearInterval(interval);
@@ -644,6 +675,7 @@ const Grounding = ({ setPhase, audio }: any) => {
     const runBreathCycle = async () => {
       if (cycle >= TOTAL_CYCLES) {
         if (isMounted) {
+            audio.stopLoop(); // Ensure cycle sound stops
             audio.playOneShot('type');
             setTimeout(() => setPhase('INTENTION'), 1000);
         }
@@ -920,7 +952,7 @@ const Etching = ({ setPhase, archetype, audio, aiData, intention }: any) => {
           </button>
       ) : (
           <button 
-            onClick={() => { audio.playOneShot('water'); setPhase('CHANT'); }}
+            onClick={() => { audio.stopLoop(); audio.playOneShot('water'); setPhase('CHANT'); }}
             className="w-full max-w-xs py-8 border-2 border-double border-white text-white bg-white/10 text-xs font-mono tracking-widest animate-pulse"
           >
             [ PROCEED TO CHANT ]
@@ -1092,7 +1124,7 @@ const FinalCast = ({ intention, archetype, audio, onExit }: any) => (
         </div>
         <p className="text-slate-600 font-mono text-[10px] mt-12 animate-pulse">The universe has been recompiled.</p>
         <button 
-          onClick={() => { audio.playOneShot('water'); onExit(); }}
+          onClick={() => { audio.stopLoop(); audio.playOneShot('water'); onExit(); }}
           className="mt-12 text-slate-600 hover:text-white font-mono text-xs border-b border-transparent hover:border-white transition-all cursor-pointer z-50">
           [ CLOSE SESSION ]
         </button>
@@ -1123,7 +1155,6 @@ export default function RealityPatchSpell({ onExit }: { onExit: () => void }) {
       }
   };
 
-  // Background Effects
   const WarpBackground = ({ intensity }: { intensity: number }) => (
     <div className="fixed inset-0 z-0 bg-black overflow-hidden pointer-events-none">
         <div className="absolute inset-0 opacity-30 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')]" />
