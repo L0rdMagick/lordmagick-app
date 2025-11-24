@@ -166,8 +166,7 @@ const useAudioEngine = () => {
     }
   }, []);
 
-  // --- CRITICAL FIX: CLEAN STOP LOGIC ---
-  // This prevents "zombie" sounds by capturing the specific nodes to stop in a closure
+  // --- STOP LOGIC WITH AGGRESSIVE CLEANUP ---
   const stopLoop = useCallback(() => {
     if (activeNodes.current && activeNodes.current.gain && ctxRef.current) {
       const ctx = ctxRef.current;
@@ -494,14 +493,62 @@ const useAudioEngine = () => {
           osc.connect(g); g.connect(masterGainRef.current);
           osc.start(); osc.stop(t + 0.1);
       } else if (type === 'boom') {
-          const osc = ctx.createOscillator();
-          const g = ctx.createGain();
-          osc.frequency.setValueAtTime(100, t);
-          osc.frequency.exponentialRampToValueAtTime(10, t + 1);
-          g.gain.setValueAtTime(1, t);
-          g.gain.exponentialRampToValueAtTime(0.001, t + 2);
-          osc.connect(g); g.connect(masterGainRef.current);
-          osc.start(); osc.stop(t + 2.1);
+          // === THE NEW "FRAZZLED" REALITY BREAK BOOM ===
+          
+          // 1. The Weight (Deep Impact)
+          const sub = ctx.createOscillator();
+          const subGain = ctx.createGain();
+          sub.type = 'sine';
+          sub.frequency.setValueAtTime(150, t);
+          sub.frequency.exponentialRampToValueAtTime(20, t + 3.0);
+          subGain.gain.setValueAtTime(1.0, t);
+          subGain.gain.exponentialRampToValueAtTime(0.001, t + 3.0);
+
+          // 2. The Reality Tear (Distorted Sawtooth)
+          const tear = ctx.createOscillator();
+          const tearGain = ctx.createGain();
+          tear.type = 'sawtooth';
+          tear.frequency.setValueAtTime(200, t);
+          // Sweep up wildly then crash down
+          tear.frequency.linearRampToValueAtTime(1000, t + 1.5); 
+          tear.frequency.exponentialRampToValueAtTime(50, t + 3.0);
+          tearGain.gain.setValueAtTime(0.5, t);
+          tearGain.gain.linearRampToValueAtTime(0, t + 3.0);
+
+          // 3. The Event Horizon (Dissipating Noise)
+          const bufferSize = ctx.sampleRate * 2;
+          const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+          const data = buffer.getChannelData(0);
+          for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+          const noise = ctx.createBufferSource();
+          noise.buffer = buffer;
+          
+          // Highpass sweep to simulate disappearing into the void
+          const filter = ctx.createBiquadFilter();
+          filter.type = 'highpass';
+          filter.frequency.setValueAtTime(100, t);
+          filter.frequency.exponentialRampToValueAtTime(15000, t + 3.5); 
+          
+          const noiseGain = ctx.createGain();
+          noiseGain.gain.setValueAtTime(0.8, t);
+          noiseGain.gain.exponentialRampToValueAtTime(0.001, t + 3.0);
+
+          // Connect all layers
+          sub.connect(subGain);
+          subGain.connect(masterGainRef.current);
+          
+          tear.connect(tearGain);
+          tearGain.connect(masterGainRef.current);
+          
+          noise.connect(filter);
+          filter.connect(noiseGain);
+          noiseGain.connect(masterGainRef.current);
+
+          // Start and Auto-Stop all nodes
+          sub.start(t); sub.stop(t + 3.5);
+          tear.start(t); tear.stop(t + 3.5);
+          noise.start(t); noise.stop(t + 3.5);
+
       } else if (type === 'spark') {
           const osc = ctx.createOscillator();
           osc.type = 'sawtooth';
@@ -736,6 +783,7 @@ const Inscription = ({ setIntention, setArchetype, setPhase, archetype, audio, s
   }, [isLoading, audio]);
 
   const handleType = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      // THE FIX: Explicit casting to any to prevent TypeScript error regarding 'value' property
       setText((e.target as any).value.toUpperCase());
       audio.playOneShot('type'); 
   };
