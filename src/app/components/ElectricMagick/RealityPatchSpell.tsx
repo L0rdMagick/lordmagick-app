@@ -166,28 +166,33 @@ const useAudioEngine = () => {
     }
   }, []);
 
-  // --- STOP LOGIC WITH AGGRESSIVE CLEANUP ---
+  // --- CRITICAL FIX: CLEAN STOP LOGIC ---
+  // This prevents "zombie" sounds by capturing the specific nodes to stop in a closure
   const stopLoop = useCallback(() => {
     if (activeNodes.current && activeNodes.current.gain && ctxRef.current) {
       const ctx = ctxRef.current;
       const t = ctx.currentTime;
-      const nodes = activeNodes.current;
+      
+      // Capture the nodes we want to stop RIGHT NOW
+      const nodesToStop = activeNodes.current;
+      
+      // Clear the global ref immediately so new loops can start cleanly
+      activeNodes.current = null;
 
       // 1. Volume Fade
       try {
-        nodes.gain.gain.cancelScheduledValues(t);
-        nodes.gain.gain.setValueAtTime(nodes.gain.gain.value, t);
-        nodes.gain.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+        nodesToStop.gain.gain.cancelScheduledValues(t);
+        nodesToStop.gain.gain.setValueAtTime(nodesToStop.gain.gain.value, t);
+        nodesToStop.gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
       } catch (e) { /**/ }
       
-      // 2. Cleanup after fade
+      // 2. Cleanup after fade using the CAPTURED reference
       setTimeout(() => {
-          if (nodes.sources) nodes.sources.forEach((s: any) => { try { s.stop(); s.disconnect(); } catch(e){} });
-          if (nodes.lfo) { try { nodes.lfo.stop(); nodes.lfo.disconnect(); } catch(e){} }
-          try { nodes.gain.disconnect(); } catch(e){}
-          if (nodes.extraGains) nodes.extraGains.forEach((g: any) => { try { g.disconnect(); } catch(e){} });
-          activeNodes.current = null;
-      }, 550);
+          if (nodesToStop.sources) nodesToStop.sources.forEach((s: any) => { try { s.stop(); s.disconnect(); } catch(e){} });
+          if (nodesToStop.lfo) { try { nodesToStop.lfo.stop(); nodesToStop.lfo.disconnect(); } catch(e){} }
+          try { nodesToStop.gain.disconnect(); } catch(e){}
+          if (nodesToStop.extraGains) nodesToStop.extraGains.forEach((g: any) => { try { g.disconnect(); } catch(e){} });
+      }, 350);
     }
   }, []);
 
@@ -195,8 +200,8 @@ const useAudioEngine = () => {
     if (!ctxRef.current) initAudio();
     if (!ctxRef.current || !masterGainRef.current) return;
     
-    // Stop previous if running
-    if (activeNodes.current) stopLoop();
+    // Force stop any existing loop first
+    stopLoop();
 
     const ctx = ctxRef.current;
     const t = ctx.currentTime;
@@ -210,7 +215,7 @@ const useAudioEngine = () => {
     const nodes: any = { gain: loopMaster, type };
 
     if (type === 'drone') {
-        // RESTORED: Original Dual Oscillator Drone
+        // RESTORED: Original Opening Sound (Saw/Square)
         const osc1 = ctx.createOscillator();
         const osc2 = ctx.createOscillator();
         const filter = ctx.createBiquadFilter();
@@ -237,14 +242,14 @@ const useAudioEngine = () => {
         loopMaster.gain.linearRampToValueAtTime(0.3, t + 0.2); 
 
     } else if (type === 'void_enter') {
-        // RISING DARKNESS DRONE (Black hole expanding)
+        // GROWING BLACK HOLE SOUND
         const osc1 = ctx.createOscillator();
         osc1.type = 'sawtooth';
-        osc1.frequency.setValueAtTime(60, t); // Deep start
+        osc1.frequency.setValueAtTime(60, t); 
 
         const osc2 = ctx.createOscillator();
         osc2.type = 'sawtooth';
-        osc2.frequency.setValueAtTime(65, t); // Detuned
+        osc2.frequency.setValueAtTime(65, t); 
 
         const noise = createPinkNoise(ctx);
         const noiseGain = ctx.createGain();
@@ -252,8 +257,8 @@ const useAudioEngine = () => {
 
         const filter = ctx.createBiquadFilter();
         filter.type = 'lowpass';
-        filter.frequency.setValueAtTime(100, t); // Start muffled
-        filter.Q.value = 6; // Resonant
+        filter.frequency.setValueAtTime(100, t); 
+        filter.Q.value = 6; 
 
         osc1.connect(filter);
         osc2.connect(filter);
@@ -271,18 +276,18 @@ const useAudioEngine = () => {
         loopMaster.gain.linearRampToValueAtTime(0.6, t + 0.5);
 
     } else if (type === 'breath') {
-        // COMPLEX BREATH ENGINE
+        // ENHANCED BREATH ENGINE
         const noise = createBrownNoise(ctx);
         const filter = ctx.createBiquadFilter();
         filter.type = 'lowpass';
         filter.frequency.value = 200;
-        filter.Q.value = 1;
+        filter.Q.value = 2; // Higher resonance for wind feeling
 
         const droneOsc = ctx.createOscillator();
         droneOsc.type = 'sine';
         droneOsc.frequency.value = 150; 
         const droneGain = ctx.createGain();
-        droneGain.gain.value = 0; // Starts silent
+        droneGain.gain.value = 0; 
 
         noise.connect(filter);
         filter.connect(loopMaster);
@@ -294,26 +299,24 @@ const useAudioEngine = () => {
 
         nodes.sources = [noise, droneOsc];
         nodes.filter = filter;
-        nodes.extraGains = [droneGain]; // Store secondary gain for later modulation
-        loopMaster.gain.value = 1.0; // Master stays open, we modulate filter/drone
+        nodes.extraGains = [droneGain]; 
+        loopMaster.gain.value = 1.0; 
 
     } else if (type === 'consulting') {
-        // PULSING SINE 700-800Hz
         const osc = ctx.createOscillator();
         osc.type = 'sine';
         osc.frequency.value = 750;
 
         const lfo = ctx.createOscillator();
         lfo.type = 'sine';
-        lfo.frequency.value = 2; // 2Hz pulse
+        lfo.frequency.value = 2; 
 
         const lfoGain = ctx.createGain();
-        lfoGain.gain.value = 50; // Range +/- 50Hz
+        lfoGain.gain.value = 50; 
 
         lfo.connect(lfoGain);
         lfoGain.connect(osc.frequency);
 
-        // Amp LFO
         const ampLfo = ctx.createOscillator();
         ampLfo.type = 'triangle';
         ampLfo.frequency.value = 4;
@@ -323,7 +326,6 @@ const useAudioEngine = () => {
         osc.connect(ampGain);
         ampGain.connect(loopMaster);
         
-        // Connect Amp LFO to gain
         const scaler = ctx.createGain();
         scaler.gain.value = 0.05;
         ampLfo.connect(scaler);
@@ -338,10 +340,9 @@ const useAudioEngine = () => {
         loopMaster.gain.linearRampToValueAtTime(0.15, t + 0.5);
 
     } else if (type === 'etching') {
-        // PIERCING REALITY
         const osc = ctx.createOscillator();
         osc.type = 'sawtooth';
-        osc.frequency.value = 4000; // High pitch start
+        osc.frequency.value = 4000; 
 
         const noise = createPinkNoise(ctx);
         const noiseGain = ctx.createGain();
@@ -349,7 +350,7 @@ const useAudioEngine = () => {
 
         const filter = ctx.createBiquadFilter();
         filter.type = 'bandpass';
-        filter.Q.value = 10; // Very sharp resonance
+        filter.Q.value = 10; 
         filter.frequency.value = 2000;
 
         osc.connect(filter);
@@ -365,7 +366,6 @@ const useAudioEngine = () => {
         loopMaster.gain.setValueAtTime(0, t);
         loopMaster.gain.linearRampToValueAtTime(0.4, t + 0.1);
     } else if (type === 'chant') {
-        // Chanting drone
         const osc = ctx.createOscillator();
         osc.type = 'triangle';
         osc.frequency.value = 110;
@@ -375,7 +375,6 @@ const useAudioEngine = () => {
         loopMaster.gain.setValueAtTime(0, t);
         loopMaster.gain.linearRampToValueAtTime(0.2, t+1);
     } else if (type === 'charge') {
-        // Rising Charge
         const osc = ctx.createOscillator();
         osc.type = 'square';
         osc.frequency.value = 50;
@@ -397,7 +396,6 @@ const useAudioEngine = () => {
     const t = ctx.currentTime;
 
     if (type === 'drone') {
-        // RESTORED: Original Drone Modulation
         if(nodes.sources && nodes.sources.length === 2) {
             nodes.sources[0].frequency.setTargetAtTime(130 - (progress * 0.9), t, 0.1);
             nodes.sources[1].frequency.setTargetAtTime(65 - (progress * 0.35), t, 0.1);
@@ -406,72 +404,63 @@ const useAudioEngine = () => {
         if(nodes.gain) nodes.gain.gain.setTargetAtTime(0.3 + (progress * 0.002), t, 0.1);
 
     } else if (type === 'void_enter') {
-        // RISING TENSION
         const p = typeof progress === 'number' ? progress : 0;
         const normalized = p / 100;
 
         if (nodes.sources && nodes.sources.length >= 2) {
-            // Pitch rising 60 -> 300Hz
             nodes.sources[0].frequency.linearRampToValueAtTime(60 + (normalized * 240), t + 0.1);
             nodes.sources[1].frequency.linearRampToValueAtTime(65 + (normalized * 245), t + 0.1);
         }
         if (nodes.filter) {
-            // Filter opening 100 -> 5000Hz
             nodes.filter.frequency.exponentialRampToValueAtTime(100 + (normalized * 4900), t + 0.1);
         }
-        // Volume rising
         nodes.gain.gain.setTargetAtTime(0.2 + (normalized * 0.6), t, 0.1);
 
     } else if (type === 'breath') {
-        // BREATH CYCLE
+        // ENHANCED BREATH LOGIC
         if (progress === 'INHALE') {
-            // Rising, Filling
             if(nodes.filter) {
                 nodes.filter.frequency.cancelScheduledValues(t);
                 nodes.filter.frequency.linearRampToValueAtTime(1200, t + 4); // Open up
             }
             if(nodes.gain) {
                 nodes.gain.gain.cancelScheduledValues(t);
-                nodes.gain.gain.linearRampToValueAtTime(0.8, t + 4); // Louder
+                nodes.gain.gain.linearRampToValueAtTime(0.8, t + 4); 
             }
             if(nodes.extraGains) {
                 nodes.extraGains[0].gain.cancelScheduledValues(t);
-                nodes.extraGains[0].gain.linearRampToValueAtTime(0, t + 0.5); // Silence drone
+                nodes.extraGains[0].gain.linearRampToValueAtTime(0, t + 0.5); 
             }
 
         } else if (progress === 'HOLD') {
-            // Steady, Calm
-            if(nodes.filter) nodes.filter.frequency.setTargetAtTime(200, t, 0.5); // Muffle noise immediately
-            if(nodes.gain) nodes.gain.gain.setTargetAtTime(0.4, t, 0.1); // Quiet down
-            if(nodes.extraGains) nodes.extraGains[0].gain.linearRampToValueAtTime(0.15, t + 1); // Fade in smooth drone
+            if(nodes.filter) nodes.filter.frequency.setTargetAtTime(200, t, 0.5); 
+            if(nodes.gain) nodes.gain.gain.setTargetAtTime(0.4, t, 0.1); 
+            if(nodes.extraGains) nodes.extraGains[0].gain.linearRampToValueAtTime(0.15, t + 1); 
 
         } else if (progress === 'EXHALE') {
-            // Release, Distant (High -> Low sweep)
+            // FIX: Start high and sweep low for "release"
             if(nodes.filter) {
                 nodes.filter.frequency.cancelScheduledValues(t);
-                nodes.filter.frequency.setValueAtTime(1500, t); // Jump high
-                nodes.filter.frequency.exponentialRampToValueAtTime(50, t + 4); // Sweep down deep
+                nodes.filter.frequency.setValueAtTime(1800, t); // Jump high immediately
+                nodes.filter.frequency.exponentialRampToValueAtTime(100, t + 3.5); // Sweep down
             }
             if(nodes.gain) {
                 nodes.gain.gain.cancelScheduledValues(t);
-                nodes.gain.gain.setValueAtTime(0.6, t); // Little boost at start of exhale
+                nodes.gain.gain.setValueAtTime(0.7, t); // Boost volume at start
                 nodes.gain.gain.linearRampToValueAtTime(0, t + 4); // Fade out
             }
             if(nodes.extraGains) {
-                nodes.extraGains[0].gain.linearRampToValueAtTime(0, t + 2); // Fade drone
+                nodes.extraGains[0].gain.linearRampToValueAtTime(0, t + 2);
             }
         }
 
     } else if (type === 'etching') {
-        // Intense Sparks
         const p = typeof progress === 'number' ? progress : 0;
         if(nodes.filter) {
-            // Filter jumps around wildly
             const randomFreq = 500 + Math.random() * 4000;
             nodes.filter.frequency.setTargetAtTime(randomFreq, t, 0.05);
         }
         if(nodes.gain) {
-            // Volume jitter
             nodes.gain.gain.setTargetAtTime(0.3 + (Math.random() * 0.2), t, 0.05);
         }
     } else if (type === 'charge') {
@@ -514,7 +503,6 @@ const useAudioEngine = () => {
           osc.connect(g); g.connect(masterGainRef.current);
           osc.start(); osc.stop(t + 2.1);
       } else if (type === 'spark') {
-          // High pitch random chirp
           const osc = ctx.createOscillator();
           osc.type = 'sawtooth';
           osc.frequency.setValueAtTime(2000 + Math.random()*3000, t);
@@ -556,9 +544,11 @@ const Consecration = ({ setPhase, archetype, audio }: any) => {
   const [stage, setStage] = useState<'consecrate' | 'growing'>('consecrate');
   const [isHolding, setIsHolding] = useState(false);
 
+  // This effect manages audio transitions based on stage
   useEffect(() => {
     if (isHolding) {
        if (stage === 'consecrate') audio.startLoop('drone');
+       // FIX: Automatically start next sound when stage changes without re-click
        if (stage === 'growing') audio.startLoop('void_enter');
     } else {
        audio.stopLoop();
@@ -575,9 +565,8 @@ const Consecration = ({ setPhase, archetype, audio }: any) => {
                 const next = prev + 0.8; 
                 audio.updateLoop(next, 'drone');
                 if (next >= 100) {
+                    // FIX: Just change stage, useEffect handles audio switch
                     setStage('growing');
-                    audio.stopLoop(); 
-                    setTimeout(() => audio.startLoop('void_enter'), 50); 
                     return 100;
                 }
                 return next;
@@ -598,13 +587,12 @@ const Consecration = ({ setPhase, archetype, audio }: any) => {
         }
       }, 20);
     } else {
+        // Reset on release if not finished
         if (stage === 'consecrate' && progress > 0) {
             setProgress(0);
-            audio.stopLoop(); // Ensure loop stops on release
         }
         if (stage === 'growing') {
             setVoidProgress(0); 
-            audio.stopLoop();
         }
     }
     return () => clearInterval(interval);
@@ -675,7 +663,7 @@ const Grounding = ({ setPhase, audio }: any) => {
     const runBreathCycle = async () => {
       if (cycle >= TOTAL_CYCLES) {
         if (isMounted) {
-            audio.stopLoop(); // Ensure cycle sound stops
+            audio.stopLoop(); 
             audio.playOneShot('type');
             setTimeout(() => setPhase('INTENTION'), 1000);
         }
@@ -748,7 +736,6 @@ const Inscription = ({ setIntention, setArchetype, setPhase, archetype, audio, s
   }, [isLoading, audio]);
 
   const handleType = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      // THE FIX: Explicit casting to any to prevent TypeScript error regarding 'value' property
       setText((e.target as any).value.toUpperCase());
       audio.playOneShot('type'); 
   };
@@ -1155,6 +1142,7 @@ export default function RealityPatchSpell({ onExit }: { onExit: () => void }) {
       }
   };
 
+  // Background Effects
   const WarpBackground = ({ intensity }: { intensity: number }) => (
     <div className="fixed inset-0 z-0 bg-black overflow-hidden pointer-events-none">
         <div className="absolute inset-0 opacity-30 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')]" />
