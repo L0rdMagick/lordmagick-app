@@ -8,6 +8,33 @@ import {
 } from 'lucide-react';
 import { generateElectricEnsorcellment } from '@/lib/services/geminiService';
 
+// --- CONSTANTS & DATA ---
+
+const ARCHETYPES = {
+  LOVE: { color: 'text-rose-500', border: 'border-rose-500', bg: 'bg-rose-500', icon: Heart, theme: 'VENUS' },
+  MONEY: { color: 'text-emerald-400', border: 'border-emerald-400', bg: 'bg-emerald-400', icon: DollarSign, theme: 'JUPITER' },
+  POWER: { color: 'text-amber-500', border: 'border-amber-500', bg: 'bg-amber-500', icon: Sun, theme: 'SOL' },
+  PROTECT: { color: 'text-blue-500', border: 'border-blue-500', bg: 'bg-blue-500', icon: Shield, theme: 'MARS' },
+  UNK: { color: 'text-cyan-400', border: 'border-cyan-400', bg: 'bg-cyan-400', icon: Star, theme: 'AETHER' }
+};
+
+const LATIN_MANTRA_DB = {
+    LOVE: ["AMOR VINCIT OMNIA", "COR AD COR LOQUITUR", "UBI AMOR IBI OCULUS"],
+    MONEY: ["AUREA MEDIOCRITAS", "FORTUNA AUDACES IUVAT", "CRESCAT SCIENTIA"],
+    POWER: ["IMPERIUM SINE FINE", "SCIENTIA POTENTIA EST", "VINCIT QUI SE VINCIT"],
+    PROTECT: ["CUSTOS MORUM", "LUX IN TENEBRIS", "TIMOR MORTIS CONTURBAT"],
+    UNK: ["FIAT LUX", "EX NIHILO NIHIL", "MENS AGITAT MOLEM"]
+};
+
+const detectArchetype = (text: string) => {
+  const t = text.toUpperCase();
+  if (t.includes('LOVE') || t.includes('HEART') || t.includes('PARTNER') || t.includes('SOULMATE')) return ARCHETYPES.LOVE;
+  if (t.includes('MONEY') || t.includes('WEALTH') || t.includes('CASH') || t.includes('RICH')) return ARCHETYPES.MONEY;
+  if (t.includes('POWER') || t.includes('CONTROL') || t.includes('WIN') || t.includes('SUCCESS')) return ARCHETYPES.POWER;
+  if (t.includes('PROTECT') || t.includes('SAFE') || t.includes('GUARD') || t.includes('SHIELD')) return ARCHETYPES.PROTECT;
+  return ARCHETYPES.UNK;
+};
+
 // --- UTILITY: SIGIL GENERATOR ---
 const generateSigilPath = (input: string): string => {
   if (!input) return "M100,100 L100,100";
@@ -364,24 +391,71 @@ const useAudioEngine = () => {
         nodes.filter = filter;
         loopMaster.gain.setValueAtTime(0, t);
         loopMaster.gain.linearRampToValueAtTime(0.4, t + 0.1);
+
     } else if (type === 'chant') {
-        const osc = ctx.createOscillator();
-        osc.type = 'triangle';
-        osc.frequency.value = 110;
-        osc.connect(loopMaster);
-        osc.start();
-        nodes.sources = [osc];
+        // THE FIX: Cinematic Choral Drone (Triad)
+        const rootFreq = 130.81; // C3
+        const freqs = [rootFreq, rootFreq * 1.25, rootFreq * 1.5]; // Major triad
+        const sources: any[] = [];
+
+        freqs.forEach(f => {
+            const osc = ctx.createOscillator();
+            osc.type = 'triangle';
+            osc.frequency.value = f;
+            osc.connect(loopMaster);
+            osc.start();
+            sources.push(osc);
+        });
+
+        // Add LFO for "breathing" amplitude modulation
+        const lfo = ctx.createOscillator();
+        lfo.frequency.value = 0.2; // Slow swelling
+        const lfoGain = ctx.createGain();
+        lfoGain.gain.value = 0.2;
+        lfo.connect(lfoGain);
+        lfoGain.connect(loopMaster.gain);
+        lfo.start();
+
+        nodes.sources = sources;
+        nodes.lfo = lfo;
+        
         loopMaster.gain.setValueAtTime(0, t);
-        loopMaster.gain.linearRampToValueAtTime(0.2, t+1);
+        loopMaster.gain.linearRampToValueAtTime(0.3, t+1);
+
     } else if (type === 'charge') {
+        // THE FIX: Aggressive "Reality Tearing" Sawtooth with Agitation
         const osc = ctx.createOscillator();
-        osc.type = 'square';
-        osc.frequency.value = 50;
-        osc.connect(loopMaster);
+        osc.type = 'sawtooth'; // Edgy
+        osc.frequency.value = 60; // Deep start
+
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.value = 200; // Start closed
+        filter.Q.value = 10; // Resonant scream
+
+        // LFO for "Agitation" (Vibrato)
+        const lfo = ctx.createOscillator();
+        lfo.type = 'square'; // Harsh modulation
+        lfo.frequency.value = 10; // Fast jitter
+        const lfoGain = ctx.createGain();
+        lfoGain.gain.value = 20; 
+        
+        lfo.connect(lfoGain);
+        lfoGain.connect(osc.frequency);
+
+        osc.connect(filter);
+        filter.connect(loopMaster);
+        
         osc.start();
+        lfo.start();
+
         nodes.sources = [osc];
+        nodes.lfo = lfo; // Store to stop later
+        nodes.lfoGain = lfoGain; // Store to modulate depth
+        nodes.filter = filter;
+
         loopMaster.gain.setValueAtTime(0, t);
-        loopMaster.gain.linearRampToValueAtTime(0.1, t+0.5);
+        loopMaster.gain.linearRampToValueAtTime(0.3, t+0.5);
     }
 
     activeNodes.current = nodes;
@@ -463,8 +537,26 @@ const useAudioEngine = () => {
             nodes.gain.gain.setTargetAtTime(0.3 + (Math.random() * 0.2), t, 0.05);
         }
     } else if (type === 'charge') {
+        // THE FIX: Ramping Tension and Agitation
         const p = typeof progress === 'number' ? progress : 0;
-        if(nodes.sources) nodes.sources[0].frequency.linearRampToValueAtTime(50 + (p * 5), t + 0.1);
+        const normalized = p / 100;
+        
+        if(nodes.sources) {
+            // Pitch Rise: 60Hz -> 400Hz (Screaming tension)
+            nodes.sources[0].frequency.setTargetAtTime(60 + (normalized * 340), t, 0.1);
+        }
+        if(nodes.filter) {
+            // Filter Open: 200Hz -> 8000Hz (Reveal the grit)
+            nodes.filter.frequency.setTargetAtTime(200 + (normalized * 7800), t, 0.1);
+        }
+        if(nodes.lfo) {
+            // LFO Speed: 10Hz -> 50Hz (Panic)
+            nodes.lfo.frequency.setTargetAtTime(10 + (normalized * 40), t, 0.1);
+        }
+        if(nodes.lfoGain) {
+            // LFO Depth: More wobble
+            nodes.lfoGain.gain.setTargetAtTime(20 + (normalized * 100), t, 0.1);
+        }
     }
   }, []);
 
@@ -539,22 +631,7 @@ const useAudioEngine = () => {
 };
 
 // --- CONSTANTS ---
-const ARCHETYPES = {
-  LOVE: { color: 'text-rose-500', border: 'border-rose-500', bg: 'bg-rose-500', icon: Heart, theme: 'VENUS' },
-  MONEY: { color: 'text-emerald-400', border: 'border-emerald-400', bg: 'bg-emerald-400', icon: DollarSign, theme: 'JUPITER' },
-  POWER: { color: 'text-amber-500', border: 'border-amber-500', bg: 'bg-amber-500', icon: Sun, theme: 'SOL' },
-  PROTECT: { color: 'text-blue-500', border: 'border-blue-500', bg: 'bg-blue-500', icon: Shield, theme: 'MARS' },
-  UNK: { color: 'text-cyan-400', border: 'border-cyan-400', bg: 'bg-cyan-400', icon: Star, theme: 'AETHER' }
-};
-
-const detectArchetype = (text: string) => {
-  const t = text.toUpperCase();
-  if (t.includes('LOVE') || t.includes('HEART')) return ARCHETYPES.LOVE;
-  if (t.includes('MONEY') || t.includes('WEALTH')) return ARCHETYPES.MONEY;
-  if (t.includes('POWER') || t.includes('CONTROL')) return ARCHETYPES.POWER;
-  if (t.includes('PROTECT') || t.includes('SAFE')) return ARCHETYPES.PROTECT;
-  return ARCHETYPES.UNK;
-};
+// (No duplicates here)
 
 // --- SUB-COMPONENTS ---
 
@@ -775,9 +852,14 @@ const Inscription = ({ setIntention, setArchetype, setPhase, archetype, audio, s
           const result = await generateElectricEnsorcellment(text); 
           const [poetry, latin] = result.split('|');
           
+          // THE FIX: Smart Latin Selection
+          const latinPhrase = LATIN_MANTRA_DB[arch.theme as keyof typeof LATIN_MANTRA_DB] 
+                              ? LATIN_MANTRA_DB[arch.theme as keyof typeof LATIN_MANTRA_DB][Math.floor(Math.random() * 3)] 
+                              : "FIAT VOLUNTAS TUA";
+
           setAiData({
               poetry: poetry?.trim() || "The gears of fate grind in your favor.",
-              latin: latin?.trim() || "Fiat Voluntas Tua"
+              latin: latinPhrase
           });
 
           setPhase('AGREEMENT');
