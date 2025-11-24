@@ -4,8 +4,7 @@
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { 
-  Heart, DollarSign, Sun, Shield, Star, Fingerprint, Activity, Check, Eye, X,
-  Moon, Triangle, Hexagon, Sparkles, Droplets
+  Heart, DollarSign, Sun, Shield, Star, Fingerprint, Check, Eye, X, Sparkles
 } from 'lucide-react';
 import { generateElectricEnsorcellment } from '@/lib/services/geminiService';
 
@@ -50,9 +49,7 @@ const generateSigilPath = (input: string): string => {
 // --- UTILITY: SIGIL TEXT SCATTER ---
 const getScatteredChars = (text: string) => {
     if (!text) return [];
-    // Remove vowels and non-letters, uppercase
     const consonants = text.toUpperCase().replace(/[^A-Z]/g, '').replace(/[AEIOU]/g, '');
-    // Remove duplicates
     const unique = Array.from(new Set(consonants.split('')));
     return unique;
 };
@@ -60,31 +57,21 @@ const getScatteredChars = (text: string) => {
 // --- ADVANCED AUDIO ENGINE ---
 
 const useAudioEngine = () => {
-  // FIX: Use 'any' to bypass missing AudioContext types
   const ctxRef = useRef<any>(null);
   const masterGainRef = useRef<any>(null);
   const reverbNodeRef = useRef<any>(null);
-  const ambientNodeRef = useRef<any>(null);
   
-  // Cache the impulse response to prevent crashing memory
-  const impulseBufferRef = useRef<any>(null);
-
   // Store references to active nodes for the current loop
   const activeNodes = useRef<{
     sources?: any[];
     gain?: any;
     filter?: any;
     panner?: any;
-    panners?: any[];
     lfo?: any;
     lfoGain?: any;
     extraGains?: any[]; 
-    osc?: any;
-    osc2?: any;
-    source?: any;
+    type?: string;
   } | null>(null);
-
-  // --- SYNTHESIS UTILITIES ---
 
   const createPinkNoise = (ctx: any) => {
     const bufferSize = ctx.sampleRate * 2;
@@ -110,10 +97,24 @@ const useAudioEngine = () => {
     return node;
   };
 
-  const createImpulseResponse = (ctx: any) => {
-    if (impulseBufferRef.current) return impulseBufferRef.current;
+  const createBrownNoise = (ctx: any) => {
+    const bufferSize = ctx.sampleRate * 2;
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const output = buffer.getChannelData(0);
+    let lastOut = 0;
+    for (let i = 0; i < bufferSize; i++) {
+        const white = Math.random() * 2 - 1;
+        output[i] = (lastOut + (0.02 * white)) / 1.02;
+        lastOut = output[i];
+        output[i] *= 3.5; 
+    }
+    const node = ctx.createBufferSource();
+    node.buffer = buffer;
+    node.loop = true;
+    return node;
+  };
 
-    // Create a shorter, less CPU intensive reverb (2.0s)
+  const createImpulseResponse = (ctx: any) => {
     const duration = 2.0;
     const decay = 2.0;
     const sampleRate = ctx.sampleRate;
@@ -128,7 +129,6 @@ const useAudioEngine = () => {
         impulseL[i] = (Math.random() * 2 - 1) * env;
         impulseR[i] = (Math.random() * 2 - 1) * env;
     }
-    impulseBufferRef.current = impulse;
     return impulse;
   };
 
@@ -146,19 +146,16 @@ const useAudioEngine = () => {
 
           const limiter = ctx.createDynamicsCompressor();
           limiter.threshold.value = -5;
-          limiter.ratio.value = 10;
           
-          // Reverb Setup (Cached)
+          // Reverb
           const reverb = ctx.createConvolver();
           reverb.buffer = createImpulseResponse(ctx);
           reverbNodeRef.current = reverb;
-          
           const reverbGain = ctx.createGain();
-          reverbGain.gain.value = 0.4; 
+          reverbGain.gain.value = 0.3;
 
           masterGain.connect(limiter);
           limiter.connect(ctx.destination);
-
           masterGain.connect(reverb);
           reverb.connect(reverbGain);
           reverbGain.connect(ctx.destination);
@@ -169,414 +166,344 @@ const useAudioEngine = () => {
     }
   }, []);
 
-  // --- AMBIENT DRONE ---
-  const startAmbient = useCallback(() => {
-      if (!ctxRef.current) initAudio();
-      if (!ctxRef.current || ambientNodeRef.current) return;
+  // --- STOP LOGIC WITH HIGH PASS FADE ---
+  const stopLoop = useCallback(() => {
+    if (activeNodes.current && activeNodes.current.gain && ctxRef.current) {
       const ctx = ctxRef.current;
+      const t = ctx.currentTime;
+      const nodes = activeNodes.current;
 
-      const bufferSize = ctx.sampleRate * 4; 
-      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-      const data = buffer.getChannelData(0);
-      let lastOut = 0;
-      for (let i = 0; i < bufferSize; i++) {
-          const white = Math.random() * 2 - 1;
-          data[i] = (lastOut + (0.02 * white)) / 1.02;
-          lastOut = data[i];
-          data[i] *= 3.5;
-      }
+      // 1. High Pass Filter Fade Out (Sucks the sound away)
+      const fadeFilter = ctx.createBiquadFilter();
+      fadeFilter.type = 'highpass';
+      fadeFilter.frequency.setValueAtTime(0, t);
+      fadeFilter.frequency.exponentialRampToValueAtTime(10000, t + 0.5); // Sweep up
       
-      const noise = ctx.createBufferSource();
-      noise.buffer = buffer;
-      noise.loop = true;
+      // Re-route gain through this filter before disconnecting
+      nodes.gain.disconnect();
+      nodes.gain.connect(fadeFilter);
+      fadeFilter.connect(masterGainRef.current);
 
-      const filter = ctx.createBiquadFilter();
-      filter.type = 'lowpass';
-      filter.frequency.value = 80; // Deep rumble
-
-      const gain = ctx.createGain();
-      gain.gain.value = 0.2;
-
-      noise.connect(filter);
-      filter.connect(gain);
+      // 2. Volume Fade
+      nodes.gain.gain.cancelScheduledValues(t);
+      nodes.gain.gain.setValueAtTime(nodes.gain.gain.value, t);
+      nodes.gain.gain.linearRampToValueAtTime(0, t + 0.5);
       
-      if (reverbNodeRef.current) gain.connect(reverbNodeRef.current);
-      else gain.connect(masterGainRef.current);
-
-      noise.start();
-      ambientNodeRef.current = noise;
-  }, [initAudio]);
-
-  // --- UI SOUNDS ---
-
-  const playWaterDroplet = useCallback(() => {
-    if (!ctxRef.current) initAudio();
-    if (!ctxRef.current || !masterGainRef.current) return;
-    const ctx = ctxRef.current;
-    const t = ctx.currentTime;
-
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(1200, t);
-    osc.frequency.exponentialRampToValueAtTime(400, t + 0.15);
-
-    gain.gain.setValueAtTime(0, t);
-    gain.gain.linearRampToValueAtTime(0.4, t + 0.01);
-    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
-
-    osc.connect(gain);
-    if (reverbNodeRef.current) gain.connect(reverbNodeRef.current);
-    gain.connect(masterGainRef.current);
-
-    osc.start(t);
-    osc.stop(t + 0.35);
-  }, [initAudio]);
-
-  const playTypingBlip = useCallback(() => {
-    if (!ctxRef.current) initAudio();
-    if (!ctxRef.current || !masterGainRef.current) return;
-    const ctx = ctxRef.current;
-    const t = ctx.currentTime;
-
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(1200 + Math.random() * 500, t);
-    osc.frequency.exponentialRampToValueAtTime(200, t + 0.05);
-
-    gain.gain.setValueAtTime(0.03, t);
-    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
-
-    osc.connect(gain);
-    if (reverbNodeRef.current) gain.connect(reverbNodeRef.current);
-    gain.connect(masterGainRef.current);
-
-    osc.start(t);
-    osc.stop(t + 0.1);
-  }, [initAudio]);
-
-  const playHeartbeat = useCallback(() => {
-    if (!ctxRef.current || !masterGainRef.current) return;
-    const ctx = ctxRef.current;
-    const t = ctx.currentTime;
-
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    
-    osc.frequency.setValueAtTime(60, t);
-    osc.frequency.exponentialRampToValueAtTime(30, t + 0.1);
-    
-    gain.gain.setValueAtTime(0.7, t);
-    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
-
-    osc.connect(gain);
-    gain.connect(masterGainRef.current); 
-    
-    // Explicit reverb send for heartbeat
-    if (reverbNodeRef.current) {
-        const revSend = ctx.createGain();
-        revSend.gain.value = 0.5;
-        gain.connect(revSend);
-        revSend.connect(reverbNodeRef.current);
+      // 3. Cleanup
+      setTimeout(() => {
+          if (nodes.sources) nodes.sources.forEach((s: any) => { try { s.stop(); } catch(e){} });
+          if (nodes.lfo) { try { nodes.lfo.stop(); } catch(e){} }
+          // Ensure disconnection to prevent zombie nodes
+          try { nodes.gain.disconnect(); } catch(e){}
+          try { fadeFilter.disconnect(); } catch(e){}
+          activeNodes.current = null;
+      }, 600);
     }
-    
-    osc.start(t);
-    osc.stop(t + 0.4);
   }, []);
-
-  // --- LOOP ENGINE ---
 
   const startLoop = useCallback((type: string) => {
     if (!ctxRef.current) initAudio();
     if (!ctxRef.current || !masterGainRef.current) return;
+    
+    // Stop previous if running
+    if (activeNodes.current) stopLoop();
+
     const ctx = ctxRef.current;
+    const t = ctx.currentTime;
     
-    startAmbient();
+    // Master for this loop
+    const loopMaster = ctx.createGain();
+    loopMaster.connect(masterGainRef.current);
+    if(reverbNodeRef.current) loopMaster.connect(reverbNodeRef.current);
 
-    // Stop previous loop safely
-    if (activeNodes.current?.gain) {
-       const oldGain = activeNodes.current.gain;
-       oldGain.gain.cancelScheduledValues(ctx.currentTime);
-       oldGain.gain.setValueAtTime(oldGain.gain.value, ctx.currentTime);
-       oldGain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.1);
-       
-       const oldNodes = activeNodes.current;
-       setTimeout(() => {
-         try { 
-             if(oldNodes.sources) oldNodes.sources.forEach((s: any) => s.stop());
-             if(oldNodes.lfo) oldNodes.lfo.stop();
-         } catch(e){ /**/ }
-       }, 150);
-    }
-
-    const master = ctx.createGain();
-    master.connect(masterGainRef.current);
-    if (reverbNodeRef.current) master.connect(reverbNodeRef.current);
-    
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const nodes: any = { gain: master };
+    const nodes: any = { gain: loopMaster, type };
 
     if (type === 'drone') {
-        // PHASE 1a: CONSECRATION
-        const osc1 = ctx.createOscillator();
-        const osc2 = ctx.createOscillator();
+        // Initial Consecrate Drone
+        const osc = ctx.createOscillator();
+        osc.type = 'triangle';
+        osc.frequency.value = 110; // Low A
+        
         const filter = ctx.createBiquadFilter();
-
-        osc1.type = 'sawtooth'; 
-        osc1.frequency.value = 130; 
-        osc2.type = 'square'; 
-        osc2.frequency.value = 65; 
-
         filter.type = 'lowpass';
-        filter.frequency.value = 800; 
-        filter.Q.value = 5;
+        filter.frequency.value = 400;
+
+        osc.connect(filter);
+        filter.connect(loopMaster);
+        osc.start();
+
+        nodes.sources = [osc];
+        nodes.filter = filter;
+        loopMaster.gain.setValueAtTime(0, t);
+        loopMaster.gain.linearRampToValueAtTime(0.3, t + 1);
+
+    } else if (type === 'void_enter') {
+        // RISING DARKNESS DRONE
+        const osc1 = ctx.createOscillator();
+        osc1.type = 'sawtooth';
+        osc1.frequency.setValueAtTime(60, t); // Deep start
+
+        const osc2 = ctx.createOscillator();
+        osc2.type = 'sawtooth';
+        osc2.frequency.setValueAtTime(65, t); // Detuned
+
+        const noise = createPinkNoise(ctx);
+        const noiseGain = ctx.createGain();
+        noiseGain.gain.value = 0.2;
+
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(100, t); // Start muffled
+        filter.Q.value = 6; // Resonant
 
         osc1.connect(filter);
         osc2.connect(filter);
-        filter.connect(master);
+        noise.connect(noiseGain);
+        noiseGain.connect(filter);
+        filter.connect(loopMaster);
 
         osc1.start();
         osc2.start();
-
-        nodes.sources = [osc1, osc2];
-        nodes.filter = filter;
-        master.gain.setValueAtTime(0.0, ctx.currentTime);
-        master.gain.linearRampToValueAtTime(0.4, ctx.currentTime + 0.2); 
-
-    } else if (type === 'void_enter') {
-        // PHASE 1b: GROWING VOID (Expansion)
-        // Uses Pink Noise through a Low Pass filter that opens up
-        const noise = createPinkNoise(ctx);
-        const filter = ctx.createBiquadFilter();
-        filter.type = 'lowpass';
-        filter.frequency.value = 50; // Start deep
-        filter.Q.value = 4; // Whistling wind resonance
-
-        const oscSub = ctx.createOscillator();
-        oscSub.type = 'sine';
-        oscSub.frequency.value = 40;
-
-        noise.connect(filter);
-        filter.connect(master);
-        oscSub.connect(master);
-
         noise.start();
-        oscSub.start();
 
-        nodes.sources = [noise, oscSub];
+        nodes.sources = [osc1, osc2, noise];
         nodes.filter = filter;
-        
-        // Start audible but low, ramp up
-        master.gain.setValueAtTime(0.1, ctx.currentTime);
-        master.gain.linearRampToValueAtTime(0.8, ctx.currentTime + 4); 
+        loopMaster.gain.setValueAtTime(0, t);
+        loopMaster.gain.linearRampToValueAtTime(0.6, t + 0.5);
 
     } else if (type === 'breath') {
-        // PHASE 2: GROUNDING (Oceanic Breath)
-        // Pink noise based breath
-        const noise = createPinkNoise(ctx);
-        const filter = ctx.createBiquadFilter();
-        filter.type = 'lowpass';
-        filter.frequency.value = 100; // Start closed
-        
-        const panner = ctx.createStereoPanner();
-        panner.pan.value = 0; 
-
-        noise.connect(filter);
-        filter.connect(panner);
-        panner.connect(master);
-        
-        noise.start();
-
-        nodes.sources = [noise];
-        nodes.filter = filter;
-        nodes.panner = panner;
-        master.gain.setValueAtTime(0.3, ctx.currentTime);
-
-    } else if (type === 'etching') {
-        const osc = ctx.createOscillator();
-        osc.type = 'sawtooth';
+        // COMPLEX BREATH ENGINE
+        const noise = createBrownNoise(ctx);
         const filter = ctx.createBiquadFilter();
         filter.type = 'lowpass';
         filter.frequency.value = 200;
+        filter.Q.value = 1;
+
+        const droneOsc = ctx.createOscillator();
+        droneOsc.type = 'sine';
+        droneOsc.frequency.value = 150; 
+        const droneGain = ctx.createGain();
+        droneGain.gain.value = 0; // Starts silent
+
+        noise.connect(filter);
+        filter.connect(loopMaster);
+        droneOsc.connect(droneGain);
+        droneGain.connect(loopMaster);
+
+        noise.start();
+        droneOsc.start();
+
+        nodes.sources = [noise, droneOsc];
+        nodes.filter = filter;
+        nodes.extraGains = [droneGain]; // Store secondary gain for later modulation
+        loopMaster.gain.value = 1.0; // Master stays open, we modulate filter/drone
+
+    } else if (type === 'consulting') {
+        // PULSING SINE 700-800Hz
+        const osc = ctx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.value = 750;
+
+        const lfo = ctx.createOscillator();
+        lfo.type = 'sine';
+        lfo.frequency.value = 2; // 2Hz pulse
+
+        const lfoGain = ctx.createGain();
+        lfoGain.gain.value = 50; // Range +/- 50Hz
+
+        lfo.connect(lfoGain);
+        lfoGain.connect(osc.frequency);
+
+        // Amp LFO
+        const ampLfo = ctx.createOscillator();
+        ampLfo.type = 'triangle';
+        ampLfo.frequency.value = 4;
+        const ampGain = ctx.createGain();
+        ampGain.gain.value = 0.1;
+        
+        osc.connect(ampGain);
+        ampGain.connect(loopMaster);
+        
+        // Connect Amp LFO to gain
+        const scaler = ctx.createGain();
+        scaler.gain.value = 0.05;
+        ampLfo.connect(scaler);
+        scaler.connect(ampGain.gain);
+
+        osc.start();
+        lfo.start();
+        ampLfo.start();
+
+        nodes.sources = [osc, lfo, ampLfo];
+        loopMaster.gain.setValueAtTime(0, t);
+        loopMaster.gain.linearRampToValueAtTime(0.15, t + 0.5);
+
+    } else if (type === 'etching') {
+        // PIERCING REALITY
+        const osc = ctx.createOscillator();
+        osc.type = 'sawtooth';
+        osc.frequency.value = 4000; // High pitch start
+
+        const noise = createPinkNoise(ctx);
+        const noiseGain = ctx.createGain();
+        noiseGain.gain.value = 0.3;
+
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.Q.value = 10; // Very sharp resonance
+        filter.frequency.value = 2000;
+
         osc.connect(filter);
-        filter.connect(master);
+        noise.connect(noiseGain);
+        noiseGain.connect(filter);
+        filter.connect(loopMaster);
+
+        osc.start();
+        noise.start();
+
+        nodes.sources = [osc, noise];
+        nodes.filter = filter;
+        loopMaster.gain.setValueAtTime(0, t);
+        loopMaster.gain.linearRampToValueAtTime(0.4, t + 0.1);
+    } else if (type === 'chant') {
+        // Chanting drone
+        const osc = ctx.createOscillator();
+        osc.type = 'triangle';
+        osc.frequency.value = 110;
+        osc.connect(loopMaster);
         osc.start();
         nodes.sources = [osc];
-        nodes.filter = filter;
-        master.gain.setValueAtTime(0.1, ctx.currentTime);
-
+        loopMaster.gain.setValueAtTime(0, t);
+        loopMaster.gain.linearRampToValueAtTime(0.2, t+1);
     } else if (type === 'charge') {
-      const osc = ctx.createOscillator();
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(100, ctx.currentTime);
-      osc.connect(master);
-      master.gain.setValueAtTime(0.1, ctx.currentTime);
-      osc.start();
-      nodes.sources = [osc];
-    } else if (type === 'chant') {
-      // Phase 4: The Choir
-      const root = 110; 
-      const freqs = [root, root * 1.25, root * 1.5]; // Chord
-      const sources: any[] = [];
-      
-      freqs.forEach(f => {
-          const o = ctx.createOscillator();
-          o.type = 'triangle';
-          o.frequency.value = f;
-          o.connect(master);
-          o.start();
-          sources.push(o);
-      });
-      
-      // Vibrato
-      const lfo = ctx.createOscillator();
-      lfo.frequency.value = 3; // 3hz
-      const lfoGain = ctx.createGain();
-      lfoGain.gain.value = 2;
-      lfo.connect(lfoGain);
-      sources.forEach(s => lfoGain.connect(s.frequency));
-      lfo.start();
-
-      nodes.sources = sources;
-      nodes.lfo = lfo;
-      master.gain.setValueAtTime(0, ctx.currentTime);
-      master.gain.linearRampToValueAtTime(0.4, ctx.currentTime + 1);
+        // Rising Charge
+        const osc = ctx.createOscillator();
+        osc.type = 'square';
+        osc.frequency.value = 50;
+        osc.connect(loopMaster);
+        osc.start();
+        nodes.sources = [osc];
+        loopMaster.gain.setValueAtTime(0, t);
+        loopMaster.gain.linearRampToValueAtTime(0.1, t+0.5);
     }
 
     activeNodes.current = nodes;
-  }, [initAudio, startAmbient]);
+  }, [initAudio, stopLoop]);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updateLoop = useCallback((progress: any, type: string) => {
-    if (!ctxRef.current || !activeNodes.current) return;
+    if (!ctxRef.current || !activeNodes.current || activeNodes.current.type !== type) return;
     const ctx = ctxRef.current;
     const nodes = activeNodes.current;
     const t = ctx.currentTime;
 
-    if (type === 'drone') {
-        if(nodes.sources && nodes.sources.length === 2) {
-            nodes.sources[0].frequency.setTargetAtTime(130 - (progress * 0.9), t, 0.1);
-            nodes.sources[1].frequency.setTargetAtTime(65 - (progress * 0.35), t, 0.1);
-        }
-        if(nodes.filter) nodes.filter.frequency.setTargetAtTime(800 + (progress * 40), t, 0.1);
-        if(nodes.gain) nodes.gain.gain.setTargetAtTime(0.4 + (progress * 0.002), t, 0.1);
-
-    } else if (type === 'void_enter') {
-        // VOID GROWTH
+    if (type === 'void_enter') {
+        // RISING TENSION
         const p = typeof progress === 'number' ? progress : 0;
-        // Filter opens dramatically from 50Hz -> 5000Hz
-        if (nodes.filter) nodes.filter.frequency.setTargetAtTime(50 + (p * 50), t, 0.1);
-        // Gain keeps increasing
-        if (nodes.gain) nodes.gain.gain.setTargetAtTime(0.1 + (p * 0.008), t, 0.1);
+        const normalized = p / 100;
+
+        if (nodes.sources && nodes.sources.length >= 2) {
+            // Pitch rising 60 -> 300Hz
+            nodes.sources[0].frequency.linearRampToValueAtTime(60 + (normalized * 240), t + 0.1);
+            nodes.sources[1].frequency.linearRampToValueAtTime(65 + (normalized * 245), t + 0.1);
+        }
+        if (nodes.filter) {
+            // Filter opening 100 -> 5000Hz
+            nodes.filter.frequency.exponentialRampToValueAtTime(100 + (normalized * 4900), t + 0.1);
+        }
+        // Volume rising
+        nodes.gain.gain.setTargetAtTime(0.2 + (normalized * 0.6), t, 0.1);
 
     } else if (type === 'breath') {
-        // Breath Modulation (Pink Noise Filter + Pan)
-        if(nodes.filter && nodes.panner) {
-            if (progress === 'INHALE') {
-                // Inhale: Open filter, Pan Left->Right
-                nodes.filter.frequency.setTargetAtTime(600, t, 2); 
-                nodes.panner.pan.linearRampToValueAtTime(0.6, t + 4);
-            } else if (progress === 'HOLD') {
-                // Hold: Static
-                nodes.filter.frequency.setTargetAtTime(600, t, 0.1);
-                nodes.panner.pan.setTargetAtTime(0, t, 0.1);
-            } else if (progress === 'EXHALE') {
-                // Exhale: Close filter, Pan Right->Left
-                nodes.filter.frequency.setTargetAtTime(100, t, 2);
-                nodes.panner.pan.linearRampToValueAtTime(-0.6, t + 4);
-            }
+        // BREATH CYCLE
+        if (progress === 'INHALE') {
+            // Rising, Filling
+            if(nodes.filter) nodes.filter.frequency.linearRampToValueAtTime(1200, t + 4); // Open up
+            if(nodes.gain) nodes.gain.gain.linearRampToValueAtTime(0.8, t + 4); // Louder
+            if(nodes.extraGains) nodes.extraGains[0].gain.linearRampToValueAtTime(0, t + 0.5); // Silence drone
+
+        } else if (progress === 'HOLD') {
+            // Steady, Calm
+            if(nodes.filter) nodes.filter.frequency.setTargetAtTime(200, t, 0.5); // Muffle noise immediately
+            if(nodes.gain) nodes.gain.gain.setTargetAtTime(0.4, t, 0.1); // Quiet down
+            if(nodes.extraGains) nodes.extraGains[0].gain.linearRampToValueAtTime(0.15, t + 1); // Fade in smooth drone
+
+        } else if (progress === 'EXHALE') {
+            // Release, Distant
+            if(nodes.filter) nodes.filter.frequency.linearRampToValueAtTime(50, t + 4); // Close filter down
+            if(nodes.gain) nodes.gain.gain.linearRampToValueAtTime(0, t + 4); // Fade out
+            if(nodes.extraGains) nodes.extraGains[0].gain.linearRampToValueAtTime(0, t + 2); // Fade drone
         }
+
     } else if (type === 'etching') {
-         const p = typeof progress === 'number' ? progress : 0;
-         if(nodes.filter) nodes.filter.frequency.setTargetAtTime(200 + (p * 50), t, 0.1);
+        // Intense Sparks
+        const p = typeof progress === 'number' ? progress : 0;
+        if(nodes.filter) {
+            // Filter jumps around wildly
+            const randomFreq = 500 + Math.random() * 4000;
+            nodes.filter.frequency.setTargetAtTime(randomFreq, t, 0.05);
+        }
+        if(nodes.gain) {
+            // Volume jitter
+            nodes.gain.gain.setTargetAtTime(0.3 + (Math.random() * 0.2), t, 0.05);
+        }
     } else if (type === 'charge') {
-       if(nodes.sources) nodes.sources[0].frequency.setTargetAtTime(100 + (progress * 10), t, 0.1);
+        const p = typeof progress === 'number' ? progress : 0;
+        if(nodes.sources) nodes.sources[0].frequency.linearRampToValueAtTime(50 + (p * 5), t + 0.1);
     }
   }, []);
 
-  const stopLoop = useCallback(() => {
-    if (activeNodes.current && activeNodes.current.gain && ctxRef.current) {
-      const t = ctxRef.current.currentTime;
-      // Fade out cleanly
-      activeNodes.current.gain.gain.cancelScheduledValues(t);
-      activeNodes.current.gain.gain.setValueAtTime(activeNodes.current.gain.gain.value, t);
-      activeNodes.current.gain.gain.linearRampToValueAtTime(0, t + 0.3);
-      
-      const oldNodes = activeNodes.current;
-      setTimeout(() => {
-          if (oldNodes.sources) oldNodes.sources.forEach((s: any) => s.stop());
-          if (oldNodes.lfo) oldNodes.lfo.stop();
-          activeNodes.current = null;
-      }, 350);
-    }
-  }, []);
-
-  const playCastBoom = useCallback(() => {
+  // --- ONE SHOTS ---
+  const playOneShot = useCallback((type: string) => {
       if (!ctxRef.current) initAudio();
       if (!ctxRef.current || !masterGainRef.current) return;
       const ctx = ctxRef.current;
       const t = ctx.currentTime;
 
-      // Optimized Boom (No heavy computation)
-      const subOsc = ctx.createOscillator();
-      const subGain = ctx.createGain();
-      subOsc.type = 'sine';
-      subOsc.frequency.setValueAtTime(120, t);
-      subOsc.frequency.exponentialRampToValueAtTime(30, t + 1.0); 
-      subGain.gain.setValueAtTime(1.0, t);
-      subGain.gain.exponentialRampToValueAtTime(0.01, t + 3.0); 
-      subOsc.connect(subGain);
-      subGain.connect(masterGainRef.current);
-      subOsc.start(t);
-      subOsc.stop(t + 3.1);
-
-      // High Shimmer (Triangle wave sweep)
-      const shimmer = ctx.createOscillator();
-      const shimmerGain = ctx.createGain();
-      shimmer.type = 'triangle';
-      shimmer.frequency.setValueAtTime(800, t);
-      shimmer.frequency.linearRampToValueAtTime(4000, t + 2.0);
-      shimmerGain.gain.setValueAtTime(0.2, t);
-      shimmerGain.gain.linearRampToValueAtTime(0, t + 2.0);
-      
-      shimmer.connect(shimmerGain);
-      if (reverbNodeRef.current) shimmerGain.connect(reverbNodeRef.current);
-      else shimmerGain.connect(masterGainRef.current);
-      
-      shimmer.start(t);
-      shimmer.stop(t + 2.1);
-
+      if (type === 'water') {
+          const osc = ctx.createOscillator();
+          const g = ctx.createGain();
+          osc.frequency.setValueAtTime(800, t);
+          osc.frequency.exponentialRampToValueAtTime(200, t + 0.2);
+          g.gain.setValueAtTime(0.3, t);
+          g.gain.exponentialRampToValueAtTime(0.01, t + 0.2);
+          osc.connect(g); g.connect(masterGainRef.current);
+          osc.start(); osc.stop(t + 0.3);
+      } else if (type === 'type') {
+          const osc = ctx.createOscillator();
+          const g = ctx.createGain();
+          osc.frequency.setValueAtTime(1000 + Math.random()*500, t);
+          g.gain.setValueAtTime(0.05, t);
+          g.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+          osc.connect(g); g.connect(masterGainRef.current);
+          osc.start(); osc.stop(t + 0.1);
+      } else if (type === 'boom') {
+          const osc = ctx.createOscillator();
+          const g = ctx.createGain();
+          osc.frequency.setValueAtTime(100, t);
+          osc.frequency.exponentialRampToValueAtTime(10, t + 1);
+          g.gain.setValueAtTime(1, t);
+          g.gain.exponentialRampToValueAtTime(0.001, t + 2);
+          osc.connect(g); g.connect(masterGainRef.current);
+          osc.start(); osc.stop(t + 2.1);
+      } else if (type === 'spark') {
+          // High pitch random chirp
+          const osc = ctx.createOscillator();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(2000 + Math.random()*3000, t);
+          const g = ctx.createGain();
+          g.gain.setValueAtTime(0.1, t);
+          g.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+          osc.connect(g); g.connect(masterGainRef.current);
+          osc.start(); osc.stop(t + 0.15);
+      }
   }, [initAudio]);
 
-  const playSuccess = useCallback(() => {
-     if (!ctxRef.current) initAudio();
-     if (!ctxRef.current || !masterGainRef.current) return;
-     const ctx = ctxRef.current;
-     const t = ctx.currentTime;
-     
-     const osc = ctx.createOscillator();
-     const gain = ctx.createGain();
-     osc.type = 'sine';
-     osc.frequency.setValueAtTime(440, t);
-     osc.frequency.exponentialRampToValueAtTime(880, t + 0.2);
-     gain.gain.setValueAtTime(0.1, t);
-     gain.gain.exponentialRampToValueAtTime(0.001, t + 1);
-     
-     osc.connect(gain);
-     if (reverbNodeRef.current) gain.connect(reverbNodeRef.current);
-     gain.connect(masterGainRef.current);
-     osc.start();
-     osc.stop(t + 1.1);
-  }, [initAudio]);
-
-  return { playWaterDroplet, playTypingBlip, startLoop, updateLoop, stopLoop, playCastBoom, playSuccess, playHeartbeat, initAudio, startAmbient };
+  return { initAudio, startLoop, updateLoop, stopLoop, playOneShot };
 };
 
-// --- UTILITY & CONSTANTS ---
-
+// --- CONSTANTS ---
 const ARCHETYPES = {
   LOVE: { color: 'text-rose-500', border: 'border-rose-500', bg: 'bg-rose-500', icon: Heart, theme: 'VENUS' },
   MONEY: { color: 'text-emerald-400', border: 'border-emerald-400', bg: 'bg-emerald-400', icon: DollarSign, theme: 'JUPITER' },
@@ -587,37 +514,11 @@ const ARCHETYPES = {
 
 const detectArchetype = (text: string) => {
   const t = text.toUpperCase();
-  if (t.includes('LOVE') || t.includes('HEART') || t.includes('PARTNER') || t.includes('RELATIONSHIP')) return ARCHETYPES.LOVE;
-  if (t.includes('MONEY') || t.includes('WEALTH') || t.includes('JOB') || t.includes('RICH')) return ARCHETYPES.MONEY;
-  if (t.includes('POWER') || t.includes('CONTROL') || t.includes('STRENGTH') || t.includes('WIN')) return ARCHETYPES.POWER;
-  if (t.includes('PROTECT') || t.includes('SAFE') || t.includes('GUARD') || t.includes('SHIELD')) return ARCHETYPES.PROTECT;
+  if (t.includes('LOVE') || t.includes('HEART')) return ARCHETYPES.LOVE;
+  if (t.includes('MONEY') || t.includes('WEALTH')) return ARCHETYPES.MONEY;
+  if (t.includes('POWER') || t.includes('CONTROL')) return ARCHETYPES.POWER;
+  if (t.includes('PROTECT') || t.includes('SAFE')) return ARCHETYPES.PROTECT;
   return ARCHETYPES.UNK;
-};
-
-// --- BACKGROUND EFFECTS ---
-
-const WarpBackground = ({ intensity }: { intensity: number }) => (
-  <div className="fixed inset-0 z-0 bg-black overflow-hidden pointer-events-none">
-    <div className="absolute inset-0 opacity-30 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')]" />
-    <svg className="absolute inset-0 w-full h-full opacity-30 mix-blend-screen">
-      <filter id="warpFilter">
-        <feTurbulence type="fractalNoise" baseFrequency={0.01 + (intensity / 5000)} numOctaves="2" result="noise" />
-        <feDisplacementMap in="SourceGraphic" in2="noise" scale={intensity} />
-      </filter>
-      <rect width="100%" height="100%" filter="url(#warpFilter)" fill="indigo" />
-    </svg>
-    <div className="absolute inset-0 bg-linear-to-b from-black via-transparent to-slate-950 opacity-90" />
-  </div>
-);
-
-const GlitchOverlay = ({ active }: { active: boolean }) => {
-  if (!active) return null;
-  return (
-    <div className="fixed inset-0 z-50 pointer-events-none mix-blend-difference animate-pulse bg-white/10">
-      <div className="absolute top-1/4 left-0 w-full h-2 bg-cyan-500/50 blur-sm transform -skew-x-12" />
-      <div className="absolute bottom-1/3 left-0 w-full h-4 bg-purple-500/50 blur-md transform skew-x-12" />
-    </div>
-  );
 };
 
 // --- SUB-COMPONENTS ---
@@ -626,22 +527,8 @@ const GlitchOverlay = ({ active }: { active: boolean }) => {
 const Consecration = ({ setPhase, archetype, audio }: any) => {
   const [progress, setProgress] = useState(0);
   const [voidProgress, setVoidProgress] = useState(0);
-  const [pulseTime, setPulseTime] = useState(0); 
-  const [stage, setStage] = useState<'consecrate' | 'growing' | 'pulsing'>('consecrate');
+  const [stage, setStage] = useState<'consecrate' | 'growing'>('consecrate');
   const [isHolding, setIsHolding] = useState(false);
-  const [scalePulse, setScalePulse] = useState(1);
-
-  const handleInteraction = useCallback((e: React.SyntheticEvent) => {
-      e.preventDefault();
-      audio.initAudio(); 
-      audio.startAmbient();
-      setIsHolding(true);
-  }, [audio]);
-
-  const handleHoldEnd = useCallback((e: React.SyntheticEvent) => {
-      e.preventDefault();
-      setIsHolding(false);
-  }, []);
 
   useEffect(() => {
     if (isHolding) {
@@ -655,80 +542,45 @@ const Consecration = ({ setPhase, archetype, audio }: any) => {
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    
     if (isHolding) {
       interval = setInterval(() => {
         if (stage === 'consecrate') {
             setProgress(prev => {
-                const next = prev + 0.5; 
-                audio.updateLoop(next, 'drone');
+                const next = prev + 0.8; 
                 if (next >= 100) {
                     setStage('growing');
                     audio.stopLoop(); 
                     setTimeout(() => audio.startLoop('void_enter'), 50); 
-                    const nav = (globalThis as any).navigator;
-                    if (typeof nav !== 'undefined' && nav.vibrate) nav.vibrate(50);
                     return 100;
                 }
                 return next;
             });
         } else if (stage === 'growing') {
             setVoidProgress(prev => {
-                const next = prev + 0.153; 
+                const next = prev + 0.3; 
                 audio.updateLoop(next, 'void_enter'); 
                 if (next >= 100) {
-                    setStage('pulsing');
-                    const nav = (globalThis as any).navigator;
-                    if (typeof nav !== 'undefined' && nav.vibrate) nav.vibrate(100);
-                    return 100;
-                }
-                return next;
-            });
-        } else if (stage === 'pulsing') {
-            setPulseTime(prev => {
-                const next = prev + 20; 
-                const beat = (Math.sin(next * 0.006) + 1) / 2; 
-                setScalePulse(1 + (beat * 0.1)); 
-
-                if (next % 1000 < 25 && next > 50) {
-                    audio.playHeartbeat();
-                    const nav = (globalThis as any).navigator;
-                    if (typeof nav !== 'undefined' && nav.vibrate) nav.vibrate(20);
-                }
-
-                if (next >= 7000) {
                     clearInterval(interval);
                     audio.stopLoop();
-                    audio.playCastBoom(); 
-                    const nav = (globalThis as any).navigator;
-                    if (typeof nav !== 'undefined' && nav.vibrate) nav.vibrate([200, 100, 500, 100, 1000]);
+                    audio.playOneShot('boom');
                     setPhase('GROUNDING');
-                    return 7000;
+                    return 100;
                 }
                 return next;
             });
         }
       }, 20);
     } else {
-        if (stage !== 'consecrate' || progress > 0) {
-             setStage('consecrate');
-             setProgress(0);
-             setVoidProgress(0);
-             setPulseTime(0);
-             setScalePulse(1);
-             audio.stopLoop();
+        if (stage === 'consecrate' && progress > 0) setProgress(0);
+        if (stage === 'growing') {
+            setVoidProgress(0); 
         }
     }
     return () => clearInterval(interval);
-  }, [isHolding, stage, setPhase, audio]); 
+  }, [isHolding, stage, setPhase, audio, progress]);
 
   const ArchetypeIcon = archetype.icon;
-  const getVoidMessage = () => {
-      if (stage === 'growing') return "OPENING THE GATE...";
-      if (stage === 'pulsing') return "ALIGNING HEARTBEAT...";
-      return "";
-  };
-  const growSize = 10 + (voidProgress / 100) * 260; 
+  const growSize = 10 + (voidProgress / 100) * 300; 
 
   return (
     <div className="flex flex-col items-center justify-center h-full space-y-8 animate-in fade-in duration-1000 relative z-10 select-none">
@@ -738,43 +590,37 @@ const Consecration = ({ setPhase, archetype, audio }: any) => {
                 <div className={`absolute inset-0 border-2 border-dashed ${archetype.border} rounded-full opacity-50 transition-transform duration-75 ease-linear`}
                      style={{ transform: `rotate(${progress * 10}deg) scale(${1 - (progress / 100)})`, opacity: 1 - (progress/100) }} />
                 <div className={`absolute inset-0 flex items-center justify-center transition-transform duration-75 ease-linear`}
-                     style={{ transform: `scale(${1 - (progress/100)}) translate(${isHolding ? (Math.random() * 2 - 1) + 'px' : '0'}, ${isHolding ? (Math.random() * 2 - 1) + 'px' : '0'})`, opacity: 1 - (progress/100) }}>
+                     style={{ transform: `scale(${1 - (progress/100)})` }}>
                     <ArchetypeIcon className={`w-16 h-16 ${archetype.color}`} />
                 </div>
             </>
         ) : (
             <div className="absolute inset-0 flex items-center justify-center">
-                <div className="bg-black rounded-full shadow-[0_0_60px_rgba(255,255,255,0.2)] z-30 transition-all duration-75" 
-                     style={{ width: `${growSize}px`, height: `${growSize}px`, transform: stage === 'pulsing' ? `scale(${scalePulse})` : 'scale(1)' }}
+                <div className="bg-black rounded-full shadow-[0_0_100px_rgba(0,0,0,1)] z-30 transition-all duration-75 border border-gray-900" 
+                     style={{ width: `${growSize}px`, height: `${growSize}px` }}
                 />
-                {stage === 'growing' && (
-                    <div className="absolute rounded-full border border-cyan-500/30 opacity-50 animate-ping"
-                         style={{ width: `${growSize}px`, height: `${growSize}px`, animationDuration: '3s' }} />
-                )}
-                {stage === 'pulsing' && (
-                    <div className="absolute rounded-full border-2 border-purple-500/50"
-                         style={{ width: `${growSize}px`, height: `${growSize}px`, transform: `scale(${scalePulse + 0.2})`, opacity: 0.5 }} />
-                )}
+                <div className="absolute rounded-full border-4 border-purple-900/50 animate-ping"
+                     style={{ width: `${growSize}px`, height: `${growSize}px`, animationDuration: '1s' }} />
             </div>
         )}
       </div>
 
-      <div className="text-center space-y-4 relative z-40 mix-blend-difference h-24">
-        <h2 className={`text-white font-serif italic text-xl tracking-[0.2em] drop-shadow-md transition-all duration-500`}>
-            {stage === 'consecrate' ? "CONSECRATE" : getVoidMessage()}
+      <div className="text-center space-y-4 relative z-40 h-24 mix-blend-difference">
+        <h2 className="text-white font-serif italic text-xl tracking-[0.2em] drop-shadow-md">
+            {stage === 'consecrate' ? "CONSECRATE" : "OPEN THE GATE"}
         </h2>
-        <p className="text-slate-400 font-mono text-[10px] uppercase tracking-widest max-w-xs mx-auto">
-            {stage === 'consecrate' ? "Hold to collapse reality to a single point" : "Do not release the connection"}
+        <p className="text-slate-400 font-mono text-[10px] uppercase tracking-widest">
+            {stage === 'consecrate' ? "Hold to collapse reality" : "Do not release. The void is hungry."}
         </p>
       </div>
 
       <button 
         className={`w-32 h-32 rounded-full bg-white/5 border-2 border-double ${archetype.border} shadow-[0_0_40px_rgba(255,255,255,0.15)] active:scale-95 transition-all flex items-center justify-center group z-40 animate-pulse`}
-        onMouseDown={handleInteraction}
-        onMouseUp={handleHoldEnd}
-        onMouseLeave={handleHoldEnd}
-        onTouchStart={handleInteraction}
-        onTouchEnd={handleHoldEnd}
+        onMouseDown={() => { setIsHolding(true); audio.initAudio(); }}
+        onMouseUp={() => setIsHolding(false)}
+        onMouseLeave={() => setIsHolding(false)}
+        onTouchStart={(e) => { e.preventDefault(); setIsHolding(true); audio.initAudio(); }}
+        onTouchEnd={() => setIsHolding(false)}
       >
         <Fingerprint className={`${archetype.color} w-12 h-12 group-hover:scale-110 transition-transform`} />
       </button>
@@ -782,7 +628,7 @@ const Consecration = ({ setPhase, archetype, audio }: any) => {
   );
 };
 
-// 2. GROUNDING (Breathing)
+// 2. GROUNDING
 const Grounding = ({ setPhase, audio }: any) => {
   const [cycle, setCycle] = useState(0);
   const [breathState, setBreathState] = useState('INHALE');
@@ -798,22 +644,25 @@ const Grounding = ({ setPhase, audio }: any) => {
     const runBreathCycle = async () => {
       if (cycle >= TOTAL_CYCLES) {
         if (isMounted) {
-            audio.playSuccess();
+            audio.playOneShot('type');
             setTimeout(() => setPhase('INTENTION'), 1000);
         }
         return;
       }
       if (!isMounted) return;
+      
       setBreathState('INHALE'); 
       audio.updateLoop('INHALE', 'breath'); 
       await new Promise(r => setTimeout(r, 4000));
       
       if (!isMounted) return;
+      
       setBreathState('HOLD');
       audio.updateLoop('HOLD', 'breath');
       await new Promise(r => setTimeout(r, 3000));
       
       if (!isMounted) return;
+      
       setBreathState('EXHALE');
       audio.updateLoop('EXHALE', 'breath'); 
       await new Promise(r => setTimeout(r, 4000));
@@ -827,7 +676,7 @@ const Grounding = ({ setPhase, audio }: any) => {
   const getMessage = () => {
       if (breathState === 'INHALE') return "INHALE THE MAGICK";
       if (breathState === 'HOLD') return "HOLD THE POWER";
-      return "EXHALE DEMONS";
+      return "EXHALE THE MUNDANE";
   }
 
   const guideStyle = {
@@ -839,8 +688,8 @@ const Grounding = ({ setPhase, audio }: any) => {
   return (
     <div className="flex flex-col items-center justify-center h-full space-y-12 relative z-10">
       <div className="relative">
-        <div className="w-32 h-32 bg-cyan-900/20 border border-cyan-500/30 rounded-full blur-xl absolute inset-0 transition-all duration-4000" style={guideStyle} />
-        <div className="w-32 h-32 border-2 border-cyan-400 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(34,211,238,0.2)] transition-all duration-4000" style={guideStyle}>
+        <div className="w-32 h-32 bg-cyan-900/20 border border-cyan-500/30 rounded-full blur-xl absolute inset-0" style={guideStyle} />
+        <div className="w-32 h-32 border-2 border-cyan-400 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(34,211,238,0.2)]" style={guideStyle}>
           <div className="w-2 h-2 bg-white rounded-full" />
         </div>
       </div>
@@ -857,28 +706,32 @@ const Inscription = ({ setIntention, setArchetype, setPhase, archetype, audio, s
   const [text, setText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  useEffect(() => {
+      if(isLoading) {
+          audio.startLoop('consulting');
+      } else {
+          audio.stopLoop();
+      }
+      return () => audio.stopLoop();
+  }, [isLoading, audio]);
+
   const handleType = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      // Explicit cast to fix TS error
+      // THE FIX: Explicit casting to any to prevent TypeScript error regarding 'value' property
       setText((e.target as any).value.toUpperCase());
-      audio.playTypingBlip(); 
+      audio.playOneShot('type'); 
   };
 
   const handleSubmit = async () => {
       if (text.length < 3) return;
       setIsLoading(true);
-      audio.playWaterDroplet();
+      audio.playOneShot('water');
       
       const arch = detectArchetype(text);
       setArchetype(arch);
       setIntention(text);
 
       try {
-          const prompt = `For a chaos magick spell regarding "${text}", write two things separated by a pipe symbol (|). 
-          1. A short, cryptic, mystical poem (4 lines max) about this desire manifesting. 
-          2. A short Latin incantation command for this desire. 
-          Example Output: The shadows bend to light | Fiat Lux`;
-          
-          const result = await generateElectricEnsorcellment(prompt); 
+          const result = await generateElectricEnsorcellment(text); 
           const [poetry, latin] = result.split('|');
           
           setAiData({
@@ -913,7 +766,10 @@ const Inscription = ({ setIntention, setArchetype, setPhase, archetype, audio, s
          />
          
          {isLoading ? (
-             <p className="text-cyan-500 animate-pulse font-mono text-xs">CONSULTING THE AETHER...</p>
+             <div className="flex flex-col items-center space-y-4">
+                 <div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin"/>
+                 <p className="text-cyan-500 animate-pulse font-mono text-xs">CONSULTING THE AETHER...</p>
+             </div>
          ) : (
              text.length > 3 && (
                <button 
@@ -941,7 +797,7 @@ const Agreement = ({ setPhase, audio }: any) => {
                 <span className="text-white font-bold">You must read these words aloud or project them loudly in your mind.</span>
             </p>
             <button 
-                onClick={() => { audio.playWaterDroplet(); setPhase('ETCHING'); }}
+                onClick={() => { audio.playOneShot('water'); setPhase('ETCHING'); }}
                 className="mt-8 px-8 py-4 bg-slate-900 border-2 border-double border-slate-600 text-white font-mono text-xs tracking-widest hover:bg-white hover:text-black transition-all shadow-[0_0_15px_rgba(255,255,255,0.1)]"
             >
                 I AGREE TO SPEAK THE WORDS
@@ -955,12 +811,12 @@ const Etching = ({ setPhase, archetype, audio, aiData, intention }: any) => {
   const [progress, setProgress] = useState(0);
   const [isHolding, setIsHolding] = useState(false);
   const [hasFinished, setHasFinished] = useState(false);
+  const [sparks, setSparks] = useState<{x: number, y: number, id: number}[]>([]);
   
   const duration = 13000; 
   const colorPalette = ['#ffffff', '#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899'];
   const colorIndex = Math.floor((progress / 100) * colorPalette.length * 3) % colorPalette.length;
   const currentColor = colorPalette[colorIndex];
-  const rotationSpeed = 2 + (progress / 100) * 10; 
 
   useEffect(() => {
       if (isHolding && !hasFinished) {
@@ -985,6 +841,17 @@ const Etching = ({ setPhase, archetype, audio, aiData, intention }: any) => {
                   return next;
               });
               audio.updateLoop(progress, 'etching');
+              
+              if (Math.random() > 0.5) {
+                  const newSpark = {
+                      id: Date.now() + Math.random(),
+                      x: 50 + (Math.random() * 60 - 30),
+                      y: 50 + (Math.random() * 60 - 30)
+                  };
+                  setSparks(prev => [...prev.slice(-10), newSpark]);
+                  if (Math.random() > 0.8) audio.playOneShot('spark');
+              }
+
           }, 20);
       }
       return () => clearInterval(interval);
@@ -994,7 +861,7 @@ const Etching = ({ setPhase, archetype, audio, aiData, intention }: any) => {
   const scatteredLetters = useMemo(() => getScatteredChars(intention), [intention]);
 
   return (
-    <div className="flex flex-col items-center justify-center h-full space-y-8 relative z-10">
+    <div className="flex flex-col items-center justify-center h-full space-y-8 relative z-10 overflow-hidden">
       <div className="absolute top-10 w-full px-6 text-center pointer-events-none">
           <p className={`font-serif text-xl leading-relaxed transition-all duration-300 whitespace-pre-wrap ${isHolding ? 'opacity-100 blur-0' : 'opacity-30 blur-sm'}`} 
              style={{ color: currentColor, textShadow: `0 0 15px ${currentColor}` }}>
@@ -1013,10 +880,15 @@ const Etching = ({ setPhase, archetype, audio, aiData, intention }: any) => {
           />
         </svg>
         
-        {/* SCATTERED INTENTION LETTERS */}
+        {sparks.map(s => (
+            <div key={s.id} 
+                 className="absolute w-1 h-1 bg-white rounded-full animate-ping"
+                 style={{ left: `${s.x}%`, top: `${s.y}%`, boxShadow: `0 0 10px ${currentColor}` }} />
+        ))}
+
         <div className="absolute inset-0 pointer-events-none">
             {scatteredLetters.map((char, i) => (
-                <div key={i} className="absolute text-xs font-mono opacity-50"
+                <div key={i} className="absolute text-xs font-mono opacity-50 transition-colors duration-75"
                      style={{
                          color: currentColor,
                          top: `${50 + Math.sin(i * 1.5) * 40}%`,
@@ -1027,9 +899,6 @@ const Etching = ({ setPhase, archetype, audio, aiData, intention }: any) => {
                 </div>
             ))}
         </div>
-
-        <div className="absolute inset-0 border-2 border-dashed border-white/20 rounded-full"
-             style={{ animation: `spin-slow ${15 / rotationSpeed}s linear infinite` }} />
       </div>
 
       <div className="text-center space-y-2">
@@ -1051,7 +920,7 @@ const Etching = ({ setPhase, archetype, audio, aiData, intention }: any) => {
           </button>
       ) : (
           <button 
-            onClick={() => { audio.playWaterDroplet(); setPhase('CHANT'); }}
+            onClick={() => { audio.playOneShot('water'); setPhase('CHANT'); }}
             className="w-full max-w-xs py-8 border-2 border-double border-white text-white bg-white/10 text-xs font-mono tracking-widest animate-pulse"
           >
             [ PROCEED TO CHANT ]
@@ -1080,17 +949,14 @@ const VocalChant = ({ setPhase, archetype, audio, aiData }: any) => {
         if (chanting && charge < 100) {
             interval = setInterval(() => {
                 setCharge(c => c + 0.5); 
-                const nav = (globalThis as any).navigator;
-                if (typeof nav !== 'undefined' && nav.vibrate && charge % 20 === 0) nav.vibrate(20);
             }, 30);
         } else if (!chanting && charge > 0) {
             setCharge(0); 
         }
 
         if (charge >= 100) {
-            audio.playSuccess();
-            const nav = (globalThis as any).navigator;
-            if (typeof nav !== 'undefined' && nav.vibrate) nav.vibrate([100, 100, 100]);
+            audio.stopLoop();
+            audio.playOneShot('boom');
             setTimeout(() => setPhase('CHARGE'), 1000);
         }
         return () => clearInterval(interval);
@@ -1153,8 +1019,6 @@ const ChargeAndCast = ({ setPhase, setGlitchActive, archetype, audio }: any) => 
             audio.updateLoop(next, 'charge'); 
             return next;
          });
-         const nav = (globalThis as any).navigator;
-         if (typeof nav !== 'undefined' && nav.vibrate && Math.random() > 0.7) nav.vibrate(10); 
        }, 20);
      } else if (!shaking && charge > 0 && charge < 100) {
        interval = setInterval(() => {
@@ -1167,9 +1031,7 @@ const ChargeAndCast = ({ setPhase, setGlitchActive, archetype, audio }: any) => 
    useEffect(() => {
      if (charge >= 100) {
         audio.stopLoop();
-        audio.playCastBoom(); 
-        const nav = (globalThis as any).navigator;
-        if (typeof nav !== 'undefined' && nav.vibrate) nav.vibrate([500, 200, 500, 200, 1000]);
+        audio.playOneShot('boom'); 
         setGlitchActive(true);
         const timeout = setTimeout(() => setPhase('CAST'), 5500);
         return () => clearTimeout(timeout);
@@ -1205,7 +1067,7 @@ const ChargeAndCast = ({ setPhase, setGlitchActive, archetype, audio }: any) => 
                    <div className={`h-full bg-white shadow-[0_0_20px_white] transition-all duration-75 ease-linear`} style={{ width: `${charge}%` }} />
                </div>
                <p className={`${archetype.color} text-center font-serif italic text-lg tracking-widest animate-pulse uppercase`}>
-                   {charge < 100 ? 'PENETRATING SUBATOMIC PROGRAMMING WITH YOUR MAGICK SEED' : 'REALITY BREACH'}
+                   {charge < 100 ? 'PENETRATING SUBATOMIC PROGRAMMING' : 'REALITY BREACH'}
                </p>
            </div>
            
@@ -1230,8 +1092,8 @@ const FinalCast = ({ intention, archetype, audio, onExit }: any) => (
         </div>
         <p className="text-slate-600 font-mono text-[10px] mt-12 animate-pulse">The universe has been recompiled.</p>
         <button 
-          onClick={() => { audio.playWaterDroplet(); onExit(); }}
-          className="mt-12 text-slate-600 hover:text-white font-mono text-xs border-b border-transparent hover:border-white transition-all">
+          onClick={() => { audio.playOneShot('water'); onExit(); }}
+          className="mt-12 text-slate-600 hover:text-white font-mono text-xs border-b border-transparent hover:border-white transition-all cursor-pointer z-50">
           [ CLOSE SESSION ]
         </button>
     </div>
@@ -1261,17 +1123,40 @@ export default function RealityPatchSpell({ onExit }: { onExit: () => void }) {
       }
   };
 
+  // Background Effects
+  const WarpBackground = ({ intensity }: { intensity: number }) => (
+    <div className="fixed inset-0 z-0 bg-black overflow-hidden pointer-events-none">
+        <div className="absolute inset-0 opacity-30 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')]" />
+        <svg className="absolute inset-0 w-full h-full opacity-30 mix-blend-screen">
+        <filter id="warpFilter">
+            <feTurbulence type="fractalNoise" baseFrequency={0.01 + (intensity / 5000)} numOctaves="2" result="noise" />
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale={intensity} />
+        </filter>
+        <rect width="100%" height="100%" filter="url(#warpFilter)" fill="indigo" />
+        </svg>
+        <div className="absolute inset-0 bg-linear-to-b from-black via-transparent to-slate-950 opacity-90" />
+    </div>
+  );
+
+  const GlitchOverlay = ({ active }: { active: boolean }) => {
+    if (!active) return null;
+    return (
+        <div className="fixed inset-0 z-50 pointer-events-none mix-blend-difference animate-pulse bg-white/10">
+        <div className="absolute top-1/4 left-0 w-full h-2 bg-cyan-500/50 blur-sm transform -skew-x-12" />
+        <div className="absolute bottom-1/3 left-0 w-full h-4 bg-purple-500/50 blur-md transform skew-x-12" />
+        </div>
+    );
+  };
+
   const styles = `
     @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     .animate-spin-slow { animation: spin-slow 20s linear infinite; }
-    @keyframes spin-reverse-slower { from { transform: rotate(360deg); } to { transform: rotate(0deg); } }
-    .animate-spin-reverse-slower { animation: spin-reverse-slower 30s linear infinite; }
   `;
 
   return (
     <div className="fixed inset-0 w-full h-screen bg-black text-slate-200 overflow-hidden select-none touch-none font-sans z-50">
       <style>{styles}</style>
-      <button onClick={onExit} className="absolute top-6 right-6 z-50 text-slate-600 hover:text-white transition-colors">
+      <button onClick={() => { audio.stopLoop(); onExit(); }} className="absolute top-6 right-6 z-50 text-slate-600 hover:text-white transition-colors cursor-pointer">
         <X size={24}/>
       </button>
 
@@ -1279,7 +1164,7 @@ export default function RealityPatchSpell({ onExit }: { onExit: () => void }) {
       <GlitchOverlay active={glitchActive} />
       
       <div className="relative z-10 w-full h-full max-w-md mx-auto">
-        <div className="absolute top-0 left-0 w-full p-6 flex justify-between items-start opacity-50 z-20">
+        <div className="absolute top-0 left-0 w-full p-6 flex justify-between items-start opacity-50 z-20 pointer-events-none">
             <div className="flex flex-col font-mono text-[10px] text-slate-500">
                 <span>{new Date().toLocaleTimeString()}</span>
                 <span className={archetype.color}>TYPE: {archetype.theme}</span>
