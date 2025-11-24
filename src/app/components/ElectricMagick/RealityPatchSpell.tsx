@@ -50,6 +50,7 @@ const generateSigilPath = (input: string): string => {
 // --- ADVANCED AUDIO ENGINE ---
 
 const useAudioEngine = () => {
+  // FIX: Use 'any' to bypass missing AudioContext types
   const ctxRef = useRef<any>(null);
   const masterGainRef = useRef<any>(null);
   const reverbNodeRef = useRef<any>(null);
@@ -579,6 +580,7 @@ const GlitchOverlay = ({ active }: { active: boolean }) => {
 // --- SUB-COMPONENTS ---
 
 // 1. CONSECRATION & VOID ENTRY
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const Consecration = ({ setPhase, archetype, audio }: any) => {
   const [progress, setProgress] = useState(0);
   const [voidProgress, setVoidProgress] = useState(0);
@@ -587,6 +589,7 @@ const Consecration = ({ setPhase, archetype, audio }: any) => {
   const [isHolding, setIsHolding] = useState(false);
   const [scalePulse, setScalePulse] = useState(1);
 
+  // Initialize Ambient Drone on first interaction
   const handleInteraction = useCallback((e: React.SyntheticEvent) => {
       e.preventDefault();
       audio.initAudio(); 
@@ -614,6 +617,8 @@ const Consecration = ({ setPhase, archetype, audio }: any) => {
     
     if (isHolding) {
       interval = setInterval(() => {
+        
+        // --- STAGE 1: CONSECRATE (Shrink to Dot) ---
         if (stage === 'consecrate') {
             setProgress(prev => {
                 const next = prev + 0.5; 
@@ -628,6 +633,8 @@ const Consecration = ({ setPhase, archetype, audio }: any) => {
                 }
                 return next;
             });
+
+        // --- STAGE 2: GROWING (13 Seconds to Full Size) ---
         } else if (stage === 'growing') {
             setVoidProgress(prev => {
                 const next = prev + 0.153; 
@@ -640,6 +647,8 @@ const Consecration = ({ setPhase, archetype, audio }: any) => {
                 }
                 return next;
             });
+
+        // --- STAGE 3: PULSING (7 Seconds Heartbeat) ---
         } else if (stage === 'pulsing') {
             setPulseTime(prev => {
                 const next = prev + 20; 
@@ -665,6 +674,7 @@ const Consecration = ({ setPhase, archetype, audio }: any) => {
             });
         }
       }, 20);
+
     } else {
         if (stage !== 'consecrate' || progress > 0) {
              setStage('consecrate');
@@ -688,6 +698,7 @@ const Consecration = ({ setPhase, archetype, audio }: any) => {
 
   return (
     <div className="flex flex-col items-center justify-center h-full space-y-8 animate-in fade-in duration-1000 relative z-10 select-none">
+      
       <div className="relative w-80 h-80 flex items-center justify-center">
         {stage === 'consecrate' ? (
             <>
@@ -814,7 +825,8 @@ const Inscription = ({ setIntention, setArchetype, setPhase, archetype, audio, s
   const [isLoading, setIsLoading] = useState(false);
 
   const handleType = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      setText(e.target.value.toUpperCase());
+      // Explicit cast to fix TS error
+      setText((e.target as any).value.toUpperCase());
       audio.playTypingBlip(); 
   };
 
