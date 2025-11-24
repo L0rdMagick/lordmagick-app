@@ -47,6 +47,16 @@ const generateSigilPath = (input: string): string => {
   return d;
 };
 
+// --- UTILITY: SIGIL TEXT SCATTER ---
+const getScatteredChars = (text: string) => {
+    if (!text) return [];
+    // Remove vowels and non-letters, uppercase
+    const consonants = text.toUpperCase().replace(/[^A-Z]/g, '').replace(/[AEIOU]/g, '');
+    // Remove duplicates
+    const unique = Array.from(new Set(consonants.split('')));
+    return unique;
+};
+
 // --- ADVANCED AUDIO ENGINE ---
 
 const useAudioEngine = () => {
@@ -69,6 +79,9 @@ const useAudioEngine = () => {
     lfo?: any;
     lfoGain?: any;
     extraGains?: any[]; 
+    osc?: any;
+    osc2?: any;
+    source?: any;
   } | null>(null);
 
   // --- SYNTHESIS UTILITIES ---
@@ -100,8 +113,9 @@ const useAudioEngine = () => {
   const createImpulseResponse = (ctx: any) => {
     if (impulseBufferRef.current) return impulseBufferRef.current;
 
-    const duration = 3.0;
-    const decay = 3.0;
+    // Create a shorter, less CPU intensive reverb (2.0s)
+    const duration = 2.0;
+    const decay = 2.0;
     const sampleRate = ctx.sampleRate;
     const length = sampleRate * duration;
     const impulse = ctx.createBuffer(2, length, sampleRate);
@@ -131,16 +145,16 @@ const useAudioEngine = () => {
           masterGain.gain.value = 0.8;
 
           const limiter = ctx.createDynamicsCompressor();
-          limiter.threshold.value = -10;
-          limiter.ratio.value = 12;
-          limiter.attack.value = 0.003;
-
+          limiter.threshold.value = -5;
+          limiter.ratio.value = 10;
+          
+          // Reverb Setup (Cached)
           const reverb = ctx.createConvolver();
           reverb.buffer = createImpulseResponse(ctx);
           reverbNodeRef.current = reverb;
           
           const reverbGain = ctx.createGain();
-          reverbGain.gain.value = 0.5;
+          reverbGain.gain.value = 0.4; 
 
           masterGain.connect(limiter);
           limiter.connect(ctx.destination);
@@ -178,10 +192,10 @@ const useAudioEngine = () => {
 
       const filter = ctx.createBiquadFilter();
       filter.type = 'lowpass';
-      filter.frequency.value = 120;
+      filter.frequency.value = 80; // Deep rumble
 
       const gain = ctx.createGain();
-      gain.gain.value = 0.15;
+      gain.gain.value = 0.2;
 
       noise.connect(filter);
       filter.connect(gain);
@@ -205,19 +219,19 @@ const useAudioEngine = () => {
     const gain = ctx.createGain();
     
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(1800, t);
-    osc.frequency.exponentialRampToValueAtTime(600, t + 0.15);
+    osc.frequency.setValueAtTime(1200, t);
+    osc.frequency.exponentialRampToValueAtTime(400, t + 0.15);
 
     gain.gain.setValueAtTime(0, t);
-    gain.gain.linearRampToValueAtTime(0.3, t + 0.01);
-    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+    gain.gain.linearRampToValueAtTime(0.4, t + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
 
     osc.connect(gain);
     if (reverbNodeRef.current) gain.connect(reverbNodeRef.current);
     gain.connect(masterGainRef.current);
 
     osc.start(t);
-    osc.stop(t + 0.25);
+    osc.stop(t + 0.35);
   }, [initAudio]);
 
   const playTypingBlip = useCallback(() => {
@@ -233,7 +247,7 @@ const useAudioEngine = () => {
     osc.frequency.setValueAtTime(1200 + Math.random() * 500, t);
     osc.frequency.exponentialRampToValueAtTime(200, t + 0.05);
 
-    gain.gain.setValueAtTime(0.02, t);
+    gain.gain.setValueAtTime(0.03, t);
     gain.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
 
     osc.connect(gain);
@@ -259,12 +273,12 @@ const useAudioEngine = () => {
     gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
 
     osc.connect(gain);
-    gain.connect(masterGainRef.current); // Dry
+    gain.connect(masterGainRef.current); 
     
-    // HEAVY REVERB SEND
+    // Explicit reverb send for heartbeat
     if (reverbNodeRef.current) {
         const revSend = ctx.createGain();
-        revSend.gain.value = 0.8; 
+        revSend.gain.value = 0.5;
         gain.connect(revSend);
         revSend.connect(reverbNodeRef.current);
     }
@@ -282,15 +296,20 @@ const useAudioEngine = () => {
     
     startAmbient();
 
+    // Stop previous loop safely
     if (activeNodes.current?.gain) {
-       activeNodes.current.gain.gain.setTargetAtTime(0, ctx.currentTime, 0.1); 
+       const oldGain = activeNodes.current.gain;
+       oldGain.gain.cancelScheduledValues(ctx.currentTime);
+       oldGain.gain.setValueAtTime(oldGain.gain.value, ctx.currentTime);
+       oldGain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.1);
+       
        const oldNodes = activeNodes.current;
        setTimeout(() => {
          try { 
              if(oldNodes.sources) oldNodes.sources.forEach((s: any) => s.stop());
              if(oldNodes.lfo) oldNodes.lfo.stop();
          } catch(e){ /**/ }
-       }, 200);
+       }, 150);
     }
 
     const master = ctx.createGain();
@@ -328,13 +347,13 @@ const useAudioEngine = () => {
         master.gain.linearRampToValueAtTime(0.4, ctx.currentTime + 0.2); 
 
     } else if (type === 'void_enter') {
-        // PHASE 1b: GROWING VOID (Expansion Sound)
-        // Using Pink Noise + Filter Sweep for a massive "growing" sound
+        // PHASE 1b: GROWING VOID (Expansion)
+        // Uses Pink Noise through a Low Pass filter that opens up
         const noise = createPinkNoise(ctx);
         const filter = ctx.createBiquadFilter();
         filter.type = 'lowpass';
-        filter.frequency.value = 50; // Start very closed (rumble)
-        filter.Q.value = 2;
+        filter.frequency.value = 50; // Start deep
+        filter.Q.value = 4; // Whistling wind resonance
 
         const oscSub = ctx.createOscillator();
         oscSub.type = 'sine';
@@ -342,7 +361,6 @@ const useAudioEngine = () => {
 
         noise.connect(filter);
         filter.connect(master);
-        
         oscSub.connect(master);
 
         noise.start();
@@ -351,15 +369,17 @@ const useAudioEngine = () => {
         nodes.sources = [noise, oscSub];
         nodes.filter = filter;
         
-        master.gain.setValueAtTime(0, ctx.currentTime);
-        master.gain.linearRampToValueAtTime(0.6, ctx.currentTime + 1); 
+        // Start audible but low, ramp up
+        master.gain.setValueAtTime(0.1, ctx.currentTime);
+        master.gain.linearRampToValueAtTime(0.8, ctx.currentTime + 4); 
 
     } else if (type === 'breath') {
         // PHASE 2: GROUNDING (Oceanic Breath)
+        // Pink noise based breath
         const noise = createPinkNoise(ctx);
         const filter = ctx.createBiquadFilter();
         filter.type = 'lowpass';
-        filter.frequency.value = 100; // Start quiet
+        filter.frequency.value = 100; // Start closed
         
         const panner = ctx.createStereoPanner();
         panner.pan.value = 0; 
@@ -397,13 +417,33 @@ const useAudioEngine = () => {
       osc.start();
       nodes.sources = [osc];
     } else if (type === 'chant') {
-      const osc = ctx.createOscillator();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(100, ctx.currentTime);
-      osc.connect(master);
-      master.gain.setValueAtTime(0.1, ctx.currentTime);
-      osc.start();
-      nodes.sources = [osc];
+      // Phase 4: The Choir
+      const root = 110; 
+      const freqs = [root, root * 1.25, root * 1.5]; // Chord
+      const sources: any[] = [];
+      
+      freqs.forEach(f => {
+          const o = ctx.createOscillator();
+          o.type = 'triangle';
+          o.frequency.value = f;
+          o.connect(master);
+          o.start();
+          sources.push(o);
+      });
+      
+      // Vibrato
+      const lfo = ctx.createOscillator();
+      lfo.frequency.value = 3; // 3hz
+      const lfoGain = ctx.createGain();
+      lfoGain.gain.value = 2;
+      lfo.connect(lfoGain);
+      sources.forEach(s => lfoGain.connect(s.frequency));
+      lfo.start();
+
+      nodes.sources = sources;
+      nodes.lfo = lfo;
+      master.gain.setValueAtTime(0, ctx.currentTime);
+      master.gain.linearRampToValueAtTime(0.4, ctx.currentTime + 1);
     }
 
     activeNodes.current = nodes;
@@ -425,26 +465,28 @@ const useAudioEngine = () => {
         if(nodes.gain) nodes.gain.gain.setTargetAtTime(0.4 + (progress * 0.002), t, 0.1);
 
     } else if (type === 'void_enter') {
-        // VOID GROWTH (0-100)
-        // Filter opens from 50Hz to 5000Hz (Massive expansion)
+        // VOID GROWTH
         const p = typeof progress === 'number' ? progress : 0;
+        // Filter opens dramatically from 50Hz -> 5000Hz
         if (nodes.filter) nodes.filter.frequency.setTargetAtTime(50 + (p * 50), t, 0.1);
-        // Volume swells
-        if (nodes.gain) nodes.gain.gain.setTargetAtTime(0.6 + (p * 0.004), t, 0.1);
+        // Gain keeps increasing
+        if (nodes.gain) nodes.gain.gain.setTargetAtTime(0.1 + (p * 0.008), t, 0.1);
 
     } else if (type === 'breath') {
+        // Breath Modulation (Pink Noise Filter + Pan)
         if(nodes.filter && nodes.panner) {
             if (progress === 'INHALE') {
-                // Pan L -> R, Filter Open
-                nodes.filter.frequency.linearRampToValueAtTime(800, t + 4); 
-                nodes.panner.pan.linearRampToValueAtTime(0.8, t + 4); 
+                // Inhale: Open filter, Pan Left->Right
+                nodes.filter.frequency.setTargetAtTime(600, t, 2); 
+                nodes.panner.pan.linearRampToValueAtTime(0.6, t + 4);
             } else if (progress === 'HOLD') {
-                nodes.filter.frequency.setTargetAtTime(800, t, 0.1);
+                // Hold: Static
+                nodes.filter.frequency.setTargetAtTime(600, t, 0.1);
                 nodes.panner.pan.setTargetAtTime(0, t, 0.1);
             } else if (progress === 'EXHALE') {
-                // Pan R -> L, Filter Close
-                nodes.filter.frequency.linearRampToValueAtTime(100, t + 4);
-                nodes.panner.pan.linearRampToValueAtTime(-0.8, t + 4);
+                // Exhale: Close filter, Pan Right->Left
+                nodes.filter.frequency.setTargetAtTime(100, t, 2);
+                nodes.panner.pan.linearRampToValueAtTime(-0.6, t + 4);
             }
         }
     } else if (type === 'etching') {
@@ -458,16 +500,17 @@ const useAudioEngine = () => {
   const stopLoop = useCallback(() => {
     if (activeNodes.current && activeNodes.current.gain && ctxRef.current) {
       const t = ctxRef.current.currentTime;
+      // Fade out cleanly
       activeNodes.current.gain.gain.cancelScheduledValues(t);
       activeNodes.current.gain.gain.setValueAtTime(activeNodes.current.gain.gain.value, t);
-      activeNodes.current.gain.gain.linearRampToValueAtTime(0, t + 0.2); // Quicker fade out
+      activeNodes.current.gain.gain.linearRampToValueAtTime(0, t + 0.3);
       
       const oldNodes = activeNodes.current;
       setTimeout(() => {
           if (oldNodes.sources) oldNodes.sources.forEach((s: any) => s.stop());
           if (oldNodes.lfo) oldNodes.lfo.stop();
           activeNodes.current = null;
-      }, 250);
+      }, 350);
     }
   }, []);
 
@@ -477,34 +520,34 @@ const useAudioEngine = () => {
       const ctx = ctxRef.current;
       const t = ctx.currentTime;
 
-      // Simplified Boom to prevent crash
+      // Optimized Boom (No heavy computation)
       const subOsc = ctx.createOscillator();
       const subGain = ctx.createGain();
       subOsc.type = 'sine';
-      subOsc.frequency.setValueAtTime(150, t);
-      subOsc.frequency.exponentialRampToValueAtTime(30, t + 0.8); 
+      subOsc.frequency.setValueAtTime(120, t);
+      subOsc.frequency.exponentialRampToValueAtTime(30, t + 1.0); 
       subGain.gain.setValueAtTime(1.0, t);
-      subGain.gain.exponentialRampToValueAtTime(0.01, t + 2.5); 
+      subGain.gain.exponentialRampToValueAtTime(0.01, t + 3.0); 
       subOsc.connect(subGain);
       subGain.connect(masterGainRef.current);
       subOsc.start(t);
-      subOsc.stop(t + 2.6);
+      subOsc.stop(t + 3.1);
 
-      // Simple Shimmer
+      // High Shimmer (Triangle wave sweep)
       const shimmer = ctx.createOscillator();
       const shimmerGain = ctx.createGain();
       shimmer.type = 'triangle';
       shimmer.frequency.setValueAtTime(800, t);
-      shimmer.frequency.exponentialRampToValueAtTime(5000, t + 1.5);
+      shimmer.frequency.linearRampToValueAtTime(4000, t + 2.0);
       shimmerGain.gain.setValueAtTime(0.2, t);
-      shimmerGain.gain.exponentialRampToValueAtTime(0.01, t + 1.5);
+      shimmerGain.gain.linearRampToValueAtTime(0, t + 2.0);
       
       shimmer.connect(shimmerGain);
       if (reverbNodeRef.current) shimmerGain.connect(reverbNodeRef.current);
       else shimmerGain.connect(masterGainRef.current);
       
       shimmer.start(t);
-      shimmer.stop(t + 1.6);
+      shimmer.stop(t + 2.1);
 
   }, [initAudio]);
 
@@ -580,7 +623,6 @@ const GlitchOverlay = ({ active }: { active: boolean }) => {
 // --- SUB-COMPONENTS ---
 
 // 1. CONSECRATION & VOID ENTRY
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const Consecration = ({ setPhase, archetype, audio }: any) => {
   const [progress, setProgress] = useState(0);
   const [voidProgress, setVoidProgress] = useState(0);
@@ -589,7 +631,6 @@ const Consecration = ({ setPhase, archetype, audio }: any) => {
   const [isHolding, setIsHolding] = useState(false);
   const [scalePulse, setScalePulse] = useState(1);
 
-  // Initialize Ambient Drone on first interaction
   const handleInteraction = useCallback((e: React.SyntheticEvent) => {
       e.preventDefault();
       audio.initAudio(); 
@@ -617,8 +658,6 @@ const Consecration = ({ setPhase, archetype, audio }: any) => {
     
     if (isHolding) {
       interval = setInterval(() => {
-        
-        // --- STAGE 1: CONSECRATE (Shrink to Dot) ---
         if (stage === 'consecrate') {
             setProgress(prev => {
                 const next = prev + 0.5; 
@@ -633,8 +672,6 @@ const Consecration = ({ setPhase, archetype, audio }: any) => {
                 }
                 return next;
             });
-
-        // --- STAGE 2: GROWING (13 Seconds to Full Size) ---
         } else if (stage === 'growing') {
             setVoidProgress(prev => {
                 const next = prev + 0.153; 
@@ -647,8 +684,6 @@ const Consecration = ({ setPhase, archetype, audio }: any) => {
                 }
                 return next;
             });
-
-        // --- STAGE 3: PULSING (7 Seconds Heartbeat) ---
         } else if (stage === 'pulsing') {
             setPulseTime(prev => {
                 const next = prev + 20; 
@@ -674,7 +709,6 @@ const Consecration = ({ setPhase, archetype, audio }: any) => {
             });
         }
       }, 20);
-
     } else {
         if (stage !== 'consecrate' || progress > 0) {
              setStage('consecrate');
@@ -698,7 +732,6 @@ const Consecration = ({ setPhase, archetype, audio }: any) => {
 
   return (
     <div className="flex flex-col items-center justify-center h-full space-y-8 animate-in fade-in duration-1000 relative z-10 select-none">
-      
       <div className="relative w-80 h-80 flex items-center justify-center">
         {stage === 'consecrate' ? (
             <>
@@ -958,6 +991,7 @@ const Etching = ({ setPhase, archetype, audio, aiData, intention }: any) => {
   }, [isHolding, hasFinished, progress, audio, duration]);
 
   const sigilPath = useMemo(() => generateSigilPath(intention), [intention]);
+  const scatteredLetters = useMemo(() => getScatteredChars(intention), [intention]);
 
   return (
     <div className="flex flex-col items-center justify-center h-full space-y-8 relative z-10">
@@ -978,6 +1012,22 @@ const Etching = ({ setPhase, archetype, audio, aiData, intention }: any) => {
             style={{ filter: 'drop-shadow(0 0 5px currentColor)' }}
           />
         </svg>
+        
+        {/* SCATTERED INTENTION LETTERS */}
+        <div className="absolute inset-0 pointer-events-none">
+            {scatteredLetters.map((char, i) => (
+                <div key={i} className="absolute text-xs font-mono opacity-50"
+                     style={{
+                         color: currentColor,
+                         top: `${50 + Math.sin(i * 1.5) * 40}%`,
+                         left: `${50 + Math.cos(i * 1.5) * 40}%`,
+                         transform: `rotate(${i * 30}deg)`
+                     }}>
+                    {char}
+                </div>
+            ))}
+        </div>
+
         <div className="absolute inset-0 border-2 border-dashed border-white/20 rounded-full"
              style={{ animation: `spin-slow ${15 / rotationSpeed}s linear infinite` }} />
       </div>
