@@ -437,15 +437,15 @@ const useAudioEngine = () => {
             if(nodes.extraGains) nodes.extraGains[0].gain.linearRampToValueAtTime(0.15, t + 1); 
 
         } else if (progress === 'EXHALE') {
-            // FIX: Start high and sweep low for "release"
+            // FIX: Tamed Sweep (600Hz -> 50Hz) and Lower Volume (0.4)
             if(nodes.filter) {
                 nodes.filter.frequency.cancelScheduledValues(t);
-                nodes.filter.frequency.setValueAtTime(1800, t); // Jump high immediately
-                nodes.filter.frequency.exponentialRampToValueAtTime(100, t + 3.5); // Sweep down
+                nodes.filter.frequency.setValueAtTime(600, t); // Jump to mid-high
+                nodes.filter.frequency.exponentialRampToValueAtTime(50, t + 3.5); // Sweep down
             }
             if(nodes.gain) {
                 nodes.gain.gain.cancelScheduledValues(t);
-                nodes.gain.gain.setValueAtTime(0.7, t); // Boost volume at start
+                nodes.gain.gain.setValueAtTime(0.4, t); // Lower volume start
                 nodes.gain.gain.linearRampToValueAtTime(0, t + 4); // Fade out
             }
             if(nodes.extraGains) {
@@ -493,61 +493,35 @@ const useAudioEngine = () => {
           osc.connect(g); g.connect(masterGainRef.current);
           osc.start(); osc.stop(t + 0.1);
       } else if (type === 'boom') {
-          // === THE NEW "FRAZZLED" REALITY BREAK BOOM ===
-          
-          // 1. The Weight (Deep Impact)
-          const sub = ctx.createOscillator();
+          // RESTORED: Original Boom (Sine Sub + Triangle Shimmer)
+          // Optimized Boom (No heavy computation)
+          const subOsc = ctx.createOscillator();
           const subGain = ctx.createGain();
-          sub.type = 'sine';
-          sub.frequency.setValueAtTime(150, t);
-          sub.frequency.exponentialRampToValueAtTime(20, t + 3.0);
+          subOsc.type = 'sine';
+          subOsc.frequency.setValueAtTime(120, t);
+          subOsc.frequency.exponentialRampToValueAtTime(30, t + 1.0); 
           subGain.gain.setValueAtTime(1.0, t);
-          subGain.gain.exponentialRampToValueAtTime(0.001, t + 3.0);
-
-          // 2. The Reality Tear (Distorted Sawtooth)
-          const tear = ctx.createOscillator();
-          const tearGain = ctx.createGain();
-          tear.type = 'sawtooth';
-          tear.frequency.setValueAtTime(200, t);
-          // Sweep up wildly then crash down
-          tear.frequency.linearRampToValueAtTime(1000, t + 1.5); 
-          tear.frequency.exponentialRampToValueAtTime(50, t + 3.0);
-          tearGain.gain.setValueAtTime(0.5, t);
-          tearGain.gain.linearRampToValueAtTime(0, t + 3.0);
-
-          // 3. The Event Horizon (Dissipating Noise)
-          const bufferSize = ctx.sampleRate * 2;
-          const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-          const data = buffer.getChannelData(0);
-          for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
-          const noise = ctx.createBufferSource();
-          noise.buffer = buffer;
-          
-          // Highpass sweep to simulate disappearing into the void
-          const filter = ctx.createBiquadFilter();
-          filter.type = 'highpass';
-          filter.frequency.setValueAtTime(100, t);
-          filter.frequency.exponentialRampToValueAtTime(15000, t + 3.5); 
-          
-          const noiseGain = ctx.createGain();
-          noiseGain.gain.setValueAtTime(0.8, t);
-          noiseGain.gain.exponentialRampToValueAtTime(0.001, t + 3.0);
-
-          // Connect all layers
-          sub.connect(subGain);
+          subGain.gain.exponentialRampToValueAtTime(0.01, t + 3.0); 
+          subOsc.connect(subGain);
           subGain.connect(masterGainRef.current);
-          
-          tear.connect(tearGain);
-          tearGain.connect(masterGainRef.current);
-          
-          noise.connect(filter);
-          filter.connect(noiseGain);
-          noiseGain.connect(masterGainRef.current);
+          subOsc.start(t);
+          subOsc.stop(t + 3.1);
 
-          // Start and Auto-Stop all nodes
-          sub.start(t); sub.stop(t + 3.5);
-          tear.start(t); tear.stop(t + 3.5);
-          noise.start(t); noise.stop(t + 3.5);
+          // High Shimmer (Triangle wave sweep)
+          const shimmer = ctx.createOscillator();
+          const shimmerGain = ctx.createGain();
+          shimmer.type = 'triangle';
+          shimmer.frequency.setValueAtTime(800, t);
+          shimmer.frequency.linearRampToValueAtTime(4000, t + 2.0);
+          shimmerGain.gain.setValueAtTime(0.2, t);
+          shimmerGain.gain.linearRampToValueAtTime(0, t + 2.0);
+          
+          shimmer.connect(shimmerGain);
+          if (reverbNodeRef.current) shimmerGain.connect(reverbNodeRef.current);
+          else shimmerGain.connect(masterGainRef.current);
+          
+          shimmer.start(t);
+          shimmer.stop(t + 2.1);
 
       } else if (type === 'spark') {
           const osc = ctx.createOscillator();
