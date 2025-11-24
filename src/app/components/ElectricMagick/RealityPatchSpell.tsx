@@ -1,4 +1,4 @@
-// --- START OF FILE src/app/components/ElectricMagick/RealityPatchSpell.tsx ---
+// --- START  OF FILE src/app/components/ElectricMagick/RealityPatchSpell.tsx ---
 /// <reference lib="dom" />
 "use client";
 
