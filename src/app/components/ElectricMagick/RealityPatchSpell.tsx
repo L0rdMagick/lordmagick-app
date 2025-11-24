@@ -81,6 +81,91 @@ const getScatteredChars = (text: string) => {
     return unique;
 };
 
+// --- PARTICLE SYSTEM HOOK ---
+const useParticleSystem = () => {
+  // FIX: Explicit typing for canvas ref
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const particlesRef = useRef<any[]>([]);
+
+  const spawnExplosion = useCallback((x: number, y: number, color = '#a855f7', count = 30) => {
+    if (!canvasRef.current) return;
+    for (let i = 0; i < count; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = Math.random() * 5 + 2;
+      particlesRef.current.push({
+        x, y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        life: 1.0,
+        color,
+        size: Math.random() * 3 + 1
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    // FIX: Access window safely via globalThis
+    const globalAny = globalThis as any;
+
+    const resize = () => {
+      if (typeof globalAny.window !== 'undefined') {
+        canvas.width = globalAny.window.innerWidth;
+        canvas.height = globalAny.window.innerHeight;
+      }
+    };
+    
+    if (typeof globalAny.window !== 'undefined') {
+      globalAny.window.addEventListener('resize', resize);
+      resize();
+    }
+
+    let animationFrame: number;
+    const animate = () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // Update & Draw Particles
+        for (let i = particlesRef.current.length - 1; i >= 0; i--) {
+            const p = particlesRef.current[i];
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += 0.05; // Gravity
+            p.vx *= 0.95; // Friction
+            p.life -= 0.02;
+            
+            if (p.life <= 0) {
+                particlesRef.current.splice(i, 1);
+                continue;
+            }
+
+            ctx.globalAlpha = p.life;
+            ctx.fillStyle = p.color;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 1.0;
+        }
+      
+        if (typeof globalAny.window !== 'undefined') {
+            animationFrame = globalAny.window.requestAnimationFrame(animate);
+        }
+    };
+    animate();
+    return () => {
+      if (typeof globalAny.window !== 'undefined') {
+        globalAny.window.removeEventListener('resize', resize);
+        globalAny.window.cancelAnimationFrame(animationFrame);
+      }
+    };
+  }, []);
+
+  return { canvasRef, spawnExplosion };
+};
+
 // --- ADVANCED AUDIO ENGINE ---
 
 const useAudioEngine = () => {
@@ -393,7 +478,7 @@ const useAudioEngine = () => {
         loopMaster.gain.linearRampToValueAtTime(0.4, t + 0.1);
 
     } else if (type === 'chant') {
-        // THE FIX: Cinematic Choral Drone (Triad)
+        // Cinematic Choral Drone (Triad)
         const rootFreq = 130.81; // C3
         const freqs = [rootFreq, rootFreq * 1.25, rootFreq * 1.5]; // Major triad
         const sources: any[] = [];
@@ -423,14 +508,18 @@ const useAudioEngine = () => {
         loopMaster.gain.linearRampToValueAtTime(0.3, t+1);
 
     } else if (type === 'charge') {
-        // THE FIX: Aggressive "Reality Tearing" Sawtooth with Agitation
-        const osc = ctx.createOscillator();
-        osc.type = 'sawtooth'; // Edgy
-        osc.frequency.value = 60; // Deep start
+        // Aggressive "Reality Tearing" Sawtooth with Agitation
+        const osc1 = ctx.createOscillator();
+        osc1.type = 'sawtooth'; // Edgy
+        osc1.frequency.value = 60; // Deep start
+
+        const osc2 = ctx.createOscillator();
+        osc2.type = 'sawtooth';
+        osc2.frequency.value = 62; // Detuned for phase grit
 
         const filter = ctx.createBiquadFilter();
         filter.type = 'lowpass';
-        filter.frequency.value = 200; // Start closed
+        filter.frequency.value = 400; // Start slightly open
         filter.Q.value = 10; // Resonant scream
 
         // LFO for "Agitation" (Vibrato)
@@ -441,21 +530,24 @@ const useAudioEngine = () => {
         lfoGain.gain.value = 20; 
         
         lfo.connect(lfoGain);
-        lfoGain.connect(osc.frequency);
+        lfoGain.connect(osc1.frequency);
+        lfoGain.connect(osc2.frequency);
 
-        osc.connect(filter);
+        osc1.connect(filter);
+        osc2.connect(filter);
         filter.connect(loopMaster);
         
-        osc.start();
+        osc1.start();
+        osc2.start();
         lfo.start();
 
-        nodes.sources = [osc];
-        nodes.lfo = lfo; // Store to stop later
-        nodes.lfoGain = lfoGain; // Store to modulate depth
+        nodes.sources = [osc1, osc2];
+        nodes.lfo = lfo; 
+        nodes.lfoGain = lfoGain; 
         nodes.filter = filter;
 
         loopMaster.gain.setValueAtTime(0, t);
-        loopMaster.gain.linearRampToValueAtTime(0.3, t+0.5);
+        loopMaster.gain.linearRampToValueAtTime(0.6, t+0.5); // Louder start
     }
 
     activeNodes.current = nodes;
@@ -494,7 +586,7 @@ const useAudioEngine = () => {
         if (progress === 'INHALE') {
             if(nodes.filter) {
                 nodes.filter.frequency.cancelScheduledValues(t);
-                nodes.filter.frequency.linearRampToValueAtTime(1200, t + 4); // Open up
+                nodes.filter.frequency.linearRampToValueAtTime(1500, t + 4); // Open up high
             }
             if(nodes.gain) {
                 nodes.gain.gain.cancelScheduledValues(t);
@@ -502,16 +594,17 @@ const useAudioEngine = () => {
             }
             if(nodes.extraGains) {
                 nodes.extraGains[0].gain.cancelScheduledValues(t);
-                nodes.extraGains[0].gain.linearRampToValueAtTime(0, t + 0.5); 
+                nodes.extraGains[0].gain.linearRampToValueAtTime(0.3, t + 4); // Add tone
             }
 
         } else if (progress === 'HOLD') {
-            if(nodes.filter) nodes.filter.frequency.setTargetAtTime(200, t, 0.5); 
-            if(nodes.gain) nodes.gain.gain.setTargetAtTime(0.4, t, 0.1); 
-            if(nodes.extraGains) nodes.extraGains[0].gain.linearRampToValueAtTime(0.15, t + 1); 
+            // Freeze/Maintain
+            if(nodes.filter) nodes.filter.frequency.setTargetAtTime(1500, t, 0.1); 
+            if(nodes.gain) nodes.gain.gain.setTargetAtTime(0.8, t, 0.1); 
+            if(nodes.extraGains) nodes.extraGains[0].gain.setTargetAtTime(0.3, t, 0.1);
 
         } else if (progress === 'EXHALE') {
-            // FIX: Tamed Sweep (600Hz -> 50Hz) and Lower Volume (0.4)
+            // FIX: Lower pitch sweep (600 -> 50 Hz) and lower volume (0.4)
             if(nodes.filter) {
                 nodes.filter.frequency.cancelScheduledValues(t);
                 nodes.filter.frequency.setValueAtTime(600, t); // Jump to mid-high
@@ -523,7 +616,7 @@ const useAudioEngine = () => {
                 nodes.gain.gain.linearRampToValueAtTime(0, t + 4); // Fade out
             }
             if(nodes.extraGains) {
-                nodes.extraGains[0].gain.linearRampToValueAtTime(0, t + 2);
+                nodes.extraGains[0].gain.linearRampToValueAtTime(0, t + 2); // Fade tone out
             }
         }
 
@@ -537,25 +630,29 @@ const useAudioEngine = () => {
             nodes.gain.gain.setTargetAtTime(0.3 + (Math.random() * 0.2), t, 0.05);
         }
     } else if (type === 'charge') {
-        // THE FIX: Ramping Tension and Agitation
         const p = typeof progress === 'number' ? progress : 0;
         const normalized = p / 100;
         
         if(nodes.sources) {
-            // Pitch Rise: 60Hz -> 400Hz (Screaming tension)
-            nodes.sources[0].frequency.setTargetAtTime(60 + (normalized * 340), t, 0.1);
+            // Pitch: 60 -> 800 Hz (Dramatic Sweep)
+            nodes.sources[0].frequency.setTargetAtTime(60 + (normalized * 740), t, 0.1);
+            nodes.sources[1].frequency.setTargetAtTime(62 + (normalized * 740), t, 0.1);
         }
         if(nodes.filter) {
-            // Filter Open: 200Hz -> 8000Hz (Reveal the grit)
-            nodes.filter.frequency.setTargetAtTime(200 + (normalized * 7800), t, 0.1);
+            // Filter: Open fully to 15000Hz to let all grit through
+            nodes.filter.frequency.setTargetAtTime(400 + (normalized * 14600), t, 0.1);
         }
         if(nodes.lfo) {
-            // LFO Speed: 10Hz -> 50Hz (Panic)
-            nodes.lfo.frequency.setTargetAtTime(10 + (normalized * 40), t, 0.1);
+            // Agitation Speed: 5Hz -> 60Hz (Shaking violently)
+            nodes.lfo.frequency.setTargetAtTime(5 + (normalized * 55), t, 0.1);
         }
         if(nodes.lfoGain) {
-            // LFO Depth: More wobble
-            nodes.lfoGain.gain.setTargetAtTime(20 + (normalized * 100), t, 0.1);
+            // Agitation Depth increases
+            nodes.lfoGain.gain.setTargetAtTime(10 + (normalized * 100), t, 0.1);
+        }
+        if(nodes.gain) {
+            // Volume Max at end
+            nodes.gain.gain.setTargetAtTime(0.6 + (normalized * 0.4), t, 0.1);
         }
     }
   }, []);
@@ -586,7 +683,6 @@ const useAudioEngine = () => {
           osc.start(); osc.stop(t + 0.1);
       } else if (type === 'boom') {
           // RESTORED: Original Boom (Sine Sub + Triangle Shimmer)
-          // Optimized Boom (No heavy computation)
           const subOsc = ctx.createOscillator();
           const subGain = ctx.createGain();
           subOsc.type = 'sine';
@@ -597,9 +693,8 @@ const useAudioEngine = () => {
           subOsc.connect(subGain);
           subGain.connect(masterGainRef.current);
           subOsc.start(t);
-          subOsc.stop(t + 3.1);
+          subOsc.stop(t + 3.1); // Strict stop
 
-          // High Shimmer (Triangle wave sweep)
           const shimmer = ctx.createOscillator();
           const shimmerGain = ctx.createGain();
           shimmer.type = 'triangle';
@@ -613,7 +708,7 @@ const useAudioEngine = () => {
           else shimmerGain.connect(masterGainRef.current);
           
           shimmer.start(t);
-          shimmer.stop(t + 2.1);
+          shimmer.stop(t + 2.1); // Strict stop
 
       } else if (type === 'spark') {
           const osc = ctx.createOscillator();
@@ -630,23 +725,18 @@ const useAudioEngine = () => {
   return { initAudio, startLoop, updateLoop, stopLoop, playOneShot };
 };
 
-// --- CONSTANTS ---
-// (No duplicates here)
-
 // --- SUB-COMPONENTS ---
 
 // 1. CONSECRATION & VOID ENTRY
-const Consecration = ({ setPhase, archetype, audio }: any) => {
+const Consecration = ({ setPhase, archetype, audio, spawnExplosion }: any) => {
   const [progress, setProgress] = useState(0);
   const [voidProgress, setVoidProgress] = useState(0);
   const [stage, setStage] = useState<'consecrate' | 'growing'>('consecrate');
   const [isHolding, setIsHolding] = useState(false);
 
-  // This effect manages audio transitions based on stage
   useEffect(() => {
     if (isHolding) {
        if (stage === 'consecrate') audio.startLoop('drone');
-       // FIX: Automatically start next sound when stage changes without re-click
        if (stage === 'growing') audio.startLoop('void_enter');
     } else {
        audio.stopLoop();
@@ -657,13 +747,19 @@ const Consecration = ({ setPhase, archetype, audio }: any) => {
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isHolding) {
+      // Sparks on holding
+      if (Math.random() > 0.8) {
+          // Access window safely
+          const win = (globalThis as any).window;
+          if (win) spawnExplosion(win.innerWidth / 2, win.innerHeight / 2, '#06b6d4', 5);
+      }
+
       interval = setInterval(() => {
         if (stage === 'consecrate') {
             setProgress(prev => {
                 const next = prev + 0.8; 
                 audio.updateLoop(next, 'drone');
                 if (next >= 100) {
-                    // FIX: Just change stage, useEffect handles audio switch
                     setStage('growing');
                     return 100;
                 }
@@ -685,7 +781,6 @@ const Consecration = ({ setPhase, archetype, audio }: any) => {
         }
       }, 20);
     } else {
-        // Reset on release if not finished
         if (stage === 'consecrate' && progress > 0) {
             setProgress(0);
         }
@@ -694,7 +789,7 @@ const Consecration = ({ setPhase, archetype, audio }: any) => {
         }
     }
     return () => clearInterval(interval);
-  }, [isHolding, stage, setPhase, audio, progress]);
+  }, [isHolding, stage, setPhase, audio, progress, spawnExplosion]);
 
   const ArchetypeIcon = archetype.icon;
   const growSize = 10 + (voidProgress / 100) * 300; 
@@ -713,11 +808,19 @@ const Consecration = ({ setPhase, archetype, audio }: any) => {
             </>
         ) : (
             <div className="absolute inset-0 flex items-center justify-center">
-                <div className="bg-black rounded-full shadow-[0_0_100px_rgba(0,0,0,1)] z-30 transition-all duration-75 border border-gray-900" 
-                     style={{ width: `${growSize}px`, height: `${growSize}px` }}
-                />
-                <div className="absolute rounded-full border-4 border-purple-900/50 animate-ping"
-                     style={{ width: `${growSize}px`, height: `${growSize}px`, animationDuration: '1s' }} />
+                {/* Glowing Event Horizon Aura */}
+                <div className="absolute -inset-5 rounded-full bg-linear-to-tr from-purple-600 via-cyan-500 to-purple-600 blur-md opacity-60 animate-spin-slow" />
+                
+                {/* The Black Hole */}
+                <div className="bg-black rounded-full z-30 transition-all duration-75 border border-gray-900 relative" 
+                     style={{ width: `${growSize}px`, height: `${growSize}px`, boxShadow: '0 0 30px #000' }}
+                >
+                    <div className="absolute inset-0 rounded-full bg-black z-20" />
+                </div>
+                
+                {/* Inner Pulse */}
+                <div className="absolute rounded-full border-2 border-white/30 animate-ping z-40"
+                     style={{ width: `${growSize}px`, height: `${growSize}px`, animationDuration: '1.5s' }} />
             </div>
         )}
       </div>
@@ -806,8 +909,10 @@ const Grounding = ({ setPhase, audio }: any) => {
   return (
     <div className="flex flex-col items-center justify-center h-full space-y-12 relative z-10">
       <div className="relative">
-        <div className="w-32 h-32 bg-cyan-900/20 border border-cyan-500/30 rounded-full blur-xl absolute inset-0" style={guideStyle} />
-        <div className="w-32 h-32 border-2 border-cyan-400 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(34,211,238,0.2)]" style={guideStyle}>
+        <div className="w-32 h-32 bg-cyan-900/20 border border-cyan-500/30 rounded-full blur-xl absolute inset-0 transition-all duration-4000" 
+             style={guideStyle} />
+        <div className="w-32 h-32 border-2 border-cyan-400 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(34,211,238,0.2)] transition-all duration-4000" 
+             style={guideStyle}>
           <div className="w-2 h-2 bg-white rounded-full" />
         </div>
       </div>
@@ -834,7 +939,7 @@ const Inscription = ({ setIntention, setArchetype, setPhase, archetype, audio, s
   }, [isLoading, audio]);
 
   const handleType = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      // THE FIX: Explicit casting to any to prevent TypeScript error regarding 'value' property
+      // Explicit casting
       setText((e.target as any).value.toUpperCase());
       audio.playOneShot('type'); 
   };
@@ -852,7 +957,7 @@ const Inscription = ({ setIntention, setArchetype, setPhase, archetype, audio, s
           const result = await generateElectricEnsorcellment(text); 
           const [poetry, latin] = result.split('|');
           
-          // THE FIX: Smart Latin Selection
+          // Smart Latin Selection
           const latinPhrase = LATIN_MANTRA_DB[arch.theme as keyof typeof LATIN_MANTRA_DB] 
                               ? LATIN_MANTRA_DB[arch.theme as keyof typeof LATIN_MANTRA_DB][Math.floor(Math.random() * 3)] 
                               : "FIAT VOLUNTAS TUA";
@@ -930,7 +1035,7 @@ const Agreement = ({ setPhase, audio }: any) => {
 }
 
 // 5. ETCHING
-const Etching = ({ setPhase, archetype, audio, aiData, intention }: any) => {
+const Etching = ({ setPhase, archetype, audio, aiData, intention, spawnExplosion }: any) => {
   const [progress, setProgress] = useState(0);
   const [isHolding, setIsHolding] = useState(false);
   const [hasFinished, setHasFinished] = useState(false);
@@ -965,20 +1070,25 @@ const Etching = ({ setPhase, archetype, audio, aiData, intention }: any) => {
               });
               audio.updateLoop(progress, 'etching');
               
+              // Spawn Visual Sparks
               if (Math.random() > 0.5) {
-                  const newSpark = {
-                      id: Date.now() + Math.random(),
-                      x: 50 + (Math.random() * 60 - 30),
-                      y: 50 + (Math.random() * 60 - 30)
-                  };
-                  setSparks(prev => [...prev.slice(-10), newSpark]);
+                  // Access window safely
+                  const win = (globalThis as any).window;
+                  if(win) {
+                      // Random position around center
+                      const cx = win.innerWidth / 2;
+                      const cy = win.innerHeight / 2;
+                      const ox = (Math.random() - 0.5) * 200; 
+                      const oy = (Math.random() - 0.5) * 200;
+                      spawnExplosion(cx + ox, cy + oy, currentColor, 3);
+                  }
                   if (Math.random() > 0.8) audio.playOneShot('spark');
               }
 
           }, 20);
       }
       return () => clearInterval(interval);
-  }, [isHolding, hasFinished, progress, audio, duration]);
+  }, [isHolding, hasFinished, progress, audio, duration, currentColor, spawnExplosion]);
 
   const sigilPath = useMemo(() => generateSigilPath(intention), [intention]);
   const scatteredLetters = useMemo(() => getScatteredChars(intention), [intention]);
@@ -1120,7 +1230,7 @@ const VocalChant = ({ setPhase, archetype, audio, aiData }: any) => {
 };
 
 // 7. CHARGE & CAST
-const ChargeAndCast = ({ setPhase, setGlitchActive, archetype, audio }: any) => {
+const ChargeAndCast = ({ setPhase, setGlitchActive, archetype, audio, spawnExplosion }: any) => {
    const [charge, setCharge] = useState(0);
    const [shaking, setShaking] = useState(false);
 
@@ -1136,6 +1246,13 @@ const ChargeAndCast = ({ setPhase, setGlitchActive, archetype, audio }: any) => 
    useEffect(() => {
      let interval: NodeJS.Timeout;
      if (shaking && charge < 100) {
+       
+       // Sparks on Charge
+       if (Math.random() > 0.7) {
+           const win = (globalThis as any).window;
+           if(win) spawnExplosion(win.innerWidth/2, win.innerHeight/2, '#ffffff', 5);
+       }
+
        interval = setInterval(() => {
          setCharge(c => {
             const next = c >= 100 ? 100 : c + 0.4;
@@ -1149,7 +1266,7 @@ const ChargeAndCast = ({ setPhase, setGlitchActive, archetype, audio }: any) => 
        }, 30);
      }
      return () => clearInterval(interval);
-   }, [shaking, charge, audio]);
+   }, [shaking, charge, audio, spawnExplosion]);
 
    useEffect(() => {
      if (charge >= 100) {
@@ -1232,6 +1349,7 @@ export default function RealityPatchSpell({ onExit }: { onExit: () => void }) {
   const [aiData, setAiData] = useState({ poetry: '', latin: '' });
   
   const audio = useAudioEngine();
+  const { spawnExplosion } = useParticleSystem(); // Instantiate particle system here
 
   const getWarpIntensity = () => {
       switch(phase) {
@@ -1299,13 +1417,13 @@ export default function RealityPatchSpell({ onExit }: { onExit: () => void }) {
         </div>
         
         <main className="w-full h-full relative z-10">
-            {phase === 'CONSECRATE' && <Consecration setPhase={setPhase} archetype={archetype} audio={audio} />}
+            {phase === 'CONSECRATE' && <Consecration setPhase={setPhase} archetype={archetype} audio={audio} spawnExplosion={spawnExplosion} />}
             {phase === 'GROUNDING' && <Grounding setPhase={setPhase} audio={audio} />}
             {phase === 'INTENTION' && <Inscription setIntention={setIntention} setArchetype={setArchetype} setPhase={setPhase} archetype={archetype} audio={audio} setAiData={setAiData} />}
             {phase === 'AGREEMENT' && <Agreement setPhase={setPhase} audio={audio} />}
-            {phase === 'ETCHING' && <Etching setPhase={setPhase} archetype={archetype} audio={audio} aiData={aiData} intention={intention} />}
+            {phase === 'ETCHING' && <Etching setPhase={setPhase} archetype={archetype} audio={audio} aiData={aiData} intention={intention} spawnExplosion={spawnExplosion} />}
             {phase === 'CHANT' && <VocalChant setPhase={setPhase} archetype={archetype} audio={audio} aiData={aiData} />}
-            {phase === 'CHARGE' && <ChargeAndCast setPhase={setPhase} setGlitchActive={setGlitchActive} archetype={archetype} audio={audio} />}
+            {phase === 'CHARGE' && <ChargeAndCast setPhase={setPhase} setGlitchActive={setGlitchActive} archetype={archetype} audio={audio} spawnExplosion={spawnExplosion} />}
             {phase === 'CAST' && <FinalCast intention={intention} archetype={archetype} audio={audio} onExit={onExit} />}
         </main>
       </div>
