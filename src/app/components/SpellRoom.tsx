@@ -4,7 +4,7 @@ import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 
-type Tradition = "Chaos Magick" | "Wicca Magick" | "Ceremonial Magick" | "Folk Magick" | "Hoodoo (Rootwork)" | "Electric Magick";
+type Tradition = "Chaos Magick" | "Wicca Magick" | "Ceremonial Magick" | "Folk Magick" | "Hoodoo (Rootwork)" | "Electric Magick" | "Love";
 
 interface TraditionInfo {
   name: Tradition;
@@ -50,14 +50,20 @@ const traditions: TraditionInfo[] = [
     positionClasses: "md:absolute md:bottom-[1%] md:right-[15%] lg:right-[22%]",
     widthClasses: "w-4/5 md:w-[26%] lg:w-[23%]",
   },
-  // 2. ADD THIS NEW ENTRY
   {
     name: "Electric Magick",
-    image: "/images/spell-room/electric-magick-button.png", // Ensure this image exists
+    image: "/images/spell-room/electric-magick-button.png", 
     isAvailable: true,
-    // Position: Centered at the bottom
     positionClasses: "md:absolute md:bottom-[5%] md:left-1/2 md:-translate-x-1/2",
     widthClasses: "w-4/5 md:w-[26%] lg:w-[22%]",
+  },
+  // NEW ENTRY: Love Spells
+  {
+    name: "Love",
+    image: "/images/spell-room/love-spells-app-page.png", 
+    isAvailable: true,
+    positionClasses: "md:absolute md:top-[1%] md:right-[5%] lg:right-[10%]", 
+    widthClasses: "w-4/5 md:w-[24%] lg:w-[20%]",
   },
 ];
 
@@ -121,7 +127,6 @@ const SpellRoom: React.FC = () => {
       </div>
     </div>
   );
-};
+}
 
 export default SpellRoom;
-// --- END OF FILE ---
