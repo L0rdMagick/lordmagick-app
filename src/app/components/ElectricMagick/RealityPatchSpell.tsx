@@ -83,9 +83,7 @@ const getScatteredChars = (text: string) => {
 
 // --- PARTICLE SYSTEM HOOK ---
 const useParticleSystem = () => {
-  // THE FIX: Use 'any' to avoid strict HTMLCanvasElement type issues
   const canvasRef = useRef<any>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const particlesRef = useRef<any[]>([]);
 
   const spawnExplosion = useCallback((x: number, y: number, color = '#a855f7', count = 30) => {
@@ -127,13 +125,12 @@ const useParticleSystem = () => {
     let animationFrame: number;
     const animate = () => {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        // Update & Draw Particles
         for (let i = particlesRef.current.length - 1; i >= 0; i--) {
             const p = particlesRef.current[i];
             p.x += p.vx;
             p.y += p.vy;
-            p.vy += 0.05; // Gravity
-            p.vx *= 0.95; // Friction
+            p.vy += 0.05;
+            p.vx *= 0.95;
             p.life -= 0.02;
             
             if (p.life <= 0) {
@@ -172,7 +169,6 @@ const useAudioEngine = () => {
   const masterGainRef = useRef<any>(null);
   const reverbNodeRef = useRef<any>(null);
   
-  // Store references to active nodes for the current loop
   const activeNodes = useRef<{
     sources?: any[];
     gain?: any;
@@ -258,7 +254,6 @@ const useAudioEngine = () => {
           const limiter = ctx.createDynamicsCompressor();
           limiter.threshold.value = -5;
           
-          // Reverb
           const reverb = ctx.createConvolver();
           reverb.buffer = createImpulseResponse(ctx);
           reverbNodeRef.current = reverb;
@@ -277,26 +272,18 @@ const useAudioEngine = () => {
     }
   }, []);
 
-  // --- STOP LOGIC WITH AGGRESSIVE CLEANUP ---
   const stopLoop = useCallback(() => {
     if (activeNodes.current && activeNodes.current.gain && ctxRef.current) {
-      const ctx = ctxRef.current;
-      const t = ctx.currentTime;
-      
-      // Capture the nodes we want to stop RIGHT NOW
+      const t = ctxRef.current.currentTime;
       const nodesToStop = activeNodes.current;
-      
-      // Clear the global ref immediately so new loops can start cleanly
       activeNodes.current = null;
 
-      // 1. Volume Fade
       try {
         nodesToStop.gain.gain.cancelScheduledValues(t);
         nodesToStop.gain.gain.setValueAtTime(nodesToStop.gain.gain.value, t);
         nodesToStop.gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
       } catch (e) { /**/ }
       
-      // 2. Cleanup after fade using the CAPTURED reference
       setTimeout(() => {
           if (nodesToStop.sources) nodesToStop.sources.forEach((s: any) => { try { s.stop(); s.disconnect(); } catch(e){} });
           if (nodesToStop.lfo) { try { nodesToStop.lfo.stop(); nodesToStop.lfo.disconnect(); } catch(e){} }
@@ -310,22 +297,17 @@ const useAudioEngine = () => {
     if (!ctxRef.current) initAudio();
     if (!ctxRef.current || !masterGainRef.current) return;
     
-    // Force stop any existing loop first
     stopLoop();
 
     const ctx = ctxRef.current;
     const t = ctx.currentTime;
-    
-    // Master for this loop
     const loopMaster = ctx.createGain();
     loopMaster.connect(masterGainRef.current);
     if(reverbNodeRef.current) loopMaster.connect(reverbNodeRef.current);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const nodes: any = { gain: loopMaster, type };
 
     if (type === 'drone') {
-        // RESTORED: Original Opening Sound (Saw/Square)
         const osc1 = ctx.createOscillator();
         const osc2 = ctx.createOscillator();
         const filter = ctx.createBiquadFilter();
@@ -352,7 +334,6 @@ const useAudioEngine = () => {
         loopMaster.gain.linearRampToValueAtTime(0.3, t + 0.2); 
 
     } else if (type === 'void_enter') {
-        // GROWING BLACK HOLE SOUND
         const osc1 = ctx.createOscillator();
         osc1.type = 'sawtooth';
         osc1.frequency.setValueAtTime(60, t); 
@@ -386,12 +367,11 @@ const useAudioEngine = () => {
         loopMaster.gain.linearRampToValueAtTime(0.6, t + 0.5);
 
     } else if (type === 'breath') {
-        // ENHANCED BREATH ENGINE
         const noise = createBrownNoise(ctx);
         const filter = ctx.createBiquadFilter();
         filter.type = 'lowpass';
         filter.frequency.value = 200;
-        filter.Q.value = 2; // Higher resonance for wind feeling
+        filter.Q.value = 2; 
 
         const droneOsc = ctx.createOscillator();
         droneOsc.type = 'sine';
@@ -477,9 +457,8 @@ const useAudioEngine = () => {
         loopMaster.gain.linearRampToValueAtTime(0.4, t + 0.1);
 
     } else if (type === 'chant') {
-        // Cinematic Choral Drone (Triad)
-        const rootFreq = 130.81; // C3
-        const freqs = [rootFreq, rootFreq * 1.25, rootFreq * 1.5]; // Major triad
+        const rootFreq = 130.81; 
+        const freqs = [rootFreq, rootFreq * 1.25, rootFreq * 1.5]; 
         const sources: any[] = [];
 
         freqs.forEach(f => {
@@ -491,9 +470,8 @@ const useAudioEngine = () => {
             sources.push(osc);
         });
 
-        // Add LFO for "breathing" amplitude modulation
         const lfo = ctx.createOscillator();
-        lfo.frequency.value = 0.2; // Slow swelling
+        lfo.frequency.value = 0.2; 
         const lfoGain = ctx.createGain();
         lfoGain.gain.value = 0.2;
         lfo.connect(lfoGain);
@@ -507,26 +485,24 @@ const useAudioEngine = () => {
         loopMaster.gain.linearRampToValueAtTime(0.3, t+1);
 
     } else if (type === 'charge') {
-        // Aggressive "Reality Tearing" Sawtooth with Agitation
         const osc1 = ctx.createOscillator();
-        osc1.type = 'sawtooth'; // Edgy
-        osc1.frequency.value = 60; // Deep start
+        osc1.type = 'sawtooth'; 
+        osc1.frequency.value = 60; 
 
         const osc2 = ctx.createOscillator();
         osc2.type = 'sawtooth';
-        osc2.frequency.value = 62; // Detuned for phase grit
+        osc2.frequency.value = 62; 
 
         const filter = ctx.createBiquadFilter();
         filter.type = 'lowpass';
-        filter.frequency.value = 400; // Start slightly open
-        filter.Q.value = 10; // Resonant scream
+        filter.frequency.value = 400; 
+        filter.Q.value = 8; 
 
-        // LFO for "Agitation" (Vibrato)
         const lfo = ctx.createOscillator();
-        lfo.type = 'square'; // Harsh modulation
-        lfo.frequency.value = 10; // Fast jitter
+        lfo.type = 'square'; 
+        lfo.frequency.value = 5; 
         const lfoGain = ctx.createGain();
-        lfoGain.gain.value = 20; 
+        lfoGain.gain.value = 10; 
         
         lfo.connect(lfoGain);
         lfoGain.connect(osc1.frequency);
@@ -546,13 +522,12 @@ const useAudioEngine = () => {
         nodes.filter = filter;
 
         loopMaster.gain.setValueAtTime(0, t);
-        loopMaster.gain.linearRampToValueAtTime(0.6, t+0.5); // Louder start
+        loopMaster.gain.linearRampToValueAtTime(0.6, t+0.5); 
     }
 
     activeNodes.current = nodes;
   }, [initAudio, stopLoop]);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updateLoop = useCallback((progress: any, type: string) => {
     if (!ctxRef.current || !activeNodes.current || activeNodes.current.type !== type) return;
     const ctx = ctxRef.current;
@@ -581,11 +556,10 @@ const useAudioEngine = () => {
         nodes.gain.gain.setTargetAtTime(0.2 + (normalized * 0.6), t, 0.1);
 
     } else if (type === 'breath') {
-        // ENHANCED BREATH LOGIC
         if (progress === 'INHALE') {
             if(nodes.filter) {
                 nodes.filter.frequency.cancelScheduledValues(t);
-                nodes.filter.frequency.linearRampToValueAtTime(1500, t + 4); // Open up high
+                nodes.filter.frequency.linearRampToValueAtTime(1500, t + 4); 
             }
             if(nodes.gain) {
                 nodes.gain.gain.cancelScheduledValues(t);
@@ -593,29 +567,27 @@ const useAudioEngine = () => {
             }
             if(nodes.extraGains) {
                 nodes.extraGains[0].gain.cancelScheduledValues(t);
-                nodes.extraGains[0].gain.linearRampToValueAtTime(0.3, t + 4); // Add tone
+                nodes.extraGains[0].gain.linearRampToValueAtTime(0.3, t + 4); 
             }
 
         } else if (progress === 'HOLD') {
-            // Freeze/Maintain
             if(nodes.filter) nodes.filter.frequency.setTargetAtTime(1500, t, 0.1); 
             if(nodes.gain) nodes.gain.gain.setTargetAtTime(0.8, t, 0.1); 
             if(nodes.extraGains) nodes.extraGains[0].gain.setTargetAtTime(0.3, t, 0.1);
 
         } else if (progress === 'EXHALE') {
-            // FIX: Lower pitch sweep (600 -> 50 Hz) and lower volume (0.4)
             if(nodes.filter) {
                 nodes.filter.frequency.cancelScheduledValues(t);
-                nodes.filter.frequency.setValueAtTime(600, t); // Jump to mid-high
-                nodes.filter.frequency.exponentialRampToValueAtTime(50, t + 3.5); // Sweep down
+                nodes.filter.frequency.setValueAtTime(600, t); 
+                nodes.filter.frequency.exponentialRampToValueAtTime(50, t + 3.5); 
             }
             if(nodes.gain) {
                 nodes.gain.gain.cancelScheduledValues(t);
-                nodes.gain.gain.setValueAtTime(0.4, t); // Lower volume start
-                nodes.gain.gain.linearRampToValueAtTime(0, t + 4); // Fade out
+                nodes.gain.gain.setValueAtTime(0.4, t); 
+                nodes.gain.gain.linearRampToValueAtTime(0, t + 4); 
             }
             if(nodes.extraGains) {
-                nodes.extraGains[0].gain.linearRampToValueAtTime(0, t + 2); // Fade tone out
+                nodes.extraGains[0].gain.linearRampToValueAtTime(0, t + 2); 
             }
         }
 
@@ -632,32 +604,25 @@ const useAudioEngine = () => {
         const p = typeof progress === 'number' ? progress : 0;
         const normalized = p / 100;
         
-        // Ramping Tension and Agitation
         if(nodes.sources) {
-            // Pitch: 60 -> 800 Hz (Dramatic Sweep)
             nodes.sources[0].frequency.setTargetAtTime(60 + (normalized * 740), t, 0.1);
             nodes.sources[1].frequency.setTargetAtTime(62 + (normalized * 740), t, 0.1);
         }
         if(nodes.filter) {
-            // Filter: Open fully to 15000Hz to let all grit through
             nodes.filter.frequency.setTargetAtTime(400 + (normalized * 14600), t, 0.1);
         }
         if(nodes.lfo) {
-            // Agitation Speed: 5Hz -> 60Hz (Shaking violently)
             nodes.lfo.frequency.setTargetAtTime(5 + (normalized * 55), t, 0.1);
         }
         if(nodes.lfoGain) {
-            // Agitation Depth increases
             nodes.lfoGain.gain.setTargetAtTime(10 + (normalized * 100), t, 0.1);
         }
         if(nodes.gain) {
-            // Volume Max at end
             nodes.gain.gain.setTargetAtTime(0.6 + (normalized * 0.4), t, 0.1);
         }
     }
   }, []);
 
-  // --- ONE SHOTS ---
   const playOneShot = useCallback((type: string) => {
       if (!ctxRef.current) initAudio();
       if (!ctxRef.current || !masterGainRef.current) return;
@@ -682,7 +647,6 @@ const useAudioEngine = () => {
           osc.connect(g); g.connect(masterGainRef.current);
           osc.start(); osc.stop(t + 0.1);
       } else if (type === 'boom') {
-          // RESTORED ORIGINAL SUB-BASS BOOM
           const subOsc = ctx.createOscillator();
           const subGain = ctx.createGain();
           subOsc.type = 'sine';
@@ -752,7 +716,6 @@ const Consecration = ({ setPhase, archetype, audio, spawnExplosion }: any) => {
     if (isHolding) {
       // Sparks on holding
       if (Math.random() > 0.8) {
-          // Access window safely
           const win = (globalThis as any).window;
           if (win) spawnExplosion(win.innerWidth / 2, win.innerHeight / 2, '#06b6d4', 5);
       }
@@ -811,17 +774,14 @@ const Consecration = ({ setPhase, archetype, audio, spawnExplosion }: any) => {
             </>
         ) : (
             <div className="absolute inset-0 flex items-center justify-center">
-                {/* Glowing Event Horizon Aura */}
                 <div className="absolute -inset-5 rounded-full bg-linear-to-tr from-purple-600 via-cyan-500 to-purple-600 blur-md opacity-60 animate-spin-slow" />
                 
-                {/* The Black Hole */}
                 <div className="bg-black rounded-full z-30 transition-all duration-75 border border-gray-900 relative" 
                      style={{ width: `${growSize}px`, height: `${growSize}px`, boxShadow: '0 0 30px #000' }}
                 >
                     <div className="absolute inset-0 rounded-full bg-black z-20" />
                 </div>
                 
-                {/* Inner Pulse */}
                 <div className="absolute rounded-full border-2 border-white/30 animate-ping z-40"
                      style={{ width: `${growSize}px`, height: `${growSize}px`, animationDuration: '1.5s' }} />
             </div>
@@ -942,7 +902,6 @@ const Inscription = ({ setIntention, setArchetype, setPhase, archetype, audio, s
   }, [isLoading, audio]);
 
   const handleType = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      // THE FIX: Explicit casting to any to prevent TypeScript error
       setText((e.target as any).value.toUpperCase());
       audio.playOneShot('type'); 
   };
@@ -960,7 +919,6 @@ const Inscription = ({ setIntention, setArchetype, setPhase, archetype, audio, s
           const result = await generateElectricEnsorcellment(text); 
           const [poetry, latin] = result.split('|');
           
-          // Smart Latin Selection
           const latinPhrase = LATIN_MANTRA_DB[arch.theme as keyof typeof LATIN_MANTRA_DB] 
                               ? LATIN_MANTRA_DB[arch.theme as keyof typeof LATIN_MANTRA_DB][Math.floor(Math.random() * 3)] 
                               : "FIAT VOLUNTAS TUA";
@@ -1073,18 +1031,27 @@ const Etching = ({ setPhase, archetype, audio, aiData, intention, spawnExplosion
               });
               audio.updateLoop(progress, 'etching');
               
-              // Spawn Visual Sparks
+              // Spawn Visual Sparks (RESTORED LOGIC)
               if (Math.random() > 0.5) {
-                  // Access window safely
+                  // 1. Canvas Sparks via Prop
                   const win = (globalThis as any).window;
                   if(win) {
-                      // Random position around center
                       const cx = win.innerWidth / 2;
                       const cy = win.innerHeight / 2;
                       const ox = (Math.random() - 0.5) * 200; 
                       const oy = (Math.random() - 0.5) * 200;
                       spawnExplosion(cx + ox, cy + oy, currentColor, 3);
                   }
+
+                  // 2. CSS Sparks via State (RESTORED)
+                  const newSpark = {
+                      id: Date.now() + Math.random(),
+                      x: 50 + (Math.random() * 60 - 30),
+                      y: 50 + (Math.random() * 60 - 30)
+                  };
+                  setSparks(prev => [...prev.slice(-10), newSpark]);
+
+                  // Audio Spark
                   if (Math.random() > 0.8) audio.playOneShot('spark');
               }
 
@@ -1116,6 +1083,7 @@ const Etching = ({ setPhase, archetype, audio, aiData, intention, spawnExplosion
           />
         </svg>
         
+        {/* RESTORED: CSS Sparks Rendering */}
         {sparks.map(s => (
             <div key={s.id} 
                  className="absolute w-1 h-1 bg-white rounded-full animate-ping"
@@ -1237,6 +1205,9 @@ const ChargeAndCast = ({ setPhase, setGlitchActive, archetype, audio, spawnExplo
    const [charge, setCharge] = useState(0);
    const [shaking, setShaking] = useState(false);
 
+   // REMOVED: The shadowing `useParticleSystem` call.
+   // Now `spawnExplosion` correctly refers to the prop passed from parent.
+
    useEffect(() => {
        if (shaking && charge < 100) {
            audio.startLoop('charge');
@@ -1250,7 +1221,7 @@ const ChargeAndCast = ({ setPhase, setGlitchActive, archetype, audio, spawnExplo
      let interval: NodeJS.Timeout;
      if (shaking && charge < 100) {
        
-       // Sparks on Charge
+       // Sparks on Charge - Uses passed prop now
        if (Math.random() > 0.7) {
            const win = (globalThis as any).window;
            if(win) spawnExplosion(win.innerWidth/2, win.innerHeight/2, '#ffffff', 5);
