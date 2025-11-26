@@ -3,7 +3,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Settings, X } from 'lucide-react';
+import { Settings, X, Maximize2, Minimize2 } from 'lucide-react';
 import MagickalBackLink from './MagickalBackLink';
 
 // Types for the particle system
@@ -19,8 +19,10 @@ export default function ElectroWand() {
     const [showSettings, setShowSettings] = useState(false);
     const [wandName, setWandName] = useState("");
     const [intention, setIntention] = useState("");
+    const [isFullscreen, setIsFullscreen] = useState(false);
+    const [hasStarted, setHasStarted] = useState(false);
 
-    // --- CONFIG STATE (Refs for performance in animation loop) ---
+    // --- CONFIG STATE ---
     const config = useRef({
         hue: 270,
         wandBaseColor: '#3e2723',
@@ -69,13 +71,29 @@ export default function ElectroWand() {
     });
 
     // --- HELPER FUNCTIONS ---
+    const toggleFullscreen = () => {
+        const doc = (globalThis as any).document;
+        if (!doc) return;
+
+        if (!doc.fullscreenElement) {
+            doc.documentElement.requestFullscreen().catch((e: any) => {
+                console.error(`Error attempting to enable fullscreen: ${e.message}`);
+            });
+            setIsFullscreen(true);
+        } else {
+            if (doc.exitFullscreen) {
+                doc.exitFullscreen();
+                setIsFullscreen(false);
+            }
+        }
+    };
+
     const getColor = (hue: number, whiteMode: boolean, alpha = 1) => {
         if (whiteMode) return `rgba(255, 255, 255, ${alpha})`;
         return `hsla(${hue}, 100%, 60%, ${alpha})`;
     };
 
     const updateCSSVar = () => {
-        // FIX: Safe document access
         const doc = (globalThis as any).document;
         if (doc) {
             const color = config.current.activeWhiteMode ? 'white' : `hsl(${config.current.hue}, 100%, 70%)`;
@@ -133,7 +151,6 @@ export default function ElectroWand() {
     const initAudio = () => {
         if(state.current.initialized) return;
         
-        // FIX: Safe window access
         const win = (globalThis as any).window;
         if (!win) return;
 
@@ -181,13 +198,7 @@ export default function ElectroWand() {
         audio.current.lfoOsc.start();
         
         state.current.initialized = true;
-        
-        // FIX: Safe document access
-        const doc = (globalThis as any).document;
-        if (doc) {
-            const hint = doc.getElementById('start-hint');
-            if(hint) hint.style.opacity='0';
-        }
+        setHasStarted(true);
     };
 
     const updateAudio = (active: boolean) => {
@@ -352,7 +363,6 @@ export default function ElectroWand() {
     // Initialization & Resize
     useEffect(() => {
         const resize = () => {
-            // FIX: Safe window access
             const win = (globalThis as any).window;
             if(canvasRef.current && win) {
                 canvasRef.current.width = win.innerWidth;
@@ -374,7 +384,6 @@ export default function ElectroWand() {
             }
         };
         
-        // FIX: Safe global access
         const win = (globalThis as any).window;
         if (win) win.addEventListener('resize', resize);
         resize();
@@ -752,31 +761,70 @@ export default function ElectroWand() {
                 onMouseLeave={handleEnd}
             />
 
-            <div className="absolute top-0 left-0 w-full h-full pointer-events-none z-20 flex flex-col justify-between p-4">
-                <div className="flex justify-between items-start pointer-events-auto">
+            <div className="absolute top-0 left-0 w-full h-full pointer-events-none z-20">
+                
+                {/* Top Left: Back Link */}
+                <div className="absolute top-4 left-4 pointer-events-auto">
                     <MagickalBackLink href="/marketplace/magickal-tools" text="Back" className="text-xs" />
-                    
-                    <div className="text-center opacity-80">
-                        <h1 className="text-xl font-bold tracking-widest font-serif text-purple-300" style={{textShadow: '0 0 10px currentColor'}}>LORDMAGICK</h1>
-                        {(wandName || intention) && (
-                            <div className="mt-2 transition-opacity duration-1000">
-                                <p className="text-sm text-white font-bold tracking-wide uppercase" style={{textShadow: `0 0 5px var(--wand-color)`}}>{wandName}</p>
-                                <p className="text-xs text-gray-400 italic font-serif">{intention}</p>
-                            </div>
-                        )}
-                    </div>
+                </div>
 
-                    <button onClick={() => setShowSettings(true)} className="p-2 rounded-full bg-gray-900/50 border border-purple-500/30 hover:bg-gray-800 text-purple-300 transition-colors">
+                {/* Bottom Left: Settings */}
+                <div className="absolute bottom-4 left-4 pointer-events-auto">
+                    <button onClick={() => setShowSettings(true)} className="p-3 rounded-full bg-gray-900/50 border border-purple-500/30 hover:bg-gray-800 text-purple-300 transition-colors backdrop-blur-md">
                         <Settings size={24} />
                     </button>
                 </div>
 
-                <div id="start-hint" className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none transition-opacity duration-500">
-                    <p className="text-purple-200 text-sm tracking-widest uppercase mb-2">Initialize Energy</p>
-                    <div className="w-12 h-12 border border-purple-400 rounded-full mx-auto animate-pulse flex items-center justify-center">
+                {/* Bottom Right: Fullscreen */}
+                <div className="absolute bottom-4 right-4 pointer-events-auto">
+                    <button onClick={toggleFullscreen} className="p-3 rounded-full bg-gray-900/50 border border-purple-500/30 hover:bg-gray-800 text-purple-300 transition-colors backdrop-blur-md">
+                        {isFullscreen ? <Minimize2 size={24} /> : <Maximize2 size={24} />}
+                    </button>
+                </div>
+
+                {/* Left Vertical Text: LORDMAGICK */}
+                <div className="absolute left-8 top-1/2 -translate-y-1/2 pointer-events-none flex items-center justify-center h-full w-0">
+                    <div className="-rotate-90 origin-center whitespace-nowrap opacity-30 mix-blend-screen">
+                        <h1 className="text-6xl md:text-8xl font-bold tracking-[0.2em] font-serif text-purple-300" style={{textShadow: '0 0 20px currentColor'}}>
+                            LORDMAGICK
+                        </h1>
+                    </div>
+                </div>
+
+                {/* Right Vertical Text: Name & Intention */}
+                {(wandName || intention) && (
+                    <div className="absolute right-8 top-1/2 -translate-y-1/2 pointer-events-none flex items-center justify-center h-full w-0">
+                        <div className="rotate-90 origin-center whitespace-nowrap text-center transition-opacity duration-1000">
+                            {wandName && (
+                                <p className="text-2xl md:text-4xl text-white font-bold tracking-wide uppercase mb-2" style={{textShadow: `0 0 10px var(--wand-color)`}}>
+                                    {wandName}
+                                </p>
+                            )}
+                            {intention && (
+                                <p className="text-sm md:text-lg text-gray-400 italic font-serif tracking-widest opacity-70">
+                                    "{intention}"
+                                </p>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* Start Hint Overlay */}
+                <div id="start-hint" className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center pointer-events-auto transition-opacity duration-500 ${hasStarted ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+                    <p className="text-purple-200 text-sm tracking-widest uppercase mb-4">Initialize Energy</p>
+                    <div className="w-16 h-16 border border-purple-400 rounded-full mx-auto animate-pulse flex items-center justify-center mb-6 pointer-events-none">
                         <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
                     </div>
-                    <p className="text-xs text-gray-500 mt-4">Touch & Hold Crystal Base</p>
+                    
+                    <div className="flex flex-col gap-4">
+                        <p className="text-xs text-gray-500">Touch & Hold Crystal Base</p>
+                        <button 
+                            onClick={() => { toggleFullscreen(); initAudio(); }}
+                            className="px-6 py-2 border border-purple-500/50 rounded bg-purple-900/20 text-purple-300 hover:bg-purple-800/40 text-xs tracking-wider uppercase transition-colors"
+                        >
+                            Enter Fullscreen & Begin
+                        </button>
+                    </div>
                 </div>
             </div>
 
