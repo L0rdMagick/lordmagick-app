@@ -6,12 +6,20 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Settings, X, Maximize2, Minimize2, Zap, Heart, CloudRain, Coins, Clover } from 'lucide-react';
 import MagickalBackLink from './MagickalBackLink';
 
-// Types
+// --- TYPES ---
 interface Point { x: number; y: number }
 interface Particle { x: number; y: number; vx: number; vy: number; life: number; type: string; shapeType: string; size: number; color: string; }
 interface Projectile { x: number; y: number; vx: number; vy: number; life: number; rot: number; rotSpeed: number; type: string; size: number; color: string; state: 'shooting' | 'floating'; }
 interface Bolt { segments: {x1:number, y1:number, x2:number, y2:number}[]; life: number; color: string; }
 interface Emanation { x: number; y: number; radius: number; alpha: number; color: string; }
+
+// --- COLOR PALETTE (4x4 Grid) ---
+const COLOR_PALETTE = [
+    '#ffffff', '#9ca3af', '#3e2723', '#000000', // White, Silver, Wood/Brown, Black
+    '#ef4444', '#f97316', '#facc15', '#84cc16', // Red, Orange, Yellow, Lime
+    '#10b981', '#06b6d4', '#3b82f6', '#6366f1', // Emerald, Cyan, Blue, Indigo
+    '#8b5cf6', '#d946ef', '#f43f5e', '#fbbf24'  // Violet, Magenta, Rose, Gold
+];
 
 export default function ElectroWand() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -28,24 +36,23 @@ export default function ElectroWand() {
     // --- CONFIG STATE ---
     const config = useRef({
         hue: 270,
+        // Material Colors
         wandBaseColor: '#3e2723',
-        crystalBaseHue: 270,
-        crystalWhiteMode: false,
-        activeWhiteMode: false,
+        crystalBaseColor: '#8b5cf6', 
         lightningColor: 'white',
         
         // Particle Shapes
-        internalShape: 'lightning', 
+        internalShape: 'lightning', // lightning, hearts, rainbow, coins, clovers
         externalShape: 'lightning',
         
-        // New Physics Controls
+        // Physics Controls
         internalSpeed: 3, // 1-5
         internalSize: 2,  // 1-5
         externalSize: 2,  // 1-5
-        screenFillLevel: 0, // 0-5 (0 = fly off, 5 = heavy accumulation)
+        screenFillLevel: 0, // 0-5 (Controls Spread Angle)
 
         intensityMult: 1.0,
-        vibrationLevel: 2,
+        vibrationLevel: 2, // 0-5
         activeColor: 'rgba(180, 100, 255, 1)',
         
         soundProfile: 'hum',
@@ -103,17 +110,29 @@ export default function ElectroWand() {
         }
     };
 
-    const getColor = (hue: number, whiteMode: boolean, alpha = 1) => {
-        if (whiteMode) return `rgba(255, 255, 255, ${alpha})`;
-        return `hsla(${hue}, 100%, 60%, ${alpha})`;
+    // Helper to extract HSL from Hex for glowing effects
+    const getGlowColorFromHex = (hex: string, alpha = 1) => {
+        // Simple hex to RGB conversion
+        let r = 0, g = 0, b = 0;
+        if (hex.length === 4) {
+            r = parseInt("0x" + hex[1] + hex[1]);
+            g = parseInt("0x" + hex[2] + hex[2]);
+            b = parseInt("0x" + hex[3] + hex[3]);
+        } else if (hex.length === 7) {
+            r = parseInt("0x" + hex[1] + hex[2]);
+            g = parseInt("0x" + hex[3] + hex[4]);
+            b = parseInt("0x" + hex[5] + hex[6]);
+        }
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
     };
 
     const updateCSSVar = () => {
         const doc = (globalThis as any).document;
         if (doc) {
-            const color = config.current.activeWhiteMode ? 'white' : `hsl(${config.current.hue}, 100%, 70%)`;
+            // Update CSS var for text glow based on crystal color
+            const color = config.current.crystalBaseColor;
             doc.documentElement.style.setProperty('--wand-color', color);
-            config.current.activeColor = getColor(config.current.hue, config.current.activeWhiteMode, 1);
+            config.current.activeColor = getGlowColorFromHex(color, 1);
         }
     };
 
@@ -237,7 +256,7 @@ export default function ElectroWand() {
     };
 
     const updateAudio = (active: boolean) => {
-        if(!state.current.initialized || !audio.current.ctx) return;
+        if(!state.current.initialized || !audio.current.ctx || !audio.current.masterGain || !audio.current.lfoOsc || !audio.current.filter) return;
         const now = audio.current.ctx.currentTime;
         audio.current.masterGain.gain.setTargetAtTime(active ? 0.4 * config.current.intensityMult : 0, now, 0.1);
         
@@ -338,11 +357,7 @@ export default function ElectroWand() {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const drawCrystal = (c: any, x: number, y: number, size: number) => {
-        const hue = config.current.crystalWhiteMode ? 0 : config.current.crystalBaseHue;
-        const sat = config.current.crystalWhiteMode ? 0 : 100;
-        const colBase = `hsl(${hue}, ${sat}%, 60%)`;
-        const colDark = `hsl(${hue}, ${sat}%, 40%)`;
-        const colLight = `hsl(${hue}, ${sat}%, 80%)`;
+        const color = config.current.crystalBaseColor; // Hex string
         const shape = config.current.crystalShape;
 
         const drawFacet = (points: Point[], colorStr: string) => {
@@ -357,34 +372,34 @@ export default function ElectroWand() {
         if (shape === 'orb') {
             const grad = c.createRadialGradient(x - size*0.3, y - size*0.3, size*0.1, x, y, size);
             grad.addColorStop(0, 'white');
-            grad.addColorStop(0.5, colBase);
-            grad.addColorStop(1, colDark);
+            grad.addColorStop(0.5, color);
+            grad.addColorStop(1, 'black');
             c.beginPath();
             c.arc(x, y, size, 0, Math.PI * 2);
             c.fillStyle = grad;
             c.fill();
         } else if (shape === 'diamond') {
-            drawFacet([{x:x, y:y-size*1.2}, {x:x+size, y:y}, {x:x, y:y+size*0.2}, {x:x-size, y:y}], colLight);
-            drawFacet([{x:x-size, y:y}, {x:x, y:y+size*0.2}, {x:x, y:y+size*1.2}], colDark); 
-            drawFacet([{x:x+size, y:y}, {x:x, y:y+size*0.2}, {x:x, y:y+size*1.2}], colBase); 
+            drawFacet([{x:x, y:y-size*1.2}, {x:x+size, y:y}, {x:x, y:y+size*0.2}, {x:x-size, y:y}], color);
+            drawFacet([{x:x-size, y:y}, {x:x, y:y+size*0.2}, {x:x, y:y+size*1.2}], color); 
+            drawFacet([{x:x+size, y:y}, {x:x, y:y+size*0.2}, {x:x, y:y+size*1.2}], color); 
             drawFacet([{x:x, y:y-size*1.2}, {x:x-size, y:y}, {x:x-size*0.5, y:y-size*0.5}], 'white');
         } else if (shape === 'shard') {
-            drawFacet([{x:x, y:y-size*1.2}, {x:x-size*0.6, y:y-size*0.3}, {x:x-size*0.4, y:y+size*0.8}, {x:x, y:y+size}], colDark);
-            drawFacet([{x:x, y:y-size*1.2}, {x:x+size*0.6, y:y-size*0.3}, {x:x+size*0.4, y:y+size*0.8}, {x:x, y:y+size}], colBase);
+            drawFacet([{x:x, y:y-size*1.2}, {x:x-size*0.6, y:y-size*0.3}, {x:x-size*0.4, y:y+size*0.8}, {x:x, y:y+size}], color);
+            drawFacet([{x:x, y:y-size*1.2}, {x:x+size*0.6, y:y-size*0.3}, {x:x+size*0.4, y:y+size*0.8}, {x:x, y:y+size}], color);
         } else if (shape === 'hex') {
-            drawFacet([{x:x-size*0.5, y:y-size*0.8}, {x:x+size*0.5, y:y-size*0.8}, {x:x+size*0.5, y:y+size*0.8}, {x:x-size*0.5, y:y+size*0.8}], colLight);
-            drawFacet([{x:x-size*0.5, y:y-size*0.8}, {x:x-size*0.8, y:y-size*0.6}, {x:x-size*0.8, y:y+size*0.6}, {x:x-size*0.5, y:y+size*0.8}], colDark);
-            drawFacet([{x:x+size*0.5, y:y-size*0.8}, {x:x+size*0.8, y:y-size*0.6}, {x:x+size*0.8, y:y+size*0.6}, {x:x+size*0.5, y:y+size*0.8}], colBase);
+            drawFacet([{x:x-size*0.5, y:y-size*0.8}, {x:x+size*0.5, y:y-size*0.8}, {x:x+size*0.5, y:y+size*0.8}, {x:x-size*0.5, y:y+size*0.8}], color);
+            drawFacet([{x:x-size*0.5, y:y-size*0.8}, {x:x-size*0.8, y:y-size*0.6}, {x:x-size*0.8, y:y+size*0.6}, {x:x-size*0.5, y:y+size*0.8}], color);
+            drawFacet([{x:x+size*0.5, y:y-size*0.8}, {x:x+size*0.8, y:y-size*0.6}, {x:x+size*0.8, y:y+size*0.6}, {x:x+size*0.5, y:y+size*0.8}], color);
         } else if (shape === 'tear') {
             c.beginPath();
             c.moveTo(x, y-size*1.2);
             c.bezierCurveTo(x-size*1.2, y+size*0.2, x-size*0.5, y+size, x, y+size);
-            c.fillStyle = colDark;
+            c.fillStyle = color;
             c.fill();
             c.beginPath();
             c.moveTo(x, y-size*1.2);
             c.bezierCurveTo(x+size*1.2, y+size*0.2, x+size*0.5, y+size, x, y+size);
-            c.fillStyle = colBase;
+            c.fillStyle = color;
             c.fill();
         }
         c.lineWidth = 1;
@@ -452,57 +467,28 @@ export default function ElectroWand() {
                     let progress = distFromBase / maxDist;
                     progress = Math.max(0, Math.min(1, progress));
                     
-                    // Vibration Settings
-                    const vibAmp = [0, 1.0, 2.5, 5.0, 10.0];
-                    const vibFreq = [0, 0.5, 1.0, 2.0, 4.0];
+                    // Vibration Settings - Frequency changes, amplitude stays subtle
                     const level = conf.vibrationLevel;
-
-                    const speed = 0.5 + (progress * 2.0);
-                    const sway = Math.sin(s.time * 5 * speed) * 2.5;
-                    const vibration = Math.sin(s.time * 30 * vibFreq[level]) * vibAmp[level];
-                    
-                    wobbleOffset = sway + vibration;
+                    if (level > 0) {
+                        const vibFreq = [0, 0.5, 1.0, 2.0, 3.5, 5.0]; // Increasing speed
+                        const amplitude = 2.0; // Constant subtle width
+                        const speed = 0.5 + (progress * 2.0);
+                        
+                        // Base gentle sway + High frequency vibration
+                        const sway = Math.sin(s.time * 5 * speed) * 2.5;
+                        const vibration = Math.sin(s.time * 30 * vibFreq[level]) * amplitude;
+                        wobbleOffset = sway + vibration;
+                    }
                 }
             }
 
             c.save();
             c.translate(wobbleOffset, 0);
 
-            // Draw Wand (Base)
+            // Draw Wand Body
             c.save();
-            const hexToHSL = (H: string) => {
-                let r = 0, g = 0, b = 0;
-                if (H.length == 4) {
-                    r = parseInt("0x" + H[1] + H[1]); g = parseInt("0x" + H[2] + H[2]); b = parseInt("0x" + H[3] + H[3]);
-                } else if (H.length == 7) {
-                    r = parseInt("0x" + H[1] + H[2]); g = parseInt("0x" + H[3] + H[4]); b = parseInt("0x" + H[5] + H[6]);
-                }
-                r /= 255; g /= 255; b /= 255;
-                const cmin = Math.min(r,g,b), cmax = Math.max(r,g,b), delta = cmax - cmin;
-                let h = 0, s = 0, l = 0;
-                if (delta == 0) h = 0;
-                else if (cmax == r) h = ((g - b) / delta) % 6;
-                else if (cmax == g) h = (b - r) / delta + 2;
-                else h = (r - g) / delta + 4;
-                h = Math.round(h * 60);
-                if (h < 0) h += 360;
-                l = (cmax + cmin) / 2;
-                s = delta == 0 ? 0 : delta / (1 - Math.abs(2 * l - 1));
-                return [h, s * 100, l * 100];
-            };
-
-            const [h, sat, lum] = hexToHSL(conf.wandBaseColor);
-            const minX = w.baseX - w.baseWidth;
-            const maxX = w.baseX + w.baseWidth;
-            const wandGrad = c.createLinearGradient(minX, 0, maxX, 0);
-            wandGrad.addColorStop(0, `hsl(${h}, ${sat}%, ${Math.max(0, lum-15)}%)`);
-            wandGrad.addColorStop(0.2, `hsl(${h}, ${sat}%, ${lum}%)`);
-            wandGrad.addColorStop(0.5, `hsl(${h}, ${sat}%, ${Math.min(100, lum+10)}%)`);
-            wandGrad.addColorStop(0.8, `hsl(${h}, ${sat}%, ${lum}%)`);
-            wandGrad.addColorStop(1, `hsl(${h}, ${sat}%, ${Math.max(0, lum-15)}%)`);
-
+            c.fillStyle = conf.wandBaseColor;
             getWandPath(c);
-            c.fillStyle = wandGrad;
             c.fill();
 
             c.save();
@@ -522,6 +508,9 @@ export default function ElectroWand() {
             }
             c.restore();
 
+            // Shading
+            const minX = w.baseX - w.baseWidth;
+            const maxX = w.baseX + w.baseWidth;
             const rimGradLeft = c.createLinearGradient(minX, 0, minX + 30, 0);
             rimGradLeft.addColorStop(0, 'rgba(255,255,255,0.2)');
             rimGradLeft.addColorStop(1, 'rgba(255,255,255,0)');
@@ -533,9 +522,9 @@ export default function ElectroWand() {
             rimGradRight.addColorStop(1, 'rgba(0,0,0,0.3)');
             c.fillStyle = rimGradRight;
             c.fillRect(maxX-30, 0, 30, canvasRef.current.height);
-            
             c.restore();
 
+            // Outline Glow
             c.strokeStyle = `rgba(255, 255, 255, ${0.1 + s.energyLevel * 0.5})`;
             c.lineWidth = 2;
             c.shadowBlur = s.energyLevel * 15;
@@ -561,7 +550,7 @@ export default function ElectroWand() {
                 }
                 c.beginPath();
                 c.arc(s.emanations[i].x, s.emanations[i].y, s.emanations[i].radius, 0, Math.PI * 2);
-                c.strokeStyle = getColor(conf.hue, conf.activeWhiteMode, s.emanations[i].alpha * 0.5);
+                c.strokeStyle = getGlowColorFromHex(conf.crystalBaseColor, s.emanations[i].alpha * 0.5);
                 c.lineWidth = 2;
                 c.stroke();
             }
@@ -574,8 +563,9 @@ export default function ElectroWand() {
             if (s.isCasting) {
                 if (s.energyLevel < 1) s.energyLevel += 0.05;
                 const grad = c.createLinearGradient(w.baseX, w.baseY, w.tipX, w.tipY);
-                grad.addColorStop(0, getColor(conf.hue, conf.activeWhiteMode, 0.2));
-                grad.addColorStop(1, getColor(conf.hue, conf.activeWhiteMode, 0.8 * s.energyLevel));
+                const glowColor = getGlowColorFromHex(conf.lightningColor, 1);
+                grad.addColorStop(0, getGlowColorFromHex(conf.lightningColor, 0.2));
+                grad.addColorStop(1, getGlowColorFromHex(conf.lightningColor, 0.8 * s.energyLevel));
                 c.fillStyle = grad;
                 c.fillRect(0,0,canvasRef.current.width,canvasRef.current.height);
 
@@ -583,8 +573,11 @@ export default function ElectroWand() {
                 if (Math.random() > 0.1) {
                     const spawnX = w.baseX + (Math.random() - 0.5) * 20;
                     const spawnY = w.crystalY + (Math.random() - 0.5) * 20;
-                    // Internal Speed Multiplier
-                    const speedMult = 0.5 + (conf.internalSpeed * 0.5);
+                    
+                    // Internal Speed: Level 1 is half speed of old default. L5 is 3x speed.
+                    const baseSpeed = 0.5; // Slower base
+                    const speedRange = 2.5;
+                    const speedMult = baseSpeed + ((conf.internalSpeed - 1) / 4) * speedRange;
                     
                     s.particles.push({
                         x: spawnX, y: spawnY, type: 'flow',
@@ -601,27 +594,31 @@ export default function ElectroWand() {
                 c.globalCompositeOperation = 'lighter';
                 for (let i = s.particles.length - 1; i >= 0; i--) {
                     const p = s.particles[i];
-                    // Apply Speed Mult to internal wiggle
-                    const speedMult = 0.5 + (conf.internalSpeed * 0.5);
+                    
+                    // Recalculate speed mult for wiggle logic
+                    const baseSpeed = 0.5; 
+                    const speedRange = 2.5;
+                    const speedMult = baseSpeed + ((conf.internalSpeed - 1) / 4) * speedRange;
+
                     p.x += p.vx + Math.sin(p.y * 0.05 + s.time) * 0.5 * speedMult;
                     p.y += p.vy;
                     if (p.y < w.tipY) p.life -= 0.1;
 
                     if (p.life <= 0) { s.particles.splice(i, 1); continue; }
 
-                    // Internal Particle Size
-                    const sizeMult = 0.5 + (conf.internalSize * 0.5);
-                    const radius = p.size * p.life * sizeMult;
+                    // Internal Particle Size: L1 = 1x, L5 = 6x
+                    const sizeMult = 1.0 + ((conf.internalSize - 1) * 1.25);
                     
                     if (p.shapeType === 'lightning') {
+                        const radius = p.size * p.life * sizeMult;
                         c.beginPath(); c.arc(p.x, p.y, radius, 0, Math.PI*2);
-                        c.fillStyle = getColor(conf.hue, conf.activeWhiteMode, p.life);
+                        c.fillStyle = p.color; // Use stored color
                         c.fill();
                     } else {
                         c.save();
                         c.translate(p.x, p.y);
                         c.scale(0.3 * p.life * sizeMult, 0.3 * p.life * sizeMult);
-                        drawShape(c, p.shapeType, conf.lightningColor);
+                        drawShape(c, p.shapeType, p.color);
                         c.restore();
                     }
                 }
@@ -641,47 +638,48 @@ export default function ElectroWand() {
                 if(s.energyLevel > 0.3) {
                     c.beginPath();
                     c.arc(tipX, w.tipY, 12 * s.energyLevel, 0, Math.PI*2);
-                    c.fillStyle = getColor(conf.hue, conf.activeWhiteMode, 0.8);
+                    c.fillStyle = getGlowColorFromHex(conf.lightningColor, 0.8);
                     c.fill();
                 }
 
                 // Spawn Projectiles
                 if (s.energyLevel > 0.8 && Math.random() < 0.25 * conf.intensityMult) {
-                    // Screen Fill Logic (Cap accumulation based on level)
-                    const maxParticles = conf.screenFillLevel * 50; // 0=0, 1=50... 5=250
-                    const currentFloating = s.projectiles.filter((p: Projectile) => p.state === 'floating').length;
-                    
-                    // Only spawn if we haven't hit the fill cap (or if fill is 0, always spawn)
-                    if (conf.screenFillLevel === 0 || currentFloating < maxParticles) {
-                        if (conf.externalShape === 'lightning') {
-                            const angle = (Math.random() - 0.5) * 33 * (Math.PI / 180);
-                            const dist = w.tipY + 100; 
-                            const endX = tipX + Math.tan(angle) * dist;
-                            
-                            // Generate segments for bolt
-                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            const segments: any[] = [];
-                            const generateSegments = (x1: number, y1: number, x2: number, y2: number, disp: number) => {
-                                if (disp < 5) { segments.push({x1, y1, x2, y2}); return; }
-                                const mx = (x1+x2)/2 + (Math.random()-0.5)*disp;
-                                const my = (y1+y2)/2 + (Math.random()-0.5)*disp;
-                                generateSegments(x1,y1,mx,my,disp/2);
-                                generateSegments(mx,my,x2,y2,disp/2);
-                            };
-                            generateSegments(tipX, w.tipY, endX, -100, 80);
-                            
-                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            s.projectiles.push({ segments, life: 1.0, type: 'lightning', color: conf.lightningColor, state: 'shooting' } as any);
-                        } else {
-                            const angle = (Math.random() - 0.5) * 33 * (Math.PI / 180); 
-                            const speed = Math.random() * 5 + 5;
-                            s.projectiles.push({
-                                x: tipX, y: w.tipY,
-                                vx: Math.sin(angle) * speed, vy: -Math.cos(angle) * speed,
-                                life: 1.0, rot: Math.random() * Math.PI, rotSpeed: (Math.random() - 0.5) * 0.2,
-                                type: conf.externalShape, size: 15, color: conf.lightningColor, state: 'shooting'
-                            });
-                        }
+                    if (conf.externalShape === 'lightning') {
+                        // Angle Spread Logic
+                        const spreadMap = [30, 50, 75, 90, 110, 150];
+                        const spreadDeg = spreadMap[conf.screenFillLevel] || 30;
+                        const angle = (Math.random() - 0.5) * spreadDeg * (Math.PI / 180);
+                        
+                        const dist = w.tipY + 100; 
+                        const endX = tipX + Math.tan(angle) * dist;
+                        
+                        // Generate segments for bolt
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        const segments: any[] = [];
+                        const generateSegments = (x1: number, y1: number, x2: number, y2: number, disp: number) => {
+                            if (disp < 5) { segments.push({x1, y1, x2, y2}); return; }
+                            const mx = (x1+x2)/2 + (Math.random()-0.5)*disp;
+                            const my = (y1+y2)/2 + (Math.random()-0.5)*disp;
+                            generateSegments(x1,y1,mx,my,disp/2);
+                            generateSegments(mx,my,x2,y2,disp/2);
+                        };
+                        generateSegments(tipX, w.tipY, endX, -100, 80);
+                        
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        s.projectiles.push({ segments, life: 1.0, type: 'lightning', color: conf.lightningColor, state: 'shooting' } as any);
+                    } else {
+                        // Angle Spread Logic
+                        const spreadMap = [30, 50, 75, 90, 110, 150];
+                        const spreadDeg = spreadMap[conf.screenFillLevel] || 30;
+                        const angle = (Math.random() - 0.5) * spreadDeg * (Math.PI / 180); 
+                        
+                        const speed = Math.random() * 5 + 5;
+                        s.projectiles.push({
+                            x: tipX, y: w.tipY,
+                            vx: Math.sin(angle) * speed, vy: -Math.cos(angle) * speed,
+                            life: 1.0, rot: Math.random() * Math.PI, rotSpeed: (Math.random() - 0.5) * 0.2,
+                            type: conf.externalShape, size: 15, color: conf.lightningColor, state: 'shooting'
+                        });
                     }
                 }
             }
@@ -711,18 +709,18 @@ export default function ElectroWand() {
                         const distFromTip = Math.abs(p.y - w.tipY);
                         
                         // If it's far enough, switch to floating
-                        if (p.state === 'shooting' && distFromTip > 150) {
+                        if (p.state === 'shooting' && distFromTip > 200) {
                             p.state = 'floating';
                         }
 
                         if (p.state === 'floating') {
                             // Friction / Drag
-                            p.vx *= 0.9; 
-                            p.vy *= 0.9;
+                            p.vx *= 0.95; 
+                            p.vy *= 0.95;
                             // Gentle float up
-                            p.y -= 0.5;
+                            p.y -= 0.2;
                             // Decay is much slower based on level
-                            const decay = 0.01 / (1 + conf.screenFillLevel * 0.5);
+                            const decay = 0.01 / (1 + conf.screenFillLevel * 1.5);
                             p.life -= decay;
                         } else {
                             // Normal shooting
@@ -738,7 +736,7 @@ export default function ElectroWand() {
                     p.rot += p.rotSpeed;
                     
                     // Size Control
-                    const sizeMult = 0.5 + (conf.externalSize * 0.5);
+                    const sizeMult = 1.0 + ((conf.externalSize - 1) * 1.25);
                     p.size = 15 * p.life * sizeMult;
                     
                     if (p.life <= 0) { s.projectiles.splice(i, 1); continue; }
@@ -797,13 +795,21 @@ export default function ElectroWand() {
                 ctx.beginPath(); ctx.arc(0, -size*0.3, size*0.3, 0, Math.PI*2); ctx.fill();
             }
         } else if (type === 'rainbow') {
-            const hue = (state.current.time * 10) % 360;
-            ctx.shadowBlur = 10; ctx.shadowColor = `hsl(${hue}, 100%, 50%)`;
-            ctx.fillStyle = `hsl(${hue}, 100%, 60%)`;
-            ctx.fillRect(-size/4, -size, size/2, size*2);
-            ctx.shadowBlur = 0;
+            // Replaced with Vector Arc
+            ctx.beginPath();
+            ctx.arc(0, 0, size * 0.8, Math.PI, 0); 
+            ctx.lineWidth = size * 0.4;
+            // Create a simple gradient for the arc
+            const grad = ctx.createLinearGradient(-size, 0, size, 0);
+            grad.addColorStop(0, "red");
+            grad.addColorStop(0.2, "orange");
+            grad.addColorStop(0.4, "yellow");
+            grad.addColorStop(0.6, "green");
+            grad.addColorStop(0.8, "blue");
+            grad.addColorStop(1, "violet");
+            ctx.strokeStyle = grad;
+            ctx.stroke();
         } else if (type === 'lightning') {
-            // Simple glow dot fallback if not handled by Bolt class
             ctx.fillStyle = color;
             ctx.beginPath(); ctx.arc(0, 0, size/2, 0, Math.PI*2); ctx.fill();
         }
@@ -856,6 +862,20 @@ export default function ElectroWand() {
             ? "bg-purple-600 border-purple-400 text-white shadow-[0_0_10px_#a855f7]" 
             : "bg-gray-800 border-gray-600 text-gray-400 hover:border-gray-400";
 
+    // --- SUB-COMPONENTS ---
+    const ColorGrid = ({ onSelect, selectedColor }: { onSelect: (c: string) => void, selectedColor: string }) => (
+        <div className="grid grid-cols-4 gap-1.5 p-1 bg-black/20 rounded">
+            {COLOR_PALETTE.map(c => (
+                <button 
+                    key={c}
+                    className={`w-6 h-6 rounded border border-gray-600 transition-transform active:scale-90 ${selectedColor === c ? 'ring-2 ring-white scale-110 z-10' : ''}`}
+                    style={{ backgroundColor: c }}
+                    onClick={() => onSelect(c)}
+                />
+            ))}
+        </div>
+    );
+
     return (
         <div className="fixed inset-0 bg-black overflow-hidden touch-none select-none">
             <canvas 
@@ -894,7 +914,7 @@ export default function ElectroWand() {
                 {/* Left Vertical Text: LORDMAGICK - Smaller */}
                 <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none flex items-center justify-center h-full w-0">
                     <div className="-rotate-90 origin-center whitespace-nowrap opacity-30 mix-blend-screen">
-                        <h1 className="text-xs md:text-sm font-bold tracking-[0.4em] font-serif text-purple-300/50" style={{textShadow: '0 0 5px currentColor'}}>
+                        <h1 className="text-xs font-bold tracking-[0.4em] font-serif text-purple-300/50" style={{textShadow: '0 0 5px currentColor'}}>
                             LORDMAGICK
                         </h1>
                     </div>
@@ -944,13 +964,60 @@ export default function ElectroWand() {
                         <button onClick={() => setShowSettings(false)} className="absolute top-4 right-4 text-gray-400 hover:text-white"><X size={24} /></button>
                         <h2 className="text-2xl font-serif text-purple-300 mb-4 text-center tracking-widest border-b border-gray-700 pb-2">Grimoire</h2>
                         
-                        <div className="space-y-5">
+                        <div className="space-y-6">
                             {/* Identity */}
                             <div className="space-y-2">
                                 <h3 className="text-xs uppercase text-gray-500 tracking-wide font-bold">Identity</h3>
                                 {/* FIX: Cast target to any for input values */}
                                 <input type="text" value={wandName} onChange={(e) => setWandName((e.target as any).value)} placeholder="Name your Wand..." className="w-full bg-black/30 border border-gray-600 rounded p-2 text-purple-200 text-xs focus:border-purple-500 outline-none" />
                                 <input type="text" value={intention} onChange={(e) => setIntention((e.target as any).value)} placeholder="Set your Intention..." className="w-full bg-black/30 border border-gray-600 rounded p-2 text-purple-200 text-xs focus:border-purple-500 outline-none" />
+                            </div>
+
+                            {/* Shape & Material */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-[10px] text-gray-400 block mb-1">Shape</label>
+                                    <select 
+                                        className="w-full bg-gray-800 text-xs border border-gray-600 rounded p-1 text-white" 
+                                        value={config.current.wandShape}
+                                        onChange={(e) => updateConfig('wandShape', (e.target as any).value)}
+                                    >
+                                        <option value="classic">Classic</option>
+                                        <option value="twisted">Twisted</option>
+                                        <option value="elder">Elder</option>
+                                        <option value="vine">Vine</option>
+                                        <option value="bone">Bone</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="text-[10px] text-gray-400 block mb-1">Wood Material</label>
+                                    <ColorGrid onSelect={(c) => updateConfig('wandBaseColor', c)} selectedColor={config.current.wandBaseColor} />
+                                </div>
+                            </div>
+
+                            {/* Core */}
+                            <div>
+                                <h3 className="text-xs uppercase text-gray-500 mb-2 tracking-wide font-bold">Crystal Core</h3>
+                                <div className="grid grid-cols-2 gap-4 mb-2">
+                                    <div>
+                                        <label className="text-[10px] text-gray-400 block mb-1">Shape</label>
+                                        <select 
+                                            className="w-full bg-gray-800 text-xs border border-gray-600 rounded p-1 text-white"
+                                            value={config.current.crystalShape}
+                                            onChange={(e) => updateConfig('crystalShape', (e.target as any).value)}
+                                        >
+                                            <option value="orb">Orb</option>
+                                            <option value="diamond">Diamond</option>
+                                            <option value="shard">Shard</option>
+                                            <option value="hex">Hex</option>
+                                            <option value="tear">Tear</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] text-gray-400 block mb-1">Base Color</label>
+                                        <ColorGrid onSelect={(c) => updateConfig('crystalBaseColor', c)} selectedColor={config.current.crystalBaseColor} />
+                                    </div>
+                                </div>
                             </div>
 
                             {/* Internal Flow Settings */}
@@ -977,7 +1044,7 @@ export default function ElectroWand() {
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="text-[10px] text-gray-400 block mb-1">Speed</label>
+                                        <label className="text-[10px] text-gray-400 block mb-1">Flow Speed (1=Slow)</label>
                                         <div className="flex gap-1">
                                             {[1, 2, 3, 4, 5].map(level => (
                                                 <button key={level} className={`w-full h-6 rounded border text-[10px] ${activeClass(config.current.internalSpeed === level)}`} onClick={() => updateConfig('internalSpeed', level)}>{level}</button>
@@ -985,7 +1052,7 @@ export default function ElectroWand() {
                                         </div>
                                     </div>
                                     <div>
-                                        <label className="text-[10px] text-gray-400 block mb-1">Size</label>
+                                        <label className="text-[10px] text-gray-400 block mb-1">Size (1=Small)</label>
                                         <div className="flex gap-1">
                                             {[1, 2, 3, 4, 5].map(level => (
                                                 <button key={level} className={`w-full h-6 rounded border text-[10px] ${activeClass(config.current.internalSize === level)}`} onClick={() => updateConfig('internalSize', level)}>{level}</button>
@@ -1019,7 +1086,7 @@ export default function ElectroWand() {
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="text-[10px] text-gray-400 block mb-1">Projectile Size</label>
+                                        <label className="text-[10px] text-gray-400 block mb-1">Size (1=Small)</label>
                                         <div className="flex gap-1">
                                             {[1, 2, 3, 4, 5].map(level => (
                                                 <button key={level} className={`w-full h-6 rounded border text-[10px] ${activeClass(config.current.externalSize === level)}`} onClick={() => updateConfig('externalSize', level)}>{level}</button>
@@ -1027,7 +1094,7 @@ export default function ElectroWand() {
                                         </div>
                                     </div>
                                     <div>
-                                        <label className="text-[10px] text-gray-400 block mb-1">Screen Fill (Accumulation)</label>
+                                        <label className="text-[10px] text-gray-400 block mb-1">Screen Fill (0=Off)</label>
                                         <div className="flex gap-1">
                                             {[0, 1, 2, 3, 4, 5].map(level => (
                                                 <button key={level} className={`w-full h-6 rounded border text-[10px] ${activeClass(config.current.screenFillLevel === level)}`} onClick={() => updateConfig('screenFillLevel', level)}>{level}</button>
@@ -1035,17 +1102,22 @@ export default function ElectroWand() {
                                         </div>
                                     </div>
                                 </div>
+                                
+                                <div>
+                                    <label className="text-[10px] text-gray-400 block mb-1">Energy Color</label>
+                                    <ColorGrid onSelect={(c) => updateConfig('lightningColor', c)} selectedColor={config.current.lightningColor} />
+                                </div>
                             </div>
 
                             {/* General Settings */}
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="text-[10px] text-gray-400 block mb-1">Stability (Vibration)</label>
+                                    <label className="text-[10px] text-gray-400 block mb-1">Vibration (0=None)</label>
                                     <div className="flex gap-1">
                                         {[0, 1, 2, 3, 4].map(level => (
                                             <button 
                                                 key={level}
-                                                className={`w-6 h-6 rounded border flex items-center justify-center text-[10px] transition-all active:scale-90 ${activeClass(config.current.vibrationLevel === level)}`}
+                                                className={`w-full h-6 rounded border flex items-center justify-center text-[10px] transition-all active:scale-90 ${activeClass(config.current.vibrationLevel === level)}`}
                                                 onClick={() => updateConfig('vibrationLevel', level)}
                                             >
                                                 {level}
@@ -1054,132 +1126,18 @@ export default function ElectroWand() {
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="text-[10px] text-gray-400 block mb-1">Energy Color</label>
-                                    <div className="grid grid-cols-3 gap-1">
-                                        {['white', '#fde047', '#22d3ee', '#ec4899', '#a3e635', '#ef4444'].map(c => (
+                                    <h3 className="text-[10px] text-gray-400 block mb-1">Sonic Profile</h3>
+                                    <div className="grid grid-cols-5 gap-1">
+                                        {['hum', 'theremin', 'ethereal', 'void', 'dragon'].map(s => (
                                             <button 
-                                                key={c} 
-                                                className={`h-6 rounded border border-gray-600 transition-transform active:scale-90 ${config.current.lightningColor === c ? 'ring-2 ring-white' : ''}`} 
-                                                style={{backgroundColor: c}} 
-                                                onClick={() => updateConfig('lightningColor', c)} 
-                                            />
+                                                key={s} 
+                                                className={`p-1 text-[8px] rounded border capitalize transition-all active:scale-90 overflow-hidden text-center ${activeClass(config.current.soundProfile === s)}`} 
+                                                onClick={() => updateConfig('soundProfile', s)}
+                                            >
+                                                {s.slice(0,3)}
+                                            </button>
                                         ))}
                                     </div>
-                                </div>
-                            </div>
-
-                            {/* Shape & Material */}
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="text-[10px] text-gray-400 block mb-1">Wand Shape</label>
-                                    <select 
-                                        className="w-full bg-gray-800 text-xs border border-gray-600 rounded p-1 text-white" 
-                                        value={config.current.wandShape}
-                                        onChange={(e) => updateConfig('wandShape', (e.target as any).value)}
-                                    >
-                                        <option value="classic">Classic</option>
-                                        <option value="twisted">Twisted</option>
-                                        <option value="elder">Elder</option>
-                                        <option value="vine">Vine</option>
-                                        <option value="bone">Bone</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="text-[10px] text-gray-400 block mb-1">Wood Material</label>
-                                    <div className="flex gap-1">
-                                        {['#3e2723', '#1a1a1a', '#e0e0e0', '#c5a000'].map(c => (
-                                            <button key={c} 
-                                                className={`w-6 h-6 rounded transition-transform active:scale-90 ${config.current.wandBaseColor === c ? 'ring-2 ring-white' : ''}`} 
-                                                style={{backgroundColor: c}} 
-                                                onClick={() => updateConfig('wandBaseColor', c)} 
-                                            />
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Core */}
-                            <div>
-                                <h3 className="text-xs uppercase text-gray-500 mb-2 tracking-wide font-bold">Crystal Core</h3>
-                                <div className="grid grid-cols-2 gap-4 mb-2">
-                                    <div>
-                                        <label className="text-[10px] text-gray-400 block mb-1">Shape</label>
-                                        <select 
-                                            className="w-full bg-gray-800 text-xs border border-gray-600 rounded p-1 text-white"
-                                            value={config.current.crystalShape}
-                                            onChange={(e) => updateConfig('crystalShape', (e.target as any).value)}
-                                        >
-                                            <option value="orb">Orb</option>
-                                            <option value="diamond">Diamond</option>
-                                            <option value="shard">Shard</option>
-                                            <option value="hex">Hex</option>
-                                            <option value="tear">Tear</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="text-[10px] text-gray-400 block mb-1">Base Color</label>
-                                        <div className="flex gap-1">
-                                            {[270, 210, 0, null].map((h, i) => {
-                                                const isSelected = h === null ? config.current.crystalWhiteMode : (!config.current.crystalWhiteMode && config.current.crystalBaseHue === h);
-                                                return (
-                                                    <button key={i} 
-                                                        className={`w-6 h-6 rounded border border-gray-600 transition-transform active:scale-90 ${isSelected ? 'ring-2 ring-white scale-110' : ''} ${h===null?'bg-white':''}`} 
-                                                        style={{backgroundColor: h!==null?`hsl(${h}, 50%, 50%)`:''}} 
-                                                        onClick={() => {
-                                                            if(h===null) { updateConfig('crystalWhiteMode', true); updateConfig('crystalBaseHue', 0); }
-                                                            else { updateConfig('crystalWhiteMode', false); updateConfig('crystalBaseHue', h); }
-                                                        }} 
-                                                    />
-                                                )
-                                            })}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="text-[10px] text-gray-400 block mb-1">Activated Glow</label>
-                                    <div className="grid grid-cols-6 gap-2">
-                                        {[280, 210, 150, 0, 45, null].map((h, i) => {
-                                            const isSelected = h === null ? config.current.activeWhiteMode : (!config.current.activeWhiteMode && config.current.hue === h);
-                                            return (
-                                                <button key={i} 
-                                                    className={`h-8 rounded border border-gray-600 transition-transform active:scale-90 ${isSelected ? 'ring-2 ring-white scale-110' : ''} ${h===null?'bg-white':''}`} 
-                                                    style={{backgroundColor: h!==null?`hsl(${h}, 100%, 50%)`:''}} 
-                                                    onClick={() => {
-                                                        if(h===null) { updateConfig('activeWhiteMode', true); updateConfig('hue', 0); }
-                                                        else { updateConfig('activeWhiteMode', false); updateConfig('hue', h); }
-                                                    }} 
-                                                />
-                                            )
-                                        })}
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Sound */}
-                            <div>
-                                <h3 className="text-xs uppercase text-gray-500 mb-2 tracking-wide font-bold flex justify-between items-center">
-                                    Sonic Resonance
-                                    <div className="flex items-center gap-2 text-[10px] font-normal normal-case text-gray-400">
-                                        {/* FIX: Cast target to any for checkbox */}
-                                        <input 
-                                            type="checkbox" 
-                                            className="accent-purple-500" 
-                                            checked={config.current.reverb}
-                                            onChange={(e) => updateConfig('reverb', (e.target as any).checked)} 
-                                        /> 
-                                        <span>Reverb</span>
-                                    </div>
-                                </h3>
-                                <div className="grid grid-cols-5 gap-1">
-                                    {['hum', 'theremin', 'ethereal', 'void', 'dragon'].map(s => (
-                                        <button 
-                                            key={s} 
-                                            className={`p-1 text-[10px] rounded border capitalize transition-all active:scale-90 ${activeClass(config.current.soundProfile === s)}`} 
-                                            onClick={() => updateConfig('soundProfile', s)}
-                                        >
-                                            {s}
-                                        </button>
-                                    ))}
                                 </div>
                             </div>
                         </div>
