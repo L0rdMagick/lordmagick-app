@@ -387,8 +387,50 @@ export default function ElectroWand() {
         c.stroke();
     };
 
+    // Helper to draw shapes
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const drawShape = (ctx: any, type: string, color: string, size: number = 10) => {
+        if (type === 'hearts') {
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            const topCurveHeight = size * 0.3;
+            ctx.moveTo(0, topCurveHeight);
+            ctx.bezierCurveTo(0, 0, -size/2, 0, -size/2, topCurveHeight);
+            ctx.bezierCurveTo(-size/2, (size+topCurveHeight)/2, 0, (size+topCurveHeight)/2, 0, size);
+            ctx.bezierCurveTo(0, (size+topCurveHeight)/2, size/2, (size+topCurveHeight)/2, size/2, topCurveHeight);
+            ctx.bezierCurveTo(size/2, 0, 0, 0, 0, topCurveHeight);
+            ctx.fill();
+        } else if (type === 'coins') {
+            ctx.fillStyle = '#fbbf24'; 
+            ctx.beginPath(); ctx.arc(0,0, size/2, 0, Math.PI*2); ctx.fill();
+            ctx.strokeStyle = '#b45309'; ctx.lineWidth=2; ctx.stroke();
+            ctx.fillStyle = '#fef08a'; ctx.font = `${size*0.6}px serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+            ctx.fillText('$', 0, 1);
+        } else if (type === 'clovers') {
+            ctx.fillStyle = '#4ade80'; 
+            for(let k=0; k<4; k++) {
+                ctx.rotate(Math.PI/2);
+                ctx.beginPath(); ctx.arc(0, -size*0.3, size*0.3, 0, Math.PI*2); ctx.fill();
+            }
+        } else if (type === 'rainbow') {
+            // Updated Rainbow: Vector Arc
+            ctx.beginPath();
+            ctx.arc(0, 0, size * 0.8, Math.PI, 0); 
+            ctx.lineWidth = size * 0.4;
+            const grad = ctx.createLinearGradient(-size, 0, size, 0);
+            grad.addColorStop(0, "red"); grad.addColorStop(0.2, "orange");
+            grad.addColorStop(0.4, "yellow"); grad.addColorStop(0.6, "green");
+            grad.addColorStop(0.8, "blue"); grad.addColorStop(1, "violet");
+            ctx.strokeStyle = grad; ctx.stroke();
+        } else if (type === 'lightning') {
+            ctx.fillStyle = color;
+            ctx.beginPath(); ctx.arc(0, 0, size/2, 0, Math.PI*2); ctx.fill();
+        }
+    };
+
     // --- EFFECT HOOKS ---
 
+    // Initialization & Resize
     useEffect(() => {
         const resize = () => {
             const win = (globalThis as any).window;
@@ -418,7 +460,7 @@ export default function ElectroWand() {
         return () => { if (win) win.removeEventListener('resize', resize); }
     }, []);
 
-    // Main Loop
+    // Main Animation Loop
     useEffect(() => {
         let animationFrameId: number;
 
@@ -445,6 +487,7 @@ export default function ElectroWand() {
                     
                     const level = conf.vibrationLevel;
                     if (level > 0) {
+                        // Updated Vibration: Higher Freq, Controlled Amplitude
                         const vibFreq = [0, 0.5, 1.0, 2.0, 3.5, 5.0]; 
                         const amplitude = 2.0; 
                         const speed = 0.5 + (progress * 2.0);
@@ -567,11 +610,12 @@ export default function ElectroWand() {
                 c.fillStyle = grad;
                 c.fillRect(0,0,canvasRef.current.width,canvasRef.current.height);
 
+                // Generate Internal Particles
                 if (Math.random() > 0.1) {
                     const spawnX = w.baseX + (Math.random() - 0.5) * 20;
                     const spawnY = w.crystalY + (Math.random() - 0.5) * 20;
                     
-                    // Internal Speed: Level 1 = 0.5 (Half of old base), L5 = 3.0 (Fast)
+                    // Internal Speed: Slower base
                     const baseSpeed = 0.5; 
                     const speedRange = 2.5;
                     const speedMult = baseSpeed + ((conf.internalSpeed - 1) / 4) * speedRange;
@@ -591,6 +635,7 @@ export default function ElectroWand() {
                 for (let i = s.particles.length - 1; i >= 0; i--) {
                     const p = s.particles[i];
                     
+                    // Recalculate speed mult for wiggle logic
                     const baseSpeed = 0.5; 
                     const speedRange = 2.5;
                     const speedMult = baseSpeed + ((conf.internalSpeed - 1) / 4) * speedRange;
@@ -602,7 +647,6 @@ export default function ElectroWand() {
                     if (p.life <= 0) { s.particles.splice(i, 1); continue; }
 
                     // Internal Size: L1=1x, L5=2x. Scale linearly.
-                    // L1=1.0, L5=2.0 -> (1 + (level-1)/4)
                     const sizeMult = 1.0 + ((conf.internalSize - 1) / 4);
                     
                     if (p.shapeType === 'lightning') {
@@ -661,6 +705,7 @@ export default function ElectroWand() {
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         s.projectiles.push({ segments, life: 1.0, type: 'lightning', color: conf.externalColor, state: 'shooting' } as any);
                     } else {
+                        // Angle Spread Logic
                         const spreadMap = [30, 50, 75, 90, 110, 150];
                         const spreadDeg = spreadMap[conf.screenFillLevel] || 30;
                         const angle = (Math.random() - 0.5) * spreadDeg * (Math.PI / 180); 
@@ -739,47 +784,6 @@ export default function ElectroWand() {
         return () => { if (win) win.cancelAnimationFrame(animationFrameId); };
     }, []);
 
-    // Helper to draw shapes
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const drawShape = (ctx: any, type: string, color: string, size: number = 10) => {
-        if (type === 'hearts') {
-            ctx.fillStyle = color;
-            ctx.beginPath();
-            const topCurveHeight = size * 0.3;
-            ctx.moveTo(0, topCurveHeight);
-            ctx.bezierCurveTo(0, 0, -size/2, 0, -size/2, topCurveHeight);
-            ctx.bezierCurveTo(-size/2, (size+topCurveHeight)/2, 0, (size+topCurveHeight)/2, 0, size);
-            ctx.bezierCurveTo(0, (size+topCurveHeight)/2, size/2, (size+topCurveHeight)/2, size/2, topCurveHeight);
-            ctx.bezierCurveTo(size/2, 0, 0, 0, 0, topCurveHeight);
-            ctx.fill();
-        } else if (type === 'coins') {
-            ctx.fillStyle = '#fbbf24'; 
-            ctx.beginPath(); ctx.arc(0,0, size/2, 0, Math.PI*2); ctx.fill();
-            ctx.strokeStyle = '#b45309'; ctx.lineWidth=2; ctx.stroke();
-            ctx.fillStyle = '#fef08a'; ctx.font = `${size*0.6}px serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
-            ctx.fillText('$', 0, 1);
-        } else if (type === 'clovers') {
-            ctx.fillStyle = '#4ade80'; 
-            for(let k=0; k<4; k++) {
-                ctx.rotate(Math.PI/2);
-                ctx.beginPath(); ctx.arc(0, -size*0.3, size*0.3, 0, Math.PI*2); ctx.fill();
-            }
-        } else if (type === 'rainbow') {
-            // Replaced with Vector Arc
-            ctx.beginPath();
-            ctx.arc(0, 0, size * 0.8, Math.PI, 0); 
-            ctx.lineWidth = size * 0.4;
-            const grad = ctx.createLinearGradient(-size, 0, size, 0);
-            grad.addColorStop(0, "red"); grad.addColorStop(0.2, "orange");
-            grad.addColorStop(0.4, "yellow"); grad.addColorStop(0.6, "green");
-            grad.addColorStop(0.8, "blue"); grad.addColorStop(1, "violet");
-            ctx.strokeStyle = grad; ctx.stroke();
-        } else if (type === 'lightning') {
-            ctx.fillStyle = color;
-            ctx.beginPath(); ctx.arc(0, 0, size/2, 0, Math.PI*2); ctx.fill();
-        }
-    };
-
     // --- EVENT HANDLERS ---
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handleStart = (e: any) => {
@@ -815,6 +819,7 @@ export default function ElectroWand() {
         config.current[key] = value;
         updateCSSVar();
         if(key === 'wandBaseColor' || key === 'wandShape') generateWoodGrain();
+        
         setConfigTick(t => t + 1);
     };
 
@@ -853,22 +858,27 @@ export default function ElectroWand() {
             />
 
             <div className="absolute top-0 left-0 w-full h-full pointer-events-none z-20">
+                
+                {/* Top Left: Back Link */}
                 <div className="absolute top-4 left-4 pointer-events-auto">
                     <MagickalBackLink href="/marketplace/magickal-tools" text="Back" className="text-xs" />
                 </div>
 
+                {/* Bottom Left: Settings */}
                 <div className="absolute bottom-4 left-4 pointer-events-auto">
                     <button onClick={() => setShowSettings(true)} className="p-3 rounded-full bg-gray-900/50 border border-purple-500/30 hover:bg-gray-800 text-purple-300 transition-colors backdrop-blur-md">
                         <Settings size={24} />
                     </button>
                 </div>
 
+                {/* Bottom Right: Fullscreen */}
                 <div className="absolute bottom-4 right-4 pointer-events-auto">
                     <button onClick={toggleFullscreen} className="p-3 rounded-full bg-gray-900/50 border border-purple-500/30 hover:bg-gray-800 text-purple-300 transition-colors backdrop-blur-md">
                         {isFullscreen ? <Minimize2 size={24} /> : <Maximize2 size={24} />}
                     </button>
                 </div>
 
+                {/* Left Vertical Text: LORDMAGICK - Smaller */}
                 <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none flex items-center justify-center h-full w-0">
                     <div className="-rotate-90 origin-center whitespace-nowrap opacity-30 mix-blend-screen">
                         <h1 className="text-xs font-bold tracking-[0.4em] font-serif text-purple-300/50" style={{textShadow: '0 0 5px currentColor'}}>
@@ -877,6 +887,7 @@ export default function ElectroWand() {
                     </div>
                 </div>
 
+                {/* Right Vertical Text: Name & Intention */}
                 {(wandName || intention) && (
                     <div className="absolute right-8 top-1/2 -translate-y-1/2 pointer-events-none flex items-center justify-center h-full w-0">
                         <div className="rotate-90 origin-center whitespace-nowrap text-center transition-opacity duration-1000">
@@ -894,6 +905,7 @@ export default function ElectroWand() {
                     </div>
                 )}
 
+                {/* Start Hint Overlay */}
                 <div id="start-hint" className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center pointer-events-auto transition-opacity duration-500 ${hasStarted ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
                     <p className="text-purple-200 text-sm tracking-widest uppercase mb-4">Initialize Energy</p>
                     <div className="w-16 h-16 border border-purple-400 rounded-full mx-auto animate-pulse flex items-center justify-center mb-6 pointer-events-none">
@@ -912,6 +924,7 @@ export default function ElectroWand() {
                 </div>
             </div>
 
+            {/* SETTINGS MODAL */}
             {showSettings && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
                     <div className="w-11/12 max-w-md bg-gray-950/95 border border-gray-700 rounded-xl p-6 relative max-h-[85vh] overflow-y-auto">
@@ -919,6 +932,7 @@ export default function ElectroWand() {
                         <h2 className="text-2xl font-serif text-purple-300 mb-4 text-center tracking-widest border-b border-gray-700 pb-2">Grimoire</h2>
                         
                         <div className="space-y-6">
+                            {/* Identity */}
                             <div className="space-y-2">
                                 <h3 className="text-xs uppercase text-gray-500 tracking-wide font-bold">Identity</h3>
                                 {/* FIX: Cast target to any for input values */}
@@ -926,6 +940,7 @@ export default function ElectroWand() {
                                 <input type="text" value={intention} onChange={(e) => setIntention((e.target as any).value)} placeholder="Set your Intention..." className="w-full bg-black/30 border border-gray-600 rounded p-2 text-purple-200 text-xs focus:border-purple-500 outline-none" />
                             </div>
 
+                            {/* Shape & Material */}
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="text-[10px] text-gray-400 block mb-1">Shape</label>
@@ -941,9 +956,13 @@ export default function ElectroWand() {
                                         <option value="bone">Bone</option>
                                     </select>
                                 </div>
-                                <ColorPickerButton label="Wood Color" value={config.current.wandBaseColor} onChange={(c) => updateConfig('wandBaseColor', c)} />
+                                <div>
+                                    <label className="text-[10px] text-gray-400 block mb-1">Wood Material</label>
+                                    <ColorPickerButton label="Wood Color" value={config.current.wandBaseColor} onChange={(c) => updateConfig('wandBaseColor', c)} />
+                                </div>
                             </div>
 
+                            {/* Core */}
                             <div>
                                 <h3 className="text-xs uppercase text-gray-500 mb-2 tracking-wide font-bold">Crystal Core</h3>
                                 <div className="grid grid-cols-2 gap-4 mb-2">
@@ -966,56 +985,119 @@ export default function ElectroWand() {
                                 <ColorPickerButton label="Activated Glow" value={config.current.activatedColor} onChange={(c) => updateConfig('activatedColor', c)} />
                             </div>
 
+                            {/* Internal Flow Settings */}
                             <div className="p-3 bg-gray-900/50 rounded border border-gray-800 space-y-3">
                                 <h3 className="text-xs uppercase text-gray-500 tracking-wide font-bold">Internal Energy</h3>
+                                
                                 <div className="grid grid-cols-5 gap-1">
-                                    {[{id: 'lightning', icon: Zap}, {id: 'hearts', icon: Heart}, {id: 'rainbow', icon: CloudRain}, {id: 'coins', icon: Coins}, {id: 'clovers', icon: Clover}].map(item => (
-                                        <button key={item.id} className={`p-2 rounded border flex items-center justify-center transition-all active:scale-90 ${activeClass(config.current.internalShape === item.id)}`} onClick={() => updateConfig('internalShape', item.id)}><item.icon size={14} /></button>
+                                    {[
+                                        {id: 'lightning', icon: Zap}, 
+                                        {id: 'hearts', icon: Heart}, 
+                                        {id: 'rainbow', icon: CloudRain}, 
+                                        {id: 'coins', icon: Coins}, 
+                                        {id: 'clovers', icon: Clover}
+                                    ].map(item => (
+                                        <button 
+                                            key={item.id} 
+                                            className={`p-2 rounded border flex items-center justify-center transition-all active:scale-90 ${activeClass(config.current.internalShape === item.id)}`}
+                                            onClick={() => updateConfig('internalShape', item.id)}
+                                        >
+                                            <item.icon size={14} />
+                                        </button>
                                     ))}
                                 </div>
+
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="text-[10px] text-gray-400 block mb-1">Speed</label>
-                                        <div className="flex gap-1">{[1, 2, 3, 4, 5].map(level => (<button key={level} className={`w-full h-6 rounded border text-[10px] ${activeClass(config.current.internalSpeed === level)}`} onClick={() => updateConfig('internalSpeed', level)}>{level}</button>))}</div>
+                                        <label className="text-[10px] text-gray-400 block mb-1">Flow Speed (1=Slow)</label>
+                                        <div className="flex gap-1">
+                                            {[1, 2, 3, 4, 5].map(level => (
+                                                <button key={level} className={`w-full h-6 rounded border text-[10px] ${activeClass(config.current.internalSpeed === level)}`} onClick={() => updateConfig('internalSpeed', level)}>{level}</button>
+                                            ))}
+                                        </div>
                                     </div>
                                     <div>
-                                        <label className="text-[10px] text-gray-400 block mb-1">Size</label>
-                                        <div className="flex gap-1">{[1, 2, 3, 4, 5].map(level => (<button key={level} className={`w-full h-6 rounded border text-[10px] ${activeClass(config.current.internalSize === level)}`} onClick={() => updateConfig('internalSize', level)}>{level}</button>))}</div>
+                                        <label className="text-[10px] text-gray-400 block mb-1">Size (1=Small)</label>
+                                        <div className="flex gap-1">
+                                            {[1, 2, 3, 4, 5].map(level => (
+                                                <button key={level} className={`w-full h-6 rounded border text-[10px] ${activeClass(config.current.internalSize === level)}`} onClick={() => updateConfig('internalSize', level)}>{level}</button>
+                                            ))}
+                                        </div>
                                     </div>
                                 </div>
                                 <ColorPickerButton label="Internal Color" value={config.current.internalColor} onChange={(c) => updateConfig('internalColor', c)} />
                             </div>
 
+                            {/* External Cast Settings */}
                             <div className="p-3 bg-gray-900/50 rounded border border-gray-800 space-y-3">
                                 <h3 className="text-xs uppercase text-gray-500 tracking-wide font-bold">External Projection</h3>
+                                
                                 <div className="grid grid-cols-5 gap-1">
-                                    {[{id: 'lightning', icon: Zap}, {id: 'hearts', icon: Heart}, {id: 'rainbow', icon: CloudRain}, {id: 'coins', icon: Coins}, {id: 'clovers', icon: Clover}].map(item => (
-                                        <button key={item.id} className={`p-2 rounded border flex items-center justify-center transition-all active:scale-90 ${activeClass(config.current.externalShape === item.id)}`} onClick={() => updateConfig('externalShape', item.id)}><item.icon size={14} /></button>
+                                    {[
+                                        {id: 'lightning', icon: Zap}, 
+                                        {id: 'hearts', icon: Heart}, 
+                                        {id: 'rainbow', icon: CloudRain}, 
+                                        {id: 'coins', icon: Coins}, 
+                                        {id: 'clovers', icon: Clover}
+                                    ].map(item => (
+                                        <button 
+                                            key={item.id} 
+                                            className={`p-2 rounded border flex items-center justify-center transition-all active:scale-90 ${activeClass(config.current.externalShape === item.id)}`}
+                                            onClick={() => updateConfig('externalShape', item.id)}
+                                        >
+                                            <item.icon size={14} />
+                                        </button>
                                     ))}
                                 </div>
+
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="text-[10px] text-gray-400 block mb-1">Size</label>
-                                        <div className="flex gap-1">{[1, 2, 3, 4, 5].map(level => (<button key={level} className={`w-full h-6 rounded border text-[10px] ${activeClass(config.current.externalSize === level)}`} onClick={() => updateConfig('externalSize', level)}>{level}</button>))}</div>
+                                        <label className="text-[10px] text-gray-400 block mb-1">Projectile Size</label>
+                                        <div className="flex gap-1">
+                                            {[1, 2, 3, 4, 5].map(level => (
+                                                <button key={level} className={`w-full h-6 rounded border text-[10px] ${activeClass(config.current.externalSize === level)}`} onClick={() => updateConfig('externalSize', level)}>{level}</button>
+                                            ))}
+                                        </div>
                                     </div>
                                     <div>
-                                        <label className="text-[10px] text-gray-400 block mb-1">Accumulation</label>
-                                        <div className="flex gap-1">{[0, 1, 2, 3, 4, 5].map(level => (<button key={level} className={`w-full h-6 rounded border text-[10px] ${activeClass(config.current.screenFillLevel === level)}`} onClick={() => updateConfig('screenFillLevel', level)}>{level}</button>))}</div>
+                                        <label className="text-[10px] text-gray-400 block mb-1">Screen Fill (0=Off)</label>
+                                        <div className="flex gap-1">
+                                            {[0, 1, 2, 3, 4, 5].map(level => (
+                                                <button key={level} className={`w-full h-6 rounded border text-[10px] ${activeClass(config.current.screenFillLevel === level)}`} onClick={() => updateConfig('screenFillLevel', level)}>{level}</button>
+                                            ))}
+                                        </div>
                                     </div>
                                 </div>
                                 <ColorPickerButton label="Cast Color" value={config.current.externalColor} onChange={(c) => updateConfig('externalColor', c)} />
                             </div>
 
+                            {/* General Settings */}
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="text-[10px] text-gray-400 block mb-1">Stability (0=None)</label>
-                                    <div className="flex gap-1">{[0, 1, 2, 3, 4].map(level => (<button key={level} className={`w-full h-6 rounded border flex items-center justify-center text-[10px] transition-all active:scale-90 ${activeClass(config.current.vibrationLevel === level)}`} onClick={() => updateConfig('vibrationLevel', level)}>{level}</button>))}</div>
+                                    <label className="text-[10px] text-gray-400 block mb-1">Vibration (0=None)</label>
+                                    <div className="flex gap-1">
+                                        {[0, 1, 2, 3, 4].map(level => (
+                                            <button 
+                                                key={level}
+                                                className={`w-full h-6 rounded border flex items-center justify-center text-[10px] transition-all active:scale-90 ${activeClass(config.current.vibrationLevel === level)}`}
+                                                onClick={() => updateConfig('vibrationLevel', level)}
+                                            >
+                                                {level}
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
                                 <div>
                                     <h3 className="text-[10px] text-gray-400 block mb-1">Sonic Profile</h3>
                                     <div className="grid grid-cols-5 gap-1">
                                         {['hum', 'theremin', 'ethereal', 'void', 'dragon'].map(s => (
-                                            <button key={s} className={`p-1 text-[8px] rounded border capitalize transition-all active:scale-90 overflow-hidden text-center ${activeClass(config.current.soundProfile === s)}`} onClick={() => updateConfig('soundProfile', s)}>{s.slice(0,3)}</button>
+                                            <button 
+                                                key={s} 
+                                                className={`p-1 text-[8px] rounded border capitalize transition-all active:scale-90 overflow-hidden text-center ${activeClass(config.current.soundProfile === s)}`} 
+                                                onClick={() => updateConfig('soundProfile', s)}
+                                            >
+                                                {s.slice(0,3)}
+                                            </button>
                                         ))}
                                     </div>
                                 </div>
