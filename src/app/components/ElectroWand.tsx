@@ -52,13 +52,13 @@ export default function ElectroWand() {
         internalSpeed: 3, 
         internalSize: 2,  
         externalSize: 2,  
-        screenFillLevel: 0,
+        screenFillLevel: 0, // 0-5
         wandWidthLevel: 1, // 1-5
 
         // Audio/Haptics
         intensityMult: 1.0,
         vibrationLevel: 2,
-        masterVolume: 1.0, // 0.0 to 2.0
+        masterVolume: 1.0, 
         soundProfile: 'hum',
         reverb: false,
 
@@ -357,7 +357,6 @@ export default function ElectroWand() {
         c.closePath();
     };
 
-    // New 3D Crystal Renderer
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const drawCrystal = (c: any, x: number, y: number, size: number) => {
         const color = config.current.crystalBaseColor;
@@ -665,12 +664,11 @@ export default function ElectroWand() {
 
                     if (p.life <= 0) { s.particles.splice(i, 1); continue; }
 
-                    // FIXED Internal Size Scaling to match external: 
-                    // Base size (15) x Life x Multiplier (1.0 to 2.0)
-                    const sizeMult = 1.0 + ((conf.internalSize - 1) / 4);
+                    // FIXED SYNCED SIZING: Matches external logic (1.0 + (level-1)*0.25)
+                    const sizeMult = 1.0 + ((conf.internalSize - 1) * 0.25);
                     
                     if (p.shapeType === 'lightning') {
-                         // Match external width logic: 2 * (1 + (size - 1) * 0.5)
+                        // Match width logic for internal lightning
                         const thickness = 2 * (1 + (conf.internalSize - 1) * 0.5);
                         c.beginPath();
                         c.strokeStyle = p.color;
@@ -681,15 +679,10 @@ export default function ElectroWand() {
                     } else {
                         c.save();
                         c.translate(p.x, p.y);
-                        // 15 is base size.
-                        const scale = (15 / 10) * p.life * sizeMult * 0.3; // Internal scaling factor adjustment
-                        // Actually, to match external visual weight:
-                        const matchedScale = p.life * sizeMult; 
-                        // External uses base size 15. Internal draws shape at base size 10.
-                        // So scale should be (15/10) * matchedScale -> 1.5 * matchedScale.
-                        // But we want them slightly smaller inside. Let's just match the logic exactly but render smaller due to distance.
-                        c.scale(matchedScale, matchedScale); 
-                        drawShape(c, p.shapeType, p.color, 15);
+                        // Base size is 15 (same as external base), scaled by multiplier
+                        const scale = (15/10) * p.life * sizeMult * 0.3; // Rendering scale down for inside view
+                        c.scale(scale, scale);
+                        drawShape(c, p.shapeType, p.color);
                         c.restore();
                     }
                 }
@@ -712,18 +705,26 @@ export default function ElectroWand() {
                     c.fill();
                 }
 
-                // Spawn Probability Logic (Volume Increase +20% per level)
+                // Spawn Probability Logic (Volume Increase +25% per level)
                 let spawnRate = 0.25; 
-                if (conf.screenFillLevel > 1) {
-                    spawnRate *= (1 + (conf.screenFillLevel - 1) * 0.2); 
+                if (conf.screenFillLevel >= 2) {
+                     // Compound 25% increase per level starting at level 2
+                     const multiplier = Math.pow(1.25, conf.screenFillLevel - 1);
+                     spawnRate *= multiplier;
                 }
 
                 if (s.energyLevel > 0.8 && Math.random() < spawnRate * conf.intensityMult) {
                     if (conf.externalShape === 'lightning') {
                         const spreadMap = [30, 50, 75, 90, 110, 150];
-                        const spreadDeg = spreadMap[conf.screenFillLevel] || 30;
-                        const angle = (Math.random() - 0.5) * spreadDeg * (Math.PI / 180);
+                        // Apply Spread Multiplier same as Volume (+25% compound)
+                        let spreadDeg = 30;
+                        if (conf.screenFillLevel >= 2) {
+                            spreadDeg = 30 * Math.pow(1.25, conf.screenFillLevel - 1);
+                        } else if (conf.screenFillLevel === 1) {
+                            spreadDeg = 30; // Baseline
+                        }
                         
+                        const angle = (Math.random() - 0.5) * spreadDeg * (Math.PI / 180);
                         const dist = w.tipY + 100; 
                         const endX = tipX + Math.tan(angle) * dist;
                         
@@ -738,14 +739,17 @@ export default function ElectroWand() {
                         };
                         generateSegments(tipX, w.tipY, endX, -100, 80);
                         
+                        // Use external size for width
                         const width = 2 * (1 + (conf.externalSize - 1) * 0.5);
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         s.projectiles.push({ segments, life: 1.0, type: 'lightning', color: conf.externalColor, state: 'shooting', width } as any);
                     } else {
-                        const spreadMap = [30, 50, 75, 90, 110, 150];
-                        const spreadDeg = spreadMap[conf.screenFillLevel] || 30;
+                        let spreadDeg = 30;
+                        if (conf.screenFillLevel >= 2) {
+                            spreadDeg = 30 * Math.pow(1.25, conf.screenFillLevel - 1);
+                        }
+
                         const angle = (Math.random() - 0.5) * spreadDeg * (Math.PI / 180); 
-                        
                         const speed = Math.random() * 5 + 5;
                         s.projectiles.push({
                             x: tipX, y: w.tipY,
@@ -768,6 +772,7 @@ export default function ElectroWand() {
                     if(bolt.life <= 0) { s.projectiles.splice(i, 1); continue; }
                     c.beginPath();
                     c.strokeStyle = bolt.color;
+                    // Width scaling
                     c.lineWidth = Math.max(0.1, (bolt.width || 2) * bolt.life * conf.intensityMult);
                     c.shadowBlur = 10;
                     c.shadowColor = bolt.color;
@@ -796,7 +801,8 @@ export default function ElectroWand() {
 
                     p.rot += p.rotSpeed;
                     
-                    const sizeMult = 1.0 + ((conf.externalSize - 1) / 4);
+                    // External Size Scaling (Matches Internal Logic)
+                    const sizeMult = 1.0 + ((conf.externalSize - 1) * 0.25);
                     p.size = 15 * p.life * sizeMult;
                     
                     if (p.life <= 0) { s.projectiles.splice(i, 1); continue; }
@@ -895,6 +901,7 @@ export default function ElectroWand() {
         config.current[key] = value;
         updateCSSVar();
         if(key === 'wandBaseColor' || key === 'wandShape') generateWoodGrain();
+        
         setConfigTick(t => t + 1);
     };
     
@@ -1167,7 +1174,7 @@ export default function ElectroWand() {
                                     <label className="text-xs text-gray-400 block mb-1">Sonic Profile</label>
                                     <div className="grid grid-cols-5 gap-1">
                                         {['hum', 'theremin', 'ethereal', 'void', 'dragon'].map(s => (
-                                            <button key={s} className={`p-1 text-[8px] rounded border capitalize transition-all active:scale-90 overflow-hidden text-center ${activeClass(config.current.soundProfile === s)}`} onClick={() => updateConfig('soundProfile', s)}>{s.slice(0,3)}</button>
+                                            <button key={s} className={`p-1 text-[10px] rounded border capitalize transition-all active:scale-90 overflow-hidden text-center ${activeClass(config.current.soundProfile === s)}`} onClick={() => updateConfig('soundProfile', s)}>{s.slice(0,3)}</button>
                                         ))}
                                     </div>
                                 </div>
