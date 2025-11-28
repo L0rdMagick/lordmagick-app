@@ -9,16 +9,25 @@ import MagickalBackLink from './MagickalBackLink';
 // --- TYPES ---
 interface Point { x: number; y: number }
 interface Particle { x: number; y: number; vx: number; vy: number; life: number; type: string; shapeType: string; size: number; color: string; }
-interface Projectile { x: number; y: number; vx: number; vy: number; life: number; rot: number; rotSpeed: number; type: string; size: number; color: string; state: 'shooting' | 'floating'; }
+interface Projectile { x: number; y: number; vx: number; vy: number; life: number; rot: number; rotSpeed: number; type: string; size: number; color: string; state: 'shooting' | 'floating' | 'falling'; }
 interface Bolt { segments: {x1:number, y1:number, x2:number, y2:number}[]; life: number; color: string; width: number; }
 interface Emanation { x: number; y: number; radius: number; alpha: number; color: string; }
 
 // --- PALETTE ---
+// Updated per requirements: Indigo added, Red deepened, others made more vibrant
 const COLOR_PALETTE = [
     '#ffffff', '#9ca3af', '#3e2723', '#000000',
-    '#ef4444', '#f97316', '#facc15', '#84cc16',
-    '#10b981', '#06b6d4', '#3b82f6', '#6366f1',
-    '#8b5cf6', '#d946ef', '#f43f5e', '#fbbf24'
+    '#dc2626', // Deep Red
+    '#fb923c', // Vibrant Orange
+    '#facc15', // Yellow
+    '#22c55e', // Vibrant Green
+    '#22d3ee', // Cyan
+    '#3b82f6', // Blue
+    '#4b0082', // Indigo (New)
+    '#a855f7', // Vibrant Purple
+    '#ff00ff', // Hot Pink
+    '#f43f5e', // Rose
+    '#fbbf24'  // Amber
 ];
 
 export default function ElectroWand() {
@@ -39,10 +48,10 @@ export default function ElectroWand() {
     const config = useRef({
         // Colors
         wandBaseColor: '#3e2723',
-        crystalBaseColor: '#8b5cf6', 
-        activatedColor: '#d8b4fe',
+        crystalBaseColor: '#a855f7', 
+        activatedColor: '#ff00ff',
         internalColor: '#ffffff',
-        externalColor: '#fcd34d',
+        externalColor: '#facc15',
         
         // Shapes
         internalShape: 'lightning', 
@@ -386,6 +395,37 @@ export default function ElectroWand() {
             c.stroke();
         };
 
+        const drawStar = (points: number, innerMult: number) => {
+            c.beginPath();
+            const outer = size;
+            const inner = size * innerMult;
+            const step = Math.PI / points;
+            let rot = -Math.PI/2;
+            let cx = x, cy = y;
+            c.moveTo(cx, cy - outer);
+            for(let i=0; i<points; i++) {
+                cx = x + Math.cos(rot) * outer;
+                cy = y + Math.sin(rot) * outer;
+                c.lineTo(cx, cy);
+                rot += step;
+                cx = x + Math.cos(rot) * inner;
+                cy = y + Math.sin(rot) * inner;
+                c.lineTo(cx, cy);
+                rot += step;
+            }
+            c.closePath();
+            // Radial Gradient for Stars
+            const grad = c.createRadialGradient(x, y, 0, x, y, size);
+            grad.addColorStop(0, 'white');
+            grad.addColorStop(0.3, color);
+            grad.addColorStop(1, '#1a0526');
+            c.fillStyle = grad;
+            c.fill();
+            c.strokeStyle = 'rgba(255,255,255,0.8)';
+            c.lineWidth = 1;
+            c.stroke();
+        };
+
         if (shape === 'orb') {
             // Deep base
             const grad = c.createRadialGradient(x - size*0.3, y - size*0.3, 0, x, y, size);
@@ -404,6 +444,12 @@ export default function ElectroWand() {
             c.strokeStyle = 'rgba(255,255,255,0.4)';
             c.lineWidth = 2;
             c.stroke();
+        } else if (shape === 'star5') {
+            drawStar(5, 0.4);
+        } else if (shape === 'star6') {
+            drawStar(6, 0.45);
+        } else if (shape === 'star7') {
+            drawStar(7, 0.5); // Elven/Faery star usually has less acute angles
         } else {
             // Faceted Shapes with simulated lighting
             // Light comes from Top-Left
@@ -447,8 +493,12 @@ export default function ElectroWand() {
                 const h = win.innerHeight;
                 const w = win.innerWidth;
                 
-                // Scale Width based on Setting (10% increase per level)
-                const widthMult = 1.0 + ((config.current.wandWidthLevel - 1) * 0.1);
+                // Scale Width based on Setting
+                // Old Max (L5) was 1.4x base. New Max (L5) needs to be 2.8x base (Twice what it was).
+                // Level 1 stays 1.0x.
+                // Formula: 1.0 + ((level - 1) * 0.45)
+                // L1 = 1.0, L5 = 1 + 1.8 = 2.8.
+                const widthMult = 1.0 + ((config.current.wandWidthLevel - 1) * 0.45);
 
                 state.current.wand = {
                     baseX: w / 2,
@@ -664,8 +714,11 @@ export default function ElectroWand() {
 
                     if (p.life <= 0) { s.particles.splice(i, 1); continue; }
 
-                    // FIXED SYNCED SIZING: Matches external logic (1.0 + (level-1)*0.25)
-                    const sizeMult = 1.0 + ((conf.internalSize - 1) * 0.25);
+                    // INTERNAL SIZE SCALING
+                    // Level 1 = 1.0x (Default)
+                    // Level 5 = 3.0x (New Max)
+                    // Formula: 1.0 + ((Level - 1) * 0.5)
+                    const sizeMult = 1.0 + ((conf.internalSize - 1) * 0.5);
                     
                     if (p.shapeType === 'lightning') {
                         // Match width logic for internal lightning
@@ -705,18 +758,23 @@ export default function ElectroWand() {
                     c.fill();
                 }
 
-                // Spawn Probability Logic (Volume Increase +25% per level)
+                // Spawn Probability Logic 
+                // Baseline: 0.25
+                // Level 5 Screen Fill needs to flood the screen
                 let spawnRate = 0.25; 
-                if (conf.screenFillLevel >= 2) {
-                     // Compound 25% increase per level starting at level 2
-                     const multiplier = Math.pow(1.25, conf.screenFillLevel - 1);
+                if (conf.screenFillLevel > 0) {
+                     // 1 -> 1.0x multiplier
+                     // 2-4 -> Increasing
+                     // 5 -> Massive increase (waterfall)
+                     // Using exponential curve for volume
+                     const multiplier = Math.pow(1.8, conf.screenFillLevel);
                      spawnRate *= multiplier;
                 }
 
                 if (s.energyLevel > 0.8 && Math.random() < spawnRate * conf.intensityMult) {
                     if (conf.externalShape === 'lightning') {
                         const spreadMap = [30, 50, 75, 90, 110, 150];
-                        // Apply Spread Multiplier same as Volume (+25% compound)
+                        // Apply Spread Multiplier
                         let spreadDeg = 30;
                         if (conf.screenFillLevel >= 2) {
                             spreadDeg = 30 * Math.pow(1.25, conf.screenFillLevel - 1);
@@ -744,13 +802,18 @@ export default function ElectroWand() {
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         s.projectiles.push({ segments, life: 1.0, type: 'lightning', color: conf.externalColor, state: 'shooting', width } as any);
                     } else {
+                        // STANDARD PROJECTILES & WATERFALL LOGIC
                         let spreadDeg = 30;
                         if (conf.screenFillLevel >= 2) {
-                            spreadDeg = 30 * Math.pow(1.25, conf.screenFillLevel - 1);
+                            spreadDeg = 30 * Math.pow(1.5, conf.screenFillLevel - 1); // Wider spread for waterfall
                         }
 
                         const angle = (Math.random() - 0.5) * spreadDeg * (Math.PI / 180); 
-                        const speed = Math.random() * 5 + 5;
+                        let speed = Math.random() * 5 + 5;
+                        
+                        // If Level 5 (Waterfall), shoot up harder initially
+                        if (conf.screenFillLevel === 5) speed *= 1.5;
+
                         s.projectiles.push({
                             x: tipX, y: w.tipY,
                             vx: Math.sin(angle) * speed, vy: -Math.cos(angle) * speed,
@@ -782,27 +845,59 @@ export default function ElectroWand() {
                 } else {
                     if (conf.screenFillLevel > 0) {
                         const distFromTip = Math.abs(p.y - w.tipY);
-                        if (p.state === 'shooting' && distFromTip > 200) p.state = 'floating';
+                        // Transition to falling/floating based on fill level
+                        if (p.state === 'shooting' && distFromTip > (150 + (5-conf.screenFillLevel)*30)) {
+                            p.state = 'floating';
+                        }
 
-                        if (p.state === 'floating') {
-                            p.vx *= 0.95; 
-                            p.vy *= 0.95;
-                            p.y -= 0.2;
-                            const decay = 0.01 / (1 + conf.screenFillLevel * 1.5);
-                            p.life -= decay;
+                        // WATERFALL PHYSICS (High Fill Levels)
+                        if (conf.screenFillLevel >= 3) {
+                            // Apply Gravity
+                            const gravity = 0.1 * (conf.screenFillLevel - 1);
+                            p.vy += gravity;
+
+                            // Horizontal Drag / Dampening to make them fall "around" the wand
+                            p.vx *= 0.96;
+                            
+                            // Move
+                            p.x += p.vx;
+                            p.y += p.vy;
+
+                            // Life Logic for Waterfall
+                            // They need to reach the bottom
+                            if (p.y > canvasRef.current.height + 50) {
+                                p.life = 0; // Die when off screen
+                            } else {
+                                // Keep life high while falling
+                                p.life = Math.max(p.life - 0.001, 0.5);
+                            }
                         } else {
-                            p.x += p.vx; p.y += p.vy;
-                            p.life -= 0.01;
+                            // Standard Float/Decay (Low Fill Levels)
+                            if (p.state === 'floating') {
+                                p.vx *= 0.95; 
+                                p.vy *= 0.95;
+                                p.y -= 0.2;
+                                const decay = 0.01 / (1 + conf.screenFillLevel * 1.5);
+                                p.life -= decay;
+                            } else {
+                                p.x += p.vx; p.y += p.vy;
+                                p.life -= 0.01;
+                            }
                         }
                     } else {
+                        // Level 0 - Simple shoot and fade
                         p.x += p.vx; p.y += p.vy;
                         p.life -= 0.01;
                     }
 
                     p.rot += p.rotSpeed;
                     
-                    // External Size Scaling (Matches Internal Logic)
-                    const sizeMult = 1.0 + ((conf.externalSize - 1) * 0.25);
+                    // EXTERNAL SIZE SCALING
+                    // Level 1 = 1.0x (Default)
+                    // Level 5 = 4.0x (Double Previous Max of 2.0x)
+                    // Formula: 1.0 + ((Level - 1) * 0.75)
+                    // L1 = 1.0, L5 = 1 + 3.0 = 4.0.
+                    const sizeMult = 1.0 + ((conf.externalSize - 1) * 0.75);
                     p.size = 15 * p.life * sizeMult;
                     
                     if (p.life <= 0) { s.projectiles.splice(i, 1); continue; }
@@ -1102,6 +1197,9 @@ export default function ElectroWand() {
                                             <option value="shard">Shard</option>
                                             <option value="hex">Hex</option>
                                             <option value="tear">Tear</option>
+                                            <option value="star5">5-Star</option>
+                                            <option value="star6">6-Star</option>
+                                            <option value="star7">7-Star (Elven)</option>
                                         </select>
                                     </div>
                                     <div className="flex flex-col justify-end">
