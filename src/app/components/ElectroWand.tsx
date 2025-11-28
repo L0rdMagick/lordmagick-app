@@ -14,7 +14,6 @@ interface Bolt { segments: {x1:number, y1:number, x2:number, y2:number}[]; life:
 interface Emanation { x: number; y: number; radius: number; alpha: number; color: string; }
 
 // --- PALETTE ---
-// Updated per requirements: Indigo added, Red deepened, others made more vibrant
 const COLOR_PALETTE = [
     '#ffffff', '#9ca3af', '#3e2723', '#000000',
     '#dc2626', // Deep Red
@@ -23,7 +22,7 @@ const COLOR_PALETTE = [
     '#22c55e', // Vibrant Green
     '#22d3ee', // Cyan
     '#3b82f6', // Blue
-    '#4b0082', // Indigo (New)
+    '#4b0082', // Indigo
     '#a855f7', // Vibrant Purple
     '#ff00ff', // Hot Pink
     '#f43f5e', // Rose
@@ -292,7 +291,9 @@ export default function ElectroWand() {
             const freq = (Math.random() * 0.03) + 0.01;
             const amp = (Math.random() * 5) + 2;
             
-            for(let y = w.baseY + 50; y > w.tipY - 50; y -= 15) {
+            // Fix: ensure grain covers entire bottom radius of base
+            const bottomLimit = w.baseY + w.baseWidth; 
+            for(let y = bottomLimit; y > w.tipY - 50; y -= 15) {
                 let x = w.baseX + xOffset + Math.sin(y * freq) * amp;
                 x += (Math.random() - 0.5) * 1.5;
                 path.push({x, y});
@@ -494,21 +495,24 @@ export default function ElectroWand() {
                 const w = win.innerWidth;
                 
                 // Scale Width based on Setting
-                // Old Max (L5) was 1.4x base. New Max (L5) needs to be 2.8x base (Twice what it was).
-                // Level 1 stays 1.0x.
-                // Formula: 1.0 + ((level - 1) * 0.45)
-                // L1 = 1.0, L5 = 1 + 1.8 = 2.8.
                 const widthMult = 1.0 + ((config.current.wandWidthLevel - 1) * 0.45);
+                const baseWidth = Math.min(w * 0.15, 80) * widthMult;
+                
+                // Fix Cutoff: Adjust baseY dynamically so the full base arc is always visible
+                // The base is an arc with radius baseWidth/2. 
+                // We ensure baseY + baseWidth/2 < h - padding.
+                const requiredBottom = baseWidth / 2 + 20;
+                const baseY = h - requiredBottom;
 
                 state.current.wand = {
                     baseX: w / 2,
-                    baseY: h - 80,
+                    baseY: baseY,
                     tipX: w / 2,
                     tipY: h * 0.15,
-                    length: (h - 80) - (h * 0.15),
-                    baseWidth: Math.min(w * 0.15, 80) * widthMult,
+                    length: baseY - (h * 0.15),
+                    baseWidth: baseWidth,
                     tipWidth: Math.min(w * 0.03, 15) * widthMult,
-                    crystalY: (h - 80) - ((h - 80 - h * 0.15) * 0.12)
+                    crystalY: baseY - ((baseY - h * 0.15) * 0.12)
                 };
                 generateWoodGrain();
             }
@@ -716,9 +720,10 @@ export default function ElectroWand() {
 
                     // INTERNAL SIZE SCALING
                     // Level 1 = 1.0x (Default)
-                    // Level 5 = 3.0x (New Max)
-                    // Formula: 1.0 + ((Level - 1) * 0.5)
-                    const sizeMult = 1.0 + ((conf.internalSize - 1) * 0.5);
+                    // Level 5 = 9.0x (Triple previous max of 3.0x)
+                    // Formula: 1.0 + ((Level - 1) * 2.0)
+                    // Sequence: 1, 3, 5, 7, 9
+                    const sizeMult = 1.0 + ((conf.internalSize - 1) * 2.0);
                     
                     if (p.shapeType === 'lightning') {
                         // Match width logic for internal lightning
@@ -1042,9 +1047,11 @@ export default function ElectroWand() {
 
             <div className="absolute top-0 left-0 w-full h-full pointer-events-none z-20">
                 
-                <div className="absolute top-4 left-4 pointer-events-auto">
-                    <MagickalBackLink href="/marketplace/magickal-tools" text="Back" className="text-xs" />
-                </div>
+                {!isFullscreen && (
+                    <div className="absolute top-4 left-4 pointer-events-auto">
+                        <MagickalBackLink href="/marketplace/magickal-tools" text="Back" className="text-xs" />
+                    </div>
+                )}
 
                 <div className="absolute bottom-4 left-4 pointer-events-auto">
                     <button onClick={() => setShowSettings(true)} className="p-3 rounded-full bg-gray-900/50 border border-purple-500/30 hover:bg-gray-800 text-purple-300 transition-colors backdrop-blur-md">
