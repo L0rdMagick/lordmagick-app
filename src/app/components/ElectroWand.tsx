@@ -3,7 +3,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Settings, X, Maximize2, Minimize2, Zap, Heart, CloudRain, Coins, Clover, Volume2, Palette } from 'lucide-react';
+import { Settings, X, Maximize2, Minimize2, Zap, Heart, CloudRain, Coins, Clover, Volume2 } from 'lucide-react';
 import MagickalBackLink from './MagickalBackLink';
 
 // --- TYPES ---
@@ -149,7 +149,6 @@ export default function ElectroWand() {
         osc.type = 'sine';
         osc.frequency.setValueAtTime(800, ctx.currentTime);
         osc.frequency.exponentialRampToValueAtTime(400, ctx.currentTime + 0.1);
-        // Scale click by master volume
         gain.gain.setValueAtTime(0.1 * config.current.masterVolume, ctx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
         osc.start();
@@ -272,7 +271,6 @@ export default function ElectroWand() {
     };
 
     // --- DRAWING LOGIC ---
-    // Updated for Wand Width
     const generateWoodGrain = () => {
         state.current.woodGrains = [];
         const w = state.current.wand;
@@ -364,12 +362,6 @@ export default function ElectroWand() {
     const drawCrystal = (c: any, x: number, y: number, size: number) => {
         const color = config.current.crystalBaseColor;
         const shape = config.current.crystalShape;
-
-        // Helper to get color variations
-        const getShade = (hex: string, lum: number) => {
-            // Quick hack for shading without a full color library
-            return hex; // Simplified for canvas performance, usually you'd use HSL
-        };
 
         // 3D Facet Helper
         const drawFacet3D = (points: Point[], colorHex: string, brightness: number) => {
@@ -512,12 +504,10 @@ export default function ElectroWand() {
                     
                     const level = conf.vibrationLevel;
                     if (level > 0) {
-                        // L1 = Hypnotic Slow Sine
                         if (level === 1) {
-                            wobbleOffset = Math.sin(s.time * 0.5) * 5.0;
+                            wobbleOffset = Math.sin(s.time * 0.5) * 5.0; // Slow hypnotic
                         } else {
-                             // L2-5 = Faster Jitter
-                            const vibFreq = [0, 0, 1.0, 2.0, 3.5, 5.0]; 
+                            const vibFreq = [0, 0.5, 2.0, 5.0, 10.0, 20.0]; 
                             const amplitude = 2.0; 
                             const speed = 0.5 + (progress * 2.0);
                             const sway = Math.sin(s.time * 5 * speed) * 2.5;
@@ -640,11 +630,12 @@ export default function ElectroWand() {
                 c.fillStyle = grad;
                 c.fillRect(0,0,canvasRef.current.width,canvasRef.current.height);
 
+                // Generate Internal Particles
                 if (Math.random() > 0.1) {
                     const spawnX = w.baseX + (Math.random() - 0.5) * 20;
                     const spawnY = w.crystalY + (Math.random() - 0.5) * 20;
                     
-                    // Internal Speed: L1 = 0.5 (Half old base)
+                    // Internal Speed: Slower base
                     const baseSpeed = 0.5; 
                     const speedRange = 2.5;
                     const speedMult = baseSpeed + ((conf.internalSpeed - 1) / 4) * speedRange;
@@ -674,14 +665,14 @@ export default function ElectroWand() {
 
                     if (p.life <= 0) { s.particles.splice(i, 1); continue; }
 
-                    // Internal Size: L1=1x, L5=2x
-                    const sizeMult = 1.0 + ((conf.internalSize - 1) / 4);
+                    // FIXED Internal Size Scaling: L1=0.8, L5=2.8
+                    const sizeMult = 0.8 + ((conf.internalSize - 1) * 0.5);
                     
                     if (p.shapeType === 'lightning') {
-                        // Internal Lightning: Draw jagged line, not dot
+                        // Thicker, jagged bolts
                         c.beginPath();
                         c.strokeStyle = p.color;
-                        c.lineWidth = 2 * sizeMult; // Thicker based on size
+                        c.lineWidth = 2 * sizeMult;
                         c.moveTo(p.x, p.y);
                         c.lineTo(p.x + (Math.random()-0.5)*10, p.y - 15*sizeMult);
                         c.stroke();
@@ -713,7 +704,13 @@ export default function ElectroWand() {
                     c.fill();
                 }
 
-                if (s.energyLevel > 0.8 && Math.random() < 0.25 * conf.intensityMult) {
+                // Spawn Probability Logic (Volume Increase)
+                let spawnRate = 0.25; 
+                if (conf.screenFillLevel > 1) {
+                    spawnRate *= (1 + (conf.screenFillLevel - 1) * 0.2); // +20% per level above 1
+                }
+
+                if (s.energyLevel > 0.8 && Math.random() < spawnRate * conf.intensityMult) {
                     if (conf.externalShape === 'lightning') {
                         const spreadMap = [30, 50, 75, 90, 110, 150];
                         const spreadDeg = spreadMap[conf.screenFillLevel] || 30;
@@ -733,7 +730,6 @@ export default function ElectroWand() {
                         };
                         generateSegments(tipX, w.tipY, endX, -100, 80);
                         
-                        // Store width in bolt object based on externalSize setting (1-5)
                         const width = 2 * (1 + (conf.externalSize - 1) * 0.5);
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         s.projectiles.push({ segments, life: 1.0, type: 'lightning', color: conf.externalColor, state: 'shooting', width } as any);
@@ -764,7 +760,7 @@ export default function ElectroWand() {
                     if(bolt.life <= 0) { s.projectiles.splice(i, 1); continue; }
                     c.beginPath();
                     c.strokeStyle = bolt.color;
-                    // Use stored bolt width which is based on size setting
+                    // Width scaling
                     c.lineWidth = Math.max(0.1, (bolt.width || 2) * bolt.life * conf.intensityMult);
                     c.shadowBlur = 10;
                     c.shadowColor = bolt.color;
@@ -830,13 +826,13 @@ export default function ElectroWand() {
             ctx.bezierCurveTo(size/2, 0, 0, 0, 0, topCurveHeight);
             ctx.fill();
         } else if (type === 'coins') {
-            ctx.fillStyle = color; // User color
+            ctx.fillStyle = color; 
             ctx.beginPath(); ctx.arc(0,0, size/2, 0, Math.PI*2); ctx.fill();
             ctx.strokeStyle = '#b45309'; ctx.lineWidth=2; ctx.stroke();
             ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.font = `${size*0.6}px serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
             ctx.fillText('$', 0, 1);
         } else if (type === 'clovers') {
-            ctx.fillStyle = color; // User color
+            ctx.fillStyle = color; 
             for(let k=0; k<4; k++) {
                 ctx.rotate(Math.PI/2);
                 ctx.beginPath(); ctx.arc(0, -size*0.3, size*0.3, 0, Math.PI*2); ctx.fill();
@@ -887,16 +883,13 @@ export default function ElectroWand() {
     // --- UI UPDATERS ---
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updateConfig = (key: string, value: any) => {
-        playClickSound();
+        // Play click sound only if not dragging a color picker (to avoid spamming)
+        if (!key.toLowerCase().includes('color')) playClickSound();
+        
         // @ts-expect-error - dynamic property access
         config.current[key] = value;
         updateCSSVar();
-        
-        // Update physics for immediate feedback
-        if(key === 'wandBaseColor' || key === 'wandShape' || key === 'wandWidthLevel') {
-             const win = (globalThis as any).window;
-             if(win) win.dispatchEvent(new Event('resize')); // Trigger physics recalculation
-        }
+        if(key === 'wandBaseColor' || key === 'wandShape') generateWoodGrain();
         
         setConfigTick(t => t + 1);
     };
@@ -921,9 +914,9 @@ export default function ElectroWand() {
             : "bg-gray-800 border-gray-600 text-gray-400 hover:border-gray-400";
             
     const ColorButton = ({ color, label, onClick }: { color: string, label: string, onClick: () => void }) => (
-        <div className="flex justify-between items-center bg-gray-800 p-2 rounded border border-gray-700 cursor-pointer hover:border-purple-500 transition-colors" onClick={onClick}>
-            <span className="text-xs text-gray-300 font-medium">{label}</span>
-            <div className="w-6 h-6 rounded-full border border-gray-500 shadow-sm" style={{ backgroundColor: color }}></div>
+        <div className="flex justify-between items-center bg-gray-800 p-3 rounded border border-gray-700 cursor-pointer hover:border-purple-500 transition-colors" onClick={onClick}>
+            <span className="text-sm text-gray-300 font-medium">{label}</span>
+            <div className="w-8 h-8 rounded-full border border-gray-500 shadow-sm" style={{ backgroundColor: color }}></div>
         </div>
     );
 
