@@ -3,7 +3,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Settings, X, Maximize2, Minimize2, Zap, Heart, CloudRain, Coins, Clover } from 'lucide-react';
+import { Settings, X, Maximize2, Minimize2, Zap, Heart, CloudRain, Coins, Clover, Activity, Volume2 } from 'lucide-react';
 import MagickalBackLink from './MagickalBackLink';
 
 // --- TYPES ---
@@ -27,7 +27,6 @@ export default function ElectroWand() {
 
     // --- CONFIG STATE ---
     const config = useRef({
-        hue: 270,
         // Material Colors
         wandBaseColor: '#3e2723',
         crystalBaseColor: '#8b5cf6', 
@@ -43,11 +42,10 @@ export default function ElectroWand() {
         internalSpeed: 3, // 1-5
         internalSize: 2,  // 1-5
         externalSize: 2,  // 1-5
-        screenFillLevel: 0, // 0-5
+        screenFillLevel: 0, // 0-5 (Spread/Accumulation)
 
         intensityMult: 1.0,
         vibrationLevel: 2, // 0-5
-        activeColor: 'rgba(180, 100, 255, 1)',
         
         soundProfile: 'hum',
         wandShape: 'classic',
@@ -123,7 +121,6 @@ export default function ElectroWand() {
         if (doc) {
             const color = config.current.activatedColor;
             doc.documentElement.style.setProperty('--wand-color', color);
-            config.current.activeColor = getGlowColorFromHex(color, 1);
         }
     };
 
@@ -240,6 +237,12 @@ export default function ElectroWand() {
         if(!state.current.initialized || !audio.current.ctx) return;
         const now = audio.current.ctx.currentTime;
         audio.current.masterGain.gain.setTargetAtTime(active ? 0.4 * config.current.intensityMult : 0, now, 0.1);
+        
+        // Reverb Update
+        if (audio.current.reverbGain) {
+            audio.current.reverbGain.gain.setTargetAtTime(config.current.reverb ? 0.6 : 0, now, 0.1);
+        }
+
         if(active) { 
             audio.current.lfoOsc.frequency.linearRampToValueAtTime(audio.current.lfoOsc.frequency.value * 1.5, now + 0.5); 
             audio.current.filter.frequency.linearRampToValueAtTime(audio.current.filter.frequency.value + 500, now + 0.5); 
@@ -387,47 +390,6 @@ export default function ElectroWand() {
         c.stroke();
     };
 
-    // Helper to draw shapes
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const drawShape = (ctx: any, type: string, color: string, size: number = 10) => {
-        if (type === 'hearts') {
-            ctx.fillStyle = color;
-            ctx.beginPath();
-            const topCurveHeight = size * 0.3;
-            ctx.moveTo(0, topCurveHeight);
-            ctx.bezierCurveTo(0, 0, -size/2, 0, -size/2, topCurveHeight);
-            ctx.bezierCurveTo(-size/2, (size+topCurveHeight)/2, 0, (size+topCurveHeight)/2, 0, size);
-            ctx.bezierCurveTo(0, (size+topCurveHeight)/2, size/2, (size+topCurveHeight)/2, size/2, topCurveHeight);
-            ctx.bezierCurveTo(size/2, 0, 0, 0, 0, topCurveHeight);
-            ctx.fill();
-        } else if (type === 'coins') {
-            ctx.fillStyle = '#fbbf24'; 
-            ctx.beginPath(); ctx.arc(0,0, size/2, 0, Math.PI*2); ctx.fill();
-            ctx.strokeStyle = '#b45309'; ctx.lineWidth=2; ctx.stroke();
-            ctx.fillStyle = '#fef08a'; ctx.font = `${size*0.6}px serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
-            ctx.fillText('$', 0, 1);
-        } else if (type === 'clovers') {
-            ctx.fillStyle = '#4ade80'; 
-            for(let k=0; k<4; k++) {
-                ctx.rotate(Math.PI/2);
-                ctx.beginPath(); ctx.arc(0, -size*0.3, size*0.3, 0, Math.PI*2); ctx.fill();
-            }
-        } else if (type === 'rainbow') {
-            // Updated Rainbow: Vector Arc
-            ctx.beginPath();
-            ctx.arc(0, 0, size * 0.8, Math.PI, 0); 
-            ctx.lineWidth = size * 0.4;
-            const grad = ctx.createLinearGradient(-size, 0, size, 0);
-            grad.addColorStop(0, "red"); grad.addColorStop(0.2, "orange");
-            grad.addColorStop(0.4, "yellow"); grad.addColorStop(0.6, "green");
-            grad.addColorStop(0.8, "blue"); grad.addColorStop(1, "violet");
-            ctx.strokeStyle = grad; ctx.stroke();
-        } else if (type === 'lightning') {
-            ctx.fillStyle = color;
-            ctx.beginPath(); ctx.arc(0, 0, size/2, 0, Math.PI*2); ctx.fill();
-        }
-    };
-
     // --- EFFECT HOOKS ---
 
     // Initialization & Resize
@@ -460,7 +422,7 @@ export default function ElectroWand() {
         return () => { if (win) win.removeEventListener('resize', resize); }
     }, []);
 
-    // Main Animation Loop
+    // Main Loop
     useEffect(() => {
         let animationFrameId: number;
 
@@ -487,13 +449,19 @@ export default function ElectroWand() {
                     
                     const level = conf.vibrationLevel;
                     if (level > 0) {
-                        // Updated Vibration: Higher Freq, Controlled Amplitude
-                        const vibFreq = [0, 0.5, 1.0, 2.0, 3.5, 5.0]; 
-                        const amplitude = 2.0; 
-                        const speed = 0.5 + (progress * 2.0);
-                        const sway = Math.sin(s.time * 5 * speed) * 2.5;
-                        const vibration = Math.sin(s.time * 30 * vibFreq[level]) * amplitude;
-                        wobbleOffset = sway + vibration;
+                        // L1 = Hypnotic Slow, L2-5 = Faster Jitter
+                        if (level === 1) {
+                            wobbleOffset = Math.sin(s.time * 0.5) * 5.0; // Slow, wider
+                        } else {
+                            const vibFreq = [0, 0.5, 2.0, 5.0, 10.0, 20.0]; 
+                            const amplitude = 2.0; 
+                            const speed = 0.5 + (progress * 2.0);
+                            const sway = Math.sin(s.time * 5 * speed) * 2.5;
+                            const vibration = Math.sin(s.time * 30 * vibFreq[level]) * amplitude;
+                            wobbleOffset = sway + vibration;
+                        }
+                    } else {
+                        wobbleOffset = 0;
                     }
                 }
             }
@@ -615,7 +583,7 @@ export default function ElectroWand() {
                     const spawnX = w.baseX + (Math.random() - 0.5) * 20;
                     const spawnY = w.crystalY + (Math.random() - 0.5) * 20;
                     
-                    // Internal Speed: Slower base
+                    // Internal Speed: Level 1 = 0.5 (Half of old base), L5 = 3.0 (Fast)
                     const baseSpeed = 0.5; 
                     const speedRange = 2.5;
                     const speedMult = baseSpeed + ((conf.internalSpeed - 1) / 4) * speedRange;
@@ -635,7 +603,6 @@ export default function ElectroWand() {
                 for (let i = s.particles.length - 1; i >= 0; i--) {
                     const p = s.particles[i];
                     
-                    // Recalculate speed mult for wiggle logic
                     const baseSpeed = 0.5; 
                     const speedRange = 2.5;
                     const speedMult = baseSpeed + ((conf.internalSpeed - 1) / 4) * speedRange;
@@ -646,21 +613,16 @@ export default function ElectroWand() {
 
                     if (p.life <= 0) { s.particles.splice(i, 1); continue; }
 
-                    // Internal Size: L1=1x, L5=2x. Scale linearly.
+                    // Internal Size: L1=1x, L5=2x.
                     const sizeMult = 1.0 + ((conf.internalSize - 1) / 4);
                     
-                    if (p.shapeType === 'lightning') {
-                        const radius = p.size * p.life * sizeMult;
-                        c.beginPath(); c.arc(p.x, p.y, radius, 0, Math.PI*2);
-                        c.fillStyle = p.color;
-                        c.fill();
-                    } else {
-                        c.save();
-                        c.translate(p.x, p.y);
-                        c.scale(0.3 * p.life * sizeMult, 0.3 * p.life * sizeMult);
-                        drawShape(c, p.shapeType, p.color);
-                        c.restore();
-                    }
+                    c.save();
+                    c.translate(p.x, p.y);
+                    // Base Internal Scale = 0.3. Multiplied by sizeMult (1 to 2).
+                    const scale = 0.3 * p.life * sizeMult;
+                    c.scale(scale, scale);
+                    drawShape(c, p.shapeType, conf.internalColor, 20); // Fixed base size 20 for shapes
+                    c.restore();
                 }
             } else {
                 if (s.energyLevel > 0) s.energyLevel -= 0.05;
@@ -705,7 +667,6 @@ export default function ElectroWand() {
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         s.projectiles.push({ segments, life: 1.0, type: 'lightning', color: conf.externalColor, state: 'shooting' } as any);
                     } else {
-                        // Angle Spread Logic
                         const spreadMap = [30, 50, 75, 90, 110, 150];
                         const spreadDeg = spreadMap[conf.screenFillLevel] || 30;
                         const angle = (Math.random() - 0.5) * spreadDeg * (Math.PI / 180); 
@@ -762,14 +723,13 @@ export default function ElectroWand() {
                     
                     // External Size: L1=1x, L5=2x
                     const sizeMult = 1.0 + ((conf.externalSize - 1) / 4);
-                    p.size = 15 * p.life * sizeMult;
+                    const baseSize = 20; 
                     
-                    if (p.life <= 0) { s.projectiles.splice(i, 1); continue; }
-
                     c.save();
                     c.translate(p.x, p.y);
                     c.rotate(p.rot);
-                    drawShape(c, p.type, p.color, p.size);
+                    c.scale(p.life * sizeMult, p.life * sizeMult);
+                    drawShape(c, p.type, conf.externalColor, baseSize);
                     c.restore();
                 }
             }
@@ -783,6 +743,47 @@ export default function ElectroWand() {
         if (win) animationFrameId = win.requestAnimationFrame(animate);
         return () => { if (win) win.cancelAnimationFrame(animationFrameId); };
     }, []);
+
+    // Helper to draw shapes
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const drawShape = (ctx: any, type: string, color: string, size: number = 20) => {
+        if (type === 'hearts') {
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            const topCurveHeight = size * 0.3;
+            ctx.moveTo(0, topCurveHeight);
+            ctx.bezierCurveTo(0, 0, -size/2, 0, -size/2, topCurveHeight);
+            ctx.bezierCurveTo(-size/2, (size+topCurveHeight)/2, 0, (size+topCurveHeight)/2, 0, size);
+            ctx.bezierCurveTo(0, (size+topCurveHeight)/2, size/2, (size+topCurveHeight)/2, size/2, topCurveHeight);
+            ctx.bezierCurveTo(size/2, 0, 0, 0, 0, topCurveHeight);
+            ctx.fill();
+        } else if (type === 'coins') {
+            ctx.fillStyle = '#fbbf24'; 
+            ctx.beginPath(); ctx.arc(0,0, size/2, 0, Math.PI*2); ctx.fill();
+            ctx.strokeStyle = '#b45309'; ctx.lineWidth=2; ctx.stroke();
+            ctx.fillStyle = '#fef08a'; ctx.font = `${size*0.6}px serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+            ctx.fillText('$', 0, 1);
+        } else if (type === 'clovers') {
+            ctx.fillStyle = '#4ade80'; 
+            for(let k=0; k<4; k++) {
+                ctx.rotate(Math.PI/2);
+                ctx.beginPath(); ctx.arc(0, -size*0.3, size*0.3, 0, Math.PI*2); ctx.fill();
+            }
+        } else if (type === 'rainbow') {
+            // Replaced with Vector Arc
+            ctx.beginPath();
+            ctx.arc(0, 0, size * 0.8, Math.PI, 0); 
+            ctx.lineWidth = size * 0.4;
+            const grad = ctx.createLinearGradient(-size, 0, size, 0);
+            grad.addColorStop(0, "red"); grad.addColorStop(0.2, "orange");
+            grad.addColorStop(0.4, "yellow"); grad.addColorStop(0.6, "green");
+            grad.addColorStop(0.8, "blue"); grad.addColorStop(1, "violet");
+            ctx.strokeStyle = grad; ctx.stroke();
+        } else if (type === 'lightning') {
+            ctx.fillStyle = color;
+            ctx.beginPath(); ctx.arc(0, 0, size/2, 0, Math.PI*2); ctx.fill();
+        }
+    };
 
     // --- EVENT HANDLERS ---
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -814,7 +815,9 @@ export default function ElectroWand() {
     // --- UI UPDATERS ---
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updateConfig = (key: string, value: any) => {
-        playClickSound();
+        // Play click sound only if not dragging a color picker (to avoid spamming)
+        if (!key.toLowerCase().includes('color')) playClickSound();
+        
         // @ts-expect-error - dynamic property access
         config.current[key] = value;
         updateCSSVar();
@@ -835,8 +838,8 @@ export default function ElectroWand() {
                 <input 
                     type="color" 
                     value={value} 
-                    // FIX: Cast target to any to access value
-                    onChange={(e) => onChange((e.target as any).value)} 
+                    // FIX: Use onInput for live updates without closing, cast target to any
+                    onInput={(e) => onChange((e.target as any).value)} 
                     className="absolute inset-0 w-[150%] h-[150%] -translate-x-1/4 -translate-y-1/4 p-0 border-0 cursor-pointer"
                 />
             </div>
@@ -956,10 +959,7 @@ export default function ElectroWand() {
                                         <option value="bone">Bone</option>
                                     </select>
                                 </div>
-                                <div>
-                                    <label className="text-[10px] text-gray-400 block mb-1">Wood Material</label>
-                                    <ColorPickerButton label="Wood Color" value={config.current.wandBaseColor} onChange={(c) => updateConfig('wandBaseColor', c)} />
-                                </div>
+                                <ColorPickerButton label="Wood Color" value={config.current.wandBaseColor} onChange={(c) => updateConfig('wandBaseColor', c)} />
                             </div>
 
                             {/* Core */}
@@ -1074,33 +1074,31 @@ export default function ElectroWand() {
                             {/* General Settings */}
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="text-[10px] text-gray-400 block mb-1">Vibration (0=None)</label>
-                                    <div className="flex gap-1">
-                                        {[0, 1, 2, 3, 4].map(level => (
-                                            <button 
-                                                key={level}
-                                                className={`w-full h-6 rounded border flex items-center justify-center text-[10px] transition-all active:scale-90 ${activeClass(config.current.vibrationLevel === level)}`}
-                                                onClick={() => updateConfig('vibrationLevel', level)}
-                                            >
-                                                {level}
-                                            </button>
-                                        ))}
-                                    </div>
+                                    <label className="text-[10px] text-gray-400 block mb-1">Stability (0=None)</label>
+                                    <div className="flex gap-1">{[0, 1, 2, 3, 4].map(level => (<button key={level} className={`w-full h-6 rounded border flex items-center justify-center text-[10px] transition-all active:scale-90 ${activeClass(config.current.vibrationLevel === level)}`} onClick={() => updateConfig('vibrationLevel', level)}>{level}</button>))}</div>
                                 </div>
                                 <div>
                                     <h3 className="text-[10px] text-gray-400 block mb-1">Sonic Profile</h3>
                                     <div className="grid grid-cols-5 gap-1">
                                         {['hum', 'theremin', 'ethereal', 'void', 'dragon'].map(s => (
-                                            <button 
-                                                key={s} 
-                                                className={`p-1 text-[8px] rounded border capitalize transition-all active:scale-90 overflow-hidden text-center ${activeClass(config.current.soundProfile === s)}`} 
-                                                onClick={() => updateConfig('soundProfile', s)}
-                                            >
-                                                {s.slice(0,3)}
-                                            </button>
+                                            <button key={s} className={`p-1 text-[8px] rounded border capitalize transition-all active:scale-90 overflow-hidden text-center ${activeClass(config.current.soundProfile === s)}`} onClick={() => updateConfig('soundProfile', s)}>{s.slice(0,3)}</button>
                                         ))}
                                     </div>
                                 </div>
+                            </div>
+                            
+                            {/* Reverb Toggle */}
+                             <div className="flex items-center gap-3 border border-gray-700 p-2 rounded bg-gray-800/50">
+                                <input 
+                                    type="checkbox" 
+                                    id="reverbToggle"
+                                    className="w-4 h-4 accent-purple-500 cursor-pointer"
+                                    checked={config.current.reverb}
+                                    onChange={(e) => updateConfig('reverb', (e.target as any).checked)} 
+                                />
+                                <label htmlFor="reverbToggle" className="text-xs text-gray-300 flex items-center gap-2 cursor-pointer">
+                                    <Volume2 size={14} /> Cathedral Reverb
+                                </label>
                             </div>
                         </div>
                     </div>
