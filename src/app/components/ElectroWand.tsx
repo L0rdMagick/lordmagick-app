@@ -3,54 +3,69 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Settings, X, Maximize2, Minimize2, Zap, Heart, CloudRain, Coins, Clover, Activity, Volume2 } from 'lucide-react';
+import { Settings, X, Maximize2, Minimize2, Zap, Heart, CloudRain, Coins, Clover, Volume2, Palette } from 'lucide-react';
 import MagickalBackLink from './MagickalBackLink';
 
 // --- TYPES ---
 interface Point { x: number; y: number }
 interface Particle { x: number; y: number; vx: number; vy: number; life: number; type: string; shapeType: string; size: number; color: string; }
 interface Projectile { x: number; y: number; vx: number; vy: number; life: number; rot: number; rotSpeed: number; type: string; size: number; color: string; state: 'shooting' | 'floating'; }
-interface Bolt { segments: {x1:number, y1:number, x2:number, y2:number}[]; life: number; color: string; }
+interface Bolt { segments: {x1:number, y1:number, x2:number, y2:number}[]; life: number; color: string; width: number; }
 interface Emanation { x: number; y: number; radius: number; alpha: number; color: string; }
+
+// --- PALETTE ---
+const COLOR_PALETTE = [
+    '#ffffff', '#9ca3af', '#3e2723', '#000000',
+    '#ef4444', '#f97316', '#facc15', '#84cc16',
+    '#10b981', '#06b6d4', '#3b82f6', '#6366f1',
+    '#8b5cf6', '#d946ef', '#f43f5e', '#fbbf24'
+];
 
 export default function ElectroWand() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const canvasRef = useRef<any>(null);
     const [showSettings, setShowSettings] = useState(false);
+    const [showColorModal, setShowColorModal] = useState<{show: boolean, target: string | null, label: string}>({ show: false, target: null, label: '' });
+    const [tempColor, setTempColor] = useState("#ffffff");
+    
     const [wandName, setWandName] = useState("");
     const [intention, setIntention] = useState("");
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [hasStarted, setHasStarted] = useState(false);
     
-    // Dummy state to force re-render for UI updates
     const [, setConfigTick] = useState(0); 
 
     // --- CONFIG STATE ---
     const config = useRef({
-        // Material Colors
+        // Colors
         wandBaseColor: '#3e2723',
         crystalBaseColor: '#8b5cf6', 
         activatedColor: '#d8b4fe',
         internalColor: '#ffffff',
         externalColor: '#fcd34d',
         
-        // Particle Shapes
+        // Shapes
         internalShape: 'lightning', 
         externalShape: 'lightning',
         
-        // Physics Controls
-        internalSpeed: 3, // 1-5
-        internalSize: 2,  // 1-5
-        externalSize: 2,  // 1-5
-        screenFillLevel: 0, // 0-5 (Spread/Accumulation)
+        // Physics
+        internalSpeed: 3, 
+        internalSize: 2,  
+        externalSize: 2,  
+        screenFillLevel: 0,
+        wandWidthLevel: 1, // 1-5
 
+        // Audio/Haptics
         intensityMult: 1.0,
-        vibrationLevel: 2, // 0-5
-        
+        vibrationLevel: 2,
+        masterVolume: 1.0, // 0.0 to 2.0
         soundProfile: 'hum',
+        reverb: false,
+
+        // Visuals
         wandShape: 'classic',
         crystalShape: 'orb',
-        reverb: false,
+        activeColor: 'rgba(180, 100, 255, 1)',
     });
 
     // --- PHYSICS STATE ---
@@ -134,7 +149,8 @@ export default function ElectroWand() {
         osc.type = 'sine';
         osc.frequency.setValueAtTime(800, ctx.currentTime);
         osc.frequency.exponentialRampToValueAtTime(400, ctx.currentTime + 0.1);
-        gain.gain.setValueAtTime(0.1, ctx.currentTime);
+        // Scale click by master volume
+        gain.gain.setValueAtTime(0.1 * config.current.masterVolume, ctx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
         osc.start();
         osc.stop(ctx.currentTime + 0.15);
@@ -236,11 +252,15 @@ export default function ElectroWand() {
     const updateAudio = (active: boolean) => {
         if(!state.current.initialized || !audio.current.ctx) return;
         const now = audio.current.ctx.currentTime;
-        audio.current.masterGain.gain.setTargetAtTime(active ? 0.4 * config.current.intensityMult : 0, now, 0.1);
+        // Apply Master Volume scaling here
+        const baseVol = active ? 0.4 : 0;
+        const finalVol = baseVol * config.current.intensityMult * config.current.masterVolume;
+        
+        audio.current.masterGain.gain.setTargetAtTime(finalVol, now, 0.1);
         
         // Reverb Update
         if (audio.current.reverbGain) {
-            audio.current.reverbGain.gain.setTargetAtTime(config.current.reverb ? 0.6 : 0, now, 0.1);
+            audio.current.reverbGain.gain.setTargetAtTime(config.current.reverb ? 0.6 * config.current.masterVolume : 0, now, 0.1);
         }
 
         if(active) { 
@@ -252,6 +272,7 @@ export default function ElectroWand() {
     };
 
     // --- DRAWING LOGIC ---
+    // Updated for Wand Width
     const generateWoodGrain = () => {
         state.current.woodGrains = [];
         const w = state.current.wand;
@@ -338,61 +359,94 @@ export default function ElectroWand() {
         c.closePath();
     };
 
+    // New 3D Crystal Renderer
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const drawCrystal = (c: any, x: number, y: number, size: number) => {
-        const color = config.current.crystalBaseColor; 
+        const color = config.current.crystalBaseColor;
         const shape = config.current.crystalShape;
 
-        const drawFacet = (points: Point[], colorStr: string) => {
-            c.fillStyle = colorStr;
+        // Helper to get color variations
+        const getShade = (hex: string, lum: number) => {
+            // Quick hack for shading without a full color library
+            return hex; // Simplified for canvas performance, usually you'd use HSL
+        };
+
+        // 3D Facet Helper
+        const drawFacet3D = (points: Point[], colorHex: string, brightness: number) => {
             c.beginPath();
             c.moveTo(points[0].x, points[0].y);
             for(let i=1; i<points.length; i++) c.lineTo(points[i].x, points[i].y);
             c.closePath();
+            
+            // Simulate lighting
+            c.fillStyle = colorHex;
             c.fill();
+            
+            // Shine/Shadow overlay
+            if (brightness > 0) {
+                c.fillStyle = `rgba(255, 255, 255, ${brightness})`;
+                c.fill();
+            } else {
+                c.fillStyle = `rgba(0, 0, 0, ${Math.abs(brightness)})`;
+                c.fill();
+            }
+            c.strokeStyle = 'rgba(255,255,255,0.3)';
+            c.lineWidth = 0.5;
+            c.stroke();
         };
 
         if (shape === 'orb') {
-            const grad = c.createRadialGradient(x - size*0.3, y - size*0.3, size*0.1, x, y, size);
-            grad.addColorStop(0, 'white');
-            grad.addColorStop(0.5, color);
-            grad.addColorStop(1, 'black');
+            // Deep base
+            const grad = c.createRadialGradient(x - size*0.3, y - size*0.3, 0, x, y, size);
+            grad.addColorStop(0, 'rgba(255,255,255,0.9)'); // Specular Highlight
+            grad.addColorStop(0.2, color);
+            grad.addColorStop(0.9, '#000000'); // Shadow
+            
             c.beginPath();
             c.arc(x, y, size, 0, Math.PI * 2);
             c.fillStyle = grad;
             c.fill();
-        } else if (shape === 'diamond') {
-            drawFacet([{x:x, y:y-size*1.2}, {x:x+size, y:y}, {x:x, y:y+size*0.2}, {x:x-size, y:y}], color);
-            drawFacet([{x:x-size, y:y}, {x:x, y:y+size*0.2}, {x:x, y:y+size*1.2}], color); 
-            drawFacet([{x:x+size, y:y}, {x:x, y:y+size*0.2}, {x:x, y:y+size*1.2}], color); 
-            drawFacet([{x:x, y:y-size*1.2}, {x:x-size, y:y}, {x:x-size*0.5, y:y-size*0.5}], 'white');
-        } else if (shape === 'shard') {
-            drawFacet([{x:x, y:y-size*1.2}, {x:x-size*0.6, y:y-size*0.3}, {x:x-size*0.4, y:y+size*0.8}, {x:x, y:y+size}], color);
-            drawFacet([{x:x, y:y-size*1.2}, {x:x+size*0.6, y:y-size*0.3}, {x:x+size*0.4, y:y+size*0.8}, {x:x, y:y+size}], color);
-        } else if (shape === 'hex') {
-            drawFacet([{x:x-size*0.5, y:y-size*0.8}, {x:x+size*0.5, y:y-size*0.8}, {x:x+size*0.5, y:y+size*0.8}, {x:x-size*0.5, y:y+size*0.8}], color);
-            drawFacet([{x:x-size*0.5, y:y-size*0.8}, {x:x-size*0.8, y:y-size*0.6}, {x:x-size*0.8, y:y+size*0.6}, {x:x-size*0.5, y:y+size*0.8}], color);
-            drawFacet([{x:x+size*0.5, y:y-size*0.8}, {x:x+size*0.8, y:y-size*0.6}, {x:x+size*0.8, y:y+size*0.6}, {x:x+size*0.5, y:y+size*0.8}], color);
-        } else if (shape === 'tear') {
+            
+            // Glassy rim
             c.beginPath();
-            c.moveTo(x, y-size*1.2);
-            c.bezierCurveTo(x-size*1.2, y+size*0.2, x-size*0.5, y+size, x, y+size);
-            c.fillStyle = color;
-            c.fill();
-            c.beginPath();
-            c.moveTo(x, y-size*1.2);
-            c.bezierCurveTo(x+size*1.2, y+size*0.2, x+size*0.5, y+size, x, y+size);
-            c.fillStyle = color;
-            c.fill();
+            c.arc(x, y, size, 0, Math.PI * 2);
+            c.strokeStyle = 'rgba(255,255,255,0.4)';
+            c.lineWidth = 2;
+            c.stroke();
+        } else {
+            // Faceted Shapes with simulated lighting
+            // Light comes from Top-Left
+            if (shape === 'diamond') {
+                drawFacet3D([{x:x, y:y-size*1.2}, {x:x+size, y:y}, {x:x, y:y+size*0.2}, {x:x-size, y:y}], color, 0.4); // Top (Bright)
+                drawFacet3D([{x:x-size, y:y}, {x:x, y:y+size*0.2}, {x:x, y:y+size*1.2}], color, -0.2); // Left (Mid)
+                drawFacet3D([{x:x+size, y:y}, {x:x, y:y+size*0.2}, {x:x, y:y+size*1.2}], color, -0.5); // Right (Dark)
+                drawFacet3D([{x:x, y:y-size*1.2}, {x:x-size, y:y}, {x:x-size*0.5, y:y-size*0.5}], color, 0.8); // Highlight Facet
+            } else if (shape === 'shard') {
+                drawFacet3D([{x:x, y:y-size*1.2}, {x:x-size*0.6, y:y-size*0.3}, {x:x-size*0.4, y:y+size*0.8}, {x:x, y:y+size}], color, -0.1);
+                drawFacet3D([{x:x, y:y-size*1.2}, {x:x+size*0.6, y:y-size*0.3}, {x:x+size*0.4, y:y+size*0.8}, {x:x, y:y+size}], color, 0.3); // Right side hit by light?
+                // Actually swap for 3d look
+                drawFacet3D([{x:x, y:y-size*1.2}, {x:x-size*0.6, y:y-size*0.3}, {x:x, y:y+size}], color, 0.5);
+            } else if (shape === 'hex') {
+                drawFacet3D([{x:x-size*0.5, y:y-size*0.8}, {x:x+size*0.5, y:y-size*0.8}, {x:x+size*0.5, y:y+size*0.8}, {x:x-size*0.5, y:y+size*0.8}], color, 0.5); // Top face
+                drawFacet3D([{x:x-size*0.5, y:y-size*0.8}, {x:x-size*0.8, y:y-size*0.6}, {x:x-size*0.8, y:y+size*0.6}, {x:x-size*0.5, y:y+size*0.8}], color, -0.2);
+                drawFacet3D([{x:x+size*0.5, y:y-size*0.8}, {x:x+size*0.8, y:y-size*0.6}, {x:x+size*0.8, y:y+size*0.6}, {x:x+size*0.5, y:y+size*0.8}], color, -0.5);
+            } else if (shape === 'tear') {
+                c.beginPath();
+                c.moveTo(x, y-size*1.2);
+                c.bezierCurveTo(x-size*1.2, y+size*0.2, x-size*0.5, y+size, x, y+size);
+                c.bezierCurveTo(x+size*0.5, y+size, x+size*1.2, y+size*0.2, x, y-size*1.2);
+                const grad = c.createRadialGradient(x - size*0.2, y + size*0.2, 0, x, y, size*1.2);
+                grad.addColorStop(0, 'white');
+                grad.addColorStop(0.3, color);
+                grad.addColorStop(1, 'black');
+                c.fillStyle = grad;
+                c.fill();
+            }
         }
-        c.lineWidth = 1;
-        c.strokeStyle = `rgba(255,255,255,0.4)`;
-        c.stroke();
     };
 
     // --- EFFECT HOOKS ---
 
-    // Initialization & Resize
     useEffect(() => {
         const resize = () => {
             const win = (globalThis as any).window;
@@ -402,14 +456,17 @@ export default function ElectroWand() {
                 const h = win.innerHeight;
                 const w = win.innerWidth;
                 
+                // Scale Width based on Setting (10% increase per level)
+                const widthMult = 1.0 + ((config.current.wandWidthLevel - 1) * 0.1);
+
                 state.current.wand = {
                     baseX: w / 2,
                     baseY: h - 80,
                     tipX: w / 2,
                     tipY: h * 0.15,
                     length: (h - 80) - (h * 0.15),
-                    baseWidth: Math.min(w * 0.15, 80),
-                    tipWidth: Math.min(w * 0.03, 15),
+                    baseWidth: Math.min(w * 0.15, 80) * widthMult,
+                    tipWidth: Math.min(w * 0.03, 15) * widthMult,
                     crystalY: (h - 80) - ((h - 80 - h * 0.15) * 0.12)
                 };
                 generateWoodGrain();
@@ -421,6 +478,12 @@ export default function ElectroWand() {
         resize();
         return () => { if (win) win.removeEventListener('resize', resize); }
     }, []);
+
+    // Update wand when width config changes
+    useEffect(() => {
+        const win = (globalThis as any).window;
+        if (win) win.dispatchEvent(new Event('resize'));
+    }, [config.current.wandWidthLevel]); // Reacting to ref change via UI update
 
     // Main Loop
     useEffect(() => {
@@ -449,19 +512,18 @@ export default function ElectroWand() {
                     
                     const level = conf.vibrationLevel;
                     if (level > 0) {
-                        // L1 = Hypnotic Slow, L2-5 = Faster Jitter
+                        // L1 = Hypnotic Slow Sine
                         if (level === 1) {
-                            wobbleOffset = Math.sin(s.time * 0.5) * 5.0; // Slow, wider
+                            wobbleOffset = Math.sin(s.time * 0.5) * 5.0;
                         } else {
-                            const vibFreq = [0, 0.5, 2.0, 5.0, 10.0, 20.0]; 
+                             // L2-5 = Faster Jitter
+                            const vibFreq = [0, 0, 1.0, 2.0, 3.5, 5.0]; 
                             const amplitude = 2.0; 
                             const speed = 0.5 + (progress * 2.0);
                             const sway = Math.sin(s.time * 5 * speed) * 2.5;
                             const vibration = Math.sin(s.time * 30 * vibFreq[level]) * amplitude;
                             wobbleOffset = sway + vibration;
                         }
-                    } else {
-                        wobbleOffset = 0;
                     }
                 }
             }
@@ -578,12 +640,11 @@ export default function ElectroWand() {
                 c.fillStyle = grad;
                 c.fillRect(0,0,canvasRef.current.width,canvasRef.current.height);
 
-                // Generate Internal Particles
                 if (Math.random() > 0.1) {
                     const spawnX = w.baseX + (Math.random() - 0.5) * 20;
                     const spawnY = w.crystalY + (Math.random() - 0.5) * 20;
                     
-                    // Internal Speed: Level 1 = 0.5 (Half of old base), L5 = 3.0 (Fast)
+                    // Internal Speed: L1 = 0.5 (Half old base)
                     const baseSpeed = 0.5; 
                     const speedRange = 2.5;
                     const speedMult = baseSpeed + ((conf.internalSpeed - 1) / 4) * speedRange;
@@ -613,16 +674,25 @@ export default function ElectroWand() {
 
                     if (p.life <= 0) { s.particles.splice(i, 1); continue; }
 
-                    // Internal Size: L1=1x, L5=2x.
+                    // Internal Size: L1=1x, L5=2x
                     const sizeMult = 1.0 + ((conf.internalSize - 1) / 4);
                     
-                    c.save();
-                    c.translate(p.x, p.y);
-                    // Base Internal Scale = 0.3. Multiplied by sizeMult (1 to 2).
-                    const scale = 0.3 * p.life * sizeMult;
-                    c.scale(scale, scale);
-                    drawShape(c, p.shapeType, conf.internalColor, 20); // Fixed base size 20 for shapes
-                    c.restore();
+                    if (p.shapeType === 'lightning') {
+                        // Internal Lightning: Draw jagged line, not dot
+                        c.beginPath();
+                        c.strokeStyle = p.color;
+                        c.lineWidth = 2 * sizeMult; // Thicker based on size
+                        c.moveTo(p.x, p.y);
+                        c.lineTo(p.x + (Math.random()-0.5)*10, p.y - 15*sizeMult);
+                        c.stroke();
+                    } else {
+                        c.save();
+                        c.translate(p.x, p.y);
+                        const scale = 0.3 * p.life * sizeMult;
+                        c.scale(scale, scale);
+                        drawShape(c, p.shapeType, p.color);
+                        c.restore();
+                    }
                 }
             } else {
                 if (s.energyLevel > 0) s.energyLevel -= 0.05;
@@ -645,7 +715,6 @@ export default function ElectroWand() {
 
                 if (s.energyLevel > 0.8 && Math.random() < 0.25 * conf.intensityMult) {
                     if (conf.externalShape === 'lightning') {
-                        // Angle Spread: 30, 50, 75, 90, 110, 150
                         const spreadMap = [30, 50, 75, 90, 110, 150];
                         const spreadDeg = spreadMap[conf.screenFillLevel] || 30;
                         const angle = (Math.random() - 0.5) * spreadDeg * (Math.PI / 180);
@@ -664,8 +733,10 @@ export default function ElectroWand() {
                         };
                         generateSegments(tipX, w.tipY, endX, -100, 80);
                         
+                        // Store width in bolt object based on externalSize setting (1-5)
+                        const width = 2 * (1 + (conf.externalSize - 1) * 0.5);
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        s.projectiles.push({ segments, life: 1.0, type: 'lightning', color: conf.externalColor, state: 'shooting' } as any);
+                        s.projectiles.push({ segments, life: 1.0, type: 'lightning', color: conf.externalColor, state: 'shooting', width } as any);
                     } else {
                         const spreadMap = [30, 50, 75, 90, 110, 150];
                         const spreadDeg = spreadMap[conf.screenFillLevel] || 30;
@@ -693,7 +764,8 @@ export default function ElectroWand() {
                     if(bolt.life <= 0) { s.projectiles.splice(i, 1); continue; }
                     c.beginPath();
                     c.strokeStyle = bolt.color;
-                    c.lineWidth = Math.max(0.1, 2 * bolt.life * conf.intensityMult);
+                    // Use stored bolt width which is based on size setting
+                    c.lineWidth = Math.max(0.1, (bolt.width || 2) * bolt.life * conf.intensityMult);
                     c.shadowBlur = 10;
                     c.shadowColor = bolt.color;
                     for(const seg of bolt.segments) { c.moveTo(seg.x1,seg.y1); c.lineTo(seg.x2,seg.y2); }
@@ -721,15 +793,15 @@ export default function ElectroWand() {
 
                     p.rot += p.rotSpeed;
                     
-                    // External Size: L1=1x, L5=2x
                     const sizeMult = 1.0 + ((conf.externalSize - 1) / 4);
-                    const baseSize = 20; 
+                    p.size = 15 * p.life * sizeMult;
                     
+                    if (p.life <= 0) { s.projectiles.splice(i, 1); continue; }
+
                     c.save();
                     c.translate(p.x, p.y);
                     c.rotate(p.rot);
-                    c.scale(p.life * sizeMult, p.life * sizeMult);
-                    drawShape(c, p.type, conf.externalColor, baseSize);
+                    drawShape(c, p.type, p.color, p.size);
                     c.restore();
                 }
             }
@@ -746,7 +818,7 @@ export default function ElectroWand() {
 
     // Helper to draw shapes
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const drawShape = (ctx: any, type: string, color: string, size: number = 20) => {
+    const drawShape = (ctx: any, type: string, color: string, size: number = 10) => {
         if (type === 'hearts') {
             ctx.fillStyle = color;
             ctx.beginPath();
@@ -758,19 +830,19 @@ export default function ElectroWand() {
             ctx.bezierCurveTo(size/2, 0, 0, 0, 0, topCurveHeight);
             ctx.fill();
         } else if (type === 'coins') {
-            ctx.fillStyle = '#fbbf24'; 
+            ctx.fillStyle = color; // User color
             ctx.beginPath(); ctx.arc(0,0, size/2, 0, Math.PI*2); ctx.fill();
             ctx.strokeStyle = '#b45309'; ctx.lineWidth=2; ctx.stroke();
-            ctx.fillStyle = '#fef08a'; ctx.font = `${size*0.6}px serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+            ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.font = `${size*0.6}px serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
             ctx.fillText('$', 0, 1);
         } else if (type === 'clovers') {
-            ctx.fillStyle = '#4ade80'; 
+            ctx.fillStyle = color; // User color
             for(let k=0; k<4; k++) {
                 ctx.rotate(Math.PI/2);
                 ctx.beginPath(); ctx.arc(0, -size*0.3, size*0.3, 0, Math.PI*2); ctx.fill();
             }
         } else if (type === 'rainbow') {
-            // Replaced with Vector Arc
+            // Vector Arc
             ctx.beginPath();
             ctx.arc(0, 0, size * 0.8, Math.PI, 0); 
             ctx.lineWidth = size * 0.4;
@@ -815,39 +887,48 @@ export default function ElectroWand() {
     // --- UI UPDATERS ---
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updateConfig = (key: string, value: any) => {
-        // Play click sound only if not dragging a color picker (to avoid spamming)
-        if (!key.toLowerCase().includes('color')) playClickSound();
-        
+        playClickSound();
         // @ts-expect-error - dynamic property access
         config.current[key] = value;
         updateCSSVar();
-        if(key === 'wandBaseColor' || key === 'wandShape') generateWoodGrain();
+        
+        // Update physics for immediate feedback
+        if(key === 'wandBaseColor' || key === 'wandShape' || key === 'wandWidthLevel') {
+             const win = (globalThis as any).window;
+             if(win) win.dispatchEvent(new Event('resize')); // Trigger physics recalculation
+        }
         
         setConfigTick(t => t + 1);
     };
+    
+    const openColorPicker = (key: string, label: string) => {
+        // @ts-expect-error - dynamic access
+        setTempColor(config.current[key]);
+        setShowColorModal({ show: true, target: key, label });
+    }
+    
+    const applyColorSelection = (c: string) => {
+        if (showColorModal.target) updateConfig(showColorModal.target, c);
+    }
+    
+    const confirmColorSelection = () => {
+         setShowColorModal({ show: false, target: null, label: '' });
+    }
 
     const activeClass = (isActive: boolean) => 
         isActive 
             ? "bg-purple-600 border-purple-400 text-white shadow-[0_0_10px_#a855f7]" 
             : "bg-gray-800 border-gray-600 text-gray-400 hover:border-gray-400";
-
-    const ColorPickerButton = ({ label, value, onChange }: { label: string, value: string, onChange: (val: string) => void }) => (
-        <div className="flex justify-between items-center bg-gray-800 p-2 rounded border border-gray-700">
-            <span className="text-[10px] text-gray-400">{label}</span>
-            <div className="relative overflow-hidden w-6 h-6 rounded-full border border-gray-500">
-                <input 
-                    type="color" 
-                    value={value} 
-                    // FIX: Use onInput for live updates without closing, cast target to any
-                    onInput={(e) => onChange((e.target as any).value)} 
-                    className="absolute inset-0 w-[150%] h-[150%] -translate-x-1/4 -translate-y-1/4 p-0 border-0 cursor-pointer"
-                />
-            </div>
+            
+    const ColorButton = ({ color, label, onClick }: { color: string, label: string, onClick: () => void }) => (
+        <div className="flex justify-between items-center bg-gray-800 p-2 rounded border border-gray-700 cursor-pointer hover:border-purple-500 transition-colors" onClick={onClick}>
+            <span className="text-xs text-gray-300 font-medium">{label}</span>
+            <div className="w-6 h-6 rounded-full border border-gray-500 shadow-sm" style={{ backgroundColor: color }}></div>
         </div>
     );
 
     return (
-        <div className="fixed inset-0 bg-black overflow-hidden touch-none select-none">
+        <div className="fixed inset-0 bg-black overflow-hidden touch-none select-none font-sans">
             <canvas 
                 ref={canvasRef} 
                 className="absolute inset-0 w-full h-full z-10"
@@ -862,35 +943,30 @@ export default function ElectroWand() {
 
             <div className="absolute top-0 left-0 w-full h-full pointer-events-none z-20">
                 
-                {/* Top Left: Back Link */}
                 <div className="absolute top-4 left-4 pointer-events-auto">
                     <MagickalBackLink href="/marketplace/magickal-tools" text="Back" className="text-xs" />
                 </div>
 
-                {/* Bottom Left: Settings */}
                 <div className="absolute bottom-4 left-4 pointer-events-auto">
                     <button onClick={() => setShowSettings(true)} className="p-3 rounded-full bg-gray-900/50 border border-purple-500/30 hover:bg-gray-800 text-purple-300 transition-colors backdrop-blur-md">
-                        <Settings size={24} />
+                        <Settings size={28} />
                     </button>
                 </div>
 
-                {/* Bottom Right: Fullscreen */}
                 <div className="absolute bottom-4 right-4 pointer-events-auto">
                     <button onClick={toggleFullscreen} className="p-3 rounded-full bg-gray-900/50 border border-purple-500/30 hover:bg-gray-800 text-purple-300 transition-colors backdrop-blur-md">
-                        {isFullscreen ? <Minimize2 size={24} /> : <Maximize2 size={24} />}
+                        {isFullscreen ? <Minimize2 size={28} /> : <Maximize2 size={28} />}
                     </button>
                 </div>
 
-                {/* Left Vertical Text: LORDMAGICK - Smaller */}
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none flex items-center justify-center h-full w-0">
+                <div className="absolute left-6 top-1/2 -translate-y-1/2 pointer-events-none flex items-center justify-center h-full w-0">
                     <div className="-rotate-90 origin-center whitespace-nowrap opacity-30 mix-blend-screen">
-                        <h1 className="text-xs font-bold tracking-[0.4em] font-serif text-purple-300/50" style={{textShadow: '0 0 5px currentColor'}}>
+                        <h1 className="text-sm font-bold tracking-[0.6em] font-serif text-purple-300/50" style={{textShadow: '0 0 5px currentColor'}}>
                             LORDMAGICK
                         </h1>
                     </div>
                 </div>
 
-                {/* Right Vertical Text: Name & Intention */}
                 {(wandName || intention) && (
                     <div className="absolute right-8 top-1/2 -translate-y-1/2 pointer-events-none flex items-center justify-center h-full w-0">
                         <div className="rotate-90 origin-center whitespace-nowrap text-center transition-opacity duration-1000">
@@ -900,7 +976,7 @@ export default function ElectroWand() {
                                 </p>
                             )}
                             {intention && (
-                                <p className="text-sm md:text-lg text-gray-400 italic font-serif tracking-widest opacity-70">
+                                <p className="text-lg md:text-xl text-gray-400 italic font-serif tracking-widest opacity-70">
                                     "{intention}"
                                 </p>
                             )}
@@ -908,18 +984,17 @@ export default function ElectroWand() {
                     </div>
                 )}
 
-                {/* Start Hint Overlay */}
                 <div id="start-hint" className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center pointer-events-auto transition-opacity duration-500 ${hasStarted ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
-                    <p className="text-purple-200 text-sm tracking-widest uppercase mb-4">Initialize Energy</p>
-                    <div className="w-16 h-16 border border-purple-400 rounded-full mx-auto animate-pulse flex items-center justify-center mb-6 pointer-events-none">
-                        <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
+                    <p className="text-purple-200 text-lg tracking-widest uppercase mb-4">Initialize Energy</p>
+                    <div className="w-20 h-20 border-2 border-purple-400 rounded-full mx-auto animate-pulse flex items-center justify-center mb-6 pointer-events-none">
+                        <div className="w-3 h-3 bg-purple-400 rounded-full"></div>
                     </div>
                     
-                    <div className="flex flex-col gap-4">
-                        <p className="text-xs text-gray-500">Touch & Hold Crystal Base</p>
+                    <div className="flex flex-col gap-4 items-center">
+                        <p className="text-sm text-gray-400">Touch & Hold Crystal Base</p>
                         <button 
                             onClick={() => { toggleFullscreen(); initAudio(); }}
-                            className="px-6 py-2 border border-purple-500/50 rounded bg-purple-900/20 text-purple-300 hover:bg-purple-800/40 text-xs tracking-wider uppercase transition-colors"
+                            className="px-8 py-3 border border-purple-500/50 rounded bg-purple-900/20 text-purple-300 hover:bg-purple-800/40 text-sm tracking-wider uppercase transition-colors"
                         >
                             Enter Fullscreen & Begin
                         </button>
@@ -927,28 +1002,66 @@ export default function ElectroWand() {
                 </div>
             </div>
 
-            {/* SETTINGS MODAL */}
-            {showSettings && (
+            {/* COLOR MODAL */}
+            {showColorModal.show && (
+                <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/90 backdrop-blur-md">
+                     <div className="w-11/12 max-w-sm bg-gray-900 border border-gray-600 rounded-xl p-6 relative">
+                        <h3 className="text-xl font-serif text-white mb-6 text-center">{showColorModal.label}</h3>
+                        
+                        <div className="grid grid-cols-4 gap-3 mb-6">
+                            {COLOR_PALETTE.map(c => (
+                                <button 
+                                    key={c} 
+                                    className="w-10 h-10 rounded-full border border-gray-600 shadow-lg hover:scale-110 transition-transform"
+                                    style={{ backgroundColor: c }}
+                                    onClick={() => { setTempColor(c); applyColorSelection(c); }}
+                                />
+                            ))}
+                        </div>
+                        
+                        <div className="mb-6 flex justify-center">
+                            <input 
+                                type="color" 
+                                value={tempColor}
+                                // FIX: onInput allows dragging without closing
+                                onInput={(e) => { 
+                                    const val = (e.target as any).value; 
+                                    setTempColor(val); 
+                                    applyColorSelection(val);
+                                }} 
+                                className="w-full h-12 cursor-pointer rounded border border-gray-600"
+                            />
+                        </div>
+
+                        <button 
+                            onClick={confirmColorSelection}
+                            className="w-full py-3 bg-purple-600 text-white font-bold rounded hover:bg-purple-500 transition-colors uppercase tracking-wide"
+                        >
+                            Confirm Color
+                        </button>
+                     </div>
+                </div>
+            )}
+
+            {/* MAIN SETTINGS MODAL */}
+            {showSettings && !showColorModal.show && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
                     <div className="w-11/12 max-w-md bg-gray-950/95 border border-gray-700 rounded-xl p-6 relative max-h-[85vh] overflow-y-auto">
                         <button onClick={() => setShowSettings(false)} className="absolute top-4 right-4 text-gray-400 hover:text-white"><X size={24} /></button>
                         <h2 className="text-2xl font-serif text-purple-300 mb-4 text-center tracking-widest border-b border-gray-700 pb-2">Grimoire</h2>
                         
                         <div className="space-y-6">
-                            {/* Identity */}
-                            <div className="space-y-2">
-                                <h3 className="text-xs uppercase text-gray-500 tracking-wide font-bold">Identity</h3>
-                                {/* FIX: Cast target to any for input values */}
-                                <input type="text" value={wandName} onChange={(e) => setWandName((e.target as any).value)} placeholder="Name your Wand..." className="w-full bg-black/30 border border-gray-600 rounded p-2 text-purple-200 text-xs focus:border-purple-500 outline-none" />
-                                <input type="text" value={intention} onChange={(e) => setIntention((e.target as any).value)} placeholder="Set your Intention..." className="w-full bg-black/30 border border-gray-600 rounded p-2 text-purple-200 text-xs focus:border-purple-500 outline-none" />
+                            <div className="space-y-3">
+                                <h3 className="text-sm uppercase text-gray-500 tracking-wide font-bold">Identity</h3>
+                                <input type="text" value={wandName} onChange={(e) => setWandName((e.target as any).value)} placeholder="Name your Wand..." className="w-full bg-black/30 border border-gray-600 rounded p-3 text-purple-200 text-sm focus:border-purple-500 outline-none" />
+                                <input type="text" value={intention} onChange={(e) => setIntention((e.target as any).value)} placeholder="Set your Intention..." className="w-full bg-black/30 border border-gray-600 rounded p-3 text-purple-200 text-sm focus:border-purple-500 outline-none" />
                             </div>
 
-                            {/* Shape & Material */}
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="text-[10px] text-gray-400 block mb-1">Shape</label>
+                                    <label className="text-xs text-gray-400 block mb-1">Shape</label>
                                     <select 
-                                        className="w-full bg-gray-800 text-xs border border-gray-600 rounded p-1 text-white" 
+                                        className="w-full bg-gray-800 text-sm border border-gray-600 rounded p-2 text-white" 
                                         value={config.current.wandShape}
                                         onChange={(e) => updateConfig('wandShape', (e.target as any).value)}
                                     >
@@ -959,17 +1072,24 @@ export default function ElectroWand() {
                                         <option value="bone">Bone</option>
                                     </select>
                                 </div>
-                                <ColorPickerButton label="Wood Color" value={config.current.wandBaseColor} onChange={(c) => updateConfig('wandBaseColor', c)} />
+                                <div>
+                                    <label className="text-xs text-gray-400 block mb-1">Width (1-5)</label>
+                                    <div className="flex gap-1">
+                                        {[1, 2, 3, 4, 5].map(l => (
+                                            <button key={l} className={`flex-1 h-8 rounded border text-xs ${activeClass(config.current.wandWidthLevel === l)}`} onClick={() => updateConfig('wandWidthLevel', l)}>{l}</button>
+                                        ))}
+                                    </div>
+                                </div>
                             </div>
+                            <ColorButton label="Wood Material" color={config.current.wandBaseColor} onClick={() => openColorPicker('wandBaseColor', 'Wood Color')} />
 
-                            {/* Core */}
                             <div>
-                                <h3 className="text-xs uppercase text-gray-500 mb-2 tracking-wide font-bold">Crystal Core</h3>
-                                <div className="grid grid-cols-2 gap-4 mb-2">
+                                <h3 className="text-sm uppercase text-gray-500 mb-2 tracking-wide font-bold">Crystal Core</h3>
+                                <div className="grid grid-cols-2 gap-4 mb-3">
                                     <div>
-                                        <label className="text-[10px] text-gray-400 block mb-1">Shape</label>
+                                        <label className="text-xs text-gray-400 block mb-1">Shape</label>
                                         <select 
-                                            className="w-full bg-gray-800 text-xs border border-gray-600 rounded p-1 text-white"
+                                            className="w-full bg-gray-800 text-sm border border-gray-600 rounded p-2 text-white"
                                             value={config.current.crystalShape}
                                             onChange={(e) => updateConfig('crystalShape', (e.target as any).value)}
                                         >
@@ -980,125 +1100,93 @@ export default function ElectroWand() {
                                             <option value="tear">Tear</option>
                                         </select>
                                     </div>
-                                    <ColorPickerButton label="Crystal Color" value={config.current.crystalBaseColor} onChange={(c) => updateConfig('crystalBaseColor', c)} />
+                                    <div className="flex flex-col justify-end">
+                                        <ColorButton label="Crystal Color" color={config.current.crystalBaseColor} onClick={() => openColorPicker('crystalBaseColor', 'Crystal Color')} />
+                                    </div>
                                 </div>
-                                <ColorPickerButton label="Activated Glow" value={config.current.activatedColor} onChange={(c) => updateConfig('activatedColor', c)} />
+                                <ColorButton label="Active Glow (Aura)" color={config.current.activatedColor} onClick={() => openColorPicker('activatedColor', 'Aura Color')} />
                             </div>
 
-                            {/* Internal Flow Settings */}
-                            <div className="p-3 bg-gray-900/50 rounded border border-gray-800 space-y-3">
-                                <h3 className="text-xs uppercase text-gray-500 tracking-wide font-bold">Internal Energy</h3>
-                                
-                                <div className="grid grid-cols-5 gap-1">
-                                    {[
-                                        {id: 'lightning', icon: Zap}, 
-                                        {id: 'hearts', icon: Heart}, 
-                                        {id: 'rainbow', icon: CloudRain}, 
-                                        {id: 'coins', icon: Coins}, 
-                                        {id: 'clovers', icon: Clover}
-                                    ].map(item => (
-                                        <button 
-                                            key={item.id} 
-                                            className={`p-2 rounded border flex items-center justify-center transition-all active:scale-90 ${activeClass(config.current.internalShape === item.id)}`}
-                                            onClick={() => updateConfig('internalShape', item.id)}
-                                        >
-                                            <item.icon size={14} />
-                                        </button>
+                            <div className="p-4 bg-gray-900/50 rounded border border-gray-800 space-y-4">
+                                <h3 className="text-sm uppercase text-gray-500 tracking-wide font-bold">Internal Energy</h3>
+                                <div className="grid grid-cols-5 gap-2">
+                                    {[{id: 'lightning', icon: Zap}, {id: 'hearts', icon: Heart}, {id: 'rainbow', icon: CloudRain}, {id: 'coins', icon: Coins}, {id: 'clovers', icon: Clover}].map(item => (
+                                        <button key={item.id} className={`p-2 rounded border flex items-center justify-center transition-all active:scale-90 ${activeClass(config.current.internalShape === item.id)}`} onClick={() => updateConfig('internalShape', item.id)}><item.icon size={18} /></button>
                                     ))}
                                 </div>
-
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="text-[10px] text-gray-400 block mb-1">Flow Speed (1=Slow)</label>
-                                        <div className="flex gap-1">
-                                            {[1, 2, 3, 4, 5].map(level => (
-                                                <button key={level} className={`w-full h-6 rounded border text-[10px] ${activeClass(config.current.internalSpeed === level)}`} onClick={() => updateConfig('internalSpeed', level)}>{level}</button>
-                                            ))}
-                                        </div>
+                                        <label className="text-xs text-gray-400 block mb-1">Speed</label>
+                                        <div className="flex gap-1">{[1, 2, 3, 4, 5].map(l => (<button key={l} className={`flex-1 h-8 rounded border text-xs ${activeClass(config.current.internalSpeed === l)}`} onClick={() => updateConfig('internalSpeed', l)}>{l}</button>))}</div>
                                     </div>
                                     <div>
-                                        <label className="text-[10px] text-gray-400 block mb-1">Size (1=Small)</label>
-                                        <div className="flex gap-1">
-                                            {[1, 2, 3, 4, 5].map(level => (
-                                                <button key={level} className={`w-full h-6 rounded border text-[10px] ${activeClass(config.current.internalSize === level)}`} onClick={() => updateConfig('internalSize', level)}>{level}</button>
-                                            ))}
-                                        </div>
+                                        <label className="text-xs text-gray-400 block mb-1">Size</label>
+                                        <div className="flex gap-1">{[1, 2, 3, 4, 5].map(l => (<button key={l} className={`flex-1 h-8 rounded border text-xs ${activeClass(config.current.internalSize === l)}`} onClick={() => updateConfig('internalSize', l)}>{l}</button>))}</div>
                                     </div>
                                 </div>
-                                <ColorPickerButton label="Internal Color" value={config.current.internalColor} onChange={(c) => updateConfig('internalColor', c)} />
+                                <ColorButton label="Internal Color" color={config.current.internalColor} onClick={() => openColorPicker('internalColor', 'Internal Particles')} />
                             </div>
 
-                            {/* External Cast Settings */}
-                            <div className="p-3 bg-gray-900/50 rounded border border-gray-800 space-y-3">
-                                <h3 className="text-xs uppercase text-gray-500 tracking-wide font-bold">External Projection</h3>
-                                
-                                <div className="grid grid-cols-5 gap-1">
-                                    {[
-                                        {id: 'lightning', icon: Zap}, 
-                                        {id: 'hearts', icon: Heart}, 
-                                        {id: 'rainbow', icon: CloudRain}, 
-                                        {id: 'coins', icon: Coins}, 
-                                        {id: 'clovers', icon: Clover}
-                                    ].map(item => (
-                                        <button 
-                                            key={item.id} 
-                                            className={`p-2 rounded border flex items-center justify-center transition-all active:scale-90 ${activeClass(config.current.externalShape === item.id)}`}
-                                            onClick={() => updateConfig('externalShape', item.id)}
-                                        >
-                                            <item.icon size={14} />
-                                        </button>
+                            <div className="p-4 bg-gray-900/50 rounded border border-gray-800 space-y-4">
+                                <h3 className="text-sm uppercase text-gray-500 tracking-wide font-bold">External Projection</h3>
+                                <div className="grid grid-cols-5 gap-2">
+                                    {[{id: 'lightning', icon: Zap}, {id: 'hearts', icon: Heart}, {id: 'rainbow', icon: CloudRain}, {id: 'coins', icon: Coins}, {id: 'clovers', icon: Clover}].map(item => (
+                                        <button key={item.id} className={`p-2 rounded border flex items-center justify-center transition-all active:scale-90 ${activeClass(config.current.externalShape === item.id)}`} onClick={() => updateConfig('externalShape', item.id)}><item.icon size={18} /></button>
                                     ))}
                                 </div>
-
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="text-[10px] text-gray-400 block mb-1">Projectile Size</label>
-                                        <div className="flex gap-1">
-                                            {[1, 2, 3, 4, 5].map(level => (
-                                                <button key={level} className={`w-full h-6 rounded border text-[10px] ${activeClass(config.current.externalSize === level)}`} onClick={() => updateConfig('externalSize', level)}>{level}</button>
-                                            ))}
-                                        </div>
+                                        <label className="text-xs text-gray-400 block mb-1">Size / Thickness</label>
+                                        <div className="flex gap-1">{[1, 2, 3, 4, 5].map(l => (<button key={l} className={`flex-1 h-8 rounded border text-xs ${activeClass(config.current.externalSize === l)}`} onClick={() => updateConfig('externalSize', l)}>{l}</button>))}</div>
                                     </div>
                                     <div>
-                                        <label className="text-[10px] text-gray-400 block mb-1">Screen Fill (0=Off)</label>
-                                        <div className="flex gap-1">
-                                            {[0, 1, 2, 3, 4, 5].map(level => (
-                                                <button key={level} className={`w-full h-6 rounded border text-[10px] ${activeClass(config.current.screenFillLevel === level)}`} onClick={() => updateConfig('screenFillLevel', level)}>{level}</button>
-                                            ))}
-                                        </div>
+                                        <label className="text-xs text-gray-400 block mb-1">Screen Fill (0=Off)</label>
+                                        <div className="flex gap-1">{[0, 1, 2, 3, 4, 5].map(l => (<button key={l} className={`flex-1 h-8 rounded border text-xs ${activeClass(config.current.screenFillLevel === l)}`} onClick={() => updateConfig('screenFillLevel', l)}>{l}</button>))}</div>
                                     </div>
                                 </div>
-                                <ColorPickerButton label="Cast Color" value={config.current.externalColor} onChange={(c) => updateConfig('externalColor', c)} />
+                                <ColorButton label="Cast Color" color={config.current.externalColor} onClick={() => openColorPicker('externalColor', 'Projection Color')} />
                             </div>
 
-                            {/* General Settings */}
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-4 pt-4 border-t border-gray-700">
+                                <h3 className="text-sm uppercase text-gray-500 tracking-wide font-bold">Haptics & Audio</h3>
+                                
                                 <div>
-                                    <label className="text-[10px] text-gray-400 block mb-1">Stability (0=None)</label>
-                                    <div className="flex gap-1">{[0, 1, 2, 3, 4].map(level => (<button key={level} className={`w-full h-6 rounded border flex items-center justify-center text-[10px] transition-all active:scale-90 ${activeClass(config.current.vibrationLevel === level)}`} onClick={() => updateConfig('vibrationLevel', level)}>{level}</button>))}</div>
+                                    <label className="text-xs text-gray-400 block mb-1">Vibration (0=None)</label>
+                                    <div className="flex gap-1">{[0, 1, 2, 3, 4].map(l => (<button key={l} className={`flex-1 h-8 rounded border flex items-center justify-center text-xs transition-all active:scale-90 ${activeClass(config.current.vibrationLevel === l)}`} onClick={() => updateConfig('vibrationLevel', l)}>{l}</button>))}</div>
                                 </div>
+
                                 <div>
-                                    <h3 className="text-[10px] text-gray-400 block mb-1">Sonic Profile</h3>
+                                    <label className="text-xs text-gray-400 block mb-1">Master Volume: {Math.round(config.current.masterVolume * 100)}%</label>
+                                    <input 
+                                        type="range" 
+                                        min="0" max="200" step="10" 
+                                        defaultValue={100}
+                                        onChange={(e) => updateConfig('masterVolume', parseInt((e.target as any).value) / 100)} 
+                                        className="w-full accent-purple-500 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="text-xs text-gray-400 block mb-1">Sonic Profile</label>
                                     <div className="grid grid-cols-5 gap-1">
                                         {['hum', 'theremin', 'ethereal', 'void', 'dragon'].map(s => (
-                                            <button key={s} className={`p-1 text-[8px] rounded border capitalize transition-all active:scale-90 overflow-hidden text-center ${activeClass(config.current.soundProfile === s)}`} onClick={() => updateConfig('soundProfile', s)}>{s.slice(0,3)}</button>
+                                            <button key={s} className={`p-1 text-[10px] rounded border capitalize transition-all active:scale-90 overflow-hidden text-center ${activeClass(config.current.soundProfile === s)}`} onClick={() => updateConfig('soundProfile', s)}>{s.slice(0,3)}</button>
                                         ))}
                                     </div>
                                 </div>
-                            </div>
-                            
-                            {/* Reverb Toggle */}
-                             <div className="flex items-center gap-3 border border-gray-700 p-2 rounded bg-gray-800/50">
-                                <input 
-                                    type="checkbox" 
-                                    id="reverbToggle"
-                                    className="w-4 h-4 accent-purple-500 cursor-pointer"
-                                    checked={config.current.reverb}
-                                    onChange={(e) => updateConfig('reverb', (e.target as any).checked)} 
-                                />
-                                <label htmlFor="reverbToggle" className="text-xs text-gray-300 flex items-center gap-2 cursor-pointer">
-                                    <Volume2 size={14} /> Cathedral Reverb
-                                </label>
+                                
+                                <div className="flex items-center gap-3 border border-gray-700 p-3 rounded bg-gray-800/50">
+                                    <input 
+                                        type="checkbox" 
+                                        id="reverbToggle"
+                                        className="w-5 h-5 accent-purple-500 cursor-pointer"
+                                        checked={config.current.reverb}
+                                        onChange={(e) => updateConfig('reverb', (e.target as any).checked)} 
+                                    />
+                                    <label htmlFor="reverbToggle" className="text-sm text-gray-300 flex items-center gap-2 cursor-pointer">
+                                        <Volume2 size={16} /> Cathedral Reverb
+                                    </label>
+                                </div>
                             </div>
                         </div>
                     </div>
