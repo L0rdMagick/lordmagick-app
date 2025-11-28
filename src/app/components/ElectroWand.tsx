@@ -4,7 +4,6 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { Settings, X, Maximize2, Minimize2, Zap, Heart, CloudRain, Coins, Clover, Volume2, Save, Trash2, BookOpen } from 'lucide-react';
-// FIX: Switched to @supabase/ssr based on your package.json
 import { createBrowserClient } from '@supabase/ssr';
 import MagickalBackLink from './MagickalBackLink';
 
@@ -26,25 +25,17 @@ interface SavedWand {
 
 // --- PALETTE ---
 const COLOR_PALETTE = [
-    '#ffffff', '#9ca3af', '#3e2723', '#000000',
-    '#dc2626', // Deep Red
-    '#fb923c', // Vibrant Orange
-    '#facc15', // Yellow
-    '#22c55e', // Vibrant Green
-    '#22d3ee', // Cyan
-    '#3b82f6', // Blue
-    '#4b0082', // Indigo
-    '#a855f7', // Vibrant Purple
-    '#ff00ff', // Hot Pink
-    '#f43f5e', // Rose
-    '#fbbf24'  // Amber
+    '#ffffff', '#9ca3af', '#3e2723', '#000000', // Row 1: Neutrals
+    '#dc2626', '#fb923c', '#facc15', '#84cc16', // Row 2: Warm/Bright (Added Lime #84cc16)
+    '#22c55e', '#22d3ee', '#3b82f6', '#4b0082', // Row 3: Cool/Deep
+    '#a855f7', '#ff00ff', '#f43f5e', '#fbbf24'  // Row 4: Magickal/Vibrant
 ];
 
 export default function ElectroWand() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const canvasRef = useRef<any>(null);
     
-    // FIX: Initialize Supabase client correctly
+    // Initialize Supabase client
     const supabase = createBrowserClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -159,7 +150,7 @@ export default function ElectroWand() {
     };
 
     const handleSaveWand = async () => {
-        // FIX: Access global window/alert safely
+        // FIX: Access global window/alert/confirm safely
         const win = (globalThis as any).window;
 
         if (!user) {
@@ -171,22 +162,53 @@ export default function ElectroWand() {
             return;
         }
 
-        const newWand = {
+        const wandData = {
             user_id: user.id,
             name: wandName,
             intention: intention,
             config: config.current
         };
 
-        const { data, error } = await supabase.from('wands').insert([newWand]).select();
-        
-        if (error) {
-            console.error("Error saving wand:", error);
-            if (win) win.alert("Failed to save wand.");
-        } else if (data) {
-            playClickSound();
-            setSavedWands([data[0], ...savedWands]);
-            if (win) win.alert("Wand saved to your Witch Cabinet!");
+        // Check for duplicate name
+        const existingWand = savedWands.find(w => w.name === wandName);
+
+        if (existingWand) {
+            // Overwrite Logic
+            if (win && !win.confirm(`You already have a wand named "${wandName}". Do you want to overwrite it?`)) {
+                return; // User cancelled
+            }
+
+            const { data, error } = await supabase
+                .from('wands')
+                .update(wandData)
+                .eq('id', existingWand.id)
+                .select(); // Returns array
+
+            if (error) {
+                console.error("Error updating wand:", error);
+                if (win) win.alert("Failed to update wand.");
+            } else if (data && data.length > 0) {
+                playClickSound();
+                // Update local state by replacing the old wand with the new data
+                setSavedWands(prev => prev.map(w => w.id === existingWand.id ? data[0] : w));
+                if (win) win.alert(`Wand "${wandName}" updated successfully!`);
+            }
+
+        } else {
+            // New Insert Logic
+            const { data, error } = await supabase
+                .from('wands')
+                .insert([wandData])
+                .select();
+
+            if (error) {
+                console.error("Error saving wand:", error);
+                if (win) win.alert("Failed to save wand.");
+            } else if (data && data.length > 0) {
+                playClickSound();
+                setSavedWands([data[0], ...savedWands]);
+                if (win) win.alert("Wand saved to your Witch Cabinet!");
+            }
         }
     };
 
