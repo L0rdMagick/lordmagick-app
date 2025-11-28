@@ -3,7 +3,9 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Settings, X, Maximize2, Minimize2, Zap, Heart, CloudRain, Coins, Clover, Volume2 } from 'lucide-react';
+import { Settings, X, Maximize2, Minimize2, Zap, Heart, CloudRain, Coins, Clover, Volume2, Save, Trash2, BookOpen } from 'lucide-react';
+// FIX: Switched to @supabase/ssr based on your package.json
+import { createBrowserClient } from '@supabase/ssr';
 import MagickalBackLink from './MagickalBackLink';
 
 // --- TYPES ---
@@ -12,6 +14,15 @@ interface Particle { x: number; y: number; vx: number; vy: number; life: number;
 interface Projectile { x: number; y: number; vx: number; vy: number; life: number; rot: number; rotSpeed: number; type: string; size: number; color: string; state: 'shooting' | 'floating' | 'falling'; }
 interface Bolt { segments: {x1:number, y1:number, x2:number, y2:number}[]; life: number; color: string; width: number; }
 interface Emanation { x: number; y: number; radius: number; alpha: number; color: string; }
+
+// Database Type
+interface SavedWand {
+    id: string;
+    name: string;
+    intention: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    config: any;
+}
 
 // --- PALETTE ---
 const COLOR_PALETTE = [
@@ -32,16 +43,32 @@ const COLOR_PALETTE = [
 export default function ElectroWand() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const canvasRef = useRef<any>(null);
+    
+    // FIX: Initialize Supabase client correctly
+    const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+    
+    // UI State
     const [showSettings, setShowSettings] = useState(false);
     const [showColorModal, setShowColorModal] = useState<{show: boolean, target: string | null, label: string}>({ show: false, target: null, label: '' });
     const [tempColor, setTempColor] = useState("#ffffff");
     
+    // Wand Identity
     const [wandName, setWandName] = useState("");
     const [intention, setIntention] = useState("");
+    
+    // View State
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [hasStarted, setHasStarted] = useState(false);
-    
     const [, setConfigTick] = useState(0); 
+
+    // Cabinet State
+    const [savedWands, setSavedWands] = useState<SavedWand[]>([]);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const [user, setUser] = useState<any>(null);
+    const [loadingCabinet, setLoadingCabinet] = useState(false);
 
     // --- CONFIG STATE ---
     const config = useRef({
@@ -106,6 +133,93 @@ export default function ElectroWand() {
     }>({
         ctx: null, masterGain: null, osc1: null, osc2: null, lfoOsc: null, lfoGain: null, filter: null, convolver: null, reverbGain: null
     });
+
+    // --- SUPABASE & CABINET LOGIC ---
+    useEffect(() => {
+        const getUser = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            setUser(user);
+            if (user) fetchSavedWands(user.id);
+        };
+        getUser();
+    }, [supabase]);
+
+    const fetchSavedWands = async (userId: string) => {
+        setLoadingCabinet(true);
+        const { data, error } = await supabase
+            .from('wands')
+            .select('*')
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false });
+        
+        if (!error && data) {
+            setSavedWands(data);
+        }
+        setLoadingCabinet(false);
+    };
+
+    const handleSaveWand = async () => {
+        // FIX: Access global window/alert safely
+        const win = (globalThis as any).window;
+
+        if (!user) {
+            if (win) win.alert("You must be logged in to save wands to your Witch Cabinet.");
+            return;
+        }
+        if (!wandName) {
+            if (win) win.alert("Please give your wand a name before saving.");
+            return;
+        }
+
+        const newWand = {
+            user_id: user.id,
+            name: wandName,
+            intention: intention,
+            config: config.current
+        };
+
+        const { data, error } = await supabase.from('wands').insert([newWand]).select();
+        
+        if (error) {
+            console.error("Error saving wand:", error);
+            if (win) win.alert("Failed to save wand.");
+        } else if (data) {
+            playClickSound();
+            setSavedWands([data[0], ...savedWands]);
+            if (win) win.alert("Wand saved to your Witch Cabinet!");
+        }
+    };
+
+    const handleLoadWand = (wand: SavedWand) => {
+        playClickSound();
+        // Load settings
+        config.current = { ...config.current, ...wand.config };
+        setWandName(wand.name);
+        setIntention(wand.intention || "");
+        
+        // Force visual update
+        updateCSSVar();
+        // Trigger resize to recalculate wand physics based on loaded settings
+        const win = (globalThis as any).window;
+        if (win) win.dispatchEvent(new Event('resize'));
+        generateWoodGrain();
+        
+        setConfigTick(t => t + 1);
+    };
+
+    const handleDeleteWand = async (id: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        // FIX: Access global confirm safely
+        const win = (globalThis as any).window;
+        
+        if(win && !win.confirm("Are you sure you want to dismantle this wand?")) return;
+        
+        const { error } = await supabase.from('wands').delete().eq('id', id);
+        if (!error) {
+            setSavedWands(prev => prev.filter(w => w.id !== id));
+            playClickSound();
+        }
+    };
 
     // --- HELPER FUNCTIONS ---
     const toggleFullscreen = () => {
@@ -291,7 +405,6 @@ export default function ElectroWand() {
             const freq = (Math.random() * 0.03) + 0.01;
             const amp = (Math.random() * 5) + 2;
             
-            // Fix: ensure grain covers entire bottom radius of base
             const bottomLimit = w.baseY + w.baseWidth; 
             for(let y = bottomLimit; y > w.tipY - 50; y -= 15) {
                 let x = w.baseX + xOffset + Math.sin(y * freq) * amp;
@@ -499,8 +612,6 @@ export default function ElectroWand() {
                 const baseWidth = Math.min(w * 0.15, 80) * widthMult;
                 
                 // Fix Cutoff: Adjust baseY dynamically so the full base arc is always visible
-                // The base is an arc with radius baseWidth/2. 
-                // We ensure baseY + baseWidth/2 < h - padding.
                 const requiredBottom = baseWidth / 2 + 20;
                 const baseY = h - requiredBottom;
 
@@ -528,7 +639,7 @@ export default function ElectroWand() {
     useEffect(() => {
         const win = (globalThis as any).window;
         if (win) win.dispatchEvent(new Event('resize'));
-    }, [config.current.wandWidthLevel]); // Reacting to ref change via UI update
+    }, [config.current.wandWidthLevel]); 
 
     // Main Loop
     useEffect(() => {
@@ -1157,6 +1268,43 @@ export default function ElectroWand() {
                         <h2 className="text-2xl font-serif text-purple-300 mb-4 text-center tracking-widest border-b border-gray-700 pb-2">Grimoire</h2>
                         
                         <div className="space-y-6">
+                            {/* WITCH CABINET */}
+                            {user && (
+                                <div className="p-4 bg-gray-900/50 rounded border border-purple-900/40 space-y-3">
+                                    <h3 className="text-sm uppercase text-purple-400 tracking-wide font-bold flex items-center gap-2">
+                                        <BookOpen size={16} /> Witch Cabinet
+                                    </h3>
+                                    <div className="flex gap-2 mb-4">
+                                        <button onClick={handleSaveWand} className="flex-1 bg-purple-900/40 hover:bg-purple-800/60 border border-purple-500/30 text-purple-200 py-2 rounded text-xs uppercase tracking-wide flex items-center justify-center gap-2 transition-colors">
+                                            <Save size={14} /> Save Wand
+                                        </button>
+                                    </div>
+                                    
+                                    <div className="max-h-32 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+                                        {loadingCabinet ? (
+                                            <p className="text-xs text-center text-gray-500 italic">Opening cabinet...</p>
+                                        ) : savedWands.length === 0 ? (
+                                            <p className="text-xs text-center text-gray-500 italic">No wands saved yet.</p>
+                                        ) : (
+                                            savedWands.map(w => (
+                                                <div key={w.id} className="group flex justify-between items-center bg-gray-950 p-2 rounded border border-gray-800 hover:border-purple-600 cursor-pointer transition-all" onClick={() => handleLoadWand(w)}>
+                                                    <div>
+                                                        <p className="text-sm text-gray-200 font-medium group-hover:text-purple-300">{w.name}</p>
+                                                        {w.intention && <p className="text-[10px] text-gray-500 truncate max-w-[150px]">{w.intention}</p>}
+                                                    </div>
+                                                    <button 
+                                                        onClick={(e) => handleDeleteWand(w.id, e)}
+                                                        className="p-1.5 text-gray-600 hover:text-red-400 hover:bg-red-900/20 rounded transition-colors"
+                                                    >
+                                                        <Trash2 size={14} />
+                                                    </button>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="space-y-3">
                                 <h3 className="text-sm uppercase text-gray-500 tracking-wide font-bold">Identity</h3>
                                 <input type="text" value={wandName} onChange={(e) => setWandName((e.target as any).value)} placeholder="Name your Wand..." className="w-full bg-black/30 border border-gray-600 rounded p-3 text-purple-200 text-sm focus:border-purple-500 outline-none" />
