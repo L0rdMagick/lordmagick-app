@@ -665,23 +665,31 @@ export default function ElectroWand() {
 
                     if (p.life <= 0) { s.particles.splice(i, 1); continue; }
 
-                    // FIXED Internal Size Scaling: L1=0.8, L5=2.8
-                    const sizeMult = 0.8 + ((conf.internalSize - 1) * 0.5);
+                    // FIXED Internal Size Scaling to match external: 
+                    // Base size (15) x Life x Multiplier (1.0 to 2.0)
+                    const sizeMult = 1.0 + ((conf.internalSize - 1) / 4);
                     
                     if (p.shapeType === 'lightning') {
-                        // Thicker, jagged bolts
+                         // Match external width logic: 2 * (1 + (size - 1) * 0.5)
+                        const thickness = 2 * (1 + (conf.internalSize - 1) * 0.5);
                         c.beginPath();
                         c.strokeStyle = p.color;
-                        c.lineWidth = 2 * sizeMult;
+                        c.lineWidth = thickness;
                         c.moveTo(p.x, p.y);
                         c.lineTo(p.x + (Math.random()-0.5)*10, p.y - 15*sizeMult);
                         c.stroke();
                     } else {
                         c.save();
                         c.translate(p.x, p.y);
-                        const scale = 0.3 * p.life * sizeMult;
-                        c.scale(scale, scale);
-                        drawShape(c, p.shapeType, p.color);
+                        // 15 is base size.
+                        const scale = (15 / 10) * p.life * sizeMult * 0.3; // Internal scaling factor adjustment
+                        // Actually, to match external visual weight:
+                        const matchedScale = p.life * sizeMult; 
+                        // External uses base size 15. Internal draws shape at base size 10.
+                        // So scale should be (15/10) * matchedScale -> 1.5 * matchedScale.
+                        // But we want them slightly smaller inside. Let's just match the logic exactly but render smaller due to distance.
+                        c.scale(matchedScale, matchedScale); 
+                        drawShape(c, p.shapeType, p.color, 15);
                         c.restore();
                     }
                 }
@@ -704,10 +712,10 @@ export default function ElectroWand() {
                     c.fill();
                 }
 
-                // Spawn Probability Logic (Volume Increase)
+                // Spawn Probability Logic (Volume Increase +20% per level)
                 let spawnRate = 0.25; 
                 if (conf.screenFillLevel > 1) {
-                    spawnRate *= (1 + (conf.screenFillLevel - 1) * 0.2); // +20% per level above 1
+                    spawnRate *= (1 + (conf.screenFillLevel - 1) * 0.2); 
                 }
 
                 if (s.energyLevel > 0.8 && Math.random() < spawnRate * conf.intensityMult) {
@@ -760,7 +768,6 @@ export default function ElectroWand() {
                     if(bolt.life <= 0) { s.projectiles.splice(i, 1); continue; }
                     c.beginPath();
                     c.strokeStyle = bolt.color;
-                    // Width scaling
                     c.lineWidth = Math.max(0.1, (bolt.width || 2) * bolt.life * conf.intensityMult);
                     c.shadowBlur = 10;
                     c.shadowColor = bolt.color;
@@ -883,14 +890,11 @@ export default function ElectroWand() {
     // --- UI UPDATERS ---
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updateConfig = (key: string, value: any) => {
-        // Play click sound only if not dragging a color picker (to avoid spamming)
         if (!key.toLowerCase().includes('color')) playClickSound();
-        
         // @ts-expect-error - dynamic property access
         config.current[key] = value;
         updateCSSVar();
         if(key === 'wandBaseColor' || key === 'wandShape') generateWoodGrain();
-        
         setConfigTick(t => t + 1);
     };
     
@@ -1163,7 +1167,7 @@ export default function ElectroWand() {
                                     <label className="text-xs text-gray-400 block mb-1">Sonic Profile</label>
                                     <div className="grid grid-cols-5 gap-1">
                                         {['hum', 'theremin', 'ethereal', 'void', 'dragon'].map(s => (
-                                            <button key={s} className={`p-1 text-[10px] rounded border capitalize transition-all active:scale-90 overflow-hidden text-center ${activeClass(config.current.soundProfile === s)}`} onClick={() => updateConfig('soundProfile', s)}>{s.slice(0,3)}</button>
+                                            <button key={s} className={`p-1 text-[8px] rounded border capitalize transition-all active:scale-90 overflow-hidden text-center ${activeClass(config.current.soundProfile === s)}`} onClick={() => updateConfig('soundProfile', s)}>{s.slice(0,3)}</button>
                                         ))}
                                     </div>
                                 </div>
