@@ -10,6 +10,7 @@ import MagickalBackLink from './MagickalBackLink';
 // --- TYPES ---
 interface Point { x: number; y: number }
 interface Particle { x: number; y: number; vx: number; vy: number; life: number; type: string; shapeType: string; size: number; color: string; }
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface Projectile { x: number; y: number; vx: number; vy: number; life: number; rot: number; rotSpeed: number; type: string; size: number; color: string; state: 'shooting' | 'floating' | 'falling'; }
 interface Bolt { segments: {x1:number, y1:number, x2:number, y2:number}[]; life: number; color: string; width: number; }
 interface Emanation { x: number; y: number; radius: number; alpha: number; color: string; }
@@ -26,7 +27,7 @@ interface SavedWand {
 // --- PALETTE ---
 const COLOR_PALETTE = [
     '#ffffff', '#9ca3af', '#3e2723', '#000000', // Row 1: Neutrals
-    '#dc2626', '#fb923c', '#facc15', '#84cc16', // Row 2: Warm/Bright (Added Lime #84cc16)
+    '#dc2626', '#fb923c', '#facc15', '#84cc16', // Row 2: Warm/Bright
     '#22c55e', '#22d3ee', '#3b82f6', '#4b0082', // Row 3: Cool/Deep
     '#a855f7', '#ff00ff', '#f43f5e', '#fbbf24'  // Row 4: Magickal/Vibrant
 ];
@@ -89,7 +90,7 @@ export default function ElectroWand() {
         reverb: false,
 
         // Visuals
-        wandShape: 'classic',
+        wandShape: 'celestial', // Default updated
         crystalShape: 'orb',
         activeColor: 'rgba(180, 100, 255, 1)',
     });
@@ -169,33 +170,29 @@ export default function ElectroWand() {
             config: config.current
         };
 
-        // Check for duplicate name
         const existingWand = savedWands.find(w => w.name === wandName);
 
         if (existingWand) {
-            // Overwrite Logic
             if (win && !win.confirm(`You already have a wand named "${wandName}". Do you want to overwrite it?`)) {
-                return; // User cancelled
+                return; 
             }
 
             const { data, error } = await supabase
                 .from('wands')
                 .update(wandData)
                 .eq('id', existingWand.id)
-                .select(); // Returns array
+                .select(); 
 
             if (error) {
                 console.error("Error updating wand:", error);
                 if (win) win.alert("Failed to update wand.");
             } else if (data && data.length > 0) {
                 playClickSound();
-                // Update local state by replacing the old wand with the new data
                 setSavedWands(prev => prev.map(w => w.id === existingWand.id ? data[0] : w));
                 if (win) win.alert(`Wand "${wandName}" updated successfully!`);
             }
 
         } else {
-            // New Insert Logic
             const { data, error } = await supabase
                 .from('wands')
                 .insert([wandData])
@@ -214,14 +211,11 @@ export default function ElectroWand() {
 
     const handleLoadWand = (wand: SavedWand) => {
         playClickSound();
-        // Load settings
         config.current = { ...config.current, ...wand.config };
         setWandName(wand.name);
         setIntention(wand.intention || "");
         
-        // Force visual update
         updateCSSVar();
-        // Trigger resize to recalculate wand physics based on loaded settings
         const win = (globalThis as any).window;
         if (win) win.dispatchEvent(new Event('resize'));
         generateWoodGrain();
@@ -231,9 +225,7 @@ export default function ElectroWand() {
 
     const handleDeleteWand = async (id: string, e: React.MouseEvent) => {
         e.stopPropagation();
-        // FIX: Access global confirm safely
         const win = (globalThis as any).window;
-        
         if(win && !win.confirm("Are you sure you want to dismantle this wand?")) return;
         
         const { error } = await supabase.from('wands').delete().eq('id', id);
@@ -395,13 +387,11 @@ export default function ElectroWand() {
     const updateAudio = (active: boolean) => {
         if(!state.current.initialized || !audio.current.ctx) return;
         const now = audio.current.ctx.currentTime;
-        // Apply Master Volume scaling here
         const baseVol = active ? 0.4 : 0;
         const finalVol = baseVol * config.current.intensityMult * config.current.masterVolume;
         
         audio.current.masterGain.gain.setTargetAtTime(finalVol, now, 0.1);
         
-        // Reverb Update
         if (audio.current.reverbGain) {
             audio.current.reverbGain.gain.setTargetAtTime(config.current.reverb ? 0.6 * config.current.masterVolume : 0, now, 0.1);
         }
@@ -441,65 +431,242 @@ export default function ElectroWand() {
     const getWandPath = (c: any, offsetX = 0, offsetY = 0) => {
         c.beginPath();
         const w = state.current.wand;
-        const bw = w.baseWidth, bx = w.baseX + offsetX, by = w.baseY + offsetY;
-        const tx = w.tipX + offsetX, ty = w.tipY + offsetY, tw = w.tipWidth;
+        const bw = w.baseWidth; 
+        const bx = w.baseX + offsetX; 
+        const by = w.baseY + offsetY;
+        const tx = w.tipX + offsetX; 
+        const ty = w.tipY + offsetY; 
+        const tw = w.tipWidth;
         const shape = config.current.wandShape;
 
-        if (shape === 'classic') {
+        if (shape === 'celestial') {
+            // Smooth, elegant taper with a defined handle
+            const handleH = w.length * 0.25;
+            c.moveTo(bx - bw/2, by); // Bottom Left
+            c.lineTo(bx - bw/2, by - handleH); // Handle goes up
+            c.bezierCurveTo(bx - bw/2, by - handleH - 50, bx - tw, by - w.length * 0.5, tx - tw/2, ty); // Smooth Taper
+            c.arc(tx, ty, tw/2, Math.PI, 0); // Tip
+            c.bezierCurveTo(bx + tw, by - w.length * 0.5, bx + bw/2, by - handleH - 50, bx + bw/2, by - handleH); // Right Taper
+            c.lineTo(bx + bw/2, by); // Right Handle
+            c.arc(bx, by, bw/2, 0, Math.PI); // Base Cap
+            
+        } else if (shape === 'mirage') {
+            // Spiral / Twisted shape outline
             c.moveTo(bx - bw/2, by);
-            c.quadraticCurveTo(bx - bw/2, by - 100, bx - bw*0.3, by - 150);
-            c.quadraticCurveTo(bx - bw*0.15, ty + 100, tx - tw/2, ty);
-            c.arc(tx, ty, tw/2, Math.PI, 0); 
-            c.quadraticCurveTo(bx + bw*0.15, ty + 100, bx + bw*0.3, by - 150);
-            c.quadraticCurveTo(bx + bw/2, by - 100, bx + bw/2, by);
-            c.arc(bx, by, bw/2, 0, Math.PI); 
-        } else if (shape === 'twisted') {
-            c.moveTo(bx - bw/2, by);
-            const steps = 40;
+            const steps = 10;
+            const stepY = w.length / steps;
+            
+            // Left side zig-zag/wave
             for(let i=0; i<=steps; i++) {
-                const p = i/steps;
-                const currentW = bw/2 * (1-p) + tw/2 * p;
-                const x = bx - currentW;
-                const y = by - (w.length)*p;
-                const wobble = Math.sin(p * Math.PI * 6) * 5; 
-                c.lineTo(x + wobble, y);
+                const y = by - (i * stepY);
+                const progress = i/steps;
+                const currentW = (bw/2) * (1 - progress) + (tw/2) * progress;
+                const wobble = (i % 2 === 0 ? -1 : 1) * (bw * 0.1); 
+                if (i===0) c.lineTo(bx - currentW, y);
+                else c.quadraticCurveTo(bx - currentW + wobble, y + stepY/2, bx - currentW, y);
             }
+            
             c.arc(tx, ty, tw/2, Math.PI, 0);
+            
+            // Right side zig-zag/wave
             for(let i=steps; i>=0; i--) {
-                const p = i/steps;
-                const currentW = bw/2 * (1-p) + tw/2 * p;
-                const x = bx + currentW;
-                const y = by - (w.length)*p;
-                const wobble = Math.sin(p * Math.PI * 6) * 5;
-                c.lineTo(x + wobble, y);
+                const y = by - (i * stepY);
+                const progress = i/steps;
+                const currentW = (bw/2) * (1 - progress) + (tw/2) * progress;
+                const wobble = (i % 2 === 0 ? -1 : 1) * (bw * 0.1);
+                if(i === steps) c.lineTo(bx + currentW, y);
+                else c.quadraticCurveTo(bx + currentW + wobble, y + stepY/2, bx + currentW, y);
             }
             c.arc(bx, by, bw/2, 0, Math.PI);
-        } else if (shape === 'elder') {
+
+        } else if (shape === 'ancient') {
+            // Knotted / Gnarled Wood
             c.moveTo(bx - bw/2, by);
-            c.lineTo(bx - bw*0.4, by - w.length * 0.2); 
-            c.bezierCurveTo(bx-bw*0.6, by - w.length*0.25, bx-bw*0.3, by - w.length*0.3, bx-bw*0.25, by - w.length*0.4);
-            c.lineTo(tx - tw/2, ty);
+            // Irregular bumps
+            c.bezierCurveTo(bx - bw*0.7, by - w.length*0.2, bx - bw*0.3, by - w.length*0.4, bx - bw*0.4, by - w.length*0.5);
+            c.bezierCurveTo(bx - bw*0.6, by - w.length*0.7, bx - bw*0.2, by - w.length*0.8, tx - tw/2, ty);
+            
             c.arc(tx, ty, tw/2, Math.PI, 0);
-            c.lineTo(bx + bw*0.25, by - w.length*0.4);
-            c.bezierCurveTo(bx+bw*0.3, by - w.length*0.3, bx+bw*0.6, by - w.length*0.25, bx+bw*0.4, by - w.length * 0.2);
-            c.lineTo(bx + bw/2, by);
+            
+            c.bezierCurveTo(bx + bw*0.2, by - w.length*0.8, bx + bw*0.6, by - w.length*0.7, bx + bw*0.4, by - w.length*0.5);
+            c.bezierCurveTo(bx + bw*0.3, by - w.length*0.4, bx + bw*0.7, by - w.length*0.2, bx + bw/2, by);
             c.arc(bx, by, bw/2, 0, Math.PI);
-        } else if (shape === 'vine') {
+
+        } else if (shape === 'sylvan') {
+            // Organic / Vine wrapped
             c.moveTo(bx - bw/3, by);
-            c.quadraticCurveTo(bx - bw, by - w.length*0.3, tx - tw/2, ty);
+            // Slight S-Curve for the main branch
+            c.quadraticCurveTo(bx - bw, by - w.length*0.4, tx - tw/2, ty);
             c.arc(tx, ty, tw/2, Math.PI, 0);
-            c.quadraticCurveTo(bx + bw, by - w.length*0.3, bx + bw/3, by);
+            c.quadraticCurveTo(bx + bw, by - w.length*0.6, bx + bw/3, by);
             c.arc(bx, by, bw/3, 0, Math.PI);
-        } else if (shape === 'bone') {
+
+        } else if (shape === 'reaper') {
+            // Bone / Femur shape
+            // Large condyles at base
+            c.moveTo(bx - bw/4, by);
+            c.bezierCurveTo(bx - bw, by + 20, bx - bw, by - 80, bx - bw*0.3, by - 100); // Left knob
+            
+            // Thin shaft
+            c.lineTo(bx - bw*0.2, ty + 40);
+            
+            // Tip knuckle
+            c.bezierCurveTo(bx - bw*0.4, ty + 20, bx - bw*0.4, ty - 10, tx, ty - 10);
+            c.bezierCurveTo(bx + bw*0.4, ty - 10, bx + bw*0.4, ty + 20, bx + bw*0.2, ty + 40);
+            
+            // Shaft down
+            c.lineTo(bx + bw*0.3, by - 100);
+            
+            // Right knob
+            c.bezierCurveTo(bx + bw, by - 80, bx + bw, by + 20, bx + bw/4, by);
+            c.closePath();
+        } else {
+            // Fallback (Celestial)
             c.moveTo(bx - bw/2, by);
-            c.quadraticCurveTo(bx - bw*0.6, by - w.length*0.1, bx - bw*0.2, by - w.length*0.2);
-            c.lineTo(tx - tw*1.5, ty + 20);
-            c.arc(tx, ty, tw*1.5, Math.PI, 0);
-            c.lineTo(bx + bw*0.2, by - w.length*0.2);
-            c.quadraticCurveTo(bx + bw*0.6, by - w.length*0.1, bx + bw/2, by);
-            c.arc(bx, by, bw/2, 0, Math.PI);
+            c.lineTo(tx - tw/2, ty);
+            c.arc(tx, ty, tw/2, Math.PI, 0); 
+            c.lineTo(bx + bw/2, by);
+            c.arc(bx, by, bw/2, 0, Math.PI); 
         }
         c.closePath();
+    };
+
+    // --- 3D RENDERER ---
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const drawWand3D = (c: any, colorHex: string) => {
+        const w = state.current.wand;
+        const shape = config.current.wandShape;
+        
+        // Helper: Hex to darken/lighten
+        const adjustColor = (hex: string, percent: number) => {
+            const num = parseInt(hex.replace("#",""), 16),
+            amt = Math.round(2.55 * percent),
+            R = (num >> 16) + amt,
+            G = (num >> 8 & 0x00FF) + amt,
+            B = (num & 0x0000FF) + amt;
+            return "#" + (0x1000000 + (R<255?R<1?0:R:255)*0x10000 + (G<255?G<1?0:G:255)*0x100 + (B<255?B<1?0:B:255)).toString(16).slice(1);
+        };
+
+        const baseColor = colorHex;
+        const shadowColor = adjustColor(colorHex, -60);
+        const highlightColor = adjustColor(colorHex, 40);
+
+        // 1. Base Gradient (Cylindrical effect)
+        const grad = c.createLinearGradient(w.baseX - w.baseWidth, 0, w.baseX + w.baseWidth, 0);
+        grad.addColorStop(0, shadowColor);
+        grad.addColorStop(0.2, baseColor);
+        grad.addColorStop(0.4, highlightColor); // Specular shine
+        grad.addColorStop(0.6, baseColor);
+        grad.addColorStop(1, shadowColor);
+        
+        c.fillStyle = grad;
+        c.fill();
+
+        // 2. Texture & Detail Overlays
+        c.save();
+        c.clip(); // Clip to the wand shape
+
+        if (shape === 'mirage') {
+            // SPIRAL EFFECT
+            c.lineWidth = w.baseWidth * 0.2;
+            c.lineCap = 'round';
+            for (let i = 0; i < 20; i++) {
+                c.beginPath();
+                const yStart = w.baseY - (i * 60);
+                c.strokeStyle = (i % 2 === 0) ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.1)';
+                c.moveTo(w.baseX - w.baseWidth, yStart);
+                c.bezierCurveTo(
+                    w.baseX, yStart - 30, 
+                    w.baseX, yStart - 30, 
+                    w.baseX + w.baseWidth, yStart - 60
+                );
+                c.stroke();
+            }
+        } 
+        else if (shape === 'ancient') {
+            // KNOTS & BARK
+            // Draw random knots
+            for (let i = 1; i < 6; i++) {
+                const ky = w.baseY - (w.length * (i/6)) + (Math.random()*20);
+                const kx = w.baseX + (Math.random() - 0.5) * w.baseWidth * 0.5;
+                const kr = w.baseWidth * 0.15 * (1 - (i/10));
+                
+                const rGrad = c.createRadialGradient(kx, ky, 0, kx, ky, kr);
+                rGrad.addColorStop(0, highlightColor);
+                rGrad.addColorStop(0.5, baseColor);
+                rGrad.addColorStop(1, '#1a0f0a');
+                c.fillStyle = rGrad;
+                c.beginPath(); c.arc(kx, ky, kr, 0, Math.PI*2); c.fill();
+            }
+        }
+        else if (shape === 'sylvan') {
+            // VINE WRAPPING
+            c.strokeStyle = '#4ade80'; // Bright green vine
+            c.lineWidth = 4;
+            c.shadowBlur = 2;
+            c.shadowColor = 'black';
+            c.beginPath();
+            const freq = 0.1;
+            for(let y = w.baseY; y > w.tipY; y-=5) {
+                const x = w.baseX + Math.sin(y * freq) * (w.baseWidth * 0.4);
+                if(y === w.baseY) c.moveTo(x, y);
+                else c.lineTo(x, y);
+            }
+            c.stroke();
+            // Leaves
+            c.fillStyle = '#22c55e';
+            for(let y = w.baseY; y > w.tipY; y-=60) {
+                const x = w.baseX + Math.sin(y * freq) * (w.baseWidth * 0.4);
+                c.beginPath();
+                c.ellipse(x, y, 8, 4, Math.random()*Math.PI, 0, Math.PI*2);
+                c.fill();
+            }
+        }
+        else if (shape === 'reaper') {
+            // BONE TEXTURE
+            // Overlay matte noise or cracks
+            c.strokeStyle = 'rgba(0,0,0,0.4)';
+            c.lineWidth = 1;
+            for(let i=0; i<10; i++) {
+                const y = w.baseY - Math.random() * w.length;
+                const x = w.baseX + (Math.random()-0.5) * w.baseWidth * 0.5;
+                c.beginPath();
+                c.moveTo(x, y);
+                c.lineTo(x + (Math.random()-0.5)*15, y + 10);
+                c.stroke();
+            }
+            // Darken ends (Ambient Occlusion)
+            const gTop = c.createLinearGradient(0, w.tipY - 20, 0, w.tipY + 60);
+            gTop.addColorStop(0, 'rgba(0,0,0,0.6)');
+            gTop.addColorStop(1, 'rgba(0,0,0,0)');
+            c.fillStyle = gTop;
+            c.fillRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+
+            const gBot = c.createLinearGradient(0, w.baseY + 20, 0, w.baseY - 100);
+            gBot.addColorStop(0, 'rgba(0,0,0,0.8)');
+            gBot.addColorStop(1, 'rgba(0,0,0,0)');
+            c.fillStyle = gBot;
+            c.fillRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+        }
+        else if (shape === 'celestial') {
+            // HIGH GLOSS POLISH
+            c.fillStyle = 'rgba(255, 255, 255, 0.2)';
+            c.beginPath();
+            c.rect(w.baseX - 5, w.tipY, 10, w.length);
+            c.fill();
+            
+            // Gold banding at handle
+            const handleY = w.baseY - (w.length * 0.25);
+            const bandGrad = c.createLinearGradient(w.baseX - w.baseWidth, 0, w.baseX + w.baseWidth, 0);
+            bandGrad.addColorStop(0, '#b45309');
+            bandGrad.addColorStop(0.5, '#fcd34d');
+            bandGrad.addColorStop(1, '#b45309');
+            
+            c.fillStyle = bandGrad;
+            c.fillRect(w.baseX - w.baseWidth/2, handleY, w.baseWidth, 10);
+        }
+
+        c.restore();
     };
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -514,11 +681,9 @@ export default function ElectroWand() {
             for(let i=1; i<points.length; i++) c.lineTo(points[i].x, points[i].y);
             c.closePath();
             
-            // Simulate lighting
             c.fillStyle = colorHex;
             c.fill();
             
-            // Shine/Shadow overlay
             if (brightness > 0) {
                 c.fillStyle = `rgba(255, 255, 255, ${brightness})`;
                 c.fill();
@@ -550,7 +715,6 @@ export default function ElectroWand() {
                 rot += step;
             }
             c.closePath();
-            // Radial Gradient for Stars
             const grad = c.createRadialGradient(x, y, 0, x, y, size);
             grad.addColorStop(0, 'white');
             grad.addColorStop(0.3, color);
@@ -563,18 +727,16 @@ export default function ElectroWand() {
         };
 
         if (shape === 'orb') {
-            // Deep base
             const grad = c.createRadialGradient(x - size*0.3, y - size*0.3, 0, x, y, size);
-            grad.addColorStop(0, 'rgba(255,255,255,0.9)'); // Specular Highlight
+            grad.addColorStop(0, 'rgba(255,255,255,0.9)'); 
             grad.addColorStop(0.2, color);
-            grad.addColorStop(0.9, '#000000'); // Shadow
+            grad.addColorStop(0.9, '#000000'); 
             
             c.beginPath();
             c.arc(x, y, size, 0, Math.PI * 2);
             c.fillStyle = grad;
             c.fill();
             
-            // Glassy rim
             c.beginPath();
             c.arc(x, y, size, 0, Math.PI * 2);
             c.strokeStyle = 'rgba(255,255,255,0.4)';
@@ -585,22 +747,19 @@ export default function ElectroWand() {
         } else if (shape === 'star6') {
             drawStar(6, 0.45);
         } else if (shape === 'star7') {
-            drawStar(7, 0.5); // Elven/Faery star usually has less acute angles
+            drawStar(7, 0.5); 
         } else {
-            // Faceted Shapes with simulated lighting
-            // Light comes from Top-Left
             if (shape === 'diamond') {
-                drawFacet3D([{x:x, y:y-size*1.2}, {x:x+size, y:y}, {x:x, y:y+size*0.2}, {x:x-size, y:y}], color, 0.4); // Top (Bright)
-                drawFacet3D([{x:x-size, y:y}, {x:x, y:y+size*0.2}, {x:x, y:y+size*1.2}], color, -0.2); // Left (Mid)
-                drawFacet3D([{x:x+size, y:y}, {x:x, y:y+size*0.2}, {x:x, y:y+size*1.2}], color, -0.5); // Right (Dark)
-                drawFacet3D([{x:x, y:y-size*1.2}, {x:x-size, y:y}, {x:x-size*0.5, y:y-size*0.5}], color, 0.8); // Highlight Facet
+                drawFacet3D([{x:x, y:y-size*1.2}, {x:x+size, y:y}, {x:x, y:y+size*0.2}, {x:x-size, y:y}], color, 0.4); 
+                drawFacet3D([{x:x-size, y:y}, {x:x, y:y+size*0.2}, {x:x, y:y+size*1.2}], color, -0.2); 
+                drawFacet3D([{x:x+size, y:y}, {x:x, y:y+size*0.2}, {x:x, y:y+size*1.2}], color, -0.5); 
+                drawFacet3D([{x:x, y:y-size*1.2}, {x:x-size, y:y}, {x:x-size*0.5, y:y-size*0.5}], color, 0.8); 
             } else if (shape === 'shard') {
                 drawFacet3D([{x:x, y:y-size*1.2}, {x:x-size*0.6, y:y-size*0.3}, {x:x-size*0.4, y:y+size*0.8}, {x:x, y:y+size}], color, -0.1);
-                drawFacet3D([{x:x, y:y-size*1.2}, {x:x+size*0.6, y:y-size*0.3}, {x:x+size*0.4, y:y+size*0.8}, {x:x, y:y+size}], color, 0.3); // Right side hit by light?
-                // Actually swap for 3d look
+                drawFacet3D([{x:x, y:y-size*1.2}, {x:x+size*0.6, y:y-size*0.3}, {x:x+size*0.4, y:y+size*0.8}, {x:x, y:y+size}], color, 0.3); 
                 drawFacet3D([{x:x, y:y-size*1.2}, {x:x-size*0.6, y:y-size*0.3}, {x:x, y:y+size}], color, 0.5);
             } else if (shape === 'hex') {
-                drawFacet3D([{x:x-size*0.5, y:y-size*0.8}, {x:x+size*0.5, y:y-size*0.8}, {x:x+size*0.5, y:y+size*0.8}, {x:x-size*0.5, y:y+size*0.8}], color, 0.5); // Top face
+                drawFacet3D([{x:x-size*0.5, y:y-size*0.8}, {x:x+size*0.5, y:y-size*0.8}, {x:x+size*0.5, y:y+size*0.8}, {x:x-size*0.5, y:y+size*0.8}], color, 0.5); 
                 drawFacet3D([{x:x-size*0.5, y:y-size*0.8}, {x:x-size*0.8, y:y-size*0.6}, {x:x-size*0.8, y:y+size*0.6}, {x:x-size*0.5, y:y+size*0.8}], color, -0.2);
                 drawFacet3D([{x:x+size*0.5, y:y-size*0.8}, {x:x+size*0.8, y:y-size*0.6}, {x:x+size*0.8, y:y+size*0.6}, {x:x+size*0.5, y:y+size*0.8}], color, -0.5);
             } else if (shape === 'tear') {
@@ -629,11 +788,9 @@ export default function ElectroWand() {
                 const h = win.innerHeight;
                 const w = win.innerWidth;
                 
-                // Scale Width based on Setting
                 const widthMult = 1.0 + ((config.current.wandWidthLevel - 1) * 0.45);
                 const baseWidth = Math.min(w * 0.15, 80) * widthMult;
                 
-                // Fix Cutoff: Adjust baseY dynamically so the full base arc is always visible
                 const requiredBottom = baseWidth / 2 + 20;
                 const baseY = h - requiredBottom;
 
@@ -657,7 +814,6 @@ export default function ElectroWand() {
         return () => { if (win) win.removeEventListener('resize', resize); }
     }, []);
 
-    // Update wand when width config changes
     useEffect(() => {
         const win = (globalThis as any).window;
         if (win) win.dispatchEvent(new Event('resize'));
@@ -678,7 +834,7 @@ export default function ElectroWand() {
 
             c.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
 
-            // WOBBLE (Vibration Logic)
+            // WOBBLE
             let wobbleOffset = 0;
             if (s.isCasting) {
                 const limitY = w.baseY - (w.length / 3);
@@ -691,7 +847,7 @@ export default function ElectroWand() {
                     const level = conf.vibrationLevel;
                     if (level > 0) {
                         if (level === 1) {
-                            wobbleOffset = Math.sin(s.time * 0.5) * 5.0; // Slow hypnotic
+                            wobbleOffset = Math.sin(s.time * 0.5) * 5.0; 
                         } else {
                             const vibFreq = [0, 0.5, 2.0, 5.0, 10.0, 20.0]; 
                             const amplitude = 2.0; 
@@ -707,75 +863,55 @@ export default function ElectroWand() {
             c.save();
             c.translate(wobbleOffset, 0);
 
-            // Draw Wand Body
+            // Draw Wand Body (New 3D Logic)
             c.save();
-            const hexToHSL = (H: string) => {
-                let r = 0, g = 0, b = 0;
-                if (H.length == 4) {
-                    r = parseInt("0x" + H[1] + H[1]); g = parseInt("0x" + H[2] + H[2]); b = parseInt("0x" + H[3] + H[3]);
-                } else if (H.length == 7) {
-                    r = parseInt("0x" + H[1] + H[2]); g = parseInt("0x" + H[3] + H[4]); b = parseInt("0x" + H[5] + H[6]);
-                }
-                r /= 255; g /= 255; b /= 255;
-                const cmin = Math.min(r,g,b), cmax = Math.max(r,g,b), delta = cmax - cmin;
-                let h = 0, s = 0, l = 0;
-                if (delta == 0) h = 0;
-                else if (cmax == r) h = ((g - b) / delta) % 6;
-                else if (cmax == g) h = (b - r) / delta + 2;
-                else h = (r - g) / delta + 4;
-                h = Math.round(h * 60);
-                if (h < 0) h += 360;
-                l = (cmax + cmin) / 2;
-                s = delta == 0 ? 0 : delta / (1 - Math.abs(2 * l - 1));
-                return [h, s * 100, l * 100];
-            };
-
-            const [h, sat, lum] = hexToHSL(conf.wandBaseColor);
-            const minX = w.baseX - w.baseWidth;
-            const maxX = w.baseX + w.baseWidth;
-            const wandGrad = c.createLinearGradient(minX, 0, maxX, 0);
-            wandGrad.addColorStop(0, `hsl(${h}, ${sat}%, ${Math.max(0, lum-15)}%)`);
-            wandGrad.addColorStop(0.2, `hsl(${h}, ${sat}%, ${lum}%)`);
-            wandGrad.addColorStop(0.5, `hsl(${h}, ${sat}%, ${Math.min(100, lum+10)}%)`);
-            wandGrad.addColorStop(0.8, `hsl(${h}, ${sat}%, ${lum}%)`);
-            wandGrad.addColorStop(1, `hsl(${h}, ${sat}%, ${Math.max(0, lum-15)}%)`);
-
+            
+            // 1. Define Path
             getWandPath(c);
-            c.fillStyle = wandGrad;
-            c.fill();
+            
+            // 2. Render 3D Body
+            drawWand3D(c, conf.wandBaseColor);
+            
+            // 3. Draw Wood Grain (Only for appropriate wands)
+            if (conf.wandShape !== 'reaper' && conf.wandShape !== 'celestial') {
+                c.save();
+                c.clip(); 
+                c.strokeStyle = 'rgba(0,0,0,0.3)';
+                c.lineWidth = 1.5;
+                c.lineCap = 'round';
+                for(const grain of s.woodGrains) {
+                    if(grain.length < 2) continue;
+                    c.beginPath();
+                    c.moveTo(grain[0].x, grain[0].y);
+                    for(let i=1; i<grain.length; i++) c.lineTo(grain[i].x, grain[i].y);
+                    c.stroke();
+                }
+                c.restore();
+            }
 
+            // 4. Rim/Edge Shadows
             c.save();
             c.clip();
+            const minX = w.baseX - w.baseWidth;
+            const maxX = w.baseX + w.baseWidth;
             
-            c.save();
-            c.strokeStyle = 'rgba(0,0,0,0.4)';
-            c.lineWidth = 1.5;
-            c.lineCap = 'round';
-            for(const grain of s.woodGrains) {
-                if(grain.length < 2) continue;
-                c.beginPath();
-                c.moveTo(grain[0].x, grain[0].y);
-                for(let i=1; i<grain.length; i++) c.lineTo(grain[i].x, grain[i].y);
-                c.stroke();
-            }
-            c.restore();
-
-            const rimGradLeft = c.createLinearGradient(minX, 0, minX + 30, 0);
-            rimGradLeft.addColorStop(0, 'rgba(255,255,255,0.2)');
-            rimGradLeft.addColorStop(1, 'rgba(255,255,255,0)');
+            const rimGradLeft = c.createLinearGradient(minX, 0, minX + 20, 0);
+            rimGradLeft.addColorStop(0, 'rgba(0,0,0,0.5)'); 
+            rimGradLeft.addColorStop(1, 'rgba(0,0,0,0)');
             c.fillStyle = rimGradLeft;
-            c.fillRect(minX, 0, 30, canvasRef.current.height);
+            c.fillRect(minX, 0, 40, canvasRef.current.height);
 
-            const rimGradRight = c.createLinearGradient(maxX - 30, 0, maxX, 0);
+            const rimGradRight = c.createLinearGradient(maxX - 20, 0, maxX, 0);
             rimGradRight.addColorStop(0, 'rgba(0,0,0,0)');
-            rimGradRight.addColorStop(1, 'rgba(0,0,0,0.3)');
+            rimGradRight.addColorStop(1, 'rgba(0,0,0,0.5)'); 
             c.fillStyle = rimGradRight;
-            c.fillRect(maxX-30, 0, 30, canvasRef.current.height);
+            c.fillRect(maxX-40, 0, 40, canvasRef.current.height);
             c.restore();
 
-            c.strokeStyle = `rgba(255, 255, 255, ${0.1 + s.energyLevel * 0.5})`;
-            c.lineWidth = 2;
-            c.shadowBlur = s.energyLevel * 15;
+            // 5. Glow Stroke
+            c.strokeStyle = `rgba(255, 255, 255, ${0.1 + s.energyLevel * 0.3})`;
+            c.lineWidth = 1;
+            c.shadowBlur = s.energyLevel * 10;
             c.shadowColor = conf.activatedColor; 
             getWandPath(c);
             c.stroke();
@@ -821,7 +957,6 @@ export default function ElectroWand() {
                     const spawnX = w.baseX + (Math.random() - 0.5) * 20;
                     const spawnY = w.crystalY + (Math.random() - 0.5) * 20;
                     
-                    // Internal Speed: Slower base
                     const baseSpeed = 0.5; 
                     const speedRange = 2.5;
                     const speedMult = baseSpeed + ((conf.internalSpeed - 1) / 4) * speedRange;
@@ -851,15 +986,9 @@ export default function ElectroWand() {
 
                     if (p.life <= 0) { s.particles.splice(i, 1); continue; }
 
-                    // INTERNAL SIZE SCALING
-                    // Level 1 = 1.0x (Default)
-                    // Level 5 = 9.0x (Triple previous max of 3.0x)
-                    // Formula: 1.0 + ((Level - 1) * 2.0)
-                    // Sequence: 1, 3, 5, 7, 9
                     const sizeMult = 1.0 + ((conf.internalSize - 1) * 2.0);
                     
                     if (p.shapeType === 'lightning') {
-                        // Match width logic for internal lightning
                         const thickness = 2 * (1 + (conf.internalSize - 1) * 0.5);
                         c.beginPath();
                         c.strokeStyle = p.color;
@@ -870,8 +999,7 @@ export default function ElectroWand() {
                     } else {
                         c.save();
                         c.translate(p.x, p.y);
-                        // Base size is 15 (same as external base), scaled by multiplier
-                        const scale = (15/10) * p.life * sizeMult * 0.3; // Rendering scale down for inside view
+                        const scale = (15/10) * p.life * sizeMult * 0.3; 
                         c.scale(scale, scale);
                         drawShape(c, p.shapeType, p.color);
                         c.restore();
@@ -896,15 +1024,8 @@ export default function ElectroWand() {
                     c.fill();
                 }
 
-                // Spawn Probability Logic 
-                // Baseline: 0.25
-                // Level 5 Screen Fill needs to flood the screen
                 let spawnRate = 0.25; 
                 if (conf.screenFillLevel > 0) {
-                     // 1 -> 1.0x multiplier
-                     // 2-4 -> Increasing
-                     // 5 -> Massive increase (waterfall)
-                     // Using exponential curve for volume
                      const multiplier = Math.pow(1.8, conf.screenFillLevel);
                      spawnRate *= multiplier;
                 }
@@ -912,12 +1033,11 @@ export default function ElectroWand() {
                 if (s.energyLevel > 0.8 && Math.random() < spawnRate * conf.intensityMult) {
                     if (conf.externalShape === 'lightning') {
                         const spreadMap = [30, 50, 75, 90, 110, 150];
-                        // Apply Spread Multiplier
                         let spreadDeg = 30;
                         if (conf.screenFillLevel >= 2) {
                             spreadDeg = 30 * Math.pow(1.25, conf.screenFillLevel - 1);
                         } else if (conf.screenFillLevel === 1) {
-                            spreadDeg = 30; // Baseline
+                            spreadDeg = 30; 
                         }
                         
                         const angle = (Math.random() - 0.5) * spreadDeg * (Math.PI / 180);
@@ -935,21 +1055,18 @@ export default function ElectroWand() {
                         };
                         generateSegments(tipX, w.tipY, endX, -100, 80);
                         
-                        // Use external size for width
                         const width = 2 * (1 + (conf.externalSize - 1) * 0.5);
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         s.projectiles.push({ segments, life: 1.0, type: 'lightning', color: conf.externalColor, state: 'shooting', width } as any);
                     } else {
-                        // STANDARD PROJECTILES & WATERFALL LOGIC
                         let spreadDeg = 30;
                         if (conf.screenFillLevel >= 2) {
-                            spreadDeg = 30 * Math.pow(1.5, conf.screenFillLevel - 1); // Wider spread for waterfall
+                            spreadDeg = 30 * Math.pow(1.5, conf.screenFillLevel - 1); 
                         }
 
                         const angle = (Math.random() - 0.5) * spreadDeg * (Math.PI / 180); 
                         let speed = Math.random() * 5 + 5;
                         
-                        // If Level 5 (Waterfall), shoot up harder initially
                         if (conf.screenFillLevel === 5) speed *= 1.5;
 
                         s.projectiles.push({
@@ -973,7 +1090,6 @@ export default function ElectroWand() {
                     if(bolt.life <= 0) { s.projectiles.splice(i, 1); continue; }
                     c.beginPath();
                     c.strokeStyle = bolt.color;
-                    // Width scaling
                     c.lineWidth = Math.max(0.1, (bolt.width || 2) * bolt.life * conf.intensityMult);
                     c.shadowBlur = 10;
                     c.shadowColor = bolt.color;
@@ -983,34 +1099,24 @@ export default function ElectroWand() {
                 } else {
                     if (conf.screenFillLevel > 0) {
                         const distFromTip = Math.abs(p.y - w.tipY);
-                        // Transition to falling/floating based on fill level
                         if (p.state === 'shooting' && distFromTip > (150 + (5-conf.screenFillLevel)*30)) {
                             p.state = 'floating';
                         }
 
-                        // WATERFALL PHYSICS (High Fill Levels)
                         if (conf.screenFillLevel >= 3) {
-                            // Apply Gravity
                             const gravity = 0.1 * (conf.screenFillLevel - 1);
                             p.vy += gravity;
-
-                            // Horizontal Drag / Dampening to make them fall "around" the wand
                             p.vx *= 0.96;
                             
-                            // Move
                             p.x += p.vx;
                             p.y += p.vy;
 
-                            // Life Logic for Waterfall
-                            // They need to reach the bottom
                             if (p.y > canvasRef.current.height + 50) {
-                                p.life = 0; // Die when off screen
+                                p.life = 0; 
                             } else {
-                                // Keep life high while falling
                                 p.life = Math.max(p.life - 0.001, 0.5);
                             }
                         } else {
-                            // Standard Float/Decay (Low Fill Levels)
                             if (p.state === 'floating') {
                                 p.vx *= 0.95; 
                                 p.vy *= 0.95;
@@ -1023,18 +1129,12 @@ export default function ElectroWand() {
                             }
                         }
                     } else {
-                        // Level 0 - Simple shoot and fade
                         p.x += p.vx; p.y += p.vy;
                         p.life -= 0.01;
                     }
 
                     p.rot += p.rotSpeed;
                     
-                    // EXTERNAL SIZE SCALING
-                    // Level 1 = 1.0x (Default)
-                    // Level 5 = 4.0x (Double Previous Max of 2.0x)
-                    // Formula: 1.0 + ((Level - 1) * 0.75)
-                    // L1 = 1.0, L5 = 1 + 3.0 = 4.0.
                     const sizeMult = 1.0 + ((conf.externalSize - 1) * 0.75);
                     p.size = 15 * p.life * sizeMult;
                     
@@ -1084,7 +1184,6 @@ export default function ElectroWand() {
                 ctx.beginPath(); ctx.arc(0, -size*0.3, size*0.3, 0, Math.PI*2); ctx.fill();
             }
         } else if (type === 'rainbow') {
-            // Vector Arc
             ctx.beginPath();
             ctx.arc(0, 0, size * 0.8, Math.PI, 0); 
             ctx.lineWidth = size * 0.4;
@@ -1262,7 +1361,6 @@ export default function ElectroWand() {
                             <input 
                                 type="color" 
                                 value={tempColor}
-                                // FIX: onInput allows dragging without closing
                                 onInput={(e) => { 
                                     const val = (e.target as any).value; 
                                     setTempColor(val); 
@@ -1341,11 +1439,11 @@ export default function ElectroWand() {
                                         value={config.current.wandShape}
                                         onChange={(e) => updateConfig('wandShape', (e.target as any).value)}
                                     >
-                                        <option value="classic">Classic</option>
-                                        <option value="twisted">Twisted</option>
-                                        <option value="elder">Elder</option>
-                                        <option value="vine">Vine</option>
-                                        <option value="bone">Bone</option>
+                                        <option value="celestial">Celestial (Smooth)</option>
+                                        <option value="ancient">Ancient (Knotted)</option>
+                                        <option value="mirage">Mirage (Spiral)</option>
+                                        <option value="sylvan">Sylvan (Nature)</option>
+                                        <option value="reaper">Reaper (Bone)</option>
                                     </select>
                                 </div>
                                 <div>
