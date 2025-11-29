@@ -4,7 +4,8 @@ import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 
-type Tradition = "Chaos Magick" | "Wicca Magick" | "Ceremonial Magick" | "Folk Magick" | "Hoodoo (Rootwork)" | "Electric Magick" | "Love";
+// Expanded type to allow arbitrary strings or specific known types
+type Tradition = "Chaos Magick" | "Wicca Magick" | "Ceremonial Magick" | "Folk Magick" | "Hoodoo (Rootwork)" | "Electric Magick" | "Love" | "Grimoire of Magickal Servitors";
 
 interface TraditionInfo {
   name: Tradition;
@@ -12,6 +13,7 @@ interface TraditionInfo {
   isAvailable: boolean;
   positionClasses: string;
   widthClasses: string;
+  customHref?: string; // Added to support custom URLs like the new page
 }
 
 const traditions: TraditionInfo[] = [
@@ -57,13 +59,21 @@ const traditions: TraditionInfo[] = [
     positionClasses: "md:absolute md:bottom-[5%] md:left-1/2 md:-translate-x-1/2",
     widthClasses: "w-4/5 md:w-[26%] lg:w-[22%]",
   },
-  // NEW ENTRY: Love Spells
   {
     name: "Love",
     image: "/images/spell-room/love-spells-app-page.png", 
     isAvailable: true,
     positionClasses: "md:absolute md:top-[1%] md:right-[5%] lg:right-[10%]", 
     widthClasses: "w-4/5 md:w-[24%] lg:w-[20%]",
+  },
+  // NEW ENTRY: Servitor Magick
+  {
+    name: "Grimoire of Magickal Servitors",
+    image: "/images/spell-room/servitor-magick.png", 
+    isAvailable: true,
+    positionClasses: "md:absolute md:top-[1%] md:left-[5%] lg:left-[10%]", 
+    widthClasses: "w-4/5 md:w-[24%] lg:w-[20%]",
+    customHref: "/spell-room/grimoire-of-digital-servitors"
   },
 ];
 
@@ -79,8 +89,8 @@ interface TraditionButtonProps {
 }
 
 const TraditionButton: React.FC<TraditionButtonProps> = ({ tradition }) => {
-    const slug = slugifyTradition(tradition.name);
-    const href = `/spell-room/${slug}`;
+    // Use customHref if present, otherwise generate slug
+    const href = tradition.customHref || `/spell-room/${slugifyTradition(tradition.name)}`;
 
     const buttonContent = (
         <div className="relative">
@@ -130,3 +140,4 @@ const SpellRoom: React.FC = () => {
 }
 
 export default SpellRoom;
+// --- END OF FILE ---
