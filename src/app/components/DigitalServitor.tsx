@@ -3,8 +3,10 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { X, Maximize2, Minimize2, Save, Trash2, BookOpen } from 'lucide-react';
+import { X, Maximize2, Minimize2, Save, Trash2, BookOpen, Info } from 'lucide-react';
 import { createBrowserClient } from '@supabase/ssr';
+
+// --- CONSTANTS ---
 
 // Define Saved Servitor Interface
 interface SavedServitor {
@@ -30,6 +32,12 @@ const OBJECTS: Record<string, string> = {
     'health': '⚕️', 'bolt': '⚡', 'bulb': '💡', 'sword': '⚔️', 'shield': '🛡️', 'fire': '🔥'
 };
 
+const FOOD_ICONS: string[] = [
+    '💖', '✨', '🍎', '🍷', '🍞', '🥩', '🍪', '🥛', '🍯', 
+    '💰', '💎', '🕯️', '🪄', '🔮', '💋', '🎁', '🎈', '🏅', 
+    '🏆', '🎱', '🗝️', '🧬', '⚡', '🎵', '🧿'
+];
+
 const CHEST_SYMBOLS: Record<string, string> = {
     'none': '', 'star': '⭐', 'eye': '👁️', 'moon': '🌙', 'sun': '☀️', 
     'om': '🕉️', 'yin': '☯️', 'cross': '✝️', 'ankh': '☥', 'spiral': '🌀'
@@ -51,12 +59,15 @@ export default function DigitalServitor() {
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
 
+    // --- State Management ---
+    
     // Logic State
     const [isRunning, setIsRunning] = useState(false);
     const runningRef = useRef(false); 
     const loopIdRef = useRef(0);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const audioCtxRef = useRef<any>(null);
+    const oscRef = useRef<any>(null); // For continuous sounds (awaken/feed)
 
     // Form State
     const [sName, setSName] = useState("");
@@ -81,16 +92,32 @@ export default function DigitalServitor() {
         beardStyle: "none",
         face: "face-stoic",
         object: "gold",
-        // New Features
         chestSymbol: "none",
-        chestType: "default", // default, portal, cave, pond
+        chestType: "default",
         hasWings: false,
         wingColor: "#aaffff",
-        movementType: "walk", // walk, fly
-        soundSearch: "rumble", // rumble, hum, static, pulse
-        soundFind: "chime",    // chime, wow, laser, chord
-        soundDeposit: "coin"   // coin, angelic, vortex, teleport
+        movementType: "walk", 
+        soundSearch: "rumble", 
+        soundFind: "chime",    
+        soundDeposit: "coin",
+        // Feeding Config
+        foodName: "Gratitude",
+        foodIcon: "✨",
+        feedFreq: 5
     });
+
+    // Awakening & Feeding State
+    const [awakenProgress, setAwakenProgress] = useState(0);
+    const [isAwakening, setIsAwakening] = useState(false);
+    const [awakenComplete, setAwakenComplete] = useState(false); // For the glitter flash
+    const [isFeeding, setIsFeeding] = useState(false); // Added missing state
+    
+    // Hunger System
+    const [depositCount, setDepositCount] = useState(0);
+    const [hungerState, setHungerState] = useState<'sated' | 'hungry' | 'fed'>('sated');
+    const [feedProgress, setFeedProgress] = useState(0);
+    const [fallingFood, setFallingFood] = useState<{id: number, left: number, top: number}[]>([]);
+    const holdIntervalRef = useRef<any>(null);
 
     // --- Supabase Init & Fetch ---
     useEffect(() => {
@@ -216,13 +243,13 @@ export default function DigitalServitor() {
         }
     };
 
-    const playSound = (category: 'search' | 'find' | 'deposit') => {
+    const playSound = (category: 'search' | 'find' | 'deposit' | 'awaken-start' | 'awaken-stop' | 'glitter') => {
         if(!audioCtxRef.current) return;
         const ctx = audioCtxRef.current;
         const now = ctx.currentTime;
         
         // Helper for oscillators
-        const playOsc = (type: string, freqStart: number, freqEnd: number, dur: number, vol: number, type2?: string) => {
+        const playOsc = (type: string, freqStart: number, freqEnd: number, dur: number, vol: number) => {
             const osc = ctx.createOscillator();
             const gain = ctx.createGain();
             osc.connect(gain);
@@ -236,6 +263,15 @@ export default function DigitalServitor() {
             osc.stop(now + dur);
         };
 
+        if(category === 'glitter') {
+            // Sparkly arpeggio
+            const base = 800;
+            for(let i=0; i<10; i++) {
+                setTimeout(() => playOsc('sine', base + (i*100), base + (i*200), 0.2, 0.1), i * 50);
+            }
+            return;
+        }
+
         const type = category === 'search' ? config.soundSearch : 
                      category === 'find' ? config.soundFind : 
                      config.soundDeposit;
@@ -243,31 +279,17 @@ export default function DigitalServitor() {
         switch(type) {
             // -- SEARCHING SOUNDS --
             case 'rumble':
-                // Steady Pulse ~300Hz (Sine)
-                const oscR = ctx.createOscillator();
-                const gainR = ctx.createGain();
-                oscR.connect(gainR); gainR.connect(ctx.destination);
-                oscR.type = 'sine';
-                oscR.frequency.setValueAtTime(300, now);
-                oscR.frequency.linearRampToValueAtTime(320, now + 0.2);
-                oscR.frequency.linearRampToValueAtTime(300, now + 0.4);
-                oscR.frequency.linearRampToValueAtTime(320, now + 0.6);
-                gainR.gain.setValueAtTime(0.3, now);
-                gainR.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
-                oscR.start(now); oscR.stop(now + 0.8);
+                playOsc('sine', 150, 140, 0.8, 0.2);
                 break;
             case 'hum':
-                // Ethereal sine waves
                 playOsc('sine', 400, 450, 1.5, 0.15);
                 playOsc('sine', 600, 550, 1.5, 0.05);
                 break;
             case 'static':
-                // Ethereal Wah
                 playOsc('triangle', 300, 500, 0.6, 0.1);
                 setTimeout(() => playOsc('sine', 500, 300, 0.6, 0.1), 400);
                 break;
             case 'pulse':
-                // Deep Pulse (>250Hz)
                 playOsc('sine', 280, 280, 0.3, 0.3);
                 setTimeout(() => playOsc('sine', 280, 280, 0.3, 0.3), 300);
                 setTimeout(() => playOsc('sine', 280, 280, 0.3, 0.3), 600);
@@ -275,21 +297,17 @@ export default function DigitalServitor() {
 
             // -- FINDING SOUNDS --
             case 'chime':
-                // Classic high pitch
                 playOsc('sine', 800, 1200, 1, 0.1);
                 setTimeout(() => playOsc('sine', 1200, 2000, 0.5, 0.05), 100);
                 break;
             case 'wow':
-                // Wah-wah effect sweep
                 playOsc('triangle', 400, 800, 0.8, 0.1);
                 playOsc('sine', 405, 805, 0.8, 0.1);
                 break;
             case 'laser':
-                // Zap sound
                 playOsc('sine', 1200, 400, 0.4, 0.1); 
                 break;
             case 'chord':
-                // Major triad
                 playOsc('sine', 440, 440, 1.5, 0.05); // A
                 playOsc('sine', 554, 554, 1.5, 0.05); // C#
                 playOsc('sine', 659, 659, 1.5, 0.05); // E
@@ -297,12 +315,10 @@ export default function DigitalServitor() {
 
             // -- DEPOSIT SOUNDS --
             case 'coin':
-                // High metal ping
                 playOsc('sine', 1800, 1800, 0.1, 0.1);
                 setTimeout(() => playOsc('sine', 2000, 2000, 0.4, 0.05), 50);
                 break;
             case 'angelic':
-                // Slow attack choir
                 const oscA = ctx.createOscillator();
                 const gA = ctx.createGain();
                 oscA.connect(gA); gA.connect(ctx.destination);
@@ -314,18 +330,55 @@ export default function DigitalServitor() {
                 oscA.start(now); oscA.stop(now + 2);
                 break;
             case 'vortex':
-                // Deepening Vortex (Sine sweep down)
                 playOsc('sine', 600, 150, 1.5, 0.4);
                 playOsc('sine', 605, 155, 1.5, 0.2);
                 break;
             case 'teleport':
-                // Sci-fi sweep
                 playOsc('sine', 200, 800, 1, 0.1);
                 setTimeout(() => playOsc('sine', 800, 200, 0.5, 0.05), 800);
                 break;
-            
-            default:
-                break;
+            default: break;
+        }
+    };
+
+    // Continuous Sound Manager for Awaken/Feed
+    const updateProgressSound = (active: boolean, progress: number, type: 'awaken' | 'feed') => {
+        if(!audioCtxRef.current) return;
+        const ctx = audioCtxRef.current;
+        const now = ctx.currentTime;
+
+        if (active) {
+            // Start or Update
+            if (!oscRef.current) {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                
+                // Base Freq
+                const base = type === 'awaken' ? 200 : 400;
+                osc.type = type === 'awaken' ? 'triangle' : 'sine';
+                osc.frequency.setValueAtTime(base, now);
+                gain.gain.setValueAtTime(0.1, now);
+                osc.start(now);
+                oscRef.current = { osc, gain, base };
+            }
+
+            // Pitch Bend based on Progress
+            const { osc, base } = oscRef.current;
+            const targetFreq = base + (progress * 10); // +1000Hz at 100%
+            osc.frequency.setTargetAtTime(targetFreq, now, 0.1);
+
+        } else {
+            // Stop / Reverse
+            if (oscRef.current) {
+                const { osc, gain, base } = oscRef.current;
+                // Pitch down effect
+                osc.frequency.exponentialRampToValueAtTime(base, now + 0.5);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+                osc.stop(now + 0.5);
+                oscRef.current = null;
+            }
         }
     };
 
@@ -365,7 +418,10 @@ export default function DigitalServitor() {
             const head = rig.querySelector('.head');
             if(head) {
                 head.classList.remove('face-stoic', 'face-determined', 'face-happy', 'face-discovery');
-                head.classList.add(config.face);
+                // Allow feeding animation override
+                if(!isFeeding) {
+                   head.classList.add(config.face); 
+                }
             }
 
             const hatContainer = doc.getElementById(prefix + 'hat-container');
@@ -416,7 +472,7 @@ export default function DigitalServitor() {
             }
         }
 
-    }, [config, isRunning]);
+    }, [config, isRunning, hungerState, isFeeding]); // Added isFeeding to dependencies
 
     // --- Animation Logic ---
     const wait = (ms: number) => new Promise(r => setTimeout(r, ms));
@@ -452,7 +508,9 @@ export default function DigitalServitor() {
         const doc = (globalThis as any).document;
         if (!doc) return;
         const servitor = doc.getElementById('servitor');
+        const rig = doc.getElementById('game-rig');
         if(servitor) servitor.classList.remove('walk-left', 'walk-right', 'anim-fly', 'anim-jump-in', 'anim-jump-out');
+        if(rig) rig.classList.remove('dance-happy');
     }
 
     const mainLoop = async (id: number) => {
@@ -486,6 +544,12 @@ export default function DigitalServitor() {
 
         while(runningRef.current && loopIdRef.current === id) {
             
+            // Check Hunger Logic
+            if(hungerState === 'hungry') {
+                // Break loop and wait for resume
+                break;
+            }
+
             if(els.status) els.status.innerText = `${sName || 'The Servitor'} seeks ${sPurpose || 'Result'}...`;
             stopAction();
             
@@ -571,13 +635,122 @@ export default function DigitalServitor() {
             els.chestWrapper.classList.remove('chest-open');
             els.chestShine.style.display = 'none';
             
+            // Update Deposit Counter and check Hunger
+            setDepositCount(prev => {
+                const newVal = prev + 1;
+                if (newVal >= config.feedFreq) {
+                    // Trigger Hunger
+                    setHungerState('hungry');
+                }
+                return newVal;
+            });
+            
             await wait(1000);
         }
     };
 
-    const handleAwaken = () => {
-        initAudio(); 
+    // --- Hold Button Handlers (Awaken & Feed) ---
+    const startHold = (type: 'awaken' | 'feed') => {
+        initAudio();
+        const startTime = Date.now();
+        const duration = type === 'awaken' ? 7000 : 11000;
+        const setProgress = type === 'awaken' ? setAwakenProgress : setFeedProgress;
+        
+        if (type === 'awaken') setIsAwakening(true);
+        if (type === 'feed') setIsFeeding(true);
+
+        holdIntervalRef.current = setInterval(() => {
+            const elapsed = Date.now() - startTime;
+            let p = (elapsed / duration) * 100;
+            if(p >= 100) {
+                p = 100;
+                clearInterval(holdIntervalRef.current);
+                holdIntervalRef.current = null;
+                // Success
+                updateProgressSound(false, 100, type);
+                playSound('glitter');
+                if(type === 'awaken') completeAwakening();
+                if(type === 'feed') completeFeeding();
+            } else {
+                updateProgressSound(true, p, type);
+            }
+            setProgress(p);
+
+            // Special Visuals during Feed
+            if(type === 'feed') {
+                 // Add random falling food
+                 if(Math.random() > 0.7) {
+                     setFallingFood(prev => [...prev, {
+                         id: Math.random(), 
+                         left: 30 + Math.random() * 40, 
+                         top: 0
+                     }]);
+                 }
+                 // Make servitor dance (Safe DOM Access)
+                 const doc = (globalThis as any).document;
+                 const rig = doc ? doc.getElementById('game-rig') : null;
+                 if(rig) rig.classList.add('dance-happy');
+            }
+
+        }, 30);
+    };
+
+    const stopHold = (type: 'awaken' | 'feed') => {
+        if(holdIntervalRef.current) {
+            clearInterval(holdIntervalRef.current);
+            holdIntervalRef.current = null;
+        }
+        
+        updateProgressSound(false, 0, type);
+        
+        // If not complete, reset
+        if(type === 'awaken') {
+            setIsAwakening(false);
+            setAwakenProgress(0);
+        }
+        if(type === 'feed') {
+            setIsFeeding(false);
+            setFeedProgress(0);
+            setFallingFood([]); // Clear food
+            // Stop dance (Safe DOM Access)
+            const doc = (globalThis as any).document;
+            const rig = doc ? doc.getElementById('game-rig') : null;
+            if(rig) rig.classList.remove('dance-happy');
+        }
+    };
+
+    // --- Completion Handlers ---
+    const completeAwakening = async () => {
+        setAwakenComplete(true);
+        // Wait for visual effect
+        await wait(1500);
+        
+        // Start Game
         setIsRunning(true);
+        runningRef.current = true;
+        setDepositCount(0);
+        setHungerState('sated');
+        loopIdRef.current++;
+        mainLoop(loopIdRef.current);
+        
+        // Reset Awaken State for next time
+        setAwakenComplete(false);
+        setIsAwakening(false);
+        setAwakenProgress(0);
+    };
+
+    const completeFeeding = () => {
+        setHungerState('fed');
+        setFeedProgress(100);
+        // Servitor says thank you logic handled in render via conditional
+    };
+
+    const handleResume = () => {
+        setHungerState('sated');
+        setDepositCount(0);
+        setFeedProgress(0);
+        setIsFeeding(false);
+        setFallingFood([]);
         runningRef.current = true;
         loopIdRef.current++;
         mainLoop(loopIdRef.current);
@@ -595,14 +768,23 @@ export default function DigitalServitor() {
     };
 
     useEffect(() => {
-        return () => { runningRef.current = false; };
+        return () => { 
+            runningRef.current = false; 
+            if(holdIntervalRef.current) clearInterval(holdIntervalRef.current);
+        };
     }, []);
+
+    const isFeedingActive = isFeeding || hungerState === 'fed';
 
     // --- JSX RENDER ---
     return (
         <div className="fixed inset-0 w-full h-full bg-[#0f0f1a] text-[#dcdcdc] overflow-hidden select-none font-sans flex flex-col">
             <style jsx global>{`
+                @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap');
+                
                 :root { --bg-color: #0f0f1a; --gold: #FFD700; --indigo: #4b0082; }
+                .magick-font { font-family: 'Cinzel', serif; }
+                
                 .sky-container { position: absolute; top:0; left:0; width:100%; height:100%; z-index: 1; pointer-events: none; overflow: hidden; background: linear-gradient(to bottom, #050510, #1a1a2e); }
                 .stars { position: absolute; width: 200%; height: 200%; top: -50%; left: -50%; background-image: radial-gradient(white 1px, transparent 1px); background-size: 50px 50px; opacity: 0.3; animation: sky-rotate 200s linear infinite; }
                 @keyframes sky-rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
@@ -621,7 +803,7 @@ export default function DigitalServitor() {
                 .servitor-root { position: absolute; bottom: calc(15vh - 5px); left: 20%; width: 0; height: 0; z-index: 30; transition: left 0.1s linear, opacity 0.5s; }
                 .servitor-rig { position: relative; width: 60px; height: 130px; transform-origin: center bottom; left: -30px; top: -130px; }
                 .skin { background-color: #f1c27d; } .clothes { background-color: #333; }
-                .head { width: 42px; height: 42px; border-radius: 50%; position: absolute; top: 0; left: 9px; z-index: 10; }
+                .head { width: 42px; height: 42px; border-radius: 50%; position: absolute; top: 0; left: 9px; z-index: 10; transition: transform 0.2s; }
                 
                 .beard { position: absolute; background-color: #444; z-index: 12; display: none; }
                 .beard.goatee { top: 38px; left: 16px; width: 10px; height: 12px; border-radius: 0 0 5px 5px; display: block; }
@@ -694,7 +876,7 @@ export default function DigitalServitor() {
                 .face-container { position: absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index: 15; }
                 .eye { position: absolute; top: 18px; width: 4px; height: 4px; background: #000; border-radius: 50%; }
                 .eye.l { left: 10px; } .eye.r { right: 10px; }
-                .mouth { position: absolute; bottom: 10px; left: 16px; width: 10px; height: 2px; background: #000; }
+                .mouth { position: absolute; bottom: 10px; left: 16px; width: 10px; height: 2px; background: #000; transition: all 0.2s; }
                 .face-happy .mouth { height: 6px; border-radius: 0 0 10px 10px; background: #500; }
                 .face-determined .eye { height: 2px; width: 6px; transform: rotate(15deg); } .face-determined .eye.r { transform: rotate(-15deg); }
                 .face-stoic .mouth { width: 10px; height: 2px; background: #333; }
@@ -801,6 +983,33 @@ export default function DigitalServitor() {
                 @keyframes calf-l-right { 0% { transform: rotate(40deg); } 50% { transform: rotate(0deg); } 100% { transform: rotate(40deg); } }
                 @keyframes thigh-r-right { 0% { transform: rotate(-20deg); } 50% { transform: rotate(10deg); } 100% { transform: rotate(-20deg); } }
                 @keyframes calf-r-right { 0% { transform: rotate(0deg); } 50% { transform: rotate(40deg); } 100% { transform: rotate(0deg); } }
+
+                /* DANCE ANIMATION FOR FEEDING */
+                .dance-happy .servitor-rig { animation: dance-bob 0.5s infinite ease-in-out; }
+                .dance-happy .arm { animation: arm-cheer 0.5s infinite alternate !important; }
+                .dance-happy .head { animation: head-bop 0.5s infinite alternate; }
+                .dance-happy .mouth { height: 6px; border-radius: 0 0 10px 10px; background: #d00; } /* Force Smile */
+                @keyframes dance-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+                @keyframes arm-cheer { 0% { transform: rotate(-60deg); } 100% { transform: rotate(-80deg); } }
+                @keyframes head-bop { 0% { transform: rotate(-5deg); } 100% { transform: rotate(5deg); } }
+
+                .falling-food {
+                    position: absolute;
+                    font-size: 20px;
+                    animation: fall-down 1.5s linear forwards;
+                    z-index: 100;
+                }
+                @keyframes fall-down { 0% { opacity: 0; transform: translateY(0) rotate(0deg); } 20% { opacity: 1; } 100% { opacity: 0; transform: translateY(150px) rotate(360deg); } }
+
+                /* Awakening Sparkles */
+                .awaken-overlay {
+                    position: fixed; top:0; left:0; width:100%; height:100%;
+                    background: radial-gradient(circle, rgba(255,215,0,0.2), transparent 70%);
+                    z-index: 1000;
+                    pointer-events: none;
+                    animation: pulse-overlay 1.5s infinite;
+                }
+                @keyframes pulse-overlay { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
             `}</style>
 
             {/* Exit Button */}
@@ -842,10 +1051,10 @@ export default function DigitalServitor() {
             </div>
 
             {/* Config Panel */}
-            <div className={`absolute top-0 left-0 w-full h-full bg-[#08080c]/98 z-300 flex flex-col overflow-y-auto p-5 transition-opacity duration-500 ${isRunning ? 'opacity-0 pointer-events-none' : 'opacity-100'}`} style={{zIndex: 300}}>
+            <div className={`absolute top-0 left-0 w-full h-full bg-[#08080c]/98 z-[300] flex flex-col overflow-y-auto p-5 transition-opacity duration-500 ${isRunning ? 'opacity-0 pointer-events-none' : 'opacity-100'}`} style={{zIndex: 300}}>
                 <div className="max-w-[600px] mx-auto w-full flex flex-col gap-4 pb-12">
                     <div className="text-center border-b border-[#FFD700] pb-4">
-                        <h2 className="text-[#FFD700] uppercase tracking-widest text-2xl font-serif">Grimoire of Servitors</h2>
+                        <h2 className="text-[#FFD700] uppercase tracking-widest text-2xl magick-font">Grimoire of Servitors</h2>
                         <p className="text-[#FFD700]/70 uppercase tracking-widest text-sm font-serif mt-1">Your Servants of Magick</p>
                     </div>
                     
@@ -915,6 +1124,7 @@ export default function DigitalServitor() {
                         </div>
                     </div>
 
+                    {/* BASIC INFO */}
                     <div className="grid grid-cols-1 gap-3 bg-white/5 p-3 rounded border border-gray-800">
                         <label className="text-gray-400 text-xs uppercase">Name your servitor</label>
                         <input type="text" value={sName} onChange={e => setSName((e.target as any).value)} placeholder="Name the entity..." className="w-full p-2 bg-[#1a1a25] border border-gray-700 text-white rounded outline-none" />
@@ -922,6 +1132,60 @@ export default function DigitalServitor() {
                     <div className="grid grid-cols-1 gap-3 bg-white/5 p-3 rounded border border-gray-800">
                         <label className="text-gray-400 text-xs uppercase">Desired Outcome</label>
                         <input type="text" value={sPurpose} onChange={e => setSPurpose((e.target as any).value)} placeholder="e.g. Wealth, Protection, Love..." className="w-full p-2 bg-[#1a1a25] border border-gray-700 text-white rounded outline-none" />
+                    </div>
+
+                    {/* FEEDING SYSTEM */}
+                    <div className="bg-gray-900/80 p-3 rounded border border-red-900/50">
+                        <p className="text-[#FFD700] text-xs uppercase tracking-widest mb-3 border-b border-red-900/50 pb-1 flex items-center justify-between">
+                            Sustenance Rituals
+                            <span className="text-[10px] text-gray-500 cursor-help" title="Servitors require energy to function. Define what they feed on."><Info size={12}/></span>
+                        </p>
+                        <div className="space-y-3">
+                             <div>
+                                <label className="text-gray-400 text-[10px] uppercase block mb-1">Your Servitor's Food</label>
+                                <input type="text" value={config.foodName} onChange={e => setConfig({...config, foodName: (e.target as any).value})} placeholder="e.g. Appreciation, Head Pats..." className="w-full text-xs p-2 bg-black border border-gray-700 rounded text-gray-300 outline-none" />
+                                <p className="text-[10px] text-gray-500 mt-1 italic">What does your Servitor feed on to survive?</p>
+                             </div>
+                             
+                             <div>
+                                <label className="text-gray-400 text-[10px] uppercase block mb-1">Food Appearance</label>
+                                <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto custom-scrollbar p-1 border border-gray-800 rounded bg-black/50">
+                                    {FOOD_ICONS.map(icon => (
+                                        <button 
+                                            key={icon}
+                                            onClick={() => setConfig({...config, foodIcon: icon})}
+                                            className={`w-8 h-8 flex items-center justify-center rounded text-lg hover:bg-white/10 ${config.foodIcon === icon ? 'bg-[#FFD700]/20 border border-[#FFD700]' : 'border border-transparent'}`}
+                                        >
+                                            {icon}
+                                        </button>
+                                    ))}
+                                </div>
+                             </div>
+
+                             <div>
+                                <label className="text-gray-400 text-[10px] uppercase block mb-1 flex justify-between">
+                                    Feeding Frequency (Deposits)
+                                    <span className="text-gray-500">{config.feedFreq} tasks</span>
+                                </label>
+                                <div className="flex items-center gap-2">
+                                    <input 
+                                        type="range" 
+                                        min="1" max="50" 
+                                        value={config.feedFreq} 
+                                        onChange={e => setConfig({...config, feedFreq: parseInt((e.target as any).value)})}
+                                        className="flex-1 accent-[#FFD700]" 
+                                    />
+                                    <input 
+                                        type="number" 
+                                        min="1" max="1000000"
+                                        value={config.feedFreq}
+                                        onChange={e => setConfig({...config, feedFreq: parseInt((e.target as any).value)})}
+                                        className="w-20 text-xs p-1 bg-black border border-gray-700 rounded text-center"
+                                    />
+                                </div>
+                                <p className="text-[10px] text-gray-500 mt-1 italic">Servitor pauses after {config.feedFreq} tasks to be fed.</p>
+                             </div>
+                        </div>
                     </div>
                     
                     {/* CHEST SYMBOL SELECTION */}
@@ -1027,6 +1291,7 @@ export default function DigitalServitor() {
                         </div>
                     </div>
 
+                    {/* APPEARANCE */}
                     <div className="grid grid-cols-2 gap-3">
                         <div className="bg-white/5 p-3 rounded border border-gray-800">
                             <label className="text-gray-400 text-xs uppercase block mb-2">Outfit</label>
@@ -1112,20 +1377,92 @@ export default function DigitalServitor() {
                         </div>
                     </div>
 
-                    <button 
-                        onClick={handleAwaken}
-                        className="w-full py-4 mt-4 bg-linear-to-b from-[#2a2a35] to-[#1a1a25] border border-[#FFD700] text-[#FFD700] text-lg uppercase tracking-widest hover:bg-[#FFD700] hover:text-black transition-all shadow-[0_0_15px_rgba(255,215,0,0.3)]"
-                    >
-                        Awaken Entity
-                    </button>
+                    {/* AWAKEN BUTTON */}
+                    <div className="relative mt-6">
+                        {isAwakening && (
+                            <div className="absolute -top-10 left-0 w-full text-center">
+                                <div className="inline-block bg-black/80 border border-[#FFD700] px-4 py-2 rounded text-[#FFD700] text-sm magick-font animate-pulse">
+                                    You are awakening your servitor now...
+                                </div>
+                            </div>
+                        )}
+                        <button 
+                            onMouseDown={() => startHold('awaken')}
+                            onMouseUp={() => stopHold('awaken')}
+                            onMouseLeave={() => stopHold('awaken')}
+                            onTouchStart={() => startHold('awaken')}
+                            onTouchEnd={() => stopHold('awaken')}
+                            className="w-full h-16 relative bg-gradient-to-b from-[#2a2a35] to-[#1a1a25] border border-[#FFD700] overflow-hidden group active:scale-95 transition-transform"
+                        >
+                            <div className="absolute top-0 left-0 h-full bg-[#FFD700]/30 transition-all duration-75 ease-linear" style={{width: `${awakenProgress}%`}}></div>
+                            <span className="relative z-10 text-[#FFD700] text-lg uppercase tracking-widest font-serif flex items-center justify-center gap-2">
+                                Press to Awaken Your Servitor
+                            </span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
             {/* STAGE */}
             <div id="stage" className="relative flex-1 w-full h-full overflow-hidden z-10">
-                <div id="status-bar" className="absolute top-5 w-full text-center text-xl text-white tracking-widest z-50 shadow-none">
+                
+                {/* STATUS BAR */}
+                <div id="status-bar" className="absolute top-5 w-full text-center text-xl text-white tracking-widest z-50 shadow-none magick-font">
                     Awaiting summoning...
                 </div>
+
+                {/* AWAKEN GLITTER & TEXT */}
+                {awakenComplete && (
+                    <div className="awaken-overlay flex flex-col items-center justify-center z-[500]">
+                         <h1 className="text-4xl md:text-6xl text-[#FFD700] font-bold text-center magick-font drop-shadow-[0_0_15px_rgba(255,215,0,0.8)] animate-bounce">
+                             {sName} has awoken
+                         </h1>
+                         <p className="text-xl text-white mt-4 font-serif italic opacity-80">...and is serving you now.</p>
+                    </div>
+                )}
+
+                {/* FEEDING OVERLAY */}
+                {isFeedingActive && (
+                    <div className="absolute inset-0 z-[200] bg-black/40 flex flex-col items-center justify-center pointer-events-auto">
+                        {hungerState === 'fed' ? (
+                            <div className="bg-black/90 p-8 rounded border-2 border-[#FFD700] text-center max-w-sm mx-4 shadow-[0_0_30px_#FFD700]">
+                                <div className="text-4xl mb-4 animate-spin">✨</div>
+                                <h2 className="text-2xl text-[#FFD700] magick-font mb-2">Thank You, Master!</h2>
+                                <p className="text-gray-300 mb-6 font-serif">I am revitalized by your {config.foodName}. Shall I resume searching for more {OBJECTS[config.object] || 'treasures'}?</p>
+                                <div className="flex gap-4 justify-center">
+                                    <button onClick={handleResume} className="bg-[#FFD700] text-black px-6 py-2 rounded font-bold hover:bg-white uppercase tracking-wider">Yes, Resume</button>
+                                    <button onClick={() => {}} className="border border-gray-600 text-gray-400 px-6 py-2 rounded font-bold hover:text-white uppercase tracking-wider">Wait</button>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="flex flex-col items-center animate-in fade-in duration-500">
+                                <div className="text-[#FFD700] magick-font text-2xl mb-8 text-center drop-shadow-md bg-black/50 px-4 py-2 rounded-full border border-[#FFD700]/30">
+                                    {sName} hungers for {config.foodName}...
+                                </div>
+                                
+                                <button
+                                    onMouseDown={() => startHold('feed')}
+                                    onMouseUp={() => stopHold('feed')}
+                                    onMouseLeave={() => stopHold('feed')}
+                                    onTouchStart={() => startHold('feed')}
+                                    onTouchEnd={() => stopHold('feed')}
+                                    className="w-32 h-32 rounded-full border-4 border-[#FFD700] bg-gradient-to-br from-purple-900 to-black shadow-[0_0_30px_rgba(255,215,0,0.4)] flex items-center justify-center active:scale-95 transition-transform overflow-hidden relative group"
+                                >
+                                    <div className="absolute bottom-0 left-0 w-full bg-[#FFD700]/40 transition-all duration-75 ease-linear" style={{height: `${feedProgress}%`}}></div>
+                                    <span className="text-4xl z-10 animate-pulse">{config.foodIcon}</span>
+                                </button>
+                                <p className="mt-4 text-gray-400 text-xs uppercase tracking-widest animate-pulse">Hold for 11 Seconds to Feed</p>
+                            </div>
+                        )}
+                    </div>
+                )}
+                
+                {/* FALLING FOOD PARTICLES */}
+                {fallingFood.map(f => (
+                    <div key={f.id} className="falling-food" style={{left: f.left + '%', top: '10%'}}>
+                        {config.foodIcon}
+                    </div>
+                ))}
 
                 {/* MOUND */}
                 <div className="mound" id="mound">
@@ -1173,7 +1510,7 @@ export default function DigitalServitor() {
                         <div className="chest-seal left"></div>
                         <div className="chest-seal right"></div>
                     </div>
-                    <div className="mt-1 text-gray-400 text-xs text-center drop-shadow-[0_0_5px_black]" id="chest-label">
+                    <div className="mt-1 text-gray-400 text-xs text-center drop-shadow-[0_0_5px_black] magick-font" id="chest-label">
                         {uName || 'Master'}'s {CHEST_NAMES[config.chestType]}
                     </div>
                 </div>
