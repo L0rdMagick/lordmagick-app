@@ -1,10 +1,11 @@
+// --- START OF FILE src/app/layout.tsx ---
 import type { Metadata } from "next";
 import { Cinzel } from "next/font/google";
 import { ReactElement } from "react";
 import "./globals.css";
 import BackgroundAudio from "./components/BackgroundAudio";
-import { NavMenuProvider } from "./context/NavMenuContext"; // THE FIX: Import the provider
-import RoomsMenu from "./components/RoomsMenu"; // THE FIX: Import the new menu
+import { NavMenuProvider } from "./context/NavMenuContext";
+import RoomsMenu from "./components/RoomsMenu";
 
 const cinzel = Cinzel({
   subsets: ["latin"],
@@ -24,16 +25,24 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${cinzel.className} bg-black text-white antialiased`}>
-        {/* THE FIX: Wrap the application in the NavMenuProvider */}
         <NavMenuProvider>
           <BackgroundAudio />
           {children}
-          <RoomsMenu /> {/* THE FIX: Add the global menu component */}
+          <RoomsMenu />
         </NavMenuProvider>
         
-        <div className="mist-overlay fixed bottom-0 left-0 w-full h-2/5 bg-[url('/images/mist-overlay.png')] bg-repeat-x z-30 pointer-events-none opacity-[.001] animate-[flow-mist_45s_linear_infinite]" />
-        <div className="mist-overlay fixed bottom-0 left-0 w-full h-2/5 bg-[url('/images/mist-overlay.png')] bg-repeat-x z-30 pointer-events-none opacity-[.001] animate-[flow-mist-crossfade_45s_linear_infinite]" />
+        {/* MIST OVERLAY CONTAINER */}
+        {/* We apply opacity here (0.05) to act as a master filter. 
+            Even if the child animation pulses opacity, it will never exceed this limit. */}
+        <div 
+          className="fixed bottom-0 left-0 w-full h-2/5 z-30 pointer-events-none mix-blend-screen"
+          style={{ opacity: 0.25 }} 
+        >
+            <div className="absolute inset-0 w-full h-full bg-[url('/images/mist-overlay.png')] bg-repeat-x animate-[flow-mist_45s_linear_infinite]" />
+            <div className="absolute inset-0 w-full h-full bg-[url('/images/mist-overlay.png')] bg-repeat-x animate-[flow-mist-crossfade_45s_linear_infinite]" />
+        </div>
       </body>
     </html>
   );
 }
+// --- END OF FILE ---
