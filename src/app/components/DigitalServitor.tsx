@@ -3,7 +3,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { X } from 'lucide-react';
+import { X, Maximize2, Minimize2 } from 'lucide-react';
 
 const HATS: Record<string, string> = {
     'none': '',
@@ -27,6 +27,7 @@ export default function DigitalServitor() {
     const [isRunning, setIsRunning] = useState(false);
     const runningRef = useRef(false); 
     const loopIdRef = useRef(0);
+    const [isFullscreen, setIsFullscreen] = useState(false);
     // FIX: Use 'any' type for AudioContext
     const audioCtxRef = useRef<any>(null);
 
@@ -49,6 +50,26 @@ export default function DigitalServitor() {
         face: "face-stoic",
         object: "gold"
     });
+
+    // --- Helpers ---
+    const toggleFullscreen = () => {
+        // FIX: Safe access to document via globalThis
+        const doc = (globalThis as any).document;
+        if (!doc) return;
+
+        if (!doc.fullscreenElement) {
+            // FIX: Explicitly type 'e' as any
+            doc.documentElement.requestFullscreen().catch((e: any) => {
+                console.error(`Error attempting to enable fullscreen: ${e.message}`);
+            });
+            setIsFullscreen(true);
+        } else {
+            if (doc.exitFullscreen) {
+                doc.exitFullscreen();
+                setIsFullscreen(false);
+            }
+        }
+    };
 
     // --- Audio Logic ---
     const initAudio = () => {
@@ -169,7 +190,6 @@ export default function DigitalServitor() {
 
         updateCharacter('p-');
         
-        // Fix: Use safe window access for requestAnimationFrame
         if(isRunning) {
             const win = (globalThis as any).window;
             if (win) {
@@ -197,7 +217,6 @@ export default function DigitalServitor() {
 
             el.style.transition = `left ${time}ms linear`;
             
-            // Fix: Explicitly use window.requestAnimationFrame
             win.requestAnimationFrame(() => {
                 el.style.left = targetPercent + "%";
             });
@@ -247,7 +266,7 @@ export default function DigitalServitor() {
         while(runningRef.current && loopIdRef.current === id) {
             
             // 1. Walk to Mound
-            if(els.status) els.status.innerText = `${sName || 'The Servitor'} seeks ${sPurpose || 'Energy'}...`;
+            if(els.status) els.status.innerText = `${sName || 'The Servitor'} seeks ${sPurpose || 'Result'}...`;
             stopAction();
             els.servitor.classList.add('walk-left');
             await moveTo(15, id);
@@ -260,7 +279,7 @@ export default function DigitalServitor() {
             await wait(500);
             
             // 3. Dig
-            if(els.status) els.status.innerText = `Searching for more ${sPurpose || 'Energy'} for you...`;
+            if(els.status) els.status.innerText = `Searching the aether for ${sPurpose || 'Result'}...`;
             els.mound.classList.add('mound-active'); 
             
             const digTime = 5000 + Math.random() * 10000;
@@ -288,7 +307,7 @@ export default function DigitalServitor() {
             await wait(500);
             stopAction(); 
             
-            if(els.status) els.status.innerText = `${sName || 'The Servitor'} has found ${sPurpose || 'Energy'} for you!`;
+            if(els.status) els.status.innerText = `${sName || 'The Servitor'} has retrieved it!`;
             
             setTimeout(() => {
                 if(runningRef.current && loopIdRef.current === id && els.head) {
@@ -308,7 +327,7 @@ export default function DigitalServitor() {
             if(!runningRef.current || loopIdRef.current !== id) break;
 
             // 6. Deposit
-            if(els.status) els.status.innerText = `Adding ${sPurpose || 'Energy'} to treasure chest.`;
+            if(els.status) els.status.innerText = `Adding ${sPurpose || 'Result'} to treasure chest.`;
             els.chestWrapper.classList.add('chest-open');
             await wait(300);
             
@@ -372,9 +391,12 @@ export default function DigitalServitor() {
                 .servitor-rig { position: relative; width: 60px; height: 130px; transform-origin: center bottom; left: -30px; top: -130px; }
                 .skin { background-color: #f1c27d; } .clothes { background-color: #333; }
                 .head { width: 42px; height: 42px; border-radius: 50%; position: absolute; top: 0; left: 9px; z-index: 10; }
+                
+                /* FIX: Raised full beard slightly to cover mouth in happy/content state */
                 .beard { position: absolute; background-color: #444; z-index: 12; display: none; }
                 .beard.goatee { top: 38px; left: 16px; width: 10px; height: 12px; border-radius: 0 0 5px 5px; display: block; }
-                .beard.full { top: 28px; left: 2px; width: 38px; height: 20px; border-radius: 5px 5px 20px 20px; display: block; }
+                .beard.full { top: 24px; left: 2px; width: 38px; height: 20px; border-radius: 5px 5px 20px 20px; display: block; }
+                
                 .body { position: absolute; top: 35px; left: 13px; z-index: 5; }
                 .outfit-tunic .body { width: 34px; height: 50px; border-radius: 8px 8px 4px 4px; }
                 .outfit-robe .body { width: 38px; height: 85px; left: 11px; border-radius: 15px 15px 2px 2px; clip-path: polygon(10% 0, 90% 0, 100% 100%, 0% 100%); }
@@ -472,15 +494,23 @@ export default function DigitalServitor() {
                 <X size={24} />
             </button>
 
-            {/* Edit Button */}
+            {/* Edit Button (Bottom Left) */}
             {isRunning && (
                 <button 
                     onClick={handleEdit}
-                    className="absolute top-6 right-20 z-50 border border-[#FFD700] text-[#FFD700] bg-black/50 px-4 py-1 text-xs uppercase hover:bg-[#FFD700]/20"
+                    className="absolute bottom-6 left-6 z-50 border border-[#FFD700] text-[#FFD700] bg-black/50 px-4 py-2 text-xs uppercase hover:bg-[#FFD700]/20 tracking-widest"
                 >
                     Edit Ritual
                 </button>
             )}
+
+            {/* Fullscreen Button (Bottom Right) */}
+            <button
+                onClick={toggleFullscreen}
+                className="absolute bottom-6 right-6 z-50 text-gray-500 hover:text-white bg-black/30 p-2 rounded-full border border-gray-700 hover:border-gray-500"
+            >
+                {isFullscreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
+            </button>
 
             {/* Background */}
             <div className="sky-container">
@@ -497,10 +527,13 @@ export default function DigitalServitor() {
             {/* Config Panel */}
             <div className={`absolute top-0 left-0 w-full h-full bg-[#08080c]/98 z-300 flex flex-col overflow-y-auto p-5 transition-opacity duration-500 ${isRunning ? 'opacity-0 pointer-events-none' : 'opacity-100'}`} style={{zIndex: 300}}>
                 <div className="max-w-[600px] mx-auto w-full flex flex-col gap-4 pb-12">
-                    <h2 className="text-[#FFD700] border-b border-[#FFD700] pb-4 text-center uppercase tracking-widest text-2xl font-serif">Grimoire of Creation</h2>
+                    <div className="text-center border-b border-[#FFD700] pb-4">
+                        <h2 className="text-[#FFD700] uppercase tracking-widest text-2xl font-serif">Grimoire of Servitors</h2>
+                        <p className="text-[#FFD700]/70 uppercase tracking-widest text-sm font-serif mt-1">Your Servants of Magick</p>
+                    </div>
                     
                     <div className="bg-[radial-gradient(circle_at_center,#2b1055_0%,#000_100%)] border border-[#FFD700] h-[260px] relative flex justify-center items-center mt-2 shadow-[inset_0_0_20px_#000]">
-                        <div id="preview-rig" className="servitor-rig">
+                        <div id="preview-rig" className="servitor-rig" style={{left: 0, top: 0}}>
                             {/* Structure copied from original HTML, dynamic logic handled by useEffect */}
                             <div className="hair-back p-hair"></div>
                             <div className="leg left p-clothes"><div className="calf p-clothes"><div className="foot"></div></div></div>
@@ -523,17 +556,17 @@ export default function DigitalServitor() {
                     </div>
 
                     <div className="grid grid-cols-1 gap-3 bg-white/5 p-3 rounded border border-gray-800">
-                        <label className="text-gray-400 text-xs uppercase">Servitor Name</label>
+                        <label className="text-gray-400 text-xs uppercase">Name your servitor</label>
                         {/* FIX: Cast target to any to access value */}
                         <input type="text" value={sName} onChange={e => setSName((e.target as any).value)} placeholder="Name the entity..." className="w-full p-2 bg-[#1a1a25] border border-gray-700 text-white rounded outline-none" />
                     </div>
                     <div className="grid grid-cols-1 gap-3 bg-white/5 p-3 rounded border border-gray-800">
-                        <label className="text-gray-400 text-xs uppercase">Target Energy</label>
+                        <label className="text-gray-400 text-xs uppercase">Desired Outcome</label>
                         {/* FIX: Cast target to any to access value */}
-                        <input type="text" value={sPurpose} onChange={e => setSPurpose((e.target as any).value)} placeholder="e.g. Wealth, Protection..." className="w-full p-2 bg-[#1a1a25] border border-gray-700 text-white rounded outline-none" />
+                        <input type="text" value={sPurpose} onChange={e => setSPurpose((e.target as any).value)} placeholder="e.g. Wealth, Protection, Love..." className="w-full p-2 bg-[#1a1a25] border border-gray-700 text-white rounded outline-none" />
                     </div>
                     <div className="grid grid-cols-1 gap-3 bg-white/5 p-3 rounded border border-gray-800">
-                        <label className="text-gray-400 text-xs uppercase">Manifestation Sign</label>
+                        <label className="text-gray-400 text-xs uppercase">Symbol of Desire</label>
                         {/* FIX: Cast target to any to access value */}
                         <select value={config.object} onChange={e => setConfig({...config, object: (e.target as any).value})} className="w-full p-2 bg-[#1a1a25] border border-gray-700 text-white rounded outline-none">
                             <option value="gold">Gold 💰</option>
@@ -660,7 +693,7 @@ export default function DigitalServitor() {
 
             {/* STAGE */}
             <div id="stage" className="relative flex-1 w-full h-full overflow-hidden z-10">
-                <div id="status-bar" className="absolute top-5 w-full text-center text-xl text-white tracking-widest shadow-[0_0_10px_white] z-50">
+                <div id="status-bar" className="absolute top-5 w-full text-center text-xl text-white tracking-widest z-50">
                     Awaiting summoning...
                 </div>
 
