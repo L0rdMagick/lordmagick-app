@@ -25,7 +25,7 @@ export default function DigitalServitor() {
     
     // Logic State
     const [isRunning, setIsRunning] = useState(false);
-    const runningRef = useRef(false); // Fix: Immediate reference for the loop
+    const runningRef = useRef(false); 
     const loopIdRef = useRef(0);
     // FIX: Use 'any' type for AudioContext
     const audioCtxRef = useRef<any>(null);
@@ -112,11 +112,9 @@ export default function DigitalServitor() {
         if (!doc) return;
 
         const updateCharacter = (prefix: string) => {
-            // Determine if we are updating the game rig or preview rig
             const isGame = prefix === 'game-';
             const rig = doc.getElementById(isGame ? 'game-rig' : 'preview-rig');
             
-            // Apply Colors to ALL relevant elements based on prefix
             const setColors = (selector: string, color: string) => {
                 doc.querySelectorAll('.' + prefix + selector).forEach((el: any) => {
                     el.style.backgroundColor = color;
@@ -130,7 +128,6 @@ export default function DigitalServitor() {
 
             if(!rig) return;
 
-            // Classes & Geometry
             rig.classList.remove('outfit-tunic', 'outfit-robe', 'outfit-armor');
             rig.classList.add(config.outfit);
 
@@ -170,12 +167,14 @@ export default function DigitalServitor() {
             }
         };
 
-        // Always update preview
         updateCharacter('p-');
         
-        // If game is running, force update the game rig immediately after render
+        // Fix: Use safe window access for requestAnimationFrame
         if(isRunning) {
-            requestAnimationFrame(() => updateCharacter('game-'));
+            const win = (globalThis as any).window;
+            if (win) {
+                win.requestAnimationFrame(() => updateCharacter('game-'));
+            }
         }
 
     }, [config, isRunning]);
@@ -186,19 +185,20 @@ export default function DigitalServitor() {
     const moveTo = (targetPercent: number, id: number) => {
         return new Promise<void>(resolve => {
             const doc = (globalThis as any).document;
+            const win = (globalThis as any).window;
+            if (!doc || !win) { resolve(); return; }
+
             const el = doc.getElementById('servitor');
-            
             if(!el) { resolve(); return; }
             
-            // Get current position (or default to 20 if starting)
             const current = parseFloat(el.style.left) || 20;
             const dist = Math.abs(targetPercent - current);
             const time = dist * 40; 
 
             el.style.transition = `left ${time}ms linear`;
             
-            // Force reflow/repaint to ensure transition happens
-            requestAnimationFrame(() => {
+            // Fix: Explicitly use window.requestAnimationFrame
+            win.requestAnimationFrame(() => {
                 el.style.left = targetPercent + "%";
             });
 
@@ -217,12 +217,9 @@ export default function DigitalServitor() {
         if(servitor) servitor.classList.remove('walk-left', 'walk-right', 'anim-jump-in', 'anim-jump-out');
     }
 
-    // THE MAIN LOOP
     const mainLoop = async (id: number) => {
         const doc = (globalThis as any).document;
         
-        // Variables we need to access inside the loop
-        // We fetch elements dynamically to ensure we get them after React renders the "game" view
         const getEls = () => ({
             servitor: doc.getElementById('servitor'),
             rig: doc.getElementById('game-rig'),
@@ -234,22 +231,19 @@ export default function DigitalServitor() {
             head: doc.getElementById('game-rig')?.querySelector('.head')
         });
 
-        // Wait a tick for React to render the Game UI
         await wait(100);
         let els = getEls();
         
-        // If elements aren't there yet, wait a bit longer
         if (!els.servitor) {
             await wait(500);
             els = getEls();
         }
 
-        if(!els.servitor) return; // Should not happen
+        if(!els.servitor) return;
 
         els.carry.innerText = '';
         els.carry.style.display = 'none';
 
-        // Loop using Ref instead of State to avoid closure staleness
         while(runningRef.current && loopIdRef.current === id) {
             
             // 1. Walk to Mound
@@ -332,12 +326,10 @@ export default function DigitalServitor() {
     };
 
     const handleAwaken = () => {
-        initAudio(); // Must be called from user event
+        initAudio(); 
         setIsRunning(true);
-        runningRef.current = true; // Set Ref immediately for logic
+        runningRef.current = true;
         loopIdRef.current++;
-        
-        // Start the loop
         mainLoop(loopIdRef.current);
     };
 
@@ -352,7 +344,6 @@ export default function DigitalServitor() {
         router.push('/spell-room');
     };
 
-    // Cleanup on unmount
     useEffect(() => {
         return () => { runningRef.current = false; };
     }, []);
@@ -504,7 +495,7 @@ export default function DigitalServitor() {
             </div>
 
             {/* Config Panel */}
-            <div className={`absolute top-0 left-0 w-full h-full bg-[#08080c]/98 z-[300] flex flex-col overflow-y-auto p-5 transition-opacity duration-500 ${isRunning ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+            <div className={`absolute top-0 left-0 w-full h-full bg-[#08080c]/98 z-300 flex flex-col overflow-y-auto p-5 transition-opacity duration-500 ${isRunning ? 'opacity-0 pointer-events-none' : 'opacity-100'}`} style={{zIndex: 300}}>
                 <div className="max-w-[600px] mx-auto w-full flex flex-col gap-4 pb-12">
                     <h2 className="text-[#FFD700] border-b border-[#FFD700] pb-4 text-center uppercase tracking-widest text-2xl font-serif">Grimoire of Creation</h2>
                     
