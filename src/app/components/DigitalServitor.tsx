@@ -22,10 +22,12 @@ const OBJECTS: Record<string, string> = {
 
 export default function DigitalServitor() {
     const router = useRouter();
+    
     // Logic State
     const [isRunning, setIsRunning] = useState(false);
+    const runningRef = useRef(false); // Fix: Immediate reference for the loop
     const loopIdRef = useRef(0);
-    // FIX: Use 'any' type for AudioContext to avoid strict type issues in some environments
+    // FIX: Use 'any' type for AudioContext
     const audioCtxRef = useRef<any>(null);
 
     // Form State
@@ -50,7 +52,6 @@ export default function DigitalServitor() {
 
     // --- Audio Logic ---
     const initAudio = () => {
-        // FIX: Safe access to window via globalThis
         const win = (globalThis as any).window;
         if (typeof win === 'undefined') return;
 
@@ -66,10 +67,8 @@ export default function DigitalServitor() {
     };
 
     const playSound = (type: string) => {
-        initAudio();
+        if(!audioCtxRef.current) return;
         const ctx = audioCtxRef.current;
-        if(!ctx) return;
-
         const osc = ctx.createOscillator();
         const gainNode = ctx.createGain();
         osc.connect(gainNode);
@@ -77,21 +76,31 @@ export default function DigitalServitor() {
         const now = ctx.currentTime;
 
         if (type === 'chime') {
-            osc.type = 'sine'; osc.frequency.setValueAtTime(800, now); osc.frequency.exponentialRampToValueAtTime(1200, now + 0.5);
-            gainNode.gain.setValueAtTime(0.1, now); gainNode.gain.exponentialRampToValueAtTime(0.001, now + 1);
+            osc.type = 'sine'; 
+            osc.frequency.setValueAtTime(800, now); 
+            osc.frequency.exponentialRampToValueAtTime(1200, now + 0.5);
+            gainNode.gain.setValueAtTime(0.1, now); 
+            gainNode.gain.exponentialRampToValueAtTime(0.001, now + 1);
             osc.start(now); osc.stop(now + 1);
         } else if (type === 'swirl') {
-            osc.type = 'sawtooth'; osc.frequency.setValueAtTime(60, now); osc.frequency.linearRampToValueAtTime(70, now + 2);
-            const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.setValueAtTime(200, now); filter.frequency.linearRampToValueAtTime(100, now + 2);
+            osc.type = 'sawtooth'; 
+            osc.frequency.setValueAtTime(60, now); 
+            osc.frequency.linearRampToValueAtTime(70, now + 2);
+            const filter = ctx.createBiquadFilter(); 
+            filter.type = 'lowpass'; 
+            filter.frequency.setValueAtTime(200, now); 
+            filter.frequency.linearRampToValueAtTime(100, now + 2);
             osc.disconnect(); osc.connect(filter); filter.connect(gainNode);
-            gainNode.gain.setValueAtTime(0.15, now); gainNode.gain.linearRampToValueAtTime(0.001, now + 2);
+            gainNode.gain.setValueAtTime(0.15, now); 
+            gainNode.gain.linearRampToValueAtTime(0.001, now + 2);
             osc.start(now); osc.stop(now + 2);
         } else if (type === 'success') {
             [440, 554, 659].forEach((freq, i) => {
                 const o = ctx.createOscillator(); const g = ctx.createGain();
                 o.connect(g); g.connect(ctx.destination);
                 o.type = 'sine'; o.frequency.value = freq;
-                g.gain.setValueAtTime(0.05, now + i*0.1); g.gain.exponentialRampToValueAtTime(0.001, now + 1.5);
+                g.gain.setValueAtTime(0.05, now + i*0.1); 
+                g.gain.exponentialRampToValueAtTime(0.001, now + 1.5);
                 o.start(now + i*0.1); o.stop(now + 1.5);
             });
         }
@@ -99,22 +108,29 @@ export default function DigitalServitor() {
 
     // --- Visual Update Logic ---
     useEffect(() => {
-        // FIX: Safe access to document via globalThis
         const doc = (globalThis as any).document;
         if (!doc) return;
 
         const updateCharacter = (prefix: string) => {
+            // Determine if we are updating the game rig or preview rig
             const isGame = prefix === 'game-';
             const rig = doc.getElementById(isGame ? 'game-rig' : 'preview-rig');
+            
+            // Apply Colors to ALL relevant elements based on prefix
+            const setColors = (selector: string, color: string) => {
+                doc.querySelectorAll('.' + prefix + selector).forEach((el: any) => {
+                    el.style.backgroundColor = color;
+                });
+            };
+
+            setColors('skin', config.skin);
+            setColors('clothes', config.clothes);
+            setColors('hair', config.hairColor);
+            setColors('beard', config.beardColor);
+
             if(!rig) return;
 
-            // Colors
-            doc.querySelectorAll('.' + prefix + 'skin').forEach((el: any) => el.style.backgroundColor = config.skin);
-            doc.querySelectorAll('.' + prefix + 'clothes').forEach((el: any) => el.style.backgroundColor = config.clothes);
-            doc.querySelectorAll('.' + prefix + 'hair').forEach((el: any) => el.style.backgroundColor = config.hairColor);
-            doc.querySelectorAll('.' + prefix + 'beard').forEach((el: any) => el.style.backgroundColor = config.beardColor);
-
-            // Classes
+            // Classes & Geometry
             rig.classList.remove('outfit-tunic', 'outfit-robe', 'outfit-armor');
             rig.classList.add(config.outfit);
 
@@ -154,8 +170,13 @@ export default function DigitalServitor() {
             }
         };
 
+        // Always update preview
         updateCharacter('p-');
-        if(isRunning) updateCharacter('game-');
+        
+        // If game is running, force update the game rig immediately after render
+        if(isRunning) {
+            requestAnimationFrame(() => updateCharacter('game-'));
+        }
 
     }, [config, isRunning]);
 
@@ -164,22 +185,25 @@ export default function DigitalServitor() {
 
     const moveTo = (targetPercent: number, id: number) => {
         return new Promise<void>(resolve => {
-            // FIX: Safe access to document/window via globalThis
             const doc = (globalThis as any).document;
-            const win = (globalThis as any).window;
-            if (!doc || !win) { resolve(); return; }
-
             const el = doc.getElementById('servitor');
+            
             if(!el) { resolve(); return; }
+            
+            // Get current position (or default to 20 if starting)
             const current = parseFloat(el.style.left) || 20;
             const dist = Math.abs(targetPercent - current);
             const time = dist * 40; 
 
             el.style.transition = `left ${time}ms linear`;
-            win.requestAnimationFrame(() => el.style.left = targetPercent + "%");
+            
+            // Force reflow/repaint to ensure transition happens
+            requestAnimationFrame(() => {
+                el.style.left = targetPercent + "%";
+            });
 
             setTimeout(() => {
-                if(isRunning && loopIdRef.current === id) {
+                if(runningRef.current && loopIdRef.current === id) {
                     resolve();
                 }
             }, time);
@@ -193,71 +217,89 @@ export default function DigitalServitor() {
         if(servitor) servitor.classList.remove('walk-left', 'walk-right', 'anim-jump-in', 'anim-jump-out');
     }
 
+    // THE MAIN LOOP
     const mainLoop = async (id: number) => {
         const doc = (globalThis as any).document;
-        if (!doc) return;
+        
+        // Variables we need to access inside the loop
+        // We fetch elements dynamically to ensure we get them after React renders the "game" view
+        const getEls = () => ({
+            servitor: doc.getElementById('servitor'),
+            rig: doc.getElementById('game-rig'),
+            mound: doc.getElementById('mound'),
+            carry: doc.getElementById('game-carry'),
+            status: doc.getElementById('status-bar'),
+            chestShine: doc.getElementById('chest-shine'),
+            chestWrapper: doc.getElementById('chest-wrapper'),
+            head: doc.getElementById('game-rig')?.querySelector('.head')
+        });
 
-        const servitor = doc.getElementById('servitor');
-        const rig = doc.getElementById('game-rig');
-        const mound = doc.getElementById('mound');
-        const carry = doc.getElementById('game-carry');
-        const status = doc.getElementById('status-bar');
-        const chestShine = doc.getElementById('chest-shine');
-        const chestWrapper = doc.getElementById('chest-wrapper');
-        const head = rig?.querySelector('.head');
+        // Wait a tick for React to render the Game UI
+        await wait(100);
+        let els = getEls();
+        
+        // If elements aren't there yet, wait a bit longer
+        if (!els.servitor) {
+            await wait(500);
+            els = getEls();
+        }
 
-        if(!servitor || !rig || !mound || !carry || !status || !head || !chestShine || !chestWrapper) return;
+        if(!els.servitor) return; // Should not happen
 
-        carry.innerText = '';
-        carry.style.display = 'none';
+        els.carry.innerText = '';
+        els.carry.style.display = 'none';
 
-        while(isRunning && loopIdRef.current === id) {
+        // Loop using Ref instead of State to avoid closure staleness
+        while(runningRef.current && loopIdRef.current === id) {
+            
             // 1. Walk to Mound
-            status.innerText = `${sName || 'The Servitor'} seeks ${sPurpose || 'Energy'}...`;
+            if(els.status) els.status.innerText = `${sName || 'The Servitor'} seeks ${sPurpose || 'Energy'}...`;
             stopAction();
-            servitor.classList.add('walk-left');
+            els.servitor.classList.add('walk-left');
             await moveTo(15, id);
             stopAction();
             
-            if(!isRunning || loopIdRef.current !== id) break;
+            if(!runningRef.current || loopIdRef.current !== id) break;
 
             // 2. Jump In
-            servitor.classList.add('anim-jump-in');
+            els.servitor.classList.add('anim-jump-in');
             await wait(500);
             
             // 3. Dig
-            status.innerText = `Searching for more ${sPurpose || 'Energy'} for you...`;
-            mound.classList.add('mound-active'); 
+            if(els.status) els.status.innerText = `Searching for more ${sPurpose || 'Energy'} for you...`;
+            els.mound.classList.add('mound-active'); 
             
             const digTime = 5000 + Math.random() * 10000;
             const steps = Math.floor(digTime / 2000);
             for(let i=0; i<steps; i++) {
                 playSound('swirl');
                 await wait(2000);
-                if(!isRunning || loopIdRef.current !== id) break;
+                if(!runningRef.current || loopIdRef.current !== id) break;
             }
-            mound.classList.remove('mound-active');
+            els.mound.classList.remove('mound-active');
             
             // 4. Jump Out
             playSound('chime');
             stopAction();
-            servitor.classList.add('anim-jump-out');
+            els.servitor.classList.add('anim-jump-out');
             
-            carry.innerText = OBJECTS[config.object];
-            carry.style.display = 'block';
+            els.carry.innerText = OBJECTS[config.object];
+            els.carry.style.display = 'block';
 
-            head.classList.remove(config.face);
-            head.classList.add('face-discovery');
+            if(els.head) {
+                els.head.classList.remove(config.face);
+                els.head.classList.add('face-discovery');
+            }
 
             await wait(500);
             stopAction(); 
             
-            status.innerText = `${sName || 'The Servitor'} has found ${sPurpose || 'Energy'} for you!`;
+            if(els.status) els.status.innerText = `${sName || 'The Servitor'} has found ${sPurpose || 'Energy'} for you!`;
             
             setTimeout(() => {
-                if(isRunning && loopIdRef.current === id) {
-                    head.classList.remove('face-discovery');
-                    head.classList.add(config.face);
+                if(runningRef.current && loopIdRef.current === id && els.head) {
+                    els.head.classList.remove('face-discovery');
+                    els.head.classList.add(config.face);
                 }
             }, 1500);
 
@@ -265,56 +307,60 @@ export default function DigitalServitor() {
 
             // 5. Walk to Chest
             stopAction();
-            servitor.classList.add('walk-right'); 
+            els.servitor.classList.add('walk-right'); 
             await moveTo(80, id);
             stopAction();
             
-            if(!isRunning || loopIdRef.current !== id) break;
+            if(!runningRef.current || loopIdRef.current !== id) break;
 
             // 6. Deposit
-            status.innerText = `Adding ${sPurpose || 'Energy'} to treasure chest.`;
-            chestWrapper.classList.add('chest-open');
+            if(els.status) els.status.innerText = `Adding ${sPurpose || 'Energy'} to treasure chest.`;
+            els.chestWrapper.classList.add('chest-open');
             await wait(300);
             
-            carry.style.display = 'none';
-            chestShine.innerText = OBJECTS[config.object];
-            chestShine.style.display = 'block';
+            els.carry.style.display = 'none';
+            els.chestShine.innerText = OBJECTS[config.object];
+            els.chestShine.style.display = 'block';
             playSound('success');
             
             await wait(1500);
-            chestWrapper.classList.remove('chest-open');
-            chestShine.style.display = 'none';
+            els.chestWrapper.classList.remove('chest-open');
+            els.chestShine.style.display = 'none';
             
             await wait(1000);
         }
     };
 
     const handleAwaken = () => {
+        initAudio(); // Must be called from user event
         setIsRunning(true);
+        runningRef.current = true; // Set Ref immediately for logic
         loopIdRef.current++;
+        
+        // Start the loop
         mainLoop(loopIdRef.current);
     };
 
     const handleEdit = () => {
         setIsRunning(false);
-        // Force reset visual position roughly
+        runningRef.current = false;
         stopAction();
     };
 
     const handleBack = () => {
+        runningRef.current = false;
         router.push('/spell-room');
     };
 
-    // Cleanup
+    // Cleanup on unmount
     useEffect(() => {
-        return () => { setIsRunning(false); };
+        return () => { runningRef.current = false; };
     }, []);
 
     // --- JSX RENDER ---
     return (
         <div className="fixed inset-0 w-full h-full bg-[#0f0f1a] text-[#dcdcdc] overflow-hidden select-none font-sans flex flex-col">
             <style jsx global>{`
-                /* IMPORTED CSS FROM SOURCE */
                 :root { --bg-color: #0f0f1a; --gold: #FFD700; --indigo: #4b0082; }
                 .sky-container { position: absolute; top:0; left:0; width:100%; height:100%; z-index: 1; pointer-events: none; overflow: hidden; background: linear-gradient(to bottom, #050510, #1a1a2e); }
                 .stars { position: absolute; width: 200%; height: 200%; top: -50%; left: -50%; background-image: radial-gradient(white 1px, transparent 1px); background-size: 50px 50px; opacity: 0.3; animation: sky-rotate 200s linear infinite; }
@@ -458,7 +504,7 @@ export default function DigitalServitor() {
             </div>
 
             {/* Config Panel */}
-            <div className={`absolute top-0 left-0 w-full h-full bg-[#08080c]/98 z-300 flex flex-col overflow-y-auto p-5 transition-opacity duration-500 ${isRunning ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+            <div className={`absolute top-0 left-0 w-full h-full bg-[#08080c]/98 z-[300] flex flex-col overflow-y-auto p-5 transition-opacity duration-500 ${isRunning ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
                 <div className="max-w-[600px] mx-auto w-full flex flex-col gap-4 pb-12">
                     <h2 className="text-[#FFD700] border-b border-[#FFD700] pb-4 text-center uppercase tracking-widest text-2xl font-serif">Grimoire of Creation</h2>
                     
@@ -637,6 +683,7 @@ export default function DigitalServitor() {
                     <div className="servitor-rig" id="game-rig">
                         <div className="tool-carry" id="game-carry"></div>
                         <div className="hair-back game-hair"></div>
+                        {/* FIX: Use className instead of class */}
                         <div className="leg left game-clothes"><div className="calf game-clothes"><div className="foot"></div></div></div>
                         <div className="leg right game-clothes"><div className="calf game-clothes"><div className="foot"></div></div></div>
                         <div className="body game-clothes"></div>
