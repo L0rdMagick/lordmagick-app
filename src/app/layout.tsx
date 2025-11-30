@@ -36,7 +36,7 @@ export default function RootLayout({
             Even if the child animation pulses opacity, it will never exceed this limit. */}
         <div 
           className="fixed bottom-0 left-0 w-full h-2/5 z-30 pointer-events-none mix-blend-screen"
-          style={{ opacity: 0.05 }} 
+          style={{ opacity: 0.1 }} 
         >
             <div className="absolute inset-0 w-full h-full bg-[url('/images/mist-overlay.png')] bg-repeat-x animate-[flow-mist_45s_linear_infinite]" />
             <div className="absolute inset-0 w-full h-full bg-[url('/images/mist-overlay.png')] bg-repeat-x animate-[flow-mist-crossfade_45s_linear_infinite]" />
