@@ -35,6 +35,13 @@ const CHEST_SYMBOLS: Record<string, string> = {
     'om': '🕉️', 'yin': '☯️', 'cross': '✝️', 'ankh': '☥', 'spiral': '🌀'
 };
 
+const CHEST_NAMES: Record<string, string> = {
+    'default': 'Treasure Chest',
+    'portal': 'Soul Portal',
+    'cave': 'Magick Cavern',
+    'pond': 'Pond of Becoming'
+};
+
 export default function DigitalServitor() {
     const router = useRouter();
     
@@ -82,7 +89,7 @@ export default function DigitalServitor() {
         movementType: "walk", // walk, fly
         soundSearch: "rumble", // rumble, hum, static, pulse
         soundFind: "chime",    // chime, wow, laser, chord
-        soundDeposit: "coin"   // coin, angelic, heavy, teleport
+        soundDeposit: "coin"   // coin, angelic, vortex, teleport
     });
 
     // --- Supabase Init & Fetch ---
@@ -234,27 +241,38 @@ export default function DigitalServitor() {
                      config.soundDeposit;
 
         switch(type) {
-            // -- SEARCHING SOUNDS --
+            // -- SEARCHING SOUNDS (Modified for no harsh sounds) --
             case 'rumble':
-                // Low pitched digging thuds
-                playOsc('triangle', 60, 40, 0.5, 0.3);
-                setTimeout(() => playOsc('sawtooth', 50, 30, 0.4, 0.2), 200);
+                // Steady Pulse ~300Hz (Sine)
+                const oscR = ctx.createOscillator();
+                const gainR = ctx.createGain();
+                oscR.connect(gainR); gainR.connect(ctx.destination);
+                oscR.type = 'sine';
+                oscR.frequency.setValueAtTime(300, now);
+                // Slight vibrato
+                oscR.frequency.linearRampToValueAtTime(320, now + 0.2);
+                oscR.frequency.linearRampToValueAtTime(300, now + 0.4);
+                oscR.frequency.linearRampToValueAtTime(320, now + 0.6);
+                gainR.gain.setValueAtTime(0.3, now);
+                gainR.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+                oscR.start(now); oscR.stop(now + 0.8);
                 break;
             case 'hum':
                 // Ethereal sine waves
-                playOsc('sine', 200, 300, 1.5, 0.1);
-                playOsc('sine', 300, 400, 1.5, 0.05);
+                playOsc('sine', 400, 450, 1.5, 0.15);
+                playOsc('sine', 600, 550, 1.5, 0.05);
                 break;
             case 'static':
-                // Noise-like using erratic sawtooth
-                playOsc('sawtooth', 80, 800, 0.3, 0.05);
-                setTimeout(() => playOsc('square', 800, 100, 0.3, 0.05), 150);
+                // "Void Static" - filtered noise (simulated by erratic waves but kept high-ish)
+                // Replaced with Ethereal Wah to avoid harshness
+                playOsc('triangle', 300, 500, 0.6, 0.1);
+                setTimeout(() => playOsc('sine', 500, 300, 0.6, 0.1), 400);
                 break;
             case 'pulse':
-                // Rhythmic pulse
-                playOsc('sine', 100, 100, 0.2, 0.2);
-                setTimeout(() => playOsc('sine', 100, 100, 0.2, 0.2), 250);
-                setTimeout(() => playOsc('sine', 100, 100, 0.2, 0.2), 500);
+                // Deep Pulse (>250Hz)
+                playOsc('sine', 280, 280, 0.3, 0.3);
+                setTimeout(() => playOsc('sine', 280, 280, 0.3, 0.3), 300);
+                setTimeout(() => playOsc('sine', 280, 280, 0.3, 0.3), 600);
                 break;
 
             // -- FINDING SOUNDS --
@@ -270,7 +288,7 @@ export default function DigitalServitor() {
                 break;
             case 'laser':
                 // Zap sound
-                playOsc('sawtooth', 1500, 200, 0.4, 0.1);
+                playOsc('sine', 1200, 400, 0.4, 0.1); // Switched to sine to be softer than saw
                 break;
             case 'chord':
                 // Major triad
@@ -287,24 +305,25 @@ export default function DigitalServitor() {
                 break;
             case 'angelic':
                 // Slow attack choir
-                const osc = ctx.createOscillator();
-                const g = ctx.createGain();
-                osc.connect(g); g.connect(ctx.destination);
-                osc.type = 'triangle';
-                osc.frequency.value = 300;
-                g.gain.setValueAtTime(0, now);
-                g.gain.linearRampToValueAtTime(0.1, now + 0.5);
-                g.gain.linearRampToValueAtTime(0, now + 2);
-                osc.start(now); osc.stop(now + 2);
+                const oscA = ctx.createOscillator();
+                const gA = ctx.createGain();
+                oscA.connect(gA); gA.connect(ctx.destination);
+                oscA.type = 'triangle';
+                oscA.frequency.value = 350;
+                gA.gain.setValueAtTime(0, now);
+                gA.gain.linearRampToValueAtTime(0.1, now + 0.5);
+                gA.gain.linearRampToValueAtTime(0, now + 2);
+                oscA.start(now); oscA.stop(now + 2);
                 break;
-            case 'heavy':
-                // Deep Thud
-                playOsc('square', 60, 20, 0.5, 0.4);
+            case 'vortex': // Renamed from heavy
+                // Deepening Vortex (Sine sweep down)
+                playOsc('sine', 600, 150, 1.5, 0.4);
+                playOsc('sine', 605, 155, 1.5, 0.2);
                 break;
             case 'teleport':
                 // Sci-fi sweep
-                playOsc('sine', 200, 1500, 1, 0.1);
-                setTimeout(() => playOsc('sawtooth', 1500, 200, 0.5, 0.05), 1000);
+                playOsc('sine', 200, 800, 1, 0.1);
+                setTimeout(() => playOsc('sine', 800, 200, 0.5, 0.05), 800);
                 break;
             
             default:
@@ -377,9 +396,9 @@ export default function DigitalServitor() {
             const wings = rig.querySelector('.wings-container');
             if(wings) {
                 wings.style.display = config.hasWings ? 'block' : 'none';
-                const wingEls = wings.querySelectorAll('.wing');
+                const wingEls = wings.querySelectorAll('.wing-shape');
                 wingEls.forEach((w: any) => {
-                    w.style.backgroundColor = config.wingColor;
+                    w.style.background = `linear-gradient(to bottom right, ${config.wingColor}, rgba(255,255,255,0.5))`;
                     w.style.borderColor = 'silver';
                 });
             }
@@ -452,6 +471,8 @@ export default function DigitalServitor() {
             head: doc.getElementById('game-rig')?.querySelector('.head')
         });
 
+        const chestName = CHEST_NAMES[config.chestType] || 'Treasure Chest';
+
         await wait(100);
         let els = getEls();
         
@@ -471,11 +492,14 @@ export default function DigitalServitor() {
             stopAction();
             
             // Movement Style
-            const moveClass = config.movementType === 'fly' ? 'anim-fly' : 'walk-left';
+            const isFlying = config.movementType === 'fly';
+            const moveClass = isFlying ? 'anim-fly' : 'walk-left';
             els.servitor.classList.add(moveClass);
+            if(isFlying) els.servitor.classList.add('fly-left'); // Helper for direction
             
             await moveTo(15, id);
             stopAction();
+            if(isFlying) els.servitor.classList.remove('fly-left');
             
             if(!runningRef.current || loopIdRef.current !== id) break;
 
@@ -488,13 +512,13 @@ export default function DigitalServitor() {
             const digTime = 5000 + Math.random() * 5000;
             const steps = Math.floor(digTime / 2000);
             for(let i=0; i<steps; i++) {
-                playSound('search'); // NEW SEARCH SOUND
+                playSound('search'); 
                 await wait(2000);
                 if(!runningRef.current || loopIdRef.current !== id) break;
             }
             els.mound.classList.remove('mound-active');
             
-            playSound('find'); // NEW FIND SOUND
+            playSound('find'); 
             stopAction();
             els.servitor.classList.add('anim-jump-out');
             
@@ -509,7 +533,7 @@ export default function DigitalServitor() {
             await wait(500);
             stopAction(); 
             
-            if(els.status) els.status.innerText = `${sName || 'The Servitor'} has found you some!`;
+            if(els.status) els.status.innerText = `${sName || 'The Servitor'} found it! Returning to ${chestName}...`;
             
             setTimeout(() => {
                 if(runningRef.current && loopIdRef.current === id && els.head) {
@@ -523,15 +547,17 @@ export default function DigitalServitor() {
             stopAction();
             
             // Return Movement
-            const returnClass = config.movementType === 'fly' ? 'anim-fly' : 'walk-right';
+            const returnClass = isFlying ? 'anim-fly' : 'walk-right';
             els.servitor.classList.add(returnClass);
+            if(isFlying) els.servitor.classList.add('fly-right'); // Helper for direction
             
             await moveTo(80, id);
             stopAction();
+            if(isFlying) els.servitor.classList.remove('fly-right');
             
             if(!runningRef.current || loopIdRef.current !== id) break;
 
-            if(els.status) els.status.innerText = `Adding ${sPurpose || 'Result'} to your treasure chest.`;
+            if(els.status) els.status.innerText = `Depositing ${sPurpose || 'Result'} into ${chestName}.`;
             
             // Trigger chest open based on type
             els.chestWrapper.classList.add('chest-open');
@@ -541,7 +567,7 @@ export default function DigitalServitor() {
             els.carry.style.display = 'none';
             els.chestShine.innerText = OBJECTS[config.object];
             els.chestShine.style.display = 'block';
-            playSound('deposit'); // NEW DEPOSIT SOUND
+            playSound('deposit'); 
             
             await wait(1500);
             els.chestWrapper.classList.remove('chest-open');
@@ -607,15 +633,47 @@ export default function DigitalServitor() {
                 /* Chest Symbol */
                 .chest-sigil { position: absolute; top: 12px; left: 0; width: 100%; text-align: center; font-size: 14px; opacity: 0.7; z-index: 6; pointer-events: none; }
 
-                /* Wings */
-                .wings-container { position: absolute; top: 40px; left: 30px; z-index: 1; transform: translate(-50%, 0); display: none; }
-                .wing { position: absolute; width: 30px; height: 60px; border-radius: 0 50% 50% 0; border: 2px solid silver; background: rgba(200, 255, 255, 0.4); transform-origin: left center; }
-                .wing.left { left: -30px; transform: scaleX(-1) rotate(10deg); animation: wing-flap 0.2s infinite alternate; }
-                .wing.right { left: 0px; transform: rotate(10deg); animation: wing-flap 0.2s infinite alternate; }
-                @keyframes wing-flap { from { transform: rotate(10deg) scaleX(1); } to { transform: rotate(30deg) scaleX(0.8); } }
-                .wing.left { animation-name: wing-flap-l; }
-                @keyframes wing-flap-l { from { transform: scaleX(-1) rotate(10deg) scaleX(1); } to { transform: scaleX(-1) rotate(30deg) scaleX(0.8); } }
-
+                /* NEW WINGS (Centered & Fairy Like) */
+                .wings-container { 
+                    position: absolute; 
+                    top: 50px; 
+                    left: 30px; 
+                    width: 0; height: 0; 
+                    z-index: 0; 
+                    display: none; 
+                }
+                .wing-shape { 
+                    position: absolute; 
+                    width: 40px; 
+                    height: 60px; 
+                    top: -30px;
+                    border: 1px solid silver; 
+                    background: rgba(200, 255, 255, 0.4); 
+                    transform-origin: center center;
+                    border-radius: 0 50% 50% 0; /* Fallback */
+                    clip-path: path("M 0 0 C 30 -10 40 10 35 25 C 40 35 30 55 0 50 Z");
+                }
+                .wing.left { 
+                    left: -32px; 
+                    transform: scaleX(-1) rotate(10deg); 
+                    animation: wing-flap-l 1s infinite ease-in-out; 
+                }
+                .wing.right { 
+                    left: -8px; 
+                    transform: rotate(10deg); 
+                    animation: wing-flap-r 1s infinite ease-in-out; 
+                }
+                @keyframes wing-flap-r { 
+                    0% { transform: rotate(10deg) scaleX(1); } 
+                    50% { transform: rotate(35deg) scaleX(0.7); } 
+                    100% { transform: rotate(10deg) scaleX(1); } 
+                }
+                @keyframes wing-flap-l { 
+                    0% { transform: scaleX(-1) rotate(10deg) scaleX(1); } 
+                    50% { transform: scaleX(-1) rotate(35deg) scaleX(0.7); } 
+                    100% { transform: scaleX(-1) rotate(10deg) scaleX(1); } 
+                }
+                
                 .outfit-tunic .body { width: 34px; height: 50px; border-radius: 8px 8px 4px 4px; }
                 .outfit-robe .body { width: 38px; height: 85px; left: 11px; border-radius: 15px 15px 2px 2px; clip-path: polygon(10% 0, 90% 0, 100% 100%, 0% 100%); }
                 .outfit-armor .body { width: 40px; height: 55px; left: 10px; border-radius: 5px; border: 1px solid #666; box-shadow: inset 0 0 10px rgba(0,0,0,0.5); }
@@ -713,10 +771,15 @@ export default function DigitalServitor() {
                 .anim-jump-out { animation: jump-out 0.5s forwards; }
                 @keyframes jump-out { 0% { transform: translateY(20px) scale(0.1); opacity: 0; } 50% { transform: translateY(-40px) scale(0.8); opacity: 1; } 100% { transform: translateY(0) scale(1); opacity: 1; } }
                 
-                /* FLYING ANIMATION */
+                /* FLYING ANIMATION (LEGS FIXED) */
                 .anim-fly .servitor-rig { animation: fly-hover 1.5s infinite ease-in-out; }
-                .anim-fly .leg { transform: rotate(-30deg); }
-                .anim-fly .foot { transform: rotate(40deg); }
+                /* Moving Left (To Search) - Legs trail right */
+                .anim-fly.fly-left .leg { transform: rotate(30deg); }
+                .anim-fly.fly-left .foot { transform: rotate(10deg); }
+                /* Moving Right (To Chest) - Legs trail left */
+                .anim-fly.fly-right .leg { transform: rotate(-30deg); }
+                .anim-fly.fly-right .foot { transform: rotate(-10deg); }
+                
                 @keyframes fly-hover { 0%, 100% { transform: translateY(-30px); } 50% { transform: translateY(-40px); } }
 
                 .walk-left .leg.left { animation: thigh-l 0.8s infinite linear; } .walk-left .leg.left .calf { animation: calf-l 0.8s infinite linear; }
@@ -825,9 +888,10 @@ export default function DigitalServitor() {
 
                     <div className="bg-[radial-gradient(circle_at_center,#2b1055_0%,#000_100%)] border border-[#FFD700] h-[260px] relative flex justify-center items-center mt-2 shadow-[inset_0_0_20px_#000]">
                         <div id="preview-rig" className="servitor-rig" style={{left: 0, top: 0}}>
-                            {/* Structure copied from original HTML, dynamic logic handled by useEffect */}
+                            {/* Wings added behind body with specific z-index and container logic */}
                             <div className="wings-container">
-                                <div className="wing left"></div><div className="wing right"></div>
+                                <div className="wing-shape wing left"></div>
+                                <div className="wing-shape wing right"></div>
                             </div>
                             <div className="hair-back p-hair"></div>
                             <div className="leg left p-clothes"><div className="calf p-clothes"><div className="foot"></div></div></div>
@@ -909,7 +973,7 @@ export default function DigitalServitor() {
                         </div>
                          <div className="bg-white/5 p-3 rounded border border-gray-800 flex flex-col gap-2">
                             <label className="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" checked={config.hasWings} onChange={e => setConfig({...config, hasWings: e.target.checked})} className="accent-[#FFD700]" />
+                                <input type="checkbox" checked={config.hasWings} onChange={e => setConfig({...config, hasWings: (e.target as any).checked})} className="accent-[#FFD700]" />
                                 <span className="text-gray-400 text-xs uppercase">Aetheric Wings</span>
                             </label>
                             {config.hasWings && (
@@ -936,9 +1000,9 @@ export default function DigitalServitor() {
                             <div>
                                 <label className="text-gray-500 text-[10px] uppercase block mb-1">Search Sound</label>
                                 <select value={config.soundSearch} onChange={e => setConfig({...config, soundSearch: (e.target as any).value})} className="w-full text-xs p-1 bg-black border border-gray-700 rounded text-gray-300">
-                                    <option value="rumble">Digging Rumble</option>
+                                    <option value="rumble">Steady Pulse</option>
                                     <option value="hum">Ethereal Hum</option>
-                                    <option value="static">Void Static</option>
+                                    <option value="static">Ethereal Wah</option>
                                     <option value="pulse">Deep Pulse</option>
                                 </select>
                             </div>
@@ -956,7 +1020,7 @@ export default function DigitalServitor() {
                                 <select value={config.soundDeposit} onChange={e => setConfig({...config, soundDeposit: (e.target as any).value})} className="w-full text-xs p-1 bg-black border border-gray-700 rounded text-gray-300">
                                     <option value="coin">Coin Drop</option>
                                     <option value="angelic">Angelic</option>
-                                    <option value="heavy">Heavy Thud</option>
+                                    <option value="vortex">Vortex</option>
                                     <option value="teleport">Teleport</option>
                                 </select>
                             </div>
@@ -1072,7 +1136,8 @@ export default function DigitalServitor() {
                 <div id="servitor" className="servitor-root">
                     <div className="servitor-rig" id="game-rig">
                          <div className="wings-container">
-                            <div className="wing left"></div><div className="wing right"></div>
+                            <div className="wing-shape wing left"></div>
+                            <div className="wing-shape wing right"></div>
                         </div>
                         <div className="tool-carry" id="game-carry"></div>
                         <div className="hair-back game-hair"></div>
@@ -1109,7 +1174,7 @@ export default function DigitalServitor() {
                         <div className="chest-seal right"></div>
                     </div>
                     <div className="mt-1 text-gray-400 text-xs text-center drop-shadow-[0_0_5px_black]" id="chest-label">
-                        {uName || 'Master'}'s Treasure
+                        {uName || 'Master'}'s {CHEST_NAMES[config.chestType]}
                     </div>
                 </div>
 
