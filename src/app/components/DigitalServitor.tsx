@@ -241,7 +241,7 @@ export default function DigitalServitor() {
                      config.soundDeposit;
 
         switch(type) {
-            // -- SEARCHING SOUNDS (Modified for no harsh sounds) --
+            // -- SEARCHING SOUNDS --
             case 'rumble':
                 // Steady Pulse ~300Hz (Sine)
                 const oscR = ctx.createOscillator();
@@ -249,7 +249,6 @@ export default function DigitalServitor() {
                 oscR.connect(gainR); gainR.connect(ctx.destination);
                 oscR.type = 'sine';
                 oscR.frequency.setValueAtTime(300, now);
-                // Slight vibrato
                 oscR.frequency.linearRampToValueAtTime(320, now + 0.2);
                 oscR.frequency.linearRampToValueAtTime(300, now + 0.4);
                 oscR.frequency.linearRampToValueAtTime(320, now + 0.6);
@@ -263,8 +262,7 @@ export default function DigitalServitor() {
                 playOsc('sine', 600, 550, 1.5, 0.05);
                 break;
             case 'static':
-                // "Void Static" - filtered noise (simulated by erratic waves but kept high-ish)
-                // Replaced with Ethereal Wah to avoid harshness
+                // Ethereal Wah
                 playOsc('triangle', 300, 500, 0.6, 0.1);
                 setTimeout(() => playOsc('sine', 500, 300, 0.6, 0.1), 400);
                 break;
@@ -288,7 +286,7 @@ export default function DigitalServitor() {
                 break;
             case 'laser':
                 // Zap sound
-                playOsc('sine', 1200, 400, 0.4, 0.1); // Switched to sine to be softer than saw
+                playOsc('sine', 1200, 400, 0.4, 0.1); 
                 break;
             case 'chord':
                 // Major triad
@@ -315,7 +313,7 @@ export default function DigitalServitor() {
                 gA.gain.linearRampToValueAtTime(0, now + 2);
                 oscA.start(now); oscA.stop(now + 2);
                 break;
-            case 'vortex': // Renamed from heavy
+            case 'vortex':
                 // Deepening Vortex (Sine sweep down)
                 playOsc('sine', 600, 150, 1.5, 0.4);
                 playOsc('sine', 605, 155, 1.5, 0.2);
@@ -495,7 +493,7 @@ export default function DigitalServitor() {
             const isFlying = config.movementType === 'fly';
             const moveClass = isFlying ? 'anim-fly' : 'walk-left';
             els.servitor.classList.add(moveClass);
-            if(isFlying) els.servitor.classList.add('fly-left'); // Helper for direction
+            if(isFlying) els.servitor.classList.add('fly-left'); 
             
             await moveTo(15, id);
             stopAction();
@@ -549,7 +547,7 @@ export default function DigitalServitor() {
             // Return Movement
             const returnClass = isFlying ? 'anim-fly' : 'walk-right';
             els.servitor.classList.add(returnClass);
-            if(isFlying) els.servitor.classList.add('fly-right'); // Helper for direction
+            if(isFlying) els.servitor.classList.add('fly-right'); 
             
             await moveTo(80, id);
             stopAction();
@@ -633,7 +631,7 @@ export default function DigitalServitor() {
                 /* Chest Symbol */
                 .chest-sigil { position: absolute; top: 12px; left: 0; width: 100%; text-align: center; font-size: 14px; opacity: 0.7; z-index: 6; pointer-events: none; }
 
-                /* NEW WINGS (Centered & Fairy Like) */
+                /* NEW WINGS (Centered & Fairy Like - Updated) */
                 .wings-container { 
                     position: absolute; 
                     top: 50px; 
@@ -644,24 +642,24 @@ export default function DigitalServitor() {
                 }
                 .wing-shape { 
                     position: absolute; 
-                    width: 40px; 
-                    height: 60px; 
-                    top: -30px;
+                    width: 70px; /* Wider */
+                    height: 100px; /* Taller */
+                    top: -50px;
                     border: 1px solid silver; 
                     background: rgba(200, 255, 255, 0.4); 
                     transform-origin: center center;
-                    border-radius: 0 50% 50% 0; /* Fallback */
-                    clip-path: path("M 0 0 C 30 -10 40 10 35 25 C 40 35 30 55 0 50 Z");
+                    /* Pointy top, flared bottom lobe for visibility behind body */
+                    clip-path: polygon(0% 50%, 90% 0%, 100% 40%, 80% 50%, 100% 70%, 80% 100%, 0% 80%);
                 }
                 .wing.left { 
-                    left: -32px; 
+                    left: -65px; 
                     transform: scaleX(-1) rotate(10deg); 
-                    animation: wing-flap-l 1s infinite ease-in-out; 
+                    animation: wing-flap-l 0.8s infinite ease-in-out; 
                 }
                 .wing.right { 
-                    left: -8px; 
+                    left: -5px; 
                     transform: rotate(10deg); 
-                    animation: wing-flap-r 1s infinite ease-in-out; 
+                    animation: wing-flap-r 0.8s infinite ease-in-out; 
                 }
                 @keyframes wing-flap-r { 
                     0% { transform: rotate(10deg) scaleX(1); } 
@@ -771,14 +769,16 @@ export default function DigitalServitor() {
                 .anim-jump-out { animation: jump-out 0.5s forwards; }
                 @keyframes jump-out { 0% { transform: translateY(20px) scale(0.1); opacity: 0; } 50% { transform: translateY(-40px) scale(0.8); opacity: 1; } 100% { transform: translateY(0) scale(1); opacity: 1; } }
                 
-                /* FLYING ANIMATION (LEGS FIXED) */
+                /* FLYING ANIMATION (LEGS FIXED & SWAPPED) */
                 .anim-fly .servitor-rig { animation: fly-hover 1.5s infinite ease-in-out; }
-                /* Moving Left (To Search) - Legs trail right */
-                .anim-fly.fly-left .leg { transform: rotate(30deg); }
-                .anim-fly.fly-left .foot { transform: rotate(10deg); }
-                /* Moving Right (To Chest) - Legs trail left */
-                .anim-fly.fly-right .leg { transform: rotate(-30deg); }
-                .anim-fly.fly-right .foot { transform: rotate(-10deg); }
+                
+                /* Moving Left (To Search) - Legs Swapped to point Left/Down */
+                .anim-fly.fly-left .leg { transform: rotate(-30deg); }
+                .anim-fly.fly-left .foot { transform: rotate(-20deg); }
+                
+                /* Moving Right (To Chest) - Legs Swapped to point Right/Down */
+                .anim-fly.fly-right .leg { transform: rotate(30deg); }
+                .anim-fly.fly-right .foot { transform: rotate(20deg); }
                 
                 @keyframes fly-hover { 0%, 100% { transform: translateY(-30px); } 50% { transform: translateY(-40px); } }
 
