@@ -114,6 +114,7 @@ export default function DigitalServitor() {
     
     // Hunger System
     const [depositCount, setDepositCount] = useState(0);
+    const depositRef = useRef(0); // Ref for synchronous loop access
     const [hungerState, setHungerState] = useState<'sated' | 'hungry' | 'fed'>('sated');
     const [feedProgress, setFeedProgress] = useState(0);
     const [fallingFood, setFallingFood] = useState<{id: number, left: number, top: number}[]>([]);
@@ -544,12 +545,6 @@ export default function DigitalServitor() {
 
         while(runningRef.current && loopIdRef.current === id) {
             
-            // Check Hunger Logic
-            if(hungerState === 'hungry') {
-                // Break loop and wait for resume
-                break;
-            }
-
             if(els.status) els.status.innerText = `${sName || 'The Servitor'} seeks ${sPurpose || 'Result'}...`;
             stopAction();
             
@@ -635,15 +630,15 @@ export default function DigitalServitor() {
             els.chestWrapper.classList.remove('chest-open');
             els.chestShine.style.display = 'none';
             
-            // Update Deposit Counter and check Hunger
-            setDepositCount(prev => {
-                const newVal = prev + 1;
-                if (newVal >= config.feedFreq) {
-                    // Trigger Hunger
-                    setHungerState('hungry');
-                }
-                return newVal;
-            });
+            // Update Deposit Counter and check Hunger using REF
+            depositRef.current += 1;
+            setDepositCount(depositRef.current);
+            
+            if (depositRef.current >= config.feedFreq) {
+                setHungerState('hungry');
+                // Break the loop to enter hungry state
+                break;
+            }
             
             await wait(1000);
         }
@@ -728,6 +723,7 @@ export default function DigitalServitor() {
         // Start Game
         setIsRunning(true);
         runningRef.current = true;
+        depositRef.current = 0; // Reset ref
         setDepositCount(0);
         setHungerState('sated');
         loopIdRef.current++;
@@ -747,6 +743,7 @@ export default function DigitalServitor() {
 
     const handleResume = () => {
         setHungerState('sated');
+        depositRef.current = 0; // Reset ref
         setDepositCount(0);
         setFeedProgress(0);
         setIsFeeding(false);
@@ -1037,6 +1034,18 @@ export default function DigitalServitor() {
             >
                 {isFullscreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
             </button>
+
+            {/* NEW: Magickal Counter (Bottom Center) */}
+            {isRunning && !isFeedingActive && (
+                <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-40 text-center animate-pulse">
+                     <p className="magick-font text-[#FFD700] text-sm tracking-widest drop-shadow-md">
+                        Found {sPurpose || 'Treasures'} since last feeding
+                     </p>
+                     <p className="text-2xl text-white font-bold drop-shadow-[0_0_5px_#FFD700]">
+                         {depositCount}
+                     </p>
+                </div>
+            )}
 
             {/* Background */}
             <div className="sky-container">
