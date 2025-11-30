@@ -1021,11 +1021,11 @@ export default function DigitalServitor() {
                 <X size={24} />
             </button>
 
-            {/* Edit Button (Bottom Left) */}
+            {/* Edit Button (Moved to Top-Left to prevent overlap) */}
             {isRunning && (
                 <button 
                     onClick={handleEdit}
-                    className="absolute bottom-6 left-6 z-50 border border-[#FFD700] text-[#FFD700] bg-black/50 px-4 py-2 text-xs uppercase hover:bg-[#FFD700]/20 tracking-widest"
+                    className="absolute top-6 left-6 z-50 border border-[#FFD700] text-[#FFD700] bg-black/50 px-4 py-2 text-xs uppercase hover:bg-[#FFD700]/20 tracking-widest"
                 >
                     Edit Ritual
                 </button>
@@ -1041,9 +1041,9 @@ export default function DigitalServitor() {
 
             {/* NEW: Magickal Counter (Scoreboard Style - In Ground) */}
             {isRunning && !isFeedingActive && (
-                <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 z-40 text-center animate-in fade-in zoom-in duration-700">
+                <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 z-40 text-center animate-in fade-in zoom-in duration-700 max-w-[200px]">
                      <div className="bg-[#08080c]/80 border border-[#FFD700]/50 rounded px-3 py-1 shadow-[0_0_10px_rgba(0,0,0,0.8)] backdrop-blur-sm flex flex-col items-center">
-                         <p className="magick-font text-[#FFD700] text-[10px] tracking-widest uppercase opacity-80 mb-0.5">
+                         <p className="magick-font text-[#FFD700] text-[10px] tracking-widest uppercase opacity-80 mb-0.5 truncate w-full">
                             {sPurpose || 'Treasures'} Found
                          </p>
                          <p className="text-sm text-white font-bold drop-shadow-[0_0_5px_#FFD700] leading-none">
@@ -1422,8 +1422,10 @@ export default function DigitalServitor() {
             <div id="stage" className="relative flex-1 w-full h-full overflow-hidden z-10">
                 
                 {/* STATUS BAR */}
-                <div id="status-bar" className="absolute top-5 w-full text-center text-xl text-white tracking-widest z-50 shadow-none magick-font">
-                    Awaiting summoning...
+                <div id="status-bar" className="absolute top-5 w-full text-center text-xl text-white tracking-widest z-50 shadow-none magick-font pointer-events-none">
+                    <div className="px-16 truncate">
+                        {hungerState === 'hungry' ? `${sName} is hungry...` : 'Awaiting summoning...'}
+                    </div>
                 </div>
 
                 {/* AWAKEN GLITTER & TEXT */}
