@@ -771,7 +771,8 @@ export default function DigitalServitor() {
         };
     }, []);
 
-    const isFeedingActive = isFeeding || hungerState === 'fed';
+    // FIX: Show overlay if hungry OR actively feeding OR just finished feeding
+    const isFeedingActive = hungerState === 'hungry' || isFeeding || hungerState === 'fed';
 
     // --- JSX RENDER ---
     return (
@@ -1037,7 +1038,7 @@ export default function DigitalServitor() {
 
             {/* NEW: Magickal Counter (Bottom Center) */}
             {isRunning && !isFeedingActive && (
-                <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-40 text-center animate-pulse">
+                <div className="absolute bottom-12 left-1/2 transform -translate-x-1/2 z-40 text-center animate-pulse">
                      <p className="magick-font text-[#FFD700] text-sm tracking-widest drop-shadow-md">
                         Found {sPurpose || 'Treasures'} since last feeding
                      </p>
