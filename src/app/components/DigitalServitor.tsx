@@ -384,7 +384,7 @@ export default function DigitalServitor() {
             els.servitor.classList.add('anim-jump-in');
             await wait(500);
             
-            if(els.status) els.status.innerText = `Searching the aether for ${sPurpose || 'Result'}...`;
+            if(els.status) els.status.innerText = `Searching the aether for your ${sPurpose || 'Result'}...`;
             els.mound.classList.add('mound-active'); 
             
             const digTime = 5000 + Math.random() * 10000;
@@ -411,7 +411,7 @@ export default function DigitalServitor() {
             await wait(500);
             stopAction(); 
             
-            if(els.status) els.status.innerText = `${sName || 'The Servitor'} has retrieved it!`;
+            if(els.status) els.status.innerText = `${sName || 'The Servitor'} has found you some!`;
             
             setTimeout(() => {
                 if(runningRef.current && loopIdRef.current === id && els.head) {
@@ -429,7 +429,7 @@ export default function DigitalServitor() {
             
             if(!runningRef.current || loopIdRef.current !== id) break;
 
-            if(els.status) els.status.innerText = `Adding ${sPurpose || 'Result'} to treasure chest.`;
+            if(els.status) els.status.innerText = `Adding ${sPurpose || 'Result'} to your treasure chest.`;
             els.chestWrapper.classList.add('chest-open');
             await wait(300);
             
@@ -817,7 +817,7 @@ export default function DigitalServitor() {
                             </select>
                         </div>
                         <div className="bg-white/5 p-3 rounded border border-gray-800">
-                            <label className="text-gray-400 text-xs uppercase block mb-2">Tool</label>
+                            <label className="text-gray-400 text-xs uppercase block mb-2">Magick Tool</label>
                             {/* FIX: Cast target to any to access value */}
                             <select value={config.tool} onChange={e => setConfig({...config, tool: (e.target as any).value})} className="w-full p-2 bg-[#1a1a25] border border-gray-700 text-white rounded outline-none">
                                 <option value="wand">Wand 🪄</option>
