@@ -778,7 +778,7 @@ export default function DigitalServitor() {
                             <select value={config.hairStyle} onChange={e => setConfig({...config, hairStyle: (e.target as any).value})} className="w-full p-2 bg-[#1a1a25] border border-gray-700 text-white rounded outline-none">
                                 <option value="short">Short</option>
                                 <option value="long">Long</option>
-                                <option value="afro">Curly/Afro</option>
+                                <option value="afro">Curly</option>
                                 <option value="bald">Bald</option>
                             </select>
                         </div>
