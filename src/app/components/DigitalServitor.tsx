@@ -531,7 +531,7 @@ export default function DigitalServitor() {
             await wait(500);
             stopAction(); 
             
-            if(els.status) els.status.innerText = `${sName || 'The Servitor'} found it! Returning to ${chestName}...`;
+            if(els.status) els.status.innerText = `${sName || 'The Servitor'} found it! Returning to your ${chestName}...`;
             
             setTimeout(() => {
                 if(runningRef.current && loopIdRef.current === id && els.head) {
@@ -555,7 +555,7 @@ export default function DigitalServitor() {
             
             if(!runningRef.current || loopIdRef.current !== id) break;
 
-            if(els.status) els.status.innerText = `Depositing ${sPurpose || 'Result'} into ${chestName}.`;
+            if(els.status) els.status.innerText = `Depositing ${sPurpose || 'Result'} into your ${chestName}.`;
             
             // Trigger chest open based on type
             els.chestWrapper.classList.add('chest-open');
