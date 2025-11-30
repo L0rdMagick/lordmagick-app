@@ -3,7 +3,17 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { X, Maximize2, Minimize2 } from 'lucide-react';
+import { X, Maximize2, Minimize2, Save, Trash2, BookOpen } from 'lucide-react';
+import { createBrowserClient } from '@supabase/ssr';
+
+// Define Saved Servitor Interface
+interface SavedServitor {
+    id: string;
+    name: string;
+    master_name: string;
+    purpose: string;
+    config: any;
+}
 
 const HATS: Record<string, string> = {
     'none': '',
@@ -23,12 +33,17 @@ const OBJECTS: Record<string, string> = {
 export default function DigitalServitor() {
     const router = useRouter();
     
+    // Supabase
+    const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+
     // Logic State
     const [isRunning, setIsRunning] = useState(false);
     const runningRef = useRef(false); 
     const loopIdRef = useRef(0);
     const [isFullscreen, setIsFullscreen] = useState(false);
-    // FIX: Use 'any' type for AudioContext
     const audioCtxRef = useRef<any>(null);
 
     // Form State
@@ -36,6 +51,11 @@ export default function DigitalServitor() {
     const [sPurpose, setSPurpose] = useState("");
     const [uName, setUName] = useState("");
     
+    // User & Cabinet State
+    const [user, setUser] = useState<any>(null);
+    const [savedServitors, setSavedServitors] = useState<SavedServitor[]>([]);
+    const [loadingCabinet, setLoadingCabinet] = useState(false);
+
     // Appearance State
     const [config, setConfig] = useState({
         skin: "#9ea7c6",
@@ -51,14 +71,102 @@ export default function DigitalServitor() {
         object: "gold"
     });
 
+    // --- Supabase Init & Fetch ---
+    useEffect(() => {
+        const getUser = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            setUser(user);
+            if (user) fetchSavedServitors(user.id);
+        };
+        getUser();
+    }, [supabase]);
+
+    const fetchSavedServitors = async (userId: string) => {
+        setLoadingCabinet(true);
+        const { data, error } = await supabase
+            .from('servitors')
+            .select('*')
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false });
+        
+        if (!error && data) {
+            setSavedServitors(data);
+        }
+        setLoadingCabinet(false);
+    };
+
+    // --- Cabinet Actions ---
+    const handleSave = async () => {
+        const win = (globalThis as any).window;
+        if (!user) {
+            if (win) win.alert("You must be logged in to save servitors to your Grimoire.");
+            return;
+        }
+        if (!sName) {
+            if (win) win.alert("Please name your servitor before binding it.");
+            return;
+        }
+
+        const servitorData = {
+            user_id: user.id,
+            name: sName,
+            master_name: uName,
+            purpose: sPurpose,
+            config: config
+        };
+
+        const existing = savedServitors.find(s => s.name === sName);
+
+        if (existing) {
+            if (win && !win.confirm(`Overwrite existing servitor "${sName}"?`)) return;
+            
+            const { data, error } = await supabase
+                .from('servitors')
+                .update(servitorData)
+                .eq('id', existing.id)
+                .select();
+
+            if (!error && data) {
+                setSavedServitors(prev => prev.map(s => s.id === existing.id ? data[0] : s));
+                if(win) win.alert(`Servitor "${sName}" updated.`);
+            }
+        } else {
+            const { data, error } = await supabase
+                .from('servitors')
+                .insert([servitorData])
+                .select();
+
+            if (!error && data) {
+                setSavedServitors([data[0], ...savedServitors]);
+                if(win) win.alert(`Servitor "${sName}" bound to Grimoire.`);
+            }
+        }
+    };
+
+    const handleLoad = (servitor: SavedServitor) => {
+        setSName(servitor.name);
+        setUName(servitor.master_name || "");
+        setSPurpose(servitor.purpose || "");
+        setConfig(servitor.config);
+    };
+
+    const handleDelete = async (id: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        const win = (globalThis as any).window;
+        if (win && !win.confirm("Release this servitor back to the void?")) return;
+
+        const { error } = await supabase.from('servitors').delete().eq('id', id);
+        if (!error) {
+            setSavedServitors(prev => prev.filter(s => s.id !== id));
+        }
+    };
+
     // --- Helpers ---
     const toggleFullscreen = () => {
-        // FIX: Safe access to document via globalThis
         const doc = (globalThis as any).document;
         if (!doc) return;
 
         if (!doc.fullscreenElement) {
-            // FIX: Explicitly type 'e' as any
             doc.documentElement.requestFullscreen().catch((e: any) => {
                 console.error(`Error attempting to enable fullscreen: ${e.message}`);
             });
@@ -265,7 +373,6 @@ export default function DigitalServitor() {
 
         while(runningRef.current && loopIdRef.current === id) {
             
-            // 1. Walk to Mound
             if(els.status) els.status.innerText = `${sName || 'The Servitor'} seeks ${sPurpose || 'Result'}...`;
             stopAction();
             els.servitor.classList.add('walk-left');
@@ -274,11 +381,9 @@ export default function DigitalServitor() {
             
             if(!runningRef.current || loopIdRef.current !== id) break;
 
-            // 2. Jump In
             els.servitor.classList.add('anim-jump-in');
             await wait(500);
             
-            // 3. Dig
             if(els.status) els.status.innerText = `Searching the aether for ${sPurpose || 'Result'}...`;
             els.mound.classList.add('mound-active'); 
             
@@ -291,7 +396,6 @@ export default function DigitalServitor() {
             }
             els.mound.classList.remove('mound-active');
             
-            // 4. Jump Out
             playSound('chime');
             stopAction();
             els.servitor.classList.add('anim-jump-out');
@@ -318,7 +422,6 @@ export default function DigitalServitor() {
 
             await wait(500);
 
-            // 5. Walk to Chest
             stopAction();
             els.servitor.classList.add('walk-right'); 
             await moveTo(80, id);
@@ -326,7 +429,6 @@ export default function DigitalServitor() {
             
             if(!runningRef.current || loopIdRef.current !== id) break;
 
-            // 6. Deposit
             if(els.status) els.status.innerText = `Adding ${sPurpose || 'Result'} to treasure chest.`;
             els.chestWrapper.classList.add('chest-open');
             await wait(300);
@@ -392,10 +494,10 @@ export default function DigitalServitor() {
                 .skin { background-color: #f1c27d; } .clothes { background-color: #333; }
                 .head { width: 42px; height: 42px; border-radius: 50%; position: absolute; top: 0; left: 9px; z-index: 10; }
                 
-                /* FIX: Raised full beard slightly to cover mouth in happy/content state */
+                /* FIX: Raised beard to cover mouth in discovery state */
                 .beard { position: absolute; background-color: #444; z-index: 12; display: none; }
                 .beard.goatee { top: 38px; left: 16px; width: 10px; height: 12px; border-radius: 0 0 5px 5px; display: block; }
-                .beard.full { top: 24px; left: 2px; width: 38px; height: 20px; border-radius: 5px 5px 20px 20px; display: block; }
+                .beard.full { top: 22px; left: 2px; width: 38px; height: 22px; border-radius: 5px 5px 20px 20px; display: block; }
                 
                 .body { position: absolute; top: 35px; left: 13px; z-index: 5; }
                 .outfit-tunic .body { width: 34px; height: 50px; border-radius: 8px 8px 4px 4px; }
@@ -426,17 +528,24 @@ export default function DigitalServitor() {
                 .face-stoic .mouth { width: 10px; height: 2px; background: #333; }
                 .face-discovery .eye { width: 5px; height: 5px; top: 16px; }
                 .face-discovery .mouth { height: 10px; width: 14px; left: 14px; bottom: 8px; border-radius: 0 0 15px 15px; background: #d00; border: 1px solid #000; }
-                .hat-wizard { position: absolute; top: -45px; left: -5px; width: 0; height: 0; border-left: 35px solid transparent; border-right: 35px solid transparent; border-bottom: 60px solid var(--indigo); }
+                
+                /* FIX: Increased z-indices for hats to sit in front */
+                .hat-container { position: absolute; width: 100%; height: 100%; z-index: 50; pointer-events: none; }
+                .hat-wizard { position: absolute; top: -45px; left: -5px; width: 0; height: 0; border-left: 35px solid transparent; border-right: 35px solid transparent; border-bottom: 60px solid var(--indigo); z-index: 55; }
                 .hat-wizard::after { content: '✦'; color: var(--gold); font-size: 10px; position: absolute; top: 20px; left: -5px; }
                 .hat-wizard::before { content: ''; position: absolute; bottom: -60px; left: -35px; width: 70px; height: 8px; background: var(--indigo); border-radius: 50%; }
-                .hat-crown { position: absolute; top: -15px; left: 6px; width: 48px; height: 15px; background: var(--gold); border-radius: 5px; box-shadow: inset 0 0 5px rgba(0,0,0,0.3); }
+                .hat-crown { position: absolute; top: -15px; left: 6px; width: 48px; height: 15px; background: var(--gold); border-radius: 5px; box-shadow: inset 0 0 5px rgba(0,0,0,0.3); z-index: 55; }
                 .hat-crown::after { content:''; position: absolute; top: -10px; left: 0; width: 100%; height: 10px; background: repeating-linear-gradient(45deg, var(--gold), var(--gold) 5px, transparent 5px, transparent 10px); clip-path: polygon(0 100%, 10% 0, 20% 100%, 30% 0, 40% 100%, 50% 0, 60% 100%, 70% 0, 80% 100%, 90% 0, 100% 100%); }
-                .hat-horns .horn { position: absolute; top: -12px; width: 8px; height: 25px; background: #d00; border-radius: 50% 50% 0 0; }
+                .hat-horns .horn { position: absolute; top: -12px; width: 8px; height: 25px; background: #d00; border-radius: 50% 50% 0 0; z-index: 55; }
                 .hat-horns .horn.l { left: 8px; transform: rotate(-15deg); clip-path: polygon(0 100%, 50% 0, 100% 100%); } .hat-horns .horn.r { right: 8px; transform: rotate(15deg); clip-path: polygon(0 100%, 50% 0, 100% 100%); }
-                .hat-hood { position: absolute; top: -8px; left: 2px; width: 56px; height: 58px; background: #222; border-radius: 30px 30px 10px 10px; z-index: 12; mask: radial-gradient(circle at 50% 45%, transparent 18px, black 19px); -webkit-mask: radial-gradient(circle at 50% 45%, transparent 18px, black 19px); }
+                
+                /* FIX: Hood is now solid color, no transparency on the cloth */
+                .hat-hood { position: absolute; top: -8px; left: 2px; width: 56px; height: 58px; background: #222; border-radius: 30px 30px 10px 10px; z-index: 55; mask: radial-gradient(circle at 50% 45%, transparent 18px, black 19px); -webkit-mask: radial-gradient(circle at 50% 45%, transparent 18px, black 19px); opacity: 1; }
                 .hat-hood::before { content: ''; position: absolute; bottom: 0; left: 10px; width: 36px; height: 15px; background: #222; z-index: -1; border-radius: 0 0 10px 10px; }
-                .hat-diadem { position: absolute; top: 10px; left: 6px; width: 48px; height: 10px; border-top: 3px solid #0ff; border-radius: 50% 50% 0 0; }
-                .hat-halo { position: absolute; top: -15px; left: 10px; width: 40px; height: 10px; border: 3px solid gold; border-radius: 50%; transform: rotateX(60deg); }
+                
+                .hat-diadem { position: absolute; top: 10px; left: 6px; width: 48px; height: 10px; border-top: 3px solid #0ff; border-radius: 50% 50% 0 0; z-index: 60; }
+                .hat-halo { position: absolute; top: -15px; left: 10px; width: 40px; height: 10px; border: 3px solid gold; border-radius: 50%; transform: rotateX(60deg); z-index: 60; }
+                
                 .tool-hand { position: absolute; bottom: 0; left: 0; transform-origin: center bottom; }
                 .tool-carry { position: absolute; top: 50px; left: -5px; z-index: 200; font-size: 26px; filter: drop-shadow(0 0 5px white); display: none; }
                 .css-wand { width: 3px; height: 50px; background: #6d4c41; transform: rotate(-15deg) translateY(10px); position: relative; }
@@ -532,6 +641,43 @@ export default function DigitalServitor() {
                         <p className="text-[#FFD700]/70 uppercase tracking-widest text-sm font-serif mt-1">Your Servants of Magick</p>
                     </div>
                     
+                    {/* WITCH CABINET */}
+                    {user && (
+                        <div className="p-4 bg-gray-900/50 rounded border border-[#FFD700]/40 space-y-3">
+                            <h3 className="text-sm uppercase text-[#FFD700] tracking-wide font-bold flex items-center gap-2">
+                                <BookOpen size={16} /> Servitor Cabinet
+                            </h3>
+                            <div className="flex gap-2 mb-4">
+                                <button onClick={handleSave} className="flex-1 bg-black/40 hover:bg-[#FFD700]/20 border border-[#FFD700]/50 text-[#FFD700] py-2 rounded text-xs uppercase tracking-wide flex items-center justify-center gap-2 transition-colors">
+                                    <Save size={14} /> Save Servitor
+                                </button>
+                            </div>
+                            
+                            <div className="max-h-32 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+                                {loadingCabinet ? (
+                                    <p className="text-xs text-center text-gray-500 italic">Opening cabinet...</p>
+                                ) : savedServitors.length === 0 ? (
+                                    <p className="text-xs text-center text-gray-500 italic">No servitors bound yet.</p>
+                                ) : (
+                                    savedServitors.map(s => (
+                                        <div key={s.id} className="group flex justify-between items-center bg-gray-950 p-2 rounded border border-gray-800 hover:border-[#FFD700] cursor-pointer transition-all" onClick={() => handleLoad(s)}>
+                                            <div>
+                                                <p className="text-sm text-gray-200 font-medium group-hover:text-[#FFD700]">{s.name}</p>
+                                                {s.purpose && <p className="text-[10px] text-gray-500 truncate max-w-[150px]">{s.purpose}</p>}
+                                            </div>
+                                            <button 
+                                                onClick={(e) => handleDelete(s.id, e)}
+                                                className="p-1.5 text-gray-600 hover:text-red-400 hover:bg-red-900/20 rounded transition-colors"
+                                            >
+                                                <Trash2 size={14} />
+                                            </button>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    )}
+
                     <div className="bg-[radial-gradient(circle_at_center,#2b1055_0%,#000_100%)] border border-[#FFD700] h-[260px] relative flex justify-center items-center mt-2 shadow-[inset_0_0_20px_#000]">
                         <div id="preview-rig" className="servitor-rig" style={{left: 0, top: 0}}>
                             {/* Structure copied from original HTML, dynamic logic handled by useEffect */}
@@ -648,7 +794,7 @@ export default function DigitalServitor() {
                             <label className="text-gray-400 text-xs uppercase block mb-2">Beard Style</label>
                             {/* FIX: Cast target to any to access value */}
                             <select value={config.beardStyle} onChange={e => setConfig({...config, beardStyle: (e.target as any).value})} className="w-full p-2 bg-[#1a1a25] border border-gray-700 text-white rounded outline-none">
-                                <option value="none">Clean Shaven</option>
+                                <option value="none">No Facial Hair</option>
                                 <option value="goatee">Goatee</option>
                                 <option value="full">Full Beard</option>
                             </select>
@@ -693,7 +839,7 @@ export default function DigitalServitor() {
 
             {/* STAGE */}
             <div id="stage" className="relative flex-1 w-full h-full overflow-hidden z-10">
-                <div id="status-bar" className="absolute top-5 w-full text-center text-xl text-white tracking-widest z-50">
+                <div id="status-bar" className="absolute top-5 w-full text-center text-xl text-white tracking-widest z-50 shadow-none">
                     Awaiting summoning...
                 </div>
 
