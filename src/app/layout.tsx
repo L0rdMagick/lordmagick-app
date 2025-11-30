@@ -36,7 +36,7 @@ export default function RootLayout({
           className="fixed bottom-0 left-0 w-full h-2/5 z-30 pointer-events-none mix-blend-screen"
           style={{ 
             // Master Opacity Control
-            opacity: 0.05, 
+            opacity: 0.2, 
             // CSS Mask to fade the top edge
             maskImage: 'linear-gradient(to top, black 40%, transparent 100%)',
             WebkitMaskImage: 'linear-gradient(to top, black 40%, transparent 100%)'
