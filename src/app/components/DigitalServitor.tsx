@@ -1021,35 +1021,37 @@ export default function DigitalServitor() {
                 <X size={24} />
             </button>
 
-            {/* Edit Button (Moved to Top-Left to prevent overlap) */}
-            {isRunning && (
-                <button 
-                    onClick={handleEdit}
-                    className="absolute top-6 left-6 z-50 border border-[#FFD700] text-[#FFD700] bg-black/50 px-4 py-2 text-xs uppercase hover:bg-[#FFD700]/20 tracking-widest"
-                >
-                    Edit Ritual
-                </button>
-            )}
-
-            {/* Fullscreen Button (Bottom Right) */}
-            <button
-                onClick={toggleFullscreen}
-                className="absolute bottom-6 right-6 z-50 text-gray-500 hover:text-white bg-black/30 p-2 rounded-full border border-gray-700 hover:border-gray-500"
-            >
-                {isFullscreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
-            </button>
-
-            {/* NEW: Magickal Counter (Scoreboard Style - In Ground) */}
+            {/* Bottom Controls Container - Flex Row for Non-Overlapping Layout */}
             {isRunning && !isFeedingActive && (
-                <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 z-40 text-center animate-in fade-in zoom-in duration-700 max-w-[200px]">
-                     <div className="bg-[#08080c]/80 border border-[#FFD700]/50 rounded px-3 py-1 shadow-[0_0_10px_rgba(0,0,0,0.8)] backdrop-blur-sm flex flex-col items-center">
-                         <p className="magick-font text-[#FFD700] text-[10px] tracking-widest uppercase opacity-80 mb-0.5 truncate w-full">
-                            {sPurpose || 'Treasures'} Found
-                         </p>
-                         <p className="text-sm text-white font-bold drop-shadow-[0_0_5px_#FFD700] leading-none">
-                             {depositCount}
-                         </p>
-                     </div>
+                <div className="absolute bottom-6 left-0 w-full px-4 z-50 flex items-end justify-between pointer-events-none">
+                    
+                    {/* Left: Edit Ritual */}
+                    <button 
+                        onClick={handleEdit}
+                        className="pointer-events-auto border border-[#FFD700] text-[#FFD700] bg-black/50 px-4 py-2 text-xs uppercase hover:bg-[#FFD700]/20 tracking-widest whitespace-nowrap"
+                    >
+                        Edit Ritual
+                    </button>
+
+                    {/* Center: Counter (Scoreboard Style) */}
+                    <div className="pointer-events-auto animate-in fade-in zoom-in duration-700 max-w-[40%] flex flex-col items-center">
+                         <div className="bg-[#08080c]/80 border border-[#FFD700]/50 rounded px-3 py-1 shadow-[0_0_10px_rgba(0,0,0,0.8)] backdrop-blur-sm flex flex-col items-center w-full">
+                             <p className="magick-font text-[#FFD700] text-[10px] tracking-widest uppercase opacity-80 mb-0.5 truncate w-full text-center">
+                                {sPurpose || 'Treasures'} Found
+                             </p>
+                             <p className="text-sm text-white font-bold drop-shadow-[0_0_5px_#FFD700] leading-none">
+                                 {depositCount}
+                             </p>
+                         </div>
+                    </div>
+
+                    {/* Right: Fullscreen Icon */}
+                    <button
+                        onClick={toggleFullscreen}
+                        className="pointer-events-auto text-gray-500 hover:text-white bg-black/30 p-2 rounded-full border border-gray-700 hover:border-gray-500"
+                    >
+                        {isFullscreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
+                    </button>
                 </div>
             )}
 
@@ -1423,9 +1425,7 @@ export default function DigitalServitor() {
                 
                 {/* STATUS BAR */}
                 <div id="status-bar" className="absolute top-5 w-full text-center text-xl text-white tracking-widest z-50 shadow-none magick-font pointer-events-none">
-                    <div className="px-16 truncate">
-                        {hungerState === 'hungry' ? `${sName} is hungry...` : 'Awaiting summoning...'}
-                    </div>
+                    {hungerState === 'hungry' ? `${sName} is hungry...` : 'Awaiting summoning...'}
                 </div>
 
                 {/* AWAKEN GLITTER & TEXT */}
