@@ -32,11 +32,15 @@ export default function RootLayout({
         </NavMenuProvider>
         
         {/* MIST OVERLAY CONTAINER */}
-        {/* We apply opacity here (0.05) to act as a master filter. 
-            Even if the child animation pulses opacity, it will never exceed this limit. */}
         <div 
           className="fixed bottom-0 left-0 w-full h-2/5 z-30 pointer-events-none mix-blend-screen"
-          style={{ opacity: 0.25 }} 
+          style={{ 
+            // Master Opacity Control
+            opacity: 0.05, 
+            // CSS Mask to fade the top edge
+            maskImage: 'linear-gradient(to top, black 40%, transparent 100%)',
+            WebkitMaskImage: 'linear-gradient(to top, black 40%, transparent 100%)'
+          }} 
         >
             <div className="absolute inset-0 w-full h-full bg-[url('/images/mist-overlay.png')] bg-repeat-x animate-[flow-mist_45s_linear_infinite]" />
             <div className="absolute inset-0 w-full h-full bg-[url('/images/mist-overlay.png')] bg-repeat-x animate-[flow-mist-crossfade_45s_linear_infinite]" />
