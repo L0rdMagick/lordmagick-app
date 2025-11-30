@@ -348,6 +348,12 @@ export default function DigitalServitor() {
         const ctx = audioCtxRef.current;
         const now = ctx.currentTime;
 
+        // Pitch limits: 250Hz (Low) to 850Hz (High)
+        // Awaken maps to: 250 - 550Hz
+        // Feed maps to: 450 - 850Hz
+        const startFreq = type === 'awaken' ? 250 : 450;
+        const endFreq = type === 'awaken' ? 550 : 850;
+
         if (active) {
             // Start or Update
             if (!oscRef.current) {
@@ -356,26 +362,24 @@ export default function DigitalServitor() {
                 osc.connect(gain);
                 gain.connect(ctx.destination);
                 
-                // Base Freq
-                const base = type === 'awaken' ? 200 : 400;
                 osc.type = type === 'awaken' ? 'triangle' : 'sine';
-                osc.frequency.setValueAtTime(base, now);
+                osc.frequency.setValueAtTime(startFreq, now);
                 gain.gain.setValueAtTime(0.1, now);
                 osc.start(now);
-                oscRef.current = { osc, gain, base };
+                oscRef.current = { osc, gain, startFreq };
             }
 
-            // Pitch Bend based on Progress
-            const { osc, base } = oscRef.current;
-            const targetFreq = base + (progress * 10); // +1000Hz at 100%
-            osc.frequency.setTargetAtTime(targetFreq, now, 0.1);
+            // Pitch Bend based on Progress within nice limits
+            const { osc } = oscRef.current;
+            const currentFreq = startFreq + ((endFreq - startFreq) * (progress / 100));
+            osc.frequency.setTargetAtTime(currentFreq, now, 0.1);
 
         } else {
             // Stop / Reverse
             if (oscRef.current) {
-                const { osc, gain, base } = oscRef.current;
-                // Pitch down effect
-                osc.frequency.exponentialRampToValueAtTime(base, now + 0.5);
+                const { osc, gain, startFreq } = oscRef.current;
+                // Pitch down effect back to startFreq
+                osc.frequency.exponentialRampToValueAtTime(startFreq, now + 0.5);
                 gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
                 osc.stop(now + 0.5);
                 oscRef.current = null;
@@ -988,7 +992,7 @@ export default function DigitalServitor() {
                 .dance-happy .head { animation: head-bop 0.5s infinite alternate; }
                 .dance-happy .mouth { height: 6px; border-radius: 0 0 10px 10px; background: #d00; } /* Force Smile */
                 @keyframes dance-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-                @keyframes arm-cheer { 0% { transform: rotate(-60deg); } 100% { transform: rotate(-80deg); } }
+                @keyframes arm-cheer { 0% { transform: rotate(60deg); } 100% { transform: rotate(80deg); } }
                 @keyframes head-bop { 0% { transform: rotate(-5deg); } 100% { transform: rotate(5deg); } }
 
                 .falling-food {
