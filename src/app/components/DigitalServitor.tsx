@@ -110,7 +110,7 @@ export default function DigitalServitor() {
     const [awakenProgress, setAwakenProgress] = useState(0);
     const [isAwakening, setIsAwakening] = useState(false);
     const [awakenComplete, setAwakenComplete] = useState(false); // For the glitter flash
-    const [isFeeding, setIsFeeding] = useState(false); // Added missing state
+    const [isFeeding, setIsFeeding] = useState(false);
     
     // Hunger System
     const [depositCount, setDepositCount] = useState(0);
@@ -472,7 +472,7 @@ export default function DigitalServitor() {
             }
         }
 
-    }, [config, isRunning, hungerState, isFeeding]); // Added isFeeding to dependencies
+    }, [config, isRunning, hungerState, isFeeding]);
 
     // --- Animation Logic ---
     const wait = (ms: number) => new Promise(r => setTimeout(r, ms));
@@ -1051,7 +1051,7 @@ export default function DigitalServitor() {
             </div>
 
             {/* Config Panel */}
-            <div className={`absolute top-0 left-0 w-full h-full bg-[#08080c]/98 z-[300] flex flex-col overflow-y-auto p-5 transition-opacity duration-500 ${isRunning ? 'opacity-0 pointer-events-none' : 'opacity-100'}`} style={{zIndex: 300}}>
+            <div className={`absolute top-0 left-0 w-full h-full bg-[#08080c]/98 z-300 flex flex-col overflow-y-auto p-5 transition-opacity duration-500 ${isRunning ? 'opacity-0 pointer-events-none' : 'opacity-100'}`} style={{zIndex: 300}}>
                 <div className="max-w-[600px] mx-auto w-full flex flex-col gap-4 pb-12">
                     <div className="text-center border-b border-[#FFD700] pb-4">
                         <h2 className="text-[#FFD700] uppercase tracking-widest text-2xl magick-font">Grimoire of Servitors</h2>
@@ -1148,7 +1148,7 @@ export default function DigitalServitor() {
                              </div>
                              
                              <div>
-                                <label className="text-gray-400 text-[10px] uppercase block mb-1">Food Appearance</label>
+                                <label className="text-gray-400 text-[10px] uppercase mb-1 flex justify-between">Food Appearance</label>
                                 <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto custom-scrollbar p-1 border border-gray-800 rounded bg-black/50">
                                     {FOOD_ICONS.map(icon => (
                                         <button 
@@ -1163,7 +1163,7 @@ export default function DigitalServitor() {
                              </div>
 
                              <div>
-                                <label className="text-gray-400 text-[10px] uppercase block mb-1 flex justify-between">
+                                <label className="text-gray-400 text-[10px] uppercase flex mb-1 justify-between">
                                     Feeding Frequency (Deposits)
                                     <span className="text-gray-500">{config.feedFreq} tasks</span>
                                 </label>
@@ -1392,7 +1392,7 @@ export default function DigitalServitor() {
                             onMouseLeave={() => stopHold('awaken')}
                             onTouchStart={() => startHold('awaken')}
                             onTouchEnd={() => stopHold('awaken')}
-                            className="w-full h-16 relative bg-gradient-to-b from-[#2a2a35] to-[#1a1a25] border border-[#FFD700] overflow-hidden group active:scale-95 transition-transform"
+                            className="w-full h-16 relative bg-linear-to-b from-[#2a2a35] to-[#1a1a25] border border-[#FFD700] overflow-hidden group active:scale-95 transition-transform"
                         >
                             <div className="absolute top-0 left-0 h-full bg-[#FFD700]/30 transition-all duration-75 ease-linear" style={{width: `${awakenProgress}%`}}></div>
                             <span className="relative z-10 text-[#FFD700] text-lg uppercase tracking-widest font-serif flex items-center justify-center gap-2">
@@ -1413,7 +1413,7 @@ export default function DigitalServitor() {
 
                 {/* AWAKEN GLITTER & TEXT */}
                 {awakenComplete && (
-                    <div className="awaken-overlay flex flex-col items-center justify-center z-[500]">
+                    <div className="awaken-overlay flex flex-col items-center justify-center z-500">
                          <h1 className="text-4xl md:text-6xl text-[#FFD700] font-bold text-center magick-font drop-shadow-[0_0_15px_rgba(255,215,0,0.8)] animate-bounce">
                              {sName} has awoken
                          </h1>
@@ -1423,7 +1423,7 @@ export default function DigitalServitor() {
 
                 {/* FEEDING OVERLAY */}
                 {isFeedingActive && (
-                    <div className="absolute inset-0 z-[200] bg-black/40 flex flex-col items-center justify-center pointer-events-auto">
+                    <div className="absolute inset-0 z-200 bg-black/40 flex flex-col items-center justify-center pointer-events-auto">
                         {hungerState === 'fed' ? (
                             <div className="bg-black/90 p-8 rounded border-2 border-[#FFD700] text-center max-w-sm mx-4 shadow-[0_0_30px_#FFD700]">
                                 <div className="text-4xl mb-4 animate-spin">✨</div>
@@ -1446,7 +1446,7 @@ export default function DigitalServitor() {
                                     onMouseLeave={() => stopHold('feed')}
                                     onTouchStart={() => startHold('feed')}
                                     onTouchEnd={() => stopHold('feed')}
-                                    className="w-32 h-32 rounded-full border-4 border-[#FFD700] bg-gradient-to-br from-purple-900 to-black shadow-[0_0_30px_rgba(255,215,0,0.4)] flex items-center justify-center active:scale-95 transition-transform overflow-hidden relative group"
+                                    className="w-32 h-32 rounded-full border-4 border-[#FFD700] bg-linear-to-br from-purple-900 to-black shadow-[0_0_30px_rgba(255,215,0,0.4)] flex items-center justify-center active:scale-95 transition-transform overflow-hidden relative group"
                                 >
                                     <div className="absolute bottom-0 left-0 w-full bg-[#FFD700]/40 transition-all duration-75 ease-linear" style={{height: `${feedProgress}%`}}></div>
                                     <span className="text-4xl z-10 animate-pulse">{config.foodIcon}</span>
