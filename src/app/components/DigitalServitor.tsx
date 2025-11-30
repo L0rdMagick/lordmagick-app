@@ -348,11 +348,9 @@ export default function DigitalServitor() {
         const ctx = audioCtxRef.current;
         const now = ctx.currentTime;
 
-        // Pitch limits: 250Hz (Low) to 850Hz (High)
-        // Awaken maps to: 250 - 550Hz
-        // Feed maps to: 450 - 850Hz
-        const startFreq = type === 'awaken' ? 250 : 450;
-        const endFreq = type === 'awaken' ? 550 : 850;
+        // UPDATED: Strict pleasant range for both buttons
+        const startFreq = 200;
+        const endFreq = 350;
 
         if (active) {
             // Start or Update
@@ -986,12 +984,13 @@ export default function DigitalServitor() {
                 @keyframes thigh-r-right { 0% { transform: rotate(-20deg); } 50% { transform: rotate(10deg); } 100% { transform: rotate(-20deg); } }
                 @keyframes calf-r-right { 0% { transform: rotate(0deg); } 50% { transform: rotate(40deg); } 100% { transform: rotate(0deg); } }
 
-                /* DANCE ANIMATION FOR FEEDING */
+                /* DANCE ANIMATION FOR FEEDING - REVERSED ARMS */
                 .dance-happy .servitor-rig { animation: dance-bob 0.5s infinite ease-in-out; }
                 .dance-happy .arm { animation: arm-cheer 0.5s infinite alternate !important; }
                 .dance-happy .head { animation: head-bop 0.5s infinite alternate; }
                 .dance-happy .mouth { height: 6px; border-radius: 0 0 10px 10px; background: #d00; } /* Force Smile */
                 @keyframes dance-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+                /* Inverted rotation for left sway: positive instead of negative */
                 @keyframes arm-cheer { 0% { transform: rotate(60deg); } 100% { transform: rotate(80deg); } }
                 @keyframes head-bop { 0% { transform: rotate(-5deg); } 100% { transform: rotate(5deg); } }
 
@@ -1040,15 +1039,17 @@ export default function DigitalServitor() {
                 {isFullscreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
             </button>
 
-            {/* NEW: Magickal Counter (Bottom Center) */}
+            {/* NEW: Magickal Counter (Scoreboard Style - In Ground) */}
             {isRunning && !isFeedingActive && (
-                <div className="absolute bottom-12 left-1/2 transform -translate-x-1/2 z-40 text-center animate-pulse">
-                     <p className="magick-font text-[#FFD700] text-sm tracking-widest drop-shadow-md">
-                        Found {sPurpose || 'Treasures'} since last feeding
-                     </p>
-                     <p className="text-2xl text-white font-bold drop-shadow-[0_0_5px_#FFD700]">
-                         {depositCount}
-                     </p>
+                <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 z-40 text-center animate-in fade-in zoom-in duration-700">
+                     <div className="bg-[#08080c]/80 border border-[#FFD700]/50 rounded px-3 py-1 shadow-[0_0_10px_rgba(0,0,0,0.8)] backdrop-blur-sm flex flex-col items-center">
+                         <p className="magick-font text-[#FFD700] text-[10px] tracking-widest uppercase opacity-80 mb-0.5">
+                            {sPurpose || 'Treasures'} Found
+                         </p>
+                         <p className="text-sm text-white font-bold drop-shadow-[0_0_5px_#FFD700] leading-none">
+                             {depositCount}
+                         </p>
+                     </div>
                 </div>
             )}
 
@@ -1442,7 +1443,7 @@ export default function DigitalServitor() {
                             <div className="bg-black/90 p-8 rounded border-2 border-[#FFD700] text-center max-w-sm mx-4 shadow-[0_0_30px_#FFD700]">
                                 <div className="text-4xl mb-4 animate-spin">✨</div>
                                 <h2 className="text-2xl text-[#FFD700] magick-font mb-2">Thank You, Master!</h2>
-                                <p className="text-gray-300 mb-6 font-serif">I am revitalized by your {config.foodName}. Shall I resume searching for more {OBJECTS[config.object] || 'treasures'}?</p>
+                                <p className="text-gray-300 mb-6 font-serif">I am revitalized by your {config.foodName}. Shall I resume searching for more {sPurpose || 'treasures'}?</p>
                                 <div className="flex gap-4 justify-center">
                                     <button onClick={handleResume} className="bg-[#FFD700] text-black px-6 py-2 rounded font-bold hover:bg-white uppercase tracking-wider">Yes, Resume</button>
                                     <button onClick={() => {}} className="border border-gray-600 text-gray-400 px-6 py-2 rounded font-bold hover:text-white uppercase tracking-wider">Wait</button>
