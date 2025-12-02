@@ -1,4 +1,3 @@
-// --- START OF FILE RoomsMenu.tsx ---
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -16,7 +15,7 @@ const navLinks = [
   { name: "Grand Hall", href: "/hall" },
   { name: "The Spell Room", href: "/spell-room" },
   { name: "Oracle Room", href: "/oracle-room" },
-  { name: "The Library", href: "/library" },
+  { name: "The School", href: "/the-magick-psychic-school" }, // UPDATED
   { name: "Marketplace", href: "/marketplace" },
 ];
 
@@ -65,7 +64,6 @@ export default function RoomsMenu() {
         }`}
       >
         <div className="relative w-full h-full">
-          {/* THE FIX: Added the close button */}
           <button 
             onClick={closeMenu}
             aria-label="Close menu"
@@ -125,4 +123,3 @@ export default function RoomsMenu() {
     </>
   );
 }
-// --- END OF FILE ---

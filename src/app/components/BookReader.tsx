@@ -1,8 +1,6 @@
 /// <reference lib="dom" />
 "use client";
 
-// --- START OF FILE src/app/library/BookReader.tsx ---
-
 import { useState, useEffect, useRef, useCallback, CSSProperties } from 'react';
 import { Crimson_Text, Uncial_Antiqua } from 'next/font/google';
 
@@ -22,7 +20,6 @@ export default function BookReader({ title, content, onTocToggle }: BookReaderPr
   const [totalPages, setTotalPages] = useState(1);
   const [fontSizeIndex, setFontSizeIndex] = useState(1);
 
-  // We default refs to null, but will cast them to any during access to bypass strict type checks
   const viewportRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 

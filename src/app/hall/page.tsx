@@ -30,11 +30,14 @@ const portals = [
     soundSrc: "/audio/sfx-oracle-room-portal.mp3",
     isExternal: false,
   },
+  // UPDATED SECTION FOR THE SCHOOL
   {
-    title: "The Library",
-    href: "/library",
-    imageSrc: "/images/portal-library.png",
-    signImageSrc: "/images/the-library-sign.png",
+    title: "The School",
+    href: "/the-magick-psychic-school",
+    // Ensure you have renamed/uploaded this image in /public/images/
+    imageSrc: "/images/the-magick-psychic-school.png", 
+    // You may need to create a new sign image or reuse the library one for now
+    signImageSrc: "/images/the-library-sign.png", 
     interactiveGlow: "group-hover:[--glow-color:theme(colors.orange.500)] active:[--glow-color:theme(colors.orange.500)]",
     soundSrc: "/audio/sfx-library-portal.mp3",
     isExternal: false,

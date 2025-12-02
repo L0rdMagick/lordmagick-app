@@ -1,13 +1,13 @@
 /// <reference lib="dom" />
 "use client";
 
-// --- START OF FILE src/app/library/[slug]/page.tsx ---
+// --- START OF FILE src/app/the-magick-psychic-school/the-magick-library/[slug]/page.tsx ---
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import BookReader from '../BookReader';
-import TableOfContents, { Chapter } from '../../components/TableOfContents';
-import MagickalBackLink from '../../components/MagickalBackLink';
+import BookReader from '@/app/components/BookReader';
+import TableOfContents, { Chapter } from '@/app/components/TableOfContents';
+import MagickalBackLink from '@/app/components/MagickalBackLink';
 
 function LoadingSpinner() {
   return (
@@ -115,7 +115,7 @@ export default function BookPage() {
       )}
 
       <MagickalBackLink 
-        href="/library"
+        href="/the-magick-psychic-school/the-magick-library"
         text="Return to Library"
         className="absolute top-6 left-6 z-20"
       />
