@@ -15,8 +15,8 @@ const navLinks = [
   { name: "Grand Hall", href: "/hall" },
   { name: "The Spell Room", href: "/spell-room" },
   { name: "Oracle Room", href: "/oracle-room" },
-  { name: "The School", href: "/the-magick-psychic-school" }, // UPDATED
-  { name: "Marketplace", href: "/marketplace" },
+  { name: "The School", href: "/the-magick-psychic-school" },
+  { name: "Magickal Tools", href: "/magickal-tools" }, // UPDATED LINK & NAME
 ];
 
 export default function RoomsMenu() {

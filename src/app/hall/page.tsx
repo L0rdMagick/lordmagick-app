@@ -1,8 +1,6 @@
 /// <reference lib="dom" />
 "use client";
 
-// --- START OF FILE src/app/hall/page.tsx ---
-
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useState, useRef, MouseEvent, useEffect } from 'react';
@@ -17,7 +15,8 @@ const portals = [
     href: "/spell-room", 
     imageSrc: "/images/portal-spell.png",
     signImageSrc: "/images/spell-room-sign.png",
-    interactiveGlow: "group-hover:[--glow-color:theme(colors.purple.500)] active:[--glow-color:theme(colors.purple.500)]",
+    // UPDATED GLOW: Using explicit drop-shadow classes to match the school page style
+    glowClass: "group-hover:drop-shadow-[0_0_25px_rgba(168,85,247,0.6)]",
     soundSrc: "/audio/sfx-spell-room-portal.mp3",
     isExternal: false,
   },
@@ -26,28 +25,25 @@ const portals = [
     href: "/oracle-room",
     imageSrc: "/images/portal-oracle.png",
     signImageSrc: "/images/oracle-room-sign.png",
-    interactiveGlow: "group-hover:[--glow-color:theme(colors.cyan.500)] active:[--glow-color:theme(colors.cyan.500)]",
+    glowClass: "group-hover:drop-shadow-[0_0_25px_rgba(34,211,238,0.6)]",
     soundSrc: "/audio/sfx-oracle-room-portal.mp3",
     isExternal: false,
   },
-  // UPDATED SECTION FOR THE SCHOOL
   {
     title: "The School",
     href: "/the-magick-psychic-school",
-    // Ensure you have renamed/uploaded this image in /public/images/
     imageSrc: "/images/the-magick-psychic-school.png", 
-    // You may need to create a new sign image or reuse the library one for now
     signImageSrc: "/images/the-magick-school-sign.png", 
-    interactiveGlow: "group-hover:[--glow-color:theme(colors.orange.500)] active:[--glow-color:theme(colors.orange.500)]",
+    glowClass: "group-hover:drop-shadow-[0_0_25px_rgba(251,146,60,0.6)]",
     soundSrc: "/audio/sfx-library-portal.mp3",
     isExternal: false,
   },
   {
-    title: "Marketplace",
-    href: "/marketplace",
+    title: "Magickal Tools", // RENAMED
+    href: "/magickal-tools", // UPDATED LINK
     imageSrc: "/images/portal-marketplace.png",
     signImageSrc: "/images/marketplace-sign.png",
-    interactiveGlow: "group-hover:[--glow-color:theme(colors.green.500)] active:[--glow-color:theme(colors.green.500)]",
+    glowClass: "group-hover:drop-shadow-[0_0_25px_rgba(74,222,128,0.6)]",
     soundSrc: "/audio/sfx-marketplace-portal.mp3",
     isExternal: false,
   },
@@ -60,11 +56,10 @@ export default function HallPage() {
   const [sparkle, setSparkle] = useState<SparkleState | null>(null);
   const [navigatingTo, setNavigatingTo] = useState<{ href: string; isExternal: boolean } | null>(null);
   
-  // FIX: Use 'any' type for audio elements to prevent strict property missing errors during build
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const portalSoundsRef = useRef<{[key: string]: any}>({});
 
   useEffect(() => {
-    // FIX: Safe access to window.Audio via globalThis
     const win = (globalThis as any).window;
     if (typeof win !== 'undefined') {
         const AudioCtor = win.Audio;
@@ -83,7 +78,6 @@ export default function HallPage() {
     
     const clickSound = portalSoundsRef.current[soundSrc];
     if (clickSound) {
-      // FIX: Properties 'currentTime' and 'play' are now accessible on 'any' type
       clickSound.currentTime = 0;
       clickSound.play();
     }
@@ -93,7 +87,6 @@ export default function HallPage() {
   const handleAnimationComplete = () => {
     if (navigatingTo) {
       if (navigatingTo.isExternal) {
-        // FIX: Safe access to window.open via globalThis
         const win = (globalThis as any).window;
         if (win) {
             win.open(navigatingTo.href, '_blank', 'noopener,noreferrer');
@@ -150,10 +143,17 @@ export default function HallPage() {
                         <a 
                           href={portal.href} 
                           onClick={(e) => handlePortalClick(e, portal.href, portal.soundSrc, portal.isExternal)} 
-                          className={`relative w-full aspect-3/4 group block cursor-pointer transition-all duration-300 hover:scale-105 active:scale-95 ${portal.interactiveGlow}`} 
-                          style={{ '--glow-color': 'transparent', filter: 'drop-shadow(8px 12px 20px rgba(0,0,0,0.8)) drop-shadow(0 0 15px var(--glow-color))' } as React.CSSProperties}
+                          className={`relative w-full aspect-3/4 group block cursor-pointer transition-all duration-300 hover:scale-105 active:scale-95`} 
                         >
-                            <Image src={portal.imageSrc} alt={`${portal.title} Portal`} fill style={{ objectFit: 'contain' }} className="transition-transform duration-300 group-hover:scale-110" />
+                            <div className={`w-full h-full transition-all duration-300 ${portal.glowClass}`}>
+                                <Image 
+                                    src={portal.imageSrc} 
+                                    alt={`${portal.title} Portal`} 
+                                    fill 
+                                    style={{ objectFit: 'contain' }} 
+                                    className="transition-transform duration-300 group-hover:scale-110" 
+                                />
+                            </div>
                         </a>
                     </div>
                 ))}
