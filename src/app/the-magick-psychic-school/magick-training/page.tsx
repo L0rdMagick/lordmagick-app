@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Orbit, Sparkles, Zap } from 'lucide-react';
+import { Orbit, Sparkles, Flame } from 'lucide-react';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
 import RoomsButton from '@/app/components/RoomsButton';
 
