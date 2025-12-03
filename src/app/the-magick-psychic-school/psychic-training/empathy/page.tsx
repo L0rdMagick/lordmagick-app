@@ -26,11 +26,10 @@ const EMOTIONS = [
   { id: 'laughing', name: 'Laughter', icon: PartyPopper, color: '#d946ef', desc: 'Vibration, Release', aura: 'shadow-fuchsia-500' }
 ];
 
-// Card backs: Deep Indigo/Black themes with Static and Silver Borders
+// Card backs
 const CARD_BACKS: Record<string, { name: string; bg: string }> = {
   static: { 
     name: 'Static', 
-    // High contrast TV static effect using gradients + deep indigo overlay
     bg: 'bg-indigo-950 bg-[repeating-conic-gradient(#000000_0deg_10deg,_#312e81_10deg_20deg,_#ffffff15_20deg_30deg)]' 
   },
   void: { 
@@ -43,7 +42,7 @@ const CARD_BACKS: Record<string, { name: string; bg: string }> = {
   }
 };
 
-// --- 2. AUDIO ENGINE (Web Audio API) ---
+// --- 2. AUDIO ENGINE ---
 const useAudioEngine = () => {
   const ctxRef = useRef<any>(null);
   const thetaOscRef = useRef<any>(null);
@@ -70,23 +69,18 @@ const useAudioEngine = () => {
       const gain = ctx.createGain();
       osc.type = 'sine';
       osc.frequency.setValueAtTime(110, ctx.currentTime); 
-      
       const lfo = ctx.createOscillator();
       lfo.type = 'sine';
       lfo.frequency.setValueAtTime(4, ctx.currentTime); 
       const lfoGain = ctx.createGain();
       lfoGain.gain.setValueAtTime(5, ctx.currentTime);
-      
       lfo.connect(lfoGain);
       lfoGain.connect(osc.frequency);
-
       gain.gain.setValueAtTime(0.05, ctx.currentTime);
-      
       osc.connect(gain);
       gain.connect(ctx.destination);
       osc.start();
       lfo.start();
-      
       thetaOscRef.current = { osc, lfo, gain };
     } else if (!active && thetaOscRef.current) {
       const { osc, lfo, gain } = thetaOscRef.current;
@@ -447,7 +441,7 @@ export default function EmpathyApp() {
     if (deckSize >= 5 && deckSize <= 7) cols = 3;
     if (deckSize >= 8) cols = 4;
     
-    // Calculate required rows to ensure fit
+    // Calculate required rows
     const rows = Math.ceil(deckSize / cols);
     
     return { cols, rows };
@@ -640,19 +634,22 @@ export default function EmpathyApp() {
                 <div 
                     key={card.id}
                     onClick={() => handleCardClick(idx)}
-                    // Wrapper: Centers the card in the cell
-                    className="relative w-full h-full flex items-center justify-center"
+                    className="relative w-full h-full"
                 >
-                    <div className={`
-                        relative aspect-[2/3] w-auto h-auto max-w-full max-h-full
-                        cursor-pointer transition-all duration-500 transform
-                        ${gameState === 'sensing' ? 'hover:-translate-y-1 hover:shadow-[0_0_25px_rgba(255,255,255,0.2)]' : ''}
-                    `}
-                    style={{
-                        transformStyle: 'preserve-3d',
-                        transform: card.status !== 'face-down' ? 'rotateY(180deg)' : 'rotateY(0deg)',
-                    }}
+                    {/* Centered Absolute Card */}
+                    <div 
+                        className={`
+                            absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2
+                            h-[90%] w-auto aspect-2/3 max-w-full
+                            cursor-pointer transition-all duration-500 transform
+                            ${gameState === 'sensing' ? 'hover:-translate-y-1 hover:shadow-[0_0_25px_rgba(255,255,255,0.2)]' : ''}
+                        `}
+                        style={{
+                            transformStyle: 'preserve-3d',
+                            transform: card.status !== 'face-down' ? 'rotateY(180deg)' : 'rotateY(0deg)',
+                        }}
                     >
+                    
                     {/* Card Back - Magickal Silver Border */}
                     <div 
                         className={`
@@ -663,7 +660,7 @@ export default function EmpathyApp() {
                         `}
                     >
                         {/* Inner metallic sheen */}
-                        <div className="absolute inset-0 border-[1px] border-white/20 rounded-lg pointer-events-none"></div>
+                        <div className="absolute inset-0 border border-white/20 rounded-lg pointer-events-none"></div>
                     </div>
 
                     {/* Card Front */}
@@ -695,9 +692,9 @@ export default function EmpathyApp() {
                         <Sparkles className="absolute top-1 right-1 text-amber-400 animate-spin-slow" size={12} />
                         )}
                     </div>
+                  </div>
                 </div>
-            </div>
-          ))}
+            ))}
           </div>
         </div>
       </main>
