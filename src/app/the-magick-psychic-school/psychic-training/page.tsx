@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Eye, Brain, Lock, Activity, DoorOpen, Heart } from 'lucide-react';
+import { Eye, Brain, Lock, Activity, DoorOpen, Heart, Crosshair } from 'lucide-react';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
 import RoomsButton from '@/app/components/RoomsButton';
 
@@ -11,7 +11,6 @@ export default function PsychicTrainingPage() {
     <main className="relative min-h-screen w-full bg-black bg-cover bg-center p-8 flex flex-col" style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}>
         <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
         
-        {/* HEADER */}
         <header className="relative z-20 mb-10 w-full max-w-7xl mx-auto">
             <div className="flex justify-between items-center flex-wrap w-full">
                 <div className="order-1">
@@ -29,7 +28,6 @@ export default function PsychicTrainingPage() {
             </p>
         </header>
 
-        {/* APPS GRID */}
         <div className="relative z-10 grow flex items-start justify-center pt-8">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 w-full max-w-6xl px-4">
                 
@@ -129,7 +127,29 @@ export default function PsychicTrainingPage() {
                     </div>
                 </Link>
 
-                {/* APP 5: REMOTE VIEWING (Placeholder) */}
+                {/* APP 5: PSI-HUNTER */}
+                <Link href="/the-magick-psychic-school/psychic-training/psi-hunter" className="group relative bg-black/40 border border-purple-500/30 rounded-xl overflow-hidden hover:border-green-500 transition-all duration-300 hover:shadow-[0_0_30px_rgba(34,197,94,0.2)] hover:-translate-y-1">
+                    <div className="h-48 w-full bg-slate-950 relative flex items-center justify-center overflow-hidden">
+                        <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'linear-gradient(#06b6d4 1px, transparent 1px), linear-gradient(90deg, #06b6d4 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
+                        <div className="relative z-10 flex flex-col items-center">
+                            <div className="w-24 h-24 flex items-center justify-center bg-black/50 border-2 border-cyan-500/50 rounded-lg shadow-[0_0_20px_rgba(6,182,212,0.3)] group-hover:scale-110 transition-transform duration-500">
+                                <Crosshair size={48} className="text-cyan-400 animate-pulse" />
+                            </div>
+                        </div>
+                    </div>
+                    <div className="p-6">
+                        <h2 className="text-2xl font-serif text-white mb-2 group-hover:text-cyan-400 transition-colors">Psi-Hunter</h2>
+                        <p className="text-sm text-gray-400 leading-relaxed">
+                            Intuition Defense System. Locate hidden threats using clairsentience in a logic-defying simulation.
+                        </p>
+                        <div className="mt-4 flex items-center gap-2 text-xs font-mono text-cyan-500 uppercase tracking-widest">
+                            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                            Active Training
+                        </div>
+                    </div>
+                </Link>
+
+                {/* APP 6: REMOTE VIEWING (Placeholder) */}
                 <div className="group relative bg-black/20 border border-gray-800 rounded-xl overflow-hidden opacity-70 grayscale cursor-not-allowed">
                     <div className="h-48 w-full bg-gray-900 relative flex items-center justify-center">
                         <Brain size={64} className="text-gray-700" />
@@ -137,11 +157,11 @@ export default function PsychicTrainingPage() {
                     </div>
                     <div className="p-6">
                         <div className="flex justify-between items-start">
-                            <h2 className="text-2xl font-serif text-gray-500 mb-2">Remote Viewing</h2>
+                            <h2 className="text-2xl font-serif text-gray-500 mb-2">CRV Coordinates</h2>
                             <Lock size={16} className="text-gray-600 mt-1" />
                         </div>
                         <p className="text-sm text-gray-600 leading-relaxed">
-                            Project your consciousness to distant coordinates. Coordinate Remote Viewing (CRV) training protocols coming soon.
+                             Project your consciousness to specific coordinate sets. Coordinate Remote Viewing (CRV) protocols coming soon.
                         </p>
                         <div className="mt-4 flex items-center gap-2 text-xs font-mono text-gray-600 uppercase tracking-widest">
                             In Development
