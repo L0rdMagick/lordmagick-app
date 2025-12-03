@@ -273,12 +273,23 @@ export default function EmpathyApp() {
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
+  // Layout State
+  const [isDesktop, setIsDesktop] = useState(false);
+
   const audio = useAudioEngine();
 
   // Initialize
   useEffect(() => {
       const savedStats = localStorage.getItem('empathy_stats');
       if (savedStats) setStats(JSON.parse(savedStats));
+
+      // Responsiveness check
+      const checkLayout = () => {
+        setIsDesktop(window.innerWidth >= 768);
+      };
+      checkLayout();
+      window.addEventListener('resize', checkLayout);
+      return () => window.removeEventListener('resize', checkLayout);
   }, []);
 
   const handleStart = () => {
@@ -437,9 +448,23 @@ export default function EmpathyApp() {
 
   // --- GRID & LAYOUT LOGIC ---
   const getLayoutConfig = () => {
-    let cols = 2;
-    if (deckSize >= 5 && deckSize <= 7) cols = 3;
-    if (deckSize >= 8) cols = 4;
+    let cols = 2; // Default Mobile
+    
+    if (isDesktop) {
+        if (deckSize === 10) {
+            cols = 5;
+        } else {
+            // Default to 4 for large screens as requested
+            // Note: If deckSize is 2 or 3, we still use 4 cols, 
+            // but we might want to constrain it to centered items. 
+            // However, grid-cols-4 ensures consistent sizing.
+            // Let's cap at deckSize so 2 cards aren't tiny, but max 4.
+            cols = Math.min(deckSize, 4);
+        }
+    } else {
+        // Mobile Logic
+        cols = deckSize > 6 ? 3 : 2;
+    }
     
     // Calculate required rows
     const rows = Math.ceil(deckSize / cols);
@@ -624,7 +649,7 @@ export default function EmpathyApp() {
         {/* Grid Container - Forces Fit */}
         <div className="flex-1 w-full min-h-0 flex items-center justify-center">
             <div 
-                className="grid gap-3 w-full max-w-5xl h-full max-h-full"
+                className="grid gap-3 w-full max-w-6xl h-full max-h-full"
                 style={{
                     gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
                     gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`
@@ -640,7 +665,7 @@ export default function EmpathyApp() {
                     <div 
                         className={`
                             absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2
-                            h-[90%] w-auto aspect-2/3 max-w-full
+                            h-[90%] w-auto aspect-[2/3] max-w-full
                             cursor-pointer transition-all duration-500 transform
                             ${gameState === 'sensing' ? 'hover:-translate-y-1 hover:shadow-[0_0_25px_rgba(255,255,255,0.2)]' : ''}
                         `}
@@ -660,7 +685,7 @@ export default function EmpathyApp() {
                         `}
                     >
                         {/* Inner metallic sheen */}
-                        <div className="absolute inset-0 border border-white/20 rounded-lg pointer-events-none"></div>
+                        <div className="absolute inset-0 border-[1px] border-white/20 rounded-lg pointer-events-none"></div>
                     </div>
 
                     {/* Card Front */}
