@@ -9,10 +9,15 @@ import { tarotProducts } from '@/lib/marketplaceData';
 
 export default function TarotDecksPage() {
   return (
-    <main className="relative min-h-screen w-full bg-black bg-cover bg-center p-8" style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}>
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+    <main 
+      className="relative min-h-screen w-full bg-black bg-cover bg-center p-4 md:p-8" 
+      style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}
+    >
+      {/* Background Overlay - consistent with main tools page */}
+      <div className="absolute inset-0 bg-black/70" />
       
-      <header className="relative z-20 w-full p-4 md:p-6 shrink-0">
+      {/* HEADER */}
+      <header className="relative z-20 w-full shrink-0">
         <div className="flex justify-between items-center flex-wrap w-full max-w-7xl mx-auto">
           <div className="order-1">
             <MagickalBackLink href="/magickal-tools" text="Magickal Tools" />
@@ -20,13 +25,16 @@ export default function TarotDecksPage() {
           <div className="order-2 md:order-3">
             <RoomsButton />
           </div>
-          <h1 className="w-full text-center order-3 md:w-auto md:order-2 text-4xl md:text-5xl font-serif text-amber-300 mt-2 md:mt-0" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
+          <h1 className="w-full text-center order-3 md:w-auto md:order-2 text-3xl md:text-5xl font-serif text-amber-300 mt-2 md:mt-0" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
             Tarot Decks
           </h1>
         </div>
+        <p className="relative z-20 text-center text-gray-200 mt-2 max-w-2xl mx-auto font-medium text-sm md:text-base" style={{ textShadow: '1px 1px 3px rgba(0,0,0,0.9)' }}>
+            Browse our collection of mystical decks. Each a gateway to ancient wisdom and inner reflection.
+        </p>
       </header>
 
-      <div className="relative z-10 mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
+      <div className="relative z-10 mt-8 md:mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
         {tarotProducts.map((product) => (
             <Link key={product.slug} href={`/magickal-tools/tarot-decks/${product.slug}`} className="group block">
                 <div className="relative aspect-3/4 w-full overflow-hidden rounded-lg shadow-2xl shadow-black/50 transform transition-all duration-300 group-hover:scale-105 group-hover:-translate-y-2 border border-white/10 group-hover:border-amber-400/50">
