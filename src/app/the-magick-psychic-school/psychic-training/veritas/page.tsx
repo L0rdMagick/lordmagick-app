@@ -154,7 +154,8 @@ const useAudioEngine = () => {
 // CRT Scanline Overlay
 const CRTOverlay = () => (
   <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden h-full w-full">
-    <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,3px_100%] pointer-events-none" />
+    {/* LINTER FIX: Updated bg-[length:...] to bg-size-[...] */}
+    <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-size-[100%_4px,3px_100%] pointer-events-none" />
     <div className="absolute inset-0 bg-black opacity-[0.05] animate-pulse pointer-events-none" />
   </div>
 );
@@ -596,7 +597,7 @@ export default function VeritasApp() {
         {/* The Phrase */}
         <div className="relative z-10 w-full flex flex-col items-center justify-center space-y-8">
           <h2 
-            className="text-2xl md:text-5xl font-mono text-center leading-tight transition-all duration-100 max-w-4xl break-words"
+            className="text-2xl md:text-5xl font-mono text-center leading-tight transition-all duration-100 max-w-4xl wrap-break-word"
             style={{ 
               color: feedback === 'CORRECT' ? '#22d3ee' : feedback === 'WRONG' ? '#d946ef' : '#ffffff',
               ...getGlitchStyle()

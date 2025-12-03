@@ -59,7 +59,8 @@ export default function PsychicTrainingPage() {
                 {/* APP 2: VERITAS */}
                 <Link href="/the-magick-psychic-school/psychic-training/veritas" className="group relative bg-black/40 border border-purple-500/30 rounded-xl overflow-hidden hover:border-cyan-400 transition-all duration-300 hover:shadow-[0_0_30px_rgba(34,211,238,0.2)] hover:-translate-y-1">
                     <div className="h-48 w-full bg-zinc-950 relative flex items-center justify-center overflow-hidden">
-                        <div className="absolute inset-0 opacity-20 pointer-events-none bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,3px_100%]" />
+                        {/* LINTER FIX: Updated bg-[length:...] to bg-size-[...] */}
+                        <div className="absolute inset-0 opacity-20 pointer-events-none bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-size-[100%_4px,3px_100%]" />
                         <div className="absolute inset-0 flex items-center justify-center opacity-30">
                              <div className="w-full h-1 bg-cyan-500 rotate-12 blur-sm group-hover:rotate-0 transition-all duration-500"></div>
                              <div className="w-full h-1 bg-fuchsia-500 -rotate-12 blur-sm group-hover:rotate-0 transition-all duration-500"></div>
