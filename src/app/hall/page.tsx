@@ -37,7 +37,7 @@ const portals = [
     // Ensure you have renamed/uploaded this image in /public/images/
     imageSrc: "/images/the-magick-psychic-school.png", 
     // You may need to create a new sign image or reuse the library one for now
-    signImageSrc: "/images/the-library-sign.png", 
+    signImageSrc: "/images/the-magick-school-sign.png", 
     interactiveGlow: "group-hover:[--glow-color:theme(colors.orange.500)] active:[--glow-color:theme(colors.orange.500)]",
     soundSrc: "/audio/sfx-library-portal.mp3",
     isExternal: false,
