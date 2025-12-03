@@ -201,7 +201,30 @@ export default function PsychicTrainingPage() {
                     </div>
                 </Link>
 
-                {/* APP 8: REMOTE VIEWING (Placeholder) */}
+                {/* APP 8: PSI-TRAINER */}
+                <Link href="/the-magick-psychic-school/psychic-training/psi-trainer" className="group relative bg-black/40 border border-purple-500/30 rounded-xl overflow-hidden hover:border-indigo-400 transition-all duration-300 hover:shadow-[0_0_30px_rgba(129,140,248,0.2)] hover:-translate-y-1">
+                    <div className="h-48 w-full bg-slate-950 relative flex items-center justify-center overflow-hidden">
+                        <div className="absolute inset-0 bg-[conic-gradient(at_bottom_left,var(--tw-gradient-stops))] from-slate-900 via-indigo-900 to-slate-900 opacity-50" />
+                        <div className="relative z-10 flex flex-col items-center">
+                             <div className="w-24 h-24 rounded-full bg-slate-900 border-2 border-indigo-500 flex items-center justify-center shadow-[0_0_20px_rgba(99,102,241,0.5)] group-hover:scale-110 transition-transform duration-500">
+                                 <Brain size={48} className="text-indigo-400 drop-shadow-lg" />
+                             </div>
+                             <div className="absolute -top-2 right-10 w-4 h-4 bg-yellow-400 rounded-full animate-bounce shadow-[0_0_10px_#facc15]"></div>
+                        </div>
+                    </div>
+                    <div className="p-6">
+                        <h2 className="text-2xl font-serif text-white mb-2 group-hover:text-indigo-300 transition-colors">Psi-Trainer</h2>
+                        <p className="text-sm text-gray-400 leading-relaxed">
+                            Dual-Mode Intuition Training. Detect threats (The Devil) or sense safety (The Angel) to calibrate your gut instinct for danger and trust.
+                        </p>
+                        <div className="mt-4 flex items-center gap-2 text-xs font-mono text-indigo-400 uppercase tracking-widest">
+                            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                            Active Training
+                        </div>
+                    </div>
+                </Link>
+
+                {/* APP 9: REMOTE VIEWING (Placeholder) */}
                 <div className="group relative bg-black/20 border border-gray-800 rounded-xl overflow-hidden opacity-70 grayscale cursor-not-allowed">
                     <div className="h-48 w-full bg-gray-900 relative flex items-center justify-center">
                         <Brain size={64} className="text-gray-700" />
