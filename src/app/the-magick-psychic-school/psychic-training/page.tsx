@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Eye, Brain, Lock } from 'lucide-react';
+import { Eye, Brain, Lock, Activity } from 'lucide-react';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
 import RoomsButton from '@/app/components/RoomsButton';
 
@@ -35,11 +35,8 @@ export default function PsychicTrainingPage() {
                 
                 {/* APP 1: THE GAZE */}
                 <Link href="/the-magick-psychic-school/psychic-training/the-gaze" className="group relative bg-black/40 border border-purple-500/30 rounded-xl overflow-hidden hover:border-purple-400 transition-all duration-300 hover:shadow-[0_0_30px_rgba(168,85,247,0.2)] hover:-translate-y-1">
-                    {/* CSS Thumbnail for The Gaze */}
                     <div className="h-48 w-full bg-linear-to-b from-gray-900 to-black relative flex items-center justify-center overflow-hidden">
                         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(168,85,247,0.1),transparent)] group-hover:opacity-100 transition-opacity opacity-50" />
-                        
-                        {/* Eye Graphic */}
                         <div className="relative z-10 flex flex-col items-center">
                             <div className="w-24 h-24 rounded-full border-2 border-cyan-500/50 flex items-center justify-center bg-black/50 group-hover:scale-110 transition-transform duration-500">
                                 <Eye size={48} className="text-cyan-400 drop-shadow-[0_0_10px_rgba(34,211,238,0.8)]" />
@@ -47,7 +44,6 @@ export default function PsychicTrainingPage() {
                             <div className="absolute -bottom-4 w-32 h-1 bg-cyan-500/50 blur-md rounded-full group-hover:w-40 transition-all duration-500"></div>
                         </div>
                     </div>
-
                     <div className="p-6">
                         <h2 className="text-2xl font-serif text-white mb-2 group-hover:text-purple-300 transition-colors">The Gaze</h2>
                         <p className="text-sm text-gray-400 leading-relaxed">
@@ -60,7 +56,33 @@ export default function PsychicTrainingPage() {
                     </div>
                 </Link>
 
-                {/* APP 2: REMOTE VIEWING (Placeholder) */}
+                {/* APP 2: VERITAS */}
+                <Link href="/the-magick-psychic-school/psychic-training/veritas" className="group relative bg-black/40 border border-purple-500/30 rounded-xl overflow-hidden hover:border-cyan-400 transition-all duration-300 hover:shadow-[0_0_30px_rgba(34,211,238,0.2)] hover:-translate-y-1">
+                    <div className="h-48 w-full bg-zinc-950 relative flex items-center justify-center overflow-hidden">
+                        <div className="absolute inset-0 opacity-20 pointer-events-none bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,3px_100%]" />
+                        <div className="absolute inset-0 flex items-center justify-center opacity-30">
+                             <div className="w-full h-1 bg-cyan-500 rotate-12 blur-sm group-hover:rotate-0 transition-all duration-500"></div>
+                             <div className="w-full h-1 bg-fuchsia-500 -rotate-12 blur-sm group-hover:rotate-0 transition-all duration-500"></div>
+                        </div>
+                        <div className="relative z-10 flex flex-col items-center">
+                            <div className="w-24 h-24 rounded-sm border-2 border-cyan-500/50 flex items-center justify-center bg-black/50 group-hover:scale-110 transition-transform duration-500 shadow-[0_0_20px_rgba(34,211,238,0.3)]">
+                                <Activity size={48} className="text-cyan-400" />
+                            </div>
+                        </div>
+                    </div>
+                    <div className="p-6">
+                        <h2 className="text-2xl font-serif text-white mb-2 group-hover:text-cyan-300 transition-colors">Veritas</h2>
+                        <p className="text-sm text-gray-400 leading-relaxed">
+                            The Intuition Polygraph. Train your subconscious to detect truth versus deception through energetic sensitivity, not logic.
+                        </p>
+                        <div className="mt-4 flex items-center gap-2 text-xs font-mono text-cyan-500 uppercase tracking-widest">
+                            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                            Active Training
+                        </div>
+                    </div>
+                </Link>
+
+                {/* APP 3: REMOTE VIEWING (Placeholder) */}
                 <div className="group relative bg-black/20 border border-gray-800 rounded-xl overflow-hidden opacity-70 grayscale cursor-not-allowed">
                     <div className="h-48 w-full bg-gray-900 relative flex items-center justify-center">
                         <Brain size={64} className="text-gray-700" />
