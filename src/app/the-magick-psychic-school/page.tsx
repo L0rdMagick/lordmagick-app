@@ -30,13 +30,15 @@ export default function SchoolPage() {
 
   return (
     <main 
-      className="relative h-screen w-full bg-black bg-cover bg-center overflow-hidden flex flex-col p-4 md:p-8" 
+      // UPDATED CLASSNAME:
+      // min-h-screen: Allows the container to grow on mobile so scrolling works naturally.
+      // md:h-screen: Locks the height to the viewport on desktop/tablets to fit in one screen.
+      // md:overflow-hidden: Prevents scrolling on desktop.
+      className="relative w-full bg-black bg-cover bg-center flex flex-col p-4 md:p-8 min-h-screen md:h-screen md:overflow-hidden" 
       style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}
     >
       
-      {/* 
-        HEADER: Set to shrink-0 so it takes only necessary space.
-      */}
+      {/* HEADER */}
       <header className="relative z-20 w-full shrink-0">
         <div className="flex justify-between items-center flex-wrap w-full max-w-7xl mx-auto">
           <div className="order-1">
@@ -54,23 +56,14 @@ export default function SchoolPage() {
         </p>
       </header>
 
-      {/* 
-        CONTENT CONTAINER: Set to grow to fill remaining height.
-        items-center centers the grid vertically.
-      */}
-      <div className="relative z-10 grow flex items-center justify-center w-full">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-12 max-w-7xl w-full items-center justify-items-center">
+      {/* CONTENT CONTAINER */}
+      <div className="relative z-10 grow flex items-center justify-center w-full py-8 md:py-0">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-4 lg:gap-12 max-w-7xl w-full items-center justify-items-center">
           {sections.map((section) => (
             <Link key={section.name} href={section.href} className="group flex flex-col items-center justify-center w-full h-full">
               
-              {/* 
-                 IMAGE WRAPPER:
-                 - max-h-[50vh]: Ensures images never grow taller than 50% of screen height.
-                 - aspect-square: Maintains shape.
-                 - w-auto: Allows width to adjust based on height constraint.
-                 - max-w-full: Prevents horizontal overflow.
-              */}
-              <div className="relative w-full max-w-[350px] aspect-square h-auto max-h-[40vh] lg:max-h-[50vh] transition-transform duration-500 group-hover:scale-105 group-hover:-translate-y-2">
+              {/* IMAGE WRAPPER */}
+              <div className="relative w-full max-w-[300px] md:max-w-[350px] aspect-square h-auto max-h-[40vh] lg:max-h-[50vh] transition-transform duration-500 group-hover:scale-105 group-hover:-translate-y-2">
                   <div className="relative w-full h-full flex items-center justify-center">
                       <Image 
                           src={section.image} 
