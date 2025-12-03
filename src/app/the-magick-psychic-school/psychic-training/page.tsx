@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Eye, Brain, Lock, Activity } from 'lucide-react';
+import { Eye, Brain, Lock, Activity, DoorOpen } from 'lucide-react';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
 import RoomsButton from '@/app/components/RoomsButton';
 
@@ -59,7 +59,6 @@ export default function PsychicTrainingPage() {
                 {/* APP 2: VERITAS */}
                 <Link href="/the-magick-psychic-school/psychic-training/veritas" className="group relative bg-black/40 border border-purple-500/30 rounded-xl overflow-hidden hover:border-cyan-400 transition-all duration-300 hover:shadow-[0_0_30px_rgba(34,211,238,0.2)] hover:-translate-y-1">
                     <div className="h-48 w-full bg-zinc-950 relative flex items-center justify-center overflow-hidden">
-                        {/* LINTER FIX: Updated bg-[length:...] to bg-size-[...] */}
                         <div className="absolute inset-0 opacity-20 pointer-events-none bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-size-[100%_4px,3px_100%]" />
                         <div className="absolute inset-0 flex items-center justify-center opacity-30">
                              <div className="w-full h-1 bg-cyan-500 rotate-12 blur-sm group-hover:rotate-0 transition-all duration-500"></div>
@@ -83,25 +82,31 @@ export default function PsychicTrainingPage() {
                     </div>
                 </Link>
 
-                {/* APP 3: REMOTE VIEWING (Placeholder) */}
-                <div className="group relative bg-black/20 border border-gray-800 rounded-xl overflow-hidden opacity-70 grayscale cursor-not-allowed">
-                    <div className="h-48 w-full bg-gray-900 relative flex items-center justify-center">
-                        <Brain size={64} className="text-gray-700" />
-                        <div className="absolute inset-0 bg-[repeating-linear-gradient(45deg,transparent,transparent_10px,#000_10px,#000_20px)] opacity-20"></div>
+                {/* APP 3: THE THRESHOLD */}
+                <Link href="/the-magick-psychic-school/psychic-training/the-threshold" className="group relative bg-black/40 border border-purple-500/30 rounded-xl overflow-hidden hover:border-yellow-600 transition-all duration-300 hover:shadow-[0_0_30px_rgba(202,138,4,0.2)] hover:-translate-y-1">
+                    <div className="h-48 w-full bg-neutral-900 relative flex items-center justify-center overflow-hidden">
+                        {/* Door Background */}
+                        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom,rgba(250,204,21,0.1),transparent)] opacity-50" />
+                        <div className="relative z-10 flex flex-col items-center">
+                            {/* Door Visual */}
+                            <div className="w-32 h-40 bg-neutral-950 border-4 border-yellow-900/60 rounded-t-full relative flex items-center justify-center shadow-2xl group-hover:scale-105 transition-transform duration-700">
+                                <div className="absolute inset-0 border-r border-black/50 w-1/2 h-full"></div>
+                                <div className="w-full h-full bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.05)_50%,transparent_75%)] opacity-30"></div>
+                                <DoorOpen size={48} className="text-yellow-600/80 drop-shadow-[0_0_10px_rgba(202,138,4,0.5)]" />
+                            </div>
+                        </div>
                     </div>
                     <div className="p-6">
-                        <div className="flex justify-between items-start">
-                            <h2 className="text-2xl font-serif text-gray-500 mb-2">Remote Viewing</h2>
-                            <Lock size={16} className="text-gray-600 mt-1" />
-                        </div>
-                        <p className="text-sm text-gray-600 leading-relaxed">
-                            Project your consciousness to distant coordinates. Coordinate Remote Viewing (CRV) training protocols coming soon.
+                        <h2 className="text-2xl font-serif text-white mb-2 group-hover:text-yellow-500 transition-colors">The Threshold</h2>
+                        <p className="text-sm text-gray-400 leading-relaxed">
+                            Remote Viewing Trainer. Project your consciousness through barriers to perceive hidden targets. A foundational CRV exercise.
                         </p>
-                        <div className="mt-4 flex items-center gap-2 text-xs font-mono text-gray-600 uppercase tracking-widest">
-                            In Development
+                        <div className="mt-4 flex items-center gap-2 text-xs font-mono text-yellow-600 uppercase tracking-widest">
+                            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                            Active Training
                         </div>
                     </div>
-                </div>
+                </Link>
 
             </div>
         </div>
