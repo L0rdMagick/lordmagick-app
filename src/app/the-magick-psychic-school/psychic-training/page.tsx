@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Eye, Brain, Lock, Activity, DoorOpen, Heart, Crosshair, AudioWaveform } from 'lucide-react';
+import { Eye, Brain, Lock, Activity, DoorOpen, Heart, Crosshair, AudioWaveform, Zap } from 'lucide-react';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
 import RoomsButton from '@/app/components/RoomsButton';
 
@@ -175,8 +175,33 @@ export default function PsychicTrainingPage() {
                         </div>
                     </div>
                 </Link>
+                
+                {/* APP 7: THE STATISTICAL EYE */}
+                <Link href="/the-magick-psychic-school/psychic-training/statistical-eye" className="group relative bg-black/40 border border-purple-500/30 rounded-xl overflow-hidden hover:border-zinc-500 transition-all duration-300 hover:shadow-[0_0_30px_rgba(212,212,216,0.2)] hover:-translate-y-1">
+                    <div className="h-48 w-full bg-neutral-950 relative flex items-center justify-center overflow-hidden">
+                        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,#ffffff,transparent)]" />
+                        <div className="relative z-10 flex flex-col items-center">
+                             <div className="w-24 h-32 bg-zinc-900 border-2 border-zinc-700 rounded-lg flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform duration-500">
+                                 <div className="w-16 h-16 border-2 border-zinc-600 rounded-full flex items-center justify-center">
+                                     <span className="text-2xl font-bold text-zinc-500">?</span>
+                                 </div>
+                             </div>
+                             <Zap size={24} className="absolute top-2 -right-5 text-yellow-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-pulse" />
+                        </div>
+                    </div>
+                    <div className="p-6">
+                        <h2 className="text-2xl font-serif text-white mb-2 group-hover:text-zinc-300 transition-colors">The Statistical Eye</h2>
+                        <p className="text-sm text-gray-400 leading-relaxed">
+                            Classic Zener Card training. Measure your Psi ability against mathematical chance. Track your deviation from the mean.
+                        </p>
+                        <div className="mt-4 flex items-center gap-2 text-xs font-mono text-zinc-500 uppercase tracking-widest">
+                            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                            Active Training
+                        </div>
+                    </div>
+                </Link>
 
-                {/* APP 7: REMOTE VIEWING (Placeholder) */}
+                {/* APP 8: REMOTE VIEWING (Placeholder) */}
                 <div className="group relative bg-black/20 border border-gray-800 rounded-xl overflow-hidden opacity-70 grayscale cursor-not-allowed">
                     <div className="h-48 w-full bg-gray-900 relative flex items-center justify-center">
                         <Brain size={64} className="text-gray-700" />
