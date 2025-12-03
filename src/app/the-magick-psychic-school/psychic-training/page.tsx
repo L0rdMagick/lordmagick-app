@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Eye, Brain, Lock, Activity, DoorOpen, Heart, Crosshair } from 'lucide-react';
+import { Eye, Brain, Lock, Activity, DoorOpen, Heart, Crosshair, AudioWaveform } from 'lucide-react';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
 import RoomsButton from '@/app/components/RoomsButton';
 
@@ -148,8 +148,35 @@ export default function PsychicTrainingPage() {
                         </div>
                     </div>
                 </Link>
+                
+                {/* APP 6: SENSES */}
+                <Link href="/the-magick-psychic-school/psychic-training/senses" className="group relative bg-black/40 border border-purple-500/30 rounded-xl overflow-hidden hover:border-indigo-500 transition-all duration-300 hover:shadow-[0_0_30px_rgba(99,102,241,0.2)] hover:-translate-y-1">
+                    <div className="h-48 w-full bg-neutral-950 relative flex items-center justify-center overflow-hidden">
+                        <div className="absolute inset-0 opacity-30 bg-[repeating-linear-gradient(90deg,transparent,transparent_20px,#4f46e5_20px,#4f46e5_21px)]" />
+                        <div className="relative z-10 flex flex-col items-center">
+                             <div className="w-32 h-20 flex items-center justify-center gap-1">
+                                 {[1,2,3,4,5].map(i => (
+                                     <div key={i} className="w-3 bg-indigo-500 rounded-full animate-pulse" style={{ height: `${Math.random() * 60 + 20}%`, animationDelay: `${i*0.1}s` }}></div>
+                                 ))}
+                             </div>
+                             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+                                <AudioWaveform size={48} className="text-white drop-shadow-lg" />
+                             </div>
+                        </div>
+                    </div>
+                    <div className="p-6">
+                        <h2 className="text-2xl font-serif text-white mb-2 group-hover:text-indigo-400 transition-colors">Senses</h2>
+                        <p className="text-sm text-gray-400 leading-relaxed">
+                            Sensory ESP Trainer. Develop your ability to intuit smells, tastes, and textures of hidden objects through non-local perception.
+                        </p>
+                        <div className="mt-4 flex items-center gap-2 text-xs font-mono text-indigo-500 uppercase tracking-widest">
+                            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                            Active Training
+                        </div>
+                    </div>
+                </Link>
 
-                {/* APP 6: REMOTE VIEWING (Placeholder) */}
+                {/* APP 7: REMOTE VIEWING (Placeholder) */}
                 <div className="group relative bg-black/20 border border-gray-800 rounded-xl overflow-hidden opacity-70 grayscale cursor-not-allowed">
                     <div className="h-48 w-full bg-gray-900 relative flex items-center justify-center">
                         <Brain size={64} className="text-gray-700" />
@@ -157,7 +184,7 @@ export default function PsychicTrainingPage() {
                     </div>
                     <div className="p-6">
                         <div className="flex justify-between items-start">
-                            <h2 className="text-2xl font-serif text-gray-500 mb-2">CRV Coordinates</h2>
+                            <h2 className="text-2xl font-serif text-gray-500 mb-2">Remote Viewing</h2>
                             <Lock size={16} className="text-gray-600 mt-1" />
                         </div>
                         <p className="text-sm text-gray-600 leading-relaxed">
