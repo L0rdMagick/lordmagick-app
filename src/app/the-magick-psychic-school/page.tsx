@@ -23,7 +23,7 @@ export default function SchoolPage() {
     {
       name: "The Magick Library",
       href: "/the-magick-psychic-school/the-magick-library",
-      image: "/images/the-magick-library.png", // Assuming png based on others
+      image: "/images/the-magick-library.png",
       description: "Ancient tomes and arcane knowledge."
     }
   ];
@@ -52,12 +52,8 @@ export default function SchoolPage() {
       <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-7xl mx-auto items-center justify-center">
         {sections.map((section) => (
           <Link key={section.name} href={section.href} className="group flex flex-col items-center">
-            <div className="relative w-full aspect-3/4 max-w-[350px] transition-transform duration-500 group-hover:scale-105 group-hover:-translate-y-2 filter drop-shadow-2xl">
-                {/* 
-                   Note: Ensure these images exist in /public/images/ 
-                   If they don't exist yet, Next/Image will throw an error or show broken image.
-                   You can temporarily comment out the Image component and use a div if needed.
-                */}
+            {/* UPDATED: Changed aspect-3/4 to aspect-square */}
+            <div className="relative w-full aspect-square max-w-[350px] transition-transform duration-500 group-hover:scale-105 group-hover:-translate-y-2 filter drop-shadow-2xl">
                 <div className="relative w-full h-full rounded-xl overflow-hidden border-2 border-transparent group-hover:border-amber-400/50 transition-colors">
                     <Image 
                         src={section.image} 
