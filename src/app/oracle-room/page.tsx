@@ -11,32 +11,32 @@ const uncialAntiqua = Uncial_Antiqua({ subsets: ['latin'], weight: ['400'] });
 export default function OracleRoomPage() {
   return (
     <main 
-      className="relative min-h-screen w-full bg-black bg-cover bg-center p-8 flex flex-col items-center" 
+      className="relative min-h-screen w-full bg-black bg-cover bg-center p-8 flex flex-col" 
       style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}
     >
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
 
-      <div className="relative z-10 flex flex-col items-center text-white max-w-4xl mx-auto w-full h-full">
-        
-        {/* UPDATED HEADER */}
-        <header className="relative z-20 w-full shrink-0 mb-12">
-            <div className="flex justify-between items-center flex-wrap w-full">
-                <div className="order-1">
-                    <MagickalBackLink href="/hall" text="Grand Hall" />
-                </div>
-                <div className="order-2 md:order-3">
-                    <RoomsButton />
-                </div>
-                <h1 className={`w-full text-center order-3 md:w-auto md:order-2 text-4xl md:text-6xl text-cyan-300 ${uncialAntiqua.className} mt-2 md:mt-0`} style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
-                    The Oracle's Chamber
-                </h1>
-            </div>
-            <p className="relative z-20 text-center text-gray-300 mt-4 max-w-2xl mx-auto text-lg">
-                Here, the veils between worlds are thin. Gaze into the mists and choose your method of divination.
-            </p>
-        </header>
+      {/* HEADER - Now in a wider container to prevent wrapping on desktop */}
+      <header className="relative z-20 w-full shrink-0 mb-12">
+          <div className="flex justify-between items-center flex-wrap w-full max-w-7xl mx-auto">
+              <div className="order-1">
+                  <MagickalBackLink href="/hall" text="Grand Hall" />
+              </div>
+              <div className="order-2 md:order-3">
+                  <RoomsButton />
+              </div>
+              <h1 className={`w-full text-center order-3 md:w-auto md:order-2 text-4xl md:text-6xl text-cyan-300 ${uncialAntiqua.className} mt-2 md:mt-0`} style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
+                  The Oracle's Chamber
+              </h1>
+          </div>
+          <p className="relative z-20 text-center text-gray-300 mt-4 max-w-2xl mx-auto text-lg">
+              Here, the veils between worlds are thin. Gaze into the mists and choose your method of divination.
+          </p>
+      </header>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 w-full">
+      {/* CONTENT - Centered vertically and constrained width */}
+      <div className="relative z-10 grow flex flex-col items-center justify-center w-full">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 w-full max-w-4xl mx-auto">
           <Link
             href="/oracle-room/tarot-reading"
             className="group block p-6 bg-black/40 rounded-xl border border-gray-700/50 backdrop-blur-sm transition-all duration-300 hover:border-cyan-400/80 hover:scale-105 hover:bg-black/60 hover:[--glow-color:var(--color-cyan-400)]"
@@ -77,7 +77,6 @@ export default function OracleRoomPage() {
             </p>
           </Link>
         </div>
-        
       </div>
     </main>
   );
