@@ -466,8 +466,8 @@ export default function PsiHunterApp() {
         )}
       </header>
 
-      <main className="flex-grow p-4 flex flex-col justify-center relative">
-        <div className="text-center mb-6 min-h-[40px]">
+      <main className="grow p-4 flex flex-col justify-center relative">
+        <div className="text-center mb-6 min-h-10">
           {!roundActive && !revealed && (
              <button 
                onClick={generateGrid}
