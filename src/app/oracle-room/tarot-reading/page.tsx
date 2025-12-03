@@ -1,9 +1,10 @@
-// src/app/oracle-room/tarot-reading/page.tsx
+"use client";
 
 import Image from 'next/image';
 import Link from 'next/link';
 import { Uncial_Antiqua } from 'next/font/google';
 import RoomsButton from '../../components/RoomsButton';
+import MagickalBackLink from '../../components/MagickalBackLink';
 
 const uncialAntiqua = Uncial_Antiqua({ subsets: ['latin'], weight: ['400'] });
 
@@ -43,14 +44,20 @@ export default function TarotReadingLandingPage() {
       
       <div className="relative z-10 flex flex-col items-center justify-center min-h-screen text-white w-full">
         
-        <header className="mb-12 w-full max-w-5xl">
-            <div className="flex flex-col md:flex-row justify-between items-center gap-4 w-full">
-                <h1 className={`text-5xl md:text-6xl text-cyan-300 text-center md:text-left ${uncialAntiqua.className}`} style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
+        {/* UPDATED HEADER */}
+        <header className="mb-12 w-full max-w-5xl shrink-0">
+            <div className="flex justify-between items-center flex-wrap w-full">
+                <div className="order-1">
+                    <MagickalBackLink href="/oracle-room" text="Oracle Room" />
+                </div>
+                <div className="order-2 md:order-3">
+                    <RoomsButton />
+                </div>
+                <h1 className={`w-full text-center order-3 md:w-auto md:order-2 text-4xl md:text-6xl text-cyan-300 ${uncialAntiqua.className} mt-2 md:mt-0`} style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
                     Choose Your Oracle
                 </h1>
-                <RoomsButton className="ml-0 md:ml-8" />
             </div>
-            <p className="mt-4 max-w-2xl text-lg text-gray-300 text-center md:text-left mx-auto md:mx-0">
+            <p className="mt-4 text-lg text-gray-300 text-center">
                 Select the guide and the duration of the reading that resonates with your query.
             </p>
         </header>
@@ -79,7 +86,7 @@ export default function TarotReadingLandingPage() {
                   <Link 
                     key={option.duration}
                     href={`/oracle-room/tarot-reading/${reader.slug}-${option.duration}`}
-                    className="block w-full py-3 px-4 bg-gray-800/50 text-gray-200 rounded-lg border border-gray-600 hover:bg-gray-700 hover:text-white transition-colors"
+                    className="block w-full py-3 px-4 bg-gray-800/50 text-gray-200 rounded-lg border border-gray-600 hover:bg-gray-700 hover:text-white transition-colors text-center"
                   >
                     {option.label}
                   </Link>

@@ -10,6 +10,7 @@ import LoadingSpinner from '@/app/components/LoadingSpinner';
 import AuthPage from '@/app/components/AuthPage';
 import { HeaderIcon, PlusIcon, LockIcon } from '@/app/components/icons';
 import RoomsButton from '@/app/components/RoomsButton';
+import MagickalBackLink from '@/app/components/MagickalBackLink';
 
 export default function HumanDesignPage() {
   const [session, setSession] = useState<Session | null>(null);
@@ -154,17 +155,23 @@ export default function HumanDesignPage() {
       <div className="absolute inset-0 bg-black/40" />
       <div className="relative z-10 container mx-auto max-w-4xl p-4 sm:p-6 md:p-8">
         
-        <header className="mb-8 w-full">
-            <div className="flex flex-col md:flex-row justify-between items-center gap-4 w-full">
-                <div className="flex items-center gap-4">
+        {/* UPDATED HEADER */}
+        <header className="mb-8 w-full shrink-0">
+            <div className="flex justify-between items-center flex-wrap w-full">
+                <div className="order-1">
+                    <MagickalBackLink href="/oracle-room" text="Oracle Room" />
+                </div>
+                <div className="order-2 md:order-3">
+                    <RoomsButton />
+                </div>
+                <div className="w-full text-center order-3 md:w-auto md:order-2 mt-2 md:mt-0 flex justify-center items-center gap-4">
                     <HeaderIcon />
                     <h1 className="text-4xl sm:text-5xl font-bold text-transparent bg-clip-text bg-linear-to-r from-purple-400 via-pink-500 to-red-500">
                       Human Design
                     </h1>
                 </div>
-                <RoomsButton className="ml-0 md:ml-8" />
             </div>
-            <p className="text-lg text-gray-400 mt-2 text-center">Generate your personalized energetic blueprint.</p>
+            <p className="text-lg text-gray-400 mt-2 text-center">Unlock the blueprint of your soul. Generate your chart to understand your unique energetic mechanics.</p>
         </header>
 
         <main className="bg-black/40 backdrop-blur-sm p-6 sm:p-8 rounded-2xl shadow-2xl shadow-purple-500/10 border border-white/10 transition-all duration-300">

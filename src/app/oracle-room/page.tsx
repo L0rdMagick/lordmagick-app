@@ -1,31 +1,37 @@
-// src/app/oracle-room/page.tsx
+"use client";
 
 import Image from 'next/image';
 import Link from 'next/link';
 import { Uncial_Antiqua } from 'next/font/google';
 import RoomsButton from '../components/RoomsButton';
+import MagickalBackLink from '../components/MagickalBackLink';
 
 const uncialAntiqua = Uncial_Antiqua({ subsets: ['latin'], weight: ['400'] });
 
 export default function OracleRoomPage() {
   return (
     <main 
-      className="relative min-h-screen w-full bg-black bg-cover bg-center p-8 flex flex-col items-center justify-center" 
+      className="relative min-h-screen w-full bg-black bg-cover bg-center p-8 flex flex-col items-center" 
       style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}
     >
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
 
-      <div className="relative z-10 flex flex-col items-center text-white max-w-4xl mx-auto w-full">
+      <div className="relative z-10 flex flex-col items-center text-white max-w-4xl mx-auto w-full h-full">
         
-        {/* THE FIX: New responsive header structure */}
-        <header className="mb-12 w-full">
-            <div className="flex flex-col md:flex-row justify-between items-center gap-4 w-full">
-                <h1 className={`text-5xl md:text-6xl text-cyan-300 text-center md:text-left ${uncialAntiqua.className}`} style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
+        {/* UPDATED HEADER */}
+        <header className="relative z-20 w-full shrink-0 mb-12">
+            <div className="flex justify-between items-center flex-wrap w-full">
+                <div className="order-1">
+                    <MagickalBackLink href="/hall" text="Grand Hall" />
+                </div>
+                <div className="order-2 md:order-3">
+                    <RoomsButton />
+                </div>
+                <h1 className={`w-full text-center order-3 md:w-auto md:order-2 text-4xl md:text-6xl text-cyan-300 ${uncialAntiqua.className} mt-2 md:mt-0`} style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
                     The Oracle's Chamber
                 </h1>
-                <RoomsButton className="ml-0 md:ml-8" />
             </div>
-            <p className="mt-4 max-w-2xl mx-auto text-lg text-gray-300 text-center">
+            <p className="relative z-20 text-center text-gray-300 mt-4 max-w-2xl mx-auto text-lg">
                 Here, the veils between worlds are thin. Gaze into the mists and choose your method of divination.
             </p>
         </header>
