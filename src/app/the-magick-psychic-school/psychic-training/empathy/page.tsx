@@ -26,16 +26,16 @@ const EMOTIONS = [
   { id: 'laughing', name: 'Laughter', icon: PartyPopper, color: '#d946ef', desc: 'Vibration, Release', aura: 'shadow-fuchsia-500' }
 ];
 
-// Card backs: Indigo/Black themes with Static and Silver Borders
+// Card backs: Deep Indigo/Black themes with Static and Silver Borders
 const CARD_BACKS: Record<string, { name: string; bg: string }> = {
-  void: { 
-    name: 'Void', 
-    bg: 'bg-[radial-gradient(circle_at_center,_#312e81_0%,_#020617_100%)]' // Indigo to Black
-  },
   static: { 
     name: 'Static', 
-    // High contrast TV static effect using gradients
-    bg: 'bg-black bg-[repeating-conic-gradient(#000000_0deg_10deg,_#312e81_10deg_20deg,_#ffffff10_20deg_30deg)] opacity-90' 
+    // High contrast TV static effect using gradients + deep indigo overlay
+    bg: 'bg-indigo-950 bg-[repeating-conic-gradient(#000000_0deg_10deg,_#312e81_10deg_20deg,_#ffffff15_20deg_30deg)]' 
+  },
+  void: { 
+    name: 'Void', 
+    bg: 'bg-[radial-gradient(circle_at_center,_#312e81_0%,_#020617_90%)]' 
   },
   ether: { 
     name: 'Ether', 
@@ -264,7 +264,7 @@ export default function EmpathyApp() {
 
   const [showInstructions, setShowInstructions] = useState(true);
   const [deckSize, setDeckSize] = useState(4);
-  const [cardBack, setCardBack] = useState('static'); // Default to static per request
+  const [cardBack, setCardBack] = useState('static'); 
   const [feedbackMode, setFeedbackMode] = useState('training');
   const [targetFocus, setTargetFocus] = useState('random');
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -441,12 +441,19 @@ export default function EmpathyApp() {
 
   const TargetIcon = targetEmotion?.icon;
 
-  // GRID LOGIC
-  const getGridClass = () => {
-    if (deckSize <= 4) return 'grid-cols-2 max-w-sm';
-    if (deckSize < 8) return 'grid-cols-3 max-w-2xl';
-    return 'grid-cols-4 max-w-3xl';
+  // --- GRID & LAYOUT LOGIC ---
+  const getLayoutConfig = () => {
+    let cols = 2;
+    if (deckSize >= 5 && deckSize <= 7) cols = 3;
+    if (deckSize >= 8) cols = 4;
+    
+    // Calculate required rows to ensure fit
+    const rows = Math.ceil(deckSize / cols);
+    
+    return { cols, rows };
   };
+
+  const { cols, rows } = getLayoutConfig();
 
   return (
     <div className="relative h-dvh w-full bg-neutral-950 text-slate-200 font-sans selection:bg-purple-500/30 flex flex-col overflow-hidden" style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}>
@@ -456,7 +463,7 @@ export default function EmpathyApp() {
       {showInstructions && <InstructionModal onClose={handleStart} />}
 
       {/* HEADER */}
-      <header className="relative z-20 flex justify-between items-center px-4 py-3 border-b border-white/5 backdrop-blur-sm bg-black/40 shrink-0">
+      <header className="relative z-20 flex justify-between items-center px-4 py-3 border-b border-white/5 backdrop-blur-sm bg-black/40 shrink-0 h-16">
         <div className="flex items-center gap-4">
             <MagickalBackLink href="/the-magick-psychic-school/psychic-training" text="Exit" className="text-xs text-slate-400 hover:text-white" />
             <div className="w-px h-6 bg-white/20 hidden md:block"></div>
@@ -605,85 +612,98 @@ export default function EmpathyApp() {
       )}
 
       {/* GAME AREA */}
-      <main className="flex-1 flex flex-col items-center justify-start p-4 relative z-10 w-full min-h-0">
+      <main className="flex-1 w-full flex flex-col relative z-10 overflow-y-auto p-2">
         
         {/* Instruction / Status */}
-        <div className="mb-4 text-center animate-fade-in-up shrink-0 w-full">
-          <p className="text-slate-500 text-[10px] md:text-xs uppercase tracking-[0.2em] mb-1">Target Frequency</p>
-          <div className="flex items-center justify-center gap-3">
-             {TargetIcon && <TargetIcon size={20} className="text-amber-400" />}
-             <h1 className="text-2xl md:text-3xl font-serif text-slate-100">{targetEmotion?.name.toUpperCase()}</h1>
-             {TargetIcon && <TargetIcon size={20} className="text-amber-400" />}
+        <div className="shrink-0 mb-2 w-full text-center animate-fade-in-up min-h-[60px] flex flex-col justify-center">
+          <p className="text-slate-500 text-[10px] uppercase tracking-[0.2em] mb-1">Target Frequency</p>
+          <div className="flex items-center justify-center gap-2">
+             {TargetIcon && <TargetIcon size={18} className="text-amber-400" />}
+             <h1 className="text-xl md:text-3xl font-serif text-slate-100">{targetEmotion?.name.toUpperCase()}</h1>
+             {TargetIcon && <TargetIcon size={18} className="text-amber-400" />}
           </div>
-          <p className={`mt-1 h-5 text-xs font-medium tracking-wide transition-colors duration-500 ${message.includes('CONFIRMED') ? 'text-green-400' : message.includes('Dissonance') ? 'text-red-400' : 'text-purple-300/80'}`}>
+          <p className={`h-4 text-[10px] md:text-xs font-medium tracking-wide transition-colors duration-500 ${message.includes('CONFIRMED') ? 'text-green-400' : message.includes('Dissonance') ? 'text-red-400' : 'text-purple-300/80'}`}>
             {message}
           </p>
         </div>
 
-        {/* Dynamic Grid Layout */}
-        <div className={`w-full grid gap-4 place-items-center ${getGridClass()} flex-1 max-h-full`}>
-          {cards.map((card, idx) => (
+        {/* Grid Container - Forces Fit */}
+        <div className="flex-1 w-full min-h-0 flex items-center justify-center">
             <div 
-              key={card.id}
-              onClick={() => handleCardClick(idx)}
-              className={`
-                relative w-full h-full aspect-2/3 cursor-pointer transition-all duration-500 transform
-                ${gameState === 'sensing' ? 'hover:-translate-y-1 hover:shadow-[0_0_25px_rgba(255,255,255,0.2)]' : ''}
-              `}
-              style={{
-                transformStyle: 'preserve-3d',
-                transform: card.status !== 'face-down' ? 'rotateY(180deg)' : 'rotateY(0deg)',
-              }}
+                className="grid gap-3 w-full max-w-5xl h-full max-h-full"
+                style={{
+                    gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
+                    gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`
+                }}
             >
-              {/* Card Back - Magickal Silver Border */}
-              <div 
-                className={`
-                   absolute inset-0 w-full h-full rounded-xl backface-hidden overflow-hidden
-                   ${CARD_BACKS[cardBack].bg}
-                   border-4 border-slate-400 ring-2 ring-inset ring-black/50
-                   shadow-[0_0_15px_rgba(148,163,184,0.3)]
-                `}
-              >
-                 {/* Inner border sheen effect */}
-                 <div className="absolute inset-0 border-2 border-white/20 rounded-lg pointer-events-none"></div>
-              </div>
+            {cards.map((card, idx) => (
+                <div 
+                    key={card.id}
+                    onClick={() => handleCardClick(idx)}
+                    // Wrapper: Centers the card in the cell
+                    className="relative w-full h-full flex items-center justify-center"
+                >
+                    <div className={`
+                        relative aspect-[2/3] w-auto h-auto max-w-full max-h-full
+                        cursor-pointer transition-all duration-500 transform
+                        ${gameState === 'sensing' ? 'hover:-translate-y-1 hover:shadow-[0_0_25px_rgba(255,255,255,0.2)]' : ''}
+                    `}
+                    style={{
+                        transformStyle: 'preserve-3d',
+                        transform: card.status !== 'face-down' ? 'rotateY(180deg)' : 'rotateY(0deg)',
+                    }}
+                    >
+                    {/* Card Back - Magickal Silver Border */}
+                    <div 
+                        className={`
+                        absolute inset-0 w-full h-full rounded-lg backface-hidden overflow-hidden
+                        ${CARD_BACKS[cardBack].bg}
+                        border-[3px] border-slate-400 ring-1 ring-inset ring-black/80
+                        shadow-[0_0_10px_rgba(148,163,184,0.2)]
+                        `}
+                    >
+                        {/* Inner metallic sheen */}
+                        <div className="absolute inset-0 border-[1px] border-white/20 rounded-lg pointer-events-none"></div>
+                    </div>
 
-              {/* Card Front */}
-              <div 
-                className={`
-                  absolute inset-0 w-full h-full rounded-xl backface-hidden transform-[rotateY(180deg)]
-                  flex flex-col items-center justify-center border-2
-                  ${card.status === 'revealed-wrong' 
-                    ? 'bg-neutral-800 border-neutral-700 grayscale opacity-60' 
-                    : `bg-neutral-900 ${card.color === '#ec4899' ? 'border-pink-500' : 'border-slate-600'} ${card.aura}`
-                  }
-                `}
-              >
-                {card.status === 'revealed' && card.isTarget && (
-                  <div className="absolute inset-0 bg-linear-to-t from-amber-500/20 to-transparent animate-pulse rounded-xl"></div>
-                )}
+                    {/* Card Front */}
+                    <div 
+                        className={`
+                        absolute inset-0 w-full h-full rounded-lg backface-hidden transform-[rotateY(180deg)]
+                        flex flex-col items-center justify-center border-2
+                        ${card.status === 'revealed-wrong' 
+                            ? 'bg-neutral-800 border-neutral-700 grayscale opacity-60' 
+                            : `bg-neutral-900 ${card.color === '#ec4899' ? 'border-pink-500' : 'border-slate-600'} ${card.aura}`
+                        }
+                        `}
+                    >
+                        {card.status === 'revealed' && card.isTarget && (
+                        <div className="absolute inset-0 bg-linear-to-t from-amber-500/20 to-transparent animate-pulse rounded-lg"></div>
+                        )}
 
-                <div className={`p-4 rounded-full bg-white/5 mb-4 ${card.status === 'revealed' && card.isTarget ? 'text-amber-300 scale-110' : 'text-slate-300'}`}>
-                  <card.icon 
-                    className="w-8 h-8 md:w-10 md:h-10"
-                    color={card.status === 'revealed-wrong' ? '#525252' : card.color} 
-                  />
+                        <div className={`p-3 rounded-full bg-white/5 mb-3 ${card.status === 'revealed' && card.isTarget ? 'text-amber-300 scale-110' : 'text-slate-300'}`}>
+                        <card.icon 
+                            className="w-6 h-6 md:w-8 md:h-8"
+                            color={card.status === 'revealed-wrong' ? '#525252' : card.color} 
+                        />
+                        </div>
+                        <span className={`text-[10px] md:text-xs uppercase tracking-widest font-bold ${card.status === 'revealed-wrong' ? 'text-neutral-500' : 'text-white'}`}>
+                        {card.name}
+                        </span>
+                        
+                        {card.isTarget && card.status === 'revealed' && (
+                        <Sparkles className="absolute top-1 right-1 text-amber-400 animate-spin-slow" size={12} />
+                        )}
+                    </div>
                 </div>
-                <span className={`text-xs md:text-sm uppercase tracking-widest font-bold ${card.status === 'revealed-wrong' ? 'text-neutral-500' : 'text-white'}`}>
-                  {card.name}
-                </span>
-                
-                {card.isTarget && card.status === 'revealed' && (
-                  <Sparkles className="absolute top-2 right-2 text-amber-400 animate-spin-slow" size={16} />
-                )}
-              </div>
             </div>
           ))}
+          </div>
         </div>
       </main>
 
       {/* FOOTER */}
-      <footer className="relative z-20 py-2 text-center border-t border-white/5 bg-black/40 backdrop-blur text-[10px] text-slate-600 shrink-0">
+      <footer className="relative z-20 py-2 text-center border-t border-white/5 bg-black/40 backdrop-blur text-[10px] text-slate-600 shrink-0 h-8 flex items-center justify-center">
         <p>LAB CONDITIONS: {deckSize} CARDS // {feedbackMode.toUpperCase()} MODE</p>
       </footer>
 
