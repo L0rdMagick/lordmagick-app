@@ -26,19 +26,20 @@ const EMOTIONS = [
   { id: 'laughing', name: 'Laughter', icon: PartyPopper, color: '#d946ef', desc: 'Vibration, Release', aura: 'shadow-fuchsia-500' }
 ];
 
-// Card backs modified to be abstract/static/void
+// Card backs: Indigo/Black themes with Static and Silver Borders
 const CARD_BACKS: Record<string, { name: string; bg: string }> = {
   void: { 
     name: 'Void', 
-    bg: 'bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-neutral-800 via-neutral-950 to-black border border-white/5' 
+    bg: 'bg-[radial-gradient(circle_at_center,_#312e81_0%,_#020617_100%)]' // Indigo to Black
   },
   static: { 
     name: 'Static', 
-    bg: 'bg-neutral-900 opacity-90 border border-white/5 bg-[repeating-linear-gradient(45deg,#000_0px,#000_2px,#111_2px,#111_4px)]' 
+    // High contrast TV static effect using gradients
+    bg: 'bg-black bg-[repeating-conic-gradient(#000000_0deg_10deg,_#312e81_10deg_20deg,_#ffffff10_20deg_30deg)] opacity-90' 
   },
   ether: { 
     name: 'Ether', 
-    bg: 'bg-neutral-900 border-none bg-[conic-gradient(from_0deg_at_50%_50%,_#1a1a1a_0deg,_#0a0a0a_180deg,_#1a1a1a_360deg)]' 
+    bg: 'bg-[conic-gradient(at_bottom_left,_var(--tw-gradient-stops))] from-slate-900 via-indigo-950 to-slate-900' 
   }
 };
 
@@ -256,7 +257,6 @@ const EmotionRadar = ({ stats }: { stats: any }) => {
 // --- 5. MAIN APP ---
 
 export default function EmpathyApp() {
-  // Initialize Supabase Client with @supabase/ssr using standard Env Vars
   const [supabase] = useState(() => createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -264,7 +264,7 @@ export default function EmpathyApp() {
 
   const [showInstructions, setShowInstructions] = useState(true);
   const [deckSize, setDeckSize] = useState(4);
-  const [cardBack, setCardBack] = useState('void');
+  const [cardBack, setCardBack] = useState('static'); // Default to static per request
   const [feedbackMode, setFeedbackMode] = useState('training');
   const [targetFocus, setTargetFocus] = useState('random');
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -283,7 +283,6 @@ export default function EmpathyApp() {
 
   // Initialize
   useEffect(() => {
-      // Load saved stats if any from local storage to start
       const savedStats = localStorage.getItem('empathy_stats');
       if (savedStats) setStats(JSON.parse(savedStats));
   }, []);
@@ -317,7 +316,7 @@ export default function EmpathyApp() {
           user_id: user.id,
           name: 'Empathy Training',
           category: 'training', 
-          chart_data: stats, // JSONB data of performance
+          chart_data: stats, 
           report_content: `Session completed. Total Attempts: ${totalAttempts}. Focus: ${targetFocus}. Deck Size: ${deckSize}.`,
         });
 
@@ -356,7 +355,7 @@ export default function EmpathyApp() {
       target = EMOTIONS.find(e => e.id === targetFocus);
     }
     
-    if (!target) return; // Safety
+    if (!target) return;
 
     setTargetEmotion(target);
     setMessage(`Locate the energy of ${target.name.toUpperCase()}`);
@@ -442,6 +441,13 @@ export default function EmpathyApp() {
 
   const TargetIcon = targetEmotion?.icon;
 
+  // GRID LOGIC
+  const getGridClass = () => {
+    if (deckSize <= 4) return 'grid-cols-2 max-w-sm';
+    if (deckSize < 8) return 'grid-cols-3 max-w-2xl';
+    return 'grid-cols-4 max-w-3xl';
+  };
+
   return (
     <div className="relative h-dvh w-full bg-neutral-950 text-slate-200 font-sans selection:bg-purple-500/30 flex flex-col overflow-hidden" style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}>
       {/* Background Overlay */}
@@ -503,7 +509,6 @@ export default function EmpathyApp() {
             })}
           </div>
           
-          {/* Save Button */}
           <button 
             onClick={handleSaveResults} 
             disabled={saving}
@@ -525,7 +530,6 @@ export default function EmpathyApp() {
           </div>
 
           <div className="space-y-8">
-            {/* Probability Pool */}
             <div>
               <label className="text-xs text-slate-400 uppercase tracking-wider block mb-3">Probability Pool (Cards)</label>
               <div className="flex items-center gap-4">
@@ -539,7 +543,6 @@ export default function EmpathyApp() {
               <div className="text-xs text-slate-500 mt-2 text-right">Chance: {Math.round((1/deckSize)*100)}%</div>
             </div>
 
-            {/* Target Focus */}
             <div>
               <label className="text-xs text-slate-400 uppercase tracking-wider block mb-3">Target Signature</label>
               <div className="grid grid-cols-2 gap-2">
@@ -561,7 +564,6 @@ export default function EmpathyApp() {
               </div>
             </div>
 
-            {/* Feedback Mode */}
             <div>
               <label className="text-xs text-slate-400 uppercase tracking-wider block mb-3">Feedback Protocol</label>
               <div className="flex gap-2 bg-white/5 p-1 rounded-lg">
@@ -580,7 +582,6 @@ export default function EmpathyApp() {
               </div>
             </div>
 
-            {/* Card Backs */}
             <div>
               <label className="text-xs text-slate-400 uppercase tracking-wider block mb-3">Etheric Masking</label>
               <div className="flex gap-3">
@@ -604,46 +605,53 @@ export default function EmpathyApp() {
       )}
 
       {/* GAME AREA */}
-      <main className="flex-1 flex flex-col items-center justify-center p-4 relative z-10 w-full min-h-0">
+      <main className="flex-1 flex flex-col items-center justify-start p-4 relative z-10 w-full min-h-0">
         
         {/* Instruction / Status */}
-        <div className="mb-4 md:mb-8 text-center animate-fade-in-up shrink-0">
-          <p className="text-slate-500 text-[10px] md:text-xs uppercase tracking-[0.2em] mb-2">Target Frequency</p>
+        <div className="mb-4 text-center animate-fade-in-up shrink-0 w-full">
+          <p className="text-slate-500 text-[10px] md:text-xs uppercase tracking-[0.2em] mb-1">Target Frequency</p>
           <div className="flex items-center justify-center gap-3">
              {TargetIcon && <TargetIcon size={20} className="text-amber-400" />}
-             <h1 className="text-2xl md:text-4xl font-serif text-slate-100">{targetEmotion?.name.toUpperCase()}</h1>
+             <h1 className="text-2xl md:text-3xl font-serif text-slate-100">{targetEmotion?.name.toUpperCase()}</h1>
              {TargetIcon && <TargetIcon size={20} className="text-amber-400" />}
           </div>
-          <p className={`mt-2 h-6 text-xs md:text-sm font-medium tracking-wide transition-colors duration-500 ${message.includes('CONFIRMED') ? 'text-green-400' : message.includes('Dissonance') ? 'text-red-400' : 'text-purple-300/80'}`}>
+          <p className={`mt-1 h-5 text-xs font-medium tracking-wide transition-colors duration-500 ${message.includes('CONFIRMED') ? 'text-green-400' : message.includes('Dissonance') ? 'text-red-400' : 'text-purple-300/80'}`}>
             {message}
           </p>
         </div>
 
-        {/* Card Grid - Responsive Sizing */}
-        <div className="w-full max-w-5xl flex flex-wrap justify-center items-center content-center gap-3 md:gap-6 perspective-[1000px] flex-1 max-h-[60vh]">
+        {/* Dynamic Grid Layout */}
+        <div className={`w-full grid gap-4 place-items-center ${getGridClass()} flex-1 max-h-full`}>
           {cards.map((card, idx) => (
             <div 
               key={card.id}
               onClick={() => handleCardClick(idx)}
               className={`
-                relative cursor-pointer transition-all duration-500 transform
-                ${deckSize > 6 ? 'w-16 h-24 md:w-24 md:h-36' : 'w-20 h-32 md:w-32 md:h-48'}
-                ${gameState === 'sensing' ? 'hover:-translate-y-2 hover:shadow-[0_0_25px_rgba(255,255,255,0.2)]' : ''}
+                relative w-full h-full aspect-2/3 cursor-pointer transition-all duration-500 transform
+                ${gameState === 'sensing' ? 'hover:-translate-y-1 hover:shadow-[0_0_25px_rgba(255,255,255,0.2)]' : ''}
               `}
               style={{
                 transformStyle: 'preserve-3d',
                 transform: card.status !== 'face-down' ? 'rotateY(180deg)' : 'rotateY(0deg)',
               }}
             >
-              {/* Card Back */}
-              <div className={`absolute inset-0 w-full h-full rounded-lg shadow-2xl backface-hidden overflow-hidden ${CARD_BACKS[cardBack].bg}`}>
-                {/* No symbols/shapes allowed on back */}
+              {/* Card Back - Magickal Silver Border */}
+              <div 
+                className={`
+                   absolute inset-0 w-full h-full rounded-xl backface-hidden overflow-hidden
+                   ${CARD_BACKS[cardBack].bg}
+                   border-4 border-slate-400 ring-2 ring-inset ring-black/50
+                   shadow-[0_0_15px_rgba(148,163,184,0.3)]
+                `}
+              >
+                 {/* Inner border sheen effect */}
+                 <div className="absolute inset-0 border-2 border-white/20 rounded-lg pointer-events-none"></div>
               </div>
 
               {/* Card Front */}
               <div 
                 className={`
-                  absolute inset-0 w-full h-full rounded-lg backface-hidden transform-[rotateY(180deg)]
+                  absolute inset-0 w-full h-full rounded-xl backface-hidden transform-[rotateY(180deg)]
                   flex flex-col items-center justify-center border-2
                   ${card.status === 'revealed-wrong' 
                     ? 'bg-neutral-800 border-neutral-700 grayscale opacity-60' 
@@ -652,21 +660,21 @@ export default function EmpathyApp() {
                 `}
               >
                 {card.status === 'revealed' && card.isTarget && (
-                  <div className="absolute inset-0 bg-linear-to-t from-amber-500/20 to-transparent animate-pulse rounded-lg"></div>
+                  <div className="absolute inset-0 bg-linear-to-t from-amber-500/20 to-transparent animate-pulse rounded-xl"></div>
                 )}
 
-                <div className={`p-2 md:p-3 rounded-full bg-white/5 mb-2 md:mb-3 ${card.status === 'revealed' && card.isTarget ? 'text-amber-300 scale-110' : 'text-slate-300'}`}>
+                <div className={`p-4 rounded-full bg-white/5 mb-4 ${card.status === 'revealed' && card.isTarget ? 'text-amber-300 scale-110' : 'text-slate-300'}`}>
                   <card.icon 
-                    className="w-5 h-5 md:w-8 md:h-8"
+                    className="w-8 h-8 md:w-10 md:h-10"
                     color={card.status === 'revealed-wrong' ? '#525252' : card.color} 
                   />
                 </div>
-                <span className={`text-[10px] md:text-xs uppercase tracking-widest font-bold ${card.status === 'revealed-wrong' ? 'text-neutral-500' : 'text-white'}`}>
+                <span className={`text-xs md:text-sm uppercase tracking-widest font-bold ${card.status === 'revealed-wrong' ? 'text-neutral-500' : 'text-white'}`}>
                   {card.name}
                 </span>
                 
                 {card.isTarget && card.status === 'revealed' && (
-                  <Sparkles className="absolute top-1 right-1 text-amber-400 animate-spin-slow" size={12} />
+                  <Sparkles className="absolute top-2 right-2 text-amber-400 animate-spin-slow" size={16} />
                 )}
               </div>
             </div>
@@ -675,7 +683,7 @@ export default function EmpathyApp() {
       </main>
 
       {/* FOOTER */}
-      <footer className="relative z-20 py-3 text-center border-t border-white/5 bg-black/40 backdrop-blur text-[10px] text-slate-600 shrink-0">
+      <footer className="relative z-20 py-2 text-center border-t border-white/5 bg-black/40 backdrop-blur text-[10px] text-slate-600 shrink-0">
         <p>LAB CONDITIONS: {deckSize} CARDS // {feedbackMode.toUpperCase()} MODE</p>
       </footer>
 
