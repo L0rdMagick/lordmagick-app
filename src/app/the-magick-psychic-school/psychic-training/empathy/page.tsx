@@ -3,11 +3,11 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Heart, CloudRain, Sun, Banknote, Flame, Zap, Crosshair, PartyPopper, 
-  Settings, Eye, Volume2, VolumeX, BookOpen, 
-  Sparkles, X, Trophy, Info, RotateCcw
+  Settings, Eye, Volume2, VolumeX, 
+  Sparkles, X, Trophy, Info, RotateCcw, Save
 } from 'lucide-react';
+import { createBrowserClient } from '@supabase/ssr';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
-import RoomsButton from '@/app/components/RoomsButton';
 
 /**
  * EMPATHY - Emotional Intuition Trainer
@@ -26,10 +26,20 @@ const EMOTIONS = [
   { id: 'laughing', name: 'Laughter', icon: PartyPopper, color: '#d946ef', desc: 'Vibration, Release', aura: 'shadow-fuchsia-500' }
 ];
 
+// Card backs modified to be abstract/static/void
 const CARD_BACKS: Record<string, { name: string; bg: string }> = {
-  minimalist: { name: 'Void', bg: 'bg-black border-2 border-yellow-600' },
-  classic: { name: 'Arcane', bg: 'bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-indigo-900 via-purple-950 to-black border-2 border-yellow-600/50' },
-  abstract: { name: 'Nebula', bg: 'bg-[conic-gradient(at_top_right,_var(--tw-gradient-stops))] from-slate-900 via-purple-900 to-slate-900 border-none' }
+  void: { 
+    name: 'Void', 
+    bg: 'bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-neutral-800 via-neutral-950 to-black border border-white/5' 
+  },
+  static: { 
+    name: 'Static', 
+    bg: 'bg-neutral-900 opacity-90 border border-white/5 bg-[repeating-linear-gradient(45deg,#000_0px,#000_2px,#111_2px,#111_4px)]' 
+  },
+  ether: { 
+    name: 'Ether', 
+    bg: 'bg-neutral-900 border-none bg-[conic-gradient(from_0deg_at_50%_50%,_#1a1a1a_0deg,_#0a0a0a_180deg,_#1a1a1a_360deg)]' 
+  }
 };
 
 // --- 2. AUDIO ENGINE (Web Audio API) ---
@@ -55,16 +65,14 @@ const useAudioEngine = () => {
     const ctx = ctxRef.current;
 
     if (active && !thetaOscRef.current) {
-      // Create Binaural/Drone effect
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(110, ctx.currentTime); // A2
+      osc.frequency.setValueAtTime(110, ctx.currentTime); 
       
-      // LFO for "throbbing" texture
       const lfo = ctx.createOscillator();
       lfo.type = 'sine';
-      lfo.frequency.setValueAtTime(4, ctx.currentTime); // Theta range (4-8hz)
+      lfo.frequency.setValueAtTime(4, ctx.currentTime); 
       const lfoGain = ctx.createGain();
       lfoGain.gain.setValueAtTime(5, ctx.currentTime);
       
@@ -108,7 +116,6 @@ const useAudioEngine = () => {
     if (!ctxRef.current) return;
     const ctx = ctxRef.current;
     const now = ctx.currentTime;
-    // Major chord arpeggio
     [440, 554.37, 659.25, 880].forEach((freq, i) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
@@ -131,8 +138,8 @@ const useAudioEngine = () => {
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(110, now); // Low A
-    osc.frequency.linearRampToValueAtTime(55, now + 0.5); // Drop pitch
+    osc.frequency.setValueAtTime(110, now);
+    osc.frequency.linearRampToValueAtTime(55, now + 0.5); 
     gain.gain.setValueAtTime(0.1, now);
     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
     osc.connect(gain);
@@ -157,7 +164,6 @@ const secureShuffle = (array: any[]) => {
         [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
       }
   } else {
-      // Fallback
       for (let i = newArray.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
@@ -169,7 +175,7 @@ const secureShuffle = (array: any[]) => {
 // --- 4. COMPONENTS ---
 
 const InstructionModal = ({ onClose }: { onClose: () => void }) => (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-6 animate-in fade-in duration-500">
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-md p-6 animate-in fade-in duration-500">
     <div className="max-w-md w-full border border-purple-500/30 bg-[#0f0f1a] p-8 rounded-xl shadow-[0_0_50px_rgba(236,72,153,0.2)] text-center relative">
         <h2 className="text-3xl font-serif text-pink-400 mb-2 tracking-widest">EMPATHY PROTOCOL</h2>
         <p className="text-xs font-mono text-purple-300 uppercase tracking-[0.2em] mb-6">Emotional Resonance Trainer</p>
@@ -189,7 +195,7 @@ const InstructionModal = ({ onClose }: { onClose: () => void }) => (
             onClick={onClose}
             className="w-full py-3 bg-pink-900/30 hover:bg-pink-800/50 border border-pink-500/50 text-pink-100 font-serif tracking-widest uppercase transition-all duration-300 hover:shadow-[0_0_20px_rgba(236,72,153,0.4)]"
         >
-            Open Connection
+            Begin Training
         </button>
     </div>
   </div>
@@ -243,7 +249,6 @@ const EmotionRadar = ({ stats }: { stats: any }) => {
           );
         })}
       </svg>
-      <div className="text-xs text-slate-400 mt-2 italic">Intuition Resonance Field</div>
     </div>
   );
 };
@@ -251,29 +256,34 @@ const EmotionRadar = ({ stats }: { stats: any }) => {
 // --- 5. MAIN APP ---
 
 export default function EmpathyApp() {
+  // Initialize Supabase Client with @supabase/ssr using standard Env Vars
+  const [supabase] = useState(() => createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  ));
+
   const [showInstructions, setShowInstructions] = useState(true);
   const [deckSize, setDeckSize] = useState(4);
-  const [cardBack, setCardBack] = useState('classic');
+  const [cardBack, setCardBack] = useState('void');
   const [feedbackMode, setFeedbackMode] = useState('training');
   const [targetFocus, setTargetFocus] = useState('random');
   const [soundEnabled, setSoundEnabled] = useState(true);
   
   const [gameState, setGameState] = useState('setup');
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [targetEmotion, setTargetEmotion] = useState<any>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [cards, setCards] = useState<any[]>([]);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [stats, setStats] = useState<any>({});
   const [message, setMessage] = useState("Initializing...");
   const [showStats, setShowStats] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
   const audio = useAudioEngine();
 
   // Initialize
   useEffect(() => {
-      // Load saved stats if any
+      // Load saved stats if any from local storage to start
       const savedStats = localStorage.getItem('empathy_stats');
       if (savedStats) setStats(JSON.parse(savedStats));
   }, []);
@@ -283,6 +293,43 @@ export default function EmpathyApp() {
       audio.init();
       if (soundEnabled) audio.playTheta(true);
       startNewRound();
+  };
+
+  const handleSaveResults = async () => {
+    setSaving(true);
+    setSaveMessage("Inscribing...");
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        setSaveMessage("Soul signature not found (Login required)");
+        setTimeout(() => setSaveMessage(null), 3000);
+        setSaving(false);
+        return;
+      }
+
+      const totalAttempts = Object.values(stats).reduce((acc: number, curr: any) => acc + curr.attempts, 0);
+
+      const { error } = await supabase
+        .from('reports')
+        .insert({
+          user_id: user.id,
+          name: 'Empathy Training',
+          category: 'training', 
+          chart_data: stats, // JSONB data of performance
+          report_content: `Session completed. Total Attempts: ${totalAttempts}. Focus: ${targetFocus}. Deck Size: ${deckSize}.`,
+        });
+
+      if (error) throw error;
+      setSaveMessage("Inscribed in Grimoire");
+    } catch (e) {
+      console.error(e);
+      setSaveMessage("Inscription Failed");
+    } finally {
+      setTimeout(() => setSaveMessage(null), 3000);
+      setSaving(false);
+    }
   };
 
   const toggleSound = () => {
@@ -315,7 +362,6 @@ export default function EmpathyApp() {
     setMessage(`Locate the energy of ${target.name.toUpperCase()}`);
 
     // 2. Build Deck
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let deck: any[] = [];
     deck.push({ ...target, isTarget: true, id: `card-${Math.random()}`, status: 'face-down' });
 
@@ -397,14 +443,14 @@ export default function EmpathyApp() {
   const TargetIcon = targetEmotion?.icon;
 
   return (
-    <div className="relative min-h-screen w-full bg-neutral-950 text-slate-200 font-sans selection:bg-purple-500/30 flex flex-col overflow-hidden" style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}>
+    <div className="relative h-dvh w-full bg-neutral-950 text-slate-200 font-sans selection:bg-purple-500/30 flex flex-col overflow-hidden" style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}>
       {/* Background Overlay */}
       <div className="absolute inset-0 bg-[#0a0a0a]/90 backdrop-blur-sm z-0" />
       
       {showInstructions && <InstructionModal onClose={handleStart} />}
 
       {/* HEADER */}
-      <header className="relative z-20 flex justify-between items-center p-4 md:p-6 border-b border-white/5 backdrop-blur-sm bg-black/40">
+      <header className="relative z-20 flex justify-between items-center px-4 py-3 border-b border-white/5 backdrop-blur-sm bg-black/40 shrink-0">
         <div className="flex items-center gap-4">
             <MagickalBackLink href="/the-magick-psychic-school/psychic-training" text="Exit" className="text-xs text-slate-400 hover:text-white" />
             <div className="w-px h-6 bg-white/20 hidden md:block"></div>
@@ -419,6 +465,9 @@ export default function EmpathyApp() {
         </div>
         
         <div className="flex gap-2">
+           <button onClick={() => setShowInstructions(true)} className="p-2 hover:bg-white/10 rounded-full transition-colors text-slate-400">
+             <Info size={20} />
+           </button>
            <button onClick={toggleSound} className="p-2 hover:bg-white/10 rounded-full transition-colors text-slate-400">
             {soundEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />}
           </button>
@@ -428,20 +477,19 @@ export default function EmpathyApp() {
           <button onClick={() => setShowSettings(!showSettings)} className={`p-2 rounded-full transition-colors ${showSettings ? 'bg-purple-900/50 text-purple-200' : 'hover:bg-white/10 text-slate-400'}`}>
             <Settings size={20} />
           </button>
-          <div className="ml-2"><RoomsButton /></div>
         </div>
       </header>
 
       {/* STATS DRAWER */}
       {showStats && (
         <div className="absolute inset-0 z-40 bg-black/95 backdrop-blur-md flex flex-col items-center justify-center p-6 animate-in fade-in slide-in-from-bottom-10 duration-300 overflow-y-auto">
-          <button onClick={() => setShowStats(false)} className="absolute top-24 right-6 p-2 text-slate-500 hover:text-white"><X /></button>
-          <h2 className="text-3xl font-serif text-amber-100 mb-8 flex items-center gap-3 mt-20 md:mt-0">
+          <button onClick={() => setShowStats(false)} className="absolute top-6 right-6 p-2 text-slate-500 hover:text-white"><X /></button>
+          <h2 className="text-3xl font-serif text-amber-100 mb-8 flex items-center gap-3">
             <Sparkles className="text-amber-400" />
             Soul Resonance
           </h2>
           <EmotionRadar stats={stats} />
-          <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-2xl pb-10">
+          <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-2xl pb-6">
             {EMOTIONS.map(e => {
               const s = stats[e.id] || { attempts: 0, hits: 0 };
               const rate = s.attempts > 0 ? Math.round((s.hits / s.attempts) * 100) : 0;
@@ -454,6 +502,17 @@ export default function EmpathyApp() {
               )
             })}
           </div>
+          
+          {/* Save Button */}
+          <button 
+            onClick={handleSaveResults} 
+            disabled={saving}
+            className="flex items-center gap-2 px-6 py-3 bg-purple-900/50 hover:bg-purple-800/50 border border-purple-500/50 text-purple-100 rounded-lg transition-all"
+          >
+            {saving ? <Sparkles className="animate-spin" size={18} /> : <Save size={18} />}
+            {saving ? "Inscribing..." : "Inscribe to Grimoire"}
+          </button>
+          {saveMessage && <p className="mt-3 text-sm text-amber-300 font-mono animate-pulse">{saveMessage}</p>}
         </div>
       )}
 
@@ -523,13 +582,14 @@ export default function EmpathyApp() {
 
             {/* Card Backs */}
             <div>
-              <label className="text-xs text-slate-400 uppercase tracking-wider block mb-3">Visual Masking</label>
+              <label className="text-xs text-slate-400 uppercase tracking-wider block mb-3">Etheric Masking</label>
               <div className="flex gap-3">
                 {Object.keys(CARD_BACKS).map(key => (
                   <button 
                     key={key} 
                     onClick={() => setCardBack(key)}
                     className={`h-12 flex-1 rounded border-2 transition-all ${cardBack === key ? 'border-amber-400 scale-105' : 'border-transparent opacity-50'} ${CARD_BACKS[key].bg}`}
+                    title={CARD_BACKS[key].name}
                   ></button>
                 ))}
               </div>
@@ -544,29 +604,30 @@ export default function EmpathyApp() {
       )}
 
       {/* GAME AREA */}
-      <main className="flex-1 flex flex-col items-center justify-center p-4 relative z-10 w-full overflow-y-auto">
+      <main className="flex-1 flex flex-col items-center justify-center p-4 relative z-10 w-full min-h-0">
         
         {/* Instruction / Status */}
-        <div className="mb-10 text-center animate-fade-in-up">
-          <p className="text-slate-500 text-sm uppercase tracking-[0.2em] mb-2">Target Frequency</p>
+        <div className="mb-4 md:mb-8 text-center animate-fade-in-up shrink-0">
+          <p className="text-slate-500 text-[10px] md:text-xs uppercase tracking-[0.2em] mb-2">Target Frequency</p>
           <div className="flex items-center justify-center gap-3">
-             {TargetIcon && <TargetIcon size={24} className="text-amber-400" />}
-             <h1 className="text-3xl md:text-5xl font-serif text-slate-100">{targetEmotion?.name.toUpperCase()}</h1>
-             {TargetIcon && <TargetIcon size={24} className="text-amber-400" />}
+             {TargetIcon && <TargetIcon size={20} className="text-amber-400" />}
+             <h1 className="text-2xl md:text-4xl font-serif text-slate-100">{targetEmotion?.name.toUpperCase()}</h1>
+             {TargetIcon && <TargetIcon size={20} className="text-amber-400" />}
           </div>
-          <p className={`mt-4 h-6 text-sm md:text-base font-medium tracking-wide transition-colors duration-500 ${message.includes('CONFIRMED') ? 'text-green-400' : message.includes('Dissonance') ? 'text-red-400' : 'text-purple-300/80'}`}>
+          <p className={`mt-2 h-6 text-xs md:text-sm font-medium tracking-wide transition-colors duration-500 ${message.includes('CONFIRMED') ? 'text-green-400' : message.includes('Dissonance') ? 'text-red-400' : 'text-purple-300/80'}`}>
             {message}
           </p>
         </div>
 
-        {/* Card Grid */}
-        <div className="w-full max-w-5xl flex flex-wrap justify-center gap-4 md:gap-8 perspective-[1000px] pb-8">
+        {/* Card Grid - Responsive Sizing */}
+        <div className="w-full max-w-5xl flex flex-wrap justify-center items-center content-center gap-3 md:gap-6 perspective-[1000px] flex-1 max-h-[60vh]">
           {cards.map((card, idx) => (
             <div 
               key={card.id}
               onClick={() => handleCardClick(idx)}
               className={`
-                relative w-24 h-36 md:w-32 md:h-48 cursor-pointer transition-all duration-500 transform
+                relative cursor-pointer transition-all duration-500 transform
+                ${deckSize > 6 ? 'w-16 h-24 md:w-24 md:h-36' : 'w-20 h-32 md:w-32 md:h-48'}
                 ${gameState === 'sensing' ? 'hover:-translate-y-2 hover:shadow-[0_0_25px_rgba(255,255,255,0.2)]' : ''}
               `}
               style={{
@@ -575,18 +636,14 @@ export default function EmpathyApp() {
               }}
             >
               {/* Card Back */}
-              <div className={`absolute inset-0 w-full h-full rounded-xl shadow-2xl backface-hidden ${CARD_BACKS[cardBack].bg} flex items-center justify-center`}>
-                {cardBack === 'minimalist' && <div className="w-16 h-24 border border-yellow-600/30"></div>}
-                {cardBack === 'classic' && (
-                    <div className="w-full h-full opacity-30 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgdmlld0JveD0iMCAwIDQwIDQwIj48ZyBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0wIDQwaDQwVjBIMHY0MHptMjAtMjB2MjBoMjBWMjBIMjB6TTAgMjBoMjBWMHgyMHYyMHoiIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIi8+PC9nPjwvc3ZnPg==')]"></div>
-                )}
-                <div className="absolute inset-0 rounded-xl ring-1 ring-white/10"></div>
+              <div className={`absolute inset-0 w-full h-full rounded-lg shadow-2xl backface-hidden overflow-hidden ${CARD_BACKS[cardBack].bg}`}>
+                {/* No symbols/shapes allowed on back */}
               </div>
 
               {/* Card Front */}
               <div 
                 className={`
-                  absolute inset-0 w-full h-full rounded-xl backface-hidden transform-[rotateY(180deg)]
+                  absolute inset-0 w-full h-full rounded-lg backface-hidden transform-[rotateY(180deg)]
                   flex flex-col items-center justify-center border-2
                   ${card.status === 'revealed-wrong' 
                     ? 'bg-neutral-800 border-neutral-700 grayscale opacity-60' 
@@ -595,21 +652,21 @@ export default function EmpathyApp() {
                 `}
               >
                 {card.status === 'revealed' && card.isTarget && (
-                  <div className="absolute inset-0 bg-linear-to-t from-amber-500/20 to-transparent animate-pulse rounded-xl"></div>
+                  <div className="absolute inset-0 bg-linear-to-t from-amber-500/20 to-transparent animate-pulse rounded-lg"></div>
                 )}
 
-                <div className={`p-3 rounded-full bg-white/5 mb-3 ${card.status === 'revealed' && card.isTarget ? 'text-amber-300 scale-110' : 'text-slate-300'}`}>
+                <div className={`p-2 md:p-3 rounded-full bg-white/5 mb-2 md:mb-3 ${card.status === 'revealed' && card.isTarget ? 'text-amber-300 scale-110' : 'text-slate-300'}`}>
                   <card.icon 
-                    size={32} 
+                    className="w-5 h-5 md:w-8 md:h-8"
                     color={card.status === 'revealed-wrong' ? '#525252' : card.color} 
                   />
                 </div>
-                <span className={`text-xs uppercase tracking-widest font-bold ${card.status === 'revealed-wrong' ? 'text-neutral-500' : 'text-white'}`}>
+                <span className={`text-[10px] md:text-xs uppercase tracking-widest font-bold ${card.status === 'revealed-wrong' ? 'text-neutral-500' : 'text-white'}`}>
                   {card.name}
                 </span>
                 
                 {card.isTarget && card.status === 'revealed' && (
-                  <Sparkles className="absolute top-2 right-2 text-amber-400 animate-spin-slow" size={16} />
+                  <Sparkles className="absolute top-1 right-1 text-amber-400 animate-spin-slow" size={12} />
                 )}
               </div>
             </div>
@@ -618,7 +675,7 @@ export default function EmpathyApp() {
       </main>
 
       {/* FOOTER */}
-      <footer className="relative z-20 py-4 text-center border-t border-white/5 bg-black/40 backdrop-blur text-xs text-slate-600">
+      <footer className="relative z-20 py-3 text-center border-t border-white/5 bg-black/40 backdrop-blur text-[10px] text-slate-600 shrink-0">
         <p>LAB CONDITIONS: {deckSize} CARDS // {feedbackMode.toUpperCase()} MODE</p>
       </footer>
 
