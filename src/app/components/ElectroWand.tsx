@@ -1182,7 +1182,7 @@ export default function ElectroWand() {
                 
                 {!isFullscreen && (
                     <div className="absolute top-4 left-4 pointer-events-auto">
-                        <MagickalBackLink href="/marketplace/magickal-tools" text="Back" className="text-xs" />
+                        <MagickalBackLink href="/magickal-tools" text="Back" className="text-xs" />
                     </div>
                 )}
 
