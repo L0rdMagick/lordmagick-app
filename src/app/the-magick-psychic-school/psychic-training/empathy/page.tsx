@@ -77,7 +77,7 @@ const PsiStats = ({ stats, deckSize }: { stats: any, deckSize: number }) => {
   const [lifetimeStats, setLifetimeStats] = useState({ hits: 0, trials: 0 });
   const [loadingLifetime, setLoadingLifetime] = useState(false);
   
-  // 1. Current Session Stats
+  // Current Session Stats
   let sessionTrials = 0;
   let sessionHits = 0;
   Object.values(stats).forEach((s: any) => {
@@ -91,34 +91,27 @@ const PsiStats = ({ stats, deckSize }: { stats: any, deckSize: number }) => {
   const sessionProb = calculateProbability(sessionZ);
   const sessionTier = getPsiTier(sessionZ);
 
-  // 2. Fetch Lifetime Stats on Modal Open
+  // Fetch Lifetime Stats
   useEffect(() => {
     if (showModal) {
       const fetchHistory = async () => {
         setLoadingLifetime(true);
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
-            // Fallback to local storage if not logged in
-            const local = localStorage.getItem('empathy_stats'); // Simple fallback
-            if(local) {
-               // This is just a quick visual fallback, real logic below is better
-            }
             setLoadingLifetime(false);
             return;
         }
 
-        // Fetch all reports for Empathy Training
         const { data, error } = await supabase
             .from('reports')
             .select('chart_data')
             .eq('user_id', user.id)
-            .eq('category', 'training') // Assuming we categorized them as added in SQL
+            .eq('category', 'training') 
             .eq('name', 'Empathy Training');
 
         if (!error && data) {
             let h = 0; 
             let t = 0;
-            // Aggregate all historical sessions
             data.forEach((row: any) => {
                 const chart = row.chart_data;
                 if (chart) {
@@ -128,7 +121,7 @@ const PsiStats = ({ stats, deckSize }: { stats: any, deckSize: number }) => {
                     });
                 }
             });
-            // Add current session to lifetime visual
+            // Combine with current session for the "Lifetime" view
             setLifetimeStats({ hits: h + sessionHits, trials: t + sessionTrials });
         }
         setLoadingLifetime(false);
@@ -137,21 +130,17 @@ const PsiStats = ({ stats, deckSize }: { stats: any, deckSize: number }) => {
     }
   }, [showModal, sessionHits, sessionTrials, supabase]);
 
-  // Lifetime Calculations
   const lifeAccuracy = lifetimeStats.trials > 0 ? (lifetimeStats.hits / lifetimeStats.trials) * 100 : 0;
-  // Note: Lifetime Z-score is tricky with varying deck sizes, but we assume an average for the "General" feel,
-  // or use the current deckSize as the benchmark for simplicity in this specific view.
   const lifeZ = calculateZScore(lifetimeStats.hits, lifetimeStats.trials, chance);
   const lifeProb = calculateProbability(lifeZ);
   const lifeTier = getPsiTier(lifeZ);
 
   return (
     <>
-      {/* HUD BOX - Absolute Positioned to sit snugly */}
-      <div className="absolute top-18 right-4 z-30 flex flex-col items-end pointer-events-auto">
-        <div className="bg-black/60 backdrop-blur-md border border-white/10 rounded-lg p-2 text-right shadow-[0_0_20px_rgba(0,0,0,0.5)] min-w-[130px]">
+      {/* HUD BOX */}
+      <div className="bg-black/60 backdrop-blur-md border border-white/10 rounded-lg p-2 text-right shadow-[0_0_20px_rgba(0,0,0,0.5)] min-w-[130px] z-30 relative pointer-events-auto">
           
-          <div className="flex justify-between items-end gap-4 border-b border-white/10 pb-1 mb-1">
+          <div className="flex justify-between items-end gap-2 border-b border-white/10 pb-1 mb-1">
              <span className="text-[9px] text-slate-400 uppercase tracking-widest">Chance</span>
              <span className="text-[10px] font-mono text-white">1 in {deckSize}</span>
           </div>
@@ -174,7 +163,6 @@ const PsiStats = ({ stats, deckSize }: { stats: any, deckSize: number }) => {
           >
             View Scores
           </button>
-        </div>
       </div>
 
       {/* MODAL */}
@@ -186,7 +174,6 @@ const PsiStats = ({ stats, deckSize }: { stats: any, deckSize: number }) => {
               <Activity className="text-purple-400" /> Psychic Performance Record
             </h2>
             
-            {/* Comparison Table */}
             <div className="grid grid-cols-2 gap-4 mb-8">
               {/* CURRENT */}
               <div className="bg-white/5 rounded-lg p-4 border border-white/5">
@@ -710,8 +697,24 @@ export default function EmpathyApp() {
         </div>
       </header>
 
-      {/* PSI STATS HUD (Absolute positioned "snug") */}
-      <PsiStats stats={stats} deckSize={deckSize} />
+      {/* TOP BAR: Target Info & Scorecard in Flow */}
+      <div className="shrink-0 w-full flex items-start justify-between p-2 relative z-20 min-h-[90px]">
+          
+          {/* Center Target Info (Absolute Centered) */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-0">
+             <p className="text-slate-500 text-[10px] uppercase tracking-[0.2em] mb-1">Target Frequency</p>
+             <div className="flex items-center justify-center gap-2">
+                {TargetIcon && <TargetIcon size={24} className="text-amber-400" />}
+                <h1 className="text-2xl md:text-4xl font-serif text-slate-100">{targetEmotion?.name.toUpperCase()}</h1>
+                {TargetIcon && <TargetIcon size={24} className="text-amber-400" />}
+             </div>
+          </div>
+
+          {/* Right HUD (Relative Flow - Pushes Grid Down) */}
+          <div className="ml-auto relative z-10 pointer-events-auto">
+              <PsiStats stats={stats} deckSize={deckSize} />
+          </div>
+      </div>
 
       {/* MAGICKAL FEEDBACK OVERLAY */}
       {feedback && feedback.show && (
@@ -768,7 +771,7 @@ export default function EmpathyApp() {
                 >
                   Random Loop
                 </button>
-                {/* Specific Targets */}
+                {/* Specific Targets including Focus */}
                 {EMOTIONS.filter(e => ['love', 'sad', 'happy', 'focused'].includes(e.id)).map(e => (
                    <button 
                    key={e.id}
@@ -833,17 +836,6 @@ export default function EmpathyApp() {
 
       {/* GAME AREA */}
       <main className="flex-1 w-full flex flex-col relative z-10 overflow-y-auto p-2">
-        
-        {/* Instruction / Status */}
-        <div className="shrink-0 mb-2 w-full text-center animate-fade-in-up min-h-[50px] flex flex-col justify-center">
-          <p className="text-slate-500 text-[10px] uppercase tracking-[0.2em] mb-1">Target Frequency</p>
-          <div className="flex items-center justify-center gap-2">
-             {TargetIcon && <TargetIcon size={24} className="text-amber-400" />}
-             <h1 className="text-2xl md:text-4xl font-serif text-slate-100">{targetEmotion?.name.toUpperCase()}</h1>
-             {TargetIcon && <TargetIcon size={24} className="text-amber-400" />}
-          </div>
-        </div>
-
         {/* Grid Container - Forces Fit */}
         <div className="flex-1 w-full min-h-0 flex items-center justify-center">
             <div 
