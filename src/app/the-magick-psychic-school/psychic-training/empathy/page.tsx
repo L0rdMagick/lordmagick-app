@@ -654,24 +654,18 @@ export default function EmpathyApp() {
   const TargetIcon = targetEmotion?.icon;
 
   const getLayoutConfig = () => {
-    let cols = 2; 
-    
-    // Explicit override for 9 cards to ensure 3x3
-    if (deckSize === 9) {
-        return { cols: 3, rows: 3 };
-    }
-
+    let cols = 2;
     if (isDesktop) {
-        if (deckSize === 10) {
-            cols = 5;
-        } else {
-            cols = Math.min(deckSize, 4);
-        }
+        // Desktop / Large Screen Logic
+        if (deckSize <= 5) cols = deckSize;        // 1 row of 1-5 cards
+        else if (deckSize === 6) cols = 3;         // 2 rows of 3
+        else if (deckSize <= 8) cols = 4;          // 2 rows of 4
+        else cols = 5;                             // 2 rows of 5 (9-10 cards)
     } else {
-        // Mobile Logic Updated
+        // Mobile Logic (Existing logic)
         if (deckSize >= 10) cols = 4;
         else if (deckSize >= 5) cols = 3;
-        else cols = 2; // 2-4 cards
+        else cols = 2;
     }
     const rows = Math.ceil(deckSize / cols);
     return { cols, rows };
@@ -856,7 +850,7 @@ export default function EmpathyApp() {
         {/* Grid Container - Forces Fit */}
         <div className="flex-1 w-full h-full flex items-center justify-center">
             <div 
-                className="grid gap-3 w-full max-w-6xl h-full max-h-full"
+                className="grid gap-2 w-full max-w-full h-full max-h-full"
                 style={{
                     gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
                     gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`
@@ -865,11 +859,12 @@ export default function EmpathyApp() {
             {cards.map((card, idx) => (
                 // GROUP WRAPPER: Handles the click and hover detection.
                 // Uses flex center to allow the inner card to maintain aspect ratio without stretching into the grid cell shape.
+                // Added min-w-0 and min-h-0 to prevent flex item blowouts.
                 <div 
                     key={card.id}
                     onClick={() => handleCardClick(idx)}
                     onMouseEnter={() => { if(gameState === 'sensing') audio.playSlide(); }}
-                    className="w-full h-full flex items-center justify-center p-1 md:p-2 group cursor-pointer relative perspective-[1000px]"
+                    className="w-full h-full min-w-0 min-h-0 flex items-center justify-center p-1 md:p-2 group cursor-pointer relative perspective-[1000px] overflow-hidden"
                 >
                     {/* Centered Card Container: Uses SVG strut to enforce aspect ratio while maximizing size */}
                     <div 
@@ -888,7 +883,7 @@ export default function EmpathyApp() {
                             viewBox="0 0 200 300"
                             width="200"
                             height="300"
-                            className="block w-auto h-auto min-w-[50px] min-h-[75px] max-w-full max-h-full opacity-0 pointer-events-none select-none"
+                            className="block w-auto h-auto max-w-full max-h-full opacity-0 pointer-events-none select-none"
                             style={{ 
                                 height: 'auto', 
                                 width: 'auto', 
