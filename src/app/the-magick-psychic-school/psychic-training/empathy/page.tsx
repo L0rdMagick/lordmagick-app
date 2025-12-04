@@ -11,9 +11,9 @@ import MagickalBackLink from '@/app/components/MagickalBackLink';
 
 /**
  * --- PSI MATH ENGINE ---
- * Helper functions for statistical analysis of psychic phenomena.
+ * Statistical Analysis & definitions.
  */
-const calculateZScore = (hits: number, trials: number, chance: number) => {
+const calculatePsiScore = (hits: number, trials: number, chance: number) => {
   if (trials === 0) return 0;
   const expected = trials * chance;
   const stdDev = Math.sqrt(trials * chance * (1 - chance));
@@ -38,7 +38,8 @@ const erf = (x: number) => {
 };
 
 const calculateProbability = (z: number) => {
-  const pValue = 0.5 * (1 - erf(z / Math.sqrt(2)));
+  // One-tailed probability
+  const pValue = 0.5 * (1 - erf(Math.abs(z) / Math.sqrt(2)));
   if (pValue <= 0) return "1 in ∞"; 
   const oneInX = 1 / pValue;
   
@@ -49,6 +50,7 @@ const calculateProbability = (z: number) => {
 };
 
 const getPsiTier = (z: number) => {
+  // Positive Scale (Psi-Hitting)
   if (z >= 4.0) return { name: "The Oracle", color: "text-amber-300 shadow-amber-500/50" };
   if (z >= 3.0) return { name: "The Medium", color: "text-purple-300 shadow-purple-500/50" };
   if (z >= 1.96) return { name: "The Clairvoyant", color: "text-pink-300 shadow-pink-500/50" };
@@ -56,19 +58,115 @@ const getPsiTier = (z: number) => {
   if (z >= 1.0) return { name: "The Sensitive", color: "text-cyan-300 shadow-cyan-500/50" };
   if (z >= 0.5) return { name: "The Intuitive", color: "text-teal-300 shadow-teal-500/50" };
   
+  // Negative Scale (Psi-Missing)
   if (z <= -4.0) return { name: "The Void", color: "text-slate-500" };
   if (z <= -3.0) return { name: "The Shadow", color: "text-slate-400" };
   if (z <= -2.0) return { name: "The Inverter", color: "text-slate-400" };
   if (z <= -1.0) return { name: "The Skeptic", color: "text-slate-400" };
   if (z <= -0.5) return { name: "The Latent", color: "text-slate-400" };
   
+  // Neutral
   return { name: "The Sensor", color: "text-slate-300" };
+};
+
+/**
+ * --- RADAR CHART COMPONENT ---
+ * Renders the "Soul Resonance" spiderweb.
+ */
+const RadarChart = ({ stats, emotions }: { stats: any, emotions: any[] }) => {
+    const size = 200;
+    const center = size / 2;
+    const radius = 70; // drawing radius
+    
+    // Calculate points
+    const points = emotions.map((emo, i) => {
+        const angle = (Math.PI * 2 * i) / emotions.length - Math.PI / 2;
+        const stat = stats[emo.id] || { hits: 0, attempts: 0 };
+        const percentage = stat.attempts > 0 ? (stat.hits / stat.attempts) : 0;
+        // Scale: Center is 0%, Outer rim is 100% accuracy.
+        // We cap visual at 100% even if Z-score is high, as this is resonance/accuracy.
+        const r = radius * Math.min(percentage * 2, 1.2); // *2 to make 50% hit the edge (since chance is 1/4 or 1/10) - actually let's just do pure accuracy normalized
+        // Let's normalize: If chance is 25% (1/4), then 25% should be "baseline". 
+        // Simple View: 0 to 100% accuracy.
+        const dist = radius * percentage; 
+        
+        return [
+            center + dist * Math.cos(angle),
+            center + dist * Math.sin(angle)
+        ];
+    });
+
+    const pathData = points.map((p, i) => (i === 0 ? 'M' : 'L') + p[0] + ',' + p[1]).join(' ') + 'Z';
+
+    return (
+        <div className="flex flex-col items-center justify-center py-4">
+            <h4 className="text-amber-200 font-serif text-lg flex items-center gap-2 mb-2">
+                <Sparkles size={16}/> Soul Resonance
+            </h4>
+            <div className="relative">
+                <svg width={size} height={size} className="overflow-visible">
+                    {/* Web Background */}
+                    {[0.25, 0.5, 0.75, 1].map((scale, k) => (
+                        <polygon 
+                            key={k}
+                            points={emotions.map((_, i) => {
+                                const angle = (Math.PI * 2 * i) / emotions.length - Math.PI / 2;
+                                const r = radius * scale;
+                                return `${center + r * Math.cos(angle)},${center + r * Math.sin(angle)}`;
+                            }).join(' ')}
+                            fill="none"
+                            stroke="#333"
+                            strokeWidth="1"
+                        />
+                    ))}
+                    {/* Spokes */}
+                    {emotions.map((_, i) => {
+                        const angle = (Math.PI * 2 * i) / emotions.length - Math.PI / 2;
+                        return (
+                            <line 
+                                key={i}
+                                x1={center} y1={center}
+                                x2={center + radius * Math.cos(angle)}
+                                y2={center + radius * Math.sin(angle)}
+                                stroke="#333"
+                                strokeWidth="1"
+                            />
+                        );
+                    })}
+                    {/* Data Shape */}
+                    <path d={pathData} fill="rgba(236, 72, 153, 0.3)" stroke="#ec4899" strokeWidth="2" />
+                    
+                    {/* Labels */}
+                    {emotions.map((emo, i) => {
+                        const angle = (Math.PI * 2 * i) / emotions.length - Math.PI / 2;
+                        const labelRadius = radius + 15;
+                        const x = center + labelRadius * Math.cos(angle);
+                        const y = center + labelRadius * Math.sin(angle);
+                        return (
+                            <text 
+                                key={emo.id} 
+                                x={x} y={y} 
+                                textAnchor="middle" 
+                                dominantBaseline="middle" 
+                                fill={emo.color}
+                                fontSize="8"
+                                className="uppercase font-mono"
+                            >
+                                {emo.name}
+                            </text>
+                        );
+                    })}
+                </svg>
+                <div className="text-[10px] text-slate-500 text-center mt-2 italic">Intuition Resonance Field</div>
+            </div>
+        </div>
+    );
 };
 
 /**
  * --- PSI STATS COMPONENT ---
  */
-const PsiStats = ({ stats, deckSize }: { stats: any, deckSize: number }) => {
+const PsiStats = ({ stats, deckSize, onClose }: { stats: any, deckSize: number, onClose?: () => void }) => {
   const [supabase] = useState(() => createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -86,7 +184,7 @@ const PsiStats = ({ stats, deckSize }: { stats: any, deckSize: number }) => {
 
   const chance = 1 / deckSize;
   const sessionAccuracy = sessionTrials > 0 ? (sessionHits / sessionTrials) * 100 : 0;
-  const sessionZ = calculateZScore(sessionHits, sessionTrials, chance);
+  const sessionZ = calculatePsiScore(sessionHits, sessionTrials, chance);
   const sessionProb = calculateProbability(sessionZ);
   const sessionTier = getPsiTier(sessionZ);
 
@@ -128,7 +226,7 @@ const PsiStats = ({ stats, deckSize }: { stats: any, deckSize: number }) => {
   }, [showModal, sessionHits, sessionTrials, supabase]);
 
   const lifeAccuracy = lifetimeStats.trials > 0 ? (lifetimeStats.hits / lifetimeStats.trials) * 100 : 0;
-  const lifeZ = calculateZScore(lifetimeStats.hits, lifetimeStats.trials, chance);
+  const lifeZ = calculatePsiScore(lifetimeStats.hits, lifetimeStats.trials, chance);
   const lifeProb = calculateProbability(lifeZ);
   const lifeTier = getPsiTier(lifeZ);
 
@@ -159,8 +257,14 @@ const PsiStats = ({ stats, deckSize }: { stats: any, deckSize: number }) => {
 
       {/* MODAL */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-xl p-4 animate-in fade-in duration-300">
-          <div className="max-w-3xl w-full bg-neutral-900 border border-white/10 rounded-xl p-6 relative max-h-[90vh] overflow-y-auto">
+        <div 
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-xl p-4 animate-in fade-in duration-300"
+            onClick={() => setShowModal(false)}
+        >
+          <div 
+            className="max-w-3xl w-full bg-neutral-900 border border-white/10 rounded-xl p-6 relative max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             <button onClick={() => setShowModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white"><X /></button>
             <h2 className="text-2xl font-serif text-white mb-6 flex items-center gap-2">
               <Activity className="text-purple-400" /> Psychic Performance Record
@@ -173,7 +277,7 @@ const PsiStats = ({ stats, deckSize }: { stats: any, deckSize: number }) => {
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between border-b border-white/5 pb-1"><span>Hits / Trials</span> <span className="text-white font-mono">{sessionHits} / {sessionTrials}</span></div>
                   <div className="flex justify-between border-b border-white/5 pb-1"><span>Accuracy</span> <span className="text-white font-mono">{sessionAccuracy.toFixed(1)}%</span></div>
-                  <div className="flex justify-between border-b border-white/5 pb-1"><span>Z-Score</span> <span className="text-amber-300 font-mono">{sessionZ.toFixed(2)}</span></div>
+                  <div className="flex justify-between border-b border-white/5 pb-1"><span>Psi Score (Z)</span> <span className="text-amber-300 font-mono">{sessionZ.toFixed(2)}</span></div>
                   <div className="flex justify-between"><span>Probability</span> <span className="text-green-300 font-mono">{sessionProb}</span></div>
                   <div className="mt-2 text-center text-xs font-bold uppercase tracking-widest text-white">{sessionTier.name}</div>
                 </div>
@@ -188,12 +292,17 @@ const PsiStats = ({ stats, deckSize }: { stats: any, deckSize: number }) => {
                     <div className="space-y-2 text-sm">
                         <div className="flex justify-between border-b border-white/5 pb-1"><span>Hits / Trials</span> <span className="text-white font-mono">{lifetimeStats.hits} / {lifetimeStats.trials}</span></div>
                         <div className="flex justify-between border-b border-white/5 pb-1"><span>Accuracy</span> <span className="text-white font-mono">{lifeAccuracy.toFixed(1)}%</span></div>
-                        <div className="flex justify-between border-b border-white/5 pb-1"><span>Z-Score</span> <span className="text-amber-300 font-mono">{lifeZ.toFixed(2)}</span></div>
+                        <div className="flex justify-between border-b border-white/5 pb-1"><span>Psi Score (Z)</span> <span className="text-amber-300 font-mono">{lifeZ.toFixed(2)}</span></div>
                         <div className="flex justify-between"><span>Probability</span> <span className="text-green-300 font-mono">{lifeProb}</span></div>
                         <div className="mt-2 text-center text-xs font-bold uppercase tracking-widest text-white">{lifeTier.name}</div>
                     </div>
                  )}
               </div>
+            </div>
+
+            {/* RADAR CHART */}
+            <div className="mb-8 border-t border-white/10 pt-6">
+                <RadarChart stats={stats} emotions={EMOTIONS} />
             </div>
 
             {/* Definitions Legend */}
@@ -206,14 +315,18 @@ const PsiStats = ({ stats, deckSize }: { stats: any, deckSize: number }) => {
                         <div><strong className="text-pink-300 block">The Clairvoyant (Z &ge; 1.96)</strong><span className="text-slate-400">Statistically Significant (p &lt; 0.05).</span></div>
                         <div><strong className="text-indigo-300 block">The Empath (Z &ge; 1.65)</strong><span className="text-slate-400">Borderline Significant (1 in 20).</span></div>
                         <div><strong className="text-teal-300 block">The Sensitive (Z &ge; 1.0)</strong><span className="text-slate-400">High Variance. Beating odds of 1 in 6.</span></div>
+                        <div><strong className="text-slate-300 block">The Intuitive (Z &ge; 0.5)</strong><span className="text-slate-500">Slight positive variation.</span></div>
                     </div>
                 </div>
                 <div>
                     <h4 className="text-xs uppercase tracking-widest text-blue-400 mb-3 pb-2">Psi-Missing (Negative)</h4>
                     <div className="space-y-3 text-xs">
-                        <div><strong className="text-slate-300 block">The Sensor (Z ≈ 0)</strong><span className="text-slate-500">Performing exactly at statistical chance.</span></div>
+                        <div><strong className="text-slate-300 block">The Sensor (Z &approx; 0)</strong><span className="text-slate-500">Performing exactly at statistical chance.</span></div>
+                        <div><strong className="text-slate-400 block">The Latent (Z &le; -0.5)</strong><span className="text-slate-500">Slightly below chance. Over-thinking.</span></div>
+                        <div><strong className="text-slate-400 block">The Skeptic (Z &le; -1.0)</strong><span className="text-slate-500">Consistently avoiding targets.</span></div>
                         <div><strong className="text-slate-400 block">The Inverter (Z &le; -2.0)</strong><span className="text-slate-500">Significant Avoidance. Subconsciously flipping.</span></div>
                         <div><strong className="text-slate-500 block">The Shadow (Z &le; -3.0)</strong><span className="text-slate-600">Highly Significant Displacement.</span></div>
+                        <div><strong className="text-slate-500 block">The Void (Z &le; -4.0)</strong><span className="text-slate-600">World Class Anomaly. Total suppression.</span></div>
                     </div>
                 </div>
             </div>
@@ -240,6 +353,18 @@ const EMOTIONS = [
 ];
 
 const CARD_BACKS: Record<string, { name: string; bg: string }> = {
+  checkered: { 
+    name: 'Checkered Gold', 
+    bg: 'bg-purple-950 bg-[linear-gradient(45deg,#3b0764_25%,transparent_25%,transparent_75%,#3b0764_75%,#3b0764),linear-gradient(45deg,#3b0764_25%,transparent_25%,transparent_75%,#3b0764_75%,#3b0764)] bg-[length:20px_20px] [background-position:0_0,10px_10px] border-2 border-amber-500/50' 
+  },
+  box: {
+    name: 'Golden Box',
+    bg: 'bg-black border border-amber-500/80 shadow-[inset_0_0_0_10px_rgba(0,0,0,1),inset_0_0_0_11px_rgba(245,158,11,0.5)]'
+  },
+  solid: {
+    name: 'Deep Purple',
+    bg: 'bg-[#4b0082]'
+  },
   static: { 
     name: 'Static', 
     bg: 'bg-indigo-950 bg-[repeating-conic-gradient(#000000_0deg_10deg,_#312e81_10deg_20deg,_#ffffff15_20deg_30deg)]' 
@@ -344,15 +469,19 @@ const useAudioEngine = () => {
     const now = ctx.currentTime;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(110, now);
-    osc.frequency.linearRampToValueAtTime(55, now + 0.5); 
-    gain.gain.setValueAtTime(0.1, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+    
+    // Low Thud (Triangle wave, ~150Hz drop to 50Hz, quick decay)
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(150, now);
+    osc.frequency.exponentialRampToValueAtTime(50, now + 0.3);
+    
+    gain.gain.setValueAtTime(0.3, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+    
     osc.connect(gain);
     gain.connect(ctx.destination);
     osc.start(now);
-    osc.stop(now + 0.5);
+    osc.stop(now + 0.3);
   };
 
   const playSlide = () => {
@@ -408,8 +537,14 @@ const secureShuffle = (array: any[]) => {
 // --- 4. COMPONENTS ---
 
 const InstructionModal = ({ onClose }: { onClose: () => void }) => (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-md p-6 animate-in fade-in duration-500">
-    <div className="max-w-md w-full border border-purple-500/30 bg-[#0f0f1a] p-8 rounded-xl shadow-[0_0_50px_rgba(236,72,153,0.2)] text-center relative">
+  <div 
+    className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-md p-6 animate-in fade-in duration-500"
+    onClick={onClose}
+  >
+    <div 
+        className="max-w-md w-full border border-purple-500/30 bg-[#0f0f1a] p-8 rounded-xl shadow-[0_0_50px_rgba(236,72,153,0.2)] text-center relative"
+        onClick={(e) => e.stopPropagation()}
+    >
         <h2 className="text-3xl font-serif text-pink-400 mb-2 tracking-widest">EMPATHY PROTOCOL</h2>
         <p className="text-xs font-mono text-purple-300 uppercase tracking-[0.2em] mb-6">Emotional Resonance Trainer</p>
         
@@ -420,6 +555,7 @@ const InstructionModal = ({ onClose }: { onClose: () => void }) => (
             <ul className="list-disc pl-5 space-y-2 text-sm text-gray-400">
                 <li>A target emotion will be chosen (e.g., JOY).</li>
                 <li>Cards will be dealt face down. One holds the energy.</li>
+                <li>Locate the card with the chosen energy.</li>
                 <li>Feel for the resonance. Do not guess; <strong>sense</strong>.</li>
             </ul>
         </div>
@@ -444,7 +580,7 @@ export default function EmpathyApp() {
 
   const [showInstructions, setShowInstructions] = useState(true);
   const [deckSize, setDeckSize] = useState(4);
-  const [cardBack, setCardBack] = useState('static'); 
+  const [cardBack, setCardBack] = useState('checkered'); 
   const [feedbackMode, setFeedbackMode] = useState('training');
   const [targetFocus, setTargetFocus] = useState('random');
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -624,8 +760,7 @@ export default function EmpathyApp() {
         text: "CORRECT",
         subtext: `You found ${targetEmotion.name}`
       });
-      
-      setTimeout(() => startNewRound(), 5000); 
+      // Removed auto-timer
 
     } else {
       audio.playFailure();
@@ -646,9 +781,12 @@ export default function EmpathyApp() {
         text: "INCORRECT",
         subtext: `You chose ${clickedCard.name}. Target was ${targetEmotion.name}.`
       });
-
-      setTimeout(() => startNewRound(), 5000);
+      // Removed auto-timer
     }
+  };
+
+  const handleFeedbackClick = () => {
+      startNewRound();
   };
 
   const TargetIcon = targetEmotion?.icon;
@@ -727,9 +865,12 @@ export default function EmpathyApp() {
           </div>
       </div>
 
-      {/* MAGICKAL FEEDBACK OVERLAY */}
+      {/* MAGICKAL FEEDBACK OVERLAY (Click to Dismiss) */}
       {feedback && feedback.show && (
-        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center pointer-events-none">
+        <div 
+            className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/60 backdrop-blur-[2px] cursor-pointer"
+            onClick={handleFeedbackClick}
+        >
             <div className="animate-magick-zoom text-center px-4">
                 <h1 
                   className={`
@@ -747,124 +888,134 @@ export default function EmpathyApp() {
                 <p className="text-lg md:text-2xl text-white font-mono uppercase tracking-widest bg-black/80 px-6 py-2 rounded-full inline-block border border-white/20">
                     {feedback.subtext}
                 </p>
+                <p className="text-xs text-slate-400 mt-8 animate-pulse uppercase tracking-widest">Tap anywhere to continue</p>
             </div>
         </div>
       )}
 
       {/* SETTINGS DRAWER */}
       {showSettings && (
-        <div className="absolute right-0 top-16 bottom-0 w-80 z-40 bg-neutral-900 border-l border-white/10 shadow-2xl p-6 overflow-y-auto animate-in slide-in-from-right duration-300">
-          <div className="flex justify-between items-center mb-8">
-            <h3 className="font-serif text-xl text-purple-200">Lab Conditions</h3>
-            <button onClick={() => setShowSettings(false)}><X className="text-slate-500" /></button>
-          </div>
-
-          <div className="space-y-8">
-            <div>
-              <label className="text-xs text-slate-400 uppercase tracking-wider block mb-3">Probability Pool (Cards)</label>
-              <div className="flex items-center gap-4">
-                <input 
-                  type="range" min="2" max="10" 
-                  value={deckSize} onChange={(e) => setDeckSize(parseInt(e.target.value))}
-                  className="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-purple-500"
-                />
-                <span className="font-mono text-xl w-8 text-center">{deckSize}</span>
-              </div>
-              <div className="text-xs text-slate-500 mt-2 text-right">Chance: {Math.round((1/deckSize)*100)}%</div>
-            </div>
-
-            <div>
-              <label className="text-xs text-slate-400 uppercase tracking-wider block mb-3">Target Signature</label>
-              <div className="grid grid-cols-2 gap-2">
-                <button 
-                  onClick={() => setTargetFocus('random')}
-                  className={`px-3 py-2 text-sm rounded border ${targetFocus === 'random' ? 'bg-purple-900 border-purple-500 text-white' : 'border-white/10 text-slate-400 hover:bg-white/5'}`}
-                >
-                  Random Loop
-                </button>
-                {/* Specific Targets - Expanded to all options */}
-                {EMOTIONS.map(e => (
-                   <button 
-                   key={e.id}
-                   onClick={() => setTargetFocus(e.id)}
-                   className={`px-3 py-2 text-sm rounded border truncate ${targetFocus === e.id ? 'bg-purple-900 border-purple-500 text-white' : 'border-white/10 text-slate-400 hover:bg-white/5'}`}
-                 >
-                   Only {e.name}
-                 </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <label className="text-xs text-slate-400 uppercase tracking-wider block mb-3">Feedback Protocol</label>
-              <div className="flex gap-2 bg-white/5 p-1 rounded-lg">
-                <button 
-                  onClick={() => setFeedbackMode('training')}
-                  className={`flex-1 py-2 text-xs rounded transition-all ${feedbackMode === 'training' ? 'bg-slate-700 text-white shadow' : 'text-slate-400'}`}
-                >
-                  Training
-                </button>
-                <button 
-                  onClick={() => setFeedbackMode('test')}
-                  className={`flex-1 py-2 text-xs rounded transition-all ${feedbackMode === 'test' ? 'bg-slate-700 text-white shadow' : 'text-slate-400'}`}
-                >
-                  Test
-                </button>
-              </div>
-            </div>
-
-            <div>
-              <label className="text-xs text-slate-400 uppercase tracking-wider block mb-3">Etheric Masking</label>
-              <div className="flex gap-3">
-                {Object.keys(CARD_BACKS).map(key => (
-                  <button 
-                    key={key} 
-                    onClick={() => setCardBack(key)}
-                    className={`h-12 flex-1 rounded border-2 transition-all ${cardBack === key ? 'border-amber-400 scale-105' : 'border-transparent opacity-50'} ${CARD_BACKS[key].bg}`}
-                    title={CARD_BACKS[key].name}
-                  ></button>
-                ))}
-              </div>
-              <div className="text-center text-xs text-slate-500 mt-2 capitalize">{CARD_BACKS[cardBack].name}</div>
-            </div>
-            
-            <button onClick={handleResetSimulation} className="w-full py-3 bg-white/10 hover:bg-white/20 text-white rounded border border-white/10 flex items-center justify-center gap-2">
-              <RotateCcw size={16} /> Reset Simulation
-            </button>
-            
-            <button 
-                onClick={handleSaveResults} 
-                disabled={saving}
-                className="w-full py-3 bg-purple-900/50 hover:bg-purple-800/50 border border-purple-500/50 text-purple-100 rounded flex items-center justify-center gap-2"
+        <div 
+            className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowSettings(false)}
+        >
+            <div 
+                className="absolute right-0 top-16 bottom-0 w-80 bg-neutral-900 border-l border-white/10 shadow-2xl p-6 overflow-y-auto animate-in slide-in-from-right duration-300"
+                onClick={(e) => e.stopPropagation()}
             >
-                {saving ? <Sparkles className="animate-spin" size={16} /> : <Save size={16} />}
-                {saving ? "Inscribing..." : "Save Session"}
-            </button>
-            {saveMessage && <p className="text-center text-xs text-amber-300 font-mono animate-pulse">{saveMessage}</p>}
-          </div>
+                <div className="flex justify-between items-center mb-8">
+                    <h3 className="font-serif text-xl text-purple-200">Lab Conditions</h3>
+                    <button onClick={() => setShowSettings(false)}><X className="text-slate-500" /></button>
+                </div>
+
+                <div className="space-y-8">
+                    <div>
+                    <label className="text-xs text-slate-400 uppercase tracking-wider block mb-3">Probability Pool (Cards)</label>
+                    <div className="flex items-center gap-4">
+                        <input 
+                        type="range" min="2" max="10" 
+                        value={deckSize} onChange={(e) => setDeckSize(parseInt(e.target.value))}
+                        className="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-purple-500"
+                        />
+                        <span className="font-mono text-xl w-8 text-center">{deckSize}</span>
+                    </div>
+                    <div className="text-xs text-slate-500 mt-2 text-right">Chance: {Math.round((1/deckSize)*100)}%</div>
+                    </div>
+
+                    <div>
+                    <label className="text-xs text-slate-400 uppercase tracking-wider block mb-3">Target Signature</label>
+                    <div className="grid grid-cols-2 gap-2">
+                        <button 
+                        onClick={() => setTargetFocus('random')}
+                        className={`px-3 py-2 text-sm rounded border ${targetFocus === 'random' ? 'bg-purple-900 border-purple-500 text-white' : 'border-white/10 text-slate-400 hover:bg-white/5'}`}
+                        >
+                        Random Loop
+                        </button>
+                        {/* Specific Targets - Expanded to all options */}
+                        {EMOTIONS.map(e => (
+                        <button 
+                        key={e.id}
+                        onClick={() => setTargetFocus(e.id)}
+                        className={`px-3 py-2 text-sm rounded border truncate ${targetFocus === e.id ? 'bg-purple-900 border-purple-500 text-white' : 'border-white/10 text-slate-400 hover:bg-white/5'}`}
+                        >
+                        Only {e.name}
+                        </button>
+                        ))}
+                    </div>
+                    </div>
+
+                    <div>
+                    <label className="text-xs text-slate-400 uppercase tracking-wider block mb-3">Feedback Protocol</label>
+                    <div className="flex gap-2 bg-white/5 p-1 rounded-lg">
+                        <button 
+                        onClick={() => setFeedbackMode('training')}
+                        className={`flex-1 py-2 text-xs rounded transition-all ${feedbackMode === 'training' ? 'bg-slate-700 text-white shadow' : 'text-slate-400'}`}
+                        >
+                        Training
+                        </button>
+                        <button 
+                        onClick={() => setFeedbackMode('test')}
+                        className={`flex-1 py-2 text-xs rounded transition-all ${feedbackMode === 'test' ? 'bg-slate-700 text-white shadow' : 'text-slate-400'}`}
+                        >
+                        Test
+                        </button>
+                    </div>
+                    </div>
+
+                    <div>
+                    <label className="text-xs text-slate-400 uppercase tracking-wider block mb-3">Etheric Masking</label>
+                    <div className="flex gap-3">
+                        {Object.keys(CARD_BACKS).map(key => (
+                        <button 
+                            key={key} 
+                            onClick={() => setCardBack(key)}
+                            className={`h-12 flex-1 rounded border-2 transition-all ${cardBack === key ? 'border-amber-400 scale-105' : 'border-transparent opacity-50'} ${CARD_BACKS[key].bg}`}
+                            title={CARD_BACKS[key].name}
+                        ></button>
+                        ))}
+                    </div>
+                    <div className="text-center text-xs text-slate-500 mt-2 capitalize">{CARD_BACKS[cardBack].name}</div>
+                    </div>
+                    
+                    <button onClick={handleResetSimulation} className="w-full py-3 bg-white/10 hover:bg-white/20 text-white rounded border border-white/10 flex items-center justify-center gap-2">
+                    <RotateCcw size={16} /> Reset Simulation
+                    </button>
+                    
+                    <button 
+                        onClick={handleSaveResults} 
+                        disabled={saving}
+                        className="w-full py-3 bg-purple-900/50 hover:bg-purple-800/50 border border-purple-500/50 text-purple-100 rounded flex items-center justify-center gap-2"
+                    >
+                        {saving ? <Sparkles className="animate-spin" size={16} /> : <Save size={16} />}
+                        {saving ? "Inscribing..." : "Save Session"}
+                    </button>
+                    {saveMessage && <p className="text-center text-xs text-amber-300 font-mono animate-pulse">{saveMessage}</p>}
+                </div>
+            </div>
         </div>
       )}
 
       {/* GAME AREA - Scrollable only here */}
-      <main className="flex-1 w-full flex flex-col relative z-10 overflow-hidden p-2">
-        {/* Grid Container - Forces Fit */}
-        <div className="flex-1 w-full h-full flex items-center justify-center">
+      {/* Changing to overflow-y-auto enables scrolling on small screens like iPhone SE */}
+      <main className="flex-1 w-full flex flex-col relative z-10 overflow-y-auto p-2">
+        {/* Grid Container - Forces Fit but allows overflow if min-height requirements are met */}
+        <div className="flex-1 w-full flex items-center justify-center min-h-0">
             <div 
-                className="grid gap-2 w-full max-w-full h-full max-h-full"
+                className="grid gap-2 w-full max-w-full"
                 style={{
                     gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
-                    gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`
+                    // We removed the forced 100% height here to allow natural stacking on small screens
+                    // but we ensure rows have a minimum height so they don't squash.
+                    gridTemplateRows: `repeat(${rows}, minmax(140px, 1fr))` 
                 }}
             >
             {cards.map((card, idx) => (
-                // GROUP WRAPPER: Handles the click and hover detection.
-                // Uses flex center to allow the inner card to maintain aspect ratio without stretching into the grid cell shape.
-                // Added min-w-0 and min-h-0 to prevent flex item blowouts.
+                // GROUP WRAPPER
                 <div 
                     key={card.id}
                     onClick={() => handleCardClick(idx)}
                     onMouseEnter={() => { if(gameState === 'sensing') audio.playSlide(); }}
-                    className="w-full h-full min-w-0 min-h-0 flex items-center justify-center p-1 md:p-2 group cursor-pointer relative perspective-[1000px] overflow-hidden"
+                    className="w-full h-full min-h-0 flex items-center justify-center p-1 md:p-2 group cursor-pointer relative perspective-[1000px]"
                 >
                     {/* Centered Card Container: Uses SVG strut to enforce aspect ratio while maximizing size */}
                     <div 
@@ -883,7 +1034,7 @@ export default function EmpathyApp() {
                             viewBox="0 0 200 300"
                             width="200"
                             height="300"
-                            className="block w-auto h-auto max-w-full max-h-full opacity-0 pointer-events-none select-none"
+                            className="block w-auto h-auto min-w-[50px] min-h-[75px] max-w-full max-h-full opacity-0 pointer-events-none select-none"
                             style={{ 
                                 height: 'auto', 
                                 width: 'auto', 
@@ -900,12 +1051,12 @@ export default function EmpathyApp() {
                             className={`
                             absolute inset-0 w-full h-full rounded-lg backface-hidden overflow-hidden z-10
                             ${CARD_BACKS[cardBack].bg}
-                            border-[3px] border-slate-400 ring-1 ring-inset ring-black/80
+                            ${cardBack === 'box' ? '' : 'border-[3px] border-slate-400 ring-1 ring-inset ring-black/80'}
                             shadow-[0_0_10px_rgba(148,163,184,0.2)]
                             `}
                         >
-                            {/* Inner metallic sheen */}
-                            <div className="absolute inset-0 border border-white/20 rounded-lg pointer-events-none"></div>
+                            {/* Inner metallic sheen for standard cards */}
+                            {cardBack !== 'box' && <div className="absolute inset-0 border border-white/20 rounded-lg pointer-events-none"></div>}
                         </div>
 
                         {/* Card Front */}
