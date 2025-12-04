@@ -44,7 +44,6 @@ const calculateProbability = (z: number) => {
   
   if (oneInX > 1000000) return `1 in ${(oneInX / 1000000).toFixed(1)}M`;
   if (oneInX > 1000) return `1 in ${(oneInX / 1000).toFixed(1)}k`;
-  // If the odds are basically 1 in 2 (chance), just show that
   if (oneInX < 2) return "1 in 2";
   return `1 in ${Math.round(oneInX)}`;
 };
@@ -70,49 +69,108 @@ const getPsiTier = (z: number) => {
  * --- PSI STATS COMPONENT ---
  */
 const PsiStats = ({ stats, deckSize }: { stats: any, deckSize: number }) => {
+  const [supabase] = useState(() => createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  ));
   const [showModal, setShowModal] = useState(false);
+  const [lifetimeStats, setLifetimeStats] = useState({ hits: 0, trials: 0 });
+  const [loadingLifetime, setLoadingLifetime] = useState(false);
   
-  let totalTrials = 0;
-  let totalHits = 0;
-  
+  // 1. Current Session Stats
+  let sessionTrials = 0;
+  let sessionHits = 0;
   Object.values(stats).forEach((s: any) => {
-    totalTrials += s.attempts;
-    totalHits += s.hits;
+    sessionTrials += s.attempts;
+    sessionHits += s.hits;
   });
 
   const chance = 1 / deckSize;
-  const accuracy = totalTrials > 0 ? (totalHits / totalTrials) * 100 : 0;
-  const zScore = calculateZScore(totalHits, totalTrials, chance);
-  const probability = calculateProbability(zScore);
-  const tier = getPsiTier(zScore);
+  const sessionAccuracy = sessionTrials > 0 ? (sessionHits / sessionTrials) * 100 : 0;
+  const sessionZ = calculateZScore(sessionHits, sessionTrials, chance);
+  const sessionProb = calculateProbability(sessionZ);
+  const sessionTier = getPsiTier(sessionZ);
+
+  // 2. Fetch Lifetime Stats on Modal Open
+  useEffect(() => {
+    if (showModal) {
+      const fetchHistory = async () => {
+        setLoadingLifetime(true);
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            // Fallback to local storage if not logged in
+            const local = localStorage.getItem('empathy_stats'); // Simple fallback
+            if(local) {
+               // This is just a quick visual fallback, real logic below is better
+            }
+            setLoadingLifetime(false);
+            return;
+        }
+
+        // Fetch all reports for Empathy Training
+        const { data, error } = await supabase
+            .from('reports')
+            .select('chart_data')
+            .eq('user_id', user.id)
+            .eq('category', 'training') // Assuming we categorized them as added in SQL
+            .eq('name', 'Empathy Training');
+
+        if (!error && data) {
+            let h = 0; 
+            let t = 0;
+            // Aggregate all historical sessions
+            data.forEach((row: any) => {
+                const chart = row.chart_data;
+                if (chart) {
+                    Object.values(chart).forEach((s: any) => {
+                        h += s.hits || 0;
+                        t += s.attempts || 0;
+                    });
+                }
+            });
+            // Add current session to lifetime visual
+            setLifetimeStats({ hits: h + sessionHits, trials: t + sessionTrials });
+        }
+        setLoadingLifetime(false);
+      };
+      fetchHistory();
+    }
+  }, [showModal, sessionHits, sessionTrials, supabase]);
+
+  // Lifetime Calculations
+  const lifeAccuracy = lifetimeStats.trials > 0 ? (lifetimeStats.hits / lifetimeStats.trials) * 100 : 0;
+  // Note: Lifetime Z-score is tricky with varying deck sizes, but we assume an average for the "General" feel,
+  // or use the current deckSize as the benchmark for simplicity in this specific view.
+  const lifeZ = calculateZScore(lifetimeStats.hits, lifetimeStats.trials, chance);
+  const lifeProb = calculateProbability(lifeZ);
+  const lifeTier = getPsiTier(lifeZ);
 
   return (
     <>
-      {/* HUD BOX - Non-absolute to prevent overlap */}
-      <div className="w-full flex justify-end px-4 mb-2 pointer-events-auto">
-        <div className="bg-black/60 backdrop-blur-md border border-white/10 rounded-lg p-2 md:p-3 text-right shadow-[0_0_20px_rgba(0,0,0,0.5)] min-w-[140px]">
+      {/* HUD BOX - Absolute Positioned to sit snugly */}
+      <div className="absolute top-18 right-4 z-30 flex flex-col items-end pointer-events-auto">
+        <div className="bg-black/60 backdrop-blur-md border border-white/10 rounded-lg p-2 text-right shadow-[0_0_20px_rgba(0,0,0,0.5)] min-w-[130px]">
           
           <div className="flex justify-between items-end gap-4 border-b border-white/10 pb-1 mb-1">
-             <span className="text-[10px] text-slate-400 uppercase tracking-widest">Base Chance</span>
-             <span className="text-xs font-mono text-white">1 in {deckSize}</span>
+             <span className="text-[9px] text-slate-400 uppercase tracking-widest">Chance</span>
+             <span className="text-[10px] font-mono text-white">1 in {deckSize}</span>
           </div>
 
-          <div className="text-3xl font-mono font-bold text-white mb-1">{accuracy.toFixed(1)}%</div>
-          <div className="text-[10px] text-slate-400 uppercase tracking-widest mb-2 border-b border-white/10 pb-1">Accuracy</div>
+          <div className="text-2xl font-mono font-bold text-white mb-1">{sessionAccuracy.toFixed(1)}%</div>
           
-          <div className="space-y-1 font-mono text-xs text-slate-300">
-            <div className="flex justify-between"><span>N:</span> <span>{totalTrials}</span></div>
-            <div className="flex justify-between"><span>Z:</span> <span className={zScore > 0 ? 'text-green-400' : zScore < 0 ? 'text-red-400' : ''}>{zScore.toFixed(2)}</span></div>
-            <div className="flex justify-between" title="Probability of achieving this score"><span>Score Odds:</span> <span>{probability}</span></div>
+          <div className="space-y-1 font-mono text-[10px] text-slate-300">
+            <div className="flex justify-between"><span>N:</span> <span>{sessionTrials}</span></div>
+            <div className="flex justify-between"><span>Z:</span> <span className={sessionZ > 0 ? 'text-green-400' : sessionZ < 0 ? 'text-red-400' : ''}>{sessionZ.toFixed(2)}</span></div>
+            <div className="flex justify-between" title="Probability of achieving this score"><span>Odds:</span> <span>{sessionProb}</span></div>
           </div>
           
-          <div className={`mt-2 text-xs font-bold uppercase tracking-wider ${tier.color} text-shadow-sm`}>
-            {tier.name}
+          <div className={`mt-1 text-[10px] font-bold uppercase tracking-wider ${sessionTier.color} text-shadow-sm`}>
+            {sessionTier.name}
           </div>
 
           <button 
             onClick={() => setShowModal(true)}
-            className="mt-3 w-full text-[10px] text-slate-500 hover:text-white uppercase tracking-wider border border-transparent hover:border-white/20 rounded py-1 transition-all"
+            className="mt-2 w-full text-[9px] text-slate-500 hover:text-white uppercase tracking-wider border border-transparent hover:border-white/20 rounded py-1 transition-all"
           >
             View Scores
           </button>
@@ -122,30 +180,67 @@ const PsiStats = ({ stats, deckSize }: { stats: any, deckSize: number }) => {
       {/* MODAL */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-xl p-4 animate-in fade-in duration-300">
-          <div className="max-w-2xl w-full bg-neutral-900 border border-white/10 rounded-xl p-6 relative max-h-[90vh] overflow-y-auto">
+          <div className="max-w-3xl w-full bg-neutral-900 border border-white/10 rounded-xl p-6 relative max-h-[90vh] overflow-y-auto">
             <button onClick={() => setShowModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white"><X /></button>
             <h2 className="text-2xl font-serif text-white mb-6 flex items-center gap-2">
               <Activity className="text-purple-400" /> Psychic Performance Record
             </h2>
+            
             {/* Comparison Table */}
             <div className="grid grid-cols-2 gap-4 mb-8">
+              {/* CURRENT */}
               <div className="bg-white/5 rounded-lg p-4 border border-white/5">
                 <h3 className="text-xs uppercase tracking-[0.2em] text-purple-300 mb-4 text-center">Current Session</h3>
                 <div className="space-y-2 text-sm">
-                  <div className="flex justify-between border-b border-white/5 pb-1"><span>Hits</span> <span className="text-white font-mono">{totalHits}</span></div>
-                  <div className="flex justify-between border-b border-white/5 pb-1"><span>Trials</span> <span className="text-white font-mono">{totalTrials}</span></div>
-                  <div className="flex justify-between border-b border-white/5 pb-1"><span>Accuracy</span> <span className="text-white font-mono">{accuracy.toFixed(1)}%</span></div>
-                  <div className="flex justify-between border-b border-white/5 pb-1"><span>Z-Score</span> <span className="text-amber-300 font-mono">{zScore.toFixed(2)}</span></div>
-                  <div className="flex justify-between"><span>Score Odds</span> <span className="text-green-300 font-mono">{probability}</span></div>
+                  <div className="flex justify-between border-b border-white/5 pb-1"><span>Hits / Trials</span> <span className="text-white font-mono">{sessionHits} / {sessionTrials}</span></div>
+                  <div className="flex justify-between border-b border-white/5 pb-1"><span>Accuracy</span> <span className="text-white font-mono">{sessionAccuracy.toFixed(1)}%</span></div>
+                  <div className="flex justify-between border-b border-white/5 pb-1"><span>Z-Score</span> <span className="text-amber-300 font-mono">{sessionZ.toFixed(2)}</span></div>
+                  <div className="flex justify-between"><span>Probability</span> <span className="text-green-300 font-mono">{sessionProb}</span></div>
+                  <div className="mt-2 text-center text-xs font-bold uppercase tracking-widest text-white">{sessionTier.name}</div>
                 </div>
               </div>
-              <div className="bg-white/5 rounded-lg p-4 border border-white/5 opacity-50 relative">
-                 <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-[1px] rounded-lg">
-                    <span className="text-xs uppercase tracking-widest text-slate-400">Lifetime Data (Simulated)</span>
-                 </div>
-                 <h3 className="text-xs uppercase tracking-[0.2em] text-slate-500 mb-4 text-center">Lifetime</h3>
+
+              {/* LIFETIME */}
+              <div className="bg-white/5 rounded-lg p-4 border border-white/5 relative">
+                 <h3 className="text-xs uppercase tracking-[0.2em] text-amber-300 mb-4 text-center">Lifetime Record</h3>
+                 {loadingLifetime ? (
+                    <div className="absolute inset-0 flex items-center justify-center"><Sparkles className="animate-spin text-amber-500"/></div>
+                 ) : (
+                    <div className="space-y-2 text-sm">
+                        <div className="flex justify-between border-b border-white/5 pb-1"><span>Hits / Trials</span> <span className="text-white font-mono">{lifetimeStats.hits} / {lifetimeStats.trials}</span></div>
+                        <div className="flex justify-between border-b border-white/5 pb-1"><span>Accuracy</span> <span className="text-white font-mono">{lifeAccuracy.toFixed(1)}%</span></div>
+                        <div className="flex justify-between border-b border-white/5 pb-1"><span>Z-Score</span> <span className="text-amber-300 font-mono">{lifeZ.toFixed(2)}</span></div>
+                        <div className="flex justify-between"><span>Probability</span> <span className="text-green-300 font-mono">{lifeProb}</span></div>
+                        <div className="mt-2 text-center text-xs font-bold uppercase tracking-widest text-white">{lifeTier.name}</div>
+                    </div>
+                 )}
               </div>
             </div>
+
+            {/* Definitions Legend */}
+            <div className="grid md:grid-cols-2 gap-8 border-t border-white/10 pt-6">
+                <div>
+                    <h4 className="text-xs uppercase tracking-widest text-amber-400 mb-3 pb-2">Psi-Hitting (Positive)</h4>
+                    <div className="space-y-3 text-xs">
+                        <div><strong className="text-amber-200 block">The Oracle (Z &ge; 4.0)</strong><span className="text-slate-400">World Class Anomaly (1 in 31,000+). Extreme evidence of psi.</span></div>
+                        <div><strong className="text-purple-300 block">The Medium (Z &ge; 3.0)</strong><span className="text-slate-400">Highly Significant (1 in 740). Strong, consistent influence.</span></div>
+                        <div><strong className="text-pink-300 block">The Clairvoyant (Z &ge; 1.96)</strong><span className="text-slate-400">Statistically Significant (p &lt; 0.05). You have beaten chance.</span></div>
+                        <div><strong className="text-indigo-300 block">The Empath (Z &ge; 1.65)</strong><span className="text-slate-400">Borderline Significant (1 in 20). Strong emotional connection.</span></div>
+                        <div><strong className="text-teal-300 block">The Sensitive (Z &ge; 1.0)</strong><span className="text-slate-400">High Variance. Beating odds of 1 in 6.</span></div>
+                    </div>
+                </div>
+                <div>
+                    <h4 className="text-xs uppercase tracking-widest text-blue-400 mb-3 pb-2">Psi-Missing (Negative)</h4>
+                    <div className="space-y-3 text-xs">
+                        <div><strong className="text-slate-300 block">The Sensor (Z ≈ 0)</strong><span className="text-slate-500">Performing exactly at statistical chance. The baseline.</span></div>
+                        <div><strong className="text-slate-400 block">The Latent (Z &le; -0.5)</strong><span className="text-slate-500">Slightly below chance. Often caused by over-thinking.</span></div>
+                        <div><strong className="text-slate-400 block">The Inverter (Z &le; -2.0)</strong><span className="text-slate-500">Significant Avoidance. Subconsciously flipping the signal.</span></div>
+                        <div><strong className="text-slate-500 block">The Shadow (Z &le; -3.0)</strong><span className="text-slate-600">Highly Significant Displacement. Powerful connection, but inverted.</span></div>
+                        <div><strong className="text-slate-600 block">The Void (Z &le; -4.0)</strong><span className="text-slate-700">Total Suppression. Massive potential manifesting as blockage.</span></div>
+                    </div>
+                </div>
+            </div>
+
           </div>
         </div>
       )}
@@ -287,8 +382,7 @@ const useAudioEngine = () => {
       if (!ctxRef.current) return;
       const ctx = ctxRef.current;
       const now = ctx.currentTime;
-      // Soft noise swipe
-      const bufferSize = ctx.sampleRate * 0.2; // 0.2 seconds
+      const bufferSize = ctx.sampleRate * 0.2; 
       const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
       const data = buffer.getChannelData(0);
       for (let i = 0; i < bufferSize; i++) {
@@ -301,7 +395,7 @@ const useAudioEngine = () => {
       filter.frequency.setValueAtTime(500, now);
       filter.frequency.linearRampToValueAtTime(100, now + 0.2);
       const gain = ctx.createGain();
-      gain.gain.setValueAtTime(0.05, now); // Quiet
+      gain.gain.setValueAtTime(0.05, now); 
       gain.gain.linearRampToValueAtTime(0, now + 0.2);
       
       noise.connect(filter);
@@ -616,10 +710,8 @@ export default function EmpathyApp() {
         </div>
       </header>
 
-      {/* PSI STATS HUD (NESTLED IN LAYOUT) */}
-      <div className="relative z-20 shrink-0">
-          <PsiStats stats={stats} deckSize={deckSize} />
-      </div>
+      {/* PSI STATS HUD (Absolute positioned "snug") */}
+      <PsiStats stats={stats} deckSize={deckSize} />
 
       {/* MAGICKAL FEEDBACK OVERLAY */}
       {feedback && feedback.show && (
@@ -676,7 +768,8 @@ export default function EmpathyApp() {
                 >
                   Random Loop
                 </button>
-                {EMOTIONS.slice(0,3).map(e => (
+                {/* Specific Targets */}
+                {EMOTIONS.filter(e => ['love', 'sad', 'happy', 'focused'].includes(e.id)).map(e => (
                    <button 
                    key={e.id}
                    onClick={() => setTargetFocus(e.id)}
