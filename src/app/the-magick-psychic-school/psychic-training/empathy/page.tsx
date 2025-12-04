@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Heart, CloudRain, Sun, Banknote, Flame, Zap, Crosshair, PartyPopper, 
   Settings, Eye, Volume2, VolumeX, 
-  Sparkles, X, Trophy, Info, RotateCcw, Save, Activity, BarChart3
+  Sparkles, X, Trophy, Info, RotateCcw, Save, Activity, Maximize, Minimize
 } from 'lucide-react';
 import { createBrowserClient } from '@supabase/ssr';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
@@ -77,7 +77,6 @@ const PsiStats = ({ stats, deckSize }: { stats: any, deckSize: number }) => {
   const [lifetimeStats, setLifetimeStats] = useState({ hits: 0, trials: 0 });
   const [loadingLifetime, setLoadingLifetime] = useState(false);
   
-  // Current Session Stats
   let sessionTrials = 0;
   let sessionHits = 0;
   Object.values(stats).forEach((s: any) => {
@@ -91,7 +90,6 @@ const PsiStats = ({ stats, deckSize }: { stats: any, deckSize: number }) => {
   const sessionProb = calculateProbability(sessionZ);
   const sessionTier = getPsiTier(sessionZ);
 
-  // Fetch Lifetime Stats
   useEffect(() => {
     if (showModal) {
       const fetchHistory = async () => {
@@ -121,7 +119,6 @@ const PsiStats = ({ stats, deckSize }: { stats: any, deckSize: number }) => {
                     });
                 }
             });
-            // Combine with current session
             setLifetimeStats({ hits: h + sessionHits, trials: t + sessionTrials });
         }
         setLoadingLifetime(false);
@@ -137,7 +134,7 @@ const PsiStats = ({ stats, deckSize }: { stats: any, deckSize: number }) => {
 
   return (
     <>
-      {/* COMPACT HUD - "Discreet and not taking up much space" */}
+      {/* COMPACT HUD */}
       <div 
         onClick={() => setShowModal(true)}
         className="
@@ -145,7 +142,7 @@ const PsiStats = ({ stats, deckSize }: { stats: any, deckSize: number }) => {
             flex flex-col items-end justify-center
             bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/20 
             rounded-lg px-3 py-1 transition-all duration-300
-            min-w-20 h-[50px]
+            min-w-[80px] h-[50px]
         "
       >
           <div className="flex items-center gap-2">
@@ -160,7 +157,7 @@ const PsiStats = ({ stats, deckSize }: { stats: any, deckSize: number }) => {
           </div>
       </div>
 
-      {/* MODAL (Full Data) */}
+      {/* MODAL */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-xl p-4 animate-in fade-in duration-300">
           <div className="max-w-3xl w-full bg-neutral-900 border border-white/10 rounded-xl p-6 relative max-h-[90vh] overflow-y-auto">
@@ -204,21 +201,19 @@ const PsiStats = ({ stats, deckSize }: { stats: any, deckSize: number }) => {
                 <div>
                     <h4 className="text-xs uppercase tracking-widest text-amber-400 mb-3 pb-2">Psi-Hitting (Positive)</h4>
                     <div className="space-y-3 text-xs">
-                        <div><strong className="text-amber-200 block">The Oracle (Z &ge; 4.0)</strong><span className="text-slate-400">World Class Anomaly (1 in 31,000+). Extreme evidence of psi.</span></div>
-                        <div><strong className="text-purple-300 block">The Medium (Z &ge; 3.0)</strong><span className="text-slate-400">Highly Significant (1 in 740). Strong, consistent influence.</span></div>
-                        <div><strong className="text-pink-300 block">The Clairvoyant (Z &ge; 1.96)</strong><span className="text-slate-400">Statistically Significant (p &lt; 0.05). You have beaten chance.</span></div>
-                        <div><strong className="text-indigo-300 block">The Empath (Z &ge; 1.65)</strong><span className="text-slate-400">Borderline Significant (1 in 20). Strong emotional connection.</span></div>
+                        <div><strong className="text-amber-200 block">The Oracle (Z &ge; 4.0)</strong><span className="text-slate-400">World Class Anomaly (1 in 31,000+).</span></div>
+                        <div><strong className="text-purple-300 block">The Medium (Z &ge; 3.0)</strong><span className="text-slate-400">Highly Significant (1 in 740).</span></div>
+                        <div><strong className="text-pink-300 block">The Clairvoyant (Z &ge; 1.96)</strong><span className="text-slate-400">Statistically Significant (p &lt; 0.05).</span></div>
+                        <div><strong className="text-indigo-300 block">The Empath (Z &ge; 1.65)</strong><span className="text-slate-400">Borderline Significant (1 in 20).</span></div>
                         <div><strong className="text-teal-300 block">The Sensitive (Z &ge; 1.0)</strong><span className="text-slate-400">High Variance. Beating odds of 1 in 6.</span></div>
                     </div>
                 </div>
                 <div>
                     <h4 className="text-xs uppercase tracking-widest text-blue-400 mb-3 pb-2">Psi-Missing (Negative)</h4>
                     <div className="space-y-3 text-xs">
-                        <div><strong className="text-slate-300 block">The Sensor (Z ≈ 0)</strong><span className="text-slate-500">Performing exactly at statistical chance. The baseline.</span></div>
-                        <div><strong className="text-slate-400 block">The Latent (Z &le; -0.5)</strong><span className="text-slate-500">Slightly below chance. Often caused by over-thinking.</span></div>
-                        <div><strong className="text-slate-400 block">The Inverter (Z &le; -2.0)</strong><span className="text-slate-500">Significant Avoidance. Subconsciously flipping the signal.</span></div>
-                        <div><strong className="text-slate-500 block">The Shadow (Z &le; -3.0)</strong><span className="text-slate-600">Highly Significant Displacement. Powerful connection, but inverted.</span></div>
-                        <div><strong className="text-slate-600 block">The Void (Z &le; -4.0)</strong><span className="text-slate-700">Total Suppression. Massive potential manifesting as blockage.</span></div>
+                        <div><strong className="text-slate-300 block">The Sensor (Z ≈ 0)</strong><span className="text-slate-500">Performing exactly at statistical chance.</span></div>
+                        <div><strong className="text-slate-400 block">The Inverter (Z &le; -2.0)</strong><span className="text-slate-500">Significant Avoidance. Subconsciously flipping.</span></div>
+                        <div><strong className="text-slate-500 block">The Shadow (Z &le; -3.0)</strong><span className="text-slate-600">Highly Significant Displacement.</span></div>
                     </div>
                 </div>
             </div>
@@ -489,32 +484,24 @@ export default function EmpathyApp() {
   };
 
   const handleResetSimulation = () => {
-    // 1. Clear State Stats
     setStats({});
-    // 2. Clear Local Storage
     localStorage.removeItem('empathy_stats');
-    // 3. Close Settings
     setShowSettings(false);
-    // 4. Start fresh
     startNewRound();
   };
 
   const handleSaveResults = async () => {
     setSaving(true);
     setSaveMessage("Inscribing...");
-    
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      
       if (!user) {
         setSaveMessage("Soul signature not found (Login required)");
         setTimeout(() => setSaveMessage(null), 3000);
         setSaving(false);
         return;
       }
-
       const totalAttempts = Object.values(stats).reduce((acc: number, curr: any) => acc + curr.attempts, 0);
-
       const { error } = await supabase
         .from('reports')
         .insert({
@@ -524,7 +511,6 @@ export default function EmpathyApp() {
           chart_data: stats, 
           report_content: `Session completed. Total Attempts: ${totalAttempts}. Focus: ${targetFocus}. Deck Size: ${deckSize}.`,
         });
-
       if (error) throw error;
       setSaveMessage("Inscribed in Grimoire");
     } catch (e) {
@@ -540,6 +526,17 @@ export default function EmpathyApp() {
     const newState = !soundEnabled;
     setSoundEnabled(newState);
     audio.playTheta(newState);
+  };
+
+  // Toggle Fullscreen
+  const toggleFullScreen = () => {
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen();
+    } else {
+        if (document.exitFullscreen) {
+            document.exitFullscreen(); 
+        }
+    }
   };
 
   const startNewRound = useCallback(() => {
@@ -589,6 +586,11 @@ export default function EmpathyApp() {
       setGameState('sensing');
     }, 600);
   }, [deckSize, targetFocus]);
+
+  // Reactive Deck Update: Automatically resets round when deckSize changes
+  useEffect(() => {
+    startNewRound();
+  }, [deckSize, startNewRound]);
 
   const handleCardClick = (index: number) => {
     if (gameState !== 'sensing') return;
@@ -660,7 +662,10 @@ export default function EmpathyApp() {
             cols = Math.min(deckSize, 4);
         }
     } else {
-        cols = deckSize > 6 ? 3 : 2;
+        // Mobile Logic Updated
+        if (deckSize >= 10) cols = 4;
+        else if (deckSize >= 5) cols = 3;
+        else cols = 2; // 2-4 cards
     }
     const rows = Math.ceil(deckSize / cols);
     return { cols, rows };
@@ -675,7 +680,7 @@ export default function EmpathyApp() {
       
       {showInstructions && <InstructionModal onClose={handleStart} />}
 
-      {/* HEADER */}
+      {/* HEADER - Fixed at top */}
       <header className="relative z-20 flex justify-between items-center px-4 py-3 border-b border-white/5 backdrop-blur-sm bg-black/40 shrink-0 h-16">
         <div className="flex items-center gap-4">
             <MagickalBackLink href="/the-magick-psychic-school/psychic-training" text="Exit" className="text-xs text-slate-400 hover:text-white" />
@@ -704,20 +709,20 @@ export default function EmpathyApp() {
       </header>
 
       {/* TOP BAR: Target Info & Scorecard in Flow */}
-      <div className="shrink-0 w-full flex items-start justify-between p-2 relative z-20 min-h-[90px]">
+      <div className="shrink-0 w-full flex items-start justify-between px-4 py-2 relative z-20 min-h-[80px]">
           
-          {/* Center Target Info (Absolute Centered) */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-0">
+          {/* Target Info - Left on Mobile, Center on Desktop */}
+          <div className="flex flex-col items-start md:items-center justify-center md:absolute md:inset-0 md:pointer-events-none z-0">
              <p className="text-slate-500 text-[10px] uppercase tracking-[0.2em] mb-1">Target Frequency</p>
-             <div className="flex items-center justify-center gap-2">
+             <div className="flex items-center gap-2">
                 {TargetIcon && <TargetIcon size={24} className="text-amber-400" />}
-                <h1 className="text-2xl md:text-4xl font-serif text-slate-100">{targetEmotion?.name.toUpperCase()}</h1>
-                {TargetIcon && <TargetIcon size={24} className="text-amber-400" />}
+                <h1 className="text-xl md:text-4xl font-serif text-slate-100">{targetEmotion?.name.toUpperCase()}</h1>
+                {TargetIcon && <TargetIcon size={24} className="text-amber-400 hidden md:block" />}
              </div>
           </div>
 
           {/* Right HUD (Relative Flow - Pushes Grid Down) */}
-          <div className="ml-auto relative z-10 pointer-events-auto">
+          <div className="ml-auto relative z-30 pointer-events-auto">
               <PsiStats stats={stats} deckSize={deckSize} />
           </div>
       </div>
@@ -725,10 +730,10 @@ export default function EmpathyApp() {
       {/* MAGICKAL FEEDBACK OVERLAY */}
       {feedback && feedback.show && (
         <div className="absolute inset-0 z-50 flex flex-col items-center justify-center pointer-events-none">
-            <div className="animate-magick-zoom text-center">
+            <div className="animate-magick-zoom text-center px-4">
                 <h1 
                   className={`
-                    text-6xl md:text-9xl font-serif font-black tracking-tighter mb-4
+                    text-5xl md:text-9xl font-serif font-black tracking-tighter mb-4
                     ${feedback.type === 'hit' ? 'text-amber-300' : 'text-slate-400'}
                   `}
                   style={{
@@ -739,7 +744,7 @@ export default function EmpathyApp() {
                 >
                     {feedback.text}
                 </h1>
-                <p className="text-xl md:text-2xl text-white font-mono uppercase tracking-widest bg-black/80 px-6 py-2 rounded-full inline-block border border-white/20">
+                <p className="text-lg md:text-2xl text-white font-mono uppercase tracking-widest bg-black/80 px-6 py-2 rounded-full inline-block border border-white/20">
                     {feedback.subtext}
                 </p>
             </div>
@@ -823,7 +828,6 @@ export default function EmpathyApp() {
               <div className="text-center text-xs text-slate-500 mt-2 capitalize">{CARD_BACKS[cardBack].name}</div>
             </div>
             
-            {/* RESET SIMULATION (Corrected) */}
             <button onClick={handleResetSimulation} className="w-full py-3 bg-white/10 hover:bg-white/20 text-white rounded border border-white/10 flex items-center justify-center gap-2">
               <RotateCcw size={16} /> Reset Simulation
             </button>
@@ -841,7 +845,7 @@ export default function EmpathyApp() {
         </div>
       )}
 
-      {/* GAME AREA */}
+      {/* GAME AREA - Scrollable only here */}
       <main className="flex-1 w-full flex flex-col relative z-10 overflow-y-auto p-2">
         {/* Grid Container - Forces Fit */}
         <div className="flex-1 w-full min-h-0 flex items-center justify-center">
@@ -864,7 +868,7 @@ export default function EmpathyApp() {
                     <div 
                         className={`
                             absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2
-                            h-[90%] w-auto aspect-2/3 max-w-full
+                            h-[90%] w-auto aspect-[2/3] max-w-full
                             transition-transform duration-300 ease-out transform
                             ${gameState === 'sensing' ? 'group-hover:translate-y-2 group-hover:shadow-[0_0_25px_rgba(255,255,255,0.2)]' : ''}
                         `}
@@ -884,7 +888,7 @@ export default function EmpathyApp() {
                         `}
                     >
                         {/* Inner metallic sheen */}
-                        <div className="absolute inset-0 border border-white/20 rounded-lg pointer-events-none"></div>
+                        <div className="absolute inset-0 border-[1px] border-white/20 rounded-lg pointer-events-none"></div>
                     </div>
 
                     {/* Card Front */}
@@ -926,8 +930,12 @@ export default function EmpathyApp() {
       </main>
 
       {/* FOOTER */}
-      <footer className="relative z-20 py-2 text-center border-t border-white/5 bg-black/40 backdrop-blur text-[10px] text-slate-600 shrink-0 h-8 flex items-center justify-center">
+      <footer className="relative z-20 py-2 text-center border-t border-white/5 bg-black/40 backdrop-blur text-[10px] text-slate-600 shrink-0 h-8 flex items-center justify-between px-4">
+        <div className="w-6"></div> {/* Spacer */}
         <p>LAB CONDITIONS: {deckSize} CARDS // {feedbackMode.toUpperCase()} MODE</p>
+        <button onClick={toggleFullScreen} className="w-6 text-slate-400 hover:text-white">
+            {typeof document !== 'undefined' && document.fullscreenElement ? <Minimize size={16}/> : <Maximize size={16}/>}
+        </button>
       </footer>
 
       {/* CSS UTILS */}
