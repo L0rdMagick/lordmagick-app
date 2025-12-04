@@ -871,12 +871,10 @@ export default function EmpathyApp() {
                     onMouseEnter={() => { if(gameState === 'sensing') audio.playSlide(); }}
                     className="w-full h-full flex items-center justify-center p-1 md:p-2 group cursor-pointer"
                 >
-                    {/* Centered Card Container: Maintains aspect ratio (2/3) and maximizes size within the cell */}
+                    {/* Centered Card Container: Uses SVG strut to enforce aspect ratio while maximizing size */}
                     <div 
                         className={`
                             relative
-                            aspect-2/3 
-                            h-auto w-auto max-w-full max-h-full
                             transition-transform duration-300 ease-out transform
                             ${gameState === 'sensing' ? 'group-hover:-translate-y-2 group-hover:shadow-[0_0_25px_rgba(255,255,255,0.2)]' : ''}
                         `}
@@ -885,6 +883,22 @@ export default function EmpathyApp() {
                             transform: card.status !== 'face-down' ? 'rotateY(180deg)' : 'rotateY(0deg)',
                         }}
                     >
+                        {/* THE STRUT: Invisible Image that forces the container to be the largest possible 2:3 box inside the grid cell */}
+                        <img 
+                            src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMzAwIj48L3N2Zz4="
+                            alt=""
+                            className="block w-auto h-auto max-w-full max-h-full opacity-0 pointer-events-none select-none"
+                            style={{ 
+                                height: 'auto', 
+                                width: 'auto', 
+                                maxHeight: '100%', 
+                                maxWidth: '100%',
+                                minWidth: '0', 
+                                minHeight: '0' 
+                            }}
+                            width={1000} // Large intrinsic size allows it to scale down to fit container
+                            height={1500}
+                        />
                     
                         {/* Card Back - Magickal Silver Border */}
                         <div 
