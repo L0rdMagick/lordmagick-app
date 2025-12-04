@@ -47,7 +47,6 @@ const calculateProbability = (z: number) => {
 };
 
 const getPsiTier = (z: number) => {
-  // POSITIVE SCALE (Psi-Hitting)
   if (z >= 4.0) return { name: "The Oracle", color: "text-amber-300 shadow-amber-500/50" };
   if (z >= 3.0) return { name: "The Medium", color: "text-purple-300 shadow-purple-500/50" };
   if (z >= 1.96) return { name: "The Clairvoyant", color: "text-pink-300 shadow-pink-500/50" };
@@ -56,14 +55,12 @@ const getPsiTier = (z: number) => {
   if (z >= 0.5) return { name: "The Spark", color: "text-teal-300 shadow-teal-500/50" };
   if (z >= 0.0) return { name: "The Initiate", color: "text-slate-200" };
 
-  // NEGATIVE SCALE (Psi-Missing)
   if (z <= -4.0) return { name: "The Void", color: "text-slate-500" };
   if (z <= -3.0) return { name: "The Shadow", color: "text-slate-400" };
   if (z <= -2.0) return { name: "The Mirror", color: "text-slate-400" };
   if (z <= -1.0) return { name: "The Blocker", color: "text-slate-400" };
   if (z <= -0.5) return { name: "The Dreamer", color: "text-slate-400" };
   
-  // Just below baseline
   return { name: "The Sleeper", color: "text-slate-300" };
 };
 
@@ -92,24 +89,18 @@ const useAudioEngine = () => {
     const ctx = ctxRef.current;
 
     if (active && !thetaOscRef.current) {
-      // 40Hz Gamma/Theta mix
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = 'sine';
       osc.frequency.setValueAtTime(110, ctx.currentTime); 
-      
       const lfo = ctx.createOscillator();
       lfo.type = 'sine';
       lfo.frequency.setValueAtTime(4, ctx.currentTime); 
-      
       const lfoGain = ctx.createGain();
       lfoGain.gain.setValueAtTime(5, ctx.currentTime);
-      
       lfo.connect(lfoGain);
       lfoGain.connect(osc.frequency);
-      
       gain.gain.setValueAtTime(0.03, ctx.currentTime);
-      
       osc.connect(gain);
       gain.connect(ctx.destination);
       osc.start();
@@ -336,12 +327,14 @@ const PsiStats = ({ stats, deckSize, onClose }: { stats: any, deckSize: number, 
         </div>
   
         {showModal && (
+          // FIX: High z-index (z-[100]) and 95% opacity background (bg-slate-950/95) to prevent footer bleed-through
           <div 
-              className="fixed inset-0 z-100 flex items-center justify-center bg-slate-950 p-4 animate-in fade-in duration-300"
+              className="fixed inset-0 z-100 flex items-center justify-center bg-slate-950/95 backdrop-blur-sm p-4 animate-in fade-in duration-300"
               onClick={() => setShowModal(false)}
           >
             <div 
-              className="max-w-3xl w-full bg-slate-900 border border-indigo-500/20 rounded-xl p-6 relative max-h-[90vh] overflow-y-auto shadow-[0_0_50px_rgba(99,102,241,0.2)]"
+              // FIX: Constrained height (max-h-[85dvh]) to prevent visual overlap with browser bars on mobile
+              className="max-w-3xl w-full bg-slate-900 border border-indigo-500/20 rounded-xl p-6 relative max-h-[85dvh] overflow-y-auto shadow-[0_0_50px_rgba(99,102,241,0.2)]"
               onClick={(e) => e.stopPropagation()}
             >
               <button onClick={() => setShowModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white"><X /></button>
