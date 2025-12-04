@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
-  Target, Shield, Activity, Eye, Brain, X, Info, Volume2, VolumeX, 
+  Activity, Eye, Brain, X, Info, Volume2, VolumeX, 
   Sparkles, Save, Maximize, Minimize, RotateCcw, Settings, Flame, Zap 
 } from 'lucide-react';
 import { createBrowserClient } from '@supabase/ssr';
@@ -225,7 +225,7 @@ const AngelIcon = ({ className }: { className?: string }) => (
  */
 
 const InstructionModal = ({ onClose, mode }: { onClose: () => void, mode: string }) => (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-md p-6 animate-in fade-in duration-500">
+    <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/95 backdrop-blur-md p-6 animate-in fade-in duration-500">
       <div className="max-w-md w-full border border-indigo-500/30 bg-[#0f172a] p-8 rounded-xl shadow-[0_0_50px_rgba(99,102,241,0.2)] text-center relative">
           <h2 className="text-3xl font-black text-indigo-400 mb-2 tracking-tighter font-serif">PSI-TRAINER</h2>
           <p className="text-xs font-mono text-slate-400 uppercase tracking-[0.2em] mb-6">Intuition Verification Protocol</p>
@@ -337,7 +337,7 @@ const PsiStats = ({ stats, deckSize, onClose }: { stats: any, deckSize: number, 
   
         {showModal && (
           <div 
-              className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-xl p-4 animate-in fade-in duration-300"
+              className="fixed inset-0 z-100 flex items-center justify-center bg-slate-950 p-4 animate-in fade-in duration-300"
               onClick={() => setShowModal(false)}
           >
             <div 
@@ -575,7 +575,7 @@ export default function PsiTrainer() {
 
       {showInstructions && <InstructionModal onClose={() => { setShowInstructions(false); startNewRound(); }} mode={gameMode} />}
 
-      {/* HEADER */}
+      {/* HEADER - Fixed Height */}
       <header className="relative z-20 flex justify-between items-center px-4 py-3 border-b border-indigo-900/30 backdrop-blur-sm bg-slate-950/60 shrink-0 h-16">
         <div className="flex items-center gap-4">
             <MagickalBackLink href="/the-magick-psychic-school/psychic-training" text="Exit" className="text-xs text-slate-500 hover:text-indigo-400" />
@@ -603,7 +603,7 @@ export default function PsiTrainer() {
         </div>
       </header>
 
-      {/* SUB-HEADER / HUD */}
+      {/* SUB-HEADER / HUD - Fixed Height */}
       <div className="shrink-0 w-full flex items-center justify-between px-4 py-2 relative z-20 min-h-[60px]">
           <div className="flex flex-col">
             <span className="text-[9px] uppercase tracking-widest text-slate-500">Protocol</span>
@@ -617,10 +617,10 @@ export default function PsiTrainer() {
           </div>
       </div>
 
-      {/* MAIN GAME GRID */}
-      <main className="flex-1 w-full min-h-0 flex items-center justify-center relative z-10 overflow-hidden p-4 md:p-8">
+      {/* MAIN GAME GRID - Maximized Space with Minimal Padding */}
+      <main className="flex-1 w-full min-h-0 flex items-center justify-center relative z-10 overflow-hidden p-1 md:p-4">
             <div 
-                className="grid gap-3 sm:gap-4"
+                className="grid gap-2"
                 style={{
                     width: 'auto',
                     height: 'auto',
@@ -683,7 +683,7 @@ export default function PsiTrainer() {
             </div>
       </main>
 
-      {/* FOOTER / FEEDBACK */}
+      {/* FOOTER / FEEDBACK - Fixed Height */}
       <footer className="relative z-20 border-t border-indigo-900/30 bg-slate-950/80 backdrop-blur shrink-0 h-16 flex items-center justify-between px-6">
          {gameState === 'REVEALED' ? (
              <div className="flex items-center gap-4 w-full">
@@ -708,9 +708,9 @@ export default function PsiTrainer() {
          </div>
       </footer>
 
-      {/* SETTINGS DRAWER */}
+      {/* SETTINGS DRAWER - Fixed Z-index overlap issues */}
       {showSettings && (
-        <div className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm" onClick={() => setShowSettings(false)}>
+        <div className="fixed inset-0 z-100 bg-black/50 backdrop-blur-sm" onClick={() => setShowSettings(false)}>
             <div 
                 className="absolute right-0 top-16 bottom-0 w-80 bg-slate-900 border-l border-indigo-500/20 shadow-2xl p-6 overflow-y-auto animate-in slide-in-from-right duration-300"
                 onClick={(e) => e.stopPropagation()}
