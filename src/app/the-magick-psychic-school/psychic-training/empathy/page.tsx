@@ -142,7 +142,7 @@ const PsiStats = ({ stats, deckSize }: { stats: any, deckSize: number }) => {
             flex flex-col items-end justify-center
             bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/20 
             rounded-lg px-3 py-1 transition-all duration-300
-            min-w-[80px] h-[50px]
+            min-w-20 h-[50px]
         "
       >
           <div className="flex items-center gap-2">
@@ -715,7 +715,7 @@ export default function EmpathyApp() {
       </header>
 
       {/* TOP BAR: Target Info & Scorecard in Flow */}
-      <div className="shrink-0 w-full flex items-start justify-between px-4 py-2 relative z-20 min-h-[80px]">
+      <div className="shrink-0 w-full flex items-start justify-between px-4 py-2 relative z-20 min-h-20">
           
           {/* Target Info - Left on Mobile, Center on Desktop */}
           <div className="flex flex-col items-start md:items-center justify-center md:absolute md:inset-0 md:pointer-events-none z-0">
@@ -875,10 +875,10 @@ export default function EmpathyApp() {
                     <div 
                         className={`
                             relative
-                            aspect-[2/3] 
+                            aspect-2/3 
                             h-auto w-auto max-w-full max-h-full
                             transition-transform duration-300 ease-out transform
-                            ${gameState === 'sensing' ? 'group-hover:translate-y-[-8px] group-hover:shadow-[0_0_25px_rgba(255,255,255,0.2)]' : ''}
+                            ${gameState === 'sensing' ? 'group-hover:-translate-y-2 group-hover:shadow-[0_0_25px_rgba(255,255,255,0.2)]' : ''}
                         `}
                         style={{
                             transformStyle: 'preserve-3d',
@@ -896,7 +896,7 @@ export default function EmpathyApp() {
                             `}
                         >
                             {/* Inner metallic sheen */}
-                            <div className="absolute inset-0 border-[1px] border-white/20 rounded-lg pointer-events-none"></div>
+                            <div className="absolute inset-0 border border-white/20 rounded-lg pointer-events-none"></div>
                         </div>
 
                         {/* Card Front */}
