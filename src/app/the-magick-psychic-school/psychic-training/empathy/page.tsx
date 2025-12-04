@@ -4,14 +4,187 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Heart, CloudRain, Sun, Banknote, Flame, Zap, Crosshair, PartyPopper, 
   Settings, Eye, Volume2, VolumeX, 
-  Sparkles, X, Trophy, Info, RotateCcw, Save
+  Sparkles, X, Trophy, Info, RotateCcw, Save, Activity
 } from 'lucide-react';
 import { createBrowserClient } from '@supabase/ssr';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
 
 /**
- * EMPATHY - Emotional Intuition Trainer
+ * --- PSI MATH ENGINE ---
+ * Helper functions for statistical analysis of psychic phenomena.
  */
+const calculateZScore = (hits: number, trials: number, chance: number) => {
+  if (trials === 0) return 0;
+  const expected = trials * chance;
+  const stdDev = Math.sqrt(trials * chance * (1 - chance));
+  return (hits - expected) / stdDev;
+};
+
+// Approximation of the error function (erf) for p-value calculation
+const erf = (x: number) => {
+  const a1 =  0.254829592;
+  const a2 = -0.284496736;
+  const a3 =  1.421413741;
+  const a4 = -1.453152027;
+  const a5 =  1.061405429;
+  const p  =  0.3275911;
+
+  const sign = (x < 0) ? -1 : 1;
+  x = Math.abs(x);
+
+  const t = 1.0 / (1.0 + p * x);
+  const y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
+
+  return sign * y;
+};
+
+const calculateProbability = (z: number) => {
+  // One-tailed probability
+  const pValue = 0.5 * (1 - erf(z / Math.sqrt(2)));
+  if (pValue <= 0) return "1 in ∞"; // Effectively impossible
+  const oneInX = 1 / pValue;
+  
+  if (oneInX > 1000000) return `1 in ${(oneInX / 1000000).toFixed(1)}M`;
+  if (oneInX > 1000) return `1 in ${(oneInX / 1000).toFixed(1)}k`;
+  return `1 in ${Math.round(oneInX)}`;
+};
+
+const getPsiTier = (z: number) => {
+  if (z >= 4.0) return { name: "The Oracle", color: "text-amber-300 shadow-amber-500/50" };
+  if (z >= 3.0) return { name: "The Medium", color: "text-purple-300 shadow-purple-500/50" };
+  if (z >= 1.96) return { name: "The Clairvoyant", color: "text-pink-300 shadow-pink-500/50" };
+  if (z >= 1.65) return { name: "The Empath", color: "text-indigo-300 shadow-indigo-500/50" };
+  if (z >= 1.0) return { name: "The Sensitive", color: "text-cyan-300 shadow-cyan-500/50" };
+  if (z >= 0.5) return { name: "The Intuitive", color: "text-teal-300 shadow-teal-500/50" };
+  
+  if (z <= -4.0) return { name: "The Void", color: "text-slate-500" };
+  if (z <= -3.0) return { name: "The Shadow", color: "text-slate-400" };
+  if (z <= -2.0) return { name: "The Inverter", color: "text-slate-400" };
+  if (z <= -1.0) return { name: "The Skeptic", color: "text-slate-400" };
+  if (z <= -0.5) return { name: "The Latent", color: "text-slate-400" };
+  
+  return { name: "The Sensor", color: "text-slate-300" };
+};
+
+/**
+ * --- PSI STATS COMPONENT ---
+ * HUD for displaying performance metrics.
+ */
+const PsiStats = ({ stats, deckSize }: { stats: any, deckSize: number }) => {
+  const [showModal, setShowModal] = useState(false);
+  
+  // Aggregate current session stats
+  let totalTrials = 0;
+  let totalHits = 0;
+  
+  Object.values(stats).forEach((s: any) => {
+    totalTrials += s.attempts;
+    totalHits += s.hits;
+  });
+
+  const chance = 1 / deckSize;
+  const accuracy = totalTrials > 0 ? (totalHits / totalTrials) * 100 : 0;
+  const zScore = calculateZScore(totalHits, totalTrials, chance);
+  const probability = calculateProbability(zScore);
+  const tier = getPsiTier(zScore);
+
+  // Load lifetime stats for modal
+  const [lifetimeStats, setLifetimeStats] = useState<any>({ hits: 0, trials: 0 });
+  
+  useEffect(() => {
+    if (showModal) {
+      // Mockup of reading local storage or DB for lifetime
+      const saved = localStorage.getItem('empathy_lifetime');
+      if (saved) setLifetimeStats(JSON.parse(saved));
+    }
+  }, [showModal]);
+
+  return (
+    <>
+      {/* HUD BOX */}
+      <div className="absolute top-20 md:top-6 right-2 md:right-6 z-30 flex flex-col items-end pointer-events-auto">
+        <div className="bg-black/60 backdrop-blur-md border border-white/10 rounded-lg p-3 text-right shadow-[0_0_20px_rgba(0,0,0,0.5)] w-[140px] md:w-[180px]">
+          <div className="text-3xl font-mono font-bold text-white mb-1">{accuracy.toFixed(1)}%</div>
+          <div className="text-[10px] text-slate-400 uppercase tracking-widest mb-2 border-b border-white/10 pb-1">Accuracy</div>
+          
+          <div className="space-y-1 font-mono text-xs text-slate-300">
+            <div className="flex justify-between"><span>N:</span> <span>{totalTrials}</span></div>
+            <div className="flex justify-between"><span>Z:</span> <span className={zScore > 0 ? 'text-green-400' : zScore < 0 ? 'text-red-400' : ''}>{zScore.toFixed(2)}</span></div>
+            <div className="flex justify-between"><span>Prob:</span> <span>{probability}</span></div>
+          </div>
+          
+          <div className={`mt-2 text-xs font-bold uppercase tracking-wider ${tier.color} text-shadow-sm`}>
+            {tier.name}
+          </div>
+
+          <button 
+            onClick={() => setShowModal(true)}
+            className="mt-3 w-full text-[10px] text-slate-500 hover:text-white uppercase tracking-wider border border-transparent hover:border-white/20 rounded py-1 transition-all"
+          >
+            View Scores
+          </button>
+        </div>
+      </div>
+
+      {/* MODAL */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-xl p-4 animate-in fade-in duration-300">
+          <div className="max-w-2xl w-full bg-neutral-900 border border-white/10 rounded-xl p-6 relative max-h-[90vh] overflow-y-auto">
+            <button onClick={() => setShowModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white"><X /></button>
+            
+            <h2 className="text-2xl font-serif text-white mb-6 flex items-center gap-2">
+              <Activity className="text-purple-400" /> Psychic Performance Record
+            </h2>
+
+            {/* Comparison Table */}
+            <div className="grid grid-cols-2 gap-4 mb-8">
+              <div className="bg-white/5 rounded-lg p-4 border border-white/5">
+                <h3 className="text-xs uppercase tracking-[0.2em] text-purple-300 mb-4 text-center">Current Session</h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between border-b border-white/5 pb-1"><span>Hits</span> <span className="text-white font-mono">{totalHits}</span></div>
+                  <div className="flex justify-between border-b border-white/5 pb-1"><span>Trials</span> <span className="text-white font-mono">{totalTrials}</span></div>
+                  <div className="flex justify-between border-b border-white/5 pb-1"><span>Accuracy</span> <span className="text-white font-mono">{accuracy.toFixed(1)}%</span></div>
+                  <div className="flex justify-between border-b border-white/5 pb-1"><span>Z-Score</span> <span className="text-amber-300 font-mono">{zScore.toFixed(2)}</span></div>
+                  <div className="flex justify-between"><span>Probability</span> <span className="text-green-300 font-mono">{probability}</span></div>
+                </div>
+              </div>
+              <div className="bg-white/5 rounded-lg p-4 border border-white/5 opacity-50 relative">
+                 <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-[1px] rounded-lg">
+                    <span className="text-xs uppercase tracking-widest text-slate-400">Lifetime Data (Simulated)</span>
+                 </div>
+                 {/* Placeholder for lifetime structure */}
+                 <h3 className="text-xs uppercase tracking-[0.2em] text-slate-500 mb-4 text-center">Lifetime</h3>
+              </div>
+            </div>
+
+            {/* Legend */}
+            <div className="space-y-6">
+              <div>
+                <h4 className="text-xs uppercase tracking-widest text-slate-500 mb-3 border-b border-white/10 pb-2">Psi-Hitting (Positive Scale)</h4>
+                <div className="space-y-2 text-xs md:text-sm">
+                  <div className="grid grid-cols-12 gap-2"><span className="col-span-2 text-amber-300 font-bold">Oracle</span><span className="col-span-2 text-slate-500">Z &ge; 4.0</span><span className="col-span-8 text-slate-300">World Class Anomaly (1 in 31,000)</span></div>
+                  <div className="grid grid-cols-12 gap-2"><span className="col-span-2 text-purple-300 font-bold">Medium</span><span className="col-span-2 text-slate-500">Z &ge; 3.0</span><span className="col-span-8 text-slate-300">Highly Significant (1 in 740)</span></div>
+                  <div className="grid grid-cols-12 gap-2"><span className="col-span-2 text-pink-300 font-bold">Clairvoyant</span><span className="col-span-2 text-slate-500">Z &ge; 1.96</span><span className="col-span-8 text-slate-300">Statistically Significant (p &lt; 0.05)</span></div>
+                  <div className="grid grid-cols-12 gap-2"><span className="col-span-2 text-indigo-300 font-bold">Empath</span><span className="col-span-2 text-slate-500">Z &ge; 1.65</span><span className="col-span-8 text-slate-300">Borderline Significant</span></div>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-xs uppercase tracking-widest text-slate-500 mb-3 border-b border-white/10 pb-2">Psi-Missing (Negative Scale)</h4>
+                 <div className="space-y-2 text-xs md:text-sm text-slate-400">
+                  <div className="grid grid-cols-12 gap-2"><span className="col-span-2 font-bold">Inverter</span><span className="col-span-2 text-slate-600">Z &le; -2.0</span><span className="col-span-8">Subconscious flipping of signal</span></div>
+                  <div className="grid grid-cols-12 gap-2"><span className="col-span-2 font-bold">Shadow</span><span className="col-span-2 text-slate-600">Z &le; -3.0</span><span className="col-span-8">Highly significant displacement</span></div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
+
 
 // --- 1. CONFIGURATION & ASSETS ---
 
@@ -196,58 +369,6 @@ const InstructionModal = ({ onClose }: { onClose: () => void }) => (
   </div>
 );
 
-const EmotionRadar = ({ stats }: { stats: any }) => {
-  const size = 200;
-  const center = size / 2;
-  const radius = 80;
-  
-  const points = EMOTIONS.map((emotion, i) => {
-    const angle = (Math.PI * 2 * i) / EMOTIONS.length - Math.PI / 2;
-    const stat = stats[emotion.id] || { attempts: 0, hits: 0 };
-    const accuracy = stat.attempts > 0 ? stat.hits / stat.attempts : 0.1;
-    
-    const x = center + radius * accuracy * Math.cos(angle);
-    const y = center + radius * accuracy * Math.sin(angle);
-    return `${x},${y}`;
-  }).join(' ');
-
-  const gridPoints = [0.25, 0.5, 0.75, 1].map(scale => {
-    return EMOTIONS.map((_, i) => {
-      const angle = (Math.PI * 2 * i) / EMOTIONS.length - Math.PI / 2;
-      const x = center + radius * scale * Math.cos(angle);
-      const y = center + radius * scale * Math.sin(angle);
-      return `${x},${y}`;
-    }).join(' ');
-  });
-
-  return (
-    <div className="flex flex-col items-center">
-      <svg width={size} height={size} className="overflow-visible">
-        {gridPoints.map((pts, i) => (
-          <polygon key={i} points={pts} fill="none" stroke="#334155" strokeWidth="1" />
-        ))}
-        {EMOTIONS.map((_, i) => {
-          const angle = (Math.PI * 2 * i) / EMOTIONS.length - Math.PI / 2;
-          const x = center + radius * Math.cos(angle);
-          const y = center + radius * Math.sin(angle);
-          return <line key={i} x1={center} y1={center} x2={x} y2={y} stroke="#334155" strokeWidth="1" />;
-        })}
-        <polygon points={points} fill="rgba(236, 72, 153, 0.3)" stroke="#ec4899" strokeWidth="2" />
-        {EMOTIONS.map((emo, i) => {
-          const angle = (Math.PI * 2 * i) / EMOTIONS.length - Math.PI / 2;
-          const x = center + (radius + 20) * Math.cos(angle);
-          const y = center + (radius + 20) * Math.sin(angle);
-          return (
-            <text key={i} x={x} y={y} textAnchor="middle" alignmentBaseline="middle" fill={emo.color} fontSize="10" fontWeight="bold">
-              {emo.name}
-            </text>
-          );
-        })}
-      </svg>
-    </div>
-  );
-};
-
 // --- 5. MAIN APP ---
 
 export default function EmpathyApp() {
@@ -267,8 +388,10 @@ export default function EmpathyApp() {
   const [targetEmotion, setTargetEmotion] = useState<any>(null);
   const [cards, setCards] = useState<any[]>([]);
   const [stats, setStats] = useState<any>({});
-  const [message, setMessage] = useState("Initializing...");
-  const [showStats, setShowStats] = useState(false);
+  
+  // Feedback System State
+  const [feedback, setFeedback] = useState<{show: boolean, type: 'hit'|'miss', text: string, subtext: string} | null>(null);
+
   const [showSettings, setShowSettings] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
@@ -283,7 +406,6 @@ export default function EmpathyApp() {
       const savedStats = localStorage.getItem('empathy_stats');
       if (savedStats) setStats(JSON.parse(savedStats));
 
-      // Responsiveness check
       const checkLayout = () => {
         setIsDesktop(window.innerWidth >= 768);
       };
@@ -344,6 +466,7 @@ export default function EmpathyApp() {
 
   const startNewRound = useCallback(() => {
     setGameState('setup');
+    setFeedback(null);
     
     // 1. Select Target
     let target;
@@ -363,11 +486,14 @@ export default function EmpathyApp() {
     if (!target) return;
 
     setTargetEmotion(target);
-    setMessage(`Locate the energy of ${target.name.toUpperCase()}`);
 
     // 2. Build Deck
     let deck: any[] = [];
     deck.push({ ...target, isTarget: true, id: `card-${Math.random()}`, status: 'face-down' });
+
+    // CRITICAL FIX: EXCLUDE TARGET FROM DISTRACTORS
+    // This prevents a "Love" card being chosen as a distractor when "Love" is the target
+    const possibleDistractors = EMOTIONS.filter(e => e.id !== target.id);
 
     while (deck.length < deckSize) {
       const win = (globalThis as any).window;
@@ -375,9 +501,9 @@ export default function EmpathyApp() {
       if (win && win.crypto) {
           const buffer = new Uint32Array(1);
           win.crypto.getRandomValues(buffer);
-          randomEmo = EMOTIONS[buffer[0] % EMOTIONS.length];
+          randomEmo = possibleDistractors[buffer[0] % possibleDistractors.length];
       } else {
-          randomEmo = EMOTIONS[Math.floor(Math.random() * EMOTIONS.length)];
+          randomEmo = possibleDistractors[Math.floor(Math.random() * possibleDistractors.length)];
       }
       deck.push({ ...randomEmo, isTarget: false, id: `card-${Math.random()}`, status: 'face-down' });
     }
@@ -398,6 +524,7 @@ export default function EmpathyApp() {
     
     audio.playFlip();
 
+    // Update Stats
     setStats((prev: any) => {
       const targetId = targetEmotion.id;
       const current = prev[targetId] || { attempts: 0, hits: 0 };
@@ -409,38 +536,47 @@ export default function EmpathyApp() {
       return newStats;
     });
 
+    // Reveal Logic
     if (isMatch) {
       audio.playSuccess();
       const newCards = [...cards];
       newCards[index].status = 'revealed';
       setCards(newCards);
       setGameState('revealed');
-      setMessage("RESONANCE CONFIRMED");
       
-      setTimeout(() => startNewRound(), 2500);
+      // SHOW MAGICKAL FEEDBACK
+      setFeedback({
+        show: true,
+        type: 'hit',
+        text: "CORRECT",
+        subtext: `You found ${targetEmotion.name}`
+      });
+      
+      setTimeout(() => startNewRound(), 5000); // 5 Seconds pause
 
     } else {
       audio.playFailure();
-      
       const newCards = [...cards];
       newCards[index].status = 'revealed-wrong';
+      
+      // If training mode, show the correct card too
+      if (feedbackMode === 'training') {
+        const truthIndex = cards.findIndex(c => c.isTarget);
+        newCards[truthIndex].status = 'revealed';
+      }
+
       setCards(newCards);
       setGameState('revealed');
-      setMessage(`Dissonance. You found ${clickedCard.name}.`);
 
-      if (feedbackMode === 'training') {
-        setTimeout(() => {
-          const truthIndex = cards.findIndex(c => c.isTarget);
-          const finalCards = [...newCards];
-          finalCards[truthIndex].status = 'revealed';
-          setCards(finalCards);
-          setMessage(`Energy was here.`);
-          
-          setTimeout(() => startNewRound(), 2000);
-        }, 800);
-      } else {
-        setTimeout(() => startNewRound(), 1500);
-      }
+      // SHOW MAGICKAL FEEDBACK
+      setFeedback({
+        show: true,
+        type: 'miss',
+        text: "INCORRECT",
+        subtext: `You chose ${clickedCard.name}. Target was ${targetEmotion.name}.`
+      });
+
+      setTimeout(() => startNewRound(), 5000); // 5 Seconds pause
     }
   };
 
@@ -449,26 +585,16 @@ export default function EmpathyApp() {
   // --- GRID & LAYOUT LOGIC ---
   const getLayoutConfig = () => {
     let cols = 2; // Default Mobile
-    
     if (isDesktop) {
         if (deckSize === 10) {
             cols = 5;
         } else {
-            // Default to 4 for large screens as requested
-            // Note: If deckSize is 2 or 3, we still use 4 cols, 
-            // but we might want to constrain it to centered items. 
-            // However, grid-cols-4 ensures consistent sizing.
-            // Let's cap at deckSize so 2 cards aren't tiny, but max 4.
             cols = Math.min(deckSize, 4);
         }
     } else {
-        // Mobile Logic
         cols = deckSize > 6 ? 3 : 2;
     }
-    
-    // Calculate required rows
     const rows = Math.ceil(deckSize / cols);
-    
     return { cols, rows };
   };
 
@@ -503,47 +629,37 @@ export default function EmpathyApp() {
            <button onClick={toggleSound} className="p-2 hover:bg-white/10 rounded-full transition-colors text-slate-400">
             {soundEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />}
           </button>
-          <button onClick={() => setShowStats(!showStats)} className={`p-2 rounded-full transition-colors ${showStats ? 'bg-purple-900/50 text-purple-200' : 'hover:bg-white/10 text-slate-400'}`}>
-            <Trophy size={20} />
-          </button>
           <button onClick={() => setShowSettings(!showSettings)} className={`p-2 rounded-full transition-colors ${showSettings ? 'bg-purple-900/50 text-purple-200' : 'hover:bg-white/10 text-slate-400'}`}>
             <Settings size={20} />
           </button>
         </div>
       </header>
 
-      {/* STATS DRAWER */}
-      {showStats && (
-        <div className="absolute inset-0 z-40 bg-black/95 backdrop-blur-md flex flex-col items-center justify-center p-6 animate-in fade-in slide-in-from-bottom-10 duration-300 overflow-y-auto">
-          <button onClick={() => setShowStats(false)} className="absolute top-6 right-6 p-2 text-slate-500 hover:text-white"><X /></button>
-          <h2 className="text-3xl font-serif text-amber-100 mb-8 flex items-center gap-3">
-            <Sparkles className="text-amber-400" />
-            Soul Resonance
-          </h2>
-          <EmotionRadar stats={stats} />
-          <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-2xl pb-6">
-            {EMOTIONS.map(e => {
-              const s = stats[e.id] || { attempts: 0, hits: 0 };
-              const rate = s.attempts > 0 ? Math.round((s.hits / s.attempts) * 100) : 0;
-              return (
-                <div key={e.id} className="bg-white/5 p-3 rounded border border-white/5 flex flex-col items-center">
-                  <div className="text-xs text-slate-400 uppercase tracking-widest mb-1">{e.name}</div>
-                  <div className="text-xl font-mono text-white">{rate}%</div>
-                  <div className="text-[10px] text-slate-500">{s.hits}/{s.attempts}</div>
-                </div>
-              )
-            })}
-          </div>
-          
-          <button 
-            onClick={handleSaveResults} 
-            disabled={saving}
-            className="flex items-center gap-2 px-6 py-3 bg-purple-900/50 hover:bg-purple-800/50 border border-purple-500/50 text-purple-100 rounded-lg transition-all"
-          >
-            {saving ? <Sparkles className="animate-spin" size={18} /> : <Save size={18} />}
-            {saving ? "Inscribing..." : "Inscribe to Grimoire"}
-          </button>
-          {saveMessage && <p className="mt-3 text-sm text-amber-300 font-mono animate-pulse">{saveMessage}</p>}
+      {/* PSI STATS HUD */}
+      <PsiStats stats={stats} deckSize={deckSize} />
+
+      {/* MAGICKAL FEEDBACK OVERLAY */}
+      {feedback && feedback.show && (
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center pointer-events-none">
+            {/* The Text Animation Container */}
+            <div className="animate-magick-zoom text-center">
+                <h1 
+                  className={`
+                    text-6xl md:text-9xl font-serif font-black tracking-tighter mb-4
+                    ${feedback.type === 'hit' ? 'text-amber-300' : 'text-slate-400'}
+                  `}
+                  style={{
+                    textShadow: feedback.type === 'hit' 
+                      ? '4px 4px 0px #ec4899, -2px -2px 0px #facc15' 
+                      : '4px 4px 0px #1e293b, -2px -2px 0px #0f172a'
+                  }}
+                >
+                    {feedback.text}
+                </h1>
+                <p className="text-xl md:text-2xl text-white font-mono uppercase tracking-widest bg-black/80 px-6 py-2 rounded-full inline-block border border-white/20">
+                    {feedback.subtext}
+                </p>
+            </div>
         </div>
       )}
 
@@ -626,6 +742,16 @@ export default function EmpathyApp() {
             <button onClick={startNewRound} className="w-full py-3 bg-white/10 hover:bg-white/20 text-white rounded border border-white/10 flex items-center justify-center gap-2">
               <RotateCcw size={16} /> Reset Simulation
             </button>
+            
+            <button 
+                onClick={handleSaveResults} 
+                disabled={saving}
+                className="w-full py-3 bg-purple-900/50 hover:bg-purple-800/50 border border-purple-500/50 text-purple-100 rounded flex items-center justify-center gap-2"
+            >
+                {saving ? <Sparkles className="animate-spin" size={16} /> : <Save size={16} />}
+                {saving ? "Inscribing..." : "Save Session"}
+            </button>
+            {saveMessage && <p className="text-center text-xs text-amber-300 font-mono animate-pulse">{saveMessage}</p>}
           </div>
         </div>
       )}
@@ -637,12 +763,12 @@ export default function EmpathyApp() {
         <div className="shrink-0 mb-2 w-full text-center animate-fade-in-up min-h-[60px] flex flex-col justify-center">
           <p className="text-slate-500 text-[10px] uppercase tracking-[0.2em] mb-1">Target Frequency</p>
           <div className="flex items-center justify-center gap-2">
-             {TargetIcon && <TargetIcon size={18} className="text-amber-400" />}
-             <h1 className="text-xl md:text-3xl font-serif text-slate-100">{targetEmotion?.name.toUpperCase()}</h1>
-             {TargetIcon && <TargetIcon size={18} className="text-amber-400" />}
+             {TargetIcon && <TargetIcon size={24} className="text-amber-400" />}
+             <h1 className="text-2xl md:text-4xl font-serif text-slate-100">{targetEmotion?.name.toUpperCase()}</h1>
+             {TargetIcon && <TargetIcon size={24} className="text-amber-400" />}
           </div>
-          <p className={`h-4 text-[10px] md:text-xs font-medium tracking-wide transition-colors duration-500 ${message.includes('CONFIRMED') ? 'text-green-400' : message.includes('Dissonance') ? 'text-red-400' : 'text-purple-300/80'}`}>
-            {message}
+          <p className="h-4 text-[10px] md:text-xs font-medium tracking-wide text-purple-300/50">
+            {gameState === 'sensing' ? 'Tune into the signal...' : 'Processing...'}
           </p>
         </div>
 
@@ -665,7 +791,7 @@ export default function EmpathyApp() {
                     <div 
                         className={`
                             absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2
-                            h-[90%] w-auto aspect-[2/3] max-w-full
+                            h-[90%] w-auto aspect-2/3 max-w-full
                             cursor-pointer transition-all duration-500 transform
                             ${gameState === 'sensing' ? 'hover:-translate-y-1 hover:shadow-[0_0_25px_rgba(255,255,255,0.2)]' : ''}
                         `}
@@ -685,7 +811,7 @@ export default function EmpathyApp() {
                         `}
                     >
                         {/* Inner metallic sheen */}
-                        <div className="absolute inset-0 border-[1px] border-white/20 rounded-lg pointer-events-none"></div>
+                        <div className="absolute inset-0 border border-white/20 rounded-lg pointer-events-none"></div>
                     </div>
 
                     {/* Card Front */}
@@ -703,18 +829,21 @@ export default function EmpathyApp() {
                         <div className="absolute inset-0 bg-linear-to-t from-amber-500/20 to-transparent animate-pulse rounded-lg"></div>
                         )}
 
-                        <div className={`p-3 rounded-full bg-white/5 mb-3 ${card.status === 'revealed' && card.isTarget ? 'text-amber-300 scale-110' : 'text-slate-300'}`}>
-                        <card.icon 
-                            className="w-6 h-6 md:w-8 md:h-8"
-                            color={card.status === 'revealed-wrong' ? '#525252' : card.color} 
-                        />
+                        {/* BIGGER ICONS */}
+                        <div className={`p-4 rounded-full bg-white/5 mb-2 ${card.status === 'revealed' && card.isTarget ? 'text-amber-300 scale-110' : 'text-slate-300'}`}>
+                            <card.icon 
+                                // Taking up 1/3 of space essentially
+                                className="w-12 h-12 md:w-16 md:h-16 lg:w-20 lg:h-20"
+                                color={card.status === 'revealed-wrong' ? '#525252' : card.color} 
+                                strokeWidth={1.5}
+                            />
                         </div>
-                        <span className={`text-[10px] md:text-xs uppercase tracking-widest font-bold ${card.status === 'revealed-wrong' ? 'text-neutral-500' : 'text-white'}`}>
+                        <span className={`text-[10px] md:text-sm uppercase tracking-widest font-bold ${card.status === 'revealed-wrong' ? 'text-neutral-500' : 'text-white'}`}>
                         {card.name}
                         </span>
                         
                         {card.isTarget && card.status === 'revealed' && (
-                        <Sparkles className="absolute top-1 right-1 text-amber-400 animate-spin-slow" size={12} />
+                        <Sparkles className="absolute top-2 right-2 text-amber-400 animate-spin-slow" size={20} />
                         )}
                     </div>
                   </div>
@@ -729,15 +858,23 @@ export default function EmpathyApp() {
         <p>LAB CONDITIONS: {deckSize} CARDS // {feedbackMode.toUpperCase()} MODE</p>
       </footer>
 
-      {/* CSS UTILS FOR 3D */}
+      {/* CSS UTILS */}
       <style jsx global>{`
         .perspective-[1000px] { perspective: 1000px; }
         .backface-hidden { backface-visibility: hidden; }
+        
         @keyframes spin-slow {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
         }
         .animate-spin-slow { animation: spin-slow 3s linear infinite; }
+
+        @keyframes magick-zoom {
+            0% { transform: scale(0.5) translateY(50px); opacity: 0; }
+            50% { opacity: 1; }
+            100% { transform: scale(1) translateY(0); opacity: 1; }
+        }
+        .animate-magick-zoom { animation: magick-zoom 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
       `}</style>
     </div>
   );
