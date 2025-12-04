@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Heart, CloudRain, Sun, Banknote, Flame, Zap, Crosshair, PartyPopper, 
   Settings, Eye, Volume2, VolumeX, 
-  Sparkles, X, Trophy, Info, RotateCcw, Save, Activity
+  Sparkles, X, Trophy, Info, RotateCcw, Save, Activity, BarChart3
 } from 'lucide-react';
 import { createBrowserClient } from '@supabase/ssr';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
@@ -121,7 +121,7 @@ const PsiStats = ({ stats, deckSize }: { stats: any, deckSize: number }) => {
                     });
                 }
             });
-            // Combine with current session for the "Lifetime" view
+            // Combine with current session
             setLifetimeStats({ hits: h + sessionHits, trials: t + sessionTrials });
         }
         setLoadingLifetime(false);
@@ -137,35 +137,30 @@ const PsiStats = ({ stats, deckSize }: { stats: any, deckSize: number }) => {
 
   return (
     <>
-      {/* HUD BOX */}
-      <div className="bg-black/60 backdrop-blur-md border border-white/10 rounded-lg p-2 text-right shadow-[0_0_20px_rgba(0,0,0,0.5)] min-w-[130px] z-30 relative pointer-events-auto">
-          
-          <div className="flex justify-between items-end gap-2 border-b border-white/10 pb-1 mb-1">
-             <span className="text-[9px] text-slate-400 uppercase tracking-widest">Chance</span>
-             <span className="text-[10px] font-mono text-white">1 in {deckSize}</span>
+      {/* COMPACT HUD - "Discreet and not taking up much space" */}
+      <div 
+        onClick={() => setShowModal(true)}
+        className="
+            cursor-pointer group
+            flex flex-col items-end justify-center
+            bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/20 
+            rounded-lg px-3 py-1 transition-all duration-300
+            min-w-20 h-[50px]
+        "
+      >
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-mono text-slate-400 group-hover:text-white transition-colors">N: {sessionTrials}</span>
+            <div className="w-px h-3 bg-white/20"></div>
+            <span className="text-xl font-mono font-bold text-white group-hover:text-amber-300 transition-colors">
+                {sessionAccuracy.toFixed(0)}%
+            </span>
           </div>
-
-          <div className="text-2xl font-mono font-bold text-white mb-1">{sessionAccuracy.toFixed(1)}%</div>
-          
-          <div className="space-y-1 font-mono text-[10px] text-slate-300">
-            <div className="flex justify-between"><span>N:</span> <span>{sessionTrials}</span></div>
-            <div className="flex justify-between"><span>Z:</span> <span className={sessionZ > 0 ? 'text-green-400' : sessionZ < 0 ? 'text-red-400' : ''}>{sessionZ.toFixed(2)}</span></div>
-            <div className="flex justify-between" title="Probability of achieving this score"><span>Odds:</span> <span>{sessionProb}</span></div>
-          </div>
-          
-          <div className={`mt-1 text-[10px] font-bold uppercase tracking-wider ${sessionTier.color} text-shadow-sm`}>
-            {sessionTier.name}
-          </div>
-
-          <button 
-            onClick={() => setShowModal(true)}
-            className="mt-2 w-full text-[9px] text-slate-500 hover:text-white uppercase tracking-wider border border-transparent hover:border-white/20 rounded py-1 transition-all"
-          >
+          <div className="text-[9px] text-slate-500 uppercase tracking-widest group-hover:text-purple-300 transition-colors">
             View Scores
-          </button>
+          </div>
       </div>
 
-      {/* MODAL */}
+      {/* MODAL (Full Data) */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-xl p-4 animate-in fade-in duration-300">
           <div className="max-w-3xl w-full bg-neutral-900 border border-white/10 rounded-xl p-6 relative max-h-[90vh] overflow-y-auto">
@@ -174,7 +169,7 @@ const PsiStats = ({ stats, deckSize }: { stats: any, deckSize: number }) => {
               <Activity className="text-purple-400" /> Psychic Performance Record
             </h2>
             
-            <div className="grid grid-cols-2 gap-4 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
               {/* CURRENT */}
               <div className="bg-white/5 rounded-lg p-4 border border-white/5">
                 <h3 className="text-xs uppercase tracking-[0.2em] text-purple-300 mb-4 text-center">Current Session</h3>
@@ -491,6 +486,17 @@ export default function EmpathyApp() {
       audio.init();
       if (soundEnabled) audio.playTheta(true);
       startNewRound();
+  };
+
+  const handleResetSimulation = () => {
+    // 1. Clear State Stats
+    setStats({});
+    // 2. Clear Local Storage
+    localStorage.removeItem('empathy_stats');
+    // 3. Close Settings
+    setShowSettings(false);
+    // 4. Start fresh
+    startNewRound();
   };
 
   const handleSaveResults = async () => {
@@ -817,7 +823,8 @@ export default function EmpathyApp() {
               <div className="text-center text-xs text-slate-500 mt-2 capitalize">{CARD_BACKS[cardBack].name}</div>
             </div>
             
-            <button onClick={startNewRound} className="w-full py-3 bg-white/10 hover:bg-white/20 text-white rounded border border-white/10 flex items-center justify-center gap-2">
+            {/* RESET SIMULATION (Corrected) */}
+            <button onClick={handleResetSimulation} className="w-full py-3 bg-white/10 hover:bg-white/20 text-white rounded border border-white/10 flex items-center justify-center gap-2">
               <RotateCcw size={16} /> Reset Simulation
             </button>
             
