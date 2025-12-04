@@ -142,7 +142,7 @@ const PsiStats = ({ stats, deckSize }: { stats: any, deckSize: number }) => {
             flex flex-col items-end justify-center
             bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/20 
             rounded-lg px-3 py-1 transition-all duration-300
-            min-w-[80px] h-[50px]
+            min-w-20 h-[50px]
         "
       >
           <div className="flex items-center gap-2">
@@ -528,7 +528,6 @@ export default function EmpathyApp() {
     audio.playTheta(newState);
   };
 
-  // Toggle Fullscreen
   const toggleFullScreen = () => {
     if (!document.fullscreenElement) {
         document.documentElement.requestFullscreen();
@@ -587,7 +586,6 @@ export default function EmpathyApp() {
     }, 600);
   }, [deckSize, targetFocus]);
 
-  // Reactive Deck Update: Automatically resets round when deckSize changes
   useEffect(() => {
     startNewRound();
   }, [deckSize, startNewRound]);
@@ -662,10 +660,9 @@ export default function EmpathyApp() {
             cols = Math.min(deckSize, 4);
         }
     } else {
-        // Mobile Logic Updated
         if (deckSize >= 10) cols = 4;
         else if (deckSize >= 5) cols = 3;
-        else cols = 2; // 2-4 cards
+        else cols = 2; 
     }
     const rows = Math.ceil(deckSize / cols);
     return { cols, rows };
@@ -709,7 +706,7 @@ export default function EmpathyApp() {
       </header>
 
       {/* TOP BAR: Target Info & Scorecard in Flow */}
-      <div className="shrink-0 w-full flex items-start justify-between px-4 py-2 relative z-20 min-h-[80px]">
+      <div className="shrink-0 w-full flex items-start justify-between px-4 py-2 relative z-20 min-h-20">
           
           {/* Target Info - Left on Mobile, Center on Desktop */}
           <div className="flex flex-col items-start md:items-center justify-center md:absolute md:inset-0 md:pointer-events-none z-0">
@@ -862,13 +859,12 @@ export default function EmpathyApp() {
                     key={card.id}
                     onClick={() => handleCardClick(idx)}
                     onMouseEnter={() => { if(gameState === 'sensing') audio.playSlide(); }}
-                    className="relative w-full h-full group cursor-pointer"
+                    className="relative w-full h-full group cursor-pointer flex items-center justify-center p-1"
                 >
-                    {/* Centered Absolute Card - Moves on Group Hover */}
+                    {/* Centered Flex Card - Maximize Size with Aspect Ratio */}
                     <div 
                         className={`
-                            absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2
-                            h-[90%] w-auto aspect-[2/3] max-w-full
+                            w-auto h-auto max-w-full max-h-full aspect-2/3
                             transition-transform duration-300 ease-out transform
                             ${gameState === 'sensing' ? 'group-hover:translate-y-2 group-hover:shadow-[0_0_25px_rgba(255,255,255,0.2)]' : ''}
                         `}
@@ -888,7 +884,7 @@ export default function EmpathyApp() {
                         `}
                     >
                         {/* Inner metallic sheen */}
-                        <div className="absolute inset-0 border-[1px] border-white/20 rounded-lg pointer-events-none"></div>
+                        <div className="absolute inset-0 border border-white/20 rounded-lg pointer-events-none"></div>
                     </div>
 
                     {/* Card Front */}
