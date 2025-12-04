@@ -5,7 +5,7 @@ import {
   Heart, CloudRain, Sun, Banknote, Flame, Zap, Crosshair, PartyPopper, 
   Settings, Eye, Volume2, VolumeX, 
   Sparkles, X, Activity, Maximize, Minimize,
-  Info, RotateCcw, Save
+  Info, RotateCcw, Save // Restored imports
 } from 'lucide-react';
 import { createBrowserClient } from '@supabase/ssr';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
@@ -65,6 +65,7 @@ const getPsiTier = (z: number) => {
   if (z <= -1.0) return { name: "The Blocker", color: "text-slate-400" };
   if (z <= -0.5) return { name: "The Dreamer", color: "text-slate-400" };
   
+  // Just below baseline
   return { name: "The Sleeper", color: "text-slate-300" };
 };
 
@@ -366,7 +367,7 @@ const CARD_BACKS: Record<string, { name: string; bg: string }> = {
   checkered: { 
     name: 'Checkered Gold', 
     // Uses inset shadow to create interior depth
-    bg: 'bg-[#2e1065] border-[2px] border-amber-300/50 bg-[linear-gradient(45deg,#1e1b4b_25%,transparent_25%,transparent_75%,#1e1b4b_75%,#1e1b4b),linear-gradient(45deg,#1e1b4b_25%,transparent_25%,transparent_75%,#1e1b4b_75%,#1e1b4b)] bg-[length:30px_30px] [background-position:0_0,15px_15px] shadow-[inset_0_0_40px_rgba(0,0,0,0.9)]' 
+    bg: 'bg-[#2e1065] border-2 border-amber-300/50 bg-[linear-gradient(45deg,#1e1b4b_25%,transparent_25%,transparent_75%,#1e1b4b_75%,#1e1b4b),linear-gradient(45deg,#1e1b4b_25%,transparent_25%,transparent_75%,#1e1b4b_75%,#1e1b4b)] bg-[length:30px_30px] [background-position:0_0,15px_15px] shadow-[inset_0_0_40px_rgba(0,0,0,0.9)]' 
   },
   box: {
     name: 'Golden Box',
@@ -844,7 +845,7 @@ export default function EmpathyApp() {
       {showInstructions && <InstructionModal onClose={handleStart} />}
 
       {/* HEADER - Fixed at top */}
-      <header className="relative z-20 flex justify-between items-center px-4 py-3 border-b border-white/5 backdrop-blur-sm bg-neutral-950 shrink-0 h-16">
+      <header className="relative z-20 flex justify-between items-center px-4 py-3 border-b border-white/5 backdrop-blur-sm bg-black/40 shrink-0 h-16">
         <div className="flex items-center gap-4">
             <MagickalBackLink href="/the-magick-psychic-school/psychic-training" text="Exit" className="text-xs text-slate-400 hover:text-white" />
             <div className="w-px h-6 bg-white/20 hidden md:block"></div>
@@ -872,7 +873,7 @@ export default function EmpathyApp() {
       </header>
 
       {/* TOP BAR: Target Info & Scorecard in Flow */}
-      <div className="shrink-0 w-full flex items-start justify-between px-4 py-2 relative z-20 min-h-20 bg-neutral-950/80 backdrop-blur-sm">
+      <div className="shrink-0 w-full flex items-start justify-between px-4 py-2 relative z-20 min-h-20">
           
           {/* Target Info - Left on Mobile, Center on Desktop */}
           <div className="flex flex-col items-start md:items-center justify-center md:absolute md:inset-0 md:pointer-events-none z-0">
@@ -1044,7 +1045,7 @@ export default function EmpathyApp() {
                     onMouseEnter={() => { if(gameState === 'sensing') audio.playSlide(); }}
                     className="w-full h-full min-h-[140px] flex items-center justify-center p-1 group cursor-pointer relative perspective-[1000px]"
                 >
-                    {/* Centered Card Container: Uses SVG strut to enforce aspect ratio while maximizing size */}
+                    {/* Centered Card Container */}
                     <div 
                         className={`
                             relative
@@ -1123,7 +1124,7 @@ export default function EmpathyApp() {
       </main>
 
       {/* FOOTER */}
-      <footer className="relative z-20 py-2 text-center border-t border-white/5 bg-neutral-950 shrink-0 h-8 flex items-center justify-between px-4">
+      <footer className="relative z-20 py-2 text-center border-t border-white/5 bg-black/40 backdrop-blur text-[10px] text-slate-600 shrink-0 h-8 flex items-center justify-between px-4">
         <div className="w-6"></div> {/* Spacer */}
         <p>LAB CONDITIONS: {deckSize} CARDS // {feedbackMode.toUpperCase()} MODE</p>
         <button onClick={toggleFullScreen} className="w-6 text-slate-400 hover:text-white">
