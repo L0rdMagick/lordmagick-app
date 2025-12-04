@@ -528,7 +528,6 @@ export default function EmpathyApp() {
     audio.playTheta(newState);
   };
 
-  // Toggle Fullscreen
   const toggleFullScreen = () => {
     if (!document.fullscreenElement) {
         document.documentElement.requestFullscreen();
@@ -587,7 +586,6 @@ export default function EmpathyApp() {
     }, 600);
   }, [deckSize, targetFocus]);
 
-  // Reactive Deck Update: Automatically resets round when deckSize changes
   useEffect(() => {
     startNewRound();
   }, [deckSize, startNewRound]);
@@ -662,10 +660,9 @@ export default function EmpathyApp() {
             cols = Math.min(deckSize, 4);
         }
     } else {
-        // Mobile Logic Updated
         if (deckSize >= 10) cols = 4;
         else if (deckSize >= 5) cols = 3;
-        else cols = 2; // 2-4 cards
+        else cols = 2; 
     }
     const rows = Math.ceil(deckSize / cols);
     return { cols, rows };
@@ -862,13 +859,12 @@ export default function EmpathyApp() {
                     key={card.id}
                     onClick={() => handleCardClick(idx)}
                     onMouseEnter={() => { if(gameState === 'sensing') audio.playSlide(); }}
-                    className="relative w-full h-full group cursor-pointer"
+                    className="relative w-full h-full group cursor-pointer flex items-center justify-center p-1"
                 >
-                    {/* Centered Absolute Card - Moves on Group Hover */}
+                    {/* Centered Flex Card - Maximize Size with Aspect Ratio */}
                     <div 
                         className={`
-                            absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2
-                            h-[90%] w-auto aspect-[2/3] max-w-full
+                            w-auto h-auto max-w-full max-h-full aspect-[2/3]
                             transition-transform duration-300 ease-out transform
                             ${gameState === 'sensing' ? 'group-hover:translate-y-2 group-hover:shadow-[0_0_25px_rgba(255,255,255,0.2)]' : ''}
                         `}
