@@ -772,21 +772,21 @@ export default function EmpathyApp() {
 
             <div>
               <label className="text-xs text-slate-400 uppercase tracking-wider block mb-3">Target Signature</label>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 <button 
                   onClick={() => setTargetFocus('random')}
-                  className={`px-3 py-2 text-sm rounded border ${targetFocus === 'random' ? 'bg-purple-900 border-purple-500 text-white' : 'border-white/10 text-slate-400 hover:bg-white/5'}`}
+                  className={`px-3 py-2 text-xs rounded border ${targetFocus === 'random' ? 'bg-purple-900 border-purple-500 text-white' : 'border-white/10 text-slate-400 hover:bg-white/5'}`}
                 >
                   Random Loop
                 </button>
-                {/* Specific Targets including Focus */}
-                {EMOTIONS.filter(e => ['love', 'sad', 'happy', 'focused'].includes(e.id)).map(e => (
+                {/* ALL TARGETS */}
+                {EMOTIONS.map(e => (
                    <button 
                    key={e.id}
                    onClick={() => setTargetFocus(e.id)}
-                   className={`px-3 py-2 text-sm rounded border truncate ${targetFocus === e.id ? 'bg-purple-900 border-purple-500 text-white' : 'border-white/10 text-slate-400 hover:bg-white/5'}`}
+                   className={`px-3 py-2 text-xs rounded border truncate ${targetFocus === e.id ? 'bg-purple-900 border-purple-500 text-white' : 'border-white/10 text-slate-400 hover:bg-white/5'}`}
                  >
-                   Only {e.name}
+                   {e.name}
                  </button>
                 ))}
               </div>
@@ -859,65 +859,71 @@ export default function EmpathyApp() {
                     key={card.id}
                     onClick={() => handleCardClick(idx)}
                     onMouseEnter={() => { if(gameState === 'sensing') audio.playSlide(); }}
-                    className="relative w-full h-full group cursor-pointer flex items-center justify-center p-1"
+                    className="relative w-full h-full group cursor-pointer"
                 >
-                    {/* Centered Flex Card - Maximize Size with Aspect Ratio */}
+                    {/* Centered Absolute Card - Moves on Group Hover */}
                     <div 
                         className={`
-                            w-auto h-auto max-w-full max-h-full aspect-2/3
+                            absolute inset-0 flex items-center justify-center
                             transition-transform duration-300 ease-out transform
-                            ${gameState === 'sensing' ? 'group-hover:translate-y-2 group-hover:shadow-[0_0_25px_rgba(255,255,255,0.2)]' : ''}
+                            ${gameState === 'sensing' ? 'group-hover:translate-y-2' : ''}
                         `}
-                        style={{
-                            transformStyle: 'preserve-3d',
-                            transform: card.status !== 'face-down' ? 'rotateY(180deg)' : 'rotateY(0deg)',
-                        }}
                     >
                     
-                    {/* Card Back - Magickal Silver Border */}
-                    <div 
-                        className={`
-                        absolute inset-0 w-full h-full rounded-lg backface-hidden overflow-hidden
-                        ${CARD_BACKS[cardBack].bg}
-                        border-[3px] border-slate-400 ring-1 ring-inset ring-black/80
-                        shadow-[0_0_10px_rgba(148,163,184,0.2)]
-                        `}
-                    >
-                        {/* Inner metallic sheen */}
-                        <div className="absolute inset-0 border border-white/20 rounded-lg pointer-events-none"></div>
-                    </div>
+                        {/* The Actual Card - Preserves Aspect Ratio */}
+                        <div 
+                            className="relative max-h-full max-w-full aspect-2/3"
+                            style={{
+                                transformStyle: 'preserve-3d',
+                                transform: card.status !== 'face-down' ? 'rotateY(180deg)' : 'rotateY(0deg)',
+                                transition: 'transform 0.5s ease'
+                            }}
+                        >
+                            {/* Card Back - Magickal Silver Border */}
+                            <div 
+                                className={`
+                                absolute inset-0 w-full h-full rounded-lg backface-hidden overflow-hidden
+                                ${CARD_BACKS[cardBack].bg}
+                                border-[3px] border-slate-400 ring-1 ring-inset ring-black/80
+                                shadow-[0_0_10px_rgba(148,163,184,0.2)]
+                                `}
+                            >
+                                {/* Inner metallic sheen */}
+                                <div className="absolute inset-0 border border-white/20 rounded-lg pointer-events-none"></div>
+                            </div>
 
-                    {/* Card Front */}
-                    <div 
-                        className={`
-                        absolute inset-0 w-full h-full rounded-lg backface-hidden transform-[rotateY(180deg)]
-                        flex flex-col items-center justify-center border-2
-                        ${card.status === 'revealed-wrong' 
-                            ? 'bg-neutral-800 border-neutral-700 grayscale opacity-60' 
-                            : `bg-neutral-900 ${card.color === '#ec4899' ? 'border-pink-500' : 'border-slate-600'} ${card.aura}`
-                        }
-                        `}
-                    >
-                        {card.status === 'revealed' && card.isTarget && (
-                        <div className="absolute inset-0 bg-linear-to-t from-amber-500/20 to-transparent animate-pulse rounded-lg"></div>
-                        )}
+                            {/* Card Front */}
+                            <div 
+                                className={`
+                                absolute inset-0 w-full h-full rounded-lg backface-hidden transform-[rotateY(180deg)]
+                                flex flex-col items-center justify-center border-2
+                                ${card.status === 'revealed-wrong' 
+                                    ? 'bg-neutral-800 border-neutral-700 grayscale opacity-60' 
+                                    : `bg-neutral-900 ${card.color === '#ec4899' ? 'border-pink-500' : 'border-slate-600'} ${card.aura}`
+                                }
+                                `}
+                            >
+                                {card.status === 'revealed' && card.isTarget && (
+                                <div className="absolute inset-0 bg-linear-to-t from-amber-500/20 to-transparent animate-pulse rounded-lg"></div>
+                                )}
 
-                        {/* BIGGER ICONS */}
-                        <div className={`p-4 rounded-full bg-white/5 mb-2 ${card.status === 'revealed' && card.isTarget ? 'text-amber-300 scale-110' : 'text-slate-300'}`}>
-                            <card.icon 
-                                className="w-12 h-12 md:w-16 md:h-16 lg:w-20 lg:h-20"
-                                color={card.status === 'revealed-wrong' ? '#525252' : card.color} 
-                                strokeWidth={1.5}
-                            />
+                                {/* BIGGER ICONS */}
+                                <div className={`p-4 rounded-full bg-white/5 mb-2 ${card.status === 'revealed' && card.isTarget ? 'text-amber-300 scale-110' : 'text-slate-300'}`}>
+                                    <card.icon 
+                                        className="w-12 h-12 md:w-16 md:h-16 lg:w-20 lg:h-20"
+                                        color={card.status === 'revealed-wrong' ? '#525252' : card.color} 
+                                        strokeWidth={1.5}
+                                    />
+                                </div>
+                                <span className={`text-[10px] md:text-sm uppercase tracking-widest font-bold ${card.status === 'revealed-wrong' ? 'text-neutral-500' : 'text-white'}`}>
+                                {card.name}
+                                </span>
+                                
+                                {card.isTarget && card.status === 'revealed' && (
+                                <Sparkles className="absolute top-2 right-2 text-amber-400 animate-spin-slow" size={20} />
+                                )}
+                            </div>
                         </div>
-                        <span className={`text-[10px] md:text-sm uppercase tracking-widest font-bold ${card.status === 'revealed-wrong' ? 'text-neutral-500' : 'text-white'}`}>
-                        {card.name}
-                        </span>
-                        
-                        {card.isTarget && card.status === 'revealed' && (
-                        <Sparkles className="absolute top-2 right-2 text-amber-400 animate-spin-slow" size={20} />
-                        )}
-                    </div>
                   </div>
                 </div>
             ))}
