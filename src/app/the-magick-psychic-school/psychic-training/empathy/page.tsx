@@ -655,6 +655,12 @@ export default function EmpathyApp() {
 
   const getLayoutConfig = () => {
     let cols = 2; 
+    
+    // Explicit override for 9 cards to ensure 3x3
+    if (deckSize === 9) {
+        return { cols: 3, rows: 3 };
+    }
+
     if (isDesktop) {
         if (deckSize === 10) {
             cols = 5;
@@ -782,8 +788,8 @@ export default function EmpathyApp() {
                 >
                   Random Loop
                 </button>
-                {/* Specific Targets including Focus */}
-                {EMOTIONS.filter(e => ['love', 'sad', 'happy', 'focused'].includes(e.id)).map(e => (
+                {/* Specific Targets - Expanded to all options */}
+                {EMOTIONS.map(e => (
                    <button 
                    key={e.id}
                    onClick={() => setTargetFocus(e.id)}
@@ -857,20 +863,22 @@ export default function EmpathyApp() {
                 }}
             >
             {cards.map((card, idx) => (
-                // GROUP WRAPPER: Handles the click and hover detection
+                // GROUP WRAPPER: Handles the click and hover detection.
+                // Uses flex center to allow the inner card to maintain aspect ratio without stretching into the grid cell shape.
                 <div 
                     key={card.id}
                     onClick={() => handleCardClick(idx)}
                     onMouseEnter={() => { if(gameState === 'sensing') audio.playSlide(); }}
-                    className="relative w-full h-full group cursor-pointer"
+                    className="w-full h-full flex items-center justify-center p-1 md:p-2 group cursor-pointer"
                 >
-                    {/* Centered Absolute Card - Moves on Group Hover */}
+                    {/* Centered Card Container: Maintains aspect ratio (2/3) and maximizes size within the cell */}
                     <div 
                         className={`
-                            absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2
-                            h-[90%] w-auto aspect-[2/3] max-w-full
+                            relative
+                            aspect-[2/3] 
+                            h-auto w-auto max-w-full max-h-full
                             transition-transform duration-300 ease-out transform
-                            ${gameState === 'sensing' ? 'group-hover:translate-y-2 group-hover:shadow-[0_0_25px_rgba(255,255,255,0.2)]' : ''}
+                            ${gameState === 'sensing' ? 'group-hover:translate-y-[-8px] group-hover:shadow-[0_0_25px_rgba(255,255,255,0.2)]' : ''}
                         `}
                         style={{
                             transformStyle: 'preserve-3d',
@@ -878,50 +886,50 @@ export default function EmpathyApp() {
                         }}
                     >
                     
-                    {/* Card Back - Magickal Silver Border */}
-                    <div 
-                        className={`
-                        absolute inset-0 w-full h-full rounded-lg backface-hidden overflow-hidden
-                        ${CARD_BACKS[cardBack].bg}
-                        border-[3px] border-slate-400 ring-1 ring-inset ring-black/80
-                        shadow-[0_0_10px_rgba(148,163,184,0.2)]
-                        `}
-                    >
-                        {/* Inner metallic sheen */}
-                        <div className="absolute inset-0 border-[1px] border-white/20 rounded-lg pointer-events-none"></div>
-                    </div>
-
-                    {/* Card Front */}
-                    <div 
-                        className={`
-                        absolute inset-0 w-full h-full rounded-lg backface-hidden transform-[rotateY(180deg)]
-                        flex flex-col items-center justify-center border-2
-                        ${card.status === 'revealed-wrong' 
-                            ? 'bg-neutral-800 border-neutral-700 grayscale opacity-60' 
-                            : `bg-neutral-900 ${card.color === '#ec4899' ? 'border-pink-500' : 'border-slate-600'} ${card.aura}`
-                        }
-                        `}
-                    >
-                        {card.status === 'revealed' && card.isTarget && (
-                        <div className="absolute inset-0 bg-linear-to-t from-amber-500/20 to-transparent animate-pulse rounded-lg"></div>
-                        )}
-
-                        {/* BIGGER ICONS */}
-                        <div className={`p-4 rounded-full bg-white/5 mb-2 ${card.status === 'revealed' && card.isTarget ? 'text-amber-300 scale-110' : 'text-slate-300'}`}>
-                            <card.icon 
-                                className="w-12 h-12 md:w-16 md:h-16 lg:w-20 lg:h-20"
-                                color={card.status === 'revealed-wrong' ? '#525252' : card.color} 
-                                strokeWidth={1.5}
-                            />
+                        {/* Card Back - Magickal Silver Border */}
+                        <div 
+                            className={`
+                            absolute inset-0 w-full h-full rounded-lg backface-hidden overflow-hidden
+                            ${CARD_BACKS[cardBack].bg}
+                            border-[3px] border-slate-400 ring-1 ring-inset ring-black/80
+                            shadow-[0_0_10px_rgba(148,163,184,0.2)]
+                            `}
+                        >
+                            {/* Inner metallic sheen */}
+                            <div className="absolute inset-0 border-[1px] border-white/20 rounded-lg pointer-events-none"></div>
                         </div>
-                        <span className={`text-[10px] md:text-sm uppercase tracking-widest font-bold ${card.status === 'revealed-wrong' ? 'text-neutral-500' : 'text-white'}`}>
-                        {card.name}
-                        </span>
-                        
-                        {card.isTarget && card.status === 'revealed' && (
-                        <Sparkles className="absolute top-2 right-2 text-amber-400 animate-spin-slow" size={20} />
-                        )}
-                    </div>
+
+                        {/* Card Front */}
+                        <div 
+                            className={`
+                            absolute inset-0 w-full h-full rounded-lg backface-hidden transform-[rotateY(180deg)]
+                            flex flex-col items-center justify-center border-2
+                            ${card.status === 'revealed-wrong' 
+                                ? 'bg-neutral-800 border-neutral-700 grayscale opacity-60' 
+                                : `bg-neutral-900 ${card.color === '#ec4899' ? 'border-pink-500' : 'border-slate-600'} ${card.aura}`
+                            }
+                            `}
+                        >
+                            {card.status === 'revealed' && card.isTarget && (
+                            <div className="absolute inset-0 bg-linear-to-t from-amber-500/20 to-transparent animate-pulse rounded-lg"></div>
+                            )}
+
+                            {/* BIGGER ICONS */}
+                            <div className={`p-4 rounded-full bg-white/5 mb-2 ${card.status === 'revealed' && card.isTarget ? 'text-amber-300 scale-110' : 'text-slate-300'}`}>
+                                <card.icon 
+                                    className="w-8 h-8 md:w-16 md:h-16 lg:w-20 lg:h-20"
+                                    color={card.status === 'revealed-wrong' ? '#525252' : card.color} 
+                                    strokeWidth={1.5}
+                                />
+                            </div>
+                            <span className={`text-[10px] md:text-sm uppercase tracking-widest font-bold ${card.status === 'revealed-wrong' ? 'text-neutral-500' : 'text-white'}`}>
+                            {card.name}
+                            </span>
+                            
+                            {card.isTarget && card.status === 'revealed' && (
+                            <Sparkles className="absolute top-2 right-2 text-amber-400 animate-spin-slow" size={20} />
+                            )}
+                        </div>
                   </div>
                 </div>
             ))}
