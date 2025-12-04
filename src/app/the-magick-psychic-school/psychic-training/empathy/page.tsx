@@ -4,7 +4,8 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Heart, CloudRain, Sun, Banknote, Flame, Zap, Crosshair, PartyPopper, 
   Settings, Eye, Volume2, VolumeX, 
-  Sparkles, X, Trophy, Info, RotateCcw, Save, Activity, Maximize, Minimize
+  Sparkles, X, Activity, Maximize, Minimize,
+  Info, RotateCcw, Save // Restored imports
 } from 'lucide-react';
 import { createBrowserClient } from '@supabase/ssr';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
@@ -47,7 +48,6 @@ const calculateProbability = (z: number) => {
   return `1 in ${Math.round(oneInX)}`;
 };
 
-// --- REVISED SCORING SYSTEM ---
 const getPsiTier = (z: number) => {
   // POSITIVE SCALE (Psi-Hitting)
   if (z >= 4.0) return { name: "The Oracle", color: "text-amber-300 shadow-amber-500/50" };
@@ -80,7 +80,6 @@ const RadarChart = ({ stats, emotions }: { stats: any, emotions: any[] }) => {
     const points = emotions.map((emo, i) => {
         const angle = (Math.PI * 2 * i) / emotions.length - Math.PI / 2;
         const stat = stats[emo.id] || { hits: 0, attempts: 0 };
-        // Normalize 0-1 based on hits/attempts
         const percentage = stat.attempts > 0 ? (stat.hits / stat.attempts) : 0;
         const dist = radius * percentage; 
         
@@ -149,6 +148,27 @@ const RadarChart = ({ stats, emotions }: { stats: any, emotions: any[] }) => {
                 </svg>
                 <div className="text-[10px] text-slate-500 text-center mt-2 italic">Intuition Resonance Field</div>
             </div>
+        </div>
+    );
+};
+
+/**
+ * --- STATS GRID COMPONENT ---
+ */
+const StatsGrid = ({ stats, emotions }: { stats: any, emotions: any[] }) => {
+    return (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
+            {emotions.map((emo) => {
+                const stat = stats[emo.id] || { hits: 0, attempts: 0 };
+                const percentage = stat.attempts > 0 ? Math.round((stat.hits / stat.attempts) * 100) : 0;
+                return (
+                    <div key={emo.id} className="bg-neutral-950/50 border border-white/5 rounded p-3 flex flex-col items-center justify-center min-h-20">
+                        <span className="text-[10px] text-slate-400 uppercase tracking-widest mb-1">{emo.name}</span>
+                        <span className={`text-xl font-bold font-mono ${percentage > 0 ? 'text-white' : 'text-slate-600'}`}>{percentage}%</span>
+                        <span className="text-[9px] text-slate-500 mt-1">{stat.hits}/{stat.attempts}</span>
+                    </div>
+                );
+            })}
         </div>
     );
 };
@@ -291,6 +311,7 @@ const PsiStats = ({ stats, deckSize, onClose }: { stats: any, deckSize: number, 
             {/* RADAR CHART */}
             <div className="mb-8 border-t border-white/10 pt-6">
                 <RadarChart stats={stats} emotions={EMOTIONS} />
+                <StatsGrid stats={stats} emotions={EMOTIONS} />
             </div>
 
             {/* Definitions Legend - REVISED */}
@@ -341,12 +362,12 @@ const EMOTIONS = [
   { id: 'laughing', name: 'Laughter', icon: PartyPopper, color: '#d946ef', desc: 'Vibration, Release', aura: 'shadow-fuchsia-500' }
 ];
 
-// UPDATED CARD BACKS
+// UPDATED CARD BACKS with Shadow & Gold Trim
 const CARD_BACKS: Record<string, { name: string; bg: string }> = {
   checkered: { 
     name: 'Checkered Gold', 
-    // Creating a purple checkerboard with gold border effect using CSS gradients
-    bg: 'bg-[#2e1065] border-2 border-amber-500/70 bg-[linear-gradient(45deg,#1e1b4b_25%,transparent_25%,transparent_75%,#1e1b4b_75%,#1e1b4b),linear-gradient(45deg,#1e1b4b_25%,transparent_25%,transparent_75%,#1e1b4b_75%,#1e1b4b)] bg-[length:30px_30px] [background-position:0_0,15px_15px] shadow-[0_0_15px_rgba(245,158,11,0.2)]' 
+    // Uses inset shadow to create interior depth
+    bg: 'bg-[#2e1065] border-2 border-amber-300/50 bg-[linear-gradient(45deg,#1e1b4b_25%,transparent_25%,transparent_75%,#1e1b4b_75%,#1e1b4b),linear-gradient(45deg,#1e1b4b_25%,transparent_25%,transparent_75%,#1e1b4b_75%,#1e1b4b)] bg-[length:30px_30px] [background-position:0_0,15px_15px] shadow-[inset_0_0_40px_rgba(0,0,0,0.9)]' 
   },
   box: {
     name: 'Golden Box',
@@ -354,7 +375,7 @@ const CARD_BACKS: Record<string, { name: string; bg: string }> = {
   },
   solid: {
     name: 'Deep Purple',
-    bg: 'bg-[#3b0764] border border-white/10'
+    bg: 'bg-[#3b0764] border border-white/10 shadow-[inset_0_0_30px_rgba(0,0,0,0.7)]'
   },
   static: { 
     name: 'Static', 
@@ -803,6 +824,24 @@ export default function EmpathyApp() {
       {/* Background Overlay */}
       <div className="absolute inset-0 bg-[#0a0a0a]/90 backdrop-blur-sm z-0" />
       
+      {/* Twinkling Stars Background Effect */}
+      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+        {[...Array(20)].map((_, i) => (
+            <div 
+                key={i}
+                className="absolute bg-white rounded-full opacity-0 animate-twinkle"
+                style={{
+                    width: Math.random() * 2 + 1 + 'px',
+                    height: Math.random() * 2 + 1 + 'px',
+                    top: Math.random() * 100 + '%',
+                    left: Math.random() * 100 + '%',
+                    animationDelay: Math.random() * 5 + 's',
+                    animationDuration: Math.random() * 3 + 2 + 's'
+                }}
+            />
+        ))}
+      </div>
+
       {showInstructions && <InstructionModal onClose={handleStart} />}
 
       {/* HEADER - Fixed at top */}
@@ -986,17 +1025,17 @@ export default function EmpathyApp() {
       {/* 
          LAYOUT FIX FOR SMALL SCREENS:
          - overflow-y-auto enables vertical scrolling if the grid content is too tall.
-         - The inner grid wrapper has min-h-0 to prevent flex blowout but grows as needed.
+         - The inner grid wrapper has h-auto to allow growth rather than squashing cards.
+         - padding-bottom ensures last row is visible.
       */}
-      <main className="flex-1 w-full flex flex-col relative z-10 overflow-y-auto p-2">
-        <div className="flex-1 w-full flex items-center justify-center min-h-0">
+      <main className="flex-1 w-full flex flex-col relative z-10 overflow-y-auto p-2 pb-8">
+        <div className="w-full flex items-center justify-center h-auto min-h-full">
             <div 
                 className="grid gap-2 w-full max-w-full"
                 style={{
                     gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
-                    // We removed the forced "100%" height constraint here to allow natural stacking on small screens.
-                    // minmax(140px, 1fr) ensures cards have a minimum height, triggering the parent scroll if needed.
-                    gridTemplateRows: `repeat(${rows}, minmax(120px, 1fr))` 
+                    // Mobile fix: auto-rows with min-height ensures scrolling instead of overlap
+                    gridAutoRows: 'minmax(140px, 1fr)'
                 }}
             >
             {cards.map((card, idx) => (
@@ -1004,9 +1043,9 @@ export default function EmpathyApp() {
                     key={card.id}
                     onClick={() => handleCardClick(idx)}
                     onMouseEnter={() => { if(gameState === 'sensing') audio.playSlide(); }}
-                    className="w-full h-full min-h-0 flex items-center justify-center p-1 group cursor-pointer relative perspective-[1000px]"
+                    className="w-full h-full min-h-[140px] flex items-center justify-center p-1 group cursor-pointer relative perspective-[1000px]"
                 >
-                    {/* Centered Card Container: Uses SVG strut to enforce aspect ratio while maximizing size */}
+                    {/* Centered Card Container */}
                     <div 
                         className={`
                             relative
@@ -1018,12 +1057,12 @@ export default function EmpathyApp() {
                             transform: card.status !== 'face-down' ? 'rotateY(180deg)' : 'rotateY(0deg)',
                         }}
                     >
-                        {/* THE STRUT: Inline SVG that forces the container to be the largest possible 2:3 box inside the grid cell */}
+                        {/* THE STRUT: Inline SVG forces 2:3 aspect ratio */}
                         <svg 
                             viewBox="0 0 200 300"
                             width="200"
                             height="300"
-                            className="block w-auto h-auto min-w-[50px] min-h-[75px] max-w-full max-h-full opacity-0 pointer-events-none select-none"
+                            className="block w-auto h-auto min-w-20 max-w-full max-h-full opacity-0 pointer-events-none select-none"
                             style={{ 
                                 height: 'auto', 
                                 width: 'auto', 
@@ -1040,12 +1079,11 @@ export default function EmpathyApp() {
                             className={`
                             absolute inset-0 w-full h-full rounded-lg backface-hidden overflow-hidden z-10
                             ${CARD_BACKS[cardBack].bg}
-                            ${cardBack === 'box' ? '' : 'border-[3px] border-slate-400 ring-1 ring-inset ring-black/80'}
-                            shadow-[0_0_10px_rgba(148,163,184,0.2)]
+                            ${cardBack === 'box' || cardBack === 'checkered' ? '' : 'border-2 border-slate-400 ring-1 ring-inset ring-black/80'}
                             `}
                         >
-                            {/* Inner metallic sheen for standard cards */}
-                            {cardBack !== 'box' && <div className="absolute inset-0 border border-white/20 rounded-lg pointer-events-none"></div>}
+                            {/* Metallic Sheen if needed */}
+                            {cardBack === 'static' && <div className="absolute inset-0 border border-white/20 rounded-lg pointer-events-none"></div>}
                         </div>
 
                         {/* Card Front */}
@@ -1104,6 +1142,12 @@ export default function EmpathyApp() {
           to { transform: rotate(360deg); }
         }
         .animate-spin-slow { animation: spin-slow 3s linear infinite; }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0; transform: scale(0.5); }
+            50% { opacity: 0.5; transform: scale(1); }
+        }
+        .animate-twinkle { animation: twinkle 3s ease-in-out infinite; }
 
         @keyframes magick-zoom {
             0% { transform: scale(0.5) translateY(50px); opacity: 0; }
