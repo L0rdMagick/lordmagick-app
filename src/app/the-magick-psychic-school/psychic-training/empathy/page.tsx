@@ -11,7 +11,6 @@ import MagickalBackLink from '@/app/components/MagickalBackLink';
 
 /**
  * --- PSI MATH ENGINE ---
- * Statistical Analysis & definitions.
  */
 const calculatePsiScore = (hits: number, trials: number, chance: number) => {
   if (trials === 0) return 0;
@@ -38,7 +37,6 @@ const erf = (x: number) => {
 };
 
 const calculateProbability = (z: number) => {
-  // One-tailed probability
   const pValue = 0.5 * (1 - erf(Math.abs(z) / Math.sqrt(2)));
   if (pValue <= 0) return "1 in ∞"; 
   const oneInX = 1 / pValue;
@@ -49,45 +47,41 @@ const calculateProbability = (z: number) => {
   return `1 in ${Math.round(oneInX)}`;
 };
 
+// --- REVISED SCORING SYSTEM ---
 const getPsiTier = (z: number) => {
-  // Positive Scale (Psi-Hitting)
+  // POSITIVE SCALE (Psi-Hitting)
   if (z >= 4.0) return { name: "The Oracle", color: "text-amber-300 shadow-amber-500/50" };
   if (z >= 3.0) return { name: "The Medium", color: "text-purple-300 shadow-purple-500/50" };
   if (z >= 1.96) return { name: "The Clairvoyant", color: "text-pink-300 shadow-pink-500/50" };
-  if (z >= 1.65) return { name: "The Empath", color: "text-indigo-300 shadow-indigo-500/50" };
-  if (z >= 1.0) return { name: "The Sensitive", color: "text-cyan-300 shadow-cyan-500/50" };
-  if (z >= 0.5) return { name: "The Intuitive", color: "text-teal-300 shadow-teal-500/50" };
-  
-  // Negative Scale (Psi-Missing)
+  if (z >= 1.65) return { name: "The Channel", color: "text-indigo-300 shadow-indigo-500/50" };
+  if (z >= 1.0) return { name: "The Adept", color: "text-cyan-300 shadow-cyan-500/50" };
+  if (z >= 0.5) return { name: "The Spark", color: "text-teal-300 shadow-teal-500/50" };
+  if (z >= 0.0) return { name: "The Initiate", color: "text-slate-200" };
+
+  // NEGATIVE SCALE (Psi-Missing)
   if (z <= -4.0) return { name: "The Void", color: "text-slate-500" };
   if (z <= -3.0) return { name: "The Shadow", color: "text-slate-400" };
-  if (z <= -2.0) return { name: "The Inverter", color: "text-slate-400" };
-  if (z <= -1.0) return { name: "The Skeptic", color: "text-slate-400" };
-  if (z <= -0.5) return { name: "The Latent", color: "text-slate-400" };
+  if (z <= -2.0) return { name: "The Mirror", color: "text-slate-400" };
+  if (z <= -1.0) return { name: "The Blocker", color: "text-slate-400" };
+  if (z <= -0.5) return { name: "The Dreamer", color: "text-slate-400" };
   
-  // Neutral
-  return { name: "The Sensor", color: "text-slate-300" };
+  // Just below baseline
+  return { name: "The Sleeper", color: "text-slate-300" };
 };
 
 /**
  * --- RADAR CHART COMPONENT ---
- * Renders the "Soul Resonance" spiderweb.
  */
 const RadarChart = ({ stats, emotions }: { stats: any, emotions: any[] }) => {
     const size = 200;
     const center = size / 2;
-    const radius = 70; // drawing radius
+    const radius = 70; 
     
-    // Calculate points
     const points = emotions.map((emo, i) => {
         const angle = (Math.PI * 2 * i) / emotions.length - Math.PI / 2;
         const stat = stats[emo.id] || { hits: 0, attempts: 0 };
+        // Normalize 0-1 based on hits/attempts
         const percentage = stat.attempts > 0 ? (stat.hits / stat.attempts) : 0;
-        // Scale: Center is 0%, Outer rim is 100% accuracy.
-        // We cap visual at 100% even if Z-score is high, as this is resonance/accuracy.
-        const r = radius * Math.min(percentage * 2, 1.2); // *2 to make 50% hit the edge (since chance is 1/4 or 1/10) - actually let's just do pure accuracy normalized
-        // Let's normalize: If chance is 25% (1/4), then 25% should be "baseline". 
-        // Simple View: 0 to 100% accuracy.
         const dist = radius * percentage; 
         
         return [
@@ -105,7 +99,6 @@ const RadarChart = ({ stats, emotions }: { stats: any, emotions: any[] }) => {
             </h4>
             <div className="relative">
                 <svg width={size} height={size} className="overflow-visible">
-                    {/* Web Background */}
                     {[0.25, 0.5, 0.75, 1].map((scale, k) => (
                         <polygon 
                             key={k}
@@ -119,7 +112,6 @@ const RadarChart = ({ stats, emotions }: { stats: any, emotions: any[] }) => {
                             strokeWidth="1"
                         />
                     ))}
-                    {/* Spokes */}
                     {emotions.map((_, i) => {
                         const angle = (Math.PI * 2 * i) / emotions.length - Math.PI / 2;
                         return (
@@ -133,10 +125,8 @@ const RadarChart = ({ stats, emotions }: { stats: any, emotions: any[] }) => {
                             />
                         );
                     })}
-                    {/* Data Shape */}
                     <path d={pathData} fill="rgba(236, 72, 153, 0.3)" stroke="#ec4899" strokeWidth="2" />
                     
-                    {/* Labels */}
                     {emotions.map((emo, i) => {
                         const angle = (Math.PI * 2 * i) / emotions.length - Math.PI / 2;
                         const labelRadius = radius + 15;
@@ -232,7 +222,6 @@ const PsiStats = ({ stats, deckSize, onClose }: { stats: any, deckSize: number, 
 
   return (
     <>
-      {/* COMPACT HUD */}
       <div 
         onClick={() => setShowModal(true)}
         className="
@@ -255,7 +244,6 @@ const PsiStats = ({ stats, deckSize, onClose }: { stats: any, deckSize: number, 
           </div>
       </div>
 
-      {/* MODAL */}
       {showModal && (
         <div 
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-xl p-4 animate-in fade-in duration-300"
@@ -305,7 +293,7 @@ const PsiStats = ({ stats, deckSize, onClose }: { stats: any, deckSize: number, 
                 <RadarChart stats={stats} emotions={EMOTIONS} />
             </div>
 
-            {/* Definitions Legend */}
+            {/* Definitions Legend - REVISED */}
             <div className="grid md:grid-cols-2 gap-8 border-t border-white/10 pt-6">
                 <div>
                     <h4 className="text-xs uppercase tracking-widest text-amber-400 mb-3 pb-2">Psi-Hitting (Positive)</h4>
@@ -313,19 +301,20 @@ const PsiStats = ({ stats, deckSize, onClose }: { stats: any, deckSize: number, 
                         <div><strong className="text-amber-200 block">The Oracle (Z &ge; 4.0)</strong><span className="text-slate-400">World Class Anomaly (1 in 31,000+).</span></div>
                         <div><strong className="text-purple-300 block">The Medium (Z &ge; 3.0)</strong><span className="text-slate-400">Highly Significant (1 in 740).</span></div>
                         <div><strong className="text-pink-300 block">The Clairvoyant (Z &ge; 1.96)</strong><span className="text-slate-400">Statistically Significant (p &lt; 0.05).</span></div>
-                        <div><strong className="text-indigo-300 block">The Empath (Z &ge; 1.65)</strong><span className="text-slate-400">Borderline Significant (1 in 20).</span></div>
-                        <div><strong className="text-teal-300 block">The Sensitive (Z &ge; 1.0)</strong><span className="text-slate-400">High Variance. Beating odds of 1 in 6.</span></div>
-                        <div><strong className="text-slate-300 block">The Intuitive (Z &ge; 0.5)</strong><span className="text-slate-500">Slight positive variation.</span></div>
+                        <div><strong className="text-indigo-300 block">The Channel (Z &ge; 1.65)</strong><span className="text-slate-400">Tapping into something real (1 in 20).</span></div>
+                        <div><strong className="text-cyan-300 block">The Adept (Z &ge; 1.0)</strong><span className="text-slate-400">Finding flow. Beating odds of 1 in 6.</span></div>
+                        <div><strong className="text-teal-300 block">The Spark (Z &ge; 0.5)</strong><span className="text-slate-400">Pulse of intuition. Nudging past average.</span></div>
+                        <div><strong className="text-slate-200 block">The Initiate (Z &ge; 0.0)</strong><span className="text-slate-500">Above baseline. Better than random.</span></div>
                     </div>
                 </div>
                 <div>
                     <h4 className="text-xs uppercase tracking-widest text-blue-400 mb-3 pb-2">Psi-Missing (Negative)</h4>
                     <div className="space-y-3 text-xs">
-                        <div><strong className="text-slate-300 block">The Sensor (Z &approx; 0)</strong><span className="text-slate-500">Performing exactly at statistical chance.</span></div>
-                        <div><strong className="text-slate-400 block">The Latent (Z &le; -0.5)</strong><span className="text-slate-500">Slightly below chance. Over-thinking.</span></div>
-                        <div><strong className="text-slate-400 block">The Skeptic (Z &le; -1.0)</strong><span className="text-slate-500">Consistently avoiding targets.</span></div>
-                        <div><strong className="text-slate-400 block">The Inverter (Z &le; -2.0)</strong><span className="text-slate-500">Significant Avoidance. Subconsciously flipping.</span></div>
-                        <div><strong className="text-slate-500 block">The Shadow (Z &le; -3.0)</strong><span className="text-slate-600">Highly Significant Displacement.</span></div>
+                        <div><strong className="text-slate-300 block">The Sleeper (Z &lt; 0.0)</strong><span className="text-slate-500">Just below baseline. Stop over-analyzing.</span></div>
+                        <div><strong className="text-slate-400 block">The Dreamer (Z &le; -0.5)</strong><span className="text-slate-500">Drifting. Intuition active but unfocused.</span></div>
+                        <div><strong className="text-slate-400 block">The Blocker (Z &le; -1.0)</strong><span className="text-slate-500">Dodging targets. Logic fighting gut.</span></div>
+                        <div><strong className="text-slate-400 block">The Mirror (Z &le; -2.0)</strong><span className="text-slate-500">Significant Avoidance. Flipping the signal.</span></div>
+                        <div><strong className="text-slate-500 block">The Shadow (Z &le; -3.0)</strong><span className="text-slate-600">Highly Significant Displacement. Inverted.</span></div>
                         <div><strong className="text-slate-500 block">The Void (Z &le; -4.0)</strong><span className="text-slate-600">World Class Anomaly. Total suppression.</span></div>
                     </div>
                 </div>
@@ -352,18 +341,20 @@ const EMOTIONS = [
   { id: 'laughing', name: 'Laughter', icon: PartyPopper, color: '#d946ef', desc: 'Vibration, Release', aura: 'shadow-fuchsia-500' }
 ];
 
+// UPDATED CARD BACKS
 const CARD_BACKS: Record<string, { name: string; bg: string }> = {
   checkered: { 
     name: 'Checkered Gold', 
-    bg: 'bg-purple-950 bg-[linear-gradient(45deg,#3b0764_25%,transparent_25%,transparent_75%,#3b0764_75%,#3b0764),linear-gradient(45deg,#3b0764_25%,transparent_25%,transparent_75%,#3b0764_75%,#3b0764)] bg-[length:20px_20px] [background-position:0_0,10px_10px] border-2 border-amber-500/50' 
+    // Creating a purple checkerboard with gold border effect using CSS gradients
+    bg: 'bg-[#2e1065] border-2 border-amber-500/70 bg-[linear-gradient(45deg,#1e1b4b_25%,transparent_25%,transparent_75%,#1e1b4b_75%,#1e1b4b),linear-gradient(45deg,#1e1b4b_25%,transparent_25%,transparent_75%,#1e1b4b_75%,#1e1b4b)] bg-[length:30px_30px] [background-position:0_0,15px_15px] shadow-[0_0_15px_rgba(245,158,11,0.2)]' 
   },
   box: {
     name: 'Golden Box',
-    bg: 'bg-black border border-amber-500/80 shadow-[inset_0_0_0_10px_rgba(0,0,0,1),inset_0_0_0_11px_rgba(245,158,11,0.5)]'
+    bg: 'bg-black border border-amber-500/80 shadow-[inset_0_0_0_8px_#000,inset_0_0_0_9px_rgba(245,158,11,0.6)]'
   },
   solid: {
     name: 'Deep Purple',
-    bg: 'bg-[#4b0082]'
+    bg: 'bg-[#3b0764] border border-white/10'
   },
   static: { 
     name: 'Static', 
@@ -372,10 +363,6 @@ const CARD_BACKS: Record<string, { name: string; bg: string }> = {
   void: { 
     name: 'Void', 
     bg: 'bg-[radial-gradient(circle_at_center,_#312e81_0%,_#020617_90%)]' 
-  },
-  ether: { 
-    name: 'Ether', 
-    bg: 'bg-[conic-gradient(at_bottom_left,_var(--tw-gradient-stops))] from-slate-900 via-indigo-950 to-slate-900' 
   }
 };
 
@@ -470,7 +457,7 @@ const useAudioEngine = () => {
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     
-    // Low Thud (Triangle wave, ~150Hz drop to 50Hz, quick decay)
+    // UPDATED SOUND: Low Thud (Triangle wave, ~150Hz drop to 50Hz, quick decay)
     osc.type = 'triangle';
     osc.frequency.setValueAtTime(150, now);
     osc.frequency.exponentialRampToValueAtTime(50, now + 0.3);
@@ -580,7 +567,7 @@ export default function EmpathyApp() {
 
   const [showInstructions, setShowInstructions] = useState(true);
   const [deckSize, setDeckSize] = useState(4);
-  const [cardBack, setCardBack] = useState('checkered'); 
+  const [cardBack, setCardBack] = useState('checkered'); // Set new default
   const [feedbackMode, setFeedbackMode] = useState('training');
   const [targetFocus, setTargetFocus] = useState('random');
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -800,7 +787,7 @@ export default function EmpathyApp() {
         else if (deckSize <= 8) cols = 4;          // 2 rows of 4
         else cols = 5;                             // 2 rows of 5 (9-10 cards)
     } else {
-        // Mobile Logic (Existing logic)
+        // Mobile Logic
         if (deckSize >= 10) cols = 4;
         else if (deckSize >= 5) cols = 3;
         else cols = 2;
@@ -996,26 +983,28 @@ export default function EmpathyApp() {
       )}
 
       {/* GAME AREA - Scrollable only here */}
-      {/* Changing to overflow-y-auto enables scrolling on small screens like iPhone SE */}
+      {/* 
+         LAYOUT FIX FOR SMALL SCREENS:
+         - overflow-y-auto enables vertical scrolling if the grid content is too tall.
+         - The inner grid wrapper has min-h-0 to prevent flex blowout but grows as needed.
+      */}
       <main className="flex-1 w-full flex flex-col relative z-10 overflow-y-auto p-2">
-        {/* Grid Container - Forces Fit but allows overflow if min-height requirements are met */}
         <div className="flex-1 w-full flex items-center justify-center min-h-0">
             <div 
                 className="grid gap-2 w-full max-w-full"
                 style={{
                     gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
-                    // We removed the forced 100% height here to allow natural stacking on small screens
-                    // but we ensure rows have a minimum height so they don't squash.
-                    gridTemplateRows: `repeat(${rows}, minmax(140px, 1fr))` 
+                    // We removed the forced "100%" height constraint here to allow natural stacking on small screens.
+                    // minmax(140px, 1fr) ensures cards have a minimum height, triggering the parent scroll if needed.
+                    gridTemplateRows: `repeat(${rows}, minmax(120px, 1fr))` 
                 }}
             >
             {cards.map((card, idx) => (
-                // GROUP WRAPPER
                 <div 
                     key={card.id}
                     onClick={() => handleCardClick(idx)}
                     onMouseEnter={() => { if(gameState === 'sensing') audio.playSlide(); }}
-                    className="w-full h-full min-h-0 flex items-center justify-center p-1 md:p-2 group cursor-pointer relative perspective-[1000px]"
+                    className="w-full h-full min-h-0 flex items-center justify-center p-1 group cursor-pointer relative perspective-[1000px]"
                 >
                     {/* Centered Card Container: Uses SVG strut to enforce aspect ratio while maximizing size */}
                     <div 
@@ -1046,7 +1035,7 @@ export default function EmpathyApp() {
                             <rect width="200" height="300" fill="transparent"/>
                         </svg>
                     
-                        {/* Card Back - Magickal Silver Border */}
+                        {/* Card Back */}
                         <div 
                             className={`
                             absolute inset-0 w-full h-full rounded-lg backface-hidden overflow-hidden z-10
@@ -1074,7 +1063,6 @@ export default function EmpathyApp() {
                             <div className="absolute inset-0 bg-linear-to-t from-amber-500/20 to-transparent animate-pulse rounded-lg"></div>
                             )}
 
-                            {/* BIGGER ICONS */}
                             <div className={`p-4 rounded-full bg-white/5 mb-2 ${card.status === 'revealed' && card.isTarget ? 'text-amber-300 scale-110' : 'text-slate-300'}`}>
                                 <card.icon 
                                     className="w-8 h-8 md:w-16 md:h-16 lg:w-20 lg:h-20"
