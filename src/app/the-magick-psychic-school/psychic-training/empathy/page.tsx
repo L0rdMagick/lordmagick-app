@@ -820,10 +820,7 @@ export default function EmpathyApp() {
   const { cols, rows } = getLayoutConfig();
 
   // Grid Aspect Ratio Logic to prevent overflow
-  // Card ratio is approx 2:3 (width:height). 
-  // Grid Width = Cols * Unit. Grid Height = Rows * Unit * 1.5.
-  // Grid Ratio = (Cols) / (Rows * 1.5).
-  // This allows us to use aspect-ratio css to force the grid to fit into the container
+  // This calculates the overall aspect ratio of the GRID (not individual cards)
   const gridAspectRatio = `${cols} / ${rows * 1.5}`;
 
   return (
@@ -881,7 +878,7 @@ export default function EmpathyApp() {
 
       {/* TOP BAR: Target Info & Scorecard in Flow */}
       {/* Reduced min-height to allow better fit on small mobile screens */}
-      <div className="shrink-0 w-full flex items-start justify-between px-4 py-2 relative z-20 min-h-[60px] md:min-h-20">
+      <div className="shrink-0 w-full flex items-start justify-between px-4 py-1 relative z-20 min-h-[60px] md:min-h-20">
           
           {/* Target Info - Left on Mobile, Center on Desktop */}
           <div className="flex flex-col items-start md:items-center justify-center md:absolute md:inset-0 md:pointer-events-none z-0">
@@ -1030,11 +1027,17 @@ export default function EmpathyApp() {
       )}
 
       {/* GAME AREA - Flex Centered to prevent cut-off */}
-      <main className="flex-1 w-full flex items-center justify-center relative z-10 overflow-hidden p-2">
+      <main className="flex-1 w-full min-h-0 flex items-center justify-center relative z-10 overflow-hidden p-4 md:p-8">
             <div 
-                className="grid gap-2 w-full max-h-full max-w-5xl"
+                className="grid gap-2 sm:gap-4"
                 style={{
-                    // Force the grid to maintain aspect ratio to prevent overflow
+                    // Auto width/height allows grid to shrink based on containment
+                    width: 'auto',
+                    height: 'auto',
+                    // Max-width/height forces it to stay within parent
+                    maxWidth: '100%',
+                    maxHeight: '100%',
+                    // Aspect ratio forces the shape, so one dimension will hit 100% and the other will be < 100%
                     aspectRatio: gridAspectRatio,
                     gridTemplateColumns: `repeat(${cols}, 1fr)`,
                     gridTemplateRows: `repeat(${rows}, 1fr)`
@@ -1045,7 +1048,6 @@ export default function EmpathyApp() {
                     key={card.id}
                     onClick={() => handleCardClick(idx)}
                     onMouseEnter={() => { if(gameState === 'sensing') audio.playSlide(); }}
-                    // Removed fixed min-height to allow scaling down on small screens
                     className="w-full h-full flex items-center justify-center p-1 group cursor-pointer relative perspective-[1000px]"
                 >
                     {/* Centered Card Container */}
@@ -1100,8 +1102,8 @@ export default function EmpathyApp() {
 
                             <div className={`p-4 rounded-full bg-white/5 mb-2 ${card.status === 'revealed' && card.isTarget ? 'text-amber-300 scale-110' : 'text-slate-300'}`}>
                                 <card.icon 
-                                    // Make icon responsive to container size
-                                    className="w-1/3 h-1/3 max-w-16 max-h-16"
+                                    // Percentage based sizing ensures it scales with the card container
+                                    className="w-[40%] h-[40%]"
                                     color={card.status === 'revealed-wrong' ? '#525252' : card.color} 
                                     strokeWidth={1.5}
                                 />
