@@ -5,7 +5,7 @@ import {
   Heart, CloudRain, Sun, Banknote, Flame, Zap, Crosshair, PartyPopper, 
   Settings, Eye, Volume2, VolumeX, 
   Sparkles, X, Activity, Maximize, Minimize,
-  Info, RotateCcw, Save // Restored imports
+  Info, RotateCcw, Save 
 } from 'lucide-react';
 import { createBrowserClient } from '@supabase/ssr';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
@@ -819,6 +819,13 @@ export default function EmpathyApp() {
 
   const { cols, rows } = getLayoutConfig();
 
+  // Grid Aspect Ratio Logic to prevent overflow
+  // Card ratio is approx 2:3 (width:height). 
+  // Grid Width = Cols * Unit. Grid Height = Rows * Unit * 1.5.
+  // Grid Ratio = (Cols) / (Rows * 1.5).
+  // This allows us to use aspect-ratio css to force the grid to fit into the container
+  const gridAspectRatio = `${cols} / ${rows * 1.5}`;
+
   return (
     <div className="relative h-dvh w-full bg-neutral-950 text-slate-200 font-sans selection:bg-purple-500/30 flex flex-col overflow-hidden" style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}>
       {/* Background Overlay */}
@@ -873,14 +880,15 @@ export default function EmpathyApp() {
       </header>
 
       {/* TOP BAR: Target Info & Scorecard in Flow */}
-      <div className="shrink-0 w-full flex items-start justify-between px-4 py-2 relative z-20 min-h-20">
+      {/* Reduced min-height to allow better fit on small mobile screens */}
+      <div className="shrink-0 w-full flex items-start justify-between px-4 py-2 relative z-20 min-h-[60px] md:min-h-20">
           
           {/* Target Info - Left on Mobile, Center on Desktop */}
           <div className="flex flex-col items-start md:items-center justify-center md:absolute md:inset-0 md:pointer-events-none z-0">
-             <p className="text-slate-500 text-[10px] uppercase tracking-[0.2em] mb-1">Target Frequency</p>
+             <p className="text-slate-500 text-[9px] md:text-[10px] uppercase tracking-[0.2em] mb-1">Target Frequency</p>
              <div className="flex items-center gap-2">
-                {TargetIcon && <TargetIcon size={24} className="text-amber-400" />}
-                <h1 className="text-xl md:text-4xl font-serif text-slate-100">{targetEmotion?.name.toUpperCase()}</h1>
+                {TargetIcon && <TargetIcon size={24} className="text-amber-400 w-5 h-5 md:w-6 md:h-6" />}
+                <h1 className="text-lg md:text-4xl font-serif text-slate-100">{targetEmotion?.name.toUpperCase()}</h1>
                 {TargetIcon && <TargetIcon size={24} className="text-amber-400 hidden md:block" />}
              </div>
           </div>
@@ -1021,21 +1029,15 @@ export default function EmpathyApp() {
         </div>
       )}
 
-      {/* GAME AREA - Scrollable only here */}
-      {/* 
-         LAYOUT FIX FOR SMALL SCREENS:
-         - overflow-y-auto enables vertical scrolling if the grid content is too tall.
-         - The inner grid wrapper has h-auto to allow growth rather than squashing cards.
-         - padding-bottom ensures last row is visible.
-      */}
-      <main className="flex-1 w-full flex flex-col relative z-10 overflow-y-auto p-2 pb-8">
-        <div className="w-full flex items-center justify-center h-auto min-h-full">
+      {/* GAME AREA - Flex Centered to prevent cut-off */}
+      <main className="flex-1 w-full flex items-center justify-center relative z-10 overflow-hidden p-2">
             <div 
-                className="grid gap-2 w-full max-w-full"
+                className="grid gap-2 w-full max-h-full max-w-5xl"
                 style={{
-                    gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
-                    // Mobile fix: auto-rows with min-height ensures scrolling instead of overlap
-                    gridAutoRows: 'minmax(140px, 1fr)'
+                    // Force the grid to maintain aspect ratio to prevent overflow
+                    aspectRatio: gridAspectRatio,
+                    gridTemplateColumns: `repeat(${cols}, 1fr)`,
+                    gridTemplateRows: `repeat(${rows}, 1fr)`
                 }}
             >
             {cards.map((card, idx) => (
@@ -1043,12 +1045,14 @@ export default function EmpathyApp() {
                     key={card.id}
                     onClick={() => handleCardClick(idx)}
                     onMouseEnter={() => { if(gameState === 'sensing') audio.playSlide(); }}
-                    className="w-full h-full min-h-[140px] flex items-center justify-center p-1 group cursor-pointer relative perspective-[1000px]"
+                    // Removed fixed min-height to allow scaling down on small screens
+                    className="w-full h-full flex items-center justify-center p-1 group cursor-pointer relative perspective-[1000px]"
                 >
                     {/* Centered Card Container */}
                     <div 
                         className={`
                             relative
+                            w-full h-full
                             transition-transform duration-300 ease-out transform
                             ${gameState === 'sensing' ? 'group-hover:-translate-y-2 group-hover:shadow-[0_0_25px_rgba(255,255,255,0.2)]' : ''}
                         `}
@@ -1057,18 +1061,11 @@ export default function EmpathyApp() {
                             transform: card.status !== 'face-down' ? 'rotateY(180deg)' : 'rotateY(0deg)',
                         }}
                     >
-                        {/* THE STRUT: Inline SVG forces 2:3 aspect ratio */}
+                        {/* THE STRUT: Ensures card maintains 2:3 ratio internally if grid doesn't force it enough */}
                         <svg 
                             viewBox="0 0 200 300"
-                            width="200"
-                            height="300"
-                            className="block w-auto h-auto min-w-20 max-w-full max-h-full opacity-0 pointer-events-none select-none"
-                            style={{ 
-                                height: 'auto', 
-                                width: 'auto', 
-                                maxHeight: '100%', 
-                                maxWidth: '100%'
-                            }}
+                            className="block w-full h-full opacity-0 pointer-events-none select-none"
+                            preserveAspectRatio="none"
                             aria-hidden="true"
                         >
                             <rect width="200" height="300" fill="transparent"/>
@@ -1103,12 +1100,13 @@ export default function EmpathyApp() {
 
                             <div className={`p-4 rounded-full bg-white/5 mb-2 ${card.status === 'revealed' && card.isTarget ? 'text-amber-300 scale-110' : 'text-slate-300'}`}>
                                 <card.icon 
-                                    className="w-8 h-8 md:w-16 md:h-16 lg:w-20 lg:h-20"
+                                    // Make icon responsive to container size
+                                    className="w-1/3 h-1/3 max-w-16 max-h-16"
                                     color={card.status === 'revealed-wrong' ? '#525252' : card.color} 
                                     strokeWidth={1.5}
                                 />
                             </div>
-                            <span className={`text-[10px] md:text-sm uppercase tracking-widest font-bold ${card.status === 'revealed-wrong' ? 'text-neutral-500' : 'text-white'}`}>
+                            <span className={`text-[8px] md:text-sm uppercase tracking-widest font-bold text-center px-1 ${card.status === 'revealed-wrong' ? 'text-neutral-500' : 'text-white'}`}>
                             {card.name}
                             </span>
                             
@@ -1120,7 +1118,6 @@ export default function EmpathyApp() {
                 </div>
             ))}
           </div>
-        </div>
       </main>
 
       {/* FOOTER */}
