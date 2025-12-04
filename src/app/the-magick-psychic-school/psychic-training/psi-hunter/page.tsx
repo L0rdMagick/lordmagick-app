@@ -280,7 +280,6 @@ const PsiStats = ({ stats, difficulty, onClose }: { stats: any, difficulty: numb
     }, [showModal, sessionHits, sessionTrials, supabase]);
   
     const lifeAccuracy = lifetimeStats.trials > 0 ? (lifetimeStats.hits / lifetimeStats.trials) * 100 : 0;
-    // Note: Lifetime Z-score is approximate here as difficulty might have varied, using current difficulty as baseline for estimation or 0.25 average
     const lifeZ = calculatePsiScore(lifetimeStats.hits, lifetimeStats.trials, chance);
     const lifeProb = calculateProbability(lifeZ);
     const lifeTier = getPsiTier(lifeZ);
@@ -353,26 +352,32 @@ const PsiStats = ({ stats, difficulty, onClose }: { stats: any, difficulty: numb
                 </div>
               </div>
   
-              {/* Definitions Legend */}
+              {/* Definitions Legend - FULLY SYNCED */}
               <div className="grid md:grid-cols-2 gap-8 border-t border-white/10 pt-6">
-                  <div>
-                      <h4 className="text-xs uppercase tracking-widest text-amber-400 mb-3 pb-2">Psi-Hitting (Positive)</h4>
-                      <div className="space-y-2 text-xs text-slate-400 font-mono">
-                          <div><strong className="text-amber-200">The Oracle (Z &ge; 4.0)</strong> - World Class Anomaly</div>
-                          <div><strong className="text-purple-300">The Medium (Z &ge; 3.0)</strong> - Highly Significant</div>
-                          <div><strong className="text-pink-300">The Clairvoyant (Z &ge; 1.96)</strong> - Significant</div>
-                          <div><strong className="text-cyan-300">The Adept (Z &ge; 1.0)</strong> - Above Chance</div>
-                      </div>
-                  </div>
-                  <div>
-                      <h4 className="text-xs uppercase tracking-widest text-blue-400 mb-3 pb-2">Psi-Missing (Negative)</h4>
-                      <div className="space-y-2 text-xs text-slate-400 font-mono">
-                          <div><strong className="text-slate-300">The Sleeper (Z &lt; 0.0)</strong> - Baseline</div>
-                          <div><strong className="text-slate-500">The Shadow (Z &le; -3.0)</strong> - Significant Displacement</div>
-                          <div><strong className="text-slate-600">The Void (Z &le; -4.0)</strong> - Total Suppression</div>
-                      </div>
-                  </div>
-              </div>
+                <div>
+                    <h4 className="text-xs uppercase tracking-widest text-amber-400 mb-3 pb-2">Psi-Hitting (Positive)</h4>
+                    <div className="space-y-3 text-xs">
+                        <div><strong className="text-amber-200 block">The Oracle (Z &ge; 4.0)</strong><span className="text-slate-400">World Class Anomaly (1 in 31,000+).</span></div>
+                        <div><strong className="text-purple-300 block">The Medium (Z &ge; 3.0)</strong><span className="text-slate-400">Highly Significant (1 in 740).</span></div>
+                        <div><strong className="text-pink-300 block">The Clairvoyant (Z &ge; 1.96)</strong><span className="text-slate-400">Statistically Significant (p &lt; 0.05).</span></div>
+                        <div><strong className="text-indigo-300 block">The Channel (Z &ge; 1.65)</strong><span className="text-slate-400">Tapping into something real (1 in 20).</span></div>
+                        <div><strong className="text-cyan-300 block">The Adept (Z &ge; 1.0)</strong><span className="text-slate-400">Finding flow. Beating odds of 1 in 6.</span></div>
+                        <div><strong className="text-teal-300 block">The Spark (Z &ge; 0.5)</strong><span className="text-slate-400">Pulse of intuition. Nudging past average.</span></div>
+                        <div><strong className="text-slate-200 block">The Initiate (Z &ge; 0.0)</strong><span className="text-slate-500">Above baseline. Better than random.</span></div>
+                    </div>
+                </div>
+                <div>
+                    <h4 className="text-xs uppercase tracking-widest text-blue-400 mb-3 pb-2">Psi-Missing (Negative)</h4>
+                    <div className="space-y-3 text-xs">
+                        <div><strong className="text-slate-300 block">The Sleeper (Z &lt; 0.0)</strong><span className="text-slate-500">Just below baseline. Stop over-analyzing.</span></div>
+                        <div><strong className="text-slate-400 block">The Dreamer (Z &le; -0.5)</strong><span className="text-slate-500">Drifting. Intuition active but unfocused.</span></div>
+                        <div><strong className="text-slate-400 block">The Blocker (Z &le; -1.0)</strong><span className="text-slate-500">Dodging targets. Logic fighting gut.</span></div>
+                        <div><strong className="text-slate-400 block">The Mirror (Z &le; -2.0)</strong><span className="text-slate-500">Significant Avoidance. Flipping the signal.</span></div>
+                        <div><strong className="text-slate-500 block">The Shadow (Z &le; -3.0)</strong><span className="text-slate-600">Highly Significant Displacement. Inverted.</span></div>
+                        <div><strong className="text-slate-500 block">The Void (Z &le; -4.0)</strong><span className="text-slate-600">World Class Anomaly. Total suppression.</span></div>
+                    </div>
+                </div>
+            </div>
   
             </div>
           </div>
@@ -460,6 +465,11 @@ export default function PsiHunterApp() {
     setGameState('ACTIVE');
   }, [difficulty]);
 
+  // Reactive Update: Reset round if difficulty changes
+  useEffect(() => {
+    startNewRound();
+  }, [difficulty, startNewRound]);
+
   // Handle grid clicks
   const handleSelection = (index: number) => {
     if (gameState !== 'ACTIVE') return;
@@ -495,6 +505,7 @@ export default function PsiHunterApp() {
     setGrid([]);
     setGameState('IDLE');
     setShowSettings(false);
+    startNewRound();
   };
 
   const handleSaveResults = async () => {
@@ -531,25 +542,25 @@ export default function PsiHunterApp() {
 
   // --- LAYOUT LOGIC FOR FIT-TO-SCREEN ---
   const getGridConfig = () => {
-    // Determine columns based on desktop/mobile and difficulty
-    let cols = 2;
+    // Desktop Logic
     if (isDesktop) {
-        if (difficulty === 2) cols = 2;
-        else if (difficulty === 4) cols = 2;
-        else if (difficulty === 8) cols = 4;
-        else cols = 4;
-    } else {
-        if (difficulty === 2) cols = 2; // 1 row of 2
-        else if (difficulty === 4) cols = 2; // 2 rows of 2
-        else if (difficulty === 8) cols = 3; // 3 rows of 3 (one empty or 8)
-        else cols = 3;
+        if (difficulty === 2) return { cols: 2, rows: 1 };
+        if (difficulty === 4) return { cols: 2, rows: 2 };
+        if (difficulty === 8) return { cols: 4, rows: 2 }; 
+        return { cols: 4, rows: 2 };
+    } 
+    // Mobile Logic
+    else {
+        if (difficulty === 2) return { cols: 2, rows: 1 };
+        if (difficulty === 4) return { cols: 2, rows: 2 };
+        // FIXED: 2 columns x 4 rows for 8 items. Fits phone screens much better.
+        if (difficulty === 8) return { cols: 2, rows: 4 }; 
+        return { cols: 2, rows: 4 };
     }
-    const rows = Math.ceil(difficulty / cols);
-    return { cols, rows };
   };
 
   const { cols, rows } = getGridConfig();
-  // Standard square aspect ratio for Psi Hunter avatars
+  // Aspect ratio is cols / rows.
   const gridAspectRatio = `${cols} / ${rows}`;
 
   // --- RENDER HELPERS ---
@@ -580,13 +591,14 @@ export default function PsiHunterApp() {
     if (visualMode === 'ABSTRACT') {
         const shapeIndex = item.seed.charCodeAt(0) % shapes.length;
         content = (
-            <div className={`w-1/2 h-1/2 flex items-center justify-center ${revealed && item.id === targetIndex ? 'text-green-400' : 'text-slate-600'}`}>
-               {shapes[shapeIndex]}
+            // INCREASED ICON SIZE: w-[70%] h-[70%] (was w-1/2 h-1/2)
+            <div className={`w-[70%] h-[70%] flex items-center justify-center ${revealed && item.id === targetIndex ? 'text-green-400' : 'text-slate-600'}`}>
+               {React.cloneElement(shapes[shapeIndex], { size: '100%', strokeWidth: 1.5 })}
             </div>
         );
     } else if (visualMode === 'SILHOUETTES') {
         content = (
-            <svg viewBox="0 0 24 24" fill="currentColor" className={`w-2/3 h-2/3 ${revealed && item.id === targetIndex ? 'text-green-500' : 'text-slate-800 drop-shadow-lg'}`}>
+            <svg viewBox="0 0 24 24" fill="currentColor" className={`w-[70%] h-[70%] ${revealed && item.id === targetIndex ? 'text-green-500' : 'text-slate-800 drop-shadow-lg'}`}>
               <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
             </svg>
         );
@@ -683,10 +695,11 @@ export default function PsiHunterApp() {
       </div>
 
       {/* MAIN GAME GRID */}
-      <main className="flex-1 w-full min-h-0 flex items-center justify-center relative z-10 overflow-hidden p-4 md:p-8">
+      {/* Reduced padding to maximize card size */}
+      <main className="flex-1 w-full min-h-0 flex items-center justify-center relative z-10 overflow-hidden p-2 md:p-8">
          {grid.length > 0 ? (
             <div 
-                className="grid gap-3 sm:gap-4"
+                className="grid gap-2 sm:gap-4"
                 style={{
                     width: 'auto',
                     height: 'auto',
