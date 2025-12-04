@@ -640,6 +640,16 @@ export default function PsiTrainer() {
                 >
                     <div className={`relative w-full h-full transition-all duration-500 transform-style-3d ${card.isFlipped ? 'rotate-y-180' : ''}`}>
                     
+                        {/* THE STRUT: Ensures card maintains 2:3 ratio internally if grid doesn't force it enough */}
+                        <svg 
+                            viewBox="0 0 200 300"
+                            className="block w-full h-full opacity-0 pointer-events-none select-none"
+                            preserveAspectRatio="none"
+                            aria-hidden="true"
+                        >
+                            <rect width="200" height="300" fill="transparent"/>
+                        </svg>
+
                         {/* Front (Hidden) */}
                         <div className="absolute inset-0 w-full h-full backface-hidden">
                             <div className="w-full h-full bg-slate-800 rounded-xl border-2 border-indigo-500/30 flex items-center justify-center relative overflow-hidden group-hover:border-indigo-400 transition-colors shadow-lg">
