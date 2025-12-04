@@ -20,7 +20,6 @@ const calculateZScore = (hits: number, trials: number, chance: number) => {
   return (hits - expected) / stdDev;
 };
 
-// Approximation of the error function (erf) for p-value calculation
 const erf = (x: number) => {
   const a1 =  0.254829592;
   const a2 = -0.284496736;
@@ -39,13 +38,14 @@ const erf = (x: number) => {
 };
 
 const calculateProbability = (z: number) => {
-  // One-tailed probability
   const pValue = 0.5 * (1 - erf(z / Math.sqrt(2)));
-  if (pValue <= 0) return "1 in ∞"; // Effectively impossible
+  if (pValue <= 0) return "1 in ∞"; 
   const oneInX = 1 / pValue;
   
   if (oneInX > 1000000) return `1 in ${(oneInX / 1000000).toFixed(1)}M`;
   if (oneInX > 1000) return `1 in ${(oneInX / 1000).toFixed(1)}k`;
+  // If the odds are basically 1 in 2 (chance), just show that
+  if (oneInX < 2) return "1 in 2";
   return `1 in ${Math.round(oneInX)}`;
 };
 
@@ -68,12 +68,10 @@ const getPsiTier = (z: number) => {
 
 /**
  * --- PSI STATS COMPONENT ---
- * HUD for displaying performance metrics.
  */
 const PsiStats = ({ stats, deckSize }: { stats: any, deckSize: number }) => {
   const [showModal, setShowModal] = useState(false);
   
-  // Aggregate current session stats
   let totalTrials = 0;
   let totalHits = 0;
   
@@ -88,29 +86,24 @@ const PsiStats = ({ stats, deckSize }: { stats: any, deckSize: number }) => {
   const probability = calculateProbability(zScore);
   const tier = getPsiTier(zScore);
 
-  // Load lifetime stats for modal
-  const [lifetimeStats, setLifetimeStats] = useState<any>({ hits: 0, trials: 0 });
-  
-  useEffect(() => {
-    if (showModal) {
-      // Mockup of reading local storage or DB for lifetime
-      const saved = localStorage.getItem('empathy_lifetime');
-      if (saved) setLifetimeStats(JSON.parse(saved));
-    }
-  }, [showModal]);
-
   return (
     <>
-      {/* HUD BOX */}
-      <div className="absolute top-20 md:top-6 right-2 md:right-6 z-30 flex flex-col items-end pointer-events-auto">
-        <div className="bg-black/60 backdrop-blur-md border border-white/10 rounded-lg p-3 text-right shadow-[0_0_20px_rgba(0,0,0,0.5)] w-[140px] md:w-[180px]">
+      {/* HUD BOX - Non-absolute to prevent overlap */}
+      <div className="w-full flex justify-end px-4 mb-2 pointer-events-auto">
+        <div className="bg-black/60 backdrop-blur-md border border-white/10 rounded-lg p-2 md:p-3 text-right shadow-[0_0_20px_rgba(0,0,0,0.5)] min-w-[140px]">
+          
+          <div className="flex justify-between items-end gap-4 border-b border-white/10 pb-1 mb-1">
+             <span className="text-[10px] text-slate-400 uppercase tracking-widest">Base Chance</span>
+             <span className="text-xs font-mono text-white">1 in {deckSize}</span>
+          </div>
+
           <div className="text-3xl font-mono font-bold text-white mb-1">{accuracy.toFixed(1)}%</div>
           <div className="text-[10px] text-slate-400 uppercase tracking-widest mb-2 border-b border-white/10 pb-1">Accuracy</div>
           
           <div className="space-y-1 font-mono text-xs text-slate-300">
             <div className="flex justify-between"><span>N:</span> <span>{totalTrials}</span></div>
             <div className="flex justify-between"><span>Z:</span> <span className={zScore > 0 ? 'text-green-400' : zScore < 0 ? 'text-red-400' : ''}>{zScore.toFixed(2)}</span></div>
-            <div className="flex justify-between"><span>Prob:</span> <span>{probability}</span></div>
+            <div className="flex justify-between" title="Probability of achieving this score"><span>Score Odds:</span> <span>{probability}</span></div>
           </div>
           
           <div className={`mt-2 text-xs font-bold uppercase tracking-wider ${tier.color} text-shadow-sm`}>
@@ -131,11 +124,9 @@ const PsiStats = ({ stats, deckSize }: { stats: any, deckSize: number }) => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-xl p-4 animate-in fade-in duration-300">
           <div className="max-w-2xl w-full bg-neutral-900 border border-white/10 rounded-xl p-6 relative max-h-[90vh] overflow-y-auto">
             <button onClick={() => setShowModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white"><X /></button>
-            
             <h2 className="text-2xl font-serif text-white mb-6 flex items-center gap-2">
               <Activity className="text-purple-400" /> Psychic Performance Record
             </h2>
-
             {/* Comparison Table */}
             <div className="grid grid-cols-2 gap-4 mb-8">
               <div className="bg-white/5 rounded-lg p-4 border border-white/5">
@@ -145,39 +136,16 @@ const PsiStats = ({ stats, deckSize }: { stats: any, deckSize: number }) => {
                   <div className="flex justify-between border-b border-white/5 pb-1"><span>Trials</span> <span className="text-white font-mono">{totalTrials}</span></div>
                   <div className="flex justify-between border-b border-white/5 pb-1"><span>Accuracy</span> <span className="text-white font-mono">{accuracy.toFixed(1)}%</span></div>
                   <div className="flex justify-between border-b border-white/5 pb-1"><span>Z-Score</span> <span className="text-amber-300 font-mono">{zScore.toFixed(2)}</span></div>
-                  <div className="flex justify-between"><span>Probability</span> <span className="text-green-300 font-mono">{probability}</span></div>
+                  <div className="flex justify-between"><span>Score Odds</span> <span className="text-green-300 font-mono">{probability}</span></div>
                 </div>
               </div>
               <div className="bg-white/5 rounded-lg p-4 border border-white/5 opacity-50 relative">
                  <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-[1px] rounded-lg">
                     <span className="text-xs uppercase tracking-widest text-slate-400">Lifetime Data (Simulated)</span>
                  </div>
-                 {/* Placeholder for lifetime structure */}
                  <h3 className="text-xs uppercase tracking-[0.2em] text-slate-500 mb-4 text-center">Lifetime</h3>
               </div>
             </div>
-
-            {/* Legend */}
-            <div className="space-y-6">
-              <div>
-                <h4 className="text-xs uppercase tracking-widest text-slate-500 mb-3 border-b border-white/10 pb-2">Psi-Hitting (Positive Scale)</h4>
-                <div className="space-y-2 text-xs md:text-sm">
-                  <div className="grid grid-cols-12 gap-2"><span className="col-span-2 text-amber-300 font-bold">Oracle</span><span className="col-span-2 text-slate-500">Z &ge; 4.0</span><span className="col-span-8 text-slate-300">World Class Anomaly (1 in 31,000)</span></div>
-                  <div className="grid grid-cols-12 gap-2"><span className="col-span-2 text-purple-300 font-bold">Medium</span><span className="col-span-2 text-slate-500">Z &ge; 3.0</span><span className="col-span-8 text-slate-300">Highly Significant (1 in 740)</span></div>
-                  <div className="grid grid-cols-12 gap-2"><span className="col-span-2 text-pink-300 font-bold">Clairvoyant</span><span className="col-span-2 text-slate-500">Z &ge; 1.96</span><span className="col-span-8 text-slate-300">Statistically Significant (p &lt; 0.05)</span></div>
-                  <div className="grid grid-cols-12 gap-2"><span className="col-span-2 text-indigo-300 font-bold">Empath</span><span className="col-span-2 text-slate-500">Z &ge; 1.65</span><span className="col-span-8 text-slate-300">Borderline Significant</span></div>
-                </div>
-              </div>
-
-              <div>
-                <h4 className="text-xs uppercase tracking-widest text-slate-500 mb-3 border-b border-white/10 pb-2">Psi-Missing (Negative Scale)</h4>
-                 <div className="space-y-2 text-xs md:text-sm text-slate-400">
-                  <div className="grid grid-cols-12 gap-2"><span className="col-span-2 font-bold">Inverter</span><span className="col-span-2 text-slate-600">Z &le; -2.0</span><span className="col-span-8">Subconscious flipping of signal</span></div>
-                  <div className="grid grid-cols-12 gap-2"><span className="col-span-2 font-bold">Shadow</span><span className="col-span-2 text-slate-600">Z &le; -3.0</span><span className="col-span-8">Highly significant displacement</span></div>
-                </div>
-              </div>
-            </div>
-
           </div>
         </div>
       )}
@@ -199,7 +167,6 @@ const EMOTIONS = [
   { id: 'laughing', name: 'Laughter', icon: PartyPopper, color: '#d946ef', desc: 'Vibration, Release', aura: 'shadow-fuchsia-500' }
 ];
 
-// Card backs
 const CARD_BACKS: Record<string, { name: string; bg: string }> = {
   static: { 
     name: 'Static', 
@@ -316,7 +283,34 @@ const useAudioEngine = () => {
     osc.stop(now + 0.5);
   };
 
-  return { init, playTheta, playFlip, playSuccess, playFailure };
+  const playSlide = () => {
+      if (!ctxRef.current) return;
+      const ctx = ctxRef.current;
+      const now = ctx.currentTime;
+      // Soft noise swipe
+      const bufferSize = ctx.sampleRate * 0.2; // 0.2 seconds
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+          data[i] = Math.random() * 2 - 1;
+      }
+      const noise = ctx.createBufferSource();
+      noise.buffer = buffer;
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(500, now);
+      filter.frequency.linearRampToValueAtTime(100, now + 0.2);
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.05, now); // Quiet
+      gain.gain.linearRampToValueAtTime(0, now + 0.2);
+      
+      noise.connect(filter);
+      filter.connect(gain);
+      gain.connect(ctx.destination);
+      noise.start();
+  };
+
+  return { init, playTheta, playFlip, playSuccess, playFailure, playSlide };
 };
 
 // --- 3. HELPER FUNCTIONS ---
@@ -389,19 +383,16 @@ export default function EmpathyApp() {
   const [cards, setCards] = useState<any[]>([]);
   const [stats, setStats] = useState<any>({});
   
-  // Feedback System State
   const [feedback, setFeedback] = useState<{show: boolean, type: 'hit'|'miss', text: string, subtext: string} | null>(null);
 
   const [showSettings, setShowSettings] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
-  // Layout State
   const [isDesktop, setIsDesktop] = useState(false);
 
   const audio = useAudioEngine();
 
-  // Initialize
   useEffect(() => {
       const savedStats = localStorage.getItem('empathy_stats');
       if (savedStats) setStats(JSON.parse(savedStats));
@@ -468,7 +459,6 @@ export default function EmpathyApp() {
     setGameState('setup');
     setFeedback(null);
     
-    // 1. Select Target
     let target;
     if (targetFocus === 'random') {
       const win = (globalThis as any).window;
@@ -487,12 +477,9 @@ export default function EmpathyApp() {
 
     setTargetEmotion(target);
 
-    // 2. Build Deck
     let deck: any[] = [];
     deck.push({ ...target, isTarget: true, id: `card-${Math.random()}`, status: 'face-down' });
 
-    // CRITICAL FIX: EXCLUDE TARGET FROM DISTRACTORS
-    // This prevents a "Love" card being chosen as a distractor when "Love" is the target
     const possibleDistractors = EMOTIONS.filter(e => e.id !== target.id);
 
     while (deck.length < deckSize) {
@@ -524,7 +511,6 @@ export default function EmpathyApp() {
     
     audio.playFlip();
 
-    // Update Stats
     setStats((prev: any) => {
       const targetId = targetEmotion.id;
       const current = prev[targetId] || { attempts: 0, hits: 0 };
@@ -536,7 +522,6 @@ export default function EmpathyApp() {
       return newStats;
     });
 
-    // Reveal Logic
     if (isMatch) {
       audio.playSuccess();
       const newCards = [...cards];
@@ -544,7 +529,6 @@ export default function EmpathyApp() {
       setCards(newCards);
       setGameState('revealed');
       
-      // SHOW MAGICKAL FEEDBACK
       setFeedback({
         show: true,
         type: 'hit',
@@ -552,14 +536,13 @@ export default function EmpathyApp() {
         subtext: `You found ${targetEmotion.name}`
       });
       
-      setTimeout(() => startNewRound(), 5000); // 5 Seconds pause
+      setTimeout(() => startNewRound(), 5000); 
 
     } else {
       audio.playFailure();
       const newCards = [...cards];
       newCards[index].status = 'revealed-wrong';
       
-      // If training mode, show the correct card too
       if (feedbackMode === 'training') {
         const truthIndex = cards.findIndex(c => c.isTarget);
         newCards[truthIndex].status = 'revealed';
@@ -568,7 +551,6 @@ export default function EmpathyApp() {
       setCards(newCards);
       setGameState('revealed');
 
-      // SHOW MAGICKAL FEEDBACK
       setFeedback({
         show: true,
         type: 'miss',
@@ -576,15 +558,14 @@ export default function EmpathyApp() {
         subtext: `You chose ${clickedCard.name}. Target was ${targetEmotion.name}.`
       });
 
-      setTimeout(() => startNewRound(), 5000); // 5 Seconds pause
+      setTimeout(() => startNewRound(), 5000);
     }
   };
 
   const TargetIcon = targetEmotion?.icon;
 
-  // --- GRID & LAYOUT LOGIC ---
   const getLayoutConfig = () => {
-    let cols = 2; // Default Mobile
+    let cols = 2; 
     if (isDesktop) {
         if (deckSize === 10) {
             cols = 5;
@@ -635,13 +616,14 @@ export default function EmpathyApp() {
         </div>
       </header>
 
-      {/* PSI STATS HUD */}
-      <PsiStats stats={stats} deckSize={deckSize} />
+      {/* PSI STATS HUD (NESTLED IN LAYOUT) */}
+      <div className="relative z-20 shrink-0">
+          <PsiStats stats={stats} deckSize={deckSize} />
+      </div>
 
       {/* MAGICKAL FEEDBACK OVERLAY */}
       {feedback && feedback.show && (
         <div className="absolute inset-0 z-50 flex flex-col items-center justify-center pointer-events-none">
-            {/* The Text Animation Container */}
             <div className="animate-magick-zoom text-center">
                 <h1 
                   className={`
@@ -760,16 +742,13 @@ export default function EmpathyApp() {
       <main className="flex-1 w-full flex flex-col relative z-10 overflow-y-auto p-2">
         
         {/* Instruction / Status */}
-        <div className="shrink-0 mb-2 w-full text-center animate-fade-in-up min-h-[60px] flex flex-col justify-center">
+        <div className="shrink-0 mb-2 w-full text-center animate-fade-in-up min-h-[50px] flex flex-col justify-center">
           <p className="text-slate-500 text-[10px] uppercase tracking-[0.2em] mb-1">Target Frequency</p>
           <div className="flex items-center justify-center gap-2">
              {TargetIcon && <TargetIcon size={24} className="text-amber-400" />}
              <h1 className="text-2xl md:text-4xl font-serif text-slate-100">{targetEmotion?.name.toUpperCase()}</h1>
              {TargetIcon && <TargetIcon size={24} className="text-amber-400" />}
           </div>
-          <p className="h-4 text-[10px] md:text-xs font-medium tracking-wide text-purple-300/50">
-            {gameState === 'sensing' ? 'Tune into the signal...' : 'Processing...'}
-          </p>
         </div>
 
         {/* Grid Container - Forces Fit */}
@@ -782,18 +761,20 @@ export default function EmpathyApp() {
                 }}
             >
             {cards.map((card, idx) => (
+                // GROUP WRAPPER: Handles the click and hover detection
                 <div 
                     key={card.id}
                     onClick={() => handleCardClick(idx)}
-                    className="relative w-full h-full"
+                    onMouseEnter={() => { if(gameState === 'sensing') audio.playSlide(); }}
+                    className="relative w-full h-full group cursor-pointer"
                 >
-                    {/* Centered Absolute Card */}
+                    {/* Centered Absolute Card - Moves on Group Hover */}
                     <div 
                         className={`
                             absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2
                             h-[90%] w-auto aspect-2/3 max-w-full
-                            cursor-pointer transition-all duration-500 transform
-                            ${gameState === 'sensing' ? 'hover:-translate-y-1 hover:shadow-[0_0_25px_rgba(255,255,255,0.2)]' : ''}
+                            transition-transform duration-300 ease-out transform
+                            ${gameState === 'sensing' ? 'group-hover:translate-y-2 group-hover:shadow-[0_0_25px_rgba(255,255,255,0.2)]' : ''}
                         `}
                         style={{
                             transformStyle: 'preserve-3d',
@@ -832,7 +813,6 @@ export default function EmpathyApp() {
                         {/* BIGGER ICONS */}
                         <div className={`p-4 rounded-full bg-white/5 mb-2 ${card.status === 'revealed' && card.isTarget ? 'text-amber-300 scale-110' : 'text-slate-300'}`}>
                             <card.icon 
-                                // Taking up 1/3 of space essentially
                                 className="w-12 h-12 md:w-16 md:h-16 lg:w-20 lg:h-20"
                                 color={card.status === 'revealed-wrong' ? '#525252' : card.color} 
                                 strokeWidth={1.5}
