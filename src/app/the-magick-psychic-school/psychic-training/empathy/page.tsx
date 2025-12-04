@@ -142,7 +142,7 @@ const PsiStats = ({ stats, deckSize }: { stats: any, deckSize: number }) => {
             flex flex-col items-end justify-center
             bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/20 
             rounded-lg px-3 py-1 transition-all duration-300
-            min-w-[80px] h-[50px]
+            min-w-20 h-[50px]
         "
       >
           <div className="flex items-center gap-2">
@@ -655,6 +655,12 @@ export default function EmpathyApp() {
 
   const getLayoutConfig = () => {
     let cols = 2; 
+    
+    // Explicit override for 9 cards to ensure 3x3
+    if (deckSize === 9) {
+        return { cols: 3, rows: 3 };
+    }
+
     if (isDesktop) {
         if (deckSize === 10) {
             cols = 5;
@@ -709,7 +715,7 @@ export default function EmpathyApp() {
       </header>
 
       {/* TOP BAR: Target Info & Scorecard in Flow */}
-      <div className="shrink-0 w-full flex items-start justify-between px-4 py-2 relative z-20 min-h-[80px]">
+      <div className="shrink-0 w-full flex items-start justify-between px-4 py-2 relative z-20 min-h-20">
           
           {/* Target Info - Left on Mobile, Center on Desktop */}
           <div className="flex flex-col items-start md:items-center justify-center md:absolute md:inset-0 md:pointer-events-none z-0">
@@ -782,8 +788,8 @@ export default function EmpathyApp() {
                 >
                   Random Loop
                 </button>
-                {/* Specific Targets including Focus */}
-                {EMOTIONS.filter(e => ['love', 'sad', 'happy', 'focused'].includes(e.id)).map(e => (
+                {/* Specific Targets - Expanded to all options */}
+                {EMOTIONS.map(e => (
                    <button 
                    key={e.id}
                    onClick={() => setTargetFocus(e.id)}
@@ -857,71 +863,83 @@ export default function EmpathyApp() {
                 }}
             >
             {cards.map((card, idx) => (
-                // GROUP WRAPPER: Handles the click and hover detection
+                // GROUP WRAPPER: Handles the click and hover detection.
+                // Uses flex center to allow the inner card to maintain aspect ratio without stretching into the grid cell shape.
                 <div 
                     key={card.id}
                     onClick={() => handleCardClick(idx)}
                     onMouseEnter={() => { if(gameState === 'sensing') audio.playSlide(); }}
-                    className="relative w-full h-full group cursor-pointer"
+                    className="w-full h-full flex items-center justify-center p-1 md:p-2 group cursor-pointer relative"
                 >
-                    {/* Centered Absolute Card - Moves on Group Hover */}
+                    {/* Centered Card Container: Uses IMG strut to enforce aspect ratio while maximizing size */}
                     <div 
                         className={`
-                            absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2
-                            h-[90%] w-auto aspect-[2/3] max-w-full
+                            relative
                             transition-transform duration-300 ease-out transform
-                            ${gameState === 'sensing' ? 'group-hover:translate-y-2 group-hover:shadow-[0_0_25px_rgba(255,255,255,0.2)]' : ''}
+                            ${gameState === 'sensing' ? 'group-hover:-translate-y-2 group-hover:shadow-[0_0_25px_rgba(255,255,255,0.2)]' : ''}
                         `}
                         style={{
                             transformStyle: 'preserve-3d',
                             transform: card.status !== 'face-down' ? 'rotateY(180deg)' : 'rotateY(0deg)',
                         }}
                     >
+                        {/* THE STRUT: Transparent 2:3 image (Base64) that forces the container to be the largest possible 2:3 box inside the grid cell */}
+                        <img 
+                            src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAADCAQAAAATxpQXAAAADklEQVR42mNk+M+AARgAAYgB8/6Yy4QAAAAASUVORK5CYII="
+                            alt=""
+                            className="block w-auto h-auto max-w-full max-h-full opacity-0 pointer-events-none select-none"
+                            style={{ 
+                                height: 'auto', 
+                                width: 'auto', 
+                                maxHeight: '100%', 
+                                maxWidth: '100%'
+                            }}
+                        />
                     
-                    {/* Card Back - Magickal Silver Border */}
-                    <div 
-                        className={`
-                        absolute inset-0 w-full h-full rounded-lg backface-hidden overflow-hidden
-                        ${CARD_BACKS[cardBack].bg}
-                        border-[3px] border-slate-400 ring-1 ring-inset ring-black/80
-                        shadow-[0_0_10px_rgba(148,163,184,0.2)]
-                        `}
-                    >
-                        {/* Inner metallic sheen */}
-                        <div className="absolute inset-0 border-[1px] border-white/20 rounded-lg pointer-events-none"></div>
-                    </div>
-
-                    {/* Card Front */}
-                    <div 
-                        className={`
-                        absolute inset-0 w-full h-full rounded-lg backface-hidden transform-[rotateY(180deg)]
-                        flex flex-col items-center justify-center border-2
-                        ${card.status === 'revealed-wrong' 
-                            ? 'bg-neutral-800 border-neutral-700 grayscale opacity-60' 
-                            : `bg-neutral-900 ${card.color === '#ec4899' ? 'border-pink-500' : 'border-slate-600'} ${card.aura}`
-                        }
-                        `}
-                    >
-                        {card.status === 'revealed' && card.isTarget && (
-                        <div className="absolute inset-0 bg-linear-to-t from-amber-500/20 to-transparent animate-pulse rounded-lg"></div>
-                        )}
-
-                        {/* BIGGER ICONS */}
-                        <div className={`p-4 rounded-full bg-white/5 mb-2 ${card.status === 'revealed' && card.isTarget ? 'text-amber-300 scale-110' : 'text-slate-300'}`}>
-                            <card.icon 
-                                className="w-12 h-12 md:w-16 md:h-16 lg:w-20 lg:h-20"
-                                color={card.status === 'revealed-wrong' ? '#525252' : card.color} 
-                                strokeWidth={1.5}
-                            />
+                        {/* Card Back - Magickal Silver Border */}
+                        <div 
+                            className={`
+                            absolute inset-0 w-full h-full rounded-lg backface-hidden overflow-hidden z-10
+                            ${CARD_BACKS[cardBack].bg}
+                            border-[3px] border-slate-400 ring-1 ring-inset ring-black/80
+                            shadow-[0_0_10px_rgba(148,163,184,0.2)]
+                            `}
+                        >
+                            {/* Inner metallic sheen */}
+                            <div className="absolute inset-0 border border-white/20 rounded-lg pointer-events-none"></div>
                         </div>
-                        <span className={`text-[10px] md:text-sm uppercase tracking-widest font-bold ${card.status === 'revealed-wrong' ? 'text-neutral-500' : 'text-white'}`}>
-                        {card.name}
-                        </span>
-                        
-                        {card.isTarget && card.status === 'revealed' && (
-                        <Sparkles className="absolute top-2 right-2 text-amber-400 animate-spin-slow" size={20} />
-                        )}
-                    </div>
+
+                        {/* Card Front */}
+                        <div 
+                            className={`
+                            absolute inset-0 w-full h-full rounded-lg backface-hidden transform-[rotateY(180deg)] z-10
+                            flex flex-col items-center justify-center border-2
+                            ${card.status === 'revealed-wrong' 
+                                ? 'bg-neutral-800 border-neutral-700 grayscale opacity-60' 
+                                : `bg-neutral-900 ${card.color === '#ec4899' ? 'border-pink-500' : 'border-slate-600'} ${card.aura}`
+                            }
+                            `}
+                        >
+                            {card.status === 'revealed' && card.isTarget && (
+                            <div className="absolute inset-0 bg-linear-to-t from-amber-500/20 to-transparent animate-pulse rounded-lg"></div>
+                            )}
+
+                            {/* BIGGER ICONS */}
+                            <div className={`p-4 rounded-full bg-white/5 mb-2 ${card.status === 'revealed' && card.isTarget ? 'text-amber-300 scale-110' : 'text-slate-300'}`}>
+                                <card.icon 
+                                    className="w-8 h-8 md:w-16 md:h-16 lg:w-20 lg:h-20"
+                                    color={card.status === 'revealed-wrong' ? '#525252' : card.color} 
+                                    strokeWidth={1.5}
+                                />
+                            </div>
+                            <span className={`text-[10px] md:text-sm uppercase tracking-widest font-bold ${card.status === 'revealed-wrong' ? 'text-neutral-500' : 'text-white'}`}>
+                            {card.name}
+                            </span>
+                            
+                            {card.isTarget && card.status === 'revealed' && (
+                            <Sparkles className="absolute top-2 right-2 text-amber-400 animate-spin-slow" size={20} />
+                            )}
+                        </div>
                   </div>
                 </div>
             ))}
