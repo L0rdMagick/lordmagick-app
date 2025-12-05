@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Activity, Eye, Brain, X, Info, Volume2, VolumeX, 
   Sparkles, Save, Maximize, Minimize, RotateCcw, Settings, Flame, Zap 
@@ -249,9 +250,15 @@ const PsiStats = ({ stats, deckSize, onClose }: { stats: any, deckSize: number, 
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     ));
     const [showModal, setShowModal] = useState(false);
+    const [mounted, setMounted] = useState(false);
     const [lifetimeStats, setLifetimeStats] = useState({ hits: 0, trials: 0 });
     const [loadingLifetime, setLoadingLifetime] = useState(false);
     
+    // Ensure portal only renders on client
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
     // Calculate Current Session Stats
     const sessionTrials = stats.trials;
     const sessionHits = stats.hits;
@@ -326,15 +333,13 @@ const PsiStats = ({ stats, deckSize, onClose }: { stats: any, deckSize: number, 
             </div>
         </div>
   
-        {showModal && (
-          // FIX: High z-index (z-[100]) and 95% opacity background (bg-slate-950/95) to prevent footer bleed-through
+        {showModal && mounted && createPortal(
           <div 
-              className="fixed inset-0 z-100 flex items-center justify-center bg-slate-950/95 backdrop-blur-sm p-4 animate-in fade-in duration-300"
+              className="fixed inset-0 z-100 flex items-center justify-center bg-slate-950/95 backdrop-blur-md p-4 animate-in fade-in duration-300"
               onClick={() => setShowModal(false)}
           >
             <div 
-              // FIX: Constrained height (max-h-[85dvh]) to prevent visual overlap with browser bars on mobile
-              className="max-w-3xl w-full bg-slate-900 border border-indigo-500/20 rounded-xl p-6 relative max-h-[85dvh] overflow-y-auto shadow-[0_0_50px_rgba(99,102,241,0.2)]"
+              className="max-w-3xl w-full bg-slate-900 border border-indigo-500/20 rounded-xl p-6 relative max-h-[75vh] mb-10 overflow-y-auto shadow-[0_0_50px_rgba(99,102,241,0.2)]"
               onClick={(e) => e.stopPropagation()}
             >
               <button onClick={() => setShowModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white"><X /></button>
@@ -400,7 +405,8 @@ const PsiStats = ({ stats, deckSize, onClose }: { stats: any, deckSize: number, 
             </div>
   
             </div>
-          </div>
+          </div>,
+          document.body
         )}
       </>
     );
