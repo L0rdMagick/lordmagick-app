@@ -660,7 +660,7 @@ export default function PsiTrainer() {
       </main>
 
       {/* FOOTER CONTROLS - Fixed Height */}
-      <footer className="shrink-0 relative z-20 border-t border-indigo-900/30 bg-slate-950/80 backdrop-blur shrink-0 h-14 md:h-16 flex items-center justify-center px-4">
+      <footer className="shrink-0 relative z-20 border-t border-indigo-900/30 bg-slate-950/80 backdrop-blur h-14 md:h-16 flex items-center justify-center px-4">
          {/* Mode Selector */}
          <div className="bg-slate-900 p-1 rounded-full border border-slate-800 flex relative shadow-lg">
             <button 
