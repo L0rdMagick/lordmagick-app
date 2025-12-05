@@ -1174,7 +1174,7 @@ export default function SensesApp() {
     const score = calculateScore(guesses, currentLevel.tags);
     
     // Construct local path
-    const imageUrl = `/images/senses app images/${currentLevel.filename}`;
+    const imageUrl = `/images/senses%20app%20images/${currentLevel.filename}`;
 
     return (
       <div className="w-full max-w-5xl mx-auto space-y-8 pb-12 animate-in zoom-in-95 duration-700">
