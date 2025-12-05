@@ -1,89 +1,898 @@
+// --- START OF FILE page.tsx ---
+
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
-  Settings, RefreshCw, Eye, EyeOff, Check, X, BarChart2, ArrowLeft, Volume2, VolumeX, Lock, Zap 
+  Settings, RefreshCw, Eye, EyeOff, Check, X, BarChart2, ArrowLeft, 
+  Sparkles, Moon, Sun, Layers, Wind, Zap, Lock
 } from 'lucide-react';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
 import RoomsButton from '@/app/components/RoomsButton';
 
-// --- STATIC CONFIGURATION ---
+// --- CONFIGURATION ---
+
+const POOLS = [
+  { id: 'all', label: 'Universal (All)' },
+  { id: 'animals', label: 'Biological Entities' },
+  { id: 'structures', label: 'Constructs & Ruins' },
+  { id: 'landscapes', label: 'Natural Vistas' },
+  { id: 'objects', label: 'Artifacts & Machines' },
+  { id: 'food', label: 'Sustenance' }
+];
 
 const CATEGORIES: Record<string, { id: string; label: string; options: string[] }> = {
+  GESTALT: {
+    id: 'gestalt',
+    label: 'Primary Gestalt',
+    options: ['Biological', 'Structure', 'Machine', 'Natural Feature']
+  },
   COLOR: {
     id: 'color',
     label: 'Dominant Color',
-    options: ['Red', 'Blue', 'Green', 'Yellow']
+    options: ['Warm (Red/Yel)', 'Cool (Blue/Purp)', 'Nature (Grn/Brn)', 'Mono (Grey/Wht)']
   },
   TEXTURE: {
     id: 'texture',
     label: 'Texture',
-    options: ['Smooth / Glassy', 'Rough / Rocky', 'Soft / Fuzzy', 'Sharp / Metallic']
+    options: ['Soft / Organic', 'Hard / Smooth', 'Rough / Coarse', 'Fluid / Wet']
   },
   SMELL: {
     id: 'smell',
-    label: 'Smell',
-    options: ['Floral / Sweet', 'Burnt / Smoky', 'Fresh / Rain', 'Earthy / Musty']
+    label: 'Scent',
+    options: ['Fresh / Nature', 'Chemical / City', 'Sweet / Food', 'Stagnant / Dust']
   },
   TASTE: {
     id: 'taste',
     label: 'Taste',
-    options: ['Sweet', 'Sour', 'Salty', 'Bitter']
+    options: ['Sweet / Savory', 'Metallic / Chem', 'Salty / Mineral', 'Neutral / Dry']
   },
   SOUND: {
     id: 'sound',
     label: 'Sound',
-    options: ['Silence / Quiet', 'Nature / Wind', 'Industrial', 'Crowds / Voices']
+    options: ['Silence', 'Nature Sounds', 'Mechanical', 'Chaotic / Loud']
   },
-  EMOTION: {
+  VIBE: {
     id: 'emotion',
-    label: 'Emotion',
-    options: ['Joy / Excitement', 'Fear / Danger', 'Peace / Calm', 'Sadness']
+    label: 'Energetic Vibe',
+    options: ['Peaceful', 'High Energy', 'Melancholic', 'Intense / Scary']
   }
 };
 
 interface LevelData {
     id: number;
     concept: string;
+    filename: string;
+    pool: string;
     prompt: string;
     tags: Record<string, string>;
 }
 
-// --- DATA GENERATION (50 LEVELS) ---
-const generateLevels = (): LevelData[] => [
-  { id: 1, concept: "Fresh Lemon", prompt: "macro photography of a fresh sliced lemon, bright yellow, water droplets, sunny", tags: { color: 'Yellow', texture: 'Rough / Rocky', smell: 'Floral / Sweet', taste: 'Sour', sound: 'Silence / Quiet', emotion: 'Joy / Excitement' } },
-  { id: 2, concept: "Stormy Ocean", prompt: "dark stormy ocean crashing on sharp black rocks, cinematic, dangerous", tags: { color: 'Blue', texture: 'Sharp / Metallic', smell: 'Fresh / Rain', taste: 'Salty', sound: 'Nature / Wind', emotion: 'Fear / Danger' } },
-  { id: 3, concept: "Forest Moss", prompt: "close up of soft green moss on a forest floor, peaceful, macro", tags: { color: 'Green', texture: 'Soft / Fuzzy', smell: 'Earthy / Musty', taste: 'Bitter', sound: 'Nature / Wind', emotion: 'Peace / Calm' } },
-  { id: 4, concept: "Strawberry Cake", prompt: "delicious strawberry cake with fluffy cream, red and sweet", tags: { color: 'Red', texture: 'Soft / Fuzzy', smell: 'Floral / Sweet', taste: 'Sweet', sound: 'Silence / Quiet', emotion: 'Joy / Excitement' } },
-  { id: 5, concept: "Rusted Factory", prompt: "abandoned industrial factory, rusted red metal, broken windows, gloomy", tags: { color: 'Red', texture: 'Rough / Rocky', smell: 'Burnt / Smoky', taste: 'Bitter', sound: 'Industrial', emotion: 'Sadness' } },
-  { id: 6, concept: "Glass Skyscraper", prompt: "modern blue glass skyscraper looking up, clean, geometric, reflection", tags: { color: 'Blue', texture: 'Smooth / Glassy', smell: 'Fresh / Rain', taste: 'Sour', sound: 'Industrial', emotion: 'Peace / Calm' } },
-  { id: 7, concept: "Bonfire", prompt: "roaring bonfire at night, red flames, sparks, wood", tags: { color: 'Red', texture: 'Rough / Rocky', smell: 'Burnt / Smoky', taste: 'Bitter', sound: 'Nature / Wind', emotion: 'Fear / Danger' } },
-  { id: 8, concept: "Concert Crowd", prompt: "huge concert crowd with blue stage lights, silhouette, excitement", tags: { color: 'Blue', texture: 'Soft / Fuzzy', smell: 'Burnt / Smoky', taste: 'Salty', sound: 'Crowds / Voices', emotion: 'Joy / Excitement' } },
-  { id: 9, concept: "Desert Dunes", prompt: "vast yellow desert sand dunes, smooth curves, heat, dry", tags: { color: 'Yellow', texture: 'Soft / Fuzzy', smell: 'Earthy / Musty', taste: 'Salty', sound: 'Silence / Quiet', emotion: 'Peace / Calm' } },
-  { id: 10, concept: "Espresso", prompt: "close up espresso shot in glass cup, dark liquid, crema, cafe setting", tags: { color: 'Red', texture: 'Smooth / Glassy', smell: 'Burnt / Smoky', taste: 'Bitter', sound: 'Industrial', emotion: 'Joy / Excitement' } },
-  // ... (Continuing with rest of data generation logic concept)
-  // For brevity in this specific snippet I will keep the logic flow but assume full dataset exists
-  { id: 11, concept: "Rainforest Leaf", prompt: "giant green leaf with rain droplets, tropical forest", tags: { color: 'Green', texture: 'Smooth / Glassy', smell: 'Fresh / Rain', taste: 'Bitter', sound: 'Nature / Wind', emotion: 'Peace / Calm' } },
-  { id: 12, concept: "Old Library", prompt: "old dusty library, leather books, yellow light, quiet", tags: { color: 'Yellow', texture: 'Rough / Rocky', smell: 'Earthy / Musty', taste: 'Bitter', sound: 'Silence / Quiet', emotion: 'Peace / Calm' } },
-  { id: 13, concept: "Race Car", prompt: "red formula one race car speeding, motion blur, asphalt", tags: { color: 'Red', texture: 'Sharp / Metallic', smell: 'Burnt / Smoky', taste: 'Bitter', sound: 'Industrial', emotion: 'Joy / Excitement' } },
-  { id: 14, concept: "Lavender Field", prompt: "field of purple and blue lavender flowers, sunny day", tags: { color: 'Blue', texture: 'Soft / Fuzzy', smell: 'Floral / Sweet', taste: 'Sweet', sound: 'Nature / Wind', emotion: 'Peace / Calm' } },
-  { id: 15, concept: "Urban Alley", prompt: "dark rainy alleyway at night, neon blue light, wet pavement, trash", tags: { color: 'Blue', texture: 'Rough / Rocky', smell: 'Earthy / Musty', taste: 'Sour', sound: 'Industrial', emotion: 'Fear / Danger' } },
-  // ... Adding a few more essential ones to ensure variety in demo
-  { id: 36, concept: "Fireworks", prompt: "red and gold fireworks in night sky, loud explosion visual", tags: { color: 'Red', texture: 'Soft / Fuzzy', smell: 'Burnt / Smoky', taste: 'Bitter', sound: 'Industrial', emotion: 'Joy / Excitement' } },
-  { id: 41, concept: "Thunderstorm", prompt: "lightning bolt striking, purple and blue sky, scary", tags: { color: 'Blue', texture: 'Sharp / Metallic', smell: 'Fresh / Rain', taste: 'Salty', sound: 'Nature / Wind', emotion: 'Fear / Danger' } },
-];
+// --- FULL IMAGE DATABASE (100 ITEMS) ---
 
-const LEVEL_DATA = generateLevels();
+const LEVEL_DATA: LevelData[] = [
+  // --- POOL: ANIMALS ---
+  {
+    id: 1,
+    concept: "Roaring Lion",
+    filename: "predator_lion.jpg",
+    pool: "animals",
+    prompt: "Cinematic close up of a male lion roaring, golden hour lighting, savannah background, intense eyes, sharp teeth, dust motes in air.",
+    tags: { gestalt: 'Biological', color: 'Warm (Red/Yel)', texture: 'Soft / Organic', smell: 'Stagnant / Dust', taste: 'Sweet / Savory', sound: 'Chaotic / Loud', emotion: 'Intense / Scary' }
+  },
+  {
+    id: 2,
+    concept: "Great White Shark",
+    filename: "predator_shark.jpg",
+    pool: "animals",
+    prompt: "Underwater shot of a great white shark swimming towards camera, deep blue ocean, light rays breaking through water, sharp teeth visible.",
+    tags: { gestalt: 'Biological', color: 'Cool (Blue/Purp)', texture: 'Hard / Smooth', smell: 'Fresh / Nature', taste: 'Salty / Mineral', sound: 'Silence', emotion: 'Intense / Scary' }
+  },
+  {
+    id: 3,
+    concept: "Wolf Howling",
+    filename: "predator_wolf.jpg",
+    pool: "animals",
+    prompt: "Grey wolf howling at a full moon, snowy forest night, breath visible in cold air, atmospheric, high contrast.",
+    tags: { gestalt: 'Biological', color: 'Mono (Grey/Wht)', texture: 'Soft / Organic', smell: 'Fresh / Nature', taste: 'Sweet / Savory', sound: 'Nature Sounds', emotion: 'Melancholic' }
+  },
+  {
+    id: 4,
+    concept: "Tiger Stalking",
+    filename: "predator_tiger.jpg",
+    pool: "animals",
+    prompt: "Bengal tiger walking through tall green grass, orange and black stripes, intense focus, jungle environment.",
+    tags: { gestalt: 'Biological', color: 'Warm (Red/Yel)', texture: 'Soft / Organic', smell: 'Fresh / Nature', taste: 'Sweet / Savory', sound: 'Silence', emotion: 'Intense / Scary' }
+  },
+  {
+    id: 5,
+    concept: "Grizzly Bear",
+    filename: "predator_bear.jpg",
+    pool: "animals",
+    prompt: "Massive grizzly bear standing in a river catching a salmon, splashing water, wet fur, nature photography.",
+    tags: { gestalt: 'Biological', color: 'Nature (Grn/Brn)', texture: 'Soft / Organic', smell: 'Stagnant / Dust', taste: 'Sweet / Savory', sound: 'Nature Sounds', emotion: 'Intense / Scary' }
+  },
+  {
+    id: 6,
+    concept: "Deer in Mist",
+    filename: "herbivore_deer.jpg",
+    pool: "animals",
+    prompt: "A deer standing in a misty forest clearing at dawn, soft light, antlers, peaceful atmosphere.",
+    tags: { gestalt: 'Biological', color: 'Nature (Grn/Brn)', texture: 'Soft / Organic', smell: 'Fresh / Nature', taste: 'Neutral / Dry', sound: 'Silence', emotion: 'Peaceful' }
+  },
+  {
+    id: 7,
+    concept: "Giraffe",
+    filename: "herbivore_giraffe.jpg",
+    pool: "animals",
+    prompt: "Tall giraffe eating leaves from an acacia tree, blue sky background, sunny day on the African plains.",
+    tags: { gestalt: 'Biological', color: 'Warm (Red/Yel)', texture: 'Soft / Organic', smell: 'Stagnant / Dust', taste: 'Neutral / Dry', sound: 'Nature Sounds', emotion: 'Peaceful' }
+  },
+  {
+    id: 8,
+    concept: "Giant Panda",
+    filename: "herbivore_panda.jpg",
+    pool: "animals",
+    prompt: "Giant panda sitting and eating bamboo, black and white fur, green bamboo forest background.",
+    tags: { gestalt: 'Biological', color: 'Mono (Grey/Wht)', texture: 'Soft / Organic', smell: 'Fresh / Nature', taste: 'Neutral / Dry', sound: 'Nature Sounds', emotion: 'Peaceful' }
+  },
+  {
+    id: 9,
+    concept: "Elephant",
+    filename: "herbivore_elephant.jpg",
+    pool: "animals",
+    prompt: "Close up of an elephant skin texture and eye, trunk raised, dusty environment, wrinkled gray skin.",
+    tags: { gestalt: 'Biological', color: 'Mono (Grey/Wht)', texture: 'Rough / Coarse', smell: 'Stagnant / Dust', taste: 'Salty / Mineral', sound: 'Chaotic / Loud', emotion: 'Peaceful' }
+  },
+  {
+    id: 10,
+    concept: "Rabbit",
+    filename: "herbivore_rabbit.jpg",
+    pool: "animals",
+    prompt: "Small white fluffy rabbit sitting in green grass, twitching nose, clover flowers, cute, macro photography.",
+    tags: { gestalt: 'Biological', color: 'Mono (Grey/Wht)', texture: 'Soft / Organic', smell: 'Fresh / Nature', taste: 'Neutral / Dry', sound: 'Silence', emotion: 'Peaceful' }
+  },
+  {
+    id: 11,
+    concept: "Scarlet Macaw",
+    filename: "avian_macaw.jpg",
+    pool: "animals",
+    prompt: "Bright red scarlet macaw parrot flying, colorful feathers, blue sky, tropical jungle background.",
+    tags: { gestalt: 'Biological', color: 'Warm (Red/Yel)', texture: 'Soft / Organic', smell: 'Sweet / Food', taste: 'Sweet / Savory', sound: 'Chaotic / Loud', emotion: 'High Energy' }
+  },
+  {
+    id: 12,
+    concept: "Bald Eagle",
+    filename: "avian_eagle.jpg",
+    pool: "animals",
+    prompt: "Bald eagle soaring high above mountains, wings spread wide, sharp beak, fierce expression.",
+    tags: { gestalt: 'Biological', color: 'Nature (Grn/Brn)', texture: 'Soft / Organic', smell: 'Fresh / Nature', taste: 'Salty / Mineral', sound: 'Nature Sounds', emotion: 'High Energy' }
+  },
+  {
+    id: 13,
+    concept: "Peacock",
+    filename: "avian_peacock.jpg",
+    pool: "animals",
+    prompt: "Peacock displaying full tail feathers, iridescent blue and green patterns, majestic pose.",
+    tags: { gestalt: 'Biological', color: 'Cool (Blue/Purp)', texture: 'Soft / Organic', smell: 'Stagnant / Dust', taste: 'Neutral / Dry', sound: 'Mechanical', emotion: 'High Energy' }
+  },
+  {
+    id: 14,
+    concept: "Owl at Night",
+    filename: "avian_owl.jpg",
+    pool: "animals",
+    prompt: "Great horned owl perched on a branch at night, large yellow eyes glowing, dark forest, moonlight.",
+    tags: { gestalt: 'Biological', color: 'Nature (Grn/Brn)', texture: 'Soft / Organic', smell: 'Stagnant / Dust', taste: 'Neutral / Dry', sound: 'Silence', emotion: 'Melancholic' }
+  },
+  {
+    id: 15,
+    concept: "Swan",
+    filename: "avian_swan.jpg",
+    pool: "animals",
+    prompt: "Elegant white swan floating on a calm lake, reflection in water, peaceful, graceful.",
+    tags: { gestalt: 'Biological', color: 'Mono (Grey/Wht)', texture: 'Soft / Organic', smell: 'Fresh / Nature', taste: 'Neutral / Dry', sound: 'Silence', emotion: 'Peaceful' }
+  },
+  {
+    id: 16,
+    concept: "Octopus",
+    filename: "marine_octopus.jpg",
+    pool: "animals",
+    prompt: "Red octopus moving underwater, tentacles swirling, suckers visible, coral reef background.",
+    tags: { gestalt: 'Biological', color: 'Warm (Red/Yel)', texture: 'Fluid / Wet', smell: 'Salty / Mineral', taste: 'Salty / Mineral', sound: 'Silence', emotion: 'High Energy' }
+  },
+  {
+    id: 17,
+    concept: "Jellyfish",
+    filename: "marine_jellyfish.jpg",
+    pool: "animals",
+    prompt: "Glowing blue jellyfish floating in deep black water, translucent, bioluminescent, ethereal.",
+    tags: { gestalt: 'Biological', color: 'Cool (Blue/Purp)', texture: 'Fluid / Wet', smell: 'Salty / Mineral', taste: 'Salty / Mineral', sound: 'Silence', emotion: 'Peaceful' }
+  },
+  {
+    id: 18,
+    concept: "Clownfish",
+    filename: "marine_clownfish.jpg",
+    pool: "animals",
+    prompt: "Orange and white clownfish hiding in a purple anemone, underwater macro photography, vibrant colors.",
+    tags: { gestalt: 'Biological', color: 'Warm (Red/Yel)', texture: 'Fluid / Wet', smell: 'Salty / Mineral', taste: 'Salty / Mineral', sound: 'Silence', emotion: 'Peaceful' }
+  },
+  {
+    id: 19,
+    concept: "Sea Turtle",
+    filename: "marine_turtle.jpg",
+    pool: "animals",
+    prompt: "Green sea turtle swimming gracefully underwater, sunbeams from surface, detailed shell texture.",
+    tags: { gestalt: 'Biological', color: 'Nature (Grn/Brn)', texture: 'Hard / Smooth', smell: 'Salty / Mineral', taste: 'Salty / Mineral', sound: 'Silence', emotion: 'Peaceful' }
+  },
+  {
+    id: 20,
+    concept: "Koi Fish",
+    filename: "marine_koi.jpg",
+    pool: "animals",
+    prompt: "Top down view of a pond with orange and white koi fish swimming, lily pads, ripples in water.",
+    tags: { gestalt: 'Biological', color: 'Warm (Red/Yel)', texture: 'Fluid / Wet', smell: 'Fresh / Nature', taste: 'Neutral / Dry', sound: 'Nature Sounds', emotion: 'Peaceful' }
+  },
+  {
+    id: 21,
+    concept: "Butterfly",
+    filename: "insect_butterfly.jpg",
+    pool: "animals",
+    prompt: "Monarch butterfly resting on a purple flower, macro shot, shallow depth of field, sunny garden.",
+    tags: { gestalt: 'Biological', color: 'Warm (Red/Yel)', texture: 'Soft / Organic', smell: 'Sweet / Food', taste: 'Sweet / Savory', sound: 'Silence', emotion: 'Peaceful' }
+  },
+  {
+    id: 22,
+    concept: "Spider Web",
+    filename: "insect_spider.jpg",
+    pool: "animals",
+    prompt: "Black spider sitting in the center of a dew-covered web, morning light, geometric web pattern.",
+    tags: { gestalt: 'Biological', color: 'Mono (Grey/Wht)', texture: 'Soft / Organic', smell: 'Fresh / Nature', taste: 'Bitter / Slimy', sound: 'Silence', emotion: 'Intense / Scary' }
+  },
+  {
+    id: 23,
+    concept: "Honey Bee",
+    filename: "insect_bee.jpg",
+    pool: "animals",
+    prompt: "Honey bee collecting pollen from a yellow sunflower, extreme macro, fuzzy texture, bright sunlight.",
+    tags: { gestalt: 'Biological', color: 'Warm (Red/Yel)', texture: 'Soft / Organic', smell: 'Sweet / Food', taste: 'Sweet / Savory', sound: 'Mechanical', emotion: 'High Energy' }
+  },
+  {
+    id: 24,
+    concept: "Snail",
+    filename: "insect_snail.jpg",
+    pool: "animals",
+    prompt: "Snail crawling on a wet green leaf, spiral shell, slime trail, rain drops, macro.",
+    tags: { gestalt: 'Biological', color: 'Nature (Grn/Brn)', texture: 'Fluid / Wet', smell: 'Earthy / Musty', taste: 'Bitter / Slimy', sound: 'Silence', emotion: 'Peaceful' }
+  },
+  {
+    id: 25,
+    concept: "Dragonfly",
+    filename: "insect_dragonfly.jpg",
+    pool: "animals",
+    prompt: "Blue metallic dragonfly resting on a reed, wings spread, iridescent eyes, pond background.",
+    tags: { gestalt: 'Biological', color: 'Cool (Blue/Purp)', texture: 'Hard / Smooth', smell: 'Fresh / Nature', taste: 'Bitter / Slimy', sound: 'Mechanical', emotion: 'Peaceful' }
+  },
+
+  // --- POOL: STRUCTURES ---
+  {
+    id: 26,
+    concept: "Great Pyramid",
+    filename: "ruin_pyramid.jpg",
+    pool: "structures",
+    prompt: "The Great Pyramids of Giza, yellow sand, blue sky, camels in distance, ancient stone texture.",
+    tags: { gestalt: 'Structure', color: 'Warm (Red/Yel)', texture: 'Rough / Coarse', smell: 'Stagnant / Dust', taste: 'Salty / Mineral', sound: 'Silence', emotion: 'Melancholic' }
+  },
+  {
+    id: 27,
+    concept: "Stonehenge",
+    filename: "ruin_stonehenge.jpg",
+    pool: "structures",
+    prompt: "Stonehenge stone circle at sunset, green grass, orange sky, massive standing stones, mystical.",
+    tags: { gestalt: 'Structure', color: 'Nature (Grn/Brn)', texture: 'Rough / Coarse', smell: 'Fresh / Nature', taste: 'Salty / Mineral', sound: 'Nature Sounds', emotion: 'Melancholic' }
+  },
+  {
+    id: 28,
+    concept: "Roman Colosseum",
+    filename: "ruin_colosseum.jpg",
+    pool: "structures",
+    prompt: "Interior view of the Roman Colosseum, broken stone arches, ancient ruins, sunlight and shadow.",
+    tags: { gestalt: 'Structure', color: 'Warm (Red/Yel)', texture: 'Rough / Coarse', smell: 'Stagnant / Dust', taste: 'Salty / Mineral', sound: 'Silence', emotion: 'Intense / Scary' }
+  },
+  {
+    id: 29,
+    concept: "Mayan Temple",
+    filename: "ruin_mayan.jpg",
+    pool: "structures",
+    prompt: "Chichen Itza Mayan pyramid surrounded by dense green jungle, stone steps, ancient history.",
+    tags: { gestalt: 'Structure', color: 'Nature (Grn/Brn)', texture: 'Rough / Coarse', smell: 'Earthy / Musty', taste: 'Salty / Mineral', sound: 'Nature Sounds', emotion: 'Peaceful' }
+  },
+  {
+    id: 30,
+    concept: "Moai Statues",
+    filename: "ruin_moai.jpg",
+    pool: "structures",
+    prompt: "Easter Island Moai heads standing on a grassy hill, ocean in background, overcast sky, mysterious.",
+    tags: { gestalt: 'Structure', color: 'Mono (Grey/Wht)', texture: 'Rough / Coarse', smell: 'Salty / Mineral', taste: 'Salty / Mineral', sound: 'Nature Sounds', emotion: 'Melancholic' }
+  },
+  {
+    id: 31,
+    concept: "Glass Skyscraper",
+    filename: "arch_skyscraper.jpg",
+    pool: "structures",
+    prompt: "Looking up at a modern glass skyscraper reflecting the blue sky, geometric lines, corporate architecture.",
+    tags: { gestalt: 'Structure', color: 'Cool (Blue/Purp)', texture: 'Hard / Smooth', smell: 'Chemical / City', taste: 'Metallic / Chem', sound: 'Mechanical', emotion: 'High Energy' }
+  },
+  {
+    id: 32,
+    concept: "Sydney Opera House",
+    filename: "arch_opera.jpg",
+    pool: "structures",
+    prompt: "Sydney Opera House shells against a blue harbor, white ceramic tiles, architectural icon, sunny day.",
+    tags: { gestalt: 'Structure', color: 'Mono (Grey/Wht)', texture: 'Hard / Smooth', smell: 'Salty / Mineral', taste: 'Salty / Mineral', sound: 'Nature Sounds', emotion: 'High Energy' }
+  },
+  {
+    id: 33,
+    concept: "Neon City Street",
+    filename: "arch_neon.jpg",
+    pool: "structures",
+    prompt: "Cyberpunk style city street at night, neon signs in rain, wet pavement reflections, futuristic buildings.",
+    tags: { gestalt: 'Structure', color: 'Cool (Blue/Purp)', texture: 'Hard / Smooth', smell: 'Chemical / City', taste: 'Metallic / Chem', sound: 'Chaotic / Loud', emotion: 'High Energy' }
+  },
+  {
+    id: 34,
+    concept: "Minimalist Concrete",
+    filename: "arch_concrete.jpg",
+    pool: "structures",
+    prompt: "Brutalist architecture, raw grey concrete wall with sharp shadows, minimalist, geometric shapes.",
+    tags: { gestalt: 'Structure', color: 'Mono (Grey/Wht)', texture: 'Rough / Coarse', smell: 'Stagnant / Dust', taste: 'Salty / Mineral', sound: 'Silence', emotion: 'Peaceful' }
+  },
+  {
+    id: 35,
+    concept: "Suspension Bridge",
+    filename: "arch_bridge.jpg",
+    pool: "structures",
+    prompt: "Golden Gate Bridge in fog, red metal cables, spanning over water, engineering marvel.",
+    tags: { gestalt: 'Structure', color: 'Warm (Red/Yel)', texture: 'Hard / Smooth', smell: 'Salty / Mineral', taste: 'Metallic / Chem', sound: 'Mechanical', emotion: 'High Energy' }
+  },
+  {
+    id: 36,
+    concept: "Oil Refinery",
+    filename: "ind_refinery.jpg",
+    pool: "structures",
+    prompt: "Oil refinery at night with lights and smoke stacks, complex pipes, industrial metal structures.",
+    tags: { gestalt: 'Structure', color: 'Mono (Grey/Wht)', texture: 'Hard / Smooth', smell: 'Chemical / City', taste: 'Metallic / Chem', sound: 'Mechanical', emotion: 'Intense / Scary' }
+  },
+  {
+    id: 37,
+    concept: "Rusted Factory",
+    filename: "ind_factory.jpg",
+    pool: "structures",
+    prompt: "Abandoned factory interior, rusted machinery, broken windows, light beams through dust, decay.",
+    tags: { gestalt: 'Structure', color: 'Warm (Red/Yel)', texture: 'Rough / Coarse', smell: 'Stagnant / Dust', taste: 'Metallic / Chem', sound: 'Silence', emotion: 'Melancholic' }
+  },
+  {
+    id: 38,
+    concept: "Cargo Port",
+    filename: "ind_port.jpg",
+    pool: "structures",
+    prompt: "Aerial view of shipping containers at a port, colorful metal boxes, cranes, industrial logistics.",
+    tags: { gestalt: 'Structure', color: 'Cool (Blue/Purp)', texture: 'Hard / Smooth', smell: 'Chemical / City', taste: 'Metallic / Chem', sound: 'Mechanical', emotion: 'High Energy' }
+  },
+  {
+    id: 39,
+    concept: "Wind Farm",
+    filename: "ind_windfarm.jpg",
+    pool: "structures",
+    prompt: "White wind turbines on a green hill, blue sky, renewable energy, clean lines, rotating blades.",
+    tags: { gestalt: 'Structure', color: 'Mono (Grey/Wht)', texture: 'Hard / Smooth', smell: 'Fresh / Nature', taste: 'Neutral / Dry', sound: 'Mechanical', emotion: 'Peaceful' }
+  },
+  {
+    id: 40,
+    concept: "Train Tracks",
+    filename: "ind_tracks.jpg",
+    pool: "structures",
+    prompt: "Railway tracks vanishing into the distance, gravel, steel rails, wooden ties, overcast day.",
+    tags: { gestalt: 'Structure', color: 'Mono (Grey/Wht)', texture: 'Rough / Coarse', smell: 'Chemical / City', taste: 'Metallic / Chem', sound: 'Mechanical', emotion: 'Melancholic' }
+  },
+  {
+    id: 41,
+    concept: "Buddhist Temple",
+    filename: "sacred_buddhist.jpg",
+    pool: "structures",
+    prompt: "Golden Buddhist temple roof with curved edges, incense smoke, peaceful courtyard, red columns.",
+    tags: { gestalt: 'Structure', color: 'Warm (Red/Yel)', texture: 'Hard / Smooth', smell: 'Sweet / Food', taste: 'Neutral / Dry', sound: 'Silence', emotion: 'Peaceful' }
+  },
+  {
+    id: 42,
+    concept: "Stained Glass",
+    filename: "sacred_stainedglass.jpg",
+    pool: "structures",
+    prompt: "Detailed stained glass window in a dark church, light shining through creating colorful patterns on floor.",
+    tags: { gestalt: 'Structure', color: 'Cool (Blue/Purp)', texture: 'Hard / Smooth', smell: 'Stagnant / Dust', taste: 'Neutral / Dry', sound: 'Silence', emotion: 'Peaceful' }
+  },
+  {
+    id: 43,
+    concept: "Zen Garden",
+    filename: "sacred_zen.jpg",
+    pool: "structures",
+    prompt: "Japanese Zen rock garden, raked white sand patterns, mossy rocks, peaceful meditation space.",
+    tags: { gestalt: 'Natural Feature', color: 'Mono (Grey/Wht)', texture: 'Rough / Coarse', smell: 'Fresh / Nature', taste: 'Neutral / Dry', sound: 'Silence', emotion: 'Peaceful' }
+  },
+  {
+    id: 44,
+    concept: "Candle Altar",
+    filename: "sacred_candles.jpg",
+    pool: "structures",
+    prompt: "Dozens of lit candles in a dark stone room, warm glow, dripping wax, spiritual atmosphere.",
+    tags: { gestalt: 'Machine', color: 'Warm (Red/Yel)', texture: 'Fluid / Wet', smell: 'Burnt / Smoky', taste: 'Neutral / Dry', sound: 'Silence', emotion: 'Peaceful' }
+  },
+  {
+    id: 45,
+    concept: "Torii Gate",
+    filename: "sacred_torii.jpg",
+    pool: "structures",
+    prompt: "Red Torii gate standing in calm water, Itsukushima shrine, foggy mountains in background, serene.",
+    tags: { gestalt: 'Structure', color: 'Warm (Red/Yel)', texture: 'Hard / Smooth', smell: 'Fresh / Nature', taste: 'Neutral / Dry', sound: 'Nature Sounds', emotion: 'Peaceful' }
+  },
+  {
+    id: 46,
+    concept: "Cozy Fireplace",
+    filename: "home_fireplace.jpg",
+    pool: "structures",
+    prompt: "Roaring fire in a stone fireplace, cozy living room, rug, warm light, winter evening.",
+    tags: { gestalt: 'Structure', color: 'Warm (Red/Yel)', texture: 'Rough / Coarse', smell: 'Burnt / Smoky', taste: 'Sweet / Savory', sound: 'Nature Sounds', emotion: 'Peaceful' }
+  },
+  {
+    id: 47,
+    concept: "Modern Kitchen",
+    filename: "home_kitchen.jpg",
+    pool: "structures",
+    prompt: "Clean modern kitchen with marble island, stainless steel appliances, white cabinets, bowl of fruit.",
+    tags: { gestalt: 'Structure', color: 'Mono (Grey/Wht)', texture: 'Hard / Smooth', smell: 'Sweet / Food', taste: 'Sweet / Savory', sound: 'Mechanical', emotion: 'High Energy' }
+  },
+  {
+    id: 48,
+    concept: "Old Library",
+    filename: "home_library.jpg",
+    pool: "structures",
+    prompt: "Walls of old leather books in a library, wooden ladder, dust motes, warm lamp light, studious.",
+    tags: { gestalt: 'Structure', color: 'Warm (Red/Yel)', texture: 'Rough / Coarse', smell: 'Earthy / Musty', taste: 'Neutral / Dry', sound: 'Silence', emotion: 'Peaceful' }
+  },
+  {
+    id: 49,
+    concept: "Spiral Staircase",
+    filename: "home_stairs.jpg",
+    pool: "structures",
+    prompt: "Looking down a wooden spiral staircase, geometric swirl, architectural detail, shadows.",
+    tags: { gestalt: 'Structure', color: 'Nature (Grn/Brn)', texture: 'Hard / Smooth', smell: 'Stagnant / Dust', taste: 'Neutral / Dry', sound: 'Silence', emotion: 'Melancholic' }
+  },
+  {
+    id: 50,
+    concept: "Bedroom Window",
+    filename: "home_window.jpg",
+    pool: "structures",
+    prompt: "View from a cozy bed looking out a window at rain, coffee cup on sill, blankets, moody morning.",
+    tags: { gestalt: 'Structure', color: 'Cool (Blue/Purp)', texture: 'Soft / Organic', smell: 'Fresh / Nature', taste: 'Neutral / Dry', sound: 'Nature Sounds', emotion: 'Peaceful' }
+  },
+
+  // --- POOL: LANDSCAPES ---
+  {
+    id: 51,
+    concept: "Snowy Peak",
+    filename: "land_mountain.jpg",
+    pool: "landscapes",
+    prompt: "Majestic snow-capped mountain peak against blue sky, jagged rocks, alpine environment, cold.",
+    tags: { gestalt: 'Natural Feature', color: 'Mono (Grey/Wht)', texture: 'Rough / Coarse', smell: 'Fresh / Nature', taste: 'Neutral / Dry', sound: 'Nature Sounds', emotion: 'Intense / Scary' }
+  },
+  {
+    id: 52,
+    concept: "Grand Canyon",
+    filename: "land_canyon.jpg",
+    pool: "landscapes",
+    prompt: "Vast view of the Grand Canyon, red rock layers, deep depth, sunset light, arid landscape.",
+    tags: { gestalt: 'Natural Feature', color: 'Warm (Red/Yel)', texture: 'Rough / Coarse', smell: 'Earthy / Musty', taste: 'Salty / Mineral', sound: 'Silence', emotion: 'Peaceful' }
+  },
+  {
+    id: 53,
+    concept: "Volcano Eruption",
+    filename: "land_volcano.jpg",
+    pool: "landscapes",
+    prompt: "Volcano erupting lava at night, glowing red magma flowing down, black rock, smoke plume.",
+    tags: { gestalt: 'Natural Feature', color: 'Warm (Red/Yel)', texture: 'Rough / Coarse', smell: 'Burnt / Smoky', taste: 'Salty / Mineral', sound: 'Chaotic / Loud', emotion: 'Intense / Scary' }
+  },
+  {
+    id: 54,
+    concept: "Cave Interior",
+    filename: "land_cave.jpg",
+    pool: "landscapes",
+    prompt: "Inside a limestone cave with stalactites and stalagmites, dark, damp, single light source, mysterious.",
+    tags: { gestalt: 'Natural Feature', color: 'Cool (Blue/Purp)', texture: 'Rough / Coarse', smell: 'Earthy / Musty', taste: 'Salty / Mineral', sound: 'Silence', emotion: 'Intense / Scary' }
+  },
+  {
+    id: 55,
+    concept: "Green Hills",
+    filename: "land_hills.jpg",
+    pool: "landscapes",
+    prompt: "Rolling green hills in Ireland, soft grass, overcast sky, rural landscape, peaceful.",
+    tags: { gestalt: 'Natural Feature', color: 'Nature (Grn/Brn)', texture: 'Soft / Organic', smell: 'Fresh / Nature', taste: 'Neutral / Dry', sound: 'Nature Sounds', emotion: 'Peaceful' }
+  },
+  {
+    id: 56,
+    concept: "Tropical Beach",
+    filename: "water_beach.jpg",
+    pool: "landscapes",
+    prompt: "White sand beach with turquoise water, palm tree shadow, sunny tropical paradise, calm waves.",
+    tags: { gestalt: 'Natural Feature', color: 'Cool (Blue/Purp)', texture: 'Fluid / Wet', smell: 'Fresh / Nature', taste: 'Salty / Mineral', sound: 'Nature Sounds', emotion: 'Peaceful' }
+  },
+  {
+    id: 57,
+    concept: "Waterfall",
+    filename: "water_waterfall.jpg",
+    pool: "landscapes",
+    prompt: "Powerful waterfall crashing into a pool, mist rising, green mossy rocks, dynamic water motion.",
+    tags: { gestalt: 'Natural Feature', color: 'Cool (Blue/Purp)', texture: 'Fluid / Wet', smell: 'Fresh / Nature', taste: 'Neutral / Dry', sound: 'Chaotic / Loud', emotion: 'High Energy' }
+  },
+  {
+    id: 58,
+    concept: "Stormy Ocean",
+    filename: "water_storm.jpg",
+    pool: "landscapes",
+    prompt: "Dark stormy ocean waves crashing, white foam, grey sky, dangerous sea condition, cinematic.",
+    tags: { gestalt: 'Natural Feature', color: 'Cool (Blue/Purp)', texture: 'Fluid / Wet', smell: 'Salty / Mineral', taste: 'Salty / Mineral', sound: 'Chaotic / Loud', emotion: 'Intense / Scary' }
+  },
+  {
+    id: 59,
+    concept: "Frozen Lake",
+    filename: "water_ice.jpg",
+    pool: "landscapes",
+    prompt: "Cracked blue ice on a frozen lake, bubbles trapped in ice, winter cold, smooth texture.",
+    tags: { gestalt: 'Natural Feature', color: 'Cool (Blue/Purp)', texture: 'Hard / Smooth', smell: 'Fresh / Nature', taste: 'Neutral / Dry', sound: 'Silence', emotion: 'Melancholic' }
+  },
+  {
+    id: 60,
+    concept: "River Stone",
+    filename: "water_river.jpg",
+    pool: "landscapes",
+    prompt: "Smooth river stones under clear running water, ripples, sunlight refracting on bottom, peaceful.",
+    tags: { gestalt: 'Natural Feature', color: 'Nature (Grn/Brn)', texture: 'Fluid / Wet', smell: 'Earthy / Musty', taste: 'Neutral / Dry', sound: 'Nature Sounds', emotion: 'Peaceful' }
+  },
+  {
+    id: 61,
+    concept: "Redwood Forest",
+    filename: "forest_redwood.jpg",
+    pool: "landscapes",
+    prompt: "Giant redwood trees towering up, sunbeams through mist, fern ground cover, ancient forest.",
+    tags: { gestalt: 'Natural Feature', color: 'Nature (Grn/Brn)', texture: 'Rough / Coarse', smell: 'Earthy / Musty', taste: 'Bitter / Slimy', sound: 'Silence', emotion: 'Peaceful' }
+  },
+  {
+    id: 62,
+    concept: "Autumn Path",
+    filename: "forest_autumn.jpg",
+    pool: "landscapes",
+    prompt: "Forest path covered in orange and red autumn leaves, trees changing color, soft fall light.",
+    tags: { gestalt: 'Natural Feature', color: 'Warm (Red/Yel)', texture: 'Soft / Organic', smell: 'Earthy / Musty', taste: 'Neutral / Dry', sound: 'Nature Sounds', emotion: 'Peaceful' }
+  },
+  {
+    id: 63,
+    concept: "Jungle Vines",
+    filename: "forest_jungle.jpg",
+    pool: "landscapes",
+    prompt: "Dense tropical jungle, hanging vines, huge green leaves, humidity, dark and green atmosphere.",
+    tags: { gestalt: 'Natural Feature', color: 'Nature (Grn/Brn)', texture: 'Soft / Organic', smell: 'Fresh / Nature', taste: 'Bitter / Slimy', sound: 'Nature Sounds', emotion: 'Intense / Scary' }
+  },
+  {
+    id: 64,
+    concept: "Bamboo Grove",
+    filename: "forest_bamboo.jpg",
+    pool: "landscapes",
+    prompt: "Tall green bamboo forest, vertical lines, light filtering through leaves, zen nature.",
+    tags: { gestalt: 'Natural Feature', color: 'Nature (Grn/Brn)', texture: 'Hard / Smooth', smell: 'Fresh / Nature', taste: 'Bitter / Slimy', sound: 'Nature Sounds', emotion: 'Peaceful' }
+  },
+  {
+    id: 65,
+    concept: "Dead Tree",
+    filename: "forest_dead.jpg",
+    pool: "landscapes",
+    prompt: "Lone dead tree in a barren field, twisted branches, grey sky, desolate landscape, silhouette.",
+    tags: { gestalt: 'Natural Feature', color: 'Mono (Grey/Wht)', texture: 'Rough / Coarse', smell: 'Stagnant / Dust', taste: 'Neutral / Dry', sound: 'Silence', emotion: 'Melancholic' }
+  },
+  {
+    id: 66,
+    concept: "Sand Dunes",
+    filename: "desert_dunes.jpg",
+    pool: "landscapes",
+    prompt: "Sahara desert sand dunes, smooth curves, golden sand, ripples caused by wind, clear sky.",
+    tags: { gestalt: 'Natural Feature', color: 'Warm (Red/Yel)', texture: 'Soft / Organic', smell: 'Earthy / Musty', taste: 'Neutral / Dry', sound: 'Silence', emotion: 'Peaceful' }
+  },
+  {
+    id: 67,
+    concept: "Cracked Earth",
+    filename: "desert_cracked.jpg",
+    pool: "landscapes",
+    prompt: "Dry cracked earth texture, drought, arid ground, beige clay, detail shot, lifeless.",
+    tags: { gestalt: 'Natural Feature', color: 'Nature (Grn/Brn)', texture: 'Rough / Coarse', smell: 'Earthy / Musty', taste: 'Salty / Mineral', sound: 'Silence', emotion: 'Melancholic' }
+  },
+  {
+    id: 68,
+    concept: "Cactus",
+    filename: "desert_cactus.jpg",
+    pool: "landscapes",
+    prompt: "Close up of a green cactus with sharp spines, desert background, harsh sunlight, prickly.",
+    tags: { gestalt: 'Biological', color: 'Nature (Grn/Brn)', texture: 'Rough / Coarse', smell: 'Earthy / Musty', taste: 'Bitter / Slimy', sound: 'Silence', emotion: 'Intense / Scary' }
+  },
+  {
+    id: 69,
+    concept: "Salt Flats",
+    filename: "desert_salt.jpg",
+    pool: "landscapes",
+    prompt: "Bolivia Salt Flats, endless white ground reflecting the sky, mirror effect, ethereal landscape.",
+    tags: { gestalt: 'Natural Feature', color: 'Mono (Grey/Wht)', texture: 'Rough / Coarse', smell: 'Salty / Mineral', taste: 'Salty / Mineral', sound: 'Silence', emotion: 'Peaceful' }
+  },
+  {
+    id: 70,
+    concept: "Oasis",
+    filename: "desert_oasis.jpg",
+    pool: "landscapes",
+    prompt: "Desert oasis with palm trees and a small blue pool of water, surrounded by sand, refuge.",
+    tags: { gestalt: 'Natural Feature', color: 'Cool (Blue/Purp)', texture: 'Fluid / Wet', smell: 'Fresh / Nature', taste: 'Sweet / Savory', sound: 'Nature Sounds', emotion: 'Peaceful' }
+  },
+  {
+    id: 71,
+    concept: "Iceberg",
+    filename: "ice_iceberg.jpg",
+    pool: "landscapes",
+    prompt: "Massive white and blue iceberg floating in dark ocean, antarctica, cold, majestic structure.",
+    tags: { gestalt: 'Natural Feature', color: 'Cool (Blue/Purp)', texture: 'Hard / Smooth', smell: 'Fresh / Nature', taste: 'Salty / Mineral', sound: 'Silence', emotion: 'Peaceful' }
+  },
+  {
+    id: 72,
+    concept: "Snow Flake",
+    filename: "ice_snowflake.jpg",
+    pool: "landscapes",
+    prompt: "Extreme macro of a single unique snowflake, geometric crystal structure, blue background, cold.",
+    tags: { gestalt: 'Natural Feature', color: 'Cool (Blue/Purp)', texture: 'Hard / Smooth', smell: 'Fresh / Nature', taste: 'Neutral / Dry', sound: 'Silence', emotion: 'Peaceful' }
+  },
+  {
+    id: 73,
+    concept: "Icicles",
+    filename: "ice_icicles.jpg",
+    pool: "landscapes",
+    prompt: "Sharp icicles hanging from a roof edge, glistening in sun, melting drops, winter texture.",
+    tags: { gestalt: 'Natural Feature', color: 'Cool (Blue/Purp)', texture: 'Hard / Smooth', smell: 'Fresh / Nature', taste: 'Neutral / Dry', sound: 'Silence', emotion: 'Intense / Scary' }
+  },
+  {
+    id: 74,
+    concept: "Aurora Borealis",
+    filename: "ice_aurora.jpg",
+    pool: "landscapes",
+    prompt: "Northern lights aurora borealis, green and purple lights in night sky, snowy landscape below.",
+    tags: { gestalt: 'Natural Feature', color: 'Nature (Grn/Brn)', texture: 'Soft / Organic', smell: 'Fresh / Nature', taste: 'Neutral / Dry', sound: 'Silence', emotion: 'Peaceful' }
+  },
+  {
+    id: 75,
+    concept: "Tundra Moss",
+    filename: "ice_tundra.jpg",
+    pool: "landscapes",
+    prompt: "Frozen tundra ground with moss and lichen, patches of snow, rocky, cold desolate landscape.",
+    tags: { gestalt: 'Natural Feature', color: 'Nature (Grn/Brn)', texture: 'Soft / Organic', smell: 'Earthy / Musty', taste: 'Bitter / Slimy', sound: 'Nature Sounds', emotion: 'Melancholic' }
+  },
+
+  // --- POOL: OBJECTS ---
+  {
+    id: 76,
+    concept: "Formula 1 Car",
+    filename: "vehicle_racecar.jpg",
+    pool: "objects",
+    prompt: "Red Formula 1 race car speeding on track, motion blur, asphalt, aerodynamic design.",
+    tags: { gestalt: 'Machine', color: 'Warm (Red/Yel)', texture: 'Hard / Smooth', smell: 'Burnt / Smoky', taste: 'Metallic / Chem', sound: 'Chaotic / Loud', emotion: 'High Energy' }
+  },
+  {
+    id: 77,
+    concept: "Steam Train",
+    filename: "vehicle_train.jpg",
+    pool: "objects",
+    prompt: "Black steam locomotive train emitting white smoke, vintage, heavy metal wheels, powerful.",
+    tags: { gestalt: 'Machine', color: 'Mono (Grey/Wht)', texture: 'Hard / Smooth', smell: 'Burnt / Smoky', taste: 'Metallic / Chem', sound: 'Mechanical', emotion: 'High Energy' }
+  },
+  {
+    id: 78,
+    concept: "Vintage Tractor",
+    filename: "vehicle_tractor.jpg",
+    pool: "objects",
+    prompt: "Old rusted red tractor in a field, peeled paint, weathered tires, farming history.",
+    tags: { gestalt: 'Machine', color: 'Warm (Red/Yel)', texture: 'Rough / Coarse', smell: 'Chemical / City', taste: 'Metallic / Chem', sound: 'Mechanical', emotion: 'Melancholic' }
+  },
+  {
+    id: 79,
+    concept: "Motorcycle",
+    filename: "vehicle_motorcycle.jpg",
+    pool: "objects",
+    prompt: "Chrome motorcycle detail, engine block, leather seat, shiny metal, mechanical power.",
+    tags: { gestalt: 'Machine', color: 'Mono (Grey/Wht)', texture: 'Hard / Smooth', smell: 'Chemical / City', taste: 'Metallic / Chem', sound: 'Chaotic / Loud', emotion: 'High Energy' }
+  },
+  {
+    id: 80,
+    concept: "School Bus",
+    filename: "vehicle_bus.jpg",
+    pool: "objects",
+    prompt: "Classic yellow school bus parked, stop sign extended, front grille view.",
+    tags: { gestalt: 'Machine', color: 'Warm (Red/Yel)', texture: 'Hard / Smooth', smell: 'Chemical / City', taste: 'Metallic / Chem', sound: 'Mechanical', emotion: 'Peaceful' }
+  },
+  {
+    id: 81,
+    concept: "Hot Air Balloon",
+    filename: "vessel_balloon.jpg",
+    pool: "objects",
+    prompt: "Colorful hot air balloon floating in blue sky, fabric texture, burner flame, freedom.",
+    tags: { gestalt: 'Machine', color: 'Warm (Red/Yel)', texture: 'Soft / Organic', smell: 'Burnt / Smoky', taste: 'Neutral / Dry', sound: 'Nature Sounds', emotion: 'Peaceful' }
+  },
+  {
+    id: 82,
+    concept: "Fighter Jet",
+    filename: "vessel_jet.jpg",
+    pool: "objects",
+    prompt: "Grey fighter jet flying at high speed, afterburners glowing, clouds, military technology.",
+    tags: { gestalt: 'Machine', color: 'Mono (Grey/Wht)', texture: 'Hard / Smooth', smell: 'Chemical / City', taste: 'Metallic / Chem', sound: 'Chaotic / Loud', emotion: 'Intense / Scary' }
+  },
+  {
+    id: 83,
+    concept: "Sailboat",
+    filename: "vessel_sailboat.jpg",
+    pool: "objects",
+    prompt: "White sailboat with sails full of wind, blue ocean, leaning hull, adventure.",
+    tags: { gestalt: 'Machine', color: 'Mono (Grey/Wht)', texture: 'Soft / Organic', smell: 'Fresh / Nature', taste: 'Salty / Mineral', sound: 'Nature Sounds', emotion: 'Peaceful' }
+  },
+  {
+    id: 84,
+    concept: "Submarine",
+    filename: "vessel_submarine.jpg",
+    pool: "objects",
+    prompt: "Black submarine surfacing in choppy water, wet metal, periscope, stealth.",
+    tags: { gestalt: 'Machine', color: 'Mono (Grey/Wht)', texture: 'Hard / Smooth', smell: 'Chemical / City', taste: 'Metallic / Chem', sound: 'Mechanical', emotion: 'Intense / Scary' }
+  },
+  {
+    id: 85,
+    concept: "Space Shuttle",
+    filename: "vessel_shuttle.jpg",
+    pool: "objects",
+    prompt: "Space shuttle launching, massive smoke plume, fire exhaust, pointing towards sky.",
+    tags: { gestalt: 'Machine', color: 'Mono (Grey/Wht)', texture: 'Hard / Smooth', smell: 'Burnt / Smoky', taste: 'Metallic / Chem', sound: 'Chaotic / Loud', emotion: 'High Energy' }
+  },
+  {
+    id: 86,
+    concept: "Circuit Board",
+    filename: "tech_circuit.jpg",
+    pool: "objects",
+    prompt: "Macro of a green electronic circuit board, gold paths, chips, technology texture.",
+    tags: { gestalt: 'Machine', color: 'Nature (Grn/Brn)', texture: 'Hard / Smooth', smell: 'Chemical / City', taste: 'Metallic / Chem', sound: 'Silence', emotion: 'Peaceful' }
+  },
+  {
+    id: 87,
+    concept: "Vinyl Record",
+    filename: "tech_vinyl.jpg",
+    pool: "objects",
+    prompt: "Close up of black vinyl record grooves, light reflection, spinning on turntable, retro audio.",
+    tags: { gestalt: 'Machine', color: 'Mono (Grey/Wht)', texture: 'Hard / Smooth', smell: 'Chemical / City', taste: 'Neutral / Dry', sound: 'Nature Sounds', emotion: 'Peaceful' }
+  },
+  {
+    id: 88,
+    concept: "Light Bulb",
+    filename: "tech_bulb.jpg",
+    pool: "objects",
+    prompt: "Edison light bulb glowing filament, warm orange light, glass texture, dark background.",
+    tags: { gestalt: 'Machine', color: 'Warm (Red/Yel)', texture: 'Hard / Smooth', smell: 'Burnt / Smoky', taste: 'Metallic / Chem', sound: 'Silence', emotion: 'Peaceful' }
+  },
+  {
+    id: 89,
+    concept: "Vintage Camera",
+    filename: "tech_camera.jpg",
+    pool: "objects",
+    prompt: "Old silver and black film camera, lens reflection, leather texture, retro photography.",
+    tags: { gestalt: 'Machine', color: 'Mono (Grey/Wht)', texture: 'Hard / Smooth', smell: 'Stagnant / Dust', taste: 'Metallic / Chem', sound: 'Mechanical', emotion: 'Melancholic' }
+  },
+  {
+    id: 90,
+    concept: "Robot Hand",
+    filename: "tech_robot.jpg",
+    pool: "objects",
+    prompt: "White humanoid robot hand, mechanical joints, futuristic technology, clean background.",
+    tags: { gestalt: 'Machine', color: 'Mono (Grey/Wht)', texture: 'Hard / Smooth', smell: 'Chemical / City', taste: 'Metallic / Chem', sound: 'Mechanical', emotion: 'High Energy' }
+  },
+  {
+    id: 91,
+    concept: "Rusty Key",
+    filename: "tool_key.jpg",
+    pool: "objects",
+    prompt: "Old rusty iron skeleton key, textured metal, antique, lying on wood.",
+    tags: { gestalt: 'Machine', color: 'Warm (Red/Yel)', texture: 'Rough / Coarse', smell: 'Stagnant / Dust', taste: 'Metallic / Chem', sound: 'Silence', emotion: 'Melancholic' }
+  },
+  {
+    id: 92,
+    concept: "Sword",
+    filename: "tool_sword.jpg",
+    pool: "objects",
+    prompt: "Medieval steel sword, shining blade, leather hilt, sharp edge, weapon.",
+    tags: { gestalt: 'Machine', color: 'Mono (Grey/Wht)', texture: 'Hard / Smooth', smell: 'Metallic / Chem', taste: 'Metallic / Chem', sound: 'Mechanical', emotion: 'Intense / Scary' }
+  },
+  {
+    id: 93,
+    concept: "Compass",
+    filename: "tool_compass.jpg",
+    pool: "objects",
+    prompt: "Antique brass compass, north needle, glass face, map background, exploration.",
+    tags: { gestalt: 'Machine', color: 'Warm (Red/Yel)', texture: 'Hard / Smooth', smell: 'Stagnant / Dust', taste: 'Metallic / Chem', sound: 'Silence', emotion: 'Peaceful' }
+  },
+  {
+    id: 94,
+    concept: "Paint Palette",
+    filename: "tool_palette.jpg",
+    pool: "objects",
+    prompt: "Artist wooden palette with messy colorful oil paints, brush, creative mess.",
+    tags: { gestalt: 'Machine', color: 'Warm (Red/Yel)', texture: 'Fluid / Wet', smell: 'Chemical / City', taste: 'Bitter / Slimy', sound: 'Silence', emotion: 'High Energy' }
+  },
+  {
+    id: 95,
+    concept: "Anchor",
+    filename: "tool_anchor.jpg",
+    pool: "objects",
+    prompt: "Large rusty iron ship anchor sitting on a dock, heavy, nautical texture.",
+    tags: { gestalt: 'Machine', color: 'Mono (Grey/Wht)', texture: 'Rough / Coarse', smell: 'Salty / Mineral', taste: 'Metallic / Chem', sound: 'Silence', emotion: 'Melancholic' }
+  },
+
+  // --- POOL: FOOD ---
+  {
+    id: 96,
+    concept: "Fresh Lemon",
+    filename: "food_lemon.jpg",
+    pool: "food",
+    prompt: "Bright yellow lemon sliced in half, juice droplets, zest, fresh citrus, sunny background.",
+    tags: { gestalt: 'Biological', color: 'Warm (Red/Yel)', texture: 'Rough / Coarse', smell: 'Fresh / Nature', taste: 'Sour / Acidic', sound: 'Silence', emotion: 'High Energy' }
+  },
+  {
+    id: 97,
+    concept: "Coffee Beans",
+    filename: "food_coffee.jpg",
+    pool: "food",
+    prompt: "Pile of roasted brown coffee beans, oily texture, aromatic, macro shot.",
+    tags: { gestalt: 'Biological', color: 'Nature (Grn/Brn)', texture: 'Hard / Smooth', smell: 'Burnt / Smoky', taste: 'Bitter / Slimy', sound: 'Mechanical', emotion: 'High Energy' }
+  },
+  {
+    id: 98,
+    concept: "Strawberry Cake",
+    filename: "food_cake.jpg",
+    pool: "food",
+    prompt: "Slice of strawberry shortcake with whipped cream, red berries, fluffy sponge, delicious.",
+    tags: { gestalt: 'Biological', color: 'Warm (Red/Yel)', texture: 'Soft / Organic', smell: 'Sweet / Food', taste: 'Sweet / Savory', sound: 'Silence', emotion: 'High Energy' }
+  },
+  {
+    id: 99,
+    concept: "Red Wine",
+    filename: "food_wine.jpg",
+    pool: "food",
+    prompt: "Red wine being poured into a crystal glass, splash, dark red liquid, elegant.",
+    tags: { gestalt: 'Biological', color: 'Warm (Red/Yel)', texture: 'Fluid / Wet', smell: 'Sweet / Food', taste: 'Sweet / Savory', sound: 'Silence', emotion: 'Peaceful' }
+  },
+  {
+    id: 100,
+    concept: "Chili Pepper",
+    filename: "food_chili.jpg",
+    pool: "food",
+    prompt: "Red hot chili peppers, smooth skin, spicy food ingredient, fire concept.",
+    tags: { gestalt: 'Biological', color: 'Warm (Red/Yel)', texture: 'Hard / Smooth', smell: 'Chemical / City', taste: 'Spicy / Hot', sound: 'Silence', emotion: 'Intense / Scary' }
+  }
+];
 
 // --- UTILITIES ---
 
-const calculateScore = (guesses: Record<string, string>, correctTags: Record<string, string>, activeCategories: string[]) => {
+const calculateScore = (guesses: Record<string, string>, correctTags: Record<string, string>) => {
   let matched = 0;
   let total = 0;
   
-  activeCategories.forEach(catId => {
+  Object.keys(CATEGORIES).forEach(catKey => {
+    const catId = CATEGORIES[catKey].id;
     total++;
-    if (guesses[catId] === correctTags[catId]) {
+    // Check if user has made a guess for this category
+    if (guesses[catId] && guesses[catId] === correctTags[catId]) {
       matched++;
     }
   });
@@ -94,23 +903,25 @@ const calculateScore = (guesses: Record<string, string>, correctTags: Record<str
 // --- COMPONENTS ---
 
 const Card = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => (
-  <div className={`bg-neutral-800 rounded-2xl border border-neutral-700 shadow-xl overflow-hidden ${className}`}>
+  <div className={`bg-slate-900/50 backdrop-blur-md rounded-xl border border-indigo-500/30 shadow-2xl overflow-hidden relative ${className}`}>
     {children}
   </div>
 );
 
 const Button = ({ onClick, children, variant = "primary", className = "", disabled = false }: { onClick: () => void, children: React.ReactNode, variant?: 'primary' | 'secondary' | 'outline' | 'danger', className?: string, disabled?: boolean }) => {
-  const base = "px-6 py-3 rounded-xl font-medium transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed";
+  const base = "px-6 py-3 rounded-lg font-serif tracking-wider transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 relative overflow-hidden group";
+  
   const variants = {
-    primary: "bg-purple-600 hover:bg-purple-500 text-white shadow-lg shadow-purple-900/50",
-    secondary: "bg-neutral-700 hover:bg-neutral-600 text-neutral-200",
-    outline: "border border-neutral-600 hover:bg-neutral-800 text-neutral-300",
-    danger: "bg-red-900/30 text-red-400 border border-red-900 hover:bg-red-900/50"
+    primary: "bg-indigo-900 text-amber-100 border border-indigo-700 hover:border-amber-500/50 hover:bg-indigo-800 shadow-[0_0_20px_rgba(79,70,229,0.1)]",
+    secondary: "bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700",
+    outline: "border border-slate-600 text-slate-400 hover:border-amber-500/30 hover:text-amber-100 hover:bg-slate-800",
+    danger: "bg-red-950/30 text-red-400 border border-red-900/50 hover:bg-red-900/40"
   };
   
   return (
     <button onClick={onClick} disabled={disabled} className={`${base} ${variants[variant]} ${className}`}>
-      {children}
+      <span className="relative z-10 flex items-center gap-2">{children}</span>
+      {variant === 'primary' && <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/0 via-amber-500/10 to-indigo-500/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />}
     </button>
   );
 };
@@ -119,44 +930,48 @@ const Button = ({ onClick, children, variant = "primary", className = "", disabl
 
 export default function SensesApp() {
   // State
-  const [view, setView] = useState('welcome'); // welcome, game, result, stats
+  const [view, setView] = useState('welcome'); 
   const [currentLevel, setCurrentLevel] = useState<LevelData | null>(null);
   const [guesses, setGuesses] = useState<Record<string, string>>({});
   const [isRevealed, setIsRevealed] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [history, setHistory] = useState<any[]>([]);
-  const [imageLoading, setImageLoading] = useState(false);
+  const [selectedPool, setSelectedPool] = useState('all');
   
   // Settings State
   const [showSettings, setShowSettings] = useState(false);
-  const [activeCategories, setActiveCategories] = useState(Object.keys(CATEGORIES).map(k => CATEGORIES[k].id));
-  const [soundEnabled, setSoundEnabled] = useState(true);
 
   // Initialize from LocalStorage
   useEffect(() => {
-    const saved = localStorage.getItem('senses_history');
+    const saved = localStorage.getItem('senses_history_v2');
     if (saved) setHistory(JSON.parse(saved));
   }, []);
 
   // Persist History
   useEffect(() => {
-    localStorage.setItem('senses_history', JSON.stringify(history));
+    localStorage.setItem('senses_history_v2', JSON.stringify(history));
   }, [history]);
 
   // Game Logic
   const startRound = () => {
-    // 1. SELECT TARGET
+    // 1. Filter Data by Pool
+    const poolData = selectedPool === 'all' 
+      ? LEVEL_DATA 
+      : LEVEL_DATA.filter(l => l.pool === selectedPool);
+
+    if (poolData.length === 0) return; // Should not happen with current data
+
+    // 2. Select Target
     let nextLevel;
     do {
-      nextLevel = LEVEL_DATA[Math.floor(Math.random() * LEVEL_DATA.length)];
-    } while (currentLevel && nextLevel.id === currentLevel.id && LEVEL_DATA.length > 1);
+      nextLevel = poolData[Math.floor(Math.random() * poolData.length)];
+    } while (currentLevel && nextLevel.id === currentLevel.id && poolData.length > 1);
 
-    // 2. LOCK TARGET IN STATE
+    // 3. Reset State
     setCurrentLevel(nextLevel);
     setGuesses({});
     setIsRevealed(false);
     
-    // 3. CHANGE VIEW
+    // 4. Change View
     setView('game');
   };
 
@@ -167,132 +982,188 @@ export default function SensesApp() {
   const submitGuesses = () => {
     if (!currentLevel) return;
     setIsRevealed(true);
-    setImageLoading(true);
-    const scoreData = calculateScore(guesses, currentLevel.tags, activeCategories);
+    const scoreData = calculateScore(guesses, currentLevel.tags);
     
-    // Add to history
     const resultRecord = {
       timestamp: Date.now(),
       levelId: currentLevel.id,
       score: scoreData,
       guesses: guesses,
-      correct: currentLevel.tags
+      correct: currentLevel.tags,
+      pool: currentLevel.pool
     };
     
-    setHistory(prev => [resultRecord, ...prev].slice(0, 50)); // Keep last 50
-  };
-
-  const toggleCategory = (catId: string) => {
-    setActiveCategories(prev => 
-      prev.includes(catId) 
-        ? prev.filter(c => c !== catId) 
-        : [...prev, catId]
-    );
+    setHistory(prev => [resultRecord, ...prev].slice(0, 50)); 
   };
 
   // --- SUB-VIEWS ---
 
   const WelcomeView = () => (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-8 animate-in fade-in duration-700">
-      <div className="relative">
-        <div className="absolute inset-0 bg-purple-500 blur-3xl opacity-20 rounded-full"></div>
-        <Eye className="w-24 h-24 text-purple-400 relative z-10" />
-      </div>
+    <div className="flex flex-col items-center justify-center min-h-[70vh] text-center space-y-10 animate-in fade-in duration-1000">
       
-      <div className="space-y-2">
-        <h1 className="text-5xl font-light tracking-[0.2em] text-white font-serif">SENSES</h1>
-        <p className="text-neutral-400 text-lg">Sensory ESP Training Protocol</p>
-      </div>
-
-      <div className="max-w-md text-neutral-300 bg-neutral-800/50 p-6 rounded-xl border border-neutral-700/50 backdrop-blur-sm">
-        <p className="mb-4">
-          A target image is hidden. Your goal is to intuit its sensory qualities before it is revealed.
-        </p>
-        <div className="flex items-center justify-center gap-2 text-xs text-neutral-500 font-mono border-t border-neutral-700 pt-4">
-            <Lock className="w-3 h-3" />
-            TARGET IS PRE-SELECTED BEFORE YOU GUESS
+      {/* Mystical Header */}
+      <div className="relative group cursor-default">
+        <div className="absolute -inset-4 bg-indigo-500/20 blur-3xl rounded-full opacity-50 group-hover:opacity-75 transition-opacity duration-1000"></div>
+        <div className="relative z-10 flex flex-col items-center">
+            <div className="mb-6 relative">
+                 <Moon className="w-16 h-16 text-indigo-300 absolute -top-2 -left-2 opacity-50" />
+                 <Eye className="w-20 h-20 text-amber-100 relative z-10 drop-shadow-[0_0_15px_rgba(251,191,36,0.3)]" />
+                 <Sun className="w-16 h-16 text-amber-500 absolute -bottom-2 -right-2 opacity-50" />
+            </div>
+            <h1 className="text-4xl md:text-6xl font-serif text-transparent bg-clip-text bg-gradient-to-b from-amber-100 to-amber-600 tracking-widest mb-2">
+            REMOTE VIEWING
+            </h1>
+            <p className="text-indigo-300 font-serif italic tracking-wide text-lg">
+            Protocol Omega // Psychic Training Tool
+            </p>
         </div>
       </div>
 
-      <div className="flex gap-4">
-        <Button onClick={startRound} className="w-48 text-lg">
-          Initialize
+      {/* Intro Text */}
+      <div className="max-w-lg mx-auto bg-slate-900/80 p-6 rounded-lg border border-indigo-900/50 text-slate-400 font-light leading-relaxed backdrop-blur-sm">
+        <p>
+          Connect with the unseen. A target has been hidden behind the veil. 
+          Use your intuition to describe its gestalt, sensory data, and energetic signature before it is revealed.
+        </p>
+      </div>
+
+      {/* Pool Selector */}
+      <div className="w-full max-w-lg space-y-3">
+          <label className="text-xs uppercase tracking-[0.2em] text-indigo-400 font-serif">Select Target Frequency</label>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {POOLS.map(pool => (
+                  <button
+                    key={pool.id}
+                    onClick={() => setSelectedPool(pool.id)}
+                    className={`
+                        p-3 rounded border text-xs sm:text-sm font-medium transition-all duration-300
+                        ${selectedPool === pool.id 
+                            ? 'bg-indigo-900/80 border-amber-500/50 text-amber-100 shadow-[0_0_10px_rgba(245,158,11,0.1)]' 
+                            : 'bg-slate-900/50 border-slate-800 text-slate-500 hover:border-indigo-500/30 hover:text-indigo-300'}
+                    `}
+                  >
+                      {pool.label}
+                  </button>
+              ))}
+          </div>
+      </div>
+
+      {/* Actions */}
+      <div className="flex gap-4 pt-4">
+        <Button onClick={startRound} className="w-48 text-lg border-amber-500/30">
+          <Sparkles className="w-5 h-5 text-amber-400" />
+          Initiate
         </Button>
         <Button onClick={() => setView('stats')} variant="secondary" className="px-4">
-          <BarChart2 className="w-6 h-6" />
+          <BarChart2 className="w-5 h-5" />
         </Button>
       </div>
     </div>
   );
 
   const GameView = () => {
-    const allAnswered = activeCategories.every(id => guesses[id]);
-    const progress = (Object.keys(guesses).length / activeCategories.length) * 100;
+    const totalCategories = Object.keys(CATEGORIES).length;
+    const answeredCount = Object.keys(guesses).length;
+    const allAnswered = answeredCount === totalCategories;
 
     if (isRevealed) return <ResultView />;
     if (!currentLevel) return null;
 
     return (
-      <div className="w-full max-w-2xl mx-auto space-y-6 pb-20 animate-in slide-in-from-bottom-4 duration-500">
-        {/* Hidden Target Card */}
-        <Card className="h-64 flex flex-col items-center justify-center bg-linear-to-br from-neutral-800 to-neutral-900 border-purple-500/20 relative group">
-          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5"></div>
-          
-          <div className="absolute top-4 right-4 flex items-center gap-2 text-xs font-mono text-purple-500/50">
-             <Lock className="w-3 h-3" />
-             <span>LOCKED</span>
-          </div>
-
-          <div className="relative z-10 flex flex-col items-center animate-pulse">
-            <EyeOff className="w-16 h-16 text-neutral-600 mb-4 group-hover:text-purple-400 transition-colors" />
-            <span className="text-neutral-500 font-mono tracking-widest uppercase text-sm">Target Hidden</span>
-            <span className="text-purple-500/50 text-xs mt-2 font-mono">ID: #{currentLevel.id.toString().padStart(4, '0')}</span>
-          </div>
-        </Card>
-
-        {/* Categories Grid */}
-        <div className="space-y-6">
-          <div className="flex items-center justify-between px-2">
-            <span className="text-sm font-medium text-neutral-400 uppercase tracking-wider">Sensory Data Input</span>
-            <span className="text-xs font-mono text-purple-400">{Math.round(progress)}% Complete</span>
-          </div>
-          
-          {activeCategories.map((catKey) => {
-             const category = Object.values(CATEGORIES).find(c => c.id === catKey);
-             if (!category) return null;
-             return (
-              <div key={category.id} className="space-y-3">
-                <h3 className="text-neutral-300 font-medium ml-1">{category.label}</h3>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  {category.options.map((option) => (
-                    <button
-                      key={option}
-                      onClick={() => handleGuess(category.id, option)}
-                      className={`
-                        p-3 text-sm rounded-lg border transition-all duration-200
-                        ${guesses[category.id] === option 
-                          ? 'bg-purple-600 border-purple-500 text-white shadow-[0_0_15px_rgba(147,51,234,0.3)] transform scale-[1.02]' 
-                          : 'bg-neutral-800 border-neutral-700 text-neutral-400 hover:bg-neutral-750 hover:border-neutral-600'}
-                      `}
-                    >
-                      {option}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
+      <div className="w-full max-w-4xl mx-auto space-y-8 pb-24 animate-in slide-in-from-bottom-8 duration-700">
+        
+        {/* Header / Target Status */}
+        <div className="flex items-center justify-between border-b border-indigo-900/30 pb-4">
+            <div className="flex items-center gap-3">
+                <div className="w-3 h-3 rounded-full bg-amber-500 animate-pulse shadow-[0_0_10px_rgba(245,158,11,0.5)]"></div>
+                <span className="font-mono text-xs text-amber-500 tracking-[0.2em]">TARGET COORDINATES LOCKED</span>
+            </div>
+            <div className="text-indigo-400 text-xs font-serif italic">
+                Session ID: {currentLevel.id.toString().padStart(4, '0')} // {currentLevel.pool.toUpperCase()}
+            </div>
         </div>
 
-        {/* Action Bar */}
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-neutral-900/90 backdrop-blur-md border-t border-neutral-800 flex justify-center z-50">
-          <Button 
-            onClick={submitGuesses} 
-            disabled={!allAnswered} 
-            className="w-full max-w-md shadow-2xl"
-          >
-            {allAnswered ? "Reveal Target" : "Complete All Fields"}
-          </Button>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            {/* Left Column: The "Hidden" Card */}
+            <div className="lg:col-span-5 flex flex-col gap-4">
+                <Card className="aspect-[3/4] relative group transition-all duration-500 hover:border-indigo-500/50">
+                    <div className="absolute inset-0 bg-slate-950 flex flex-col items-center justify-center p-8 text-center bg-[url('https://www.transparenttextures.com/patterns/stardust.png')]">
+                        <div className="absolute inset-0 bg-indigo-900/10 radial-gradient-mask"></div>
+                        
+                        <div className="relative z-10 w-32 h-32 mb-8 rounded-full border border-indigo-500/20 flex items-center justify-center group-hover:scale-105 transition-transform duration-500">
+                             <div className="absolute inset-0 border border-indigo-500/20 rounded-full animate-[spin_10s_linear_infinite]"></div>
+                             <div className="absolute inset-2 border border-amber-500/10 rounded-full animate-[spin_15s_linear_infinite_reverse]"></div>
+                             <Lock className="w-8 h-8 text-indigo-400/50" />
+                        </div>
+
+                        <h2 className="text-2xl font-serif text-slate-300 mb-2">Target Concealed</h2>
+                        <p className="text-sm text-slate-500 font-light">
+                            Focus your intent. <br/>receive the data streams.
+                        </p>
+                    </div>
+                    {/* Corner accents */}
+                    <div className="absolute top-2 left-2 w-4 h-4 border-t border-l border-amber-500/30"></div>
+                    <div className="absolute top-2 right-2 w-4 h-4 border-t border-r border-amber-500/30"></div>
+                    <div className="absolute bottom-2 left-2 w-4 h-4 border-b border-l border-amber-500/30"></div>
+                    <div className="absolute bottom-2 right-2 w-4 h-4 border-b border-r border-amber-500/30"></div>
+                </Card>
+                
+                <div className="bg-slate-900/50 p-4 rounded-lg border border-indigo-900/30">
+                    <div className="flex justify-between items-center mb-2">
+                        <span className="text-xs text-indigo-400 uppercase tracking-widest">Signal Strength</span>
+                        <span className="text-xs text-amber-500 font-mono">{Math.round((answeredCount/totalCategories)*100)}%</span>
+                    </div>
+                    <div className="w-full h-1 bg-slate-800 rounded-full overflow-hidden">
+                        <div 
+                            className="h-full bg-gradient-to-r from-indigo-600 to-amber-600 transition-all duration-500"
+                            style={{ width: `${(answeredCount/totalCategories)*100}%` }}
+                        ></div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Right Column: The Universal Descriptors */}
+            <div className="lg:col-span-7 space-y-6">
+                 {Object.values(CATEGORIES).map((cat) => (
+                     <div key={cat.id} className="group">
+                         <div className="flex items-center gap-2 mb-3">
+                             <span className={`w-1 h-1 rounded-full ${guesses[cat.id] ? 'bg-amber-500' : 'bg-slate-700'}`}></span>
+                             <h3 className="font-serif text-slate-300 text-sm tracking-wide">{cat.label}</h3>
+                         </div>
+                         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                             {cat.options.map((opt) => (
+                                 <button
+                                    key={opt}
+                                    onClick={() => handleGuess(cat.id, opt)}
+                                    className={`
+                                        py-2 px-2 text-[10px] sm:text-xs uppercase tracking-wider rounded border transition-all duration-300
+                                        ${guesses[cat.id] === opt 
+                                            ? 'bg-indigo-600 border-indigo-500 text-white shadow-[0_0_15px_rgba(79,70,229,0.4)]' 
+                                            : 'bg-slate-800/50 border-slate-700 text-slate-500 hover:bg-slate-700 hover:text-slate-300'}
+                                    `}
+                                 >
+                                     {opt.split(' / ')[0]}
+                                 </button>
+                             ))}
+                         </div>
+                     </div>
+                 ))}
+            </div>
+
+        </div>
+
+        {/* Floating Action Bar */}
+        <div className="fixed bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-slate-950 via-slate-950/90 to-transparent flex justify-center z-50 pointer-events-none">
+          <div className="pointer-events-auto w-full max-w-md">
+            <Button 
+                onClick={submitGuesses} 
+                disabled={!allAnswered} 
+                className={`w-full shadow-2xl transition-all duration-500 ${allAnswered ? 'opacity-100 translate-y-0' : 'opacity-80 translate-y-2'}`}
+            >
+                {allAnswered ? "Manifest Truth" : "Awaiting Data Input..."}
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -300,168 +1171,155 @@ export default function SensesApp() {
 
   const ResultView = () => {
     if (!currentLevel) return null;
-    const score = calculateScore(guesses, currentLevel.tags, activeCategories);
+    const score = calculateScore(guesses, currentLevel.tags);
     
-    // Construct generative URL based on prompt to ensure 100% visual match
-    const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(currentLevel.prompt)}?width=800&height=600&nologo=true`;
+    // Construct local path
+    const imageUrl = `/images/senses app images/${currentLevel.filename}`;
 
     return (
-      <div className="w-full max-w-2xl mx-auto space-y-6 pb-20 animate-in zoom-in-95 duration-500">
+      <div className="w-full max-w-5xl mx-auto space-y-8 pb-12 animate-in zoom-in-95 duration-700">
         
-        {/* Reveal Card */}
-        <Card className="overflow-hidden bg-neutral-800 border-purple-500/30 relative">
-          <div className="relative h-64 w-full bg-black">
-            {imageLoading && (
-                <div className="absolute inset-0 flex items-center justify-center bg-neutral-900 z-10">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div>
+        {/* Top Section: The Reveal */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+            
+            <Card className="aspect-[4/3] md:aspect-square bg-black border-amber-500/20 group">
+                <img 
+                    src={imageUrl} 
+                    alt="Target" 
+                    className="w-full h-full object-cover opacity-0 animate-in fade-in duration-[2000ms] fill-mode-forwards"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+                <div className="absolute bottom-0 left-0 p-6">
+                    <span className="block text-amber-500 text-xs font-mono mb-1 uppercase tracking-widest">Target Identity Confirmed</span>
+                    <h2 className="text-3xl font-serif text-white">{currentLevel.concept}</h2>
                 </div>
-            )}
-            <img 
-              src={imageUrl} 
-              alt="Target" 
-              className="w-full h-full object-cover animate-in fade-in duration-1000"
-              onLoad={() => setImageLoading(false)}
-            />
-            <div className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/90 to-transparent p-4">
-              <span className="text-xs font-mono text-purple-300 uppercase block mb-1">Target Identity</span>
-              <h2 className="text-2xl font-light text-white">{currentLevel.concept}</h2>
-            </div>
-          </div>
-          
-          <div className="p-6 flex items-center justify-between bg-neutral-800">
-            <div>
-              <p className="text-neutral-400 text-sm uppercase tracking-wider">Accuracy</p>
-              <div className="text-4xl font-light text-white mt-1">
-                {score.percentage}<span className="text-purple-500">%</span>
-              </div>
-            </div>
-            <div className="text-right">
-               <p className="text-neutral-400 text-sm uppercase tracking-wider">Score</p>
-               <p className="text-xl text-white font-mono">{score.matched} <span className="text-neutral-500">/</span> {score.total}</p>
-            </div>
-          </div>
-        </Card>
+            </Card>
 
-        {/* Comparison Grid */}
-        <div className="space-y-3">
-          {activeCategories.map(catKey => {
-            const category = Object.values(CATEGORIES).find(c => c.id === catKey);
-            if (!category) return null;
-            const userGuess = guesses[catKey];
-            const correct = currentLevel.tags[catKey];
-            const isCorrect = userGuess === correct;
+            <div className="space-y-6">
+                <div className="text-center md:text-left space-y-2">
+                    <h3 className="text-sm font-serif text-indigo-300 uppercase tracking-[0.2em]">Intuition Accuracy</h3>
+                    <div className="flex items-baseline justify-center md:justify-start gap-2">
+                        <span className="text-6xl font-light text-white">{score.percentage}</span>
+                        <span className="text-2xl text-amber-500">%</span>
+                    </div>
+                </div>
 
-            return (
-              <div 
-                key={catKey} 
-                className={`flex items-stretch rounded-lg overflow-hidden border ${isCorrect ? 'border-green-900/50' : 'border-red-900/50'}`}
-              >
-                {/* Status Indicator */}
-                <div className={`w-12 flex items-center justify-center ${isCorrect ? 'bg-green-900/20' : 'bg-red-900/20'}`}>
-                  {isCorrect ? <Check className="w-5 h-5 text-green-500" /> : <X className="w-5 h-5 text-red-500" />}
+                <div className="bg-slate-900/50 rounded-lg p-1 border border-indigo-900/30">
+                     <div className="grid grid-cols-3 divide-x divide-indigo-900/30 text-center py-4">
+                         <div>
+                             <div className="text-xs text-slate-500 uppercase mb-1">Matched</div>
+                             <div className="text-xl text-indigo-400 font-mono">{score.matched}</div>
+                         </div>
+                         <div>
+                             <div className="text-xs text-slate-500 uppercase mb-1">Total Datapoints</div>
+                             <div className="text-xl text-slate-300 font-mono">{score.total}</div>
+                         </div>
+                         <div>
+                             <div className="text-xs text-slate-500 uppercase mb-1">Pool</div>
+                             <div className="text-xl text-amber-500/80 font-serif capitalize text-sm pt-1">{currentLevel.pool}</div>
+                         </div>
+                     </div>
                 </div>
                 
-                {/* Details */}
-                <div className="flex-1 bg-neutral-800 p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <div className="text-xs text-neutral-500 uppercase font-bold tracking-wider sm:w-24">
-                    {category.label}
-                  </div>
-                  
-                  <div className="flex-1 flex flex-col sm:flex-row gap-2 sm:gap-4">
-                    {/* User Guess */}
-                    <div className="flex-1">
-                      <span className="text-[10px] text-neutral-500 block sm:hidden">You Guessed:</span>
-                      <span className={`${isCorrect ? 'text-green-400' : 'text-red-400 line-through decoration-red-900'}`}>
-                        {userGuess}
-                      </span>
-                    </div>
+                <p className="text-slate-400 font-serif italic text-sm leading-relaxed border-l-2 border-indigo-500/30 pl-4">
+                    "{currentLevel.prompt}"
+                </p>
 
-                    {/* Correction (only if wrong) */}
-                    {!isCorrect && (
-                      <div className="flex-1 sm:text-right">
-                        <span className="text-[10px] text-neutral-500 block sm:hidden">Truth:</span>
-                        <span className="text-neutral-200">{correct}</span>
-                      </div>
-                    )}
-                    {isCorrect && <div className="hidden sm:block flex-1"></div>}
-                  </div>
+                <div className="flex gap-4 pt-4">
+                    <Button onClick={startRound} className="flex-1">
+                        <RefreshCw className="w-4 h-4" /> Next Target
+                    </Button>
+                    <Button onClick={() => setView('welcome')} variant="outline">
+                        Exit
+                    </Button>
                 </div>
-              </div>
-            );
-          })}
+            </div>
         </div>
 
-        <div className="flex gap-4 pt-4">
-          <Button onClick={startRound} className="flex-1">
-            <RefreshCw className="w-5 h-5 mr-2 inline" />
-            Next Target
-          </Button>
-          <Button onClick={() => setView('welcome')} variant="outline">
-            Exit
-          </Button>
+        {/* Bottom Section: The Analysis */}
+        <div className="border-t border-indigo-900/30 pt-8">
+            <h3 className="text-center font-serif text-slate-400 text-lg mb-6">Psychic Data Analysis</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {Object.values(CATEGORIES).map(cat => {
+                    const userGuess = guesses[cat.id];
+                    const correct = currentLevel.tags[cat.id];
+                    const isCorrect = userGuess === correct;
+
+                    return (
+                        <div key={cat.id} className={`p-4 rounded border flex flex-col gap-2 ${isCorrect ? 'bg-indigo-950/30 border-indigo-500/30' : 'bg-slate-900/50 border-slate-800'}`}>
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs text-slate-500 uppercase tracking-wider font-bold">{cat.label}</span>
+                                {isCorrect ? <Check className="w-4 h-4 text-emerald-500" /> : <X className="w-4 h-4 text-red-500" />}
+                            </div>
+                            
+                            <div className="flex items-center justify-between text-sm mt-1">
+                                <span className={`${isCorrect ? 'text-emerald-400' : 'text-red-400 line-through decoration-red-900/50'}`}>
+                                    {userGuess || "-"}
+                                </span>
+                                {!isCorrect && (
+                                    <span className="text-indigo-300 text-right">{correct}</span>
+                                )}
+                            </div>
+                        </div>
+                    )
+                })}
+            </div>
         </div>
       </div>
     );
   };
 
   const StatsView = () => {
-    // Calculate Stats
     const totalRounds = history.length;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const avgAccuracy = totalRounds > 0 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ? Math.round(history.reduce((acc: number, curr: any) => acc + curr.score.percentage, 0) / totalRounds) 
       : 0;
-    
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const perfectRounds = history.filter((h: any) => h.score.percentage === 100).length;
 
     return (
-      <div className="w-full max-w-2xl mx-auto space-y-6 animate-in slide-in-from-right duration-500">
-        <div className="flex items-center justify-between mb-8">
-          <button onClick={() => setView('welcome')} className="text-neutral-400 hover:text-white">
-            <ArrowLeft />
+      <div className="w-full max-w-3xl mx-auto space-y-6 animate-in slide-in-from-right duration-500">
+        <div className="flex items-center justify-between mb-8 border-b border-slate-800 pb-4">
+          <button onClick={() => setView('welcome')} className="text-slate-400 hover:text-white flex items-center gap-2 transition-colors">
+            <ArrowLeft className="w-4 h-4" /> Back to Nexus
           </button>
-          <h2 className="text-xl tracking-widest uppercase">Performance Log</h2>
-          <div className="w-6"></div> 
+          <h2 className="text-xl font-serif tracking-widest text-amber-500">AKASHIC RECORDS</h2>
         </div>
 
-        <div className="grid grid-cols-3 gap-4">
-          <Card className="p-4 text-center bg-neutral-800/50">
-            <div className="text-3xl font-light text-white mb-1">{totalRounds}</div>
-            <div className="text-xs text-neutral-500 uppercase">Sessions</div>
-          </Card>
-          <Card className="p-4 text-center bg-neutral-800/50">
-            <div className="text-3xl font-light text-purple-400 mb-1">{avgAccuracy}%</div>
-            <div className="text-xs text-neutral-500 uppercase">Avg Intuition</div>
-          </Card>
-          <Card className="p-4 text-center bg-neutral-800/50">
-            <div className="text-3xl font-light text-yellow-500 mb-1">{perfectRounds}</div>
-            <div className="text-xs text-neutral-500 uppercase">Perfects</div>
-          </Card>
+        <div className="grid grid-cols-3 gap-4 mb-8">
+          <div className="p-6 text-center bg-slate-900/50 border border-indigo-500/20 rounded-lg">
+            <div className="text-3xl font-light text-white mb-2 font-serif">{totalRounds}</div>
+            <div className="text-[10px] text-slate-500 uppercase tracking-widest">Sessions</div>
+          </div>
+          <div className="p-6 text-center bg-slate-900/50 border border-indigo-500/20 rounded-lg">
+            <div className="text-3xl font-light text-indigo-400 mb-2 font-serif">{avgAccuracy}%</div>
+            <div className="text-[10px] text-slate-500 uppercase tracking-widest">Avg Resonance</div>
+          </div>
+          <div className="p-6 text-center bg-slate-900/50 border border-indigo-500/20 rounded-lg">
+            <div className="text-3xl font-light text-amber-500 mb-2 font-serif">
+                {history.filter((h: any) => h.score.percentage >= 80).length}
+            </div>
+            <div className="text-[10px] text-slate-500 uppercase tracking-widest">High Accuracy</div>
+          </div>
         </div>
 
-        <h3 className="text-sm font-medium text-neutral-500 uppercase mt-8 mb-2">Recent Logs</h3>
-        <div className="space-y-2 max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar">
-          {history.length === 0 ? (
-            <div className="text-center text-neutral-600 py-8 italic">No data recorded.</div>
-          ) : (
-            history.map((record, idx) => (
-              <div key={idx} className="flex items-center justify-between p-3 bg-neutral-800 rounded-lg border border-neutral-700">
-                <div className="flex items-center gap-3">
-                  <div className={`w-2 h-2 rounded-full ${record.score.percentage >= 50 ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                  <span className="text-sm text-neutral-300">Target #{record.levelId}</span>
-                </div>
-                <div className="flex items-center gap-4">
-                   <span className="text-xs text-neutral-500 font-mono">
-                     {new Date(record.timestamp).toLocaleDateString()}
-                   </span>
-                   <span className={`font-mono ${record.score.percentage === 100 ? 'text-yellow-500' : 'text-white'}`}>
-                     {record.score.percentage}%
-                   </span>
-                </div>
-              </div>
-            ))
-          )}
+        <div className="space-y-3">
+            <h3 className="text-xs text-slate-500 uppercase tracking-widest mb-4">Recent Transmissions</h3>
+            {history.length === 0 ? (
+                <div className="text-center py-12 text-slate-600 italic font-serif">The records are empty. Begin your training.</div>
+            ) : (
+                history.map((record, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-4 bg-slate-900/30 rounded border border-slate-800 hover:border-indigo-500/30 transition-colors">
+                        <div className="flex items-center gap-4">
+                             <div className={`w-2 h-2 rounded-full ${record.score.percentage >= 60 ? 'bg-emerald-500' : 'bg-red-500'}`}></div>
+                             <div>
+                                 <div className="text-slate-300 text-sm font-serif">Target #{record.levelId}</div>
+                                 <div className="text-xs text-slate-600 uppercase">{record.pool}</div>
+                             </div>
+                        </div>
+                        <div className="font-mono text-amber-500">{record.score.percentage}%</div>
+                    </div>
+                ))
+            )}
         </div>
       </div>
     );
@@ -471,133 +1329,111 @@ export default function SensesApp() {
     if (!showSettings) return null;
 
     return (
-      <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-        <Card className="w-full max-w-md bg-neutral-900 border border-neutral-700 max-h-[90vh] overflow-y-auto">
-          <div className="p-6 space-y-6">
+      <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200">
+        <Card className="w-full max-w-md bg-slate-950 border border-slate-800">
+          <div className="p-6 space-y-8">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-light tracking-wider flex items-center gap-2">
-                <Settings className="w-5 h-5" /> CONFIGURATION
+              <h2 className="text-lg font-serif tracking-widest text-indigo-300 flex items-center gap-2">
+                <Settings className="w-4 h-4" /> CONFIGURATION
               </h2>
-              <button onClick={() => setShowSettings(false)} className="text-neutral-500 hover:text-white">
-                <X />
+              <button onClick={() => setShowSettings(false)} className="text-slate-500 hover:text-white">
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="space-y-4">
-              <div>
-                <h3 className="text-sm font-bold text-purple-400 uppercase mb-3">Active Sensory Channels</h3>
-                <p className="text-xs text-neutral-500 mb-4">Toggle categories to focus your training session.</p>
+            <div className="space-y-6">
                 <div className="space-y-2">
-                  {Object.values(CATEGORIES).map(cat => (
-                    <button
-                      key={cat.id}
-                      onClick={() => toggleCategory(cat.id)}
-                      className={`w-full flex items-center justify-between p-3 rounded-lg border transition-colors ${
-                        activeCategories.includes(cat.id) 
-                          ? 'bg-neutral-800 border-purple-500/50 text-white' 
-                          : 'bg-neutral-900 border-neutral-800 text-neutral-600'
-                      }`}
-                    >
-                      <span>{cat.label}</span>
-                      <div className={`w-4 h-4 rounded-full border ${activeCategories.includes(cat.id) ? 'bg-purple-500 border-purple-500' : 'border-neutral-600'}`}></div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="pt-4 border-t border-neutral-800">
-                 <h3 className="text-sm font-bold text-purple-400 uppercase mb-3">System</h3>
-                 <div className="flex items-center justify-between">
-                   <span className="text-neutral-300">Sound Effects</span>
-                   <button onClick={() => setSoundEnabled(!soundEnabled)} className="text-neutral-400 hover:text-white">
-                      {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
-                   </button>
-                 </div>
-                 <div className="flex items-center justify-between mt-4">
-                    <span className="text-neutral-300">Clear History</span>
+                    <label className="text-xs uppercase text-slate-500 font-bold">Data Management</label>
                     <button 
-                      onClick={() => {
-                         // FIX: Safe window.confirm access
-                        const win = (globalThis as any).window;
-                        if(win && win.confirm("Clear all training data?")) {
-                            setHistory([]);
-                            localStorage.removeItem('senses_history');
-                        }
-                      }} 
-                      className="text-xs text-red-400 hover:text-red-300 uppercase border border-red-900/50 px-2 py-1 rounded"
+                        onClick={() => {
+                            if(confirm("Purge all akashic records? This cannot be undone.")) {
+                                setHistory([]);
+                                localStorage.removeItem('senses_history_v2');
+                                setShowSettings(false);
+                            }
+                        }}
+                        className="w-full flex items-center justify-between p-3 rounded bg-red-950/20 border border-red-900/30 text-red-400 hover:bg-red-900/30 transition-colors"
                     >
-                      Reset Data
+                        <span>Purge History Log</span>
+                        <Volume2 className="w-4 h-4 opacity-50" />
                     </button>
-                 </div>
-              </div>
+                </div>
+
+                <div className="text-xs text-slate-600 italic text-center pt-4">
+                    System Version 3.0.1 // Occult UI Framework
+                </div>
             </div>
-            
-            <Button onClick={() => setShowSettings(false)} className="w-full">Save Configuration</Button>
           </div>
         </Card>
       </div>
     );
   };
 
-  // --- RENDER WRAPPER ---
+  // --- RENDER ---
   return (
-    <main className="relative min-h-screen w-full bg-neutral-900 text-neutral-100 font-sans selection:bg-purple-500/30 overflow-hidden flex flex-col" style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}>
-      <div className="absolute inset-0 bg-[#0a0a0a]/95 backdrop-blur-sm z-0" />
+    <main className="relative min-h-screen w-full bg-slate-950 text-slate-200 font-sans selection:bg-amber-500/30 selection:text-amber-100 overflow-hidden flex flex-col">
+      {/* Background Ambience */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,_rgba(49,46,129,0.2),_rgba(2,6,23,1))]" />
+          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-indigo-500/20 to-transparent" />
+      </div>
       
       {/* Header */}
-      <header className="relative z-10 p-4 flex items-center justify-between border-b border-neutral-800/50">
-        <div className="flex items-center gap-4">
-           <MagickalBackLink href="/the-magick-psychic-school/psychic-training" text="Exit" className="text-xs text-slate-400 hover:text-white" />
-           <div className="flex items-center gap-2 text-purple-500 cursor-pointer" onClick={() => setView('welcome')}>
-              <Eye className="w-6 h-6" />
-              <span className="font-bold tracking-wider text-sm hidden sm:block">SENSES v2.0</span>
-           </div>
+      <header className="relative z-10 px-6 py-4 flex items-center justify-between border-b border-indigo-900/10 backdrop-blur-sm">
+        <div className="flex items-center gap-6">
+           <MagickalBackLink href="/the-magick-psychic-school/psychic-training" text="Return" className="text-xs text-indigo-400/50 hover:text-amber-400 transition-colors" />
         </div>
         
-        <div className="flex items-center gap-2">
-           {view === 'game' && currentLevel && (
-             <div className="px-3 py-1 bg-neutral-800 rounded-full text-xs font-mono text-neutral-400 border border-neutral-700 flex items-center gap-2">
-               <Zap className="w-3 h-3 text-yellow-500" />
-               TARGET LOCKED
-             </div>
-           )}
+        <div className="flex items-center gap-4">
            <button 
              onClick={() => setShowSettings(true)} 
-             className="p-2 hover:bg-neutral-800 rounded-full transition-colors text-neutral-400 hover:text-white"
+             className="p-2 hover:bg-slate-900 rounded-full transition-colors text-indigo-400/50 hover:text-indigo-300"
            >
              <Settings className="w-5 h-5" />
            </button>
-           <div className="ml-2"><RoomsButton /></div>
+           <RoomsButton />
         </div>
       </header>
 
-      {/* Main Content Area */}
-      <div className="relative z-10 grow flex flex-col p-4 md:p-8">
+      {/* Main Content */}
+      <div className="relative z-10 grow flex flex-col p-4 md:p-8 overflow-y-auto custom-scrollbar">
         {view === 'welcome' && <WelcomeView />}
         {view === 'game' && currentLevel && <GameView />}
         {view === 'result' && <ResultView />}
         {view === 'stats' && <StatsView />}
       </div>
 
-      {/* Modals */}
       <SettingsModal />
 
-      {/* Global Style overrides for scrollbars */}
       <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap');
+        
+        .font-serif {
+            font-family: 'Playfair Display', serif;
+        }
+        
         .custom-scrollbar::-webkit-scrollbar {
           width: 6px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
-          background: #171717; 
+          background: #020617; 
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #404040; 
+          background: #1e1b4b; 
           border-radius: 3px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: #525252; 
+          background: #312e81; 
+        }
+        
+        .radial-gradient-mask {
+            mask-image: radial-gradient(circle, black 40%, transparent 70%);
         }
       `}</style>
     </main>
   );
 }
+
+// --- ICONS ---
+// Simple component placeholders for icons not used in main logic but imported
+function Volume2({ className }: { className?: string }) { return <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>; }
