@@ -5,7 +5,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Settings, RefreshCw, Eye, Check, X, BarChart2, ArrowLeft, 
-  Sparkles, Moon, Sun, Zap, Lock, Volume2
+  Sparkles, Moon, Sun, Lock, Volume2
 } from 'lucide-react';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
 import RoomsButton from '@/app/components/RoomsButton';
@@ -1173,7 +1173,7 @@ export default function SensesApp() {
     if (!currentLevel) return null;
     const score = calculateScore(guesses, currentLevel.tags);
     
-    // Construct local path
+    // Construct local path with explicit encoding for spaces in folder name
     const imageUrl = `/images/senses%20app%20images/${currentLevel.filename}`;
 
     return (
