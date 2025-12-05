@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import { 
   Activity, Eye, Brain, X, Info, Volume2, VolumeX, 
   Sparkles, Save, RotateCcw, Settings, Flame, Zap,
-  RefreshCw, Trophy, Maximize, Minimize 
+  RefreshCw, Trophy, Maximize, Minimize, BarChart3, ChevronDown
 } from 'lucide-react';
 import { createBrowserClient } from '@supabase/ssr';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
@@ -205,7 +205,7 @@ const AngelIcon = ({ className }: { className?: string }) => (
 const CardBack = () => (
   <div className="w-full h-full bg-slate-800 rounded-xl border-2 border-indigo-500/30 flex items-center justify-center relative overflow-hidden group-hover:border-indigo-400 transition-colors shadow-lg">
     <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,var(--tw-gradient-stops))] from-indigo-500 via-slate-900 to-slate-900"></div>
-    <Eye className="w-12 h-12 text-indigo-500/50" />
+    <Eye className="w-[40%] h-[40%] text-indigo-500/50" />
     <div className="absolute top-2 right-2 w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></div>
   </div>
 );
@@ -489,24 +489,18 @@ export default function PsiTrainer() {
     return Math.round((stats.hits / stats.trials) * 100);
   };
 
-  // Layout Config for 4 cards (2x2 grid)
-  const cols = 2;
-  const rows = 2;
-  // Aspect ratio for a 2x2 grid of 2:3 cards is roughly 2 / (2*1.5) = 2/3
-  const gridAspectRatio = `2 / 3`;
-
   return (
+    // FIX: Main container is h-dvh (not min-h), prevents any body scroll
     <div className="h-dvh w-full bg-slate-950 text-slate-100 font-sans selection:bg-indigo-500/30 flex flex-col overflow-hidden relative" style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}>
       
-      {/* Background Overlay */}
       <div className="absolute inset-0 bg-black/80 backdrop-blur-sm z-0" />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,#020617_90%)] z-0 opacity-80 pointer-events-none"></div>
 
       {showInstructions && <InstructionModal onClose={() => { setShowInstructions(false); startNewRound(); }} mode={gameMode} />}
       {showStatsModal && mounted && <PsiStatsModal stats={stats} deckSize={deckSize} onClose={() => setShowStatsModal(false)} />}
 
-      {/* HEADER - Fixed Height */}
-      <header className="shrink-0 z-30 px-3 py-2 md:p-4 border-b border-slate-800 bg-slate-900/50 backdrop-blur-sm sticky top-0 flex flex-col md:flex-row justify-between items-center gap-2">
+      {/* HEADER: shrink-0 so it never collapses */}
+      <header className="shrink-0 z-30 px-3 py-2 md:p-4 border-b border-slate-800 bg-slate-900/50 backdrop-blur-sm flex flex-col md:flex-row justify-between items-center gap-2">
         <div className="flex items-center w-full md:w-auto justify-between">
              <div className="flex items-center gap-2 md:gap-3">
                <MagickalBackLink href="/the-magick-psychic-school/psychic-training" text="Exit" className="text-xs text-slate-400 hover:text-white" />
@@ -517,7 +511,7 @@ export default function PsiTrainer() {
                </h1>
              </div>
              
-             {/* Mobile: Controls Row */}
+             {/* UX IMPROVEMENT: Always visible controls on Mobile */}
              <div className="flex md:hidden gap-1 items-center">
                <button onClick={toggleSound} className="p-2 text-slate-400 hover:text-white">{soundEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}</button>
                <button onClick={() => setShowInstructions(true)} className="p-2 text-slate-400 hover:text-white"><Info size={18} /></button>
@@ -525,30 +519,32 @@ export default function PsiTrainer() {
              </div>
         </div>
         
-        {/* Stats Trigger (Centered on Desktop, Below Title on Mobile) */}
+        {/* UX IMPROVEMENT: Stats Button (Pill Shape + Icons + Clickable) */}
         <button 
             onClick={() => setShowStatsModal(true)}
-            className="flex items-center gap-4 md:gap-6 text-sm font-medium w-full md:w-auto justify-center bg-white/5 hover:bg-white/10 p-2 md:p-0 md:bg-transparent rounded-lg transition-colors cursor-pointer group"
+            className="group flex items-center gap-2 md:gap-4 bg-indigo-900/40 hover:bg-indigo-900/60 border border-indigo-500/30 rounded-full px-3 py-1 md:px-4 md:py-2 transition-all cursor-pointer w-full md:w-auto justify-between md:justify-center"
         >
-            <div className="flex flex-col items-center">
-              <span className="text-slate-400 text-[9px] uppercase tracking-wider group-hover:text-indigo-300">Accuracy</span>
-              <span className={`text-base md:text-lg font-bold ${getAccuracy() > 25 ? 'text-green-400' : 'text-slate-200'}`}>
-                {getAccuracy()}%
-              </span>
+            <div className="flex items-center gap-2 text-indigo-400">
+                <BarChart3 size={16} />
+                <div className="h-4 w-px bg-indigo-500/30"></div>
             </div>
-            <div className="h-6 w-px bg-slate-700"></div>
-            <div className="flex flex-col items-center">
-              <span className="text-slate-400 text-[9px] uppercase tracking-wider group-hover:text-indigo-300">Streak</span>
-              <div className="flex items-center gap-1">
-                <Activity className="w-3 h-3 text-orange-400" />
-                <span className="text-base md:text-lg font-bold">{stats.streak}</span>
-              </div>
+
+            <div className="flex items-center gap-3 md:gap-5 text-xs md:text-sm font-mono">
+                <div className="flex flex-col items-center leading-none">
+                    <span className="text-[9px] text-slate-400 uppercase">Acc</span>
+                    <span className={`font-bold ${getAccuracy() > 25 ? 'text-green-400' : 'text-slate-200'}`}>{getAccuracy()}%</span>
+                </div>
+                <div className="flex flex-col items-center leading-none">
+                    <span className="text-[9px] text-slate-400 uppercase">Strk</span>
+                    <span className="font-bold text-slate-200">{stats.streak}</span>
+                </div>
+                <div className="flex flex-col items-center leading-none">
+                    <span className="text-[9px] text-slate-400 uppercase">N</span>
+                    <span className="font-bold text-slate-200">{stats.trials}</span>
+                </div>
             </div>
-            <div className="h-6 w-px bg-slate-700"></div>
-            <div className="flex flex-col items-center">
-              <span className="text-slate-400 text-[9px] uppercase tracking-wider group-hover:text-indigo-300">Trials</span>
-              <span className="text-base md:text-lg font-bold">{stats.trials}</span>
-            </div>
+
+            <ChevronDown size={14} className="text-indigo-400 group-hover:translate-y-0.5 transition-transform" />
         </button>
             
         {/* Desktop Controls (Right) */}
@@ -559,11 +555,12 @@ export default function PsiTrainer() {
         </div>
       </header>
 
-      {/* MAIN GAME AREA - Flex 1 to take all space */}
-      <main className="flex-1 w-full min-h-0 flex flex-col items-center justify-between p-2 md:p-4 overflow-hidden relative z-10">
+      {/* MAIN GAME AREA - Layout Lockdown */}
+      {/* flex-1 and min-h-0 ensures this div fills available space but SHRINKS if needed */}
+      <main className="flex-1 flex flex-col items-center justify-between p-2 md:p-4 min-h-0 w-full relative z-10">
         
         {/* Top: Instruction Text */}
-        <div className="text-center w-full shrink-0 min-h-[30px] flex items-center justify-center">
+        <div className="text-center w-full shrink-0 min-h-[30px] flex items-center justify-center mb-2">
           <p className="text-slate-300 text-sm md:text-lg animate-in fade-in slide-in-from-top-2 duration-500 key={gameMode}">
             {gameMode === 'FIND_DEVIL' 
               ? "Instinct: Which card feels 'heavy' or dangerous?" 
@@ -571,16 +568,17 @@ export default function PsiTrainer() {
           </p>
         </div>
 
-        {/* Center: Card Grid (Takes max space) */}
-        <div className="flex-1 w-full flex items-center justify-center min-h-0 py-2">
+        {/* Center: Card Grid (The Grid Lockdown) */}
+        {/* flex-1 min-h-0 forces this container to take remaining height but allow internal shrinkage */}
+        <div className="flex-1 w-full min-h-0">
             <div 
-                className="grid gap-2 md:gap-4 w-full h-full max-h-full"
+                className="grid gap-2 w-full h-full"
                 style={{
-                    // Use standard aspect ratio but limit by max-h-full to prevent overflow
-                    maxWidth: '100%',
-                    aspectRatio: gridAspectRatio,
-                    gridTemplateColumns: `repeat(${cols}, 1fr)`,
-                    gridTemplateRows: `repeat(${rows}, 1fr)`
+                    // CRITICAL: Forces cards to shrink/expand to fill exactly the container
+                    // Mobile: 2x2, Desktop: 4x1 (1 row)
+                    // minmax(0, 1fr) is essential for shrinking past content size
+                    gridTemplateColumns: `repeat(${window.innerWidth >= 768 ? 4 : 2}, minmax(0, 1fr))`,
+                    gridTemplateRows: `repeat(${window.innerWidth >= 768 ? 1 : 2}, minmax(0, 1fr))`
                 }}
             >
             {cards.map((card, index) => (
@@ -588,20 +586,11 @@ export default function PsiTrainer() {
                     key={`${card.id}-${index}`} 
                     onClick={() => handleCardClick(index)}
                     disabled={gameState === 'REVEALED'}
+                    // Remove fixed heights (h-48, etc). Use h-full w-full relative to grid cell.
                     className="group relative w-full h-full perspective-1000 focus:outline-none transition-transform active:scale-95"
                 >
                     <div className={`relative w-full h-full transition-all duration-500 transform-style-3d ${card.isFlipped ? 'rotate-y-180' : ''}`}>
                     
-                        {/* THE STRUT: Ensures card maintains ratio */}
-                        <svg 
-                            viewBox="0 0 200 300"
-                            className="block w-full h-full opacity-0 pointer-events-none select-none"
-                            preserveAspectRatio="none"
-                            aria-hidden="true"
-                        >
-                            <rect width="200" height="300" fill="transparent"/>
-                        </svg>
-
                         {/* Front (Hidden) */}
                         <div className="absolute inset-0 w-full h-full backface-hidden">
                             <div className="w-full h-full bg-slate-800 rounded-xl border-2 border-indigo-500/30 flex items-center justify-center relative overflow-hidden group-hover:border-indigo-400 transition-colors shadow-lg">
@@ -617,11 +606,12 @@ export default function PsiTrainer() {
                             ${card.type === 'DEVIL' ? 'border-red-900/50 bg-linear-to-br from-red-950/30 to-slate-900' : 'border-blue-900/50 bg-linear-to-br from-blue-950/30 to-slate-900'}
                             ${gameState === 'REVEALED' && card.isTarget ? 'ring-2 ring-offset-2 ring-offset-slate-950 ' + (card.type === 'DEVIL' ? 'ring-red-500' : 'ring-yellow-400') : ''}
                         `}>
+                            {/* Icon scales with container but maxes out at 60% to allow breathing room */}
                             <div className="w-[60%] h-[60%] flex items-center justify-center">
                                 {card.type === 'DEVIL' ? <DevilIcon /> : <AngelIcon />}
                             </div>
                             
-                            <span className={`absolute bottom-2 text-[10px] md:text-xs font-bold tracking-widest uppercase opacity-60
+                            <span className={`absolute bottom-4 text-[10px] md:text-xs font-bold tracking-widest uppercase opacity-60
                                 ${card.type === 'DEVIL' ? 'text-red-400' : 'text-blue-200'}
                             `}>
                                 {card.type}
@@ -634,8 +624,8 @@ export default function PsiTrainer() {
             </div>
         </div>
 
-        {/* Bottom: Feedback & Next Button */}
-        <div className="shrink-0 w-full flex flex-col items-center justify-center h-16 md:h-20 gap-2 mb-2">
+        {/* Bottom: Feedback & Next Button - Shrink-0 */}
+        <div className="shrink-0 w-full flex flex-col items-center justify-center h-16 md:h-20 gap-2 mt-2">
           {gameState === 'REVEALED' ? (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-300 flex flex-col items-center gap-2 w-full">
                <div className={`text-lg md:text-xl font-bold flex items-center gap-2 ${feedback?.type === 'success' ? 'text-green-400' : 'text-red-400'}`}>
@@ -659,7 +649,7 @@ export default function PsiTrainer() {
 
       </main>
 
-      {/* FOOTER CONTROLS - Fixed Height */}
+      {/* FOOTER CONTROLS - Shrink-0 */}
       <footer className="shrink-0 relative z-20 border-t border-indigo-900/30 bg-slate-950/80 backdrop-blur h-14 md:h-16 flex items-center justify-center px-4">
          {/* Mode Selector */}
          <div className="bg-slate-900 p-1 rounded-full border border-slate-800 flex relative shadow-lg">
