@@ -4,8 +4,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { 
-  Settings, RefreshCw, Eye, EyeOff, Check, X, BarChart2, ArrowLeft, 
-  Sparkles, Moon, Sun, Layers, Wind, Zap, Lock
+  Settings, RefreshCw, Eye, Check, X, BarChart2, ArrowLeft, 
+  Sparkles, Moon, Sun, Zap, Lock, Volume2
 } from 'lucide-react';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
 import RoomsButton from '@/app/components/RoomsButton';
@@ -921,7 +921,7 @@ const Button = ({ onClick, children, variant = "primary", className = "", disabl
   return (
     <button onClick={onClick} disabled={disabled} className={`${base} ${variants[variant]} ${className}`}>
       <span className="relative z-10 flex items-center gap-2">{children}</span>
-      {variant === 'primary' && <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/0 via-amber-500/10 to-indigo-500/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />}
+      {variant === 'primary' && <div className="absolute inset-0 bg-linear-to-r from-indigo-500/0 via-amber-500/10 to-indigo-500/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700" />}
     </button>
   );
 };
@@ -1010,7 +1010,7 @@ export default function SensesApp() {
                  <Eye className="w-20 h-20 text-amber-100 relative z-10 drop-shadow-[0_0_15px_rgba(251,191,36,0.3)]" />
                  <Sun className="w-16 h-16 text-amber-500 absolute -bottom-2 -right-2 opacity-50" />
             </div>
-            <h1 className="text-4xl md:text-6xl font-serif text-transparent bg-clip-text bg-gradient-to-b from-amber-100 to-amber-600 tracking-widest mb-2">
+            <h1 className="text-4xl md:text-6xl font-serif text-transparent bg-clip-text bg-linear-to-b from-amber-100 to-amber-600 tracking-widest mb-2">
             REMOTE VIEWING
             </h1>
             <p className="text-indigo-300 font-serif italic tracking-wide text-lg">
@@ -1087,7 +1087,7 @@ export default function SensesApp() {
             
             {/* Left Column: The "Hidden" Card */}
             <div className="lg:col-span-5 flex flex-col gap-4">
-                <Card className="aspect-[3/4] relative group transition-all duration-500 hover:border-indigo-500/50">
+                <Card className="aspect-3/4 relative group transition-all duration-500 hover:border-indigo-500/50">
                     <div className="absolute inset-0 bg-slate-950 flex flex-col items-center justify-center p-8 text-center bg-[url('https://www.transparenttextures.com/patterns/stardust.png')]">
                         <div className="absolute inset-0 bg-indigo-900/10 radial-gradient-mask"></div>
                         
@@ -1116,7 +1116,7 @@ export default function SensesApp() {
                     </div>
                     <div className="w-full h-1 bg-slate-800 rounded-full overflow-hidden">
                         <div 
-                            className="h-full bg-gradient-to-r from-indigo-600 to-amber-600 transition-all duration-500"
+                            className="h-full bg-linear-to-r from-indigo-600 to-amber-600 transition-all duration-500"
                             style={{ width: `${(answeredCount/totalCategories)*100}%` }}
                         ></div>
                     </div>
@@ -1154,7 +1154,7 @@ export default function SensesApp() {
         </div>
 
         {/* Floating Action Bar */}
-        <div className="fixed bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-slate-950 via-slate-950/90 to-transparent flex justify-center z-50 pointer-events-none">
+        <div className="fixed bottom-0 left-0 right-0 p-6 bg-linear-to-t from-slate-950 via-slate-950/90 to-transparent flex justify-center z-50 pointer-events-none">
           <div className="pointer-events-auto w-full max-w-md">
             <Button 
                 onClick={submitGuesses} 
@@ -1182,13 +1182,13 @@ export default function SensesApp() {
         {/* Top Section: The Reveal */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
             
-            <Card className="aspect-[4/3] md:aspect-square bg-black border-amber-500/20 group">
+            <Card className="aspect-4/3 md:aspect-square bg-black border-amber-500/20 group">
                 <img 
                     src={imageUrl} 
                     alt="Target" 
-                    className="w-full h-full object-cover opacity-0 animate-in fade-in duration-[2000ms] fill-mode-forwards"
+                    className="w-full h-full object-cover opacity-0 animate-in fade-in duration-2000 fill-mode-forwards"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+                <div className="absolute inset-0 bg-linear-to-t from-black/80 via-transparent to-transparent"></div>
                 <div className="absolute bottom-0 left-0 p-6">
                     <span className="block text-amber-500 text-xs font-mono mb-1 uppercase tracking-widest">Target Identity Confirmed</span>
                     <h2 className="text-3xl font-serif text-white">{currentLevel.concept}</h2>
@@ -1216,7 +1216,7 @@ export default function SensesApp() {
                          </div>
                          <div>
                              <div className="text-xs text-slate-500 uppercase mb-1">Pool</div>
-                             <div className="text-xl text-amber-500/80 font-serif capitalize text-sm pt-1">{currentLevel.pool}</div>
+                             <div className="text-amber-500/80 font-serif capitalize text-sm pt-1">{currentLevel.pool}</div>
                          </div>
                      </div>
                 </div>
@@ -1329,7 +1329,7 @@ export default function SensesApp() {
     if (!showSettings) return null;
 
     return (
-      <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200">
+      <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-100 flex items-center justify-center p-4 animate-in fade-in duration-200">
         <Card className="w-full max-w-md bg-slate-950 border border-slate-800">
           <div className="p-6 space-y-8">
             <div className="flex items-center justify-between">
@@ -1374,8 +1374,8 @@ export default function SensesApp() {
     <main className="relative min-h-screen w-full bg-slate-950 text-slate-200 font-sans selection:bg-amber-500/30 selection:text-amber-100 overflow-hidden flex flex-col">
       {/* Background Ambience */}
       <div className="fixed inset-0 z-0 pointer-events-none">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,_rgba(49,46,129,0.2),_rgba(2,6,23,1))]" />
-          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-indigo-500/20 to-transparent" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(49,46,129,0.2),rgba(2,6,23,1))]" />
+          <div className="absolute top-0 left-0 right-0 h-px bg-linear-to-r from-transparent via-indigo-500/20 to-transparent" />
       </div>
       
       {/* Header */}
@@ -1433,7 +1433,3 @@ export default function SensesApp() {
     </main>
   );
 }
-
-// --- ICONS ---
-// Simple component placeholders for icons not used in main logic but imported
-function Volume2({ className }: { className?: string }) { return <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>; }
