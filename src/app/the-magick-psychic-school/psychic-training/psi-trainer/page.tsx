@@ -284,12 +284,16 @@ const PsiStatsModal = ({ stats, deckSize, onClose, breakdown }: { stats: any, de
                             <div><strong className="text-pink-300">The Clairvoyant (Z &ge; 1.96)</strong> - Significant (p &lt; 0.05)</div>
                             <div><strong className="text-indigo-300">The Channel (Z &ge; 1.65)</strong> - Tapping into flow</div>
                             <div><strong className="text-cyan-300">The Adept (Z &ge; 1.0)</strong> - Above Chance</div>
+                            <div><strong className="text-cyan-300">The Spark (Z &ge; 0.5)</strong> - Pulse of intuition</div>
+                            <div><strong className="text-cyan-300">The Initiate (Z &ge; 0.0)</strong> - Above baseline</div>
                         </div>
                     </div>
                     <div>
                         <h4 className="text-xs uppercase tracking-widest text-blue-400 mb-3 pb-2">Psi-Missing (Negative)</h4>
                         <div className="space-y-2 text-xs text-slate-400">
                             <div><strong className="text-slate-300">The Sleeper (Z &lt; 0.0)</strong> - Just below baseline</div>
+                            <div><strong className="text-slate-300">The Dreamer (Z &lt; -0.5)</strong> -  Intuition active but blocking</div>
+                            <div><strong className="text-slate-300">The Blocker (Z &lt; -1.0)</strong> - Dodging targets. Logic fighting gut</div>
                             <div><strong className="text-slate-400">The Mirror (Z &le; -2.0)</strong> - Significant Avoidance</div>
                             <div><strong className="text-slate-500">The Shadow (Z &le; -3.0)</strong> - Highly Significant Displacement</div>
                             <div><strong className="text-slate-600">The Void (Z &le; -4.0)</strong> - Total Suppression</div>
@@ -813,7 +817,7 @@ export default function PsiTrainer() {
                 : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              Detect Threat
+              Detect Threat (Find Devil)
             </button>
             <button 
               onClick={() => switchMode('FIND_ANGEL')}
@@ -823,7 +827,7 @@ export default function PsiTrainer() {
                 : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              Sense Safety
+              Sense Safety (Find Angel)
             </button>
         </div>
          
