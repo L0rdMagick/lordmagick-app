@@ -572,14 +572,7 @@ export default function PsiTrainer() {
         {/* flex-1 min-h-0 forces this container to take remaining height but allow internal shrinkage */}
         <div className="flex-1 w-full min-h-0">
             <div 
-                className="grid gap-2 w-full h-full"
-                style={{
-                    // CRITICAL: Forces cards to shrink/expand to fill exactly the container
-                    // Mobile: 2x2, Desktop: 4x1 (1 row)
-                    // minmax(0, 1fr) is essential for shrinking past content size
-                    gridTemplateColumns: `repeat(${window.innerWidth >= 768 ? 4 : 2}, minmax(0, 1fr))`,
-                    gridTemplateRows: `repeat(${window.innerWidth >= 768 ? 1 : 2}, minmax(0, 1fr))`
-                }}
+                className="grid gap-2 w-full h-full grid-cols-2 grid-rows-2 md:grid-cols-4 md:grid-rows-1"
             >
             {cards.map((card, index) => (
                 <button
@@ -591,6 +584,16 @@ export default function PsiTrainer() {
                 >
                     <div className={`relative w-full h-full transition-all duration-500 transform-style-3d ${card.isFlipped ? 'rotate-y-180' : ''}`}>
                     
+                        {/* THE STRUT: Ensures card maintains ratio */}
+                        <svg 
+                            viewBox="0 0 200 300"
+                            className="block w-full h-full opacity-0 pointer-events-none select-none"
+                            preserveAspectRatio="none"
+                            aria-hidden="true"
+                        >
+                            <rect width="200" height="300" fill="transparent"/>
+                        </svg>
+
                         {/* Front (Hidden) */}
                         <div className="absolute inset-0 w-full h-full backface-hidden">
                             <div className="w-full h-full bg-slate-800 rounded-xl border-2 border-indigo-500/30 flex items-center justify-center relative overflow-hidden group-hover:border-indigo-400 transition-colors shadow-lg">
