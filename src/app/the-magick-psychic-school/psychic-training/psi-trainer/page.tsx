@@ -11,8 +11,9 @@ import { createBrowserClient } from '@supabase/ssr';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
 
 /**
- * --- PSI MATH ENGINE ---
+ * --- 1. MATH & HELPERS (GOLD STANDARD) ---
  */
+
 const calculatePsiScore = (hits: number, trials: number, chance: number) => {
   if (trials === 0) return 0;
   const expected = trials * chance;
@@ -21,6 +22,7 @@ const calculatePsiScore = (hits: number, trials: number, chance: number) => {
 };
 
 const erf = (x: number) => {
+  // Approximation of the error function
   const a1 =  0.254829592;
   const a2 = -0.284496736;
   const a3 =  1.421413741;
@@ -36,7 +38,7 @@ const erf = (x: number) => {
 
 const calculateProbability = (z: number) => {
   const pValue = 0.5 * (1 - erf(Math.abs(z) / Math.sqrt(2)));
-  if (pValue <= 0) return "1 in ∞"; 
+  if (pValue <= 0) return "1 in ∞";
   const oneInX = 1 / pValue;
   if (oneInX > 1000000) return `1 in ${(oneInX / 1000000).toFixed(1)}M`;
   if (oneInX > 1000) return `1 in ${(oneInX / 1000).toFixed(1)}k`;
@@ -45,6 +47,7 @@ const calculateProbability = (z: number) => {
 };
 
 const getPsiTier = (z: number) => {
+  // POSITIVE (Psi-Hitting)
   if (z >= 4.0) return { name: "The Oracle", color: "text-amber-300 shadow-amber-500/50" };
   if (z >= 3.0) return { name: "The Medium", color: "text-purple-300 shadow-purple-500/50" };
   if (z >= 1.96) return { name: "The Clairvoyant", color: "text-pink-300 shadow-pink-500/50" };
@@ -52,12 +55,251 @@ const getPsiTier = (z: number) => {
   if (z >= 1.0) return { name: "The Adept", color: "text-cyan-300 shadow-cyan-500/50" };
   if (z >= 0.5) return { name: "The Spark", color: "text-teal-300 shadow-teal-500/50" };
   if (z >= 0.0) return { name: "The Initiate", color: "text-slate-200" };
+
+  // NEGATIVE (Psi-Missing)
   if (z <= -4.0) return { name: "The Void", color: "text-slate-500" };
   if (z <= -3.0) return { name: "The Shadow", color: "text-slate-400" };
   if (z <= -2.0) return { name: "The Mirror", color: "text-slate-400" };
   if (z <= -1.0) return { name: "The Blocker", color: "text-slate-400" };
   if (z <= -0.5) return { name: "The Dreamer", color: "text-slate-400" };
+  
   return { name: "The Sleeper", color: "text-slate-300" };
+};
+
+/**
+ * --- 2. SUB-COMPONENTS ---
+ */
+
+const RadarChart = ({ stats, categories }: { stats: any, categories: any[] }) => {
+    const size = 200;
+    const center = size / 2;
+    const radius = 70; 
+    
+    const points = categories.map((cat, i) => {
+        const angle = (Math.PI * 2 * i) / categories.length - Math.PI / 2;
+        const stat = stats[cat.id] || { hits: 0, attempts: 0 };
+        const percentage = stat.attempts > 0 ? (stat.hits / stat.attempts) : 0;
+        // Limit radius to valid visualization even with 0 attempts
+        const dist = radius * percentage; 
+        
+        return [
+            center + dist * Math.cos(angle),
+            center + dist * Math.sin(angle)
+        ];
+    });
+
+    // Fix for 2 points (Angel/Devil) to make a shape, we double back or create a width
+    // For general robustness, if points < 3, we adjust logic or just draw a line
+    // Here we will just draw the path. For 2 points it creates a straight line back and forth.
+    const pathData = points.length > 0 
+        ? points.map((p, i) => (i === 0 ? 'M' : 'L') + p[0] + ',' + p[1]).join(' ') + 'Z'
+        : '';
+
+    return (
+        <div className="flex flex-col items-center justify-center py-4">
+            <h4 className="text-amber-200 font-serif text-lg flex items-center gap-2 mb-2">
+                <Sparkles size={16}/> Intuition Field
+            </h4>
+            <div className="relative">
+                <svg width={size} height={size} className="overflow-visible">
+                    {/* Background Webs */}
+                    {[0.25, 0.5, 0.75, 1].map((scale, k) => (
+                        <polygon 
+                            key={k}
+                            points={categories.map((_, i) => {
+                                const angle = (Math.PI * 2 * i) / categories.length - Math.PI / 2;
+                                const r = radius * scale;
+                                return `${center + r * Math.cos(angle)},${center + r * Math.sin(angle)}`;
+                            }).join(' ')}
+                            fill="none"
+                            stroke="#333"
+                            strokeWidth="1"
+                        />
+                    ))}
+                    {/* Axis Lines */}
+                    {categories.map((_, i) => {
+                        const angle = (Math.PI * 2 * i) / categories.length - Math.PI / 2;
+                        return (
+                            <line 
+                                key={i}
+                                x1={center} y1={center}
+                                x2={center + radius * Math.cos(angle)}
+                                y2={center + radius * Math.sin(angle)}
+                                stroke="#333"
+                                strokeWidth="1"
+                            />
+                        );
+                    })}
+                    {/* Data Shape */}
+                    <path d={pathData} fill="rgba(99, 102, 241, 0.3)" stroke="#6366f1" strokeWidth="2" />
+                    
+                    {/* Labels */}
+                    {categories.map((cat, i) => {
+                        const angle = (Math.PI * 2 * i) / categories.length - Math.PI / 2;
+                        const labelRadius = radius + 20;
+                        const x = center + labelRadius * Math.cos(angle);
+                        const y = center + labelRadius * Math.sin(angle);
+                        return (
+                            <text 
+                                key={cat.id} 
+                                x={x} y={y} 
+                                textAnchor="middle" 
+                                dominantBaseline="middle" 
+                                fill={cat.color}
+                                fontSize="10"
+                                fontWeight="bold"
+                                className="uppercase font-mono"
+                            >
+                                {cat.name}
+                            </text>
+                        );
+                    })}
+                </svg>
+                <div className="text-[10px] text-slate-500 text-center mt-2 italic">Threat vs Safety Resonance</div>
+            </div>
+        </div>
+    );
+};
+
+const StatsGrid = ({ stats, categories }: { stats: any, categories: any[] }) => {
+    return (
+        <div className="grid grid-cols-2 gap-3 mt-4">
+            {categories.map((cat) => {
+                const stat = stats[cat.id] || { hits: 0, attempts: 0 };
+                const percentage = stat.attempts > 0 ? Math.round((stat.hits / stat.attempts) * 100) : 0;
+                return (
+                    <div key={cat.id} className="bg-slate-900/50 border border-white/5 rounded p-3 flex flex-col items-center justify-center min-h-20">
+                        <span className={`text-[10px] uppercase tracking-widest mb-1 ${cat.color}`}>{cat.name}</span>
+                        <span className={`text-xl font-bold font-mono ${percentage > 0 ? 'text-white' : 'text-slate-600'}`}>{percentage}%</span>
+                        <span className="text-[9px] text-slate-500 mt-1">{stat.hits}/{stat.attempts}</span>
+                    </div>
+                );
+            })}
+        </div>
+    );
+};
+
+// --- 3. MAIN MODAL (Gold Standard) ---
+const PsiStatsModal = ({ stats, deckSize, onClose, breakdown }: { stats: any, deckSize: number, onClose: () => void, breakdown: any }) => {
+    const [supabase] = useState(() => createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!));
+    const [lifetimeStats, setLifetimeStats] = useState({ hits: 0, trials: 0 });
+    const [loadingLifetime, setLoadingLifetime] = useState(false);
+    
+    const sessionTrials = stats.trials;
+    const sessionHits = stats.hits;
+    const chance = 1 / deckSize;
+    const sessionAccuracy = sessionTrials > 0 ? (sessionHits / sessionTrials) * 100 : 0;
+    const sessionZ = calculatePsiScore(sessionHits, sessionTrials, chance);
+    const sessionProb = calculateProbability(sessionZ);
+    const sessionTier = getPsiTier(sessionZ);
+
+    const categories = [
+        { id: 'DEVIL', name: 'Threat', color: '#f87171' },
+        { id: 'ANGEL', name: 'Safety', color: '#60a5fa' }
+    ];
+  
+    useEffect(() => {
+        const fetchHistory = async () => {
+          setLoadingLifetime(true);
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) { setLoadingLifetime(false); return; }
+          
+          const { data, error } = await supabase
+            .from('reports')
+            .select('chart_data')
+            .eq('user_id', user.id)
+            .eq('category', 'training')
+            .eq('name', 'Psi Trainer');
+
+          if (!error && data) {
+              let h = 0; let t = 0;
+              data.forEach((row: any) => { 
+                  const chart = row.chart_data; 
+                  if (chart) { 
+                      h += chart.hits || 0; 
+                      t += chart.trials || 0; 
+                  } 
+              });
+              setLifetimeStats({ hits: h + sessionHits, trials: t + sessionTrials });
+          }
+          setLoadingLifetime(false);
+        };
+        fetchHistory();
+    }, [sessionHits, sessionTrials, supabase]);
+  
+    const lifeAccuracy = lifetimeStats.trials > 0 ? (lifetimeStats.hits / lifetimeStats.trials) * 100 : 0;
+    const lifeZ = calculatePsiScore(lifetimeStats.hits, lifetimeStats.trials, chance);
+    const lifeProb = calculateProbability(lifeZ);
+    const lifeTier = getPsiTier(lifeZ);
+  
+    return createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/95 backdrop-blur-md p-4 animate-in fade-in duration-300" onClick={onClose}>
+            <div className="max-w-3xl w-full bg-slate-900 border border-indigo-500/20 rounded-xl p-6 relative max-h-[85dvh] overflow-y-auto shadow-[0_0_50px_rgba(99,102,241,0.2)]" onClick={(e) => e.stopPropagation()}>
+                <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-white"><X /></button>
+                <h2 className="text-2xl font-serif text-white mb-6 flex items-center gap-2"><Activity className="text-indigo-400" /> Performance Analysis</h2>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                    {/* CURRENT */}
+                    <div className="bg-black/20 rounded-lg p-4 border border-white/5">
+                        <h3 className="text-xs uppercase tracking-[0.2em] text-indigo-400 mb-4 text-center">Current Session</h3>
+                        <div className="space-y-2 text-sm font-mono">
+                            <div className="flex justify-between border-b border-white/5 pb-1"><span>Hits / Trials</span> <span className="text-white">{sessionHits} / {sessionTrials}</span></div>
+                            <div className="flex justify-between border-b border-white/5 pb-1"><span>Accuracy</span> <span className="text-white">{sessionAccuracy.toFixed(1)}%</span></div>
+                            <div className="flex justify-between border-b border-white/5 pb-1"><span>Psi Score (Z)</span> <span className={sessionTier.color.split(' ')[0]}>{sessionZ.toFixed(2)}</span></div>
+                            <div className="flex justify-between"><span>Probability</span> <span className="text-green-300">{sessionProb}</span></div>
+                            <div className={`mt-2 text-center text-xs font-bold uppercase tracking-widest ${sessionTier.color}`}>{sessionTier.name}</div>
+                        </div>
+                    </div>
+
+                    {/* LIFETIME */}
+                    <div className="bg-black/20 rounded-lg p-4 border border-white/5 relative">
+                        <h3 className="text-xs uppercase tracking-[0.2em] text-amber-300 mb-4 text-center">Lifetime Record</h3>
+                        {loadingLifetime ? (
+                            <div className="absolute inset-0 flex items-center justify-center"><Sparkles className="animate-spin text-indigo-500"/></div>
+                        ) : (
+                            <div className="space-y-2 text-sm font-mono">
+                                <div className="flex justify-between border-b border-white/5 pb-1"><span>Hits / Trials</span> <span className="text-white">{lifetimeStats.hits} / {lifetimeStats.trials}</span></div>
+                                <div className="flex justify-between border-b border-white/5 pb-1"><span>Accuracy</span> <span className="text-white">{lifeAccuracy.toFixed(1)}%</span></div>
+                                <div className="flex justify-between border-b border-white/5 pb-1"><span>Psi Score (Z)</span> <span className={lifeTier.color.split(' ')[0]}>{lifeZ.toFixed(2)}</span></div>
+                                <div className="flex justify-between"><span>Probability</span> <span className="text-green-300">{lifeProb}</span></div>
+                                <div className={`mt-2 text-center text-xs font-bold uppercase tracking-widest ${lifeTier.color}`}>{lifeTier.name}</div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* VISUALIZATION */}
+                <div className="mb-8 border-t border-white/10 pt-6">
+                    <RadarChart stats={breakdown} categories={categories} />
+                    <StatsGrid stats={breakdown} categories={categories} />
+                </div>
+                
+                {/* DEFINITIONS LEGEND */}
+                <div className="grid md:grid-cols-2 gap-8 border-t border-white/10 pt-6">
+                    <div>
+                        <h4 className="text-xs uppercase tracking-widest text-amber-400 mb-3 pb-2">Psi-Hitting (Positive)</h4>
+                        <div className="space-y-2 text-xs text-slate-400">
+                            <div><strong className="text-amber-200">The Oracle (Z &ge; 4.0)</strong> - World Class Anomaly</div>
+                            <div><strong className="text-purple-300">The Medium (Z &ge; 3.0)</strong> - Highly Significant</div>
+                            <div><strong className="text-pink-300">The Clairvoyant (Z &ge; 1.96)</strong> - Significant (p &lt; 0.05)</div>
+                            <div><strong className="text-indigo-300">The Channel (Z &ge; 1.65)</strong> - Tapping into flow</div>
+                            <div><strong className="text-cyan-300">The Adept (Z &ge; 1.0)</strong> - Above Chance</div>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 className="text-xs uppercase tracking-widest text-blue-400 mb-3 pb-2">Psi-Missing (Negative)</h4>
+                        <div className="space-y-2 text-xs text-slate-400">
+                            <div><strong className="text-slate-300">The Sleeper (Z &lt; 0.0)</strong> - Just below baseline</div>
+                            <div><strong className="text-slate-400">The Mirror (Z &le; -2.0)</strong> - Significant Avoidance</div>
+                            <div><strong className="text-slate-500">The Shadow (Z &le; -3.0)</strong> - Highly Significant Displacement</div>
+                            <div><strong className="text-slate-600">The Void (Z &le; -4.0)</strong> - Total Suppression</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>,
+        document.body
+    );
 };
 
 /**
@@ -211,7 +453,7 @@ const CardBack = () => (
 );
 
 /**
- * --- MODALS & COMPONENTS ---
+ * --- MODALS ---
  */
 
 const InstructionModal = ({ onClose, mode }: { onClose: () => void, mode: string }) => (
@@ -228,99 +470,6 @@ const InstructionModal = ({ onClose, mode }: { onClose: () => void, mode: string
       </div>
     </div>
 );
-
-// Portal Modal Component
-const PsiStatsModal = ({ stats, deckSize, onClose }: { stats: any, deckSize: number, onClose: () => void }) => {
-    const [supabase] = useState(() => createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!));
-    const [lifetimeStats, setLifetimeStats] = useState({ hits: 0, trials: 0 });
-    const [loadingLifetime, setLoadingLifetime] = useState(false);
-    
-    const sessionTrials = stats.trials;
-    const sessionHits = stats.hits;
-    const chance = 1 / deckSize;
-    const sessionAccuracy = sessionTrials > 0 ? (sessionHits / sessionTrials) * 100 : 0;
-    const sessionZ = calculatePsiScore(sessionHits, sessionTrials, chance);
-    const sessionProb = calculateProbability(sessionZ);
-    const sessionTier = getPsiTier(sessionZ);
-  
-    useEffect(() => {
-        const fetchHistory = async () => {
-          setLoadingLifetime(true);
-          const { data: { user } } = await supabase.auth.getUser();
-          if (!user) { setLoadingLifetime(false); return; }
-          const { data, error } = await supabase.from('reports').select('chart_data').eq('user_id', user.id).eq('category', 'training').eq('name', 'Psi Trainer');
-          if (!error && data) {
-              let h = 0; let t = 0;
-              data.forEach((row: any) => { const chart = row.chart_data; if (chart) { h += chart.hits || 0; t += chart.trials || 0; } });
-              setLifetimeStats({ hits: h + sessionHits, trials: t + sessionTrials });
-          }
-          setLoadingLifetime(false);
-        };
-        fetchHistory();
-    }, [sessionHits, sessionTrials, supabase]);
-  
-    const lifeAccuracy = lifetimeStats.trials > 0 ? (lifetimeStats.hits / lifetimeStats.trials) * 100 : 0;
-    const lifeZ = calculatePsiScore(lifetimeStats.hits, lifetimeStats.trials, chance);
-    const lifeProb = calculateProbability(lifeZ);
-    const lifeTier = getPsiTier(lifeZ);
-  
-    return createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/95 backdrop-blur-md p-4 animate-in fade-in duration-300" onClick={onClose}>
-            <div className="max-w-3xl w-full bg-slate-900 border border-indigo-500/20 rounded-xl p-6 relative max-h-[75vh] mb-10 overflow-y-auto shadow-[0_0_50px_rgba(99,102,241,0.2)]" onClick={(e) => e.stopPropagation()}>
-                <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-white"><X /></button>
-                <h2 className="text-2xl font-serif text-white mb-6 flex items-center gap-2"><Activity className="text-indigo-400" /> Performance Analysis</h2>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                    <div className="bg-black/20 rounded-lg p-4 border border-white/5">
-                        <h3 className="text-xs uppercase tracking-[0.2em] text-indigo-400 mb-4 text-center">Current Session</h3>
-                        <div className="space-y-2 text-sm font-mono">
-                            <div className="flex justify-between border-b border-white/5 pb-1"><span>Hits / Trials</span> <span className="text-white">{sessionHits} / {sessionTrials}</span></div>
-                            <div className="flex justify-between border-b border-white/5 pb-1"><span>Accuracy</span> <span className="text-white">{sessionAccuracy.toFixed(1)}%</span></div>
-                            <div className="flex justify-between border-b border-white/5 pb-1"><span>Psi Score (Z)</span> <span className={sessionZ >= 0 ? "text-amber-300" : "text-slate-400"}>{sessionZ.toFixed(2)}</span></div>
-                            <div className="flex justify-between"><span>Probability</span> <span className="text-green-300">{sessionProb}</span></div>
-                            <div className="mt-2 text-center text-xs font-bold uppercase tracking-widest text-white">{sessionTier.name}</div>
-                        </div>
-                    </div>
-                    <div className="bg-black/20 rounded-lg p-4 border border-white/5 relative">
-                        <h3 className="text-xs uppercase tracking-[0.2em] text-amber-300 mb-4 text-center">Lifetime Record</h3>
-                        {loadingLifetime ? (
-                            <div className="absolute inset-0 flex items-center justify-center"><Sparkles className="animate-spin text-indigo-500"/></div>
-                        ) : (
-                            <div className="space-y-2 text-sm font-mono">
-                                <div className="flex justify-between border-b border-white/5 pb-1"><span>Hits / Trials</span> <span className="text-white">{lifetimeStats.hits} / {lifetimeStats.trials}</span></div>
-                                <div className="flex justify-between border-b border-white/5 pb-1"><span>Accuracy</span> <span className="text-white">{lifeAccuracy.toFixed(1)}%</span></div>
-                                <div className="flex justify-between border-b border-white/5 pb-1"><span>Psi Score (Z)</span> <span className={lifeZ >= 0 ? "text-amber-300" : "text-slate-400"}>{lifeZ.toFixed(2)}</span></div>
-                                <div className="flex justify-between"><span>Probability</span> <span className="text-green-300">{lifeProb}</span></div>
-                                <div className="mt-2 text-center text-xs font-bold uppercase tracking-widest text-white">{lifeTier.name}</div>
-                            </div>
-                        )}
-                    </div>
-                </div>
-                
-                <div className="grid md:grid-cols-2 gap-8 border-t border-white/10 pt-6">
-                    <div>
-                        <h4 className="text-xs uppercase tracking-widest text-amber-400 mb-3 pb-2">Psi-Hitting (Positive)</h4>
-                        <div className="space-y-3 text-xs text-slate-400">
-                            <div><strong className="text-amber-200">The Oracle (Z &ge; 4.0)</strong> - World Class Anomaly</div>
-                            <div><strong className="text-purple-300">The Medium (Z &ge; 3.0)</strong> - Highly Significant</div>
-                            <div><strong className="text-pink-300">The Clairvoyant (Z &ge; 1.96)</strong> - Significant</div>
-                            <div><strong className="text-cyan-300">The Adept (Z &ge; 1.0)</strong> - Above Chance</div>
-                        </div>
-                    </div>
-                    <div>
-                        <h4 className="text-xs uppercase tracking-widest text-blue-400 mb-3 pb-2">Psi-Missing (Negative)</h4>
-                        <div className="space-y-3 text-xs text-slate-400">
-                            <div><strong className="text-slate-300">The Sleeper (Z &lt; 0.0)</strong> - Baseline</div>
-                            <div><strong className="text-slate-500">The Shadow (Z &le; -3.0)</strong> - Significant Displacement</div>
-                            <div><strong className="text-slate-600">The Void (Z &le; -4.0)</strong> - Total Suppression</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>,
-        document.body
-    );
-};
 
 /**
  * --- MAIN APP ---
@@ -340,13 +489,18 @@ export default function PsiTrainer() {
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
 
-  // Stats
+  // Updated Stats State to track categories
   const [stats, setStats] = useState({
     trials: 0,
     hits: 0,
     streak: 0,
     bestStreak: 0,
-    history: [] as { trial: number, zScore: number }[]
+    history: [] as { trial: number, zScore: number }[],
+    // Breakdown for Radar Chart
+    breakdown: {
+        DEVIL: { hits: 0, attempts: 0 },
+        ANGEL: { hits: 0, attempts: 0 }
+    } as Record<string, { hits: number, attempts: number }>
   });
 
   // Game Logic
@@ -413,6 +567,8 @@ export default function PsiTrainer() {
     setGameState('REVEALED');
 
     const isHit = clickedCard.isTarget;
+    // For tracking, we record based on the Game Mode (Target was DEVIL or ANGEL)
+    const targetKey = gameMode === 'FIND_DEVIL' ? 'DEVIL' : 'ANGEL';
     
     if (isHit) {
         audio.playHit();
@@ -428,12 +584,20 @@ export default function PsiTrainer() {
         const newStreak = isHit ? prev.streak + 1 : 0;
         const chance = 1 / deckSize;
         const z = calculatePsiScore(newHits, newTrials, chance);
+        
+        // Update Breakdown
+        const newBreakdown = { ...prev.breakdown };
+        if (!newBreakdown[targetKey]) newBreakdown[targetKey] = { hits: 0, attempts: 0 };
+        newBreakdown[targetKey].attempts += 1;
+        if (isHit) newBreakdown[targetKey].hits += 1;
+
         return {
           hits: newHits,
           trials: newTrials,
           streak: newStreak,
           bestStreak: Math.max(prev.bestStreak, newStreak),
-          history: [...prev.history, { trial: newTrials, zScore: z }]
+          history: [...prev.history, { trial: newTrials, zScore: z }],
+          breakdown: newBreakdown
         };
     });
   };
@@ -446,7 +610,14 @@ export default function PsiTrainer() {
   };
 
   const handleResetSimulation = () => {
-    setStats({ trials: 0, hits: 0, streak: 0, bestStreak: 0, history: [] });
+    setStats({ 
+        trials: 0, 
+        hits: 0, 
+        streak: 0, 
+        bestStreak: 0, 
+        history: [], 
+        breakdown: { DEVIL: { hits: 0, attempts: 0 }, ANGEL: { hits: 0, attempts: 0 } } 
+    });
     setGameState('WAITING');
     setShowSettings(false);
     startNewRound();
@@ -490,16 +661,15 @@ export default function PsiTrainer() {
   };
 
   return (
-    // FIX: Main container is h-dvh (not min-h), prevents any body scroll
     <div className="h-dvh w-full bg-slate-950 text-slate-100 font-sans selection:bg-indigo-500/30 flex flex-col overflow-hidden relative" style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}>
       
       <div className="absolute inset-0 bg-black/80 backdrop-blur-sm z-0" />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,#020617_90%)] z-0 opacity-80 pointer-events-none"></div>
 
       {showInstructions && <InstructionModal onClose={() => { setShowInstructions(false); startNewRound(); }} mode={gameMode} />}
-      {showStatsModal && mounted && <PsiStatsModal stats={stats} deckSize={deckSize} onClose={() => setShowStatsModal(false)} />}
+      {showStatsModal && mounted && <PsiStatsModal stats={stats} deckSize={deckSize} onClose={() => setShowStatsModal(false)} breakdown={stats.breakdown} />}
 
-      {/* HEADER: shrink-0 so it never collapses */}
+      {/* HEADER */}
       <header className="shrink-0 z-30 px-3 py-2 md:p-4 border-b border-slate-800 bg-slate-900/50 backdrop-blur-sm flex flex-col md:flex-row justify-between items-center gap-2">
         <div className="flex items-center w-full md:w-auto justify-between">
              <div className="flex items-center gap-2 md:gap-3">
@@ -511,7 +681,6 @@ export default function PsiTrainer() {
                </h1>
              </div>
              
-             {/* UX IMPROVEMENT: Always visible controls on Mobile */}
              <div className="flex md:hidden gap-1 items-center">
                <button onClick={toggleSound} className="p-2 text-slate-400 hover:text-white">{soundEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}</button>
                <button onClick={() => setShowInstructions(true)} className="p-2 text-slate-400 hover:text-white"><Info size={18} /></button>
@@ -519,7 +688,6 @@ export default function PsiTrainer() {
              </div>
         </div>
         
-        {/* UX IMPROVEMENT: Stats Button (Pill Shape + Icons + Clickable) */}
         <button 
             onClick={() => setShowStatsModal(true)}
             className="group flex items-center gap-2 md:gap-4 bg-indigo-900/40 hover:bg-indigo-900/60 border border-indigo-500/30 rounded-full px-3 py-1 md:px-4 md:py-2 transition-all cursor-pointer w-full md:w-auto justify-between md:justify-center"
@@ -547,7 +715,6 @@ export default function PsiTrainer() {
             <ChevronDown size={14} className="text-indigo-400 group-hover:translate-y-0.5 transition-transform" />
         </button>
             
-        {/* Desktop Controls (Right) */}
         <div className="hidden md:flex items-center gap-1 ml-4 pl-4 border-l border-slate-700">
             <button onClick={toggleSound} className="p-2 hover:bg-slate-800 rounded text-slate-400">{soundEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}</button>
             <button onClick={() => setShowInstructions(true)} className="p-2 hover:bg-slate-800 rounded text-slate-400"><Info size={18} /></button>
@@ -555,11 +722,9 @@ export default function PsiTrainer() {
         </div>
       </header>
 
-      {/* MAIN GAME AREA - Layout Lockdown */}
-      {/* flex-1 and min-h-0 ensures this div fills available space but SHRINKS if needed */}
+      {/* MAIN GAME AREA */}
       <main className="flex-1 flex flex-col items-center justify-between p-2 md:p-4 min-h-0 w-full relative z-10">
         
-        {/* Top: Instruction Text */}
         <div className="text-center w-full shrink-0 min-h-[30px] flex items-center justify-center mb-2">
           <p className="text-slate-300 text-sm md:text-lg animate-in fade-in slide-in-from-top-2 duration-500 key={gameMode}">
             {gameMode === 'FIND_DEVIL' 
@@ -568,8 +733,6 @@ export default function PsiTrainer() {
           </p>
         </div>
 
-        {/* Center: Card Grid (The Grid Lockdown) */}
-        {/* flex-1 min-h-0 forces this container to take remaining height but allow internal shrinkage */}
         <div className="flex-1 w-full min-h-0">
             <div 
                 className="grid gap-2 w-full h-full grid-cols-2 grid-rows-2 md:grid-cols-4 md:grid-rows-1"
@@ -579,22 +742,12 @@ export default function PsiTrainer() {
                     key={`${card.id}-${index}`} 
                     onClick={() => handleCardClick(index)}
                     disabled={gameState === 'REVEALED'}
-                    // Remove fixed heights (h-48, etc). Use h-full w-full relative to grid cell.
                     className="group relative w-full h-full perspective-1000 focus:outline-none transition-transform active:scale-95"
                 >
                     <div className={`relative w-full h-full transition-all duration-500 transform-style-3d ${card.isFlipped ? 'rotate-y-180' : ''}`}>
                     
-                        {/* THE STRUT: Ensures card maintains ratio */}
-                        <svg 
-                            viewBox="0 0 200 300"
-                            className="block w-full h-full opacity-0 pointer-events-none select-none"
-                            preserveAspectRatio="none"
-                            aria-hidden="true"
-                        >
-                            <rect width="200" height="300" fill="transparent"/>
-                        </svg>
+                        <svg viewBox="0 0 200 300" className="block w-full h-full opacity-0 pointer-events-none select-none" preserveAspectRatio="none" aria-hidden="true"><rect width="200" height="300" fill="transparent"/></svg>
 
-                        {/* Front (Hidden) */}
                         <div className="absolute inset-0 w-full h-full backface-hidden">
                             <div className="w-full h-full bg-slate-800 rounded-xl border-2 border-indigo-500/30 flex items-center justify-center relative overflow-hidden group-hover:border-indigo-400 transition-colors shadow-lg">
                                 <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,var(--tw-gradient-stops))] from-indigo-500 via-slate-900 to-slate-900"></div>
@@ -603,13 +756,11 @@ export default function PsiTrainer() {
                             </div>
                         </div>
 
-                        {/* Back (Revealed) */}
                         <div className={`
                             absolute inset-0 w-full h-full backface-hidden rotate-y-180 rounded-xl border-2 flex flex-col items-center justify-center bg-slate-900 shadow-xl
                             ${card.type === 'DEVIL' ? 'border-red-900/50 bg-linear-to-br from-red-950/30 to-slate-900' : 'border-blue-900/50 bg-linear-to-br from-blue-950/30 to-slate-900'}
                             ${gameState === 'REVEALED' && card.isTarget ? 'ring-2 ring-offset-2 ring-offset-slate-950 ' + (card.type === 'DEVIL' ? 'ring-red-500' : 'ring-yellow-400') : ''}
                         `}>
-                            {/* Icon scales with container but maxes out at 60% to allow breathing room */}
                             <div className="w-[60%] h-[60%] flex items-center justify-center">
                                 {card.type === 'DEVIL' ? <DevilIcon /> : <AngelIcon />}
                             </div>
@@ -627,7 +778,6 @@ export default function PsiTrainer() {
             </div>
         </div>
 
-        {/* Bottom: Feedback & Next Button - Shrink-0 */}
         <div className="shrink-0 w-full flex flex-col items-center justify-center h-16 md:h-20 gap-2 mt-2">
           {gameState === 'REVEALED' ? (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-300 flex flex-col items-center gap-2 w-full">
@@ -652,9 +802,8 @@ export default function PsiTrainer() {
 
       </main>
 
-      {/* FOOTER CONTROLS - Shrink-0 */}
+      {/* FOOTER */}
       <footer className="shrink-0 relative z-20 border-t border-indigo-900/30 bg-slate-950/80 backdrop-blur h-14 md:h-16 flex items-center justify-center px-4">
-         {/* Mode Selector */}
          <div className="bg-slate-900 p-1 rounded-full border border-slate-800 flex relative shadow-lg">
             <button 
               onClick={() => switchMode('FIND_DEVIL')}
@@ -664,7 +813,7 @@ export default function PsiTrainer() {
                 : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              Detect Threat (Find Devil)
+              Detect Threat
             </button>
             <button 
               onClick={() => switchMode('FIND_ANGEL')}
@@ -674,7 +823,7 @@ export default function PsiTrainer() {
                 : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              Sense Safety (Find Angel)
+              Sense Safety
             </button>
         </div>
          
