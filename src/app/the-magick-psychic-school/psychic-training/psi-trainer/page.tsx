@@ -664,7 +664,7 @@ export default function PsiTrainer() {
                 : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              Detect Threat
+              Detect Threat (Find Devil)
             </button>
             <button 
               onClick={() => switchMode('FIND_ANGEL')}
@@ -674,7 +674,7 @@ export default function PsiTrainer() {
                 : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              Sense Safety
+              Sense Safety (Find Angel)
             </button>
         </div>
          
