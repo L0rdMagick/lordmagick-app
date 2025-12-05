@@ -1170,25 +1170,38 @@ export default function SensesApp() {
   };
 
   const ResultView = () => {
+    // State to track if image has finished downloading
+    const [imageLoaded, setImageLoaded] = useState(false);
+
     if (!currentLevel) return null;
     const score = calculateScore(guesses, currentLevel.tags);
     
-    // Construct local path with explicit encoding for spaces in folder name
-    const imageUrl = `/images/senses%20app%20images/${currentLevel.filename}`;
+    // Fixed Path: Using standard spaces as requested
+    const imageUrl = `/images/senses app images/${currentLevel.filename}`;
 
     return (
-      <div className="w-full max-w-5xl mx-auto space-y-8 pb-12 animate-in zoom-in-95 duration-700">
+      <div className="w-full max-w-5xl mx-auto space-y-8 pb-12">
         
         {/* Top Section: The Reveal */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
             
-            <Card className="aspect-4/3 md:aspect-square bg-black border-amber-500/20 group">
+            <Card className="aspect-4/3 md:aspect-square bg-black border-amber-500/20 group relative">
+                {/* Loading Spinner (Visible only when imageLoaded is false) */}
+                {!imageLoaded && (
+                    <div className="absolute inset-0 flex items-center justify-center z-0">
+                         <div className="w-10 h-10 border-2 border-indigo-500/50 border-t-amber-500 rounded-full animate-spin"></div>
+                    </div>
+                )}
+
+                {/* Image with Manual Fade-in Logic */}
                 <img 
                     src={imageUrl} 
                     alt="Target" 
-                    className="w-full h-full object-cover opacity-0 animate-in fade-in duration-2000 fill-mode-forwards"
+                    onLoad={() => setImageLoaded(true)}
+                    className={`w-full h-full object-cover transition-opacity duration-1000 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
                 />
-                <div className="absolute inset-0 bg-linear-to-t from-black/80 via-transparent to-transparent"></div>
+
+                <div className="absolute inset-0 bg-linear-to-t from-black/80 via-transparent to-transparent pointer-events-none"></div>
                 <div className="absolute bottom-0 left-0 p-6">
                     <span className="block text-amber-500 text-xs font-mono mb-1 uppercase tracking-widest">Target Identity Confirmed</span>
                     <h2 className="text-3xl font-serif text-white">{currentLevel.concept}</h2>
