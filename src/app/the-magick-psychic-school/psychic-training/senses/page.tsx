@@ -5,14 +5,15 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Settings, RefreshCw, Eye, Check, X, BarChart2, ArrowLeft, 
-  Sparkles, Moon, Sun, Lock, Volume2, Home, LogOut, HelpCircle
+  Sparkles, Moon, Sun, Lock, Volume2, Home, LogOut, HelpCircle,
+  Download, Trash2, Save
 } from 'lucide-react';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
 
 // --- CONFIGURATION & CATEGORY DEFINITIONS ---
 
 const POOLS = [
-  { id: 'all', label: 'The Void (All Realms)' },
+  { id: 'all', label: 'All Categories' }, // Renamed from "The Void"
   { id: 'animals', label: 'Animals' },
   { id: 'structures', label: 'Structures' },
   { id: 'landscapes', label: "Natural Formations" },
@@ -53,7 +54,7 @@ const POOL_CONFIGS: Record<string, PoolConfig> = {
     CLASS: { id: 'class', label: 'Class', options: ['Mammal', 'Bird', 'Marine', 'Insect'] },
     SKIN: { id: 'skin', label: 'Skin / Surface', options: ['Fur / Hair', 'Feathers', 'Scales / Wet', 'Shell / Exoskeleton'] },
     ACTION: { id: 'action', label: 'Action', options: ['Resting / Still', 'Moving / Active', 'Eating', 'Flying / Swimming'] },
-    COLOR: UNIVERSAL_CATEGORIES.COLOR // Contextual visual aid
+    COLOR: UNIVERSAL_CATEGORIES.COLOR
   },
   structures: {
     MATERIAL: { id: 'material', label: 'Material', options: ['Stone / Brick', 'Metal / Glass', 'Wood / Organic', 'Concrete'] },
@@ -87,8 +88,16 @@ interface LevelData {
     filename: string;
     pool: string;
     prompt: string;
-    tags: Record<string, string>; // Stores Universal Tags by default
+    tags: Record<string, string>;
 }
+
+// --- CARD BACK DEFINITIONS ---
+const CARD_BACKS = [
+  { id: 'default', name: 'Stardust', css: "bg-slate-950 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')]" },
+  { id: 'abyss', name: 'The Abyss', css: "bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-indigo-950 via-slate-950 to-black" },
+  { id: 'gate', name: 'Golden Gate', css: "bg-slate-950 border-[1px] border-amber-900/30" }, // Simple dark with faint border
+  { id: 'shroud', name: 'Crimson Shroud', css: "bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-red-950/40 via-slate-950 to-black" }
+];
 
 // --- FULL IMAGE DATABASE (100 ITEMS) ---
 
@@ -1069,7 +1078,10 @@ export default function SensesApp() {
   const [isRevealed, setIsRevealed] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [history, setHistory] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [sessionHistory, setSessionHistory] = useState<any[]>([]); // New session history
   const [selectedPool, setSelectedPool] = useState('all');
+  const [cardBack, setCardBack] = useState('default');
   
   // Settings & Modal State
   const [showSettings, setShowSettings] = useState(false);
@@ -1077,18 +1089,16 @@ export default function SensesApp() {
 
   // Initialize from LocalStorage & SessionStorage
   useEffect(() => {
-    const saved = localStorage.getItem('senses_history_v6_highcontrast');
+    const saved = localStorage.getItem('senses_history_v7_complete');
     if (saved) setHistory(JSON.parse(saved));
 
-    const introSeen = sessionStorage.getItem('senses_intro_seen');
-    if (!introSeen) {
-        setShowInstructions(true);
-    }
+    // Show instructions on mount (every time the page component loads)
+    setShowInstructions(true);
   }, []);
 
   // Persist History
   useEffect(() => {
-    localStorage.setItem('senses_history_v6_highcontrast', JSON.stringify(history));
+    localStorage.setItem('senses_history_v7_complete', JSON.stringify(history));
   }, [history]);
 
   // Scoring Logic
@@ -1154,11 +1164,12 @@ export default function SensesApp() {
       pool: currentLevel.pool
     };
     
+    // Update both histories
     setHistory(prev => [resultRecord, ...prev].slice(0, 50)); 
+    setSessionHistory(prev => [resultRecord, ...prev]);
   };
 
   const closeInstructions = () => {
-      sessionStorage.setItem('senses_intro_seen', 'true');
       setShowInstructions(false);
   }
 
@@ -1229,6 +1240,9 @@ export default function SensesApp() {
     const totalCategories = Object.keys(currentConfig).length;
     const answeredCount = Object.keys(guesses).length;
     const allAnswered = answeredCount === totalCategories;
+    
+    // Find selected card back style
+    const activeCardBack = CARD_BACKS.find(cb => cb.id === cardBack) || CARD_BACKS[0];
 
     if (isRevealed) return <ResultView />;
     if (!currentLevel) return null;
@@ -1236,23 +1250,26 @@ export default function SensesApp() {
     return (
       <div className="w-full max-w-4xl mx-auto space-y-8 pb-24 animate-in slide-in-from-bottom-8 duration-700">
         
-        {/* Header / Target Status (REFACTORED for Anti-Cheating) */}
+        {/* Header / Target Status */}
         <div className="flex items-center justify-between border-b border-indigo-900/30 pb-4">
             <div className="flex items-center gap-3">
                 <div className="w-3 h-3 rounded-full bg-amber-500 animate-pulse shadow-[0_0_10px_rgba(245,158,11,0.5)]"></div>
                 <span className="font-serif text-sm md:text-base text-amber-100 tracking-wider">Predict the Qualities of the Image</span>
             </div>
-            <div className="text-amber-500 text-xl font-bold font-serif uppercase tracking-widest drop-shadow-[0_2px_4px_rgba(245,158,11,0.3)]">
-                 {currentLevel.pool === 'all' ? 'THE VOID' : POOLS.find(p => p.id === currentLevel.pool)?.label.toUpperCase()}
-            </div>
+            {/* HIDE Category Label if 'All Categories' is selected */}
+            {currentLevel.pool !== 'all' && (
+                <div className="text-amber-500 text-xl font-bold font-serif uppercase tracking-widest drop-shadow-[0_2px_4px_rgba(245,158,11,0.3)]">
+                    {POOLS.find(p => p.id === currentLevel.pool)?.label.toUpperCase()}
+                </div>
+            )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             
             {/* Left Column: The "Hidden" Card */}
             <div className="lg:col-span-5 flex flex-col gap-4">
-                <Card className="aspect-3/4 relative group transition-all duration-500 hover:border-indigo-500/50">
-                    <div className="absolute inset-0 bg-slate-950 flex flex-col items-center justify-center p-8 text-center bg-[url('https://www.transparenttextures.com/patterns/stardust.png')]">
+                <Card className={`aspect-3/4 relative group transition-all duration-500 hover:border-indigo-500/50 ${activeCardBack.css} bg-cover bg-center`}>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center">
                         <div className="absolute inset-0 bg-indigo-900/10 radial-gradient-mask"></div>
                         
                         <div className="relative z-10 w-32 h-32 mb-8 rounded-full border border-indigo-500/20 flex items-center justify-center group-hover:scale-105 transition-transform duration-500">
@@ -1460,14 +1477,34 @@ export default function SensesApp() {
   };
 
   const StatsView = () => {
-    const totalRounds = history.length;
+    // Determine active tab or show both? Let's show split view.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const avgAccuracy = totalRounds > 0 
-      ? Math.round(history.reduce((acc: number, curr: any) => acc + curr.score.percentage, 0) / totalRounds) 
-      : 0;
+    const calculateAvg = (arr: any[]) => arr.length > 0 ? Math.round(arr.reduce((acc, curr) => acc + curr.score.percentage, 0) / arr.length) : 0;
+    
+    const lifetimeAvg = calculateAvg(history);
+    const sessionAvg = calculateAvg(sessionHistory);
+
+    const downloadStats = () => {
+        const dataStr = JSON.stringify(history, null, 2);
+        const blob = new Blob([dataStr], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `senses_history_${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    const clearStats = () => {
+        if(confirm("Are you sure you want to erase all lifetime records? This cannot be undone.")) {
+            setHistory([]);
+            localStorage.removeItem('senses_history_v7_complete');
+        }
+    };
 
     return (
-      <div className="w-full max-w-3xl mx-auto space-y-6 animate-in slide-in-from-right duration-500">
+      <div className="w-full max-w-4xl mx-auto space-y-6 animate-in slide-in-from-right duration-500">
         <div className="flex items-center justify-between mb-8 border-b border-slate-800 pb-4">
           <button onClick={() => setView('welcome')} className="text-slate-400 hover:text-white flex items-center gap-2 transition-colors">
             <ArrowLeft className="w-4 h-4" /> Back to Gate
@@ -1475,25 +1512,58 @@ export default function SensesApp() {
           <h2 className="text-xl font-serif tracking-widest text-amber-500">AKASHIC RECORDS</h2>
         </div>
 
-        <div className="grid grid-cols-3 gap-4 mb-8">
-          <div className="p-6 text-center bg-slate-900/50 border border-indigo-500/20 rounded-lg">
-            <div className="text-3xl font-light text-white mb-2 font-serif">{totalRounds}</div>
-            <div className="text-[10px] text-slate-500 uppercase tracking-widest">Sessions</div>
-          </div>
-          <div className="p-6 text-center bg-slate-900/50 border border-indigo-500/20 rounded-lg">
-            <div className="text-3xl font-light text-indigo-400 mb-2 font-serif">{avgAccuracy}%</div>
-            <div className="text-[10px] text-slate-500 uppercase tracking-widest">Avg Resonance</div>
-          </div>
-          <div className="p-6 text-center bg-slate-900/50 border border-indigo-500/20 rounded-lg">
-            <div className="text-3xl font-light text-amber-500 mb-2 font-serif">
-                {history.filter((h: any) => h.score.percentage >= 80).length}
+        {/* Stats Summary Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            {/* Session Stats */}
+            <div className="bg-slate-900/50 p-6 rounded-lg border border-indigo-500/20">
+                <h3 className="text-xs text-indigo-300 uppercase tracking-widest mb-4">Current Session</h3>
+                <div className="grid grid-cols-2 gap-4 text-center">
+                    <div>
+                        <div className="text-3xl font-light text-white mb-1 font-serif">{sessionHistory.length}</div>
+                        <div className="text-[10px] text-slate-500 uppercase">Visions</div>
+                    </div>
+                    <div>
+                        <div className="text-3xl font-light text-indigo-400 mb-1 font-serif">{sessionAvg}%</div>
+                        <div className="text-[10px] text-slate-500 uppercase">Accuracy</div>
+                    </div>
+                </div>
             </div>
-            <div className="text-[10px] text-slate-500 uppercase tracking-widest">Ascended</div>
-          </div>
+
+            {/* Lifetime Stats */}
+            <div className="bg-slate-900/50 p-6 rounded-lg border border-amber-500/20">
+                <h3 className="text-xs text-amber-500/80 uppercase tracking-widest mb-4">Lifetime Records</h3>
+                <div className="grid grid-cols-2 gap-4 text-center">
+                    <div>
+                        <div className="text-3xl font-light text-white mb-1 font-serif">{history.length}</div>
+                        <div className="text-[10px] text-slate-500 uppercase">Total Visions</div>
+                    </div>
+                    <div>
+                        <div className="text-3xl font-light text-amber-500 mb-1 font-serif">{lifetimeAvg}%</div>
+                        <div className="text-[10px] text-slate-500 uppercase">Avg Resonance</div>
+                    </div>
+                </div>
+            </div>
         </div>
 
+        {/* Actions */}
+        <div className="flex justify-end gap-4 border-b border-slate-800 pb-6 mb-6">
+            <button 
+                onClick={clearStats}
+                className="flex items-center gap-2 px-4 py-2 rounded border border-red-900/50 text-red-400 hover:bg-red-950/30 text-xs uppercase tracking-wider transition-colors"
+            >
+                <Trash2 className="w-4 h-4" /> Erase Records
+            </button>
+            <button 
+                onClick={downloadStats}
+                className="flex items-center gap-2 px-4 py-2 rounded bg-indigo-900/50 border border-indigo-500/30 text-indigo-200 hover:bg-indigo-800/50 text-xs uppercase tracking-wider transition-colors"
+            >
+                <Download className="w-4 h-4" /> Save Results
+            </button>
+        </div>
+
+        {/* List View */}
         <div className="space-y-3">
-            <h3 className="text-xs text-slate-500 uppercase tracking-widest mb-4">Past Visions</h3>
+            <h3 className="text-xs text-slate-500 uppercase tracking-widest mb-4">Recent History Log</h3>
             {history.length === 0 ? (
                 <div className="text-center py-12 text-slate-600 italic font-serif">The records are empty. Begin your training.</div>
             ) : (
@@ -1524,33 +1594,36 @@ export default function SensesApp() {
           <div className="p-6 space-y-8">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-serif tracking-widest text-indigo-300 flex items-center gap-2">
-                <Settings className="w-4 h-4" /> CONFIGURATION
+                <Settings className="w-4 h-4" /> CARD CONFIGURATION
               </h2>
               <button onClick={() => setShowSettings(false)} className="text-slate-500 hover:text-white">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="space-y-6">
-                <div className="space-y-2">
-                    <label className="text-xs uppercase text-slate-500 font-bold">Data Management</label>
-                    <button 
-                        onClick={() => {
-                            if(confirm("Purge all akashic records? This cannot be undone.")) {
-                                setHistory([]);
-                                localStorage.removeItem('senses_history_v6_highcontrast');
-                                setShowSettings(false);
-                            }
-                        }}
-                        className="w-full flex items-center justify-between p-3 rounded bg-red-950/20 border border-red-900/30 text-red-400 hover:bg-red-900/30 transition-colors"
-                    >
-                        <span>Purge History Log</span>
-                        <Volume2 className="w-4 h-4 opacity-50" />
-                    </button>
+            <div className="space-y-4">
+                <label className="text-xs uppercase text-slate-500 font-bold">Card Backing Style</label>
+                <div className="grid grid-cols-2 gap-4">
+                    {CARD_BACKS.map(back => (
+                        <button
+                            key={back.id}
+                            onClick={() => setCardBack(back.id)}
+                            className={`
+                                relative h-24 rounded-lg border-2 transition-all duration-300 overflow-hidden group
+                                ${cardBack === back.id ? 'border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.3)]' : 'border-slate-800 hover:border-slate-600'}
+                            `}
+                        >
+                            {/* Preview the CSS background */}
+                            <div className={`absolute inset-0 ${back.css} bg-cover bg-center opacity-80 group-hover:opacity-100`}></div>
+                            <span className="absolute bottom-2 left-2 text-[10px] font-serif text-white bg-black/50 px-2 py-0.5 rounded backdrop-blur-xs">
+                                {back.name}
+                            </span>
+                        </button>
+                    ))}
                 </div>
 
-                <div className="text-xs text-slate-600 italic text-center pt-4">
-                    Remote Viewing Trainer v6
+                <div className="text-xs text-slate-600 italic text-center pt-6">
+                    "Choose the veil through which you gaze."
                 </div>
             </div>
           </div>
@@ -1691,3 +1764,5 @@ export default function SensesApp() {
     </main>
   );
 }
+
+// --- END OF FILE page.tsx ---
