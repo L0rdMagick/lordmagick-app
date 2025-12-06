@@ -229,7 +229,7 @@ const useAudioEngine = () => {
 
 const InstructionModal = ({ onClose }: { onClose: () => void }) => (
   <div 
-    className="fixed inset-0 z-100 flex items-center justify-center bg-black/95 backdrop-blur-md p-6 animate-in fade-in duration-300"
+    className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-md p-6 animate-in fade-in duration-300"
     onClick={onClose}
   >
     <div 
@@ -484,12 +484,14 @@ const PsiStats = ({ stats, variant = 'floating' }: { stats: any, variant?: 'floa
 
 const CircularTimer = ({ duration, onComplete, isActive }: { duration: number, onComplete: () => void, isActive: boolean }) => {
   const [progress, setProgress] = useState(0);
+  const [secondsLeft, setSecondsLeft] = useState(Math.ceil(duration / 1000));
   const requestRef = useRef<number | null>(null);
   const startTimeRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!isActive) {
       setProgress(0);
+      setSecondsLeft(Math.ceil(duration / 1000));
       startTimeRef.current = null;
       return;
     }
@@ -498,6 +500,9 @@ const CircularTimer = ({ duration, onComplete, isActive }: { duration: number, o
       if (!startTimeRef.current) startTimeRef.current = time;
       const timeElapsed = time - startTimeRef.current;
       const newProgress = Math.min((timeElapsed / duration) * 100, 100);
+      
+      const remaining = Math.max(0, Math.ceil((duration - timeElapsed) / 1000));
+      setSecondsLeft(remaining);
 
       setProgress(newProgress);
 
@@ -514,10 +519,11 @@ const CircularTimer = ({ duration, onComplete, isActive }: { duration: number, o
     };
   }, [isActive, duration, onComplete]);
 
+  // Dimensions
   const size = 280;
   const strokeWidth = 8;
   const center = size / 2;
-  const radius = size / 2 - strokeWidth * 2;
+  const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (progress / 100) * circumference;
 
@@ -526,8 +532,9 @@ const CircularTimer = ({ duration, onComplete, isActive }: { duration: number, o
        {/* Background Glow */}
       <div className="absolute inset-0 rounded-full bg-black shadow-[0_0_80px_rgba(139,92,246,0.3)] border border-gray-800/50 z-0" />
       
-      {/* SVG Container: Rotation applied internally via transform attribute for compatibility */}
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="z-10 relative">
+      {/* SVG Container: Removed CSS transitions to fix PC bug */}
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="z-10 relative" shapeRendering="geometricPrecision">
+          {/* Background Track */}
           <circle
             cx={center}
             cy={center}
@@ -537,7 +544,7 @@ const CircularTimer = ({ duration, onComplete, isActive }: { duration: number, o
             strokeWidth={strokeWidth}
             transform={`rotate(-90 ${center} ${center})`}
           />
-          {/* Bright Cyan Progress Line */}
+          {/* Progress Line - NO transition-all to prevent conflicts with JS animation loop */}
           <circle
             cx={center}
             cy={center}
@@ -549,13 +556,20 @@ const CircularTimer = ({ duration, onComplete, isActive }: { duration: number, o
             strokeDashoffset={strokeDashoffset}
             strokeLinecap="round"
             transform={`rotate(-90 ${center} ${center})`}
-            className="drop-shadow-[0_0_15px_rgba(34,211,238,1)] transition-all duration-75 ease-linear"
+            className="drop-shadow-[0_0_15px_rgba(34,211,238,1)]"
           />
       </svg>
       
+      {/* Countdown Text */}
+      <div className="absolute z-20 flex flex-col items-center justify-center pointer-events-none">
+          <span className="text-6xl font-mono font-bold text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">
+              {secondsLeft}
+          </span>
+      </div>
+      
       {isActive && (
-        <div className="absolute w-full h-full flex items-center justify-center animate-pulse z-20">
-           <div className="w-3 h-3 bg-cyan-400 rounded-full shadow-[0_0_30px_rgba(34,211,238,1)]" />
+        <div className="absolute w-full h-full flex items-center justify-center animate-pulse z-20 pointer-events-none">
+           <div className="w-full h-full rounded-full shadow-[inset_0_0_20px_rgba(34,211,238,0.2)]" />
         </div>
       )}
     </div>
@@ -797,47 +811,69 @@ export default function TheGazeApp() {
             </div>
           )}
 
-          {/* FOCUSING STATE */}
-          {gameState === 'FOCUSING' && (
-            <div className="flex flex-col items-center animate-in fade-in duration-700">
-              <CircularTimer 
-                duration={TIMER_DURATION} 
-                isActive={true} 
-                onComplete={handleTimerComplete} 
-              />
-              <p className="mt-8 text-cyan-200/70 text-lg font-light tracking-wide animate-pulse drop-shadow-md">
-                {phrase}
-              </p>
-            </div>
-          )}
-
-          {/* DECIDING STATE */}
-          {gameState === 'DECIDING' && (
-            <div className="flex flex-col items-center w-full animate-in slide-in-from-bottom-10 fade-in duration-300">
-              {/* Central Glowing Void */}
-              <div className="w-64 h-64 bg-black rounded-full border-4 border-indigo-900 shadow-[0_0_100px_rgba(79,70,229,0.4)] flex items-center justify-center mb-8 relative overflow-hidden animate-pulse">
-                <div className="absolute inset-0 bg-radial-gradient from-indigo-900/50 to-black/90"></div>
+          {/* ACTIVE GAME STATES (Focusing & Deciding share Layout) */}
+          {(gameState === 'FOCUSING' || gameState === 'DECIDING') && (
+            <div className="flex flex-col items-center w-full animate-in fade-in duration-500">
+              
+              {/* STAGE CONTAINER: Holds Timer and Void in same footprint */}
+              <div className="relative flex items-center justify-center mb-8" style={{ width: 280, height: 280 }}>
+                
+                {gameState === 'FOCUSING' && (
+                  <div className="absolute inset-0">
+                    <CircularTimer 
+                      duration={TIMER_DURATION} 
+                      isActive={true} 
+                      onComplete={handleTimerComplete} 
+                    />
+                  </div>
+                )}
+                
+                {gameState === 'DECIDING' && (
+                  <div className="w-full h-full bg-black rounded-full border-4 border-indigo-900 shadow-[0_0_100px_rgba(79,70,229,0.4)] flex items-center justify-center relative overflow-hidden animate-pulse">
+                    <div className="absolute inset-0 bg-radial-gradient from-indigo-900/50 to-black/90"></div>
+                  </div>
+                )}
               </div>
 
-              <h3 className="text-2xl text-white mb-8 font-medium font-serif tracking-wide drop-shadow-lg">Are they staring at you?</h3>
+              {/* Prompt Text - Persistent Height to avoid jump */}
+              <div className="h-16 flex items-center justify-center mb-6">
+                {gameState === 'FOCUSING' ? (
+                   <p className="text-cyan-200/70 text-lg font-light tracking-wide animate-pulse drop-shadow-md text-center">{phrase}</p>
+                ) : (
+                   <h3 className="text-2xl text-white font-medium font-serif tracking-wide drop-shadow-lg text-center">Are they staring at you?</h3>
+                )}
+              </div>
 
+              {/* PERSISTENT BUTTONS: Visible but disabled during Focus */}
               <div className="flex gap-4 w-full max-w-sm">
                 <button 
                   onClick={() => handleGuess('AWAY')}
-                  onMouseEnter={() => audio.playHover()}
-                  className="flex-1 py-4 px-4 bg-gray-800 hover:bg-gray-700 rounded-xl border border-gray-700 transition-all flex flex-col items-center gap-2 group"
+                  disabled={gameState === 'FOCUSING'}
+                  onMouseEnter={() => gameState === 'DECIDING' && audio.playHover()}
+                  className={`
+                    flex-1 py-4 px-4 rounded-xl border transition-all flex flex-col items-center gap-2 group
+                    ${gameState === 'FOCUSING' 
+                        ? 'bg-gray-900/50 border-gray-800 text-gray-600 cursor-not-allowed opacity-50 grayscale' 
+                        : 'bg-gray-800 hover:bg-gray-700 border-gray-700 text-gray-400 hover:text-white cursor-pointer'}
+                  `}
                 >
-                  <EyeOff size={24} className="text-gray-400 group-hover:text-white" />
-                  <span className="text-sm font-bold text-gray-400 group-hover:text-white uppercase">No</span>
+                  <EyeOff size={24} className={gameState === 'DECIDING' ? "text-gray-400 group-hover:text-white" : ""} />
+                  <span className="text-sm font-bold uppercase">No</span>
                 </button>
                 
                 <button 
                   onClick={() => handleGuess('STARE')}
-                  onMouseEnter={() => audio.playHover()}
-                  className="flex-1 py-4 px-4 bg-linear-to-b from-purple-900 to-indigo-900 hover:from-purple-800 hover:to-indigo-800 rounded-xl border border-purple-700/50 transition-all flex flex-col items-center gap-2 group shadow-lg shadow-purple-900/20"
+                  disabled={gameState === 'FOCUSING'}
+                  onMouseEnter={() => gameState === 'DECIDING' && audio.playHover()}
+                  className={`
+                    flex-1 py-4 px-4 rounded-xl border transition-all flex flex-col items-center gap-2 group shadow-lg
+                    ${gameState === 'FOCUSING'
+                        ? 'bg-gray-900/50 border-gray-800 text-gray-600 cursor-not-allowed opacity-50 grayscale shadow-none'
+                        : 'bg-linear-to-b from-purple-900 to-indigo-900 hover:from-purple-800 hover:to-indigo-800 border-purple-700/50 text-purple-200 hover:text-white cursor-pointer shadow-purple-900/20'}
+                  `}
                 >
-                  <Eye size={24} className="text-purple-300 group-hover:text-white" />
-                  <span className="text-sm font-bold text-purple-200 group-hover:text-white uppercase">Yes</span>
+                  <Eye size={24} className={gameState === 'DECIDING' ? "text-purple-300 group-hover:text-white" : ""} />
+                  <span className="text-sm font-bold uppercase">Yes</span>
                 </button>
               </div>
             </div>
