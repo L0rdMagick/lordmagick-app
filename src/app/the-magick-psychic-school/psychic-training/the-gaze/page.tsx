@@ -1,9 +1,11 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom'; // Added for Portal
 import { 
   Eye, EyeOff, Play, RotateCcw, HelpCircle, X, Trophy, 
-  Settings, Save, Activity, Sparkles, Volume2, VolumeX, Maximize, Minimize, Trash2
+  Settings, Save, Activity, Sparkles, Volume2, VolumeX, Maximize, Minimize, Trash2,
+  ChevronsUp // Added for affordance
 } from 'lucide-react';
 import { createBrowserClient } from '@supabase/ssr';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
@@ -281,6 +283,11 @@ const PsiStats = ({ stats, variant = 'floating' }: { stats: any, variant?: 'floa
     const [showModal, setShowModal] = useState(false);
     const [lifetimeStats, setLifetimeStats] = useState({ hits: 0, trials: 0 });
     const [loadingLifetime, setLoadingLifetime] = useState(false);
+    const [mounted, setMounted] = useState(false); // To handle Portal mounting
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
     
     // Calculate Current Session Stats
     const sessionTrials = stats.total;
@@ -333,8 +340,8 @@ const PsiStats = ({ stats, variant = 'floating' }: { stats: any, variant?: 'floa
     const lifeTier = getPsiTier(lifeZ);
 
     const containerClasses = variant === 'header' 
-      ? "flex items-center gap-6 px-4 py-1 hover:bg-white/5 rounded-lg cursor-pointer transition-colors border border-transparent hover:border-white/10"
-      : "cursor-pointer group flex flex-col items-end justify-center bg-slate-800/90 hover:bg-slate-700/90 border border-purple-500/20 hover:border-purple-500/50 rounded-lg px-3 py-1 transition-all duration-300 min-w-20 h-[50px]";
+      ? "flex items-center gap-6 px-4 py-1 hover:bg-white/5 rounded-lg cursor-pointer transition-colors border border-transparent hover:border-white/10 group"
+      : "cursor-pointer group flex flex-col items-end justify-center bg-slate-800/90 hover:bg-slate-700/90 border border-purple-500/20 hover:border-purple-500/50 rounded-lg px-3 py-1 transition-all duration-300 min-w-20 h-[50px] relative";
 
     const TriggerContent = () => (
       <>
@@ -351,9 +358,14 @@ const PsiStats = ({ stats, variant = 'floating' }: { stats: any, variant?: 'floa
                   <span className="text-[10px] text-gray-400 uppercase tracking-widest">Psi (Z)</span>
                   <span className={`text-sm font-bold font-mono ${sessionZ >= 0 ? 'text-purple-300' : 'text-gray-400'}`}>{sessionZ.toFixed(2)}</span>
               </div>
+              <ChevronsUp size={14} className="text-gray-600 group-hover:text-purple-400 transition-colors ml-1 animate-pulse" />
            </>
         ) : (
            <>
+             {/* Mobile visual cue */}
+             <div className="absolute top-1 right-1 text-purple-500/50 group-hover:text-purple-400">
+               <ChevronsUp size={10} />
+             </div>
              <div className="flex items-center gap-2">
               <span className="text-xs font-mono text-purple-400 group-hover:text-purple-300 transition-colors">N: {sessionTrials}</span>
               <div className="w-px h-3 bg-purple-500/20"></div>
@@ -369,92 +381,95 @@ const PsiStats = ({ stats, variant = 'floating' }: { stats: any, variant?: 'floa
       </>
     );
   
+    // Modal Content Component to be Portaled
+    const ModalContent = () => (
+        <div 
+            className="fixed inset-0 z-9999 flex items-center justify-center bg-black/95 backdrop-blur-xl p-0 md:p-4 animate-in fade-in duration-300"
+            onClick={() => setShowModal(false)}
+        >
+          {/* Modal Container: Full Screen on Mobile, Centered Card on Desktop */}
+          <div 
+            className="w-full h-full md:h-auto md:max-h-[95vh] md:max-w-4xl bg-slate-900 border-0 md:border md:border-purple-500/20 rounded-none md:rounded-xl p-6 relative overflow-y-auto shadow-[0_0_50px_rgba(168,85,247,0.2)] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Sticky Close Button for Mobile */}
+            <div className="flex justify-between items-center mb-6 sticky top-0 bg-slate-900/95 backdrop-blur z-10 py-2 border-b border-white/5 md:border-0 md:static">
+               <h2 className="text-2xl font-serif text-white flex items-center gap-2">
+                  <Activity className="text-purple-400" /> Performance
+               </h2>
+               <button onClick={() => setShowModal(false)} className="p-2 bg-slate-800 rounded-full hover:bg-slate-700 text-slate-300 hover:text-white transition-colors">
+                  <X size={20}/>
+               </button>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+              {/* CURRENT */}
+              <div className="bg-black/20 rounded-lg p-4 border border-white/5">
+                <h3 className="text-xs uppercase tracking-[0.2em] text-purple-400 mb-4 text-center">Current Session</h3>
+                <div className="space-y-2 text-sm font-mono">
+                  <div className="flex justify-between border-b border-white/5 pb-1"><span>Hits / Trials</span> <span className="text-white">{sessionHits} / {sessionTrials}</span></div>
+                  <div className="flex justify-between border-b border-white/5 pb-1"><span>Accuracy</span> <span className="text-white">{sessionAccuracy.toFixed(1)}%</span></div>
+                  <div className="flex justify-between border-b border-white/5 pb-1"><span>Psi Score (Z)</span> <span className={sessionZ >= 0 ? "text-amber-300" : "text-slate-400"}>{sessionZ.toFixed(2)}</span></div>
+                  <div className="flex justify-between"><span>Probability</span> <span className="text-green-300">{sessionProb}</span></div>
+                  <div className="mt-2 text-center text-xs font-bold uppercase tracking-widest text-white">{sessionTier.name}</div>
+                </div>
+              </div>
+
+              {/* LIFETIME */}
+              <div className="bg-black/20 rounded-lg p-4 border border-white/5 relative">
+                 <h3 className="text-xs uppercase tracking-[0.2em] text-amber-300 mb-4 text-center">Lifetime Record</h3>
+                 {loadingLifetime ? (
+                    <div className="absolute inset-0 flex items-center justify-center"><Sparkles className="animate-spin text-purple-500"/></div>
+                 ) : (
+                    <div className="space-y-2 text-sm font-mono">
+                        <div className="flex justify-between border-b border-white/5 pb-1"><span>Hits / Trials</span> <span className="text-white">{lifetimeStats.hits} / {lifetimeStats.trials}</span></div>
+                        <div className="flex justify-between border-b border-white/5 pb-1"><span>Accuracy</span> <span className="text-white">{lifeAccuracy.toFixed(1)}%</span></div>
+                        <div className="flex justify-between border-b border-white/5 pb-1"><span>Psi Score (Z)</span> <span className={lifeZ >= 0 ? "text-amber-300" : "text-slate-400"}>{lifeZ.toFixed(2)}</span></div>
+                        <div className="flex justify-between"><span>Probability</span> <span className="text-green-300">{lifeProb}</span></div>
+                        <div className="mt-2 text-center text-xs font-bold uppercase tracking-widest text-white">{lifeTier.name}</div>
+                    </div>
+                 )}
+              </div>
+            </div>
+
+            {/* Definitions Legend */}
+            <div className="grid md:grid-cols-2 gap-8 border-t border-white/10 pt-6">
+              <div>
+                  <h4 className="text-xs uppercase tracking-widest text-amber-400 mb-3 pb-2">Psi-Hitting (Positive)</h4>
+                  <div className="space-y-3 text-xs">
+                      <div><strong className="text-amber-200 block">The Oracle (Z &ge; 4.0)</strong><span className="text-slate-400">World Class Anomaly (1 in 31,000+).</span></div>
+                      <div><strong className="text-purple-300 block">The Medium (Z &ge; 3.0)</strong><span className="text-slate-400">Highly Significant (1 in 740).</span></div>
+                      <div><strong className="text-pink-300 block">The Clairvoyant (Z &ge; 1.96)</strong><span className="text-slate-400">Statistically Significant (p &lt; 0.05).</span></div>
+                      <div><strong className="text-indigo-300 block">The Channel (Z &ge; 1.65)</strong><span className="text-slate-400">Tapping into something real (1 in 20).</span></div>
+                      <div><strong className="text-cyan-300 block">The Adept (Z &ge; 1.0)</strong><span className="text-slate-400">Finding flow. Beating odds of 1 in 6.</span></div>
+                      <div><strong className="text-teal-300 block">The Spark (Z &ge; 0.5)</strong><span className="text-slate-400">Pulse of intuition. Nudging past average.</span></div>
+                      <div><strong className="text-slate-200 block">The Initiate (Z &ge; 0.0)</strong><span className="text-slate-500">Above baseline. Better than random.</span></div>
+                  </div>
+              </div>
+              <div>
+                  <h4 className="text-xs uppercase tracking-widest text-blue-400 mb-3 pb-2">Psi-Missing (Negative)</h4>
+                  <div className="space-y-3 text-xs">
+                      <div><strong className="text-slate-300 block">The Sleeper (Z &lt; 0.0)</strong><span className="text-slate-500">Just below baseline. Stop over-analyzing.</span></div>
+                      <div><strong className="text-slate-400 block">The Dreamer (Z &le; -0.5)</strong><span className="text-slate-500">Drifting. Intuition active but unfocused.</span></div>
+                      <div><strong className="text-slate-400 block">The Blocker (Z &le; -1.0)</strong><span className="text-slate-500">Dodging targets. Logic fighting gut.</span></div>
+                      <div><strong className="text-slate-400 block">The Mirror (Z &le; -2.0)</strong><span className="text-slate-500">Significant Avoidance. Flipping the signal.</span></div>
+                      <div><strong className="text-slate-500 block">The Shadow (Z &le; -3.0)</strong><span className="text-slate-600">Highly Significant Displacement. Inverted.</span></div>
+                      <div><strong className="text-slate-500 block">The Void (Z &le; -4.0)</strong><span className="text-slate-600">World Class Anomaly. Total suppression.</span></div>
+                  </div>
+              </div>
+          </div>
+
+          </div>
+        </div>
+    );
+
     return (
       <>
         <div onClick={() => setShowModal(true)} className={containerClasses}>
             <TriggerContent />
         </div>
-  
-        {showModal && (
-          <div 
-              className="fixed inset-0 z-200 flex items-center justify-center bg-black/95 backdrop-blur-xl p-0 md:p-4 animate-in fade-in duration-300"
-              onClick={() => setShowModal(false)}
-          >
-            {/* Modal Container: Full Screen on Mobile, Centered Card on Desktop */}
-            <div 
-              className="w-full h-full md:h-auto md:max-h-[95vh] md:max-w-4xl bg-slate-900 border-0 md:border md:border-purple-500/20 rounded-none md:rounded-xl p-6 relative overflow-y-auto shadow-[0_0_50px_rgba(168,85,247,0.2)] flex flex-col"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Sticky Close Button for Mobile */}
-              <div className="flex justify-between items-center mb-6 sticky top-0 bg-slate-900/95 backdrop-blur z-10 py-2 border-b border-white/5 md:border-0 md:static">
-                 <h2 className="text-2xl font-serif text-white flex items-center gap-2">
-                    <Activity className="text-purple-400" /> Performance
-                 </h2>
-                 <button onClick={() => setShowModal(false)} className="p-2 bg-slate-800 rounded-full hover:bg-slate-700 text-slate-300 hover:text-white transition-colors">
-                    <X size={20}/>
-                 </button>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                {/* CURRENT */}
-                <div className="bg-black/20 rounded-lg p-4 border border-white/5">
-                  <h3 className="text-xs uppercase tracking-[0.2em] text-purple-400 mb-4 text-center">Current Session</h3>
-                  <div className="space-y-2 text-sm font-mono">
-                    <div className="flex justify-between border-b border-white/5 pb-1"><span>Hits / Trials</span> <span className="text-white">{sessionHits} / {sessionTrials}</span></div>
-                    <div className="flex justify-between border-b border-white/5 pb-1"><span>Accuracy</span> <span className="text-white">{sessionAccuracy.toFixed(1)}%</span></div>
-                    <div className="flex justify-between border-b border-white/5 pb-1"><span>Psi Score (Z)</span> <span className={sessionZ >= 0 ? "text-amber-300" : "text-slate-400"}>{sessionZ.toFixed(2)}</span></div>
-                    <div className="flex justify-between"><span>Probability</span> <span className="text-green-300">{sessionProb}</span></div>
-                    <div className="mt-2 text-center text-xs font-bold uppercase tracking-widest text-white">{sessionTier.name}</div>
-                  </div>
-                </div>
-  
-                {/* LIFETIME */}
-                <div className="bg-black/20 rounded-lg p-4 border border-white/5 relative">
-                   <h3 className="text-xs uppercase tracking-[0.2em] text-amber-300 mb-4 text-center">Lifetime Record</h3>
-                   {loadingLifetime ? (
-                      <div className="absolute inset-0 flex items-center justify-center"><Sparkles className="animate-spin text-purple-500"/></div>
-                   ) : (
-                      <div className="space-y-2 text-sm font-mono">
-                          <div className="flex justify-between border-b border-white/5 pb-1"><span>Hits / Trials</span> <span className="text-white">{lifetimeStats.hits} / {lifetimeStats.trials}</span></div>
-                          <div className="flex justify-between border-b border-white/5 pb-1"><span>Accuracy</span> <span className="text-white">{lifeAccuracy.toFixed(1)}%</span></div>
-                          <div className="flex justify-between border-b border-white/5 pb-1"><span>Psi Score (Z)</span> <span className={lifeZ >= 0 ? "text-amber-300" : "text-slate-400"}>{lifeZ.toFixed(2)}</span></div>
-                          <div className="flex justify-between"><span>Probability</span> <span className="text-green-300">{lifeProb}</span></div>
-                          <div className="mt-2 text-center text-xs font-bold uppercase tracking-widest text-white">{lifeTier.name}</div>
-                      </div>
-                   )}
-                </div>
-              </div>
-  
-              {/* Definitions Legend */}
-              <div className="grid md:grid-cols-2 gap-8 border-t border-white/10 pt-6">
-                <div>
-                    <h4 className="text-xs uppercase tracking-widest text-amber-400 mb-3 pb-2">Psi-Hitting (Positive)</h4>
-                    <div className="space-y-3 text-xs">
-                        <div><strong className="text-amber-200 block">The Oracle (Z &ge; 4.0)</strong><span className="text-slate-400">World Class Anomaly (1 in 31,000+).</span></div>
-                        <div><strong className="text-purple-300 block">The Medium (Z &ge; 3.0)</strong><span className="text-slate-400">Highly Significant (1 in 740).</span></div>
-                        <div><strong className="text-pink-300 block">The Clairvoyant (Z &ge; 1.96)</strong><span className="text-slate-400">Statistically Significant (p &lt; 0.05).</span></div>
-                        <div><strong className="text-indigo-300 block">The Channel (Z &ge; 1.65)</strong><span className="text-slate-400">Tapping into something real (1 in 20).</span></div>
-                        <div><strong className="text-cyan-300 block">The Adept (Z &ge; 1.0)</strong><span className="text-slate-400">Finding flow. Beating odds of 1 in 6.</span></div>
-                        <div><strong className="text-teal-300 block">The Spark (Z &ge; 0.5)</strong><span className="text-slate-400">Pulse of intuition. Nudging past average.</span></div>
-                        <div><strong className="text-slate-200 block">The Initiate (Z &ge; 0.0)</strong><span className="text-slate-500">Above baseline. Better than random.</span></div>
-                    </div>
-                </div>
-                <div>
-                    <h4 className="text-xs uppercase tracking-widest text-blue-400 mb-3 pb-2">Psi-Missing (Negative)</h4>
-                    <div className="space-y-3 text-xs">
-                        <div><strong className="text-slate-300 block">The Sleeper (Z &lt; 0.0)</strong><span className="text-slate-500">Just below baseline. Stop over-analyzing.</span></div>
-                        <div><strong className="text-slate-400 block">The Dreamer (Z &le; -0.5)</strong><span className="text-slate-500">Drifting. Intuition active but unfocused.</span></div>
-                        <div><strong className="text-slate-400 block">The Blocker (Z &le; -1.0)</strong><span className="text-slate-500">Dodging targets. Logic fighting gut.</span></div>
-                        <div><strong className="text-slate-400 block">The Mirror (Z &le; -2.0)</strong><span className="text-slate-500">Significant Avoidance. Flipping the signal.</span></div>
-                        <div><strong className="text-slate-500 block">The Shadow (Z &le; -3.0)</strong><span className="text-slate-600">Highly Significant Displacement. Inverted.</span></div>
-                        <div><strong className="text-slate-500 block">The Void (Z &le; -4.0)</strong><span className="text-slate-600">World Class Anomaly. Total suppression.</span></div>
-                    </div>
-                </div>
-            </div>
-  
-            </div>
-          </div>
-        )}
+        {/* Render Portal if Mounted and Modal Open */}
+        {showModal && mounted && createPortal(<ModalContent />, document.body)}
       </>
     );
 };
@@ -503,29 +518,31 @@ const CircularTimer = ({ duration, onComplete, isActive }: { duration: number, o
        {/* Background Glow */}
       <div className="absolute w-64 h-64 rounded-full bg-black shadow-[0_0_80px_rgba(139,92,246,0.3)] border border-gray-800/50 z-0" />
       
-      {/* SVG Container with higher z-index to ensure visibility */}
-      <svg width={size} height={size} className="transform -rotate-90 z-10 relative">
-        <circle
-          cx={center}
-          cy={center}
-          r={radius}
-          fill="transparent"
-          stroke="#0f172a"
-          strokeWidth={strokeWidth}
-        />
-        {/* Bright Cyan Progress Line */}
-        <circle
-          cx={center}
-          cy={center}
-          r={radius}
-          fill="transparent"
-          stroke="#22d3ee" 
-          strokeWidth={strokeWidth}
-          strokeDasharray={circumference}
-          strokeDashoffset={strokeDashoffset}
-          strokeLinecap="round"
-          className="drop-shadow-[0_0_15px_rgba(34,211,238,1)] transition-all duration-75 ease-linear"
-        />
+      {/* SVG Container with high z-index and SVG native rotation */}
+      <svg width={size} height={size} className="z-10 relative">
+        <g transform={`rotate(-90 ${center} ${center})`}>
+          <circle
+            cx={center}
+            cy={center}
+            r={radius}
+            fill="transparent"
+            stroke="#0f172a"
+            strokeWidth={strokeWidth}
+          />
+          {/* Bright Cyan Progress Line */}
+          <circle
+            cx={center}
+            cy={center}
+            r={radius}
+            fill="transparent"
+            stroke="#22d3ee" 
+            strokeWidth={strokeWidth}
+            strokeDasharray={circumference}
+            strokeDashoffset={strokeDashoffset}
+            strokeLinecap="round"
+            className="drop-shadow-[0_0_15px_rgba(34,211,238,1)] transition-all duration-75 ease-linear"
+          />
+        </g>
       </svg>
       
       {isActive && (
