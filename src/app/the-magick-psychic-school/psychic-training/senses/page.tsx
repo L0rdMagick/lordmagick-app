@@ -5,10 +5,9 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Settings, RefreshCw, Eye, Check, X, BarChart2, ArrowLeft, 
-  Sparkles, Moon, Sun, Lock, Volume2
+  Sparkles, Moon, Sun, Lock, Volume2, Home, LogOut
 } from 'lucide-react';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
-import RoomsButton from '@/app/components/RoomsButton';
 
 // --- CONFIGURATION ---
 
@@ -21,41 +20,49 @@ const POOLS = [
   { id: 'food', label: 'Sustenance' }
 ];
 
-const CATEGORIES: Record<string, { id: string; label: string; options: string[] }> = {
-  GESTALT: {
-    id: 'gestalt',
-    label: 'Primary Gestalt',
-    options: ['Biological', 'Structure', 'Machine', 'Natural Feature']
+// --- CONTEXT AWARE CATEGORY DEFINITIONS ---
+
+type CategoryOption = { id: string; label: string; options: string[] };
+type PoolConfig = Record<string, CategoryOption>;
+
+const UNIVERSAL_CATEGORIES: PoolConfig = {
+  GESTALT: { id: 'gestalt', label: 'Primary Gestalt', options: ['Biological', 'Structure', 'Machine', 'Natural Feature'] },
+  COLOR: { id: 'color', label: 'Dominant Color', options: ['Warm (Red/Yel)', 'Cool (Blue/Purp)', 'Nature (Grn/Brn)', 'Mono (Grey/Wht)'] },
+  TEXTURE: { id: 'texture', label: 'Texture', options: ['Soft / Organic', 'Hard / Smooth', 'Rough / Coarse', 'Fluid / Wet'] },
+  VIBE: { id: 'emotion', label: 'Energetic Vibe', options: ['Peaceful', 'High Energy', 'Melancholic', 'Intense / Scary'] }
+};
+
+const POOL_CONFIGS: Record<string, PoolConfig> = {
+  all: UNIVERSAL_CATEGORIES,
+  animals: {
+    CLASS: { id: 'class', label: 'Biological Class', options: ['Mammal', 'Bird', 'Marine', 'Insect/Bug'] },
+    DIET: { id: 'diet', label: 'Dietary Archetype', options: ['Carnivore', 'Herbivore', 'Omnivore', 'Filter/Scavenger'] },
+    HABITAT: { id: 'habitat', label: 'Primary Habitat', options: ['Land / Forest', 'Water / Ocean', 'Air / Sky', 'Domestic'] },
+    COLOR: UNIVERSAL_CATEGORIES.COLOR
   },
-  COLOR: {
-    id: 'color',
-    label: 'Dominant Color',
-    options: ['Warm (Red/Yel)', 'Cool (Blue/Purp)', 'Nature (Grn/Brn)', 'Mono (Grey/Wht)']
+  structures: {
+    ERA: { id: 'era', label: 'Temporal Era', options: ['Ancient / Ruin', 'Classical / Trad', 'Modern / Industrial', 'Futuristic'] },
+    MATERIAL: { id: 'material', label: 'Primary Material', options: ['Stone / Brick', 'Metal / Glass', 'Wood / Organic', 'Concrete'] },
+    TYPE: { id: 'struct_type', label: 'Function', options: ['Dwelling', 'Monument/Sacred', 'Infrastructure', 'Commercial'] },
+    VIBE: UNIVERSAL_CATEGORIES.VIBE
   },
-  TEXTURE: {
-    id: 'texture',
-    label: 'Texture',
-    options: ['Soft / Organic', 'Hard / Smooth', 'Rough / Coarse', 'Fluid / Wet']
+  landscapes: {
+    ELEMENT: { id: 'element', label: 'Dominant Element', options: ['Water / Ice', 'Earth / Rock', 'Greenery / Plant', 'Air / Sky'] },
+    TEMP: { id: 'temp', label: 'Temperature', options: ['Hot / Arid', 'Cold / Frozen', 'Temperate / Mild', 'Humid / Tropical'] },
+    LIGHT: { id: 'light', label: 'Lighting Condition', options: ['Bright / Sunny', 'Dark / Night', 'Overcast / Stormy', 'Golden Hour'] },
+    VIBE: UNIVERSAL_CATEGORIES.VIBE
   },
-  SMELL: {
-    id: 'smell',
-    label: 'Scent',
-    options: ['Fresh / Nature', 'Chemical / City', 'Sweet / Food', 'Stagnant / Dust']
+  objects: {
+    MATERIAL: { id: 'obj_material', label: 'Material', options: ['Metal', 'Wood / Paper', 'Plastic / Synthetic', 'Composite / Glass'] },
+    FUNCTION: { id: 'function', label: 'Utility', options: ['Transport', 'Tool / Device', 'Art / Decor', 'Container'] },
+    COMPLEXITY: { id: 'complexity', label: 'Complexity', options: ['Simple / Single', 'Mechanical', 'Electronic', 'Ornate'] },
+    COLOR: UNIVERSAL_CATEGORIES.COLOR
   },
-  TASTE: {
-    id: 'taste',
-    label: 'Taste',
-    options: ['Sweet / Savory', 'Metallic / Chem', 'Salty / Mineral', 'Neutral / Dry']
-  },
-  SOUND: {
-    id: 'sound',
-    label: 'Sound',
-    options: ['Silence', 'Nature Sounds', 'Mechanical', 'Chaotic / Loud']
-  },
-  VIBE: {
-    id: 'emotion',
-    label: 'Energetic Vibe',
-    options: ['Peaceful', 'High Energy', 'Melancholic', 'Intense / Scary']
+  food: {
+    FLAVOR: { id: 'flavor', label: 'Dominant Profile', options: ['Sweet', 'Savory / Salty', 'Sour / Acidic', 'Bitter / Spicy'] },
+    STATE: { id: 'state', label: 'Physical State', options: ['Solid / Dry', 'Liquid / Wet', 'Soft / Creamy', 'Crunchy'] },
+    SOURCE: { id: 'source', label: 'Origin', options: ['Plant / Fruit', 'Meat / Protein', 'Baked / Grain', 'Beverage'] },
+    COLOR: UNIVERSAL_CATEGORIES.COLOR
   }
 };
 
@@ -65,7 +72,7 @@ interface LevelData {
     filename: string;
     pool: string;
     prompt: string;
-    tags: Record<string, string>;
+    tags: Record<string, string>; // These are the Universal Tags stored in DB
 }
 
 // --- FULL IMAGE DATABASE (100 ITEMS) ---
@@ -882,23 +889,119 @@ const LEVEL_DATA: LevelData[] = [
   }
 ];
 
-// --- UTILITIES ---
+// --- TAG INFERENCE ENGINE ---
+// This system programmatically determines specific tags for context-aware pools
+// so we don't have to manually rewrite the database.
 
-const calculateScore = (guesses: Record<string, string>, correctTags: Record<string, string>) => {
-  let matched = 0;
-  let total = 0;
-  
-  Object.keys(CATEGORIES).forEach(catKey => {
-    const catId = CATEGORIES[catKey].id;
-    total++;
-    // Check if user has made a guess for this category
-    if (guesses[catId] && guesses[catId] === correctTags[catId]) {
-      matched++;
-    }
-  });
+const inferSpecificTags = (level: LevelData, pool: string): Record<string, string> => {
+  // Start with universal tags as base
+  const tags = { ...level.tags };
+  const concept = level.concept.toLowerCase();
+  const filename = level.filename.toLowerCase();
 
-  return { matched, total, percentage: total === 0 ? 0 : Math.round((matched / total) * 100) };
+  if (pool === 'animals') {
+    // 1. CLASS
+    if (filename.includes('marine') || ['shark', 'fish', 'octopus', 'jellyfish', 'turtle'].some(k => concept.includes(k))) tags.class = 'Marine';
+    else if (filename.includes('avian') || ['eagle', 'macaw', 'peacock', 'owl', 'swan'].some(k => concept.includes(k))) tags.class = 'Bird';
+    else if (filename.includes('insect') || ['butterfly', 'spider', 'bee', 'snail', 'dragonfly'].some(k => concept.includes(k))) tags.class = 'Insect/Bug';
+    else tags.class = 'Mammal'; // Default for predator/herbivore
+
+    // 2. DIET
+    if (['lion', 'shark', 'wolf', 'tiger', 'eagle', 'spider', 'owl', 'jellyfish', 'octopus'].some(k => concept.includes(k))) tags.diet = 'Carnivore';
+    else if (['deer', 'giraffe', 'panda', 'rabbit', 'elephant', 'bee', 'butterfly', 'snail'].some(k => concept.includes(k))) tags.diet = 'Herbivore';
+    else if (['bear', 'clownfish', 'macaw'].some(k => concept.includes(k))) tags.diet = 'Omnivore';
+    else tags.diet = 'Filter/Scavenger';
+
+    // 3. HABITAT
+    if (tags.class === 'Marine' || concept.includes('swan') || concept.includes('water')) tags.habitat = 'Water / Ocean';
+    else if (tags.class === 'Bird' || concept.includes('dragonfly') || concept.includes('bee')) tags.habitat = 'Air / Sky';
+    else if (['rabbit', 'dog', 'cat'].some(k => concept.includes(k))) tags.habitat = 'Domestic';
+    else tags.habitat = 'Land / Forest';
+  }
+
+  if (pool === 'structures') {
+    // 1. ERA
+    if (filename.includes('ruin') || ['pyramid', 'mayan', 'colosseum', 'stonehenge', 'moai'].some(k => concept.includes(k))) tags.era = 'Ancient / Ruin';
+    else if (['skyscraper', 'neon', 'modern', 'refinery'].some(k => concept.includes(k))) tags.era = 'Modern / Industrial';
+    else if (['temple', 'torii', 'buddhist', 'stained glass', 'library'].some(k => concept.includes(k))) tags.era = 'Classical / Trad';
+    else tags.era = 'Modern / Industrial';
+
+    // 2. MATERIAL
+    if (concept.includes('glass') || concept.includes('neon') || concept.includes('refinery')) tags.material = 'Metal / Glass';
+    else if (concept.includes('wood') || concept.includes('bamboo') || concept.includes('tree')) tags.material = 'Wood / Organic';
+    else if (concept.includes('concrete')) tags.material = 'Concrete';
+    else tags.material = 'Stone / Brick';
+
+    // 3. TYPE
+    if (['home', 'kitchen', 'bedroom', 'fireplace'].some(k => filename.includes(k))) tags.struct_type = 'Dwelling';
+    else if (['temple', 'church', 'shrine', 'altar', 'monument', 'pyramid', 'stonehenge'].some(k => concept.toLowerCase().includes(k) || filename.includes('sacred'))) tags.struct_type = 'Monument/Sacred';
+    else if (['bridge', 'dam', 'road', 'tracks', 'port', 'wind farm'].some(k => concept.toLowerCase().includes(k) || filename.includes('ind'))) tags.struct_type = 'Infrastructure';
+    else tags.struct_type = 'Commercial';
+  }
+
+  if (pool === 'landscapes') {
+    // 1. ELEMENT
+    if (filename.includes('water') || filename.includes('ice') || concept.includes('ocean') || concept.includes('lake')) tags.element = 'Water / Ice';
+    else if (filename.includes('land') || filename.includes('desert') || concept.includes('mountain') || concept.includes('canyon')) tags.element = 'Earth / Rock';
+    else if (filename.includes('forest') || concept.includes('tree') || concept.includes('jungle') || concept.includes('green')) tags.element = 'Greenery / Plant';
+    else tags.element = 'Air / Sky';
+
+    // 2. TEMP
+    if (filename.includes('ice') || concept.includes('snow') || concept.includes('frozen')) tags.temp = 'Cold / Frozen';
+    else if (filename.includes('desert') || concept.includes('volcano') || concept.includes('dunes')) tags.temp = 'Hot / Arid';
+    else if (filename.includes('jungle') || filename.includes('water') || concept.includes('rain')) tags.temp = 'Humid / Tropical';
+    else tags.temp = 'Temperate / Mild';
+
+    // 3. LIGHT
+    if (concept.includes('night') || concept.includes('cave') || concept.includes('dark')) tags.light = 'Dark / Night';
+    else if (concept.includes('storm') || concept.includes('overcast') || concept.includes('fog')) tags.light = 'Overcast / Stormy';
+    else if (concept.includes('sunset') || concept.includes('sunrise') || concept.includes('autumn')) tags.light = 'Golden Hour';
+    else tags.light = 'Bright / Sunny';
+  }
+
+  if (pool === 'objects') {
+    // 1. MATERIAL
+    if (filename.includes('vehicle') || filename.includes('tech') || filename.includes('tool')) tags.obj_material = 'Metal';
+    else if (concept.includes('wood') || concept.includes('paper') || concept.includes('book')) tags.obj_material = 'Wood / Paper';
+    else if (concept.includes('glass') || concept.includes('composite') || concept.includes('circuit')) tags.obj_material = 'Composite / Glass';
+    else tags.obj_material = 'Plastic / Synthetic';
+
+    // 2. FUNCTION
+    if (filename.includes('vehicle') || filename.includes('vessel')) tags.function = 'Transport';
+    else if (filename.includes('tool') || filename.includes('tech') || concept.includes('robot')) tags.function = 'Tool / Device';
+    else if (concept.includes('statue') || concept.includes('painting') || concept.includes('decor')) tags.function = 'Art / Decor';
+    else tags.function = 'Container'; // box, bottle etc, defaulting if unknown
+
+    // 3. COMPLEXITY
+    if (concept.includes('circuit') || concept.includes('robot') || concept.includes('engine')) tags.complexity = 'Electronic';
+    else if (filename.includes('vehicle') || concept.includes('clock') || concept.includes('camera')) tags.complexity = 'Mechanical';
+    else if (concept.includes('ornate') || concept.includes('vintage')) tags.complexity = 'Ornate';
+    else tags.complexity = 'Simple / Single';
+  }
+
+  if (pool === 'food') {
+    // 1. FLAVOR
+    if (concept.includes('lemon') || concept.includes('lime') || concept.includes('wine')) tags.flavor = 'Sour / Acidic';
+    else if (concept.includes('cake') || concept.includes('chocolate') || concept.includes('fruit')) tags.flavor = 'Sweet';
+    else if (concept.includes('chili') || concept.includes('pepper') || concept.includes('coffee')) tags.flavor = 'Bitter / Spicy';
+    else tags.flavor = 'Savory / Salty';
+
+    // 2. STATE
+    if (concept.includes('wine') || concept.includes('juice') || concept.includes('soup')) tags.state = 'Liquid / Wet';
+    else if (concept.includes('cake') || concept.includes('bread') || concept.includes('cream')) tags.state = 'Soft / Creamy';
+    else if (concept.includes('cookie') || concept.includes('chip') || concept.includes('nut')) tags.state = 'Crunchy';
+    else tags.state = 'Solid / Dry';
+
+    // 3. SOURCE
+    if (concept.includes('meat') || concept.includes('fish') || concept.includes('egg')) tags.source = 'Meat / Protein';
+    else if (concept.includes('cake') || concept.includes('bread') || concept.includes('pasta')) tags.source = 'Baked / Grain';
+    else if (concept.includes('wine') || concept.includes('coffee')) tags.source = 'Beverage';
+    else tags.source = 'Plant / Fruit';
+  }
+
+  return tags;
 };
+
 
 // --- COMPONENTS ---
 
@@ -932,8 +1035,10 @@ export default function SensesApp() {
   // State
   const [view, setView] = useState('welcome'); 
   const [currentLevel, setCurrentLevel] = useState<LevelData | null>(null);
+  const [currentConfig, setCurrentConfig] = useState<PoolConfig>(UNIVERSAL_CATEGORIES);
   const [guesses, setGuesses] = useState<Record<string, string>>({});
   const [isRevealed, setIsRevealed] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [history, setHistory] = useState<any[]>([]);
   const [selectedPool, setSelectedPool] = useState('all');
   
@@ -951,6 +1056,22 @@ export default function SensesApp() {
     localStorage.setItem('senses_history_v2', JSON.stringify(history));
   }, [history]);
 
+  // Scoring Logic (Dynamic based on active config)
+  const calculateScore = (guesses: Record<string, string>, correctTags: Record<string, string>, config: PoolConfig) => {
+    let matched = 0;
+    let total = 0;
+    
+    Object.values(config).forEach(cat => {
+      total++;
+      // Check if user has made a guess for this category
+      if (guesses[cat.id] && guesses[cat.id] === correctTags[cat.id]) {
+        matched++;
+      }
+    });
+
+    return { matched, total, percentage: total === 0 ? 0 : Math.round((matched / total) * 100) };
+  };
+
   // Game Logic
   const startRound = () => {
     // 1. Filter Data by Pool
@@ -958,7 +1079,7 @@ export default function SensesApp() {
       ? LEVEL_DATA 
       : LEVEL_DATA.filter(l => l.pool === selectedPool);
 
-    if (poolData.length === 0) return; // Should not happen with current data
+    if (poolData.length === 0) return; 
 
     // 2. Select Target
     let nextLevel;
@@ -966,12 +1087,18 @@ export default function SensesApp() {
       nextLevel = poolData[Math.floor(Math.random() * poolData.length)];
     } while (currentLevel && nextLevel.id === currentLevel.id && poolData.length > 1);
 
-    // 3. Reset State
-    setCurrentLevel(nextLevel);
+    // 3. Determine Context-Aware Config & Infer Tags
+    const activeConfig = POOL_CONFIGS[selectedPool] || POOL_CONFIGS['all'];
+    const inferredTags = inferSpecificTags(nextLevel, selectedPool);
+    const completeLevel = { ...nextLevel, tags: { ...nextLevel.tags, ...inferredTags } };
+
+    // 4. Reset State
+    setCurrentLevel(completeLevel);
+    setCurrentConfig(activeConfig);
     setGuesses({});
     setIsRevealed(false);
     
-    // 4. Change View
+    // 5. Change View
     setView('game');
   };
 
@@ -982,7 +1109,7 @@ export default function SensesApp() {
   const submitGuesses = () => {
     if (!currentLevel) return;
     setIsRevealed(true);
-    const scoreData = calculateScore(guesses, currentLevel.tags);
+    const scoreData = calculateScore(guesses, currentLevel.tags, currentConfig);
     
     const resultRecord = {
       timestamp: Date.now(),
@@ -1001,14 +1128,15 @@ export default function SensesApp() {
   const WelcomeView = () => (
     <div className="flex flex-col items-center justify-center min-h-[70vh] text-center space-y-10 animate-in fade-in duration-1000">
       
-      {/* Mystical Header */}
+      {/* Polished Logo Section */}
       <div className="relative group cursor-default">
-        <div className="absolute -inset-4 bg-indigo-500/20 blur-3xl rounded-full opacity-50 group-hover:opacity-75 transition-opacity duration-1000"></div>
+        <div className="absolute -inset-8 bg-indigo-500/20 blur-3xl rounded-full opacity-50 group-hover:opacity-75 transition-opacity duration-1000"></div>
         <div className="relative z-10 flex flex-col items-center">
-            <div className="mb-6 relative">
-                 <Moon className="w-16 h-16 text-indigo-300 absolute -top-2 -left-2 opacity-50" />
-                 <Eye className="w-20 h-20 text-amber-100 relative z-10 drop-shadow-[0_0_15px_rgba(251,191,36,0.3)]" />
-                 <Sun className="w-16 h-16 text-amber-500 absolute -bottom-2 -right-2 opacity-50" />
+            {/* Horizontal Icon Arrangement */}
+            <div className="flex flex-row items-center gap-4 mb-4">
+                 <Moon className="w-12 h-12 text-indigo-300 opacity-60" />
+                 <Eye className="w-16 h-16 text-amber-100 drop-shadow-[0_0_15px_rgba(251,191,36,0.3)]" />
+                 <Sun className="w-12 h-12 text-amber-500 opacity-60" />
             </div>
             <h1 className="text-4xl md:text-6xl font-serif text-transparent bg-clip-text bg-linear-to-b from-amber-100 to-amber-600 tracking-widest mb-2">
             REMOTE VIEWING
@@ -1054,15 +1182,12 @@ export default function SensesApp() {
           <Sparkles className="w-5 h-5 text-amber-400" />
           Initiate
         </Button>
-        <Button onClick={() => setView('stats')} variant="secondary" className="px-4">
-          <BarChart2 className="w-5 h-5" />
-        </Button>
       </div>
     </div>
   );
 
   const GameView = () => {
-    const totalCategories = Object.keys(CATEGORIES).length;
+    const totalCategories = Object.keys(currentConfig).length;
     const answeredCount = Object.keys(guesses).length;
     const allAnswered = answeredCount === totalCategories;
 
@@ -1121,11 +1246,19 @@ export default function SensesApp() {
                         ></div>
                     </div>
                 </div>
+
+                {/* Abort Button */}
+                <button 
+                  onClick={() => setView('welcome')}
+                  className="w-full py-2 flex items-center justify-center gap-2 text-xs text-red-400/60 hover:text-red-400 border border-transparent hover:border-red-900/30 rounded transition-all"
+                >
+                   <LogOut className="w-3 h-3" /> Abort Session
+                </button>
             </div>
 
-            {/* Right Column: The Universal Descriptors */}
+            {/* Right Column: Context-Aware Descriptors */}
             <div className="lg:col-span-7 space-y-6">
-                 {Object.values(CATEGORIES).map((cat) => (
+                 {Object.values(currentConfig).map((cat) => (
                      <div key={cat.id} className="group">
                          <div className="flex items-center gap-2 mb-3">
                              <span className={`w-1 h-1 rounded-full ${guesses[cat.id] ? 'bg-amber-500' : 'bg-slate-700'}`}></span>
@@ -1174,33 +1307,31 @@ export default function SensesApp() {
     const [imageLoaded, setImageLoaded] = useState(false);
 
     if (!currentLevel) return null;
-    const score = calculateScore(guesses, currentLevel.tags);
+    const score = calculateScore(guesses, currentLevel.tags, currentConfig);
     
-    // Fixed Path: Using standard spaces as requested
+    // Using standard spaces as requested
     const imageUrl = `/images/senses app images/${currentLevel.filename}`;
 
     return (
-      <div className="w-full max-w-5xl mx-auto space-y-8 pb-12">
+      <div className="w-full max-w-5xl mx-auto space-y-8 pb-12 animate-in zoom-in-95 duration-700">
         
         {/* Top Section: The Reveal */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
             
             <Card className="aspect-4/3 md:aspect-square bg-black border-amber-500/20 group relative">
-                {/* Loading Spinner (Visible only when imageLoaded is false) */}
                 {!imageLoaded && (
                     <div className="absolute inset-0 flex items-center justify-center z-0">
                          <div className="w-10 h-10 border-2 border-indigo-500/50 border-t-amber-500 rounded-full animate-spin"></div>
                     </div>
                 )}
-
-                {/* Image with Manual Fade-in Logic */}
+                
                 <img 
                     src={imageUrl} 
                     alt="Target" 
                     onLoad={() => setImageLoaded(true)}
                     className={`w-full h-full object-cover transition-opacity duration-1000 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
                 />
-
+                
                 <div className="absolute inset-0 bg-linear-to-t from-black/80 via-transparent to-transparent pointer-events-none"></div>
                 <div className="absolute bottom-0 left-0 p-6">
                     <span className="block text-amber-500 text-xs font-mono mb-1 uppercase tracking-widest">Target Identity Confirmed</span>
@@ -1253,7 +1384,7 @@ export default function SensesApp() {
         <div className="border-t border-indigo-900/30 pt-8">
             <h3 className="text-center font-serif text-slate-400 text-lg mb-6">Psychic Data Analysis</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {Object.values(CATEGORIES).map(cat => {
+                {Object.values(currentConfig).map(cat => {
                     const userGuess = guesses[cat.id];
                     const correct = currentLevel.tags[cat.id];
                     const isCorrect = userGuess === correct;
@@ -1373,7 +1504,7 @@ export default function SensesApp() {
                 </div>
 
                 <div className="text-xs text-slate-600 italic text-center pt-4">
-                    System Version 3.0.1 // Occult UI Framework
+                    System Version 3.1.0 // Context Aware Protocol
                 </div>
             </div>
           </div>
@@ -1394,7 +1525,16 @@ export default function SensesApp() {
       {/* Header */}
       <header className="relative z-10 px-6 py-4 flex items-center justify-between border-b border-indigo-900/10 backdrop-blur-sm">
         <div className="flex items-center gap-6">
-           <MagickalBackLink href="/the-magick-psychic-school/psychic-training" text="Return" className="text-xs text-indigo-400/50 hover:text-amber-400 transition-colors" />
+           {view === 'welcome' ? (
+               <MagickalBackLink href="/the-magick-psychic-school/psychic-training" text="Return" className="text-xs text-indigo-400/50 hover:text-amber-400 transition-colors" />
+           ) : (
+               <button 
+                onClick={() => setView('welcome')}
+                className="flex items-center gap-2 text-xs text-indigo-400/50 hover:text-amber-400 transition-colors"
+               >
+                   <Home className="w-4 h-4" /> Home
+               </button>
+           )}
         </div>
         
         <div className="flex items-center gap-4">
@@ -1404,7 +1544,13 @@ export default function SensesApp() {
            >
              <Settings className="w-5 h-5" />
            </button>
-           <RoomsButton />
+           
+           <button 
+             onClick={() => setView('stats')} 
+             className="p-2 hover:bg-slate-900 rounded-full transition-colors text-indigo-400/50 hover:text-amber-500"
+           >
+             <BarChart2 className="w-5 h-5" />
+           </button>
         </div>
       </header>
 
