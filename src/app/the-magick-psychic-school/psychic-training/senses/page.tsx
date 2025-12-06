@@ -13,11 +13,11 @@ import MagickalBackLink from '@/app/components/MagickalBackLink';
 
 const POOLS = [
   { id: 'all', label: 'The Void (All Realms)' },
-  { id: 'animals', label: 'Living Spirits' },
-  { id: 'structures', label: 'Temples & Ruins' },
-  { id: 'landscapes', label: "Gaia's Form" },
-  { id: 'objects', label: 'Artifacts & Relics' },
-  { id: 'food', label: 'Sustenance & Offerings' }
+  { id: 'animals', label: 'Animals' },
+  { id: 'structures', label: 'Ancient Structures' },
+  { id: 'landscapes', label: "Natural Formations" },
+  { id: 'objects', label: 'Random Objects' },
+  { id: 'food', label: 'Food' }
 ];
 
 // --- CONTEXT AWARE CATEGORY DEFINITIONS ---
@@ -1552,7 +1552,7 @@ export default function SensesApp() {
                             <ul className="space-y-2 list-disc pl-4 text-slate-400">
                                 <li><strong className="text-slate-200">Center Yourself:</strong> Take a deep breath. Clear your mind.</li>
                                 <li><strong className="text-slate-200">Sense, Don't Think:</strong> Do not look for a name (e.g., 'Eiffel Tower'). Look for sensations. Is it jagged? Is it metallic? Does it feel ancient?</li>
-                                <li><strong className="text-slate-200">Select a Realm:</strong> Choose a specific category (like <em>Living Spirits</em>) to practice within a known archetype, or choose <em>The Void</em> to test your skills against the unknown.</li>
+                                <li><strong className="text-slate-200">Select a Realm:</strong> Choose a specific category (like <em>Animals</em>) to practice within a known archetype, or choose <em>The Void</em> to test your skills against the unknown.</li>
                             </ul>
                         </div>
                         
