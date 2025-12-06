@@ -1,3 +1,5 @@
+// --- START OF FILE page.tsx ---
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -1058,8 +1060,8 @@ const inferSpecificTags = (level: LevelData, pool: string): Record<string, strin
 
 // --- COMPONENTS ---
 
-const Card = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => (
-  <div className={`bg-slate-900/50 backdrop-blur-md rounded-xl border border-indigo-500/30 shadow-2xl overflow-hidden relative ${className}`}>
+const Card = ({ children, className = "", onClick }: { children: React.ReactNode, className?: string, onClick?: (e: React.MouseEvent) => void }) => (
+  <div onClick={onClick} className={`bg-slate-900/50 backdrop-blur-md rounded-xl border border-indigo-500/30 shadow-2xl overflow-hidden relative ${className}`}>
     {children}
   </div>
 );
@@ -1821,3 +1823,4 @@ export default function SensesApp() {
   );
 }
 
+// --- END OF FILE page.tsx ---
