@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Eye, EyeOff, Play, RotateCcw, HelpCircle, X, Trophy, 
-  Settings, Save, Activity, Sparkles, Volume2, VolumeX, Maximize, Minimize 
+  Settings, Save, Activity, Sparkles, Volume2, VolumeX, Maximize, Minimize, Trash2
 } from 'lucide-react';
 import { createBrowserClient } from '@supabase/ssr';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
@@ -332,7 +332,6 @@ const PsiStats = ({ stats, variant = 'floating' }: { stats: any, variant?: 'floa
     const lifeProb = calculateProbability(lifeZ);
     const lifeTier = getPsiTier(lifeZ);
 
-    // Conditional Styles based on variant
     const containerClasses = variant === 'header' 
       ? "flex items-center gap-6 px-4 py-1 hover:bg-white/5 rounded-lg cursor-pointer transition-colors border border-transparent hover:border-white/10"
       : "cursor-pointer group flex flex-col items-end justify-center bg-slate-800/90 hover:bg-slate-700/90 border border-purple-500/20 hover:border-purple-500/50 rounded-lg px-3 py-1 transition-all duration-300 min-w-20 h-[50px]";
@@ -340,7 +339,6 @@ const PsiStats = ({ stats, variant = 'floating' }: { stats: any, variant?: 'floa
     const TriggerContent = () => (
       <>
         {variant === 'header' ? (
-           // Header Variant Layout (Horizontal)
            <>
               <div className="flex items-center gap-3 border-r border-gray-700 pr-4">
                   <span className="text-yellow-400 font-bold flex items-center gap-1"><Trophy size={14} /> {stats.streak}</span>
@@ -355,7 +353,6 @@ const PsiStats = ({ stats, variant = 'floating' }: { stats: any, variant?: 'floa
               </div>
            </>
         ) : (
-           // Floating Variant Layout (Compact/Vertical)
            <>
              <div className="flex items-center gap-2">
               <span className="text-xs font-mono text-purple-400 group-hover:text-purple-300 transition-colors">N: {sessionTrials}</span>
@@ -380,17 +377,23 @@ const PsiStats = ({ stats, variant = 'floating' }: { stats: any, variant?: 'floa
   
         {showModal && (
           <div 
-              className="fixed inset-0 z-100 flex items-center justify-center bg-black/95 backdrop-blur-xl p-4 animate-in fade-in duration-300"
+              className="fixed inset-0 z-200 flex items-center justify-center bg-black/95 backdrop-blur-xl p-0 md:p-4 animate-in fade-in duration-300"
               onClick={() => setShowModal(false)}
           >
+            {/* Modal Container: Full Screen on Mobile, Centered Card on Desktop */}
             <div 
-              className="w-full max-w-4xl bg-slate-900 border border-purple-500/20 rounded-xl p-6 relative max-h-[95vh] overflow-y-auto shadow-[0_0_50px_rgba(168,85,247,0.2)]"
+              className="w-full h-full md:h-auto md:max-h-[95vh] md:max-w-4xl bg-slate-900 border-0 md:border md:border-purple-500/20 rounded-none md:rounded-xl p-6 relative overflow-y-auto shadow-[0_0_50px_rgba(168,85,247,0.2)] flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
-              <button onClick={() => setShowModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white"><X /></button>
-              <h2 className="text-2xl font-serif text-white mb-6 flex items-center gap-2">
-                <Activity className="text-purple-400" /> Performance Analysis
-              </h2>
+              {/* Sticky Close Button for Mobile */}
+              <div className="flex justify-between items-center mb-6 sticky top-0 bg-slate-900/95 backdrop-blur z-10 py-2 border-b border-white/5 md:border-0 md:static">
+                 <h2 className="text-2xl font-serif text-white flex items-center gap-2">
+                    <Activity className="text-purple-400" /> Performance
+                 </h2>
+                 <button onClick={() => setShowModal(false)} className="p-2 bg-slate-800 rounded-full hover:bg-slate-700 text-slate-300 hover:text-white transition-colors">
+                    <X size={20}/>
+                 </button>
+              </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
                 {/* CURRENT */}
@@ -497,34 +500,37 @@ const CircularTimer = ({ duration, onComplete, isActive }: { duration: number, o
 
   return (
     <div className="relative flex items-center justify-center">
-      <div className="absolute w-60 h-60 rounded-full bg-black shadow-[inset_0_0_60px_rgba(0,0,0,1)] border border-gray-800/50" />
-
-      <svg width={size} height={size} className="transform -rotate-90 z-10">
+       {/* Background Glow */}
+      <div className="absolute w-64 h-64 rounded-full bg-black shadow-[0_0_80px_rgba(139,92,246,0.3)] border border-gray-800/50 z-0" />
+      
+      {/* SVG Container with higher z-index to ensure visibility */}
+      <svg width={size} height={size} className="transform -rotate-90 z-10 relative">
         <circle
           cx={center}
           cy={center}
           r={radius}
           fill="transparent"
-          stroke="#1f2937"
+          stroke="#0f172a"
           strokeWidth={strokeWidth}
         />
+        {/* Bright Cyan Progress Line */}
         <circle
           cx={center}
           cy={center}
           r={radius}
           fill="transparent"
-          stroke="#ffffff"
+          stroke="#22d3ee" 
           strokeWidth={strokeWidth}
           strokeDasharray={circumference}
           strokeDashoffset={strokeDashoffset}
           strokeLinecap="round"
-          className="drop-shadow-[0_0_10px_rgba(255,255,255,0.8)] transition-all duration-75 ease-linear"
+          className="drop-shadow-[0_0_15px_rgba(34,211,238,1)] transition-all duration-75 ease-linear"
         />
       </svg>
       
       {isActive && (
-        <div className="absolute w-full h-full flex items-center justify-center animate-pulse">
-           <div className="w-2 h-2 bg-cyan-400 rounded-full shadow-[0_0_20px_rgba(34,211,238,0.8)]" />
+        <div className="absolute w-full h-full flex items-center justify-center animate-pulse z-20">
+           <div className="w-3 h-3 bg-cyan-400 rounded-full shadow-[0_0_30px_rgba(34,211,238,1)]" />
         </div>
       )}
     </div>
@@ -540,21 +546,19 @@ export default function TheGazeApp() {
   const [gameState, setGameState] = useState<'IDLE' | 'FOCUSING' | 'DECIDING' | 'REVEAL'>('IDLE');
   const [showInstructions, setShowInstructions] = useState(true);
   const [stats, setStats] = useState({ hits: 0, total: 0, streak: 0 });
+  const [sessionId, setSessionId] = useState<string | null>(null);
   
   // Game Configuration
   const [filterMode, setFilterMode] = useState<'ALL' | 'MEN' | 'WOMEN' | 'ANIMALS'>('ALL');
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
   
   // Session State
   const [currentSubject, setCurrentSubject] = useState<typeof SUBJECTS[0] | null>(null);
   const [userGuess, setUserGuess] = useState<string | null>(null);
   const [phrase, setPhrase] = useState(PHRASES[0]);
   
-  // Saving State
-  const [saving, setSaving] = useState(false);
-  const [saveMessage, setSaveMessage] = useState<string | null>(null);
-
   const audio = useAudioEngine();
 
   useEffect(() => {
@@ -572,12 +576,57 @@ export default function TheGazeApp() {
 
   const toggleSound = () => setSoundEnabled(!soundEnabled);
 
+  // AUTO-SAVE LOGIC
+  const saveSessionStats = async (newStats: typeof stats) => {
+      setSaveMessage("SAVING...");
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            setSaveMessage(null);
+            return;
+        }
+
+        if (sessionId) {
+            // Update existing session
+            const { error } = await supabase
+                .from('reports')
+                .update({ 
+                    chart_data: newStats,
+                    report_content: `Auto-saved session. Trials: ${newStats.total}. Hits: ${newStats.hits}. Mode: ${filterMode}.`
+                })
+                .eq('id', sessionId);
+            if (error) throw error;
+        } else {
+            // Create new session
+            const { data, error } = await supabase
+                .from('reports')
+                .insert({
+                    user_id: user.id,
+                    name: 'The Gaze',
+                    category: 'training',
+                    chart_data: newStats,
+                    report_content: `New session started. Mode: ${filterMode}.`
+                })
+                .select()
+                .single();
+            
+            if (error) throw error;
+            if (data) setSessionId(data.id);
+        }
+        setSaveMessage("SAVED");
+        setTimeout(() => setSaveMessage(null), 2000);
+
+      } catch (err) {
+          console.error("Auto-save failed:", err);
+          setSaveMessage("ERROR");
+      }
+  };
+
   const startFocus = () => {
     setGameState('FOCUSING');
     setUserGuess(null);
     setPhrase(PHRASES[Math.floor(Math.random() * PHRASES.length)]);
     
-    // Filter subjects based on settings
     let availableSubjects = SUBJECTS;
     if (filterMode !== 'ALL') {
       availableSubjects = SUBJECTS.filter(s => s.category === filterMode);
@@ -605,49 +654,45 @@ export default function TheGazeApp() {
       audio.playMiss();
     }
 
-    setStats(prev => ({
-      hits: isCorrect ? prev.hits + 1 : prev.hits,
-      total: prev.total + 1,
-      streak: isCorrect ? prev.streak + 1 : 0
-    }));
+    const newStats = {
+      hits: isCorrect ? stats.hits + 1 : stats.hits,
+      total: stats.total + 1,
+      streak: isCorrect ? stats.streak + 1 : 0
+    };
+
+    setStats(newStats);
+    
+    // Trigger Auto Save
+    saveSessionStats(newStats);
   };
 
-  const handleResetStats = () => {
+  const handleResetSession = () => {
     setStats({ hits: 0, total: 0, streak: 0 });
+    setSessionId(null); // Detach from DB row so next guess creates new session
     setGameState('IDLE');
     setShowSettings(false);
   };
 
-  const handleSaveResults = async () => {
-    setSaving(true);
-    setSaveMessage("UPLOADING DATA...");
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        setSaveMessage("AUTH REQUIRED");
-        setTimeout(() => setSaveMessage(null), 3000);
-        setSaving(false);
-        return;
-      }
+  const handleDeleteLifetime = async () => {
+      if(!confirm("Are you sure? This will delete ALL your history for The Gaze.")) return;
       
-      const { error } = await supabase
-        .from('reports')
-        .insert({
-          user_id: user.id,
-          name: 'The Gaze',
-          category: 'training', 
-          chart_data: stats, 
-          report_content: `Session completed. Trials: ${stats.total}. Hits: ${stats.hits}. Filter: ${filterMode}.`,
-        });
-      if (error) throw error;
-      setSaveMessage("DATA ARCHIVED");
-    } catch (e) {
-      console.error(e);
-      setSaveMessage("UPLOAD FAILED");
-    } finally {
-      setTimeout(() => setSaveMessage(null), 3000);
-      setSaving(false);
-    }
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if(!user) return;
+
+        const { error } = await supabase
+            .from('reports')
+            .delete()
+            .eq('user_id', user.id)
+            .eq('name', 'The Gaze');
+        
+        if (error) throw error;
+        alert("History deleted.");
+        handleResetSession();
+      } catch(e) {
+          console.error(e);
+          alert("Failed to delete.");
+      }
   };
 
   const toggleFullScreen = () => {
@@ -691,11 +736,11 @@ export default function TheGazeApp() {
       </header>
 
       {/* Main Game Area */}
-      <div className="relative z-10 flex-1 flex flex-col items-center justify-center p-6">
+      <div className="relative z-10 flex-1 flex flex-col items-center justify-center p-6 gap-6">
         
-        {/* Mobile Stats HUD (Hidden on desktop) */}
-        <div className="absolute top-6 left-0 right-0 flex justify-center pointer-events-none z-30 md:hidden">
-           <div className="flex items-center gap-4 px-6 py-2 bg-gray-900/80 rounded-full border border-gray-800 shadow-xl backdrop-blur-sm pointer-events-auto">
+        {/* Mobile Stats HUD (In-flow to prevent overlap) */}
+        <div className="md:hidden w-full flex justify-center order-first">
+           <div className="flex items-center gap-4 px-6 py-2 bg-gray-900/80 rounded-full border border-gray-800 shadow-xl backdrop-blur-sm">
              <div className="flex flex-col items-center">
                <span className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Streak</span>
                <span className="text-lg font-mono font-bold text-yellow-400 flex items-center gap-1">
@@ -703,7 +748,6 @@ export default function TheGazeApp() {
                </span>
              </div>
              <div className="w-px h-8 bg-gray-800"></div>
-             {/* Floating variant with lightened background handled in component */}
              <PsiStats stats={stats} variant="floating" />
            </div>
         </div>
@@ -713,11 +757,11 @@ export default function TheGazeApp() {
           
           {/* IDLE STATE */}
           {gameState === 'IDLE' && (
-            <div className="text-center animate-in fade-in zoom-in duration-500">
+            <div className="text-center animate-in fade-in zoom-in duration-500 relative z-10">
               <div className="mb-8 relative group cursor-pointer" onClick={startFocus}>
-                <div className="absolute inset-0 bg-purple-500/20 rounded-full blur-xl group-hover:bg-purple-500/30 transition-all duration-500"></div>
-                <div className="relative w-48 h-48 rounded-full border-2 border-purple-500/30 flex items-center justify-center bg-black hover:scale-105 transition-transform duration-300">
-                  <Play size={48} className="text-purple-400 ml-2" />
+                <div className="absolute inset-0 bg-purple-500/30 rounded-full blur-2xl group-hover:bg-purple-500/50 transition-all duration-500"></div>
+                <div className="relative w-48 h-48 rounded-full border-2 border-purple-500/50 flex items-center justify-center bg-black/50 backdrop-blur-sm hover:scale-105 transition-transform duration-300 shadow-[0_0_50px_rgba(168,85,247,0.3)]">
+                  <Play size={48} className="text-purple-400 ml-2 drop-shadow-[0_0_10px_rgba(168,85,247,0.8)]" />
                 </div>
               </div>
               <h2 className="text-2xl font-light text-gray-300 mb-2">Ready to Tune In?</h2>
@@ -736,7 +780,7 @@ export default function TheGazeApp() {
                 isActive={true} 
                 onComplete={handleTimerComplete} 
               />
-              <p className="mt-8 text-cyan-200/70 text-lg font-light tracking-wide animate-pulse">
+              <p className="mt-8 text-cyan-200/70 text-lg font-light tracking-wide animate-pulse drop-shadow-md">
                 {phrase}
               </p>
             </div>
@@ -745,13 +789,12 @@ export default function TheGazeApp() {
           {/* DECIDING STATE */}
           {gameState === 'DECIDING' && (
             <div className="flex flex-col items-center w-full animate-in slide-in-from-bottom-10 fade-in duration-300">
-              <div className="w-64 h-64 bg-black rounded-full border border-gray-800 shadow-[0_0_50px_rgba(0,0,0,1)] flex items-center justify-center mb-8 relative overflow-hidden">
-                <div className="absolute inset-0 bg-linear-to-b from-gray-900 to-black opacity-90 z-10 flex items-center justify-center">
-                    <span className="text-6xl animate-pulse text-gray-700">?</span>
-                </div>
+              {/* Central Glowing Void */}
+              <div className="w-64 h-64 bg-black rounded-full border-4 border-indigo-900 shadow-[0_0_100px_rgba(79,70,229,0.4)] flex items-center justify-center mb-8 relative overflow-hidden animate-pulse">
+                <div className="absolute inset-0 bg-radial-gradient from-indigo-900/50 to-black/90"></div>
               </div>
 
-              <h3 className="text-2xl text-white mb-8 font-medium font-serif tracking-wide">Are they staring at you?</h3>
+              <h3 className="text-2xl text-white mb-8 font-medium font-serif tracking-wide drop-shadow-lg">Are they staring at you?</h3>
 
               <div className="flex gap-4 w-full max-w-sm">
                 <button 
@@ -811,6 +854,7 @@ export default function TheGazeApp() {
                     <p className="text-red-200/60 text-sm">It was {currentSubject.name}.</p>
                   </div>
                 )}
+                {saveMessage && <p className="text-xs text-gray-500 mt-2 font-mono">{saveMessage}</p>}
               </div>
 
               <button 
@@ -866,19 +910,16 @@ export default function TheGazeApp() {
                     </div>
 
                     <div className="pt-4 border-t border-gray-800 space-y-3">
-                        <button onClick={handleResetStats} className="w-full py-3 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded border border-gray-700 flex items-center justify-center gap-2 text-xs font-bold tracking-widest">
-                            <RotateCcw size={14} /> RESET SESSION
+                        <button onClick={handleResetSession} className="w-full py-3 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded border border-gray-700 flex items-center justify-center gap-2 text-xs font-bold tracking-widest">
+                            <RotateCcw size={14} /> RESET CURRENT SESSION
                         </button>
                         
                         <button 
-                            onClick={handleSaveResults} 
-                            disabled={saving}
-                            className="w-full py-3 bg-purple-900/30 hover:bg-purple-800/50 border border-purple-500/50 text-purple-100 rounded flex items-center justify-center gap-2 text-xs font-bold tracking-widest"
+                            onClick={handleDeleteLifetime} 
+                            className="w-full py-3 bg-red-900/20 hover:bg-red-900/40 border border-red-500/30 text-red-400 rounded flex items-center justify-center gap-2 text-xs font-bold tracking-widest hover:shadow-[0_0_15px_rgba(220,38,38,0.3)] transition-all"
                         >
-                            {saving ? <Sparkles className="animate-spin" size={14} /> : <Save size={14} />}
-                            {saving ? "ARCHIVING..." : "SAVE LOGS"}
+                            <Trash2 size={14} /> DELETE LIFETIME DATA
                         </button>
-                        {saveMessage && <p className="text-center text-xs text-purple-500 font-mono animate-pulse">{saveMessage}</p>}
                     </div>
                 </div>
             </div>
