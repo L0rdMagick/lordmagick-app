@@ -14,7 +14,7 @@ import MagickalBackLink from '@/app/components/MagickalBackLink';
 // --- CONFIGURATION & CATEGORY DEFINITIONS ---
 
 const POOLS = [
-  { id: 'all', label: 'All Categories' }, // Renamed
+  { id: 'all', label: 'All Categories' },
   { id: 'animals', label: 'Animals' },
   { id: 'structures', label: 'Structures' },
   { id: 'landscapes', label: "Natural Formations" },
@@ -1067,12 +1067,12 @@ const Card = ({ children, className = "", onClick }: { children: React.ReactNode
 );
 
 const Button = ({ onClick, children, variant = "primary", className = "", disabled = false }: { onClick: () => void, children: React.ReactNode, variant?: 'primary' | 'secondary' | 'outline' | 'danger', className?: string, disabled?: boolean }) => {
-  const base = "px-6 py-3 rounded-lg font-serif tracking-wider transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 relative overflow-hidden group";
+  const base = "px-6 py-3 rounded-lg font-serif tracking-wider transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 relative overflow-hidden group text-base";
   
   const variants = {
     primary: "bg-indigo-900 text-amber-100 border border-indigo-700 hover:border-amber-500/50 hover:bg-indigo-800 shadow-[0_0_20px_rgba(79,70,229,0.1)]",
-    secondary: "bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700",
-    outline: "border border-slate-600 text-slate-400 hover:border-amber-500/30 hover:text-amber-100 hover:bg-slate-800",
+    secondary: "bg-slate-800 text-slate-200 border border-slate-700 hover:bg-slate-700",
+    outline: "border border-slate-600 text-slate-300 hover:border-amber-500/30 hover:text-amber-100 hover:bg-slate-800",
     danger: "bg-red-950/30 text-red-400 border border-red-900/50 hover:bg-red-900/40"
   };
   
@@ -1106,7 +1106,7 @@ export default function SensesApp() {
   const [sessionHistory, setSessionHistory] = useState<any[]>([]); // Current session
   
   const [selectedPool, setSelectedPool] = useState('all');
-  const [cardBack, setCardBack] = useState('default');
+  const [cardBack, setCardBack] = useState('hypnotic'); // Default set to Hypnotic
   
   // Settings & Modal State
   const [showSettings, setShowSettings] = useState(false);
@@ -1220,14 +1220,14 @@ export default function SensesApp() {
             <h1 className="text-4xl md:text-6xl font-serif text-transparent bg-clip-text bg-linear-to-b from-amber-100 to-amber-600 tracking-widest mb-2">
             THE ORACLE GATE
             </h1>
-            <p className="text-indigo-300 font-serif italic tracking-wide text-lg">
+            <p className="text-indigo-300 font-serif italic tracking-wide text-xl">
             High-Contrast Remote Viewing Trainer v6
             </p>
         </div>
       </div>
 
       {/* Intro Text */}
-      <div className="max-w-lg mx-auto bg-slate-900/80 p-6 rounded-lg border border-indigo-900/50 text-slate-400 font-light leading-relaxed backdrop-blur-sm">
+      <div className="max-w-lg mx-auto bg-slate-900/80 p-6 rounded-lg border border-indigo-900/50 text-slate-300 font-light leading-relaxed backdrop-blur-sm text-base">
         <p>
           Attune your inner eye. A target has been veiled from sight. 
           Use your intuition to describe its physical properties before the veil is lifted.
@@ -1236,17 +1236,17 @@ export default function SensesApp() {
 
       {/* Pool Selector */}
       <div className="w-full max-w-lg space-y-3">
-          <label className="text-xs uppercase tracking-[0.2em] text-indigo-400 font-serif">Select Your Plane of Focus</label>
+          <label className="text-sm uppercase tracking-[0.2em] text-indigo-400 font-serif">Select Your Plane of Focus</label>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {POOLS.map(pool => (
                   <button
                     key={pool.id}
                     onClick={() => setSelectedPool(pool.id)}
                     className={`
-                        p-3 rounded border text-xs sm:text-sm font-medium transition-all duration-300
+                        p-3 rounded border text-sm font-medium transition-all duration-300
                         ${selectedPool === pool.id 
                             ? 'bg-indigo-900/80 border-amber-500/50 text-amber-100 shadow-[0_0_10px_rgba(245,158,11,0.1)]' 
-                            : 'bg-slate-900/50 border-slate-800 text-slate-500 hover:border-indigo-500/30 hover:text-indigo-300'}
+                            : 'bg-slate-900/50 border-slate-800 text-slate-400 hover:border-indigo-500/30 hover:text-indigo-300'}
                     `}
                   >
                       {pool.label}
@@ -1257,7 +1257,7 @@ export default function SensesApp() {
 
       {/* Actions */}
       <div className="flex gap-4 pt-4">
-        <Button onClick={startRound} className="w-48 text-lg border-amber-500/30">
+        <Button onClick={startRound} className="w-48 text-xl border-amber-500/30">
           <Sparkles className="w-5 h-5 text-amber-400" />
           Open the Eye
         </Button>
@@ -1277,13 +1277,13 @@ export default function SensesApp() {
     if (!currentLevel) return null;
 
     return (
-      <div className="w-full max-w-4xl mx-auto space-y-8 pb-24 animate-in slide-in-from-bottom-8 duration-700">
+      <div className="w-full max-w-4xl mx-auto space-y-2 md:space-y-8 pb-24 animate-in slide-in-from-bottom-8 duration-700">
         
         {/* Header / Target Status */}
-        <div className="flex items-center justify-between border-b border-indigo-900/30 pb-4">
+        <div className="flex items-center justify-between border-b border-indigo-900/30 pb-2 md:pb-4">
             <div className="flex items-center gap-3">
                 <div className="w-3 h-3 rounded-full bg-amber-500 animate-pulse shadow-[0_0_10px_rgba(245,158,11,0.5)]"></div>
-                <span className="font-serif text-sm md:text-base text-amber-100 tracking-wider">Predict the Qualities of the Image</span>
+                <span className="font-serif text-base md:text-lg text-amber-100 tracking-wider">Predict the Qualities of the Image</span>
             </div>
             {/* HIDE Category Label if 'All Categories' is selected */}
             {selectedPool !== 'all' && (
@@ -1293,22 +1293,23 @@ export default function SensesApp() {
             )}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 md:gap-8">
             
             {/* Left Column: The "Hidden" Card */}
-            <div className="lg:col-span-5 flex flex-col gap-4">
-                <Card className={`aspect-3/4 relative group transition-all duration-500 hover:border-indigo-500/50 ${activeCardBack.css} bg-cover bg-center`}>
-                    <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center bg-black/30 backdrop-blur-[1px]">
-                        <div className="relative z-10 w-32 h-32 mb-8 rounded-full border border-indigo-500/20 flex items-center justify-center group-hover:scale-105 transition-transform duration-500 bg-black/50">
+            <div className="lg:col-span-5 flex flex-col gap-2 md:gap-4">
+                <Card className={`aspect-3/4 relative group transition-all duration-500 hover:border-indigo-500/50 ${activeCardBack.css} bg-cover bg-center w-32 mx-auto sm:w-64 md:w-full`}>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center backdrop-blur-[1px]">
+                        <div className="relative z-10 w-32 h-32 mb-4 rounded-full border border-indigo-500/20 flex items-center justify-center group-hover:scale-105 transition-transform duration-500 bg-black/20">
                              <div className="absolute inset-0 border border-indigo-500/20 rounded-full animate-[spin_10s_linear_infinite]"></div>
                              <div className="absolute inset-2 border border-amber-500/10 rounded-full animate-[spin_15s_linear_infinite_reverse]"></div>
                              <Lock className="w-8 h-8 text-indigo-400/80 drop-shadow-md" />
                         </div>
 
+                        {/* ONLY SHOW TEXT IF CARD BACK IS DEFAULT (STARDUST) */}
                         {cardBack === 'default' && (
                             <div className="relative z-10 bg-black/40 p-4 rounded-xl backdrop-blur-sm border border-white/5">
                                 <h2 className="text-2xl font-serif text-slate-200 mb-2 drop-shadow-md">Target Veiled</h2>
-                                <p className="text-sm text-slate-300 font-light drop-shadow-md">
+                                <p className="text-base text-slate-300 font-light drop-shadow-md">
                                 No visual data available. <br/>Rely on your inner senses.
                                 </p>
                             </div>
@@ -1321,10 +1322,11 @@ export default function SensesApp() {
                     <div className="absolute bottom-2 right-2 w-4 h-4 border-b border-r border-amber-500/30"></div>
                 </Card>
                 
-                <div className="bg-slate-900/50 p-4 rounded-lg border border-indigo-900/30">
+                {/* RESONANCE SECTION (Hidden on Mobile) */}
+                <div className="hidden md:block bg-slate-900/50 p-4 rounded-lg border border-indigo-900/30">
                     <div className="flex justify-between items-center mb-2">
-                        <span className="text-xs text-indigo-400 uppercase tracking-widest">Resonance</span>
-                        <span className="text-xs text-amber-500 font-mono">{Math.round((answeredCount/totalCategories)*100)}%</span>
+                        <span className="text-sm text-indigo-400 uppercase tracking-widest">Resonance</span>
+                        <span className="text-sm text-amber-500 font-mono">{Math.round((answeredCount/totalCategories)*100)}%</span>
                     </div>
                     <div className="w-full h-1 bg-slate-800 rounded-full overflow-hidden">
                         <div 
@@ -1334,29 +1336,29 @@ export default function SensesApp() {
                     </div>
                 </div>
 
-                {/* Abort Button */}
+                {/* SEVER CONNECTION (Hidden on Mobile) */}
                 <button 
                   onClick={() => setView('welcome')}
-                  className="w-full py-2 flex items-center justify-center gap-2 text-xs text-red-400/60 hover:text-red-400 border border-transparent hover:border-red-900/30 rounded transition-all"
+                  className="hidden md:flex w-full py-2 items-center justify-center gap-2 text-sm text-red-400/60 hover:text-red-400 border border-transparent hover:border-red-900/30 rounded transition-all"
                 >
                    <LogOut className="w-3 h-3" /> Sever Connection
                 </button>
             </div>
 
             {/* Right Column: Context-Aware Descriptors */}
-            <div className="lg:col-span-7 space-y-6">
-                 {/* Instructional Text */}
-                 <div className="bg-indigo-950/20 p-4 rounded border-l-2 border-amber-500/50 mb-6">
-                     <p className="text-indigo-200 text-sm font-light italic">
+            <div className="lg:col-span-7 space-y-4 md:space-y-6">
+                 {/* Instructional Text (Hidden on Mobile) */}
+                 <div className="hidden md:block bg-indigo-950/20 p-4 rounded border-l-2 border-amber-500/50 mb-6">
+                     <p className="text-indigo-200 text-base font-light italic">
                          "Tune into the target. Select the sensory details that describe its physical reality."
                      </p>
                  </div>
 
                  {Object.values(currentConfig).map((cat) => (
                      <div key={cat.id} className="group">
-                         <div className="flex items-center gap-2 mb-3">
+                         <div className="flex items-center gap-2 mb-2 md:mb-3">
                              <span className={`w-1 h-1 rounded-full ${guesses[cat.id] ? 'bg-amber-500' : 'bg-slate-700'}`}></span>
-                             <h3 className="font-serif text-slate-200 text-base tracking-wide font-medium">{cat.label}</h3>
+                             <h3 className="font-serif text-slate-200 text-lg tracking-wide font-medium">{cat.label}</h3>
                          </div>
                          <div className="grid grid-cols-2 gap-2">
                              {cat.options.map((opt) => (
@@ -1364,10 +1366,10 @@ export default function SensesApp() {
                                     key={opt}
                                     onClick={() => handleGuess(cat.id, opt)}
                                     className={`
-                                        py-3 px-3 text-xs uppercase tracking-wider rounded border transition-all duration-300
+                                        py-3 px-3 text-sm md:text-base uppercase tracking-wider rounded border transition-all duration-300
                                         ${guesses[cat.id] === opt 
                                             ? 'bg-indigo-600 border-indigo-500 text-white shadow-[0_0_15px_rgba(79,70,229,0.4)]' 
-                                            : 'bg-slate-800/50 border-slate-700 text-slate-500 hover:bg-slate-700 hover:text-slate-300'}
+                                            : 'bg-slate-800/50 border-slate-700 text-slate-400 hover:bg-slate-700 hover:text-slate-200'}
                                     `}
                                  >
                                      {opt.split(' / ')[0]}
@@ -1428,38 +1430,38 @@ export default function SensesApp() {
                 
                 <div className="absolute inset-0 bg-linear-to-t from-black/80 via-transparent to-transparent pointer-events-none"></div>
                 <div className="absolute bottom-0 left-0 p-6">
-                    <span className="block text-amber-500 text-xs font-mono mb-1 uppercase tracking-widest">Vision Confirmed</span>
+                    <span className="block text-amber-500 text-sm font-mono mb-1 uppercase tracking-widest">Vision Confirmed</span>
                     <h2 className="text-3xl font-serif text-white">{currentLevel.concept}</h2>
                 </div>
             </Card>
 
             <div className="space-y-6">
                 <div className="text-center md:text-left space-y-2">
-                    <h3 className="text-sm font-serif text-indigo-300 uppercase tracking-[0.2em]">Clairvoyance Accuracy</h3>
+                    <h3 className="text-base font-serif text-indigo-300 uppercase tracking-[0.2em]">Clairvoyance Accuracy</h3>
                     <div className="flex items-baseline justify-center md:justify-start gap-2">
-                        <span className="text-6xl font-light text-white">{score.percentage}</span>
-                        <span className="text-2xl text-amber-500">%</span>
+                        <span className="text-7xl font-light text-white">{score.percentage}</span>
+                        <span className="text-3xl text-amber-500">%</span>
                     </div>
                 </div>
 
                 <div className="bg-slate-900/50 rounded-lg p-1 border border-indigo-900/30">
                      <div className="grid grid-cols-3 divide-x divide-indigo-900/30 text-center py-4">
                          <div>
-                             <div className="text-xs text-slate-500 uppercase mb-1">Aligned</div>
-                             <div className="text-xl text-indigo-400 font-mono">{score.matched}</div>
+                             <div className="text-sm text-slate-400 uppercase mb-1">Aligned</div>
+                             <div className="text-2xl text-indigo-400 font-mono">{score.matched}</div>
                          </div>
                          <div>
-                             <div className="text-xs text-slate-500 uppercase mb-1">Elements</div>
-                             <div className="text-xl text-slate-300 font-mono">{score.total}</div>
+                             <div className="text-sm text-slate-400 uppercase mb-1">Elements</div>
+                             <div className="text-2xl text-slate-300 font-mono">{score.total}</div>
                          </div>
                          <div>
-                             <div className="text-xs text-slate-500 uppercase mb-1">Plane</div>
-                             <div className="text-amber-500/80 font-serif capitalize text-sm pt-1">{currentLevel.pool}</div>
+                             <div className="text-sm text-slate-400 uppercase mb-1">Plane</div>
+                             <div className="text-amber-500/80 font-serif capitalize text-base pt-1">{currentLevel.pool}</div>
                          </div>
                      </div>
                 </div>
                 
-                <p className="text-slate-400 font-serif italic text-sm leading-relaxed border-l-2 border-indigo-500/30 pl-4">
+                <p className="text-slate-300 font-serif italic text-base leading-relaxed border-l-2 border-indigo-500/30 pl-4">
                     "{currentLevel.prompt}"
                 </p>
 
@@ -1476,7 +1478,7 @@ export default function SensesApp() {
 
         {/* Bottom Section: The Analysis */}
         <div className="border-t border-indigo-900/30 pt-8">
-            <h3 className="text-center font-serif text-slate-400 text-lg mb-6">Objective Sensory Analysis</h3>
+            <h3 className="text-center font-serif text-slate-300 text-xl mb-6">Objective Sensory Analysis</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {Object.values(currentConfig).map(cat => {
                     const userGuess = guesses[cat.id];
@@ -1486,11 +1488,11 @@ export default function SensesApp() {
                     return (
                         <div key={cat.id} className={`p-4 rounded border flex flex-col gap-2 ${isCorrect ? 'bg-indigo-950/30 border-indigo-500/30' : 'bg-slate-900/50 border-slate-800'}`}>
                             <div className="flex items-center justify-between">
-                                <span className="text-xs text-slate-500 uppercase tracking-wider font-bold">{cat.label}</span>
+                                <span className="text-sm text-slate-400 uppercase tracking-wider font-bold">{cat.label}</span>
                                 {isCorrect ? <Check className="w-4 h-4 text-emerald-500" /> : <X className="w-4 h-4 text-red-500" />}
                             </div>
                             
-                            <div className="flex items-center justify-between text-sm mt-1">
+                            <div className="flex items-center justify-between text-base mt-1">
                                 <span className={`${isCorrect ? 'text-emerald-400' : 'text-red-400 line-through decoration-red-900/50'}`}>
                                     {userGuess || "-"}
                                 </span>
@@ -1567,30 +1569,30 @@ export default function SensesApp() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             {/* Session Stats */}
             <div className="bg-slate-900/50 p-6 rounded-lg border border-indigo-500/20">
-                <h3 className="text-xs text-indigo-300 uppercase tracking-widest mb-4">Current Session</h3>
+                <h3 className="text-sm text-indigo-300 uppercase tracking-widest mb-4">Current Session</h3>
                 <div className="grid grid-cols-2 gap-4 text-center">
                     <div>
-                        <div className="text-3xl font-light text-white mb-1 font-serif">{sessionHistory.length}</div>
-                        <div className="text-[10px] text-slate-500 uppercase">Visions</div>
+                        <div className="text-4xl font-light text-white mb-1 font-serif">{sessionHistory.length}</div>
+                        <div className="text-xs text-slate-400 uppercase">Visions</div>
                     </div>
                     <div>
-                        <div className="text-3xl font-light text-indigo-400 mb-1 font-serif">{sessionAvg}%</div>
-                        <div className="text-[10px] text-slate-500 uppercase">Accuracy</div>
+                        <div className="text-4xl font-light text-indigo-400 mb-1 font-serif">{sessionAvg}%</div>
+                        <div className="text-xs text-slate-400 uppercase">Accuracy</div>
                     </div>
                 </div>
             </div>
 
             {/* Lifetime Stats */}
             <div className="bg-slate-900/50 p-6 rounded-lg border border-amber-500/20">
-                <h3 className="text-xs text-amber-500/80 uppercase tracking-widest mb-4">Lifetime (Local)</h3>
+                <h3 className="text-sm text-amber-500/80 uppercase tracking-widest mb-4">Lifetime (Local)</h3>
                 <div className="grid grid-cols-2 gap-4 text-center">
                     <div>
-                        <div className="text-3xl font-light text-white mb-1 font-serif">{history.length}</div>
-                        <div className="text-[10px] text-slate-500 uppercase">Total Visions</div>
+                        <div className="text-4xl font-light text-white mb-1 font-serif">{history.length}</div>
+                        <div className="text-xs text-slate-400 uppercase">Total Visions</div>
                     </div>
                     <div>
-                        <div className="text-3xl font-light text-amber-500 mb-1 font-serif">{lifetimeAvg}%</div>
-                        <div className="text-[10px] text-slate-500 uppercase">Avg Resonance</div>
+                        <div className="text-4xl font-light text-amber-500 mb-1 font-serif">{lifetimeAvg}%</div>
+                        <div className="text-xs text-slate-400 uppercase">Avg Resonance</div>
                     </div>
                 </div>
             </div>
@@ -1600,14 +1602,14 @@ export default function SensesApp() {
         <div className="flex justify-end gap-4 border-b border-slate-800 pb-6 mb-6">
             <button 
                 onClick={clearStats}
-                className="flex items-center gap-2 px-4 py-2 rounded border border-red-900/50 text-red-400 hover:bg-red-950/30 text-xs uppercase tracking-wider transition-colors"
+                className="flex items-center gap-2 px-4 py-2 rounded border border-red-900/50 text-red-400 hover:bg-red-950/30 text-sm uppercase tracking-wider transition-colors"
             >
                 <Trash2 className="w-4 h-4" /> Erase Local Stats
             </button>
             <button 
                 onClick={handleSaveToCloud}
                 disabled={saving}
-                className="flex items-center gap-2 px-4 py-2 rounded bg-indigo-900/50 border border-indigo-500/30 text-indigo-200 hover:bg-indigo-800/50 text-xs uppercase tracking-wider transition-colors"
+                className="flex items-center gap-2 px-4 py-2 rounded bg-indigo-900/50 border border-indigo-500/30 text-indigo-200 hover:bg-indigo-800/50 text-sm uppercase tracking-wider transition-colors"
             >
                 {saving ? <Sparkles className="w-4 h-4 animate-spin" /> : <Cloud className="w-4 h-4" />}
                 {saving ? "SAVING..." : "SAVE TO CLOUD"}
@@ -1617,20 +1619,20 @@ export default function SensesApp() {
 
         {/* List View */}
         <div className="space-y-3">
-            <h3 className="text-xs text-slate-500 uppercase tracking-widest mb-4">Recent History Log</h3>
+            <h3 className="text-sm text-slate-400 uppercase tracking-widest mb-4">Recent History Log</h3>
             {history.length === 0 ? (
-                <div className="text-center py-12 text-slate-600 italic font-serif">The records are empty. Begin your training.</div>
+                <div className="text-center py-12 text-slate-500 italic font-serif">The records are empty. Begin your training.</div>
             ) : (
                 history.map((record, idx) => (
                     <div key={idx} className="flex items-center justify-between p-4 bg-slate-900/30 rounded border border-slate-800 hover:border-indigo-500/30 transition-colors">
                         <div className="flex items-center gap-4">
                              <div className={`w-2 h-2 rounded-full ${record.score.percentage >= 60 ? 'bg-emerald-500' : 'bg-red-500'}`}></div>
                              <div>
-                                 <div className="text-slate-300 text-sm font-serif">Vision Log #{idx + 1}</div>
-                                 <div className="text-xs text-slate-600 uppercase">{record.pool}</div>
+                                 <div className="text-slate-300 text-base font-serif">Vision Log #{idx + 1}</div>
+                                 <div className="text-xs text-slate-500 uppercase">{record.pool}</div>
                              </div>
                         </div>
-                        <div className="font-mono text-amber-500">{record.score.percentage}%</div>
+                        <div className="font-mono text-amber-500 text-lg">{record.score.percentage}%</div>
                     </div>
                 ))
             )}
@@ -1659,7 +1661,7 @@ export default function SensesApp() {
             </div>
 
             <div className="space-y-4">
-                <label className="text-xs uppercase text-slate-500 font-bold">Card Backing Style</label>
+                <label className="text-sm uppercase text-slate-400 font-bold">Card Backing Style</label>
                 <div className="grid grid-cols-2 gap-4">
                     {CARD_BACKS.map(back => (
                         <button
@@ -1679,7 +1681,7 @@ export default function SensesApp() {
                     ))}
                 </div>
 
-                <div className="text-xs text-slate-600 italic text-center pt-6">
+                <div className="text-sm text-slate-500 italic text-center pt-6">
                     "Choose the veil through which you gaze."
                 </div>
             </div>
@@ -1704,18 +1706,18 @@ export default function SensesApp() {
                         <h2 className="text-2xl font-serif text-amber-100 tracking-widest">ATTUNING THE INNER EYE</h2>
                     </div>
 
-                    <div className="space-y-4 text-slate-300 font-light leading-relaxed text-sm">
+                    <div className="space-y-4 text-slate-300 font-light leading-relaxed text-base">
                         <p>
                             Welcome, Seer. This tool is designed to sharpen your remote viewing capabilities.
                         </p>
                         <div className="bg-indigo-950/30 p-4 rounded border border-indigo-900/50">
-                            <h3 className="text-indigo-300 font-bold uppercase text-xs mb-2">How it Works</h3>
+                            <h3 className="text-indigo-300 font-bold uppercase text-sm mb-2">How it Works</h3>
                             <p>An image has been hidden behind the veil. Your task is not to 'guess' the picture, but to <span className="text-amber-400 font-medium">sense</span> its physical facts.</p>
                         </div>
                         
                         <div className="space-y-2">
-                            <h3 className="text-amber-500 font-serif uppercase tracking-widest text-xs">The Process</h3>
-                            <ul className="space-y-2 list-disc pl-4 text-slate-400">
+                            <h3 className="text-amber-500 font-serif uppercase tracking-widest text-sm">The Process</h3>
+                            <ul className="space-y-2 list-disc pl-4 text-slate-300">
                                 <li><strong className="text-slate-200">Center Yourself:</strong> Take a deep breath. Clear your mind.</li>
                                 <li><strong className="text-slate-200">Be Objective:</strong> Do not guess "Lion". Sense "Warm Color", "Biomorphic Form".</li>
                                 <li><strong className="text-slate-200">Select a Realm:</strong> Choose a specific category to focus your practice.</li>
@@ -1725,7 +1727,7 @@ export default function SensesApp() {
                         <p className="text-center italic text-indigo-400 pt-2">"True sight comes when the mind is silent."</p>
                     </div>
 
-                    <Button onClick={closeInstructions} className="w-full">
+                    <Button onClick={closeInstructions} className="w-full text-lg">
                         Begin Ritual
                     </Button>
                 </div>
@@ -1747,11 +1749,11 @@ export default function SensesApp() {
       <header className="relative z-10 px-6 py-4 flex items-center justify-between border-b border-indigo-900/10 backdrop-blur-sm">
         <div className="flex items-center gap-6">
            {view === 'welcome' ? (
-               <MagickalBackLink href="/the-magick-psychic-school/psychic-training" text="Return" className="text-xs text-indigo-400/50 hover:text-amber-400 transition-colors" />
+               <MagickalBackLink href="/the-magick-psychic-school/psychic-training" text="Return" className="text-sm text-indigo-400/50 hover:text-amber-400 transition-colors" />
            ) : (
                <button 
                 onClick={() => setView('welcome')}
-                className="flex items-center gap-2 text-xs text-indigo-400/50 hover:text-amber-400 transition-colors"
+                className="flex items-center gap-2 text-sm text-indigo-400/50 hover:text-amber-400 transition-colors"
                >
                    <Home className="w-4 h-4" /> Home
                </button>
@@ -1764,7 +1766,7 @@ export default function SensesApp() {
              className="p-2 hover:bg-slate-900 rounded-full transition-colors text-indigo-400/50 hover:text-amber-400"
              title="Instructions"
            >
-             <HelpCircle className="w-5 h-5" />
+             <HelpCircle className="w-6 h-6" />
            </button>
 
            <button 
@@ -1772,7 +1774,7 @@ export default function SensesApp() {
              className="p-2 hover:bg-slate-900 rounded-full transition-colors text-indigo-400/50 hover:text-indigo-300"
              title="Settings"
            >
-             <Settings className="w-5 h-5" />
+             <Settings className="w-6 h-6" />
            </button>
            
            <button 
@@ -1780,7 +1782,7 @@ export default function SensesApp() {
              className="p-2 hover:bg-slate-900 rounded-full transition-colors text-indigo-400/50 hover:text-amber-500"
              title="Akashic Records"
            >
-             <BarChart2 className="w-5 h-5" />
+             <BarChart2 className="w-6 h-6" />
            </button>
         </div>
       </header>
