@@ -229,7 +229,7 @@ const useAudioEngine = () => {
 
 const InstructionModal = ({ onClose }: { onClose: () => void }) => (
   <div 
-    className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-md p-6 animate-in fade-in duration-300"
+    className="fixed inset-0 z-100 flex items-center justify-center bg-black/95 backdrop-blur-md p-6 animate-in fade-in duration-300"
     onClick={onClose}
   >
     <div 
@@ -358,16 +358,18 @@ const PsiStats = ({ stats, variant = 'floating' }: { stats: any, variant?: 'floa
                   <span className="text-[10px] text-gray-400 uppercase tracking-widest">Psi (Z)</span>
                   <span className={`text-sm font-bold font-mono ${sessionZ >= 0 ? 'text-purple-300' : 'text-gray-400'}`}>{sessionZ.toFixed(2)}</span>
               </div>
-              {/* Desktop Affordance: Maximize Icon on Hover */}
-              <Maximize2 size={16} className="text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity transform scale-75 group-hover:scale-100" />
+              {/* Desktop Affordance: Visible Maximize Icon, brightens on hover */}
+              <div className="pl-4 border-l border-gray-700/50">
+                  <Maximize2 size={16} className="text-gray-500 group-hover:text-white transition-colors" />
+              </div>
            </div>
         ) : (
            <>
-             {/* Mobile Affordance: Distinct EXPAND label and visible Icon */}
-             <div className="absolute -top-3 right-0 bg-purple-900/80 border border-purple-500/30 text-[8px] font-bold px-1.5 rounded text-purple-200 tracking-wider shadow-sm">
-               EXPAND
+             {/* Mobile Affordance: Distinct EXPAND label */}
+             <div className="absolute -top-3 right-0 bg-purple-900 border border-purple-500 text-[9px] font-bold px-2 py-0.5 rounded text-white tracking-widest shadow-md">
+               TAP INFO
              </div>
-             <div className="absolute top-1 right-1 text-purple-400/70 group-hover:text-purple-300">
+             <div className="absolute top-1 right-1 text-purple-400 group-hover:text-white">
                <ChevronsUp size={12} />
              </div>
              
@@ -389,7 +391,8 @@ const PsiStats = ({ stats, variant = 'floating' }: { stats: any, variant?: 'floa
     // Modal Content Component to be Portaled
     const ModalContent = () => (
         <div 
-            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/95 backdrop-blur-xl p-0 md:p-4 animate-in fade-in duration-300"
+            className="fixed inset-0 flex items-center justify-center bg-black/95 backdrop-blur-xl p-0 md:p-4 animate-in fade-in duration-300"
+            style={{ zIndex: 9999 }} // Force z-index inline to guarantee stack order
             onClick={() => setShowModal(false)}
         >
           {/* Modal Container */}
@@ -523,8 +526,8 @@ const CircularTimer = ({ duration, onComplete, isActive }: { duration: number, o
        {/* Background Glow */}
       <div className="absolute inset-0 rounded-full bg-black shadow-[0_0_80px_rgba(139,92,246,0.3)] border border-gray-800/50 z-0" />
       
-      {/* SVG Container: Applied viewBox and Tailwind rotation to Parent SVG instead of <g> */}
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="z-10 relative transform -rotate-90">
+      {/* SVG Container: Rotation applied internally via transform attribute for compatibility */}
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="z-10 relative">
           <circle
             cx={center}
             cy={center}
@@ -532,6 +535,7 @@ const CircularTimer = ({ duration, onComplete, isActive }: { duration: number, o
             fill="transparent"
             stroke="#0f172a"
             strokeWidth={strokeWidth}
+            transform={`rotate(-90 ${center} ${center})`}
           />
           {/* Bright Cyan Progress Line */}
           <circle
@@ -544,6 +548,7 @@ const CircularTimer = ({ duration, onComplete, isActive }: { duration: number, o
             strokeDasharray={circumference}
             strokeDashoffset={strokeDashoffset}
             strokeLinecap="round"
+            transform={`rotate(-90 ${center} ${center})`}
             className="drop-shadow-[0_0_15px_rgba(34,211,238,1)] transition-all duration-75 ease-linear"
           />
       </svg>
