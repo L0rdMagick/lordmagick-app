@@ -1,4 +1,4 @@
-// --- START  OF FILE page.tsx ---
+// --- START OF FILE page.tsx ---
 
 "use client";
 
