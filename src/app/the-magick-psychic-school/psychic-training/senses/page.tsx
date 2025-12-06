@@ -1,3 +1,5 @@
+// --- START OF FILE page.tsx ---
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -21,27 +23,27 @@ const POOLS = [
 type CategoryOption = { id: string; label: string; options: string[] };
 type PoolConfig = Record<string, CategoryOption>;
 
-// NOTE: Options here must match the strings in LEVEL_DATA exactly for scoring to work.
+// --- NEW HIGH-CONTRAST UNIVERSAL SCHEMA ---
 const UNIVERSAL_CATEGORIES: PoolConfig = {
+  LUMINOSITY: { 
+    id: 'luminosity', 
+    label: 'Luminosity', 
+    options: ['Bright / Direct', 'Dark / Shadowed', 'Diffused / Hazy', 'Glow / Source'] 
+  },
   COLOR: { 
     id: 'color', 
-    label: 'Primary Color', 
-    options: ['Warm (Red/Yel)', 'Cool (Blue/Purp)', 'Nature (Grn/Brn)', 'Mono (Grey/Wht)'] 
+    label: 'Color', 
+    options: ['Warm', 'Cool', 'Earthy', 'Monochrome'] 
   },
   TEXTURE: { 
     id: 'texture', 
     label: 'Texture', 
-    options: ['Soft / Furry', 'Hard / Smooth', 'Rough / Stone', 'Fluid / Wet'] 
-  },
-  LUMINOSITY: { 
-    id: 'luminosity', 
-    label: 'Luminosity', 
-    options: ['Bright / Day', 'Dark / Night', 'Dim / Shadow', 'Neon / Artificial'] 
+    options: ['Soft / Biological', 'Hard / Smooth', 'Rough / Coarse', 'Fluid / Malleable'] 
   },
   FORM: { 
     id: 'form', 
     label: 'Form', 
-    options: ['Organic', 'Geometric', 'Fluid', 'Cluster'] 
+    options: ['Biomorphic', 'Architectural', 'Amorphous', 'Composite'] 
   }
 };
 
@@ -89,118 +91,817 @@ interface LevelData {
 }
 
 // --- FULL IMAGE DATABASE (100 ITEMS) ---
-// Universal Tags: Color, Texture, Luminosity, Form
 
 const LEVEL_DATA: LevelData[] = [
   // --- POOL: ANIMALS ---
-  { id: 1, concept: "Roaring Lion", filename: "predator_lion.jpg", pool: "animals", prompt: "Cinematic close up of a male lion roaring, golden hour lighting, savannah background, intense eyes, sharp teeth, dust motes in air.", tags: { color: 'Warm (Red/Yel)', texture: 'Soft / Furry', luminosity: 'Bright / Day', form: 'Organic' } },
-  { id: 2, concept: "Great White Shark", filename: "predator_shark.jpg", pool: "animals", prompt: "Underwater shot of a great white shark swimming towards camera, deep blue ocean, light rays breaking through water, sharp teeth visible.", tags: { color: 'Cool (Blue/Purp)', texture: 'Fluid / Wet', luminosity: 'Dim / Shadow', form: 'Fluid' } },
-  { id: 3, concept: "Wolf Howling", filename: "predator_wolf.jpg", pool: "animals", prompt: "Grey wolf howling at a full moon, snowy forest night, breath visible in cold air, atmospheric, high contrast.", tags: { color: 'Mono (Grey/Wht)', texture: 'Soft / Furry', luminosity: 'Dark / Night', form: 'Organic' } },
-  { id: 4, concept: "Tiger Stalking", filename: "predator_tiger.jpg", pool: "animals", prompt: "Bengal tiger walking through tall green grass, orange and black stripes, intense focus, jungle environment.", tags: { color: 'Warm (Red/Yel)', texture: 'Soft / Furry', luminosity: 'Bright / Day', form: 'Organic' } },
-  { id: 5, concept: "Grizzly Bear", filename: "predator_bear.jpg", pool: "animals", prompt: "Massive grizzly bear standing in a river catching a salmon, splashing water, wet fur, nature photography.", tags: { color: 'Nature (Grn/Brn)', texture: 'Fluid / Wet', luminosity: 'Bright / Day', form: 'Organic' } },
-  { id: 6, concept: "Deer in Mist", filename: "herbivore_deer.jpg", pool: "animals", prompt: "A deer standing in a misty forest clearing at dawn, soft light, antlers, peaceful atmosphere.", tags: { color: 'Nature (Grn/Brn)', texture: 'Soft / Furry', luminosity: 'Dim / Shadow', form: 'Organic' } },
-  { id: 7, concept: "Giraffe", filename: "herbivore_giraffe.jpg", pool: "animals", prompt: "Tall giraffe eating leaves from an acacia tree, blue sky background, sunny day on the African plains.", tags: { color: 'Warm (Red/Yel)', texture: 'Soft / Furry', luminosity: 'Bright / Day', form: 'Organic' } },
-  { id: 8, concept: "Giant Panda", filename: "herbivore_panda.jpg", pool: "animals", prompt: "Giant panda sitting and eating bamboo, black and white fur, green bamboo forest background.", tags: { color: 'Mono (Grey/Wht)', texture: 'Soft / Furry', luminosity: 'Bright / Day', form: 'Organic' } },
-  { id: 9, concept: "Elephant", filename: "herbivore_elephant.jpg", pool: "animals", prompt: "Close up of an elephant skin texture and eye, trunk raised, dusty environment, wrinkled gray skin.", tags: { color: 'Mono (Grey/Wht)', texture: 'Rough / Stone', luminosity: 'Bright / Day', form: 'Organic' } },
-  { id: 10, concept: "Rabbit", filename: "herbivore_rabbit.jpg", pool: "animals", prompt: "Small white fluffy rabbit sitting in green grass, twitching nose, clover flowers, cute, macro photography.", tags: { color: 'Mono (Grey/Wht)', texture: 'Soft / Furry', luminosity: 'Bright / Day', form: 'Organic' } },
-  { id: 11, concept: "Scarlet Macaw", filename: "avian_macaw.jpg", pool: "animals", prompt: "Bright red scarlet macaw parrot flying, colorful feathers, blue sky, tropical jungle background.", tags: { color: 'Warm (Red/Yel)', texture: 'Soft / Furry', luminosity: 'Bright / Day', form: 'Organic' } },
-  { id: 12, concept: "Bald Eagle", filename: "avian_eagle.jpg", pool: "animals", prompt: "Bald eagle soaring high above mountains, wings spread wide, sharp beak, fierce expression.", tags: { color: 'Nature (Grn/Brn)', texture: 'Soft / Furry', luminosity: 'Bright / Day', form: 'Organic' } },
-  { id: 13, concept: "Peacock", filename: "avian_peacock.jpg", pool: "animals", prompt: "Peacock displaying full tail feathers, iridescent blue and green patterns, majestic pose.", tags: { color: 'Cool (Blue/Purp)', texture: 'Soft / Furry', luminosity: 'Bright / Day', form: 'Cluster' } },
-  { id: 14, concept: "Owl at Night", filename: "avian_owl.jpg", pool: "animals", prompt: "Great horned owl perched on a branch at night, large yellow eyes glowing, dark forest, moonlight.", tags: { color: 'Nature (Grn/Brn)', texture: 'Soft / Furry', luminosity: 'Dark / Night', form: 'Organic' } },
-  { id: 15, concept: "Swan", filename: "avian_swan.jpg", pool: "animals", prompt: "Elegant white swan floating on a calm lake, reflection in water, peaceful, graceful.", tags: { color: 'Mono (Grey/Wht)', texture: 'Fluid / Wet', luminosity: 'Bright / Day', form: 'Organic' } },
-  { id: 16, concept: "Octopus", filename: "marine_octopus.jpg", pool: "animals", prompt: "Red octopus moving underwater, tentacles swirling, suckers visible, coral reef background.", tags: { color: 'Warm (Red/Yel)', texture: 'Fluid / Wet', luminosity: 'Dim / Shadow', form: 'Fluid' } },
-  { id: 17, concept: "Jellyfish", filename: "marine_jellyfish.jpg", pool: "animals", prompt: "Glowing blue jellyfish floating in deep black water, translucent, bioluminescent, ethereal.", tags: { color: 'Cool (Blue/Purp)', texture: 'Fluid / Wet', luminosity: 'Dark / Night', form: 'Fluid' } },
-  { id: 18, concept: "Clownfish", filename: "marine_clownfish.jpg", pool: "animals", prompt: "Orange and white clownfish hiding in a purple anemone, underwater macro photography, vibrant colors.", tags: { color: 'Warm (Red/Yel)', texture: 'Fluid / Wet', luminosity: 'Bright / Day', form: 'Organic' } },
-  { id: 19, concept: "Sea Turtle", filename: "marine_turtle.jpg", pool: "animals", prompt: "Green sea turtle swimming gracefully underwater, sunbeams from surface, detailed shell texture.", tags: { color: 'Nature (Grn/Brn)', texture: 'Hard / Smooth', luminosity: 'Bright / Day', form: 'Organic' } },
-  { id: 20, concept: "Koi Fish", filename: "marine_koi.jpg", pool: "animals", prompt: "Top down view of a pond with orange and white koi fish swimming, lily pads, ripples in water.", tags: { color: 'Warm (Red/Yel)', texture: 'Fluid / Wet', luminosity: 'Bright / Day', form: 'Cluster' } },
-  { id: 21, concept: "Butterfly", filename: "insect_butterfly.jpg", pool: "animals", prompt: "Monarch butterfly resting on a purple flower, macro shot, shallow depth of field, sunny garden.", tags: { color: 'Warm (Red/Yel)', texture: 'Soft / Furry', luminosity: 'Bright / Day', form: 'Organic' } },
-  { id: 22, concept: "Spider Web", filename: "insect_spider.jpg", pool: "animals", prompt: "Black spider sitting in the center of a dew-covered web, morning light, geometric web pattern.", tags: { color: 'Mono (Grey/Wht)', texture: 'Soft / Furry', luminosity: 'Bright / Day', form: 'Geometric' } },
-  { id: 23, concept: "Honey Bee", filename: "insect_bee.jpg", pool: "animals", prompt: "Honey bee collecting pollen from a yellow sunflower, extreme macro, fuzzy texture, bright sunlight.", tags: { color: 'Warm (Red/Yel)', texture: 'Soft / Furry', luminosity: 'Bright / Day', form: 'Organic' } },
-  { id: 24, concept: "Snail", filename: "insect_snail.jpg", pool: "animals", prompt: "Snail crawling on a wet green leaf, spiral shell, slime trail, rain drops, macro.", tags: { color: 'Nature (Grn/Brn)', texture: 'Fluid / Wet', luminosity: 'Bright / Day', form: 'Organic' } },
-  { id: 25, concept: "Dragonfly", filename: "insect_dragonfly.jpg", pool: "animals", prompt: "Blue metallic dragonfly resting on a reed, wings spread, iridescent eyes, pond background.", tags: { color: 'Cool (Blue/Purp)', texture: 'Hard / Smooth', luminosity: 'Bright / Day', form: 'Organic' } },
+  {
+    id: 1,
+    concept: "Roaring Lion",
+    filename: "predator_lion.jpg",
+    pool: "animals",
+    prompt: "Cinematic close up of a male lion roaring, golden hour lighting, savannah background, intense eyes, sharp teeth, dust motes in air.",
+    tags: { color: 'Warm', texture: 'Soft / Biological', luminosity: 'Bright / Direct', form: 'Biomorphic' }
+  },
+  {
+    id: 2,
+    concept: "Great White Shark",
+    filename: "predator_shark.jpg",
+    pool: "animals",
+    prompt: "Underwater shot of a great white shark swimming towards camera, deep blue ocean, light rays breaking through water, sharp teeth visible.",
+    tags: { color: 'Cool', texture: 'Hard / Smooth', luminosity: 'Diffused / Hazy', form: 'Biomorphic' }
+  },
+  {
+    id: 3,
+    concept: "Wolf Howling",
+    filename: "predator_wolf.jpg",
+    pool: "animals",
+    prompt: "Grey wolf howling at a full moon, snowy forest night, breath visible in cold air, atmospheric, high contrast.",
+    tags: { color: 'Monochrome', texture: 'Soft / Biological', luminosity: 'Dark / Shadowed', form: 'Biomorphic' }
+  },
+  {
+    id: 4,
+    concept: "Tiger Stalking",
+    filename: "predator_tiger.jpg",
+    pool: "animals",
+    prompt: "Bengal tiger walking through tall green grass, orange and black stripes, intense focus, jungle environment.",
+    tags: { color: 'Warm', texture: 'Soft / Biological', luminosity: 'Diffused / Hazy', form: 'Biomorphic' }
+  },
+  {
+    id: 5,
+    concept: "Grizzly Bear",
+    filename: "predator_bear.jpg",
+    pool: "animals",
+    prompt: "Massive grizzly bear standing in a river catching a salmon, splashing water, wet fur, nature photography.",
+    tags: { color: 'Earthy', texture: 'Fluid / Malleable', luminosity: 'Bright / Direct', form: 'Biomorphic' }
+  },
+  {
+    id: 6,
+    concept: "Deer in Mist",
+    filename: "herbivore_deer.jpg",
+    pool: "animals",
+    prompt: "A deer standing in a misty forest clearing at dawn, soft light, antlers, peaceful atmosphere.",
+    tags: { color: 'Earthy', texture: 'Soft / Biological', luminosity: 'Diffused / Hazy', form: 'Biomorphic' }
+  },
+  {
+    id: 7,
+    concept: "Giraffe",
+    filename: "herbivore_giraffe.jpg",
+    pool: "animals",
+    prompt: "Tall giraffe eating leaves from an acacia tree, blue sky background, sunny day on the African plains.",
+    tags: { color: 'Warm', texture: 'Soft / Biological', luminosity: 'Bright / Direct', form: 'Biomorphic' }
+  },
+  {
+    id: 8,
+    concept: "Giant Panda",
+    filename: "herbivore_panda.jpg",
+    pool: "animals",
+    prompt: "Giant panda sitting and eating bamboo, black and white fur, green bamboo forest background.",
+    tags: { color: 'Monochrome', texture: 'Soft / Biological', luminosity: 'Bright / Direct', form: 'Biomorphic' }
+  },
+  {
+    id: 9,
+    concept: "Elephant",
+    filename: "herbivore_elephant.jpg",
+    pool: "animals",
+    prompt: "Close up of an elephant skin texture and eye, trunk raised, dusty environment, wrinkled gray skin.",
+    tags: { color: 'Monochrome', texture: 'Rough / Coarse', luminosity: 'Bright / Direct', form: 'Biomorphic' }
+  },
+  {
+    id: 10,
+    concept: "Rabbit",
+    filename: "herbivore_rabbit.jpg",
+    pool: "animals",
+    prompt: "Small white fluffy rabbit sitting in green grass, twitching nose, clover flowers, cute, macro photography.",
+    tags: { color: 'Monochrome', texture: 'Soft / Biological', luminosity: 'Bright / Direct', form: 'Biomorphic' }
+  },
+  {
+    id: 11,
+    concept: "Scarlet Macaw",
+    filename: "avian_macaw.jpg",
+    pool: "animals",
+    prompt: "Bright red scarlet macaw parrot flying, colorful feathers, blue sky, tropical jungle background.",
+    tags: { color: 'Warm', texture: 'Soft / Biological', luminosity: 'Bright / Direct', form: 'Biomorphic' }
+  },
+  {
+    id: 12,
+    concept: "Bald Eagle",
+    filename: "avian_eagle.jpg",
+    pool: "animals",
+    prompt: "Bald eagle soaring high above mountains, wings spread wide, sharp beak, fierce expression.",
+    tags: { color: 'Earthy', texture: 'Soft / Biological', luminosity: 'Bright / Direct', form: 'Biomorphic' }
+  },
+  {
+    id: 13,
+    concept: "Peacock",
+    filename: "avian_peacock.jpg",
+    pool: "animals",
+    prompt: "Peacock displaying full tail feathers, iridescent blue and green patterns, majestic pose.",
+    tags: { color: 'Cool', texture: 'Soft / Biological', luminosity: 'Bright / Direct', form: 'Composite' }
+  },
+  {
+    id: 14,
+    concept: "Owl at Night",
+    filename: "avian_owl.jpg",
+    pool: "animals",
+    prompt: "Great horned owl perched on a branch at night, large yellow eyes glowing, dark forest, moonlight.",
+    tags: { color: 'Earthy', texture: 'Soft / Biological', luminosity: 'Dark / Shadowed', form: 'Biomorphic' }
+  },
+  {
+    id: 15,
+    concept: "Swan",
+    filename: "avian_swan.jpg",
+    pool: "animals",
+    prompt: "Elegant white swan floating on a calm lake, reflection in water, peaceful, graceful.",
+    tags: { color: 'Monochrome', texture: 'Fluid / Malleable', luminosity: 'Bright / Direct', form: 'Biomorphic' }
+  },
+  {
+    id: 16,
+    concept: "Octopus",
+    filename: "marine_octopus.jpg",
+    pool: "animals",
+    prompt: "Red octopus moving underwater, tentacles swirling, suckers visible, coral reef background.",
+    tags: { color: 'Warm', texture: 'Fluid / Malleable', luminosity: 'Diffused / Hazy', form: 'Biomorphic' }
+  },
+  {
+    id: 17,
+    concept: "Jellyfish",
+    filename: "marine_jellyfish.jpg",
+    pool: "animals",
+    prompt: "Glowing blue jellyfish floating in deep black water, translucent, bioluminescent, ethereal.",
+    tags: { color: 'Cool', texture: 'Fluid / Malleable', luminosity: 'Glow / Source', form: 'Biomorphic' }
+  },
+  {
+    id: 18,
+    concept: "Clownfish",
+    filename: "marine_clownfish.jpg",
+    pool: "animals",
+    prompt: "Orange and white clownfish hiding in a purple anemone, underwater macro photography, vibrant colors.",
+    tags: { color: 'Warm', texture: 'Fluid / Malleable', luminosity: 'Bright / Direct', form: 'Biomorphic' }
+  },
+  {
+    id: 19,
+    concept: "Sea Turtle",
+    filename: "marine_turtle.jpg",
+    pool: "animals",
+    prompt: "Green sea turtle swimming gracefully underwater, sunbeams from surface, detailed shell texture.",
+    tags: { color: 'Earthy', texture: 'Hard / Smooth', luminosity: 'Diffused / Hazy', form: 'Biomorphic' }
+  },
+  {
+    id: 20,
+    concept: "Koi Fish",
+    filename: "marine_koi.jpg",
+    pool: "animals",
+    prompt: "Top down view of a pond with orange and white koi fish swimming, lily pads, ripples in water.",
+    tags: { color: 'Warm', texture: 'Fluid / Malleable', luminosity: 'Bright / Direct', form: 'Composite' }
+  },
+  {
+    id: 21,
+    concept: "Butterfly",
+    filename: "insect_butterfly.jpg",
+    pool: "animals",
+    prompt: "Monarch butterfly resting on a purple flower, macro shot, shallow depth of field, sunny garden.",
+    tags: { color: 'Warm', texture: 'Soft / Biological', luminosity: 'Bright / Direct', form: 'Biomorphic' }
+  },
+  {
+    id: 22,
+    concept: "Spider Web",
+    filename: "insect_spider.jpg",
+    pool: "animals",
+    prompt: "Black spider sitting in the center of a dew-covered web, morning light, geometric web pattern.",
+    tags: { color: 'Monochrome', texture: 'Soft / Biological', luminosity: 'Bright / Direct', form: 'Architectural' }
+  },
+  {
+    id: 23,
+    concept: "Honey Bee",
+    filename: "insect_bee.jpg",
+    pool: "animals",
+    prompt: "Honey bee collecting pollen from a yellow sunflower, extreme macro, fuzzy texture, bright sunlight.",
+    tags: { color: 'Warm', texture: 'Soft / Biological', luminosity: 'Bright / Direct', form: 'Biomorphic' }
+  },
+  {
+    id: 24,
+    concept: "Snail",
+    filename: "insect_snail.jpg",
+    pool: "animals",
+    prompt: "Snail crawling on a wet green leaf, spiral shell, slime trail, rain drops, macro.",
+    tags: { color: 'Earthy', texture: 'Fluid / Malleable', luminosity: 'Diffused / Hazy', form: 'Biomorphic' }
+  },
+  {
+    id: 25,
+    concept: "Dragonfly",
+    filename: "insect_dragonfly.jpg",
+    pool: "animals",
+    prompt: "Blue metallic dragonfly resting on a reed, wings spread, iridescent eyes, pond background.",
+    tags: { color: 'Cool', texture: 'Hard / Smooth', luminosity: 'Bright / Direct', form: 'Biomorphic' }
+  },
 
   // --- POOL: STRUCTURES ---
-  { id: 26, concept: "Great Pyramid", filename: "ruin_pyramid.jpg", pool: "structures", prompt: "The Great Pyramids of Giza, yellow sand, blue sky, camels in distance, ancient stone texture.", tags: { color: 'Warm (Red/Yel)', texture: 'Rough / Stone', luminosity: 'Bright / Day', form: 'Geometric' } },
-  { id: 27, concept: "Stonehenge", filename: "ruin_stonehenge.jpg", pool: "structures", prompt: "Stonehenge stone circle at sunset, green grass, orange sky, massive standing stones, mystical.", tags: { color: 'Nature (Grn/Brn)', texture: 'Rough / Stone', luminosity: 'Bright / Day', form: 'Cluster' } },
-  { id: 28, concept: "Roman Colosseum", filename: "ruin_colosseum.jpg", pool: "structures", prompt: "Interior view of the Roman Colosseum, broken stone arches, ancient ruins, sunlight and shadow.", tags: { color: 'Warm (Red/Yel)', texture: 'Rough / Stone', luminosity: 'Bright / Day', form: 'Geometric' } },
-  { id: 29, concept: "Mayan Temple", filename: "ruin_mayan.jpg", pool: "structures", prompt: "Chichen Itza Mayan pyramid surrounded by dense green jungle, stone steps, ancient history.", tags: { color: 'Nature (Grn/Brn)', texture: 'Rough / Stone', luminosity: 'Bright / Day', form: 'Geometric' } },
-  { id: 30, concept: "Moai Statues", filename: "ruin_moai.jpg", pool: "structures", prompt: "Easter Island Moai heads standing on a grassy hill, ocean in background, overcast sky, mysterious.", tags: { color: 'Mono (Grey/Wht)', texture: 'Rough / Stone', luminosity: 'Bright / Day', form: 'Organic' } },
-  { id: 31, concept: "Glass Skyscraper", filename: "arch_skyscraper.jpg", pool: "structures", prompt: "Looking up at a modern glass skyscraper reflecting the blue sky, geometric lines, corporate architecture.", tags: { color: 'Cool (Blue/Purp)', texture: 'Hard / Smooth', luminosity: 'Bright / Day', form: 'Geometric' } },
-  { id: 32, concept: "Sydney Opera House", filename: "arch_opera.jpg", pool: "structures", prompt: "Sydney Opera House shells against a blue harbor, white ceramic tiles, architectural icon, sunny day.", tags: { color: 'Mono (Grey/Wht)', texture: 'Hard / Smooth', luminosity: 'Bright / Day', form: 'Geometric' } },
-  { id: 33, concept: "Neon City Street", filename: "arch_neon.jpg", pool: "structures", prompt: "Cyberpunk style city street at night, neon signs in rain, wet pavement reflections, futuristic buildings.", tags: { color: 'Cool (Blue/Purp)', texture: 'Hard / Smooth', luminosity: 'Neon / Artificial', form: 'Geometric' } },
-  { id: 34, concept: "Minimalist Concrete", filename: "arch_concrete.jpg", pool: "structures", prompt: "Brutalist architecture, raw grey concrete wall with sharp shadows, minimalist, geometric shapes.", tags: { color: 'Mono (Grey/Wht)', texture: 'Rough / Stone', luminosity: 'Bright / Day', form: 'Geometric' } },
-  { id: 35, concept: "Suspension Bridge", filename: "arch_bridge.jpg", pool: "structures", prompt: "Golden Gate Bridge in fog, red metal cables, spanning over water, engineering marvel.", tags: { color: 'Warm (Red/Yel)', texture: 'Hard / Smooth', luminosity: 'Dim / Shadow', form: 'Geometric' } },
-  { id: 36, concept: "Oil Refinery", filename: "ind_refinery.jpg", pool: "structures", prompt: "Oil refinery at night with lights and smoke stacks, complex pipes, industrial metal structures.", tags: { color: 'Mono (Grey/Wht)', texture: 'Hard / Smooth', luminosity: 'Neon / Artificial', form: 'Geometric' } },
-  { id: 37, concept: "Rusted Factory", filename: "ind_factory.jpg", pool: "structures", prompt: "Abandoned factory interior, rusted machinery, broken windows, light beams through dust, decay.", tags: { color: 'Warm (Red/Yel)', texture: 'Rough / Stone', luminosity: 'Dim / Shadow', form: 'Geometric' } },
-  { id: 38, concept: "Cargo Port", filename: "ind_port.jpg", pool: "structures", prompt: "Aerial view of shipping containers at a port, colorful metal boxes, cranes, industrial logistics.", tags: { color: 'Cool (Blue/Purp)', texture: 'Hard / Smooth', luminosity: 'Bright / Day', form: 'Cluster' } },
-  { id: 39, concept: "Wind Farm", filename: "ind_windfarm.jpg", pool: "structures", prompt: "White wind turbines on a green hill, blue sky, renewable energy, clean lines, rotating blades.", tags: { color: 'Mono (Grey/Wht)', texture: 'Hard / Smooth', luminosity: 'Bright / Day', form: 'Geometric' } },
-  { id: 40, concept: "Train Tracks", filename: "ind_tracks.jpg", pool: "structures", prompt: "Railway tracks vanishing into the distance, gravel, steel rails, wooden ties, overcast day.", tags: { color: 'Mono (Grey/Wht)', texture: 'Rough / Stone', luminosity: 'Dim / Shadow', form: 'Geometric' } },
-  { id: 41, concept: "Buddhist Temple", filename: "sacred_buddhist.jpg", pool: "structures", prompt: "Golden Buddhist temple roof with curved edges, incense smoke, peaceful courtyard, red columns.", tags: { color: 'Warm (Red/Yel)', texture: 'Hard / Smooth', luminosity: 'Bright / Day', form: 'Geometric' } },
-  { id: 42, concept: "Stained Glass", filename: "sacred_stainedglass.jpg", pool: "structures", prompt: "Detailed stained glass window in a dark church, light shining through creating colorful patterns on floor.", tags: { color: 'Cool (Blue/Purp)', texture: 'Hard / Smooth', luminosity: 'Dim / Shadow', form: 'Geometric' } },
-  { id: 43, concept: "Zen Garden", filename: "sacred_zen.jpg", pool: "structures", prompt: "Japanese Zen rock garden, raked white sand patterns, mossy rocks, peaceful meditation space.", tags: { color: 'Mono (Grey/Wht)', texture: 'Rough / Stone', luminosity: 'Bright / Day', form: 'Organic' } },
-  { id: 44, concept: "Candle Altar", filename: "sacred_candles.jpg", pool: "structures", prompt: "Dozens of lit candles in a dark stone room, warm glow, dripping wax, spiritual atmosphere.", tags: { color: 'Warm (Red/Yel)', texture: 'Fluid / Wet', luminosity: 'Dark / Night', form: 'Cluster' } },
-  { id: 45, concept: "Torii Gate", filename: "sacred_torii.jpg", pool: "structures", prompt: "Red Torii gate standing in calm water, Itsukushima shrine, foggy mountains in background, serene.", tags: { color: 'Warm (Red/Yel)', texture: 'Hard / Smooth', luminosity: 'Bright / Day', form: 'Geometric' } },
-  { id: 46, concept: "Cozy Fireplace", filename: "home_fireplace.jpg", pool: "structures", prompt: "Roaring fire in a stone fireplace, cozy living room, rug, warm light, winter evening.", tags: { color: 'Warm (Red/Yel)', texture: 'Rough / Stone', luminosity: 'Dim / Shadow', form: 'Organic' } },
-  { id: 47, concept: "Modern Kitchen", filename: "home_kitchen.jpg", pool: "structures", prompt: "Clean modern kitchen with marble island, stainless steel appliances, white cabinets, bowl of fruit.", tags: { color: 'Mono (Grey/Wht)', texture: 'Hard / Smooth', luminosity: 'Bright / Day', form: 'Geometric' } },
-  { id: 48, concept: "Old Library", filename: "home_library.jpg", pool: "structures", prompt: "Walls of old leather books in a library, wooden ladder, dust motes, warm lamp light, studious.", tags: { color: 'Warm (Red/Yel)', texture: 'Rough / Stone', luminosity: 'Dim / Shadow', form: 'Cluster' } },
-  { id: 49, concept: "Spiral Staircase", filename: "home_stairs.jpg", pool: "structures", prompt: "Looking down a wooden spiral staircase, geometric swirl, architectural detail, shadows.", tags: { color: 'Nature (Grn/Brn)', texture: 'Hard / Smooth', luminosity: 'Dim / Shadow', form: 'Geometric' } },
-  { id: 50, concept: "Bedroom Window", filename: "home_window.jpg", pool: "structures", prompt: "View from a cozy bed looking out a window at rain, coffee cup on sill, blankets, moody morning.", tags: { color: 'Cool (Blue/Purp)', texture: 'Soft / Furry', luminosity: 'Dim / Shadow', form: 'Geometric' } },
+  {
+    id: 26,
+    concept: "Great Pyramid",
+    filename: "ruin_pyramid.jpg",
+    pool: "structures",
+    prompt: "The Great Pyramids of Giza, yellow sand, blue sky, camels in distance, ancient stone texture.",
+    tags: { color: 'Warm', texture: 'Rough / Coarse', luminosity: 'Bright / Direct', form: 'Architectural' }
+  },
+  {
+    id: 27,
+    concept: "Stonehenge",
+    filename: "ruin_stonehenge.jpg",
+    pool: "structures",
+    prompt: "Stonehenge stone circle at sunset, green grass, orange sky, massive standing stones, mystical.",
+    tags: { color: 'Earthy', texture: 'Rough / Coarse', luminosity: 'Bright / Direct', form: 'Composite' }
+  },
+  {
+    id: 28,
+    concept: "Roman Colosseum",
+    filename: "ruin_colosseum.jpg",
+    pool: "structures",
+    prompt: "Interior view of the Roman Colosseum, broken stone arches, ancient ruins, sunlight and shadow.",
+    tags: { color: 'Warm', texture: 'Rough / Coarse', luminosity: 'Bright / Direct', form: 'Architectural' }
+  },
+  {
+    id: 29,
+    concept: "Mayan Temple",
+    filename: "ruin_mayan.jpg",
+    pool: "structures",
+    prompt: "Chichen Itza Mayan pyramid surrounded by dense green jungle, stone steps, ancient history.",
+    tags: { color: 'Earthy', texture: 'Rough / Coarse', luminosity: 'Bright / Direct', form: 'Architectural' }
+  },
+  {
+    id: 30,
+    concept: "Moai Statues",
+    filename: "ruin_moai.jpg",
+    pool: "structures",
+    prompt: "Easter Island Moai heads standing on a grassy hill, ocean in background, overcast sky, mysterious.",
+    tags: { color: 'Monochrome', texture: 'Rough / Coarse', luminosity: 'Diffused / Hazy', form: 'Biomorphic' }
+  },
+  {
+    id: 31,
+    concept: "Glass Skyscraper",
+    filename: "arch_skyscraper.jpg",
+    pool: "structures",
+    prompt: "Looking up at a modern glass skyscraper reflecting the blue sky, geometric lines, corporate architecture.",
+    tags: { color: 'Cool', texture: 'Hard / Smooth', luminosity: 'Bright / Direct', form: 'Architectural' }
+  },
+  {
+    id: 32,
+    concept: "Sydney Opera House",
+    filename: "arch_opera.jpg",
+    pool: "structures",
+    prompt: "Sydney Opera House shells against a blue harbor, white ceramic tiles, architectural icon, sunny day.",
+    tags: { color: 'Monochrome', texture: 'Hard / Smooth', luminosity: 'Bright / Direct', form: 'Architectural' }
+  },
+  {
+    id: 33,
+    concept: "Neon City Street",
+    filename: "arch_neon.jpg",
+    pool: "structures",
+    prompt: "Cyberpunk style city street at night, neon signs in rain, wet pavement reflections, futuristic buildings.",
+    tags: { color: 'Cool', texture: 'Hard / Smooth', luminosity: 'Glow / Source', form: 'Architectural' }
+  },
+  {
+    id: 34,
+    concept: "Minimalist Concrete",
+    filename: "arch_concrete.jpg",
+    pool: "structures",
+    prompt: "Brutalist architecture, raw grey concrete wall with sharp shadows, minimalist, geometric shapes.",
+    tags: { color: 'Monochrome', texture: 'Rough / Coarse', luminosity: 'Bright / Direct', form: 'Architectural' }
+  },
+  {
+    id: 35,
+    concept: "Suspension Bridge",
+    filename: "arch_bridge.jpg",
+    pool: "structures",
+    prompt: "Golden Gate Bridge in fog, red metal cables, spanning over water, engineering marvel.",
+    tags: { color: 'Warm', texture: 'Hard / Smooth', luminosity: 'Diffused / Hazy', form: 'Architectural' }
+  },
+  {
+    id: 36,
+    concept: "Oil Refinery",
+    filename: "ind_refinery.jpg",
+    pool: "structures",
+    prompt: "Oil refinery at night with lights and smoke stacks, complex pipes, industrial metal structures.",
+    tags: { color: 'Monochrome', texture: 'Hard / Smooth', luminosity: 'Glow / Source', form: 'Architectural' }
+  },
+  {
+    id: 37,
+    concept: "Rusted Factory",
+    filename: "ind_factory.jpg",
+    pool: "structures",
+    prompt: "Abandoned factory interior, rusted machinery, broken windows, light beams through dust, decay.",
+    tags: { color: 'Warm', texture: 'Rough / Coarse', luminosity: 'Diffused / Hazy', form: 'Architectural' }
+  },
+  {
+    id: 38,
+    concept: "Cargo Port",
+    filename: "ind_port.jpg",
+    pool: "structures",
+    prompt: "Aerial view of shipping containers at a port, colorful metal boxes, cranes, industrial logistics.",
+    tags: { color: 'Cool', texture: 'Hard / Smooth', luminosity: 'Bright / Direct', form: 'Composite' }
+  },
+  {
+    id: 39,
+    concept: "Wind Farm",
+    filename: "ind_windfarm.jpg",
+    pool: "structures",
+    prompt: "White wind turbines on a green hill, blue sky, renewable energy, clean lines, rotating blades.",
+    tags: { color: 'Monochrome', texture: 'Hard / Smooth', luminosity: 'Bright / Direct', form: 'Architectural' }
+  },
+  {
+    id: 40,
+    concept: "Train Tracks",
+    filename: "ind_tracks.jpg",
+    pool: "structures",
+    prompt: "Railway tracks vanishing into the distance, gravel, steel rails, wooden ties, overcast day.",
+    tags: { color: 'Monochrome', texture: 'Rough / Coarse', luminosity: 'Diffused / Hazy', form: 'Architectural' }
+  },
+  {
+    id: 41,
+    concept: "Buddhist Temple",
+    filename: "sacred_buddhist.jpg",
+    pool: "structures",
+    prompt: "Golden Buddhist temple roof with curved edges, incense smoke, peaceful courtyard, red columns.",
+    tags: { color: 'Warm', texture: 'Hard / Smooth', luminosity: 'Bright / Direct', form: 'Architectural' }
+  },
+  {
+    id: 42,
+    concept: "Stained Glass",
+    filename: "sacred_stainedglass.jpg",
+    pool: "structures",
+    prompt: "Detailed stained glass window in a dark church, light shining through creating colorful patterns on floor.",
+    tags: { color: 'Cool', texture: 'Hard / Smooth', luminosity: 'Glow / Source', form: 'Architectural' }
+  },
+  {
+    id: 43,
+    concept: "Zen Garden",
+    filename: "sacred_zen.jpg",
+    pool: "structures",
+    prompt: "Japanese Zen rock garden, raked white sand patterns, mossy rocks, peaceful meditation space.",
+    tags: { color: 'Monochrome', texture: 'Rough / Coarse', luminosity: 'Diffused / Hazy', form: 'Biomorphic' }
+  },
+  {
+    id: 44,
+    concept: "Candle Altar",
+    filename: "sacred_candles.jpg",
+    pool: "structures",
+    prompt: "Dozens of lit candles in a dark stone room, warm glow, dripping wax, spiritual atmosphere.",
+    tags: { color: 'Warm', texture: 'Fluid / Malleable', luminosity: 'Glow / Source', form: 'Composite' }
+  },
+  {
+    id: 45,
+    concept: "Torii Gate",
+    filename: "sacred_torii.jpg",
+    pool: "structures",
+    prompt: "Red Torii gate standing in calm water, Itsukushima shrine, foggy mountains in background, serene.",
+    tags: { color: 'Warm', texture: 'Hard / Smooth', luminosity: 'Diffused / Hazy', form: 'Architectural' }
+  },
+  {
+    id: 46,
+    concept: "Cozy Fireplace",
+    filename: "home_fireplace.jpg",
+    pool: "structures",
+    prompt: "Roaring fire in a stone fireplace, cozy living room, rug, warm light, winter evening.",
+    tags: { color: 'Warm', texture: 'Rough / Coarse', luminosity: 'Glow / Source', form: 'Biomorphic' }
+  },
+  {
+    id: 47,
+    concept: "Modern Kitchen",
+    filename: "home_kitchen.jpg",
+    pool: "structures",
+    prompt: "Clean modern kitchen with marble island, stainless steel appliances, white cabinets, bowl of fruit.",
+    tags: { color: 'Monochrome', texture: 'Hard / Smooth', luminosity: 'Bright / Direct', form: 'Architectural' }
+  },
+  {
+    id: 48,
+    concept: "Old Library",
+    filename: "home_library.jpg",
+    pool: "structures",
+    prompt: "Walls of old leather books in a library, wooden ladder, dust motes, warm lamp light, studious.",
+    tags: { color: 'Warm', texture: 'Rough / Coarse', luminosity: 'Diffused / Hazy', form: 'Composite' }
+  },
+  {
+    id: 49,
+    concept: "Spiral Staircase",
+    filename: "home_stairs.jpg",
+    pool: "structures",
+    prompt: "Looking down a wooden spiral staircase, geometric swirl, architectural detail, shadows.",
+    tags: { color: 'Earthy', texture: 'Hard / Smooth', luminosity: 'Diffused / Hazy', form: 'Architectural' }
+  },
+  {
+    id: 50,
+    concept: "Bedroom Window",
+    filename: "home_window.jpg",
+    pool: "structures",
+    prompt: "View from a cozy bed looking out a window at rain, coffee cup on sill, blankets, moody morning.",
+    tags: { color: 'Cool', texture: 'Soft / Biological', luminosity: 'Diffused / Hazy', form: 'Architectural' }
+  },
 
   // --- POOL: LANDSCAPES ---
-  { id: 51, concept: "Snowy Peak", filename: "land_mountain.jpg", pool: "landscapes", prompt: "Majestic snow-capped mountain peak against blue sky, jagged rocks, alpine environment, cold.", tags: { color: 'Mono (Grey/Wht)', texture: 'Rough / Stone', luminosity: 'Bright / Day', form: 'Organic' } },
-  { id: 52, concept: "Grand Canyon", filename: "land_canyon.jpg", pool: "landscapes", prompt: "Vast view of the Grand Canyon, red rock layers, deep depth, sunset light, arid landscape.", tags: { color: 'Warm (Red/Yel)', texture: 'Rough / Stone', luminosity: 'Bright / Day', form: 'Organic' } },
-  { id: 53, concept: "Volcano Eruption", filename: "land_volcano.jpg", pool: "landscapes", prompt: "Volcano erupting lava at night, glowing red magma flowing down, black rock, smoke plume.", tags: { color: 'Warm (Red/Yel)', texture: 'Rough / Stone', luminosity: 'Dark / Night', form: 'Organic' } },
-  { id: 54, concept: "Cave Interior", filename: "land_cave.jpg", pool: "landscapes", prompt: "Inside a limestone cave with stalactites and stalagmites, dark, damp, single light source, mysterious.", tags: { color: 'Mono (Grey/Wht)', texture: 'Rough / Stone', luminosity: 'Dim / Shadow', form: 'Organic' } },
-  { id: 55, concept: "Green Hills", filename: "land_hills.jpg", pool: "landscapes", prompt: "Rolling green hills in Ireland, soft grass, overcast sky, rural landscape, peaceful.", tags: { color: 'Nature (Grn/Brn)', texture: 'Soft / Furry', luminosity: 'Bright / Day', form: 'Organic' } },
-  { id: 56, concept: "Tropical Beach", filename: "water_beach.jpg", pool: "landscapes", prompt: "White sand beach with turquoise water, palm tree shadow, sunny tropical paradise, calm waves.", tags: { color: 'Cool (Blue/Purp)', texture: 'Fluid / Wet', luminosity: 'Bright / Day', form: 'Fluid' } },
-  { id: 57, concept: "Waterfall", filename: "water_waterfall.jpg", pool: "landscapes", prompt: "Powerful waterfall crashing into a pool, mist rising, green mossy rocks, dynamic water motion.", tags: { color: 'Cool (Blue/Purp)', texture: 'Fluid / Wet', luminosity: 'Bright / Day', form: 'Fluid' } },
-  { id: 58, concept: "Stormy Ocean", filename: "water_storm.jpg", pool: "landscapes", prompt: "Dark stormy ocean waves crashing, white foam, grey sky, dangerous sea condition, cinematic.", tags: { color: 'Mono (Grey/Wht)', texture: 'Fluid / Wet', luminosity: 'Dim / Shadow', form: 'Fluid' } },
-  { id: 59, concept: "Frozen Lake", filename: "water_ice.jpg", pool: "landscapes", prompt: "Cracked blue ice on a frozen lake, bubbles trapped in ice, winter cold, smooth texture.", tags: { color: 'Cool (Blue/Purp)', texture: 'Hard / Smooth', luminosity: 'Bright / Day', form: 'Fluid' } },
-  { id: 60, concept: "River Stone", filename: "water_river.jpg", pool: "landscapes", prompt: "Smooth river stones under clear running water, ripples, sunlight refracting on bottom, peaceful.", tags: { color: 'Nature (Grn/Brn)', texture: 'Fluid / Wet', luminosity: 'Bright / Day', form: 'Cluster' } },
-  { id: 61, concept: "Redwood Forest", filename: "forest_redwood.jpg", pool: "landscapes", prompt: "Giant redwood trees towering up, sunbeams through mist, fern ground cover, ancient forest.", tags: { color: 'Nature (Grn/Brn)', texture: 'Rough / Stone', luminosity: 'Dim / Shadow', form: 'Organic' } },
-  { id: 62, concept: "Autumn Path", filename: "forest_autumn.jpg", pool: "landscapes", prompt: "Forest path covered in orange and red autumn leaves, trees changing color, soft fall light.", tags: { color: 'Warm (Red/Yel)', texture: 'Soft / Furry', luminosity: 'Bright / Day', form: 'Organic' } },
-  { id: 63, concept: "Jungle Vines", filename: "forest_jungle.jpg", pool: "landscapes", prompt: "Dense tropical jungle, hanging vines, huge green leaves, humidity, dark and green atmosphere.", tags: { color: 'Nature (Grn/Brn)', texture: 'Soft / Furry', luminosity: 'Dim / Shadow', form: 'Organic' } },
-  { id: 64, concept: "Bamboo Grove", filename: "forest_bamboo.jpg", pool: "landscapes", prompt: "Tall green bamboo forest, vertical lines, light filtering through leaves, zen nature.", tags: { color: 'Nature (Grn/Brn)', texture: 'Hard / Smooth', luminosity: 'Dim / Shadow', form: 'Organic' } },
-  { id: 65, concept: "Dead Tree", filename: "forest_dead.jpg", pool: "landscapes", prompt: "Lone dead tree in a barren field, twisted branches, grey sky, desolate landscape, silhouette.", tags: { color: 'Mono (Grey/Wht)', texture: 'Rough / Stone', luminosity: 'Dim / Shadow', form: 'Organic' } },
-  { id: 66, concept: "Sand Dunes", filename: "desert_dunes.jpg", pool: "landscapes", prompt: "Sahara desert sand dunes, smooth curves, golden sand, ripples caused by wind, clear sky.", tags: { color: 'Warm (Red/Yel)', texture: 'Soft / Furry', luminosity: 'Bright / Day', form: 'Organic' } },
-  { id: 67, concept: "Cracked Earth", filename: "desert_cracked.jpg", pool: "landscapes", prompt: "Dry cracked earth texture, drought, arid ground, beige clay, detail shot, lifeless.", tags: { color: 'Nature (Grn/Brn)', texture: 'Rough / Stone', luminosity: 'Bright / Day', form: 'Organic' } },
-  { id: 68, concept: "Cactus", filename: "desert_cactus.jpg", pool: "landscapes", prompt: "Close up of a green cactus with sharp spines, desert background, harsh sunlight, prickly.", tags: { color: 'Nature (Grn/Brn)', texture: 'Rough / Stone', luminosity: 'Bright / Day', form: 'Organic' } },
-  { id: 69, concept: "Salt Flats", filename: "desert_salt.jpg", pool: "landscapes", prompt: "Bolivia Salt Flats, endless white ground reflecting the sky, mirror effect, ethereal landscape.", tags: { color: 'Mono (Grey/Wht)', texture: 'Hard / Smooth', luminosity: 'Bright / Day', form: 'Fluid' } },
-  { id: 70, concept: "Oasis", filename: "desert_oasis.jpg", pool: "landscapes", prompt: "Desert oasis with palm trees and a small blue pool of water, surrounded by sand, refuge.", tags: { color: 'Cool (Blue/Purp)', texture: 'Fluid / Wet', luminosity: 'Bright / Day', form: 'Organic' } },
-  { id: 71, concept: "Iceberg", filename: "ice_iceberg.jpg", pool: "landscapes", prompt: "Massive white and blue iceberg floating in dark ocean, antarctica, cold, majestic structure.", tags: { color: 'Cool (Blue/Purp)', texture: 'Hard / Smooth', luminosity: 'Bright / Day', form: 'Geometric' } },
-  { id: 72, concept: "Snow Flake", filename: "ice_snowflake.jpg", pool: "landscapes", prompt: "Extreme macro of a single unique snowflake, geometric crystal structure, blue background, cold.", tags: { color: 'Cool (Blue/Purp)', texture: 'Hard / Smooth', luminosity: 'Bright / Day', form: 'Geometric' } },
-  { id: 73, concept: "Icicles", filename: "ice_icicles.jpg", pool: "landscapes", prompt: "Sharp icicles hanging from a roof edge, glistening in sun, melting drops, winter texture.", tags: { color: 'Cool (Blue/Purp)', texture: 'Hard / Smooth', luminosity: 'Bright / Day', form: 'Geometric' } },
-  { id: 74, concept: "Aurora Borealis", filename: "ice_aurora.jpg", pool: "landscapes", prompt: "Northern lights aurora borealis, green and purple lights in night sky, snowy landscape below.", tags: { color: 'Nature (Grn/Brn)', texture: 'Fluid / Wet', luminosity: 'Dark / Night', form: 'Fluid' } },
-  { id: 75, concept: "Tundra Moss", filename: "ice_tundra.jpg", pool: "landscapes", prompt: "Frozen tundra ground with moss and lichen, patches of snow, rocky, cold desolate landscape.", tags: { color: 'Nature (Grn/Brn)', texture: 'Soft / Furry', luminosity: 'Bright / Day', form: 'Organic' } },
+  {
+    id: 51,
+    concept: "Snowy Peak",
+    filename: "land_mountain.jpg",
+    pool: "landscapes",
+    prompt: "Majestic snow-capped mountain peak against blue sky, jagged rocks, alpine environment, cold.",
+    tags: { color: 'Monochrome', texture: 'Rough / Coarse', luminosity: 'Bright / Direct', form: 'Biomorphic' }
+  },
+  {
+    id: 52,
+    concept: "Grand Canyon",
+    filename: "land_canyon.jpg",
+    pool: "landscapes",
+    prompt: "Vast view of the Grand Canyon, red rock layers, deep depth, sunset light, arid landscape.",
+    tags: { color: 'Warm', texture: 'Rough / Coarse', luminosity: 'Bright / Direct', form: 'Biomorphic' }
+  },
+  {
+    id: 53,
+    concept: "Volcano Eruption",
+    filename: "land_volcano.jpg",
+    pool: "landscapes",
+    prompt: "Volcano erupting lava at night, glowing red magma flowing down, black rock, smoke plume.",
+    tags: { color: 'Warm', texture: 'Rough / Coarse', luminosity: 'Glow / Source', form: 'Biomorphic' }
+  },
+  {
+    id: 54,
+    concept: "Cave Interior",
+    filename: "land_cave.jpg",
+    pool: "landscapes",
+    prompt: "Inside a limestone cave with stalactites and stalagmites, dark, damp, single light source, mysterious.",
+    tags: { color: 'Monochrome', texture: 'Rough / Coarse', luminosity: 'Dark / Shadowed', form: 'Biomorphic' }
+  },
+  {
+    id: 55,
+    concept: "Green Hills",
+    filename: "land_hills.jpg",
+    pool: "landscapes",
+    prompt: "Rolling green hills in Ireland, soft grass, overcast sky, rural landscape, peaceful.",
+    tags: { color: 'Earthy', texture: 'Soft / Biological', luminosity: 'Diffused / Hazy', form: 'Biomorphic' }
+  },
+  {
+    id: 56,
+    concept: "Tropical Beach",
+    filename: "water_beach.jpg",
+    pool: "landscapes",
+    prompt: "White sand beach with turquoise water, palm tree shadow, sunny tropical paradise, calm waves.",
+    tags: { color: 'Cool', texture: 'Fluid / Malleable', luminosity: 'Bright / Direct', form: 'Amorphous' }
+  },
+  {
+    id: 57,
+    concept: "Waterfall",
+    filename: "water_waterfall.jpg",
+    pool: "landscapes",
+    prompt: "Powerful waterfall crashing into a pool, mist rising, green mossy rocks, dynamic water motion.",
+    tags: { color: 'Cool', texture: 'Fluid / Malleable', luminosity: 'Diffused / Hazy', form: 'Amorphous' }
+  },
+  {
+    id: 58,
+    concept: "Stormy Ocean",
+    filename: "water_storm.jpg",
+    pool: "landscapes",
+    prompt: "Dark stormy ocean waves crashing, white foam, grey sky, dangerous sea condition, cinematic.",
+    tags: { color: 'Monochrome', texture: 'Fluid / Malleable', luminosity: 'Diffused / Hazy', form: 'Amorphous' }
+  },
+  {
+    id: 59,
+    concept: "Frozen Lake",
+    filename: "water_ice.jpg",
+    pool: "landscapes",
+    prompt: "Cracked blue ice on a frozen lake, bubbles trapped in ice, winter cold, smooth texture.",
+    tags: { color: 'Cool', texture: 'Hard / Smooth', luminosity: 'Bright / Direct', form: 'Amorphous' }
+  },
+  {
+    id: 60,
+    concept: "River Stone",
+    filename: "water_river.jpg",
+    pool: "landscapes",
+    prompt: "Smooth river stones under clear running water, ripples, sunlight refracting on bottom, peaceful.",
+    tags: { color: 'Earthy', texture: 'Fluid / Malleable', luminosity: 'Bright / Direct', form: 'Composite' }
+  },
+  {
+    id: 61,
+    concept: "Redwood Forest",
+    filename: "forest_redwood.jpg",
+    pool: "landscapes",
+    prompt: "Giant redwood trees towering up, sunbeams through mist, fern ground cover, ancient forest.",
+    tags: { color: 'Earthy', texture: 'Rough / Coarse', luminosity: 'Diffused / Hazy', form: 'Biomorphic' }
+  },
+  {
+    id: 62,
+    concept: "Autumn Path",
+    filename: "forest_autumn.jpg",
+    pool: "landscapes",
+    prompt: "Forest path covered in orange and red autumn leaves, trees changing color, soft fall light.",
+    tags: { color: 'Warm', texture: 'Soft / Biological', luminosity: 'Diffused / Hazy', form: 'Biomorphic' }
+  },
+  {
+    id: 63,
+    concept: "Jungle Vines",
+    filename: "forest_jungle.jpg",
+    pool: "landscapes",
+    prompt: "Dense tropical jungle, hanging vines, huge green leaves, humidity, dark and green atmosphere.",
+    tags: { color: 'Earthy', texture: 'Soft / Biological', luminosity: 'Diffused / Hazy', form: 'Biomorphic' }
+  },
+  {
+    id: 64,
+    concept: "Bamboo Grove",
+    filename: "forest_bamboo.jpg",
+    pool: "landscapes",
+    prompt: "Tall green bamboo forest, vertical lines, light filtering through leaves, zen nature.",
+    tags: { color: 'Earthy', texture: 'Hard / Smooth', luminosity: 'Diffused / Hazy', form: 'Biomorphic' }
+  },
+  {
+    id: 65,
+    concept: "Dead Tree",
+    filename: "forest_dead.jpg",
+    pool: "landscapes",
+    prompt: "Lone dead tree in a barren field, twisted branches, grey sky, desolate landscape, silhouette.",
+    tags: { color: 'Monochrome', texture: 'Rough / Coarse', luminosity: 'Diffused / Hazy', form: 'Biomorphic' }
+  },
+  {
+    id: 66,
+    concept: "Sand Dunes",
+    filename: "desert_dunes.jpg",
+    pool: "landscapes",
+    prompt: "Sahara desert sand dunes, smooth curves, golden sand, ripples caused by wind, clear sky.",
+    tags: { color: 'Warm', texture: 'Soft / Biological', luminosity: 'Bright / Direct', form: 'Biomorphic' }
+  },
+  {
+    id: 67,
+    concept: "Cracked Earth",
+    filename: "desert_cracked.jpg",
+    pool: "landscapes",
+    prompt: "Dry cracked earth texture, drought, arid ground, beige clay, detail shot, lifeless.",
+    tags: { color: 'Earthy', texture: 'Rough / Coarse', luminosity: 'Bright / Direct', form: 'Biomorphic' }
+  },
+  {
+    id: 68,
+    concept: "Cactus",
+    filename: "desert_cactus.jpg",
+    pool: "landscapes",
+    prompt: "Close up of a green cactus with sharp spines, desert background, harsh sunlight, prickly.",
+    tags: { color: 'Earthy', texture: 'Rough / Coarse', luminosity: 'Bright / Direct', form: 'Biomorphic' }
+  },
+  {
+    id: 69,
+    concept: "Salt Flats",
+    filename: "desert_salt.jpg",
+    pool: "landscapes",
+    prompt: "Bolivia Salt Flats, endless white ground reflecting the sky, mirror effect, ethereal landscape.",
+    tags: { color: 'Monochrome', texture: 'Hard / Smooth', luminosity: 'Bright / Direct', form: 'Amorphous' }
+  },
+  {
+    id: 70,
+    concept: "Oasis",
+    filename: "desert_oasis.jpg",
+    pool: "landscapes",
+    prompt: "Desert oasis with palm trees and a small blue pool of water, surrounded by sand, refuge.",
+    tags: { color: 'Cool', texture: 'Fluid / Malleable', luminosity: 'Bright / Direct', form: 'Biomorphic' }
+  },
+  {
+    id: 71,
+    concept: "Iceberg",
+    filename: "ice_iceberg.jpg",
+    pool: "landscapes",
+    prompt: "Massive white and blue iceberg floating in dark ocean, antarctica, cold, majestic structure.",
+    tags: { color: 'Cool', texture: 'Hard / Smooth', luminosity: 'Bright / Direct', form: 'Architectural' }
+  },
+  {
+    id: 72,
+    concept: "Snow Flake",
+    filename: "ice_snowflake.jpg",
+    pool: "landscapes",
+    prompt: "Extreme macro of a single unique snowflake, geometric crystal structure, blue background, cold.",
+    tags: { color: 'Cool', texture: 'Hard / Smooth', luminosity: 'Bright / Direct', form: 'Architectural' }
+  },
+  {
+    id: 73,
+    concept: "Icicles",
+    filename: "ice_icicles.jpg",
+    pool: "landscapes",
+    prompt: "Sharp icicles hanging from a roof edge, glistening in sun, melting drops, winter texture.",
+    tags: { color: 'Cool', texture: 'Hard / Smooth', luminosity: 'Bright / Direct', form: 'Architectural' }
+  },
+  {
+    id: 74,
+    concept: "Aurora Borealis",
+    filename: "ice_aurora.jpg",
+    pool: "landscapes",
+    prompt: "Northern lights aurora borealis, green and purple lights in night sky, snowy landscape below.",
+    tags: { color: 'Earthy', texture: 'Fluid / Malleable', luminosity: 'Glow / Source', form: 'Amorphous' }
+  },
+  {
+    id: 75,
+    concept: "Tundra Moss",
+    filename: "ice_tundra.jpg",
+    pool: "landscapes",
+    prompt: "Frozen tundra ground with moss and lichen, patches of snow, rocky, cold desolate landscape.",
+    tags: { color: 'Earthy', texture: 'Soft / Biological', luminosity: 'Diffused / Hazy', form: 'Biomorphic' }
+  },
 
   // --- POOL: OBJECTS ---
-  { id: 76, concept: "Formula 1 Car", filename: "vehicle_racecar.jpg", pool: "objects", prompt: "Red Formula 1 race car speeding on track, motion blur, asphalt, aerodynamic design.", tags: { color: 'Warm (Red/Yel)', texture: 'Hard / Smooth', luminosity: 'Bright / Day', form: 'Geometric' } },
-  { id: 77, concept: "Steam Train", filename: "vehicle_train.jpg", pool: "objects", prompt: "Black steam locomotive train emitting white smoke, vintage, heavy metal wheels, powerful.", tags: { color: 'Mono (Grey/Wht)', texture: 'Hard / Smooth', luminosity: 'Bright / Day', form: 'Geometric' } },
-  { id: 78, concept: "Vintage Tractor", filename: "vehicle_tractor.jpg", pool: "objects", prompt: "Old rusted red tractor in a field, peeled paint, weathered tires, farming history.", tags: { color: 'Warm (Red/Yel)', texture: 'Rough / Stone', luminosity: 'Bright / Day', form: 'Geometric' } },
-  { id: 79, concept: "Motorcycle", filename: "vehicle_motorcycle.jpg", pool: "objects", prompt: "Chrome motorcycle detail, engine block, leather seat, shiny metal, mechanical power.", tags: { color: 'Mono (Grey/Wht)', texture: 'Hard / Smooth', luminosity: 'Bright / Day', form: 'Geometric' } },
-  { id: 80, concept: "School Bus", filename: "vehicle_bus.jpg", pool: "objects", prompt: "Classic yellow school bus parked, stop sign extended, front grille view.", tags: { color: 'Warm (Red/Yel)', texture: 'Hard / Smooth', luminosity: 'Bright / Day', form: 'Geometric' } },
-  { id: 81, concept: "Hot Air Balloon", filename: "vessel_balloon.jpg", pool: "objects", prompt: "Colorful hot air balloon floating in blue sky, fabric texture, burner flame, freedom.", tags: { color: 'Warm (Red/Yel)', texture: 'Soft / Furry', luminosity: 'Bright / Day', form: 'Organic' } },
-  { id: 82, concept: "Fighter Jet", filename: "vessel_jet.jpg", pool: "objects", prompt: "Grey fighter jet flying at high speed, afterburners glowing, clouds, military technology.", tags: { color: 'Mono (Grey/Wht)', texture: 'Hard / Smooth', luminosity: 'Bright / Day', form: 'Geometric' } },
-  { id: 83, concept: "Sailboat", filename: "vessel_sailboat.jpg", pool: "objects", prompt: "White sailboat with sails full of wind, blue ocean, leaning hull, adventure.", tags: { color: 'Mono (Grey/Wht)', texture: 'Soft / Furry', luminosity: 'Bright / Day', form: 'Geometric' } },
-  { id: 84, concept: "Submarine", filename: "vessel_submarine.jpg", pool: "objects", prompt: "Black submarine surfacing in choppy water, wet metal, periscope, stealth.", tags: { color: 'Mono (Grey/Wht)', texture: 'Hard / Smooth', luminosity: 'Dim / Shadow', form: 'Geometric' } },
-  { id: 85, concept: "Space Shuttle", filename: "vessel_shuttle.jpg", pool: "objects", prompt: "Space shuttle launching, massive smoke plume, fire exhaust, pointing towards sky.", tags: { color: 'Mono (Grey/Wht)', texture: 'Fluid / Wet', luminosity: 'Bright / Day', form: 'Geometric' } },
-  { id: 86, concept: "Circuit Board", filename: "tech_circuit.jpg", pool: "objects", prompt: "Macro of a green electronic circuit board, gold paths, chips, technology texture.", tags: { color: 'Nature (Grn/Brn)', texture: 'Hard / Smooth', luminosity: 'Dim / Shadow', form: 'Geometric' } },
-  { id: 87, concept: "Vinyl Record", filename: "tech_vinyl.jpg", pool: "objects", prompt: "Close up of black vinyl record grooves, light reflection, spinning on turntable, retro audio.", tags: { color: 'Mono (Grey/Wht)', texture: 'Hard / Smooth', luminosity: 'Dim / Shadow', form: 'Geometric' } },
-  { id: 88, concept: "Light Bulb", filename: "tech_bulb.jpg", pool: "objects", prompt: "Edison light bulb glowing filament, warm orange light, glass texture, dark background.", tags: { color: 'Warm (Red/Yel)', texture: 'Hard / Smooth', luminosity: 'Dark / Night', form: 'Organic' } },
-  { id: 89, concept: "Vintage Camera", filename: "tech_camera.jpg", pool: "objects", prompt: "Old silver and black film camera, lens reflection, leather texture, retro photography.", tags: { color: 'Mono (Grey/Wht)', texture: 'Hard / Smooth', luminosity: 'Dim / Shadow', form: 'Geometric' } },
-  { id: 90, concept: "Robot Hand", filename: "tech_robot.jpg", pool: "objects", prompt: "White humanoid robot hand, mechanical joints, futuristic technology, clean background.", tags: { color: 'Mono (Grey/Wht)', texture: 'Hard / Smooth', luminosity: 'Neon / Artificial', form: 'Geometric' } },
-  { id: 91, concept: "Rusty Key", filename: "tool_key.jpg", pool: "objects", prompt: "Old rusty iron skeleton key, textured metal, antique, lying on wood.", tags: { color: 'Warm (Red/Yel)', texture: 'Rough / Stone', luminosity: 'Dim / Shadow', form: 'Geometric' } },
-  { id: 92, concept: "Sword", filename: "tool_sword.jpg", pool: "objects", prompt: "Medieval steel sword, shining blade, leather hilt, sharp edge, weapon.", tags: { color: 'Mono (Grey/Wht)', texture: 'Hard / Smooth', luminosity: 'Dim / Shadow', form: 'Geometric' } },
-  { id: 93, concept: "Compass", filename: "tool_compass.jpg", pool: "objects", prompt: "Antique brass compass, north needle, glass face, map background, exploration.", tags: { color: 'Warm (Red/Yel)', texture: 'Hard / Smooth', luminosity: 'Dim / Shadow', form: 'Geometric' } },
-  { id: 94, concept: "Paint Palette", filename: "tool_palette.jpg", pool: "objects", prompt: "Artist wooden palette with messy colorful oil paints, brush, creative mess.", tags: { color: 'Warm (Red/Yel)', texture: 'Fluid / Wet', luminosity: 'Bright / Day', form: 'Cluster' } },
-  { id: 95, concept: "Anchor", filename: "tool_anchor.jpg", pool: "objects", prompt: "Large rusty iron ship anchor sitting on a dock, heavy, nautical texture.", tags: { color: 'Mono (Grey/Wht)', texture: 'Rough / Stone', luminosity: 'Bright / Day', form: 'Geometric' } },
+  {
+    id: 76,
+    concept: "Formula 1 Car",
+    filename: "vehicle_racecar.jpg",
+    pool: "objects",
+    prompt: "Red Formula 1 race car speeding on track, motion blur, asphalt, aerodynamic design.",
+    tags: { color: 'Warm', texture: 'Hard / Smooth', luminosity: 'Bright / Direct', form: 'Architectural' }
+  },
+  {
+    id: 77,
+    concept: "Steam Train",
+    filename: "vehicle_train.jpg",
+    pool: "objects",
+    prompt: "Black steam locomotive train emitting white smoke, vintage, heavy metal wheels, powerful.",
+    tags: { color: 'Monochrome', texture: 'Hard / Smooth', luminosity: 'Bright / Direct', form: 'Architectural' }
+  },
+  {
+    id: 78,
+    concept: "Vintage Tractor",
+    filename: "vehicle_tractor.jpg",
+    pool: "objects",
+    prompt: "Old rusted red tractor in a field, peeled paint, weathered tires, farming history.",
+    tags: { color: 'Warm', texture: 'Rough / Coarse', luminosity: 'Diffused / Hazy', form: 'Architectural' }
+  },
+  {
+    id: 79,
+    concept: "Motorcycle",
+    filename: "vehicle_motorcycle.jpg",
+    pool: "objects",
+    prompt: "Chrome motorcycle detail, engine block, leather seat, shiny metal, mechanical power.",
+    tags: { color: 'Monochrome', texture: 'Hard / Smooth', luminosity: 'Bright / Direct', form: 'Architectural' }
+  },
+  {
+    id: 80,
+    concept: "School Bus",
+    filename: "vehicle_bus.jpg",
+    pool: "objects",
+    prompt: "Classic yellow school bus parked, stop sign extended, front grille view.",
+    tags: { color: 'Warm', texture: 'Hard / Smooth', luminosity: 'Bright / Direct', form: 'Architectural' }
+  },
+  {
+    id: 81,
+    concept: "Hot Air Balloon",
+    filename: "vessel_balloon.jpg",
+    pool: "objects",
+    prompt: "Colorful hot air balloon floating in blue sky, fabric texture, burner flame, freedom.",
+    tags: { color: 'Warm', texture: 'Soft / Biological', luminosity: 'Bright / Direct', form: 'Biomorphic' }
+  },
+  {
+    id: 82,
+    concept: "Fighter Jet",
+    filename: "vessel_jet.jpg",
+    pool: "objects",
+    prompt: "Grey fighter jet flying at high speed, afterburners glowing, clouds, military technology.",
+    tags: { color: 'Monochrome', texture: 'Hard / Smooth', luminosity: 'Bright / Direct', form: 'Architectural' }
+  },
+  {
+    id: 83,
+    concept: "Sailboat",
+    filename: "vessel_sailboat.jpg",
+    pool: "objects",
+    prompt: "White sailboat with sails full of wind, blue ocean, leaning hull, adventure.",
+    tags: { color: 'Monochrome', texture: 'Soft / Biological', luminosity: 'Bright / Direct', form: 'Architectural' }
+  },
+  {
+    id: 84,
+    concept: "Submarine",
+    filename: "vessel_submarine.jpg",
+    pool: "objects",
+    prompt: "Black submarine surfacing in choppy water, wet metal, periscope, stealth.",
+    tags: { color: 'Monochrome', texture: 'Hard / Smooth', luminosity: 'Diffused / Hazy', form: 'Architectural' }
+  },
+  {
+    id: 85,
+    concept: "Space Shuttle",
+    filename: "vessel_shuttle.jpg",
+    pool: "objects",
+    prompt: "Space shuttle launching, massive smoke plume, fire exhaust, pointing towards sky.",
+    tags: { color: 'Monochrome', texture: 'Fluid / Malleable', luminosity: 'Bright / Direct', form: 'Architectural' }
+  },
+  {
+    id: 86,
+    concept: "Circuit Board",
+    filename: "tech_circuit.jpg",
+    pool: "objects",
+    prompt: "Macro of a green electronic circuit board, gold paths, chips, technology texture.",
+    tags: { color: 'Earthy', texture: 'Hard / Smooth', luminosity: 'Diffused / Hazy', form: 'Architectural' }
+  },
+  {
+    id: 87,
+    concept: "Vinyl Record",
+    filename: "tech_vinyl.jpg",
+    pool: "objects",
+    prompt: "Close up of black vinyl record grooves, light reflection, spinning on turntable, retro audio.",
+    tags: { color: 'Monochrome', texture: 'Hard / Smooth', luminosity: 'Diffused / Hazy', form: 'Architectural' }
+  },
+  {
+    id: 88,
+    concept: "Light Bulb",
+    filename: "tech_bulb.jpg",
+    pool: "objects",
+    prompt: "Edison light bulb glowing filament, warm orange light, glass texture, dark background.",
+    tags: { color: 'Warm', texture: 'Hard / Smooth', luminosity: 'Glow / Source', form: 'Biomorphic' }
+  },
+  {
+    id: 89,
+    concept: "Vintage Camera",
+    filename: "tech_camera.jpg",
+    pool: "objects",
+    prompt: "Old silver and black film camera, lens reflection, leather texture, retro photography.",
+    tags: { color: 'Monochrome', texture: 'Hard / Smooth', luminosity: 'Diffused / Hazy', form: 'Architectural' }
+  },
+  {
+    id: 90,
+    concept: "Robot Hand",
+    filename: "tech_robot.jpg",
+    pool: "objects",
+    prompt: "White humanoid robot hand, mechanical joints, futuristic technology, clean background.",
+    tags: { color: 'Monochrome', texture: 'Hard / Smooth', luminosity: 'Glow / Source', form: 'Architectural' }
+  },
+  {
+    id: 91,
+    concept: "Rusty Key",
+    filename: "tool_key.jpg",
+    pool: "objects",
+    prompt: "Old rusty iron skeleton key, textured metal, antique, lying on wood.",
+    tags: { color: 'Warm', texture: 'Rough / Coarse', luminosity: 'Diffused / Hazy', form: 'Architectural' }
+  },
+  {
+    id: 92,
+    concept: "Sword",
+    filename: "tool_sword.jpg",
+    pool: "objects",
+    prompt: "Medieval steel sword, shining blade, leather hilt, sharp edge, weapon.",
+    tags: { color: 'Monochrome', texture: 'Hard / Smooth', luminosity: 'Diffused / Hazy', form: 'Architectural' }
+  },
+  {
+    id: 93,
+    concept: "Compass",
+    filename: "tool_compass.jpg",
+    pool: "objects",
+    prompt: "Antique brass compass, north needle, glass face, map background, exploration.",
+    tags: { color: 'Warm', texture: 'Hard / Smooth', luminosity: 'Diffused / Hazy', form: 'Architectural' }
+  },
+  {
+    id: 94,
+    concept: "Paint Palette",
+    filename: "tool_palette.jpg",
+    pool: "objects",
+    prompt: "Artist wooden palette with messy colorful oil paints, brush, creative mess.",
+    tags: { color: 'Warm', texture: 'Fluid / Malleable', luminosity: 'Bright / Direct', form: 'Composite' }
+  },
+  {
+    id: 95,
+    concept: "Anchor",
+    filename: "tool_anchor.jpg",
+    pool: "objects",
+    prompt: "Large rusty iron ship anchor sitting on a dock, heavy, nautical texture.",
+    tags: { color: 'Monochrome', texture: 'Rough / Coarse', luminosity: 'Bright / Direct', form: 'Architectural' }
+  },
 
   // --- POOL: FOOD ---
-  { id: 96, concept: "Fresh Lemon", filename: "food_lemon.jpg", pool: "food", prompt: "Bright yellow lemon sliced in half, juice droplets, zest, fresh citrus, sunny background.", tags: { color: 'Warm (Red/Yel)', texture: 'Rough / Stone', luminosity: 'Bright / Day', form: 'Organic' } },
-  { id: 97, concept: "Coffee Beans", filename: "food_coffee.jpg", pool: "food", prompt: "Pile of roasted brown coffee beans, oily texture, aromatic, macro shot.", tags: { color: 'Nature (Grn/Brn)', texture: 'Hard / Smooth', luminosity: 'Dim / Shadow', form: 'Cluster' } },
-  { id: 98, concept: "Strawberry Cake", filename: "food_cake.jpg", pool: "food", prompt: "Slice of strawberry shortcake with whipped cream, red berries, fluffy sponge, delicious.", tags: { color: 'Warm (Red/Yel)', texture: 'Soft / Furry', luminosity: 'Bright / Day', form: 'Organic' } },
-  { id: 99, concept: "Red Wine", filename: "food_wine.jpg", pool: "food", prompt: "Red wine being poured into a crystal glass, splash, dark red liquid, elegant.", tags: { color: 'Warm (Red/Yel)', texture: 'Fluid / Wet', luminosity: 'Dim / Shadow', form: 'Fluid' } },
-  { id: 100, concept: "Chili Pepper", filename: "food_chili.jpg", pool: "food", prompt: "Red hot chili peppers, smooth skin, spicy food ingredient, fire concept.", tags: { color: 'Warm (Red/Yel)', texture: 'Hard / Smooth', luminosity: 'Dim / Shadow', form: 'Organic' } }
+  {
+    id: 96,
+    concept: "Fresh Lemon",
+    filename: "food_lemon.jpg",
+    pool: "food",
+    prompt: "Bright yellow lemon sliced in half, juice droplets, zest, fresh citrus, sunny background.",
+    tags: { color: 'Warm', texture: 'Rough / Coarse', luminosity: 'Bright / Direct', form: 'Biomorphic' }
+  },
+  {
+    id: 97,
+    concept: "Coffee Beans",
+    filename: "food_coffee.jpg",
+    pool: "food",
+    prompt: "Pile of roasted brown coffee beans, oily texture, aromatic, macro shot.",
+    tags: { color: 'Earthy', texture: 'Hard / Smooth', luminosity: 'Diffused / Hazy', form: 'Composite' }
+  },
+  {
+    id: 98,
+    concept: "Strawberry Cake",
+    filename: "food_cake.jpg",
+    pool: "food",
+    prompt: "Slice of strawberry shortcake with whipped cream, red berries, fluffy sponge, delicious.",
+    tags: { color: 'Warm', texture: 'Soft / Biological', luminosity: 'Bright / Direct', form: 'Biomorphic' }
+  },
+  {
+    id: 99,
+    concept: "Red Wine",
+    filename: "food_wine.jpg",
+    pool: "food",
+    prompt: "Red wine being poured into a crystal glass, splash, dark red liquid, elegant.",
+    tags: { color: 'Warm', texture: 'Fluid / Malleable', luminosity: 'Diffused / Hazy', form: 'Amorphous' }
+  },
+  {
+    id: 100,
+    concept: "Chili Pepper",
+    filename: "food_chili.jpg",
+    pool: "food",
+    prompt: "Red hot chili peppers, smooth skin, spicy food ingredient, fire concept.",
+    tags: { color: 'Warm', texture: 'Hard / Smooth', luminosity: 'Diffused / Hazy', form: 'Biomorphic' }
+  }
 ];
 
 // --- OBJECTIVE INFERENCE ENGINE ---
@@ -275,13 +976,11 @@ const inferSpecificTags = (level: LevelData, pool: string): Record<string, strin
       tags.temp = 'Temperate';
     }
     
-    // Light is retained from Universal Tags mapping logic if needed, or inferred separately?
-    // Using the Universal Tags 'luminosity' to help guide 'light' if needed, but the prompt asks for specific inference.
-    // We will leave the 'light' tag empty if not strictly inferable, OR map from Universal Luminosity.
-    // Mapping Universal Luminosity to Specific Light:
-    if (tags.luminosity === 'Bright / Day') tags.light = 'Sunny / Bright';
-    else if (tags.luminosity === 'Dark / Night') tags.light = 'Night / Dark';
-    else if (tags.luminosity === 'Dim / Shadow') tags.light = 'Stormy / Grey'; // Or Golden Hour
+    // MAPPING NEW HIGH-CONTRAST LUMINOSITY TO LANDSCAPE LIGHT
+    if (tags.luminosity === 'Bright / Direct') tags.light = 'Sunny / Bright';
+    else if (tags.luminosity === 'Dark / Shadowed') tags.light = 'Night / Dark';
+    else if (tags.luminosity === 'Diffused / Hazy') tags.light = 'Stormy / Grey';
+    else if (tags.luminosity === 'Glow / Source') tags.light = 'Golden Hour';
     else tags.light = 'Sunny / Bright';
   }
 
@@ -310,7 +1009,7 @@ const inferSpecificTags = (level: LevelData, pool: string): Record<string, strin
   if (pool === 'food') {
     if (concept.includes('lemon') || concept.includes('wine')) {
       tags.flavor = 'Sour / Acidic';
-      tags.food_texture = concept.includes('wine') ? 'Liquid / Wet' : 'Rough / Stone'; // Lemon skin
+      tags.food_texture = concept.includes('wine') ? 'Liquid / Wet' : 'Crunchy / Hard'; 
     } else if (concept.includes('cake') || concept.includes('choc')) {
       tags.flavor = 'Sweet';
       tags.food_texture = 'Soft / Creamy';
@@ -378,7 +1077,7 @@ export default function SensesApp() {
 
   // Initialize from LocalStorage & SessionStorage
   useEffect(() => {
-    const saved = localStorage.getItem('senses_history_v5_objective');
+    const saved = localStorage.getItem('senses_history_v6_highcontrast');
     if (saved) setHistory(JSON.parse(saved));
 
     const introSeen = sessionStorage.getItem('senses_intro_seen');
@@ -389,7 +1088,7 @@ export default function SensesApp() {
 
   // Persist History
   useEffect(() => {
-    localStorage.setItem('senses_history_v5_objective', JSON.stringify(history));
+    localStorage.setItem('senses_history_v6_highcontrast', JSON.stringify(history));
   }, [history]);
 
   // Scoring Logic
@@ -482,7 +1181,7 @@ export default function SensesApp() {
             THE ORACLE GATE
             </h1>
             <p className="text-indigo-300 font-serif italic tracking-wide text-lg">
-            Objective Remote Viewing Trainer v5
+            High-Contrast Remote Viewing Trainer v6
             </p>
         </div>
       </div>
@@ -839,7 +1538,7 @@ export default function SensesApp() {
                         onClick={() => {
                             if(confirm("Purge all akashic records? This cannot be undone.")) {
                                 setHistory([]);
-                                localStorage.removeItem('senses_history_v5_objective');
+                                localStorage.removeItem('senses_history_v6_highcontrast');
                                 setShowSettings(false);
                             }
                         }}
@@ -851,7 +1550,7 @@ export default function SensesApp() {
                 </div>
 
                 <div className="text-xs text-slate-600 italic text-center pt-4">
-                    Remote Viewing Trainer v5
+                    Remote Viewing Trainer v6
                 </div>
             </div>
           </div>
@@ -885,7 +1584,7 @@ export default function SensesApp() {
                             <h3 className="text-amber-500 font-serif uppercase tracking-widest text-xs">The Process</h3>
                             <ul className="space-y-2 list-disc pl-4 text-slate-400">
                                 <li><strong className="text-slate-200">Center Yourself:</strong> Take a deep breath. Clear your mind.</li>
-                                <li><strong className="text-slate-200">Be Objective:</strong> Do not guess "Lion". Sense "Furry", "Warm Color", "Organic Form".</li>
+                                <li><strong className="text-slate-200">Be Objective:</strong> Do not guess "Lion". Sense "Warm Color", "Biomorphic Form".</li>
                                 <li><strong className="text-slate-200">Select a Realm:</strong> Choose a specific category to focus your practice.</li>
                             </ul>
                         </div>
