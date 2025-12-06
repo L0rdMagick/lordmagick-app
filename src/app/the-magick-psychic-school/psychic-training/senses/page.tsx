@@ -1,19 +1,18 @@
-// --- START OF FILE page.tsx ---
-
 "use client";
 
 import React, { useState, useEffect } from 'react';
 import { 
   Settings, RefreshCw, Eye, Check, X, BarChart2, ArrowLeft, 
   Sparkles, Moon, Sun, Lock, Volume2, Home, LogOut, HelpCircle,
-  Download, Trash2, Save
+  Save, Trash2, Cloud
 } from 'lucide-react';
+import { createBrowserClient } from '@supabase/ssr';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
 
 // --- CONFIGURATION & CATEGORY DEFINITIONS ---
 
 const POOLS = [
-  { id: 'all', label: 'All Categories' }, // Renamed from "The Void"
+  { id: 'all', label: 'All Categories' }, // Renamed
   { id: 'animals', label: 'Animals' },
   { id: 'structures', label: 'Structures' },
   { id: 'landscapes', label: "Natural Formations" },
@@ -24,7 +23,7 @@ const POOLS = [
 type CategoryOption = { id: string; label: string; options: string[] };
 type PoolConfig = Record<string, CategoryOption>;
 
-// --- NEW HIGH-CONTRAST UNIVERSAL SCHEMA ---
+// --- HIGH-CONTRAST UNIVERSAL SCHEMA ---
 const UNIVERSAL_CATEGORIES: PoolConfig = {
   LUMINOSITY: { 
     id: 'luminosity', 
@@ -93,10 +92,29 @@ interface LevelData {
 
 // --- CARD BACK DEFINITIONS ---
 const CARD_BACKS = [
-  { id: 'default', name: 'Stardust', css: "bg-slate-950 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')]" },
-  { id: 'abyss', name: 'The Abyss', css: "bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-indigo-950 via-slate-950 to-black" },
-  { id: 'gate', name: 'Golden Gate', css: "bg-slate-950 border-[1px] border-amber-900/30" }, // Simple dark with faint border
-  { id: 'shroud', name: 'Crimson Shroud', css: "bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-red-950/40 via-slate-950 to-black" }
+  { 
+    id: 'default', 
+    name: 'Stardust', 
+    css: "bg-slate-950 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')]" 
+  },
+  { 
+    id: 'stars', 
+    name: 'Deep Space', 
+    // CSS trick for stars
+    css: "bg-black bg-[radial-gradient(white_1px,transparent_1px)] [background-size:16px_16px]" 
+  },
+  { 
+    id: 'hypnotic', 
+    name: 'Hypnotic', 
+    // Conic gradient rainbow
+    css: "bg-[conic-gradient(at_center,red,orange,yellow,green,blue,indigo,violet,red)]" 
+  },
+  { 
+    id: 'gold', 
+    name: 'Golden Metal', 
+    // Metallic gradient
+    css: "bg-linear-to-br from-yellow-700 via-yellow-200 to-yellow-800" 
+  }
 ];
 
 // --- FULL IMAGE DATABASE (100 ITEMS) ---
@@ -930,7 +948,7 @@ const inferSpecificTags = (level: LevelData, pool: string): Record<string, strin
     } else if (filename.includes('avian') || concept.includes('macaw') || concept.includes('eagle')) {
       tags.class = 'Bird';
       tags.skin = 'Feathers';
-      tags.action = 'Flying / Swimming'; // Defaulting to flying, unless specific context
+      tags.action = 'Flying / Swimming'; 
     } else if (filename.includes('insect')) {
       tags.class = 'Insect';
       tags.skin = 'Shell / Exoskeleton';
@@ -939,7 +957,6 @@ const inferSpecificTags = (level: LevelData, pool: string): Record<string, strin
       tags.class = 'Mammal';
       tags.skin = 'Fur / Hair';
       tags.action = 'Moving / Active';
-      // Specific override mentioned in prompt
       if (concept.includes('sleeping') || concept.includes('resting')) {
           tags.action = 'Resting / Still';
       }
@@ -961,7 +978,6 @@ const inferSpecificTags = (level: LevelData, pool: string): Record<string, strin
       tags.material = 'Wood / Organic';
       tags.struct_type = 'Dwelling / Home';
     } else {
-        // Fallback for cases not explicitly covered
         tags.time_period = 'Traditional';
         tags.material = 'Stone / Brick';
         tags.struct_type = 'Commercial / City';
@@ -978,7 +994,7 @@ const inferSpecificTags = (level: LevelData, pool: string): Record<string, strin
       tags.temp = 'Hot / Arid';
     } else if (concept.includes('forest') || concept.includes('jungle') || concept.includes('hills')) {
       tags.element = 'Greenery / Forest';
-      tags.temp = 'Temperate'; // Or tropical
+      tags.temp = 'Temperate'; 
       if (concept.includes('jungle')) tags.temp = 'Tropical / Humid';
     } else {
       tags.element = 'Air / Sky';
@@ -1029,7 +1045,6 @@ const inferSpecificTags = (level: LevelData, pool: string): Record<string, strin
       tags.flavor = 'Savory / Salty';
     }
     
-    // Fallback temps if not set above
     if (!tags.food_temp) {
         if (concept.includes('wine') || concept.includes('lemon')) tags.food_temp = 'Cold / Chilled';
         else tags.food_temp = 'Room Temp';
@@ -1070,29 +1085,41 @@ const Button = ({ onClick, children, variant = "primary", className = "", disabl
 // --- MAIN APP COMPONENT ---
 
 export default function SensesApp() {
+  const [supabase] = useState(() => createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  ));
+
   // State
   const [view, setView] = useState('welcome'); 
   const [currentLevel, setCurrentLevel] = useState<LevelData | null>(null);
   const [currentConfig, setCurrentConfig] = useState<PoolConfig>(UNIVERSAL_CATEGORIES);
   const [guesses, setGuesses] = useState<Record<string, string>>({});
   const [isRevealed, setIsRevealed] = useState(false);
+  
+  // Stats State
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [history, setHistory] = useState<any[]>([]);
+  const [history, setHistory] = useState<any[]>([]); // Lifetime local
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [sessionHistory, setSessionHistory] = useState<any[]>([]); // New session history
+  const [sessionHistory, setSessionHistory] = useState<any[]>([]); // Current session
+  
   const [selectedPool, setSelectedPool] = useState('all');
   const [cardBack, setCardBack] = useState('default');
   
   // Settings & Modal State
   const [showSettings, setShowSettings] = useState(false);
   const [showInstructions, setShowInstructions] = useState(false);
+  
+  // Saving State
+  const [saving, setSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
   // Initialize from LocalStorage & SessionStorage
   useEffect(() => {
     const saved = localStorage.getItem('senses_history_v7_complete');
     if (saved) setHistory(JSON.parse(saved));
 
-    // Show instructions on mount (every time the page component loads)
+    // Show instructions on mount every time page is visited
     setShowInstructions(true);
   }, []);
 
@@ -1157,7 +1184,7 @@ export default function SensesApp() {
     
     const resultRecord = {
       timestamp: Date.now(),
-      levelId: currentLevel.id, // ID is stored but not shown to user
+      levelId: currentLevel.id, 
       score: scoreData,
       guesses: guesses,
       correct: currentLevel.tags,
@@ -1269,19 +1296,19 @@ export default function SensesApp() {
             {/* Left Column: The "Hidden" Card */}
             <div className="lg:col-span-5 flex flex-col gap-4">
                 <Card className={`aspect-3/4 relative group transition-all duration-500 hover:border-indigo-500/50 ${activeCardBack.css} bg-cover bg-center`}>
-                    <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center">
-                        <div className="absolute inset-0 bg-indigo-900/10 radial-gradient-mask"></div>
-                        
-                        <div className="relative z-10 w-32 h-32 mb-8 rounded-full border border-indigo-500/20 flex items-center justify-center group-hover:scale-105 transition-transform duration-500">
+                    <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center bg-black/30 backdrop-blur-[1px]">
+                        <div className="relative z-10 w-32 h-32 mb-8 rounded-full border border-indigo-500/20 flex items-center justify-center group-hover:scale-105 transition-transform duration-500 bg-black/50">
                              <div className="absolute inset-0 border border-indigo-500/20 rounded-full animate-[spin_10s_linear_infinite]"></div>
                              <div className="absolute inset-2 border border-amber-500/10 rounded-full animate-[spin_15s_linear_infinite_reverse]"></div>
-                             <Lock className="w-8 h-8 text-indigo-400/50" />
+                             <Lock className="w-8 h-8 text-indigo-400/80 drop-shadow-md" />
                         </div>
 
-                        <h2 className="text-2xl font-serif text-slate-300 mb-2">Target Veiled</h2>
-                        <p className="text-sm text-slate-500 font-light">
-                           No visual data available. <br/>Rely on your inner senses.
-                        </p>
+                        <div className="relative z-10 bg-black/40 p-4 rounded-xl backdrop-blur-sm border border-white/5">
+                            <h2 className="text-2xl font-serif text-slate-200 mb-2 drop-shadow-md">Target Veiled</h2>
+                            <p className="text-sm text-slate-300 font-light drop-shadow-md">
+                            No visual data available. <br/>Rely on your inner senses.
+                            </p>
+                        </div>
                     </div>
                     {/* Corner accents */}
                     <div className="absolute top-2 left-2 w-4 h-4 border-t border-l border-amber-500/30"></div>
@@ -1477,28 +1504,48 @@ export default function SensesApp() {
   };
 
   const StatsView = () => {
-    // Determine active tab or show both? Let's show split view.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const calculateAvg = (arr: any[]) => arr.length > 0 ? Math.round(arr.reduce((acc, curr) => acc + curr.score.percentage, 0) / arr.length) : 0;
     
     const lifetimeAvg = calculateAvg(history);
     const sessionAvg = calculateAvg(sessionHistory);
 
-    const downloadStats = () => {
-        const dataStr = JSON.stringify(history, null, 2);
-        const blob = new Blob([dataStr], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `senses_history_${new Date().toISOString().split('T')[0]}.json`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+    const handleSaveToCloud = async () => {
+        setSaving(true);
+        setSaveMessage("UPLOADING...");
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) {
+            setSaveMessage("LOGIN REQUIRED");
+            setTimeout(() => setSaveMessage(null), 3000);
+            setSaving(false);
+            return;
+          }
+          
+          const { error } = await supabase
+            .from('reports')
+            .insert({
+              user_id: user.id,
+              name: 'Remote Viewing Trainer',
+              category: 'training', 
+              chart_data: { history, sessionHistory }, 
+              report_content: `Session Completed. Lifetime Avg: ${lifetimeAvg}%. Session Avg: ${sessionAvg}%. Total Visions: ${history.length}.`,
+            });
+          if (error) throw error;
+          setSaveMessage("SAVED TO CLOUD");
+        } catch (e) {
+          console.error(e);
+          setSaveMessage("UPLOAD FAILED");
+        } finally {
+          setTimeout(() => setSaveMessage(null), 3000);
+          setSaving(false);
+        }
     };
 
     const clearStats = () => {
-        if(confirm("Are you sure you want to erase all lifetime records? This cannot be undone.")) {
+        if(confirm("Are you sure you want to erase all local lifetime records? This cannot be undone.")) {
             setHistory([]);
+            setSessionHistory([]);
             localStorage.removeItem('senses_history_v7_complete');
         }
     };
@@ -1531,7 +1578,7 @@ export default function SensesApp() {
 
             {/* Lifetime Stats */}
             <div className="bg-slate-900/50 p-6 rounded-lg border border-amber-500/20">
-                <h3 className="text-xs text-amber-500/80 uppercase tracking-widest mb-4">Lifetime Records</h3>
+                <h3 className="text-xs text-amber-500/80 uppercase tracking-widest mb-4">Lifetime (Local)</h3>
                 <div className="grid grid-cols-2 gap-4 text-center">
                     <div>
                         <div className="text-3xl font-light text-white mb-1 font-serif">{history.length}</div>
@@ -1551,14 +1598,17 @@ export default function SensesApp() {
                 onClick={clearStats}
                 className="flex items-center gap-2 px-4 py-2 rounded border border-red-900/50 text-red-400 hover:bg-red-950/30 text-xs uppercase tracking-wider transition-colors"
             >
-                <Trash2 className="w-4 h-4" /> Erase Records
+                <Trash2 className="w-4 h-4" /> Erase Local Stats
             </button>
             <button 
-                onClick={downloadStats}
+                onClick={handleSaveToCloud}
+                disabled={saving}
                 className="flex items-center gap-2 px-4 py-2 rounded bg-indigo-900/50 border border-indigo-500/30 text-indigo-200 hover:bg-indigo-800/50 text-xs uppercase tracking-wider transition-colors"
             >
-                <Download className="w-4 h-4" /> Save Results
+                {saving ? <Sparkles className="w-4 h-4 animate-spin" /> : <Cloud className="w-4 h-4" />}
+                {saving ? "SAVING..." : "SAVE TO CLOUD"}
             </button>
+            {saveMessage && <span className="flex items-center text-xs text-indigo-400 animate-pulse">{saveMessage}</span>}
         </div>
 
         {/* List View */}
@@ -1589,8 +1639,11 @@ export default function SensesApp() {
     if (!showSettings) return null;
 
     return (
-      <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-100 flex items-center justify-center p-4 animate-in fade-in duration-200">
-        <Card className="w-full max-w-md bg-slate-950 border border-slate-800">
+      <div 
+        className="fixed inset-0 bg-black/90 backdrop-blur-md z-100 flex items-center justify-center p-4 animate-in fade-in duration-200"
+        onClick={() => setShowSettings(false)}
+      >
+        <Card className="w-full max-w-md bg-slate-950 border border-slate-800" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
           <div className="p-6 space-y-8">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-serif tracking-widest text-indigo-300 flex items-center gap-2">
@@ -1636,8 +1689,11 @@ export default function SensesApp() {
       if (!showInstructions) return null;
 
       return (
-        <div className="fixed inset-0 bg-black/95 backdrop-blur-md z-110 flex items-center justify-center p-4 animate-in fade-in duration-500">
-            <Card className="w-full max-w-lg bg-slate-950 border border-indigo-500/30">
+        <div 
+            className="fixed inset-0 bg-black/95 backdrop-blur-md z-110 flex items-center justify-center p-4 animate-in fade-in duration-500"
+            onClick={() => setShowInstructions(false)}
+        >
+            <Card className="w-full max-w-lg bg-slate-950 border border-indigo-500/30" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
                 <div className="p-8 space-y-6">
                     <div className="text-center space-y-2">
                         <Eye className="w-12 h-12 text-amber-500 mx-auto animate-pulse" />
@@ -1765,4 +1821,3 @@ export default function SensesApp() {
   );
 }
 
-// --- END OF FILE page.tsx ---
