@@ -14,56 +14,54 @@ import MagickalBackLink from '@/app/components/MagickalBackLink';
 const POOLS = [
   { id: 'all', label: 'The Void (All Realms)' },
   { id: 'animals', label: 'Animals' },
-  { id: 'structures', label: 'Ancient Structures' },
+  { id: 'structures', label: 'Structures' },
   { id: 'landscapes', label: "Natural Formations" },
   { id: 'objects', label: 'Random Objects' },
   { id: 'food', label: 'Food' }
 ];
 
-// --- CONTEXT AWARE CATEGORY DEFINITIONS ---
-// NOTE: 'id' and 'options' remain unchanged to preserve inference logic. 
-// Only 'label' is updated to match the mystical tone.
+// --- OBJECTIVE SENSORY DEFINITIONS (NEW SCHEMA) ---
 
 type CategoryOption = { id: string; label: string; options: string[] };
 type PoolConfig = Record<string, CategoryOption>;
 
 const UNIVERSAL_CATEGORIES: PoolConfig = {
-  GESTALT: { id: 'gestalt', label: 'Core Essence', options: ['Biological', 'Structure', 'Machine', 'Natural Feature'] },
-  COLOR: { id: 'color', label: 'Dominant Aura', options: ['Warm (Red/Yel)', 'Cool (Blue/Purp)', 'Nature (Grn/Brn)', 'Mono (Grey/Wht)'] },
-  TEXTURE: { id: 'texture', label: 'Tactile Sense', options: ['Soft / Organic', 'Hard / Smooth', 'Rough / Coarse', 'Fluid / Wet'] },
-  VIBE: { id: 'emotion', label: 'Energy Signature', options: ['Peaceful', 'High Energy', 'Melancholic', 'Intense / Scary'] }
+  COLOR: { id: 'color', label: 'Primary Color', options: ['Red / Warm', 'Blue / Cool', 'Green / Nature', 'Grey / B&W'] },
+  TEXTURE: { id: 'texture', label: 'Texture', options: ['Furry / Soft', 'Hard / Smooth', 'Rough / Stone', 'Wet / Fluid'] },
+  LUMINOSITY: { id: 'luminosity', label: 'Luminosity', options: ['Bright / Day', 'Dark / Night', 'Dim / Shadow', 'Artificial / Neon'] },
+  FORM: { id: 'form', label: 'Form', options: ['Organic / Curvy', 'Geometric / Boxy', 'Fluid / Flowing', 'Cluster / Many'] }
 };
 
 const POOL_CONFIGS: Record<string, PoolConfig> = {
   all: UNIVERSAL_CATEGORIES,
   animals: {
-    CLASS: { id: 'class', label: 'Spirit Form', options: ['Mammal', 'Bird', 'Marine', 'Insect/Bug'] },
-    DIET: { id: 'diet', label: 'Energy Source', options: ['Carnivore', 'Herbivore', 'Omnivore', 'Filter/Scavenger'] },
-    HABITAT: { id: 'habitat', label: 'Native Plane', options: ['Land / Forest', 'Water / Ocean', 'Air / Sky', 'Domestic'] },
+    CLASS: { id: 'class', label: 'Class', options: ['Mammal', 'Bird', 'Marine', 'Insect'] },
+    SKIN: { id: 'skin', label: 'Skin / Surface', options: ['Fur / Hair', 'Feathers', 'Scales / Wet', 'Shell / Exoskeleton'] },
+    ACTIVITY: { id: 'activity', label: 'Activity', options: ['Stationary / Resting', 'Moving / Action', 'Swimming', 'Flying'] },
     COLOR: UNIVERSAL_CATEGORIES.COLOR
   },
   structures: {
-    ERA: { id: 'era', label: 'Temporal Epoch', options: ['Ancient / Ruin', 'Classical / Trad', 'Modern / Industrial', 'Futuristic'] },
-    MATERIAL: { id: 'material', label: 'Base Matter', options: ['Stone / Brick', 'Metal / Glass', 'Wood / Organic', 'Concrete'] },
-    TYPE: { id: 'struct_type', label: 'Manifestation', options: ['Dwelling', 'Monument/Sacred', 'Infrastructure', 'Commercial'] },
-    VIBE: UNIVERSAL_CATEGORIES.VIBE
+    MATERIAL: { id: 'material', label: 'Material', options: ['Stone / Brick', 'Metal / Glass', 'Wood / Organic', 'Concrete'] },
+    AGE: { id: 'age', label: 'Time Period', options: ['Ancient / Ruin', 'Classical / Trad', 'Modern / Industrial', 'Futuristic'] },
+    TYPE: { id: 'struct_type', label: 'Structure Type', options: ['Dwelling / Home', 'Monument / Sacred', 'Infrastructure', 'Commercial / City'] },
+    FORM: UNIVERSAL_CATEGORIES.FORM
   },
   landscapes: {
-    ELEMENT: { id: 'element', label: 'Ruling Element', options: ['Water / Ice', 'Earth / Rock', 'Greenery / Plant', 'Air / Sky'] },
-    TEMP: { id: 'temp', label: 'Atmosphere', options: ['Hot / Arid', 'Cold / Frozen', 'Temperate / Mild', 'Humid / Tropical'] },
-    LIGHT: { id: 'light', label: 'Illumination', options: ['Bright / Sunny', 'Dark / Night', 'Overcast / Stormy', 'Golden Hour'] },
-    VIBE: UNIVERSAL_CATEGORIES.VIBE
+    ELEMENT: { id: 'element', label: 'Dominant Element', options: ['Water / Ice', 'Earth / Rock', 'Greenery / Plant', 'Air / Sky'] },
+    TEMP: { id: 'temp', label: 'Temperature (Visual)', options: ['Hot / Arid', 'Cold / Frozen', 'Mild / Temperate', 'Humid / Tropical'] },
+    LUMINOSITY: UNIVERSAL_CATEGORIES.LUMINOSITY,
+    FORM: UNIVERSAL_CATEGORIES.FORM
   },
   objects: {
-    MATERIAL: { id: 'obj_material', label: 'Composition', options: ['Metal', 'Wood / Paper', 'Plastic / Synthetic', 'Composite / Glass'] },
-    FUNCTION: { id: 'function', label: 'Intent / Use', options: ['Transport', 'Tool / Device', 'Art / Decor', 'Container'] },
-    COMPLEXITY: { id: 'complexity', label: 'Intricacy', options: ['Simple / Single', 'Mechanical', 'Electronic', 'Ornate'] },
-    COLOR: UNIVERSAL_CATEGORIES.COLOR
+    MATERIAL: { id: 'obj_material', label: 'Material', options: ['Metal', 'Wood / Paper', 'Plastic / Synthetic', 'Composite / Glass'] },
+    SURFACE: { id: 'surface', label: 'Surface Texture', options: ['Polished / Shiny', 'Matte / Dull', 'Rusted / Weathered', 'Complex / Detailed'] },
+    COMPLEXITY: { id: 'complexity', label: 'Complexity', options: ['Simple / Single', 'Mechanical', 'Electronic', 'Ornate / Art'] },
+    FORM: UNIVERSAL_CATEGORIES.FORM
   },
   food: {
-    FLAVOR: { id: 'flavor', label: 'Essence Profile', options: ['Sweet', 'Savory / Salty', 'Sour / Acidic', 'Bitter / Spicy'] },
-    STATE: { id: 'state', label: 'Physical State', options: ['Solid / Dry', 'Liquid / Wet', 'Soft / Creamy', 'Crunchy'] },
-    SOURCE: { id: 'source', label: 'Origin', options: ['Plant / Fruit', 'Meat / Protein', 'Baked / Grain', 'Beverage'] },
+    TASTE: { id: 'flavor', label: 'Flavor Profile', options: ['Sweet', 'Savory / Salty', 'Sour / Acidic', 'Bitter / Spicy'] },
+    TEMP: { id: 'food_temp', label: 'Serving Temp', options: ['Hot / Cooked', 'Cold / Frozen', 'Room Temp', 'Boiling / Steaming'] },
+    TEXTURE: { id: 'food_texture', label: 'Mouthfeel', options: ['Crunchy / Hard', 'Soft / Creamy', 'Liquid / Wet', 'Fibrous / Chewy'] },
     COLOR: UNIVERSAL_CATEGORIES.COLOR
   }
 };
@@ -74,931 +72,252 @@ interface LevelData {
     filename: string;
     pool: string;
     prompt: string;
-    tags: Record<string, string>; // These are the Universal Tags stored in DB
+    tags: Record<string, string>; // Tags are now generated dynamically at runtime
 }
 
 // --- FULL IMAGE DATABASE (100 ITEMS) ---
 
 const LEVEL_DATA: LevelData[] = [
   // --- POOL: ANIMALS ---
-  {
-    id: 1,
-    concept: "Roaring Lion",
-    filename: "predator_lion.jpg",
-    pool: "animals",
-    prompt: "Cinematic close up of a male lion roaring, golden hour lighting, savannah background, intense eyes, sharp teeth, dust motes in air.",
-    tags: { gestalt: 'Biological', color: 'Warm (Red/Yel)', texture: 'Soft / Organic', smell: 'Stagnant / Dust', taste: 'Sweet / Savory', sound: 'Chaotic / Loud', emotion: 'Intense / Scary' }
-  },
-  {
-    id: 2,
-    concept: "Great White Shark",
-    filename: "predator_shark.jpg",
-    pool: "animals",
-    prompt: "Underwater shot of a great white shark swimming towards camera, deep blue ocean, light rays breaking through water, sharp teeth visible.",
-    tags: { gestalt: 'Biological', color: 'Cool (Blue/Purp)', texture: 'Hard / Smooth', smell: 'Fresh / Nature', taste: 'Salty / Mineral', sound: 'Silence', emotion: 'Intense / Scary' }
-  },
-  {
-    id: 3,
-    concept: "Wolf Howling",
-    filename: "predator_wolf.jpg",
-    pool: "animals",
-    prompt: "Grey wolf howling at a full moon, snowy forest night, breath visible in cold air, atmospheric, high contrast.",
-    tags: { gestalt: 'Biological', color: 'Mono (Grey/Wht)', texture: 'Soft / Organic', smell: 'Fresh / Nature', taste: 'Sweet / Savory', sound: 'Nature Sounds', emotion: 'Melancholic' }
-  },
-  {
-    id: 4,
-    concept: "Tiger Stalking",
-    filename: "predator_tiger.jpg",
-    pool: "animals",
-    prompt: "Bengal tiger walking through tall green grass, orange and black stripes, intense focus, jungle environment.",
-    tags: { gestalt: 'Biological', color: 'Warm (Red/Yel)', texture: 'Soft / Organic', smell: 'Fresh / Nature', taste: 'Sweet / Savory', sound: 'Silence', emotion: 'Intense / Scary' }
-  },
-  {
-    id: 5,
-    concept: "Grizzly Bear",
-    filename: "predator_bear.jpg",
-    pool: "animals",
-    prompt: "Massive grizzly bear standing in a river catching a salmon, splashing water, wet fur, nature photography.",
-    tags: { gestalt: 'Biological', color: 'Nature (Grn/Brn)', texture: 'Soft / Organic', smell: 'Stagnant / Dust', taste: 'Sweet / Savory', sound: 'Nature Sounds', emotion: 'Intense / Scary' }
-  },
-  {
-    id: 6,
-    concept: "Deer in Mist",
-    filename: "herbivore_deer.jpg",
-    pool: "animals",
-    prompt: "A deer standing in a misty forest clearing at dawn, soft light, antlers, peaceful atmosphere.",
-    tags: { gestalt: 'Biological', color: 'Nature (Grn/Brn)', texture: 'Soft / Organic', smell: 'Fresh / Nature', taste: 'Neutral / Dry', sound: 'Silence', emotion: 'Peaceful' }
-  },
-  {
-    id: 7,
-    concept: "Giraffe",
-    filename: "herbivore_giraffe.jpg",
-    pool: "animals",
-    prompt: "Tall giraffe eating leaves from an acacia tree, blue sky background, sunny day on the African plains.",
-    tags: { gestalt: 'Biological', color: 'Warm (Red/Yel)', texture: 'Soft / Organic', smell: 'Stagnant / Dust', taste: 'Neutral / Dry', sound: 'Nature Sounds', emotion: 'Peaceful' }
-  },
-  {
-    id: 8,
-    concept: "Giant Panda",
-    filename: "herbivore_panda.jpg",
-    pool: "animals",
-    prompt: "Giant panda sitting and eating bamboo, black and white fur, green bamboo forest background.",
-    tags: { gestalt: 'Biological', color: 'Mono (Grey/Wht)', texture: 'Soft / Organic', smell: 'Fresh / Nature', taste: 'Neutral / Dry', sound: 'Nature Sounds', emotion: 'Peaceful' }
-  },
-  {
-    id: 9,
-    concept: "Elephant",
-    filename: "herbivore_elephant.jpg",
-    pool: "animals",
-    prompt: "Close up of an elephant skin texture and eye, trunk raised, dusty environment, wrinkled gray skin.",
-    tags: { gestalt: 'Biological', color: 'Mono (Grey/Wht)', texture: 'Rough / Coarse', smell: 'Stagnant / Dust', taste: 'Salty / Mineral', sound: 'Chaotic / Loud', emotion: 'Peaceful' }
-  },
-  {
-    id: 10,
-    concept: "Rabbit",
-    filename: "herbivore_rabbit.jpg",
-    pool: "animals",
-    prompt: "Small white fluffy rabbit sitting in green grass, twitching nose, clover flowers, cute, macro photography.",
-    tags: { gestalt: 'Biological', color: 'Mono (Grey/Wht)', texture: 'Soft / Organic', smell: 'Fresh / Nature', taste: 'Neutral / Dry', sound: 'Silence', emotion: 'Peaceful' }
-  },
-  {
-    id: 11,
-    concept: "Scarlet Macaw",
-    filename: "avian_macaw.jpg",
-    pool: "animals",
-    prompt: "Bright red scarlet macaw parrot flying, colorful feathers, blue sky, tropical jungle background.",
-    tags: { gestalt: 'Biological', color: 'Warm (Red/Yel)', texture: 'Soft / Organic', smell: 'Sweet / Food', taste: 'Sweet / Savory', sound: 'Chaotic / Loud', emotion: 'High Energy' }
-  },
-  {
-    id: 12,
-    concept: "Bald Eagle",
-    filename: "avian_eagle.jpg",
-    pool: "animals",
-    prompt: "Bald eagle soaring high above mountains, wings spread wide, sharp beak, fierce expression.",
-    tags: { gestalt: 'Biological', color: 'Nature (Grn/Brn)', texture: 'Soft / Organic', smell: 'Fresh / Nature', taste: 'Salty / Mineral', sound: 'Nature Sounds', emotion: 'High Energy' }
-  },
-  {
-    id: 13,
-    concept: "Peacock",
-    filename: "avian_peacock.jpg",
-    pool: "animals",
-    prompt: "Peacock displaying full tail feathers, iridescent blue and green patterns, majestic pose.",
-    tags: { gestalt: 'Biological', color: 'Cool (Blue/Purp)', texture: 'Soft / Organic', smell: 'Stagnant / Dust', taste: 'Neutral / Dry', sound: 'Mechanical', emotion: 'High Energy' }
-  },
-  {
-    id: 14,
-    concept: "Owl at Night",
-    filename: "avian_owl.jpg",
-    pool: "animals",
-    prompt: "Great horned owl perched on a branch at night, large yellow eyes glowing, dark forest, moonlight.",
-    tags: { gestalt: 'Biological', color: 'Nature (Grn/Brn)', texture: 'Soft / Organic', smell: 'Stagnant / Dust', taste: 'Neutral / Dry', sound: 'Silence', emotion: 'Melancholic' }
-  },
-  {
-    id: 15,
-    concept: "Swan",
-    filename: "avian_swan.jpg",
-    pool: "animals",
-    prompt: "Elegant white swan floating on a calm lake, reflection in water, peaceful, graceful.",
-    tags: { gestalt: 'Biological', color: 'Mono (Grey/Wht)', texture: 'Soft / Organic', smell: 'Fresh / Nature', taste: 'Neutral / Dry', sound: 'Silence', emotion: 'Peaceful' }
-  },
-  {
-    id: 16,
-    concept: "Octopus",
-    filename: "marine_octopus.jpg",
-    pool: "animals",
-    prompt: "Red octopus moving underwater, tentacles swirling, suckers visible, coral reef background.",
-    tags: { gestalt: 'Biological', color: 'Warm (Red/Yel)', texture: 'Fluid / Wet', smell: 'Salty / Mineral', taste: 'Salty / Mineral', sound: 'Silence', emotion: 'High Energy' }
-  },
-  {
-    id: 17,
-    concept: "Jellyfish",
-    filename: "marine_jellyfish.jpg",
-    pool: "animals",
-    prompt: "Glowing blue jellyfish floating in deep black water, translucent, bioluminescent, ethereal.",
-    tags: { gestalt: 'Biological', color: 'Cool (Blue/Purp)', texture: 'Fluid / Wet', smell: 'Salty / Mineral', taste: 'Salty / Mineral', sound: 'Silence', emotion: 'Peaceful' }
-  },
-  {
-    id: 18,
-    concept: "Clownfish",
-    filename: "marine_clownfish.jpg",
-    pool: "animals",
-    prompt: "Orange and white clownfish hiding in a purple anemone, underwater macro photography, vibrant colors.",
-    tags: { gestalt: 'Biological', color: 'Warm (Red/Yel)', texture: 'Fluid / Wet', smell: 'Salty / Mineral', taste: 'Salty / Mineral', sound: 'Silence', emotion: 'Peaceful' }
-  },
-  {
-    id: 19,
-    concept: "Sea Turtle",
-    filename: "marine_turtle.jpg",
-    pool: "animals",
-    prompt: "Green sea turtle swimming gracefully underwater, sunbeams from surface, detailed shell texture.",
-    tags: { gestalt: 'Biological', color: 'Nature (Grn/Brn)', texture: 'Hard / Smooth', smell: 'Salty / Mineral', taste: 'Salty / Mineral', sound: 'Silence', emotion: 'Peaceful' }
-  },
-  {
-    id: 20,
-    concept: "Koi Fish",
-    filename: "marine_koi.jpg",
-    pool: "animals",
-    prompt: "Top down view of a pond with orange and white koi fish swimming, lily pads, ripples in water.",
-    tags: { gestalt: 'Biological', color: 'Warm (Red/Yel)', texture: 'Fluid / Wet', smell: 'Fresh / Nature', taste: 'Neutral / Dry', sound: 'Nature Sounds', emotion: 'Peaceful' }
-  },
-  {
-    id: 21,
-    concept: "Butterfly",
-    filename: "insect_butterfly.jpg",
-    pool: "animals",
-    prompt: "Monarch butterfly resting on a purple flower, macro shot, shallow depth of field, sunny garden.",
-    tags: { gestalt: 'Biological', color: 'Warm (Red/Yel)', texture: 'Soft / Organic', smell: 'Sweet / Food', taste: 'Sweet / Savory', sound: 'Silence', emotion: 'Peaceful' }
-  },
-  {
-    id: 22,
-    concept: "Spider Web",
-    filename: "insect_spider.jpg",
-    pool: "animals",
-    prompt: "Black spider sitting in the center of a dew-covered web, morning light, geometric web pattern.",
-    tags: { gestalt: 'Biological', color: 'Mono (Grey/Wht)', texture: 'Soft / Organic', smell: 'Fresh / Nature', taste: 'Bitter / Slimy', sound: 'Silence', emotion: 'Intense / Scary' }
-  },
-  {
-    id: 23,
-    concept: "Honey Bee",
-    filename: "insect_bee.jpg",
-    pool: "animals",
-    prompt: "Honey bee collecting pollen from a yellow sunflower, extreme macro, fuzzy texture, bright sunlight.",
-    tags: { gestalt: 'Biological', color: 'Warm (Red/Yel)', texture: 'Soft / Organic', smell: 'Sweet / Food', taste: 'Sweet / Savory', sound: 'Mechanical', emotion: 'High Energy' }
-  },
-  {
-    id: 24,
-    concept: "Snail",
-    filename: "insect_snail.jpg",
-    pool: "animals",
-    prompt: "Snail crawling on a wet green leaf, spiral shell, slime trail, rain drops, macro.",
-    tags: { gestalt: 'Biological', color: 'Nature (Grn/Brn)', texture: 'Fluid / Wet', smell: 'Earthy / Musty', taste: 'Bitter / Slimy', sound: 'Silence', emotion: 'Peaceful' }
-  },
-  {
-    id: 25,
-    concept: "Dragonfly",
-    filename: "insect_dragonfly.jpg",
-    pool: "animals",
-    prompt: "Blue metallic dragonfly resting on a reed, wings spread, iridescent eyes, pond background.",
-    tags: { gestalt: 'Biological', color: 'Cool (Blue/Purp)', texture: 'Hard / Smooth', smell: 'Fresh / Nature', taste: 'Bitter / Slimy', sound: 'Mechanical', emotion: 'Peaceful' }
-  },
+  { id: 1, concept: "Roaring Lion", filename: "predator_lion.jpg", pool: "animals", prompt: "Cinematic close up of a male lion roaring, golden hour lighting, savannah background, intense eyes, sharp teeth.", tags: {} },
+  { id: 2, concept: "Great White Shark", filename: "predator_shark.jpg", pool: "animals", prompt: "Underwater shot of a great white shark swimming towards camera, deep blue ocean.", tags: {} },
+  { id: 3, concept: "Wolf Howling", filename: "predator_wolf.jpg", pool: "animals", prompt: "Grey wolf howling at a full moon, snowy forest night, breath visible.", tags: {} },
+  { id: 4, concept: "Tiger Stalking", filename: "predator_tiger.jpg", pool: "animals", prompt: "Bengal tiger walking through tall green grass, orange and black stripes.", tags: {} },
+  { id: 5, concept: "Grizzly Bear", filename: "predator_bear.jpg", pool: "animals", prompt: "Massive grizzly bear standing in a river catching a salmon, splashing water.", tags: {} },
+  { id: 6, concept: "Deer in Mist", filename: "herbivore_deer.jpg", pool: "animals", prompt: "A deer standing in a misty forest clearing at dawn, soft light, antlers.", tags: {} },
+  { id: 7, concept: "Giraffe", filename: "herbivore_giraffe.jpg", pool: "animals", prompt: "Tall giraffe eating leaves from an acacia tree, blue sky background.", tags: {} },
+  { id: 8, concept: "Giant Panda", filename: "herbivore_panda.jpg", pool: "animals", prompt: "Giant panda sitting and eating bamboo, black and white fur.", tags: {} },
+  { id: 9, concept: "Elephant", filename: "herbivore_elephant.jpg", pool: "animals", prompt: "Close up of an elephant skin texture and eye, trunk raised, dusty environment.", tags: {} },
+  { id: 10, concept: "Rabbit", filename: "herbivore_rabbit.jpg", pool: "animals", prompt: "Small white fluffy rabbit sitting in green grass, cute, macro.", tags: {} },
+  { id: 11, concept: "Scarlet Macaw", filename: "avian_macaw.jpg", pool: "animals", prompt: "Bright red scarlet macaw parrot flying, colorful feathers, blue sky.", tags: {} },
+  { id: 12, concept: "Bald Eagle", filename: "avian_eagle.jpg", pool: "animals", prompt: "Bald eagle soaring high above mountains, wings spread wide.", tags: {} },
+  { id: 13, concept: "Peacock", filename: "avian_peacock.jpg", pool: "animals", prompt: "Peacock displaying full tail feathers, iridescent blue and green patterns.", tags: {} },
+  { id: 14, concept: "Owl at Night", filename: "avian_owl.jpg", pool: "animals", prompt: "Great horned owl perched on a branch at night, large yellow eyes glowing.", tags: {} },
+  { id: 15, concept: "Swan", filename: "avian_swan.jpg", pool: "animals", prompt: "Elegant white swan floating on a calm lake, reflection in water.", tags: {} },
+  { id: 16, concept: "Octopus", filename: "marine_octopus.jpg", pool: "animals", prompt: "Red octopus moving underwater, tentacles swirling, suckers visible.", tags: {} },
+  { id: 17, concept: "Jellyfish", filename: "marine_jellyfish.jpg", pool: "animals", prompt: "Glowing blue jellyfish floating in deep black water, translucent.", tags: {} },
+  { id: 18, concept: "Clownfish", filename: "marine_clownfish.jpg", pool: "animals", prompt: "Orange and white clownfish hiding in a purple anemone.", tags: {} },
+  { id: 19, concept: "Sea Turtle", filename: "marine_turtle.jpg", pool: "animals", prompt: "Green sea turtle swimming gracefully underwater, sunbeams from surface.", tags: {} },
+  { id: 20, concept: "Koi Fish", filename: "marine_koi.jpg", pool: "animals", prompt: "Top down view of a pond with orange and white koi fish swimming.", tags: {} },
+  { id: 21, concept: "Butterfly", filename: "insect_butterfly.jpg", pool: "animals", prompt: "Monarch butterfly resting on a purple flower, macro shot.", tags: {} },
+  { id: 22, concept: "Spider Web", filename: "insect_spider.jpg", pool: "animals", prompt: "Black spider sitting in the center of a dew-covered web, morning light.", tags: {} },
+  { id: 23, concept: "Honey Bee", filename: "insect_bee.jpg", pool: "animals", prompt: "Honey bee collecting pollen from a yellow sunflower, extreme macro.", tags: {} },
+  { id: 24, concept: "Snail", filename: "insect_snail.jpg", pool: "animals", prompt: "Snail crawling on a wet green leaf, spiral shell, slime trail.", tags: {} },
+  { id: 25, concept: "Dragonfly", filename: "insect_dragonfly.jpg", pool: "animals", prompt: "Blue metallic dragonfly resting on a reed, wings spread.", tags: {} },
 
   // --- POOL: STRUCTURES ---
-  {
-    id: 26,
-    concept: "Great Pyramid",
-    filename: "ruin_pyramid.jpg",
-    pool: "structures",
-    prompt: "The Great Pyramids of Giza, yellow sand, blue sky, camels in distance, ancient stone texture.",
-    tags: { gestalt: 'Structure', color: 'Warm (Red/Yel)', texture: 'Rough / Coarse', smell: 'Stagnant / Dust', taste: 'Salty / Mineral', sound: 'Silence', emotion: 'Melancholic' }
-  },
-  {
-    id: 27,
-    concept: "Stonehenge",
-    filename: "ruin_stonehenge.jpg",
-    pool: "structures",
-    prompt: "Stonehenge stone circle at sunset, green grass, orange sky, massive standing stones, mystical.",
-    tags: { gestalt: 'Structure', color: 'Nature (Grn/Brn)', texture: 'Rough / Coarse', smell: 'Fresh / Nature', taste: 'Salty / Mineral', sound: 'Nature Sounds', emotion: 'Melancholic' }
-  },
-  {
-    id: 28,
-    concept: "Roman Colosseum",
-    filename: "ruin_colosseum.jpg",
-    pool: "structures",
-    prompt: "Interior view of the Roman Colosseum, broken stone arches, ancient ruins, sunlight and shadow.",
-    tags: { gestalt: 'Structure', color: 'Warm (Red/Yel)', texture: 'Rough / Coarse', smell: 'Stagnant / Dust', taste: 'Salty / Mineral', sound: 'Silence', emotion: 'Intense / Scary' }
-  },
-  {
-    id: 29,
-    concept: "Mayan Temple",
-    filename: "ruin_mayan.jpg",
-    pool: "structures",
-    prompt: "Chichen Itza Mayan pyramid surrounded by dense green jungle, stone steps, ancient history.",
-    tags: { gestalt: 'Structure', color: 'Nature (Grn/Brn)', texture: 'Rough / Coarse', smell: 'Earthy / Musty', taste: 'Salty / Mineral', sound: 'Nature Sounds', emotion: 'Peaceful' }
-  },
-  {
-    id: 30,
-    concept: "Moai Statues",
-    filename: "ruin_moai.jpg",
-    pool: "structures",
-    prompt: "Easter Island Moai heads standing on a grassy hill, ocean in background, overcast sky, mysterious.",
-    tags: { gestalt: 'Structure', color: 'Mono (Grey/Wht)', texture: 'Rough / Coarse', smell: 'Salty / Mineral', taste: 'Salty / Mineral', sound: 'Nature Sounds', emotion: 'Melancholic' }
-  },
-  {
-    id: 31,
-    concept: "Glass Skyscraper",
-    filename: "arch_skyscraper.jpg",
-    pool: "structures",
-    prompt: "Looking up at a modern glass skyscraper reflecting the blue sky, geometric lines, corporate architecture.",
-    tags: { gestalt: 'Structure', color: 'Cool (Blue/Purp)', texture: 'Hard / Smooth', smell: 'Chemical / City', taste: 'Metallic / Chem', sound: 'Mechanical', emotion: 'High Energy' }
-  },
-  {
-    id: 32,
-    concept: "Sydney Opera House",
-    filename: "arch_opera.jpg",
-    pool: "structures",
-    prompt: "Sydney Opera House shells against a blue harbor, white ceramic tiles, architectural icon, sunny day.",
-    tags: { gestalt: 'Structure', color: 'Mono (Grey/Wht)', texture: 'Hard / Smooth', smell: 'Salty / Mineral', taste: 'Salty / Mineral', sound: 'Nature Sounds', emotion: 'High Energy' }
-  },
-  {
-    id: 33,
-    concept: "Neon City Street",
-    filename: "arch_neon.jpg",
-    pool: "structures",
-    prompt: "Cyberpunk style city street at night, neon signs in rain, wet pavement reflections, futuristic buildings.",
-    tags: { gestalt: 'Structure', color: 'Cool (Blue/Purp)', texture: 'Hard / Smooth', smell: 'Chemical / City', taste: 'Metallic / Chem', sound: 'Chaotic / Loud', emotion: 'High Energy' }
-  },
-  {
-    id: 34,
-    concept: "Minimalist Concrete",
-    filename: "arch_concrete.jpg",
-    pool: "structures",
-    prompt: "Brutalist architecture, raw grey concrete wall with sharp shadows, minimalist, geometric shapes.",
-    tags: { gestalt: 'Structure', color: 'Mono (Grey/Wht)', texture: 'Rough / Coarse', smell: 'Stagnant / Dust', taste: 'Salty / Mineral', sound: 'Silence', emotion: 'Peaceful' }
-  },
-  {
-    id: 35,
-    concept: "Suspension Bridge",
-    filename: "arch_bridge.jpg",
-    pool: "structures",
-    prompt: "Golden Gate Bridge in fog, red metal cables, spanning over water, engineering marvel.",
-    tags: { gestalt: 'Structure', color: 'Warm (Red/Yel)', texture: 'Hard / Smooth', smell: 'Salty / Mineral', taste: 'Metallic / Chem', sound: 'Mechanical', emotion: 'High Energy' }
-  },
-  {
-    id: 36,
-    concept: "Oil Refinery",
-    filename: "ind_refinery.jpg",
-    pool: "structures",
-    prompt: "Oil refinery at night with lights and smoke stacks, complex pipes, industrial metal structures.",
-    tags: { gestalt: 'Structure', color: 'Mono (Grey/Wht)', texture: 'Hard / Smooth', smell: 'Chemical / City', taste: 'Metallic / Chem', sound: 'Mechanical', emotion: 'Intense / Scary' }
-  },
-  {
-    id: 37,
-    concept: "Rusted Factory",
-    filename: "ind_factory.jpg",
-    pool: "structures",
-    prompt: "Abandoned factory interior, rusted machinery, broken windows, light beams through dust, decay.",
-    tags: { gestalt: 'Structure', color: 'Warm (Red/Yel)', texture: 'Rough / Coarse', smell: 'Stagnant / Dust', taste: 'Metallic / Chem', sound: 'Silence', emotion: 'Melancholic' }
-  },
-  {
-    id: 38,
-    concept: "Cargo Port",
-    filename: "ind_port.jpg",
-    pool: "structures",
-    prompt: "Aerial view of shipping containers at a port, colorful metal boxes, cranes, industrial logistics.",
-    tags: { gestalt: 'Structure', color: 'Cool (Blue/Purp)', texture: 'Hard / Smooth', smell: 'Chemical / City', taste: 'Metallic / Chem', sound: 'Mechanical', emotion: 'High Energy' }
-  },
-  {
-    id: 39,
-    concept: "Wind Farm",
-    filename: "ind_windfarm.jpg",
-    pool: "structures",
-    prompt: "White wind turbines on a green hill, blue sky, renewable energy, clean lines, rotating blades.",
-    tags: { gestalt: 'Structure', color: 'Mono (Grey/Wht)', texture: 'Hard / Smooth', smell: 'Fresh / Nature', taste: 'Neutral / Dry', sound: 'Mechanical', emotion: 'Peaceful' }
-  },
-  {
-    id: 40,
-    concept: "Train Tracks",
-    filename: "ind_tracks.jpg",
-    pool: "structures",
-    prompt: "Railway tracks vanishing into the distance, gravel, steel rails, wooden ties, overcast day.",
-    tags: { gestalt: 'Structure', color: 'Mono (Grey/Wht)', texture: 'Rough / Coarse', smell: 'Chemical / City', taste: 'Metallic / Chem', sound: 'Mechanical', emotion: 'Melancholic' }
-  },
-  {
-    id: 41,
-    concept: "Buddhist Temple",
-    filename: "sacred_buddhist.jpg",
-    pool: "structures",
-    prompt: "Golden Buddhist temple roof with curved edges, incense smoke, peaceful courtyard, red columns.",
-    tags: { gestalt: 'Structure', color: 'Warm (Red/Yel)', texture: 'Hard / Smooth', smell: 'Sweet / Food', taste: 'Neutral / Dry', sound: 'Silence', emotion: 'Peaceful' }
-  },
-  {
-    id: 42,
-    concept: "Stained Glass",
-    filename: "sacred_stainedglass.jpg",
-    pool: "structures",
-    prompt: "Detailed stained glass window in a dark church, light shining through creating colorful patterns on floor.",
-    tags: { gestalt: 'Structure', color: 'Cool (Blue/Purp)', texture: 'Hard / Smooth', smell: 'Stagnant / Dust', taste: 'Neutral / Dry', sound: 'Silence', emotion: 'Peaceful' }
-  },
-  {
-    id: 43,
-    concept: "Zen Garden",
-    filename: "sacred_zen.jpg",
-    pool: "structures",
-    prompt: "Japanese Zen rock garden, raked white sand patterns, mossy rocks, peaceful meditation space.",
-    tags: { gestalt: 'Natural Feature', color: 'Mono (Grey/Wht)', texture: 'Rough / Coarse', smell: 'Fresh / Nature', taste: 'Neutral / Dry', sound: 'Silence', emotion: 'Peaceful' }
-  },
-  {
-    id: 44,
-    concept: "Candle Altar",
-    filename: "sacred_candles.jpg",
-    pool: "structures",
-    prompt: "Dozens of lit candles in a dark stone room, warm glow, dripping wax, spiritual atmosphere.",
-    tags: { gestalt: 'Machine', color: 'Warm (Red/Yel)', texture: 'Fluid / Wet', smell: 'Burnt / Smoky', taste: 'Neutral / Dry', sound: 'Silence', emotion: 'Peaceful' }
-  },
-  {
-    id: 45,
-    concept: "Torii Gate",
-    filename: "sacred_torii.jpg",
-    pool: "structures",
-    prompt: "Red Torii gate standing in calm water, Itsukushima shrine, foggy mountains in background, serene.",
-    tags: { gestalt: 'Structure', color: 'Warm (Red/Yel)', texture: 'Hard / Smooth', smell: 'Fresh / Nature', taste: 'Neutral / Dry', sound: 'Nature Sounds', emotion: 'Peaceful' }
-  },
-  {
-    id: 46,
-    concept: "Cozy Fireplace",
-    filename: "home_fireplace.jpg",
-    pool: "structures",
-    prompt: "Roaring fire in a stone fireplace, cozy living room, rug, warm light, winter evening.",
-    tags: { gestalt: 'Structure', color: 'Warm (Red/Yel)', texture: 'Rough / Coarse', smell: 'Burnt / Smoky', taste: 'Sweet / Savory', sound: 'Nature Sounds', emotion: 'Peaceful' }
-  },
-  {
-    id: 47,
-    concept: "Modern Kitchen",
-    filename: "home_kitchen.jpg",
-    pool: "structures",
-    prompt: "Clean modern kitchen with marble island, stainless steel appliances, white cabinets, bowl of fruit.",
-    tags: { gestalt: 'Structure', color: 'Mono (Grey/Wht)', texture: 'Hard / Smooth', smell: 'Sweet / Food', taste: 'Sweet / Savory', sound: 'Mechanical', emotion: 'High Energy' }
-  },
-  {
-    id: 48,
-    concept: "Old Library",
-    filename: "home_library.jpg",
-    pool: "structures",
-    prompt: "Walls of old leather books in a library, wooden ladder, dust motes, warm lamp light, studious.",
-    tags: { gestalt: 'Structure', color: 'Warm (Red/Yel)', texture: 'Rough / Coarse', smell: 'Earthy / Musty', taste: 'Neutral / Dry', sound: 'Silence', emotion: 'Peaceful' }
-  },
-  {
-    id: 49,
-    concept: "Spiral Staircase",
-    filename: "home_stairs.jpg",
-    pool: "structures",
-    prompt: "Looking down a wooden spiral staircase, geometric swirl, architectural detail, shadows.",
-    tags: { gestalt: 'Structure', color: 'Nature (Grn/Brn)', texture: 'Hard / Smooth', smell: 'Stagnant / Dust', taste: 'Neutral / Dry', sound: 'Silence', emotion: 'Melancholic' }
-  },
-  {
-    id: 50,
-    concept: "Bedroom Window",
-    filename: "home_window.jpg",
-    pool: "structures",
-    prompt: "View from a cozy bed looking out a window at rain, coffee cup on sill, blankets, moody morning.",
-    tags: { gestalt: 'Structure', color: 'Cool (Blue/Purp)', texture: 'Soft / Organic', smell: 'Fresh / Nature', taste: 'Neutral / Dry', sound: 'Nature Sounds', emotion: 'Peaceful' }
-  },
+  { id: 26, concept: "Great Pyramid", filename: "ruin_pyramid.jpg", pool: "structures", prompt: "The Great Pyramids of Giza, yellow sand, blue sky.", tags: {} },
+  { id: 27, concept: "Stonehenge", filename: "ruin_stonehenge.jpg", pool: "structures", prompt: "Stonehenge stone circle at sunset, green grass, orange sky.", tags: {} },
+  { id: 28, concept: "Roman Colosseum", filename: "ruin_colosseum.jpg", pool: "structures", prompt: "Interior view of the Roman Colosseum, broken stone arches.", tags: {} },
+  { id: 29, concept: "Mayan Temple", filename: "ruin_mayan.jpg", pool: "structures", prompt: "Chichen Itza Mayan pyramid surrounded by dense green jungle.", tags: {} },
+  { id: 30, concept: "Moai Statues", filename: "ruin_moai.jpg", pool: "structures", prompt: "Easter Island Moai heads standing on a grassy hill, overcast.", tags: {} },
+  { id: 31, concept: "Glass Skyscraper", filename: "arch_skyscraper.jpg", pool: "structures", prompt: "Looking up at a modern glass skyscraper reflecting the blue sky.", tags: {} },
+  { id: 32, concept: "Sydney Opera House", filename: "arch_opera.jpg", pool: "structures", prompt: "Sydney Opera House shells against a blue harbor.", tags: {} },
+  { id: 33, concept: "Neon City Street", filename: "arch_neon.jpg", pool: "structures", prompt: "Cyberpunk style city street at night, neon signs in rain.", tags: {} },
+  { id: 34, concept: "Minimalist Concrete", filename: "arch_concrete.jpg", pool: "structures", prompt: "Brutalist architecture, raw grey concrete wall.", tags: {} },
+  { id: 35, concept: "Suspension Bridge", filename: "arch_bridge.jpg", pool: "structures", prompt: "Golden Gate Bridge in fog, red metal cables.", tags: {} },
+  { id: 36, concept: "Oil Refinery", filename: "ind_refinery.jpg", pool: "structures", prompt: "Oil refinery at night with lights and smoke stacks.", tags: {} },
+  { id: 37, concept: "Rusted Factory", filename: "ind_factory.jpg", pool: "structures", prompt: "Abandoned factory interior, rusted machinery, broken windows.", tags: {} },
+  { id: 38, concept: "Cargo Port", filename: "ind_port.jpg", pool: "structures", prompt: "Aerial view of shipping containers at a port, colorful metal boxes.", tags: {} },
+  { id: 39, concept: "Wind Farm", filename: "ind_windfarm.jpg", pool: "structures", prompt: "White wind turbines on a green hill, blue sky.", tags: {} },
+  { id: 40, concept: "Train Tracks", filename: "ind_tracks.jpg", pool: "structures", prompt: "Railway tracks vanishing into the distance, gravel, steel rails.", tags: {} },
+  { id: 41, concept: "Buddhist Temple", filename: "sacred_buddhist.jpg", pool: "structures", prompt: "Golden Buddhist temple roof with curved edges, incense smoke.", tags: {} },
+  { id: 42, concept: "Stained Glass", filename: "sacred_stainedglass.jpg", pool: "structures", prompt: "Detailed stained glass window in a dark church.", tags: {} },
+  { id: 43, concept: "Zen Garden", filename: "sacred_zen.jpg", pool: "structures", prompt: "Japanese Zen rock garden, raked white sand patterns.", tags: {} },
+  { id: 44, concept: "Candle Altar", filename: "sacred_candles.jpg", pool: "structures", prompt: "Dozens of lit candles in a dark stone room, warm glow.", tags: {} },
+  { id: 45, concept: "Torii Gate", filename: "sacred_torii.jpg", pool: "structures", prompt: "Red Torii gate standing in calm water, fog.", tags: {} },
+  { id: 46, concept: "Cozy Fireplace", filename: "home_fireplace.jpg", pool: "structures", prompt: "Roaring fire in a stone fireplace, cozy living room.", tags: {} },
+  { id: 47, concept: "Modern Kitchen", filename: "home_kitchen.jpg", pool: "structures", prompt: "Clean modern kitchen with marble island, white cabinets.", tags: {} },
+  { id: 48, concept: "Old Library", filename: "home_library.jpg", pool: "structures", prompt: "Walls of old leather books in a library, wooden ladder.", tags: {} },
+  { id: 49, concept: "Spiral Staircase", filename: "home_stairs.jpg", pool: "structures", prompt: "Looking down a wooden spiral staircase, geometric swirl.", tags: {} },
+  { id: 50, concept: "Bedroom Window", filename: "home_window.jpg", pool: "structures", prompt: "View from a cozy bed looking out a window at rain.", tags: {} },
 
   // --- POOL: LANDSCAPES ---
-  {
-    id: 51,
-    concept: "Snowy Peak",
-    filename: "land_mountain.jpg",
-    pool: "landscapes",
-    prompt: "Majestic snow-capped mountain peak against blue sky, jagged rocks, alpine environment, cold.",
-    tags: { gestalt: 'Natural Feature', color: 'Mono (Grey/Wht)', texture: 'Rough / Coarse', smell: 'Fresh / Nature', taste: 'Neutral / Dry', sound: 'Nature Sounds', emotion: 'Intense / Scary' }
-  },
-  {
-    id: 52,
-    concept: "Grand Canyon",
-    filename: "land_canyon.jpg",
-    pool: "landscapes",
-    prompt: "Vast view of the Grand Canyon, red rock layers, deep depth, sunset light, arid landscape.",
-    tags: { gestalt: 'Natural Feature', color: 'Warm (Red/Yel)', texture: 'Rough / Coarse', smell: 'Earthy / Musty', taste: 'Salty / Mineral', sound: 'Silence', emotion: 'Peaceful' }
-  },
-  {
-    id: 53,
-    concept: "Volcano Eruption",
-    filename: "land_volcano.jpg",
-    pool: "landscapes",
-    prompt: "Volcano erupting lava at night, glowing red magma flowing down, black rock, smoke plume.",
-    tags: { gestalt: 'Natural Feature', color: 'Warm (Red/Yel)', texture: 'Rough / Coarse', smell: 'Burnt / Smoky', taste: 'Salty / Mineral', sound: 'Chaotic / Loud', emotion: 'Intense / Scary' }
-  },
-  {
-    id: 54,
-    concept: "Cave Interior",
-    filename: "land_cave.jpg",
-    pool: "landscapes",
-    prompt: "Inside a limestone cave with stalactites and stalagmites, dark, damp, single light source, mysterious.",
-    tags: { gestalt: 'Natural Feature', color: 'Cool (Blue/Purp)', texture: 'Rough / Coarse', smell: 'Earthy / Musty', taste: 'Salty / Mineral', sound: 'Silence', emotion: 'Intense / Scary' }
-  },
-  {
-    id: 55,
-    concept: "Green Hills",
-    filename: "land_hills.jpg",
-    pool: "landscapes",
-    prompt: "Rolling green hills in Ireland, soft grass, overcast sky, rural landscape, peaceful.",
-    tags: { gestalt: 'Natural Feature', color: 'Nature (Grn/Brn)', texture: 'Soft / Organic', smell: 'Fresh / Nature', taste: 'Neutral / Dry', sound: 'Nature Sounds', emotion: 'Peaceful' }
-  },
-  {
-    id: 56,
-    concept: "Tropical Beach",
-    filename: "water_beach.jpg",
-    pool: "landscapes",
-    prompt: "White sand beach with turquoise water, palm tree shadow, sunny tropical paradise, calm waves.",
-    tags: { gestalt: 'Natural Feature', color: 'Cool (Blue/Purp)', texture: 'Fluid / Wet', smell: 'Fresh / Nature', taste: 'Salty / Mineral', sound: 'Nature Sounds', emotion: 'Peaceful' }
-  },
-  {
-    id: 57,
-    concept: "Waterfall",
-    filename: "water_waterfall.jpg",
-    pool: "landscapes",
-    prompt: "Powerful waterfall crashing into a pool, mist rising, green mossy rocks, dynamic water motion.",
-    tags: { gestalt: 'Natural Feature', color: 'Cool (Blue/Purp)', texture: 'Fluid / Wet', smell: 'Fresh / Nature', taste: 'Neutral / Dry', sound: 'Chaotic / Loud', emotion: 'High Energy' }
-  },
-  {
-    id: 58,
-    concept: "Stormy Ocean",
-    filename: "water_storm.jpg",
-    pool: "landscapes",
-    prompt: "Dark stormy ocean waves crashing, white foam, grey sky, dangerous sea condition, cinematic.",
-    tags: { gestalt: 'Natural Feature', color: 'Cool (Blue/Purp)', texture: 'Fluid / Wet', smell: 'Salty / Mineral', taste: 'Salty / Mineral', sound: 'Chaotic / Loud', emotion: 'Intense / Scary' }
-  },
-  {
-    id: 59,
-    concept: "Frozen Lake",
-    filename: "water_ice.jpg",
-    pool: "landscapes",
-    prompt: "Cracked blue ice on a frozen lake, bubbles trapped in ice, winter cold, smooth texture.",
-    tags: { gestalt: 'Natural Feature', color: 'Cool (Blue/Purp)', texture: 'Hard / Smooth', smell: 'Fresh / Nature', taste: 'Neutral / Dry', sound: 'Silence', emotion: 'Melancholic' }
-  },
-  {
-    id: 60,
-    concept: "River Stone",
-    filename: "water_river.jpg",
-    pool: "landscapes",
-    prompt: "Smooth river stones under clear running water, ripples, sunlight refracting on bottom, peaceful.",
-    tags: { gestalt: 'Natural Feature', color: 'Nature (Grn/Brn)', texture: 'Fluid / Wet', smell: 'Earthy / Musty', taste: 'Neutral / Dry', sound: 'Nature Sounds', emotion: 'Peaceful' }
-  },
-  {
-    id: 61,
-    concept: "Redwood Forest",
-    filename: "forest_redwood.jpg",
-    pool: "landscapes",
-    prompt: "Giant redwood trees towering up, sunbeams through mist, fern ground cover, ancient forest.",
-    tags: { gestalt: 'Natural Feature', color: 'Nature (Grn/Brn)', texture: 'Rough / Coarse', smell: 'Earthy / Musty', taste: 'Bitter / Slimy', sound: 'Silence', emotion: 'Peaceful' }
-  },
-  {
-    id: 62,
-    concept: "Autumn Path",
-    filename: "forest_autumn.jpg",
-    pool: "landscapes",
-    prompt: "Forest path covered in orange and red autumn leaves, trees changing color, soft fall light.",
-    tags: { gestalt: 'Natural Feature', color: 'Warm (Red/Yel)', texture: 'Soft / Organic', smell: 'Earthy / Musty', taste: 'Neutral / Dry', sound: 'Nature Sounds', emotion: 'Peaceful' }
-  },
-  {
-    id: 63,
-    concept: "Jungle Vines",
-    filename: "forest_jungle.jpg",
-    pool: "landscapes",
-    prompt: "Dense tropical jungle, hanging vines, huge green leaves, humidity, dark and green atmosphere.",
-    tags: { gestalt: 'Natural Feature', color: 'Nature (Grn/Brn)', texture: 'Soft / Organic', smell: 'Fresh / Nature', taste: 'Bitter / Slimy', sound: 'Nature Sounds', emotion: 'Intense / Scary' }
-  },
-  {
-    id: 64,
-    concept: "Bamboo Grove",
-    filename: "forest_bamboo.jpg",
-    pool: "landscapes",
-    prompt: "Tall green bamboo forest, vertical lines, light filtering through leaves, zen nature.",
-    tags: { gestalt: 'Natural Feature', color: 'Nature (Grn/Brn)', texture: 'Hard / Smooth', smell: 'Fresh / Nature', taste: 'Bitter / Slimy', sound: 'Nature Sounds', emotion: 'Peaceful' }
-  },
-  {
-    id: 65,
-    concept: "Dead Tree",
-    filename: "forest_dead.jpg",
-    pool: "landscapes",
-    prompt: "Lone dead tree in a barren field, twisted branches, grey sky, desolate landscape, silhouette.",
-    tags: { gestalt: 'Natural Feature', color: 'Mono (Grey/Wht)', texture: 'Rough / Coarse', smell: 'Stagnant / Dust', taste: 'Neutral / Dry', sound: 'Silence', emotion: 'Melancholic' }
-  },
-  {
-    id: 66,
-    concept: "Sand Dunes",
-    filename: "desert_dunes.jpg",
-    pool: "landscapes",
-    prompt: "Sahara desert sand dunes, smooth curves, golden sand, ripples caused by wind, clear sky.",
-    tags: { gestalt: 'Natural Feature', color: 'Warm (Red/Yel)', texture: 'Soft / Organic', smell: 'Earthy / Musty', taste: 'Neutral / Dry', sound: 'Silence', emotion: 'Peaceful' }
-  },
-  {
-    id: 67,
-    concept: "Cracked Earth",
-    filename: "desert_cracked.jpg",
-    pool: "landscapes",
-    prompt: "Dry cracked earth texture, drought, arid ground, beige clay, detail shot, lifeless.",
-    tags: { gestalt: 'Natural Feature', color: 'Nature (Grn/Brn)', texture: 'Rough / Coarse', smell: 'Earthy / Musty', taste: 'Salty / Mineral', sound: 'Silence', emotion: 'Melancholic' }
-  },
-  {
-    id: 68,
-    concept: "Cactus",
-    filename: "desert_cactus.jpg",
-    pool: "landscapes",
-    prompt: "Close up of a green cactus with sharp spines, desert background, harsh sunlight, prickly.",
-    tags: { gestalt: 'Biological', color: 'Nature (Grn/Brn)', texture: 'Rough / Coarse', smell: 'Earthy / Musty', taste: 'Bitter / Slimy', sound: 'Silence', emotion: 'Intense / Scary' }
-  },
-  {
-    id: 69,
-    concept: "Salt Flats",
-    filename: "desert_salt.jpg",
-    pool: "landscapes",
-    prompt: "Bolivia Salt Flats, endless white ground reflecting the sky, mirror effect, ethereal landscape.",
-    tags: { gestalt: 'Natural Feature', color: 'Mono (Grey/Wht)', texture: 'Rough / Coarse', smell: 'Salty / Mineral', taste: 'Salty / Mineral', sound: 'Silence', emotion: 'Peaceful' }
-  },
-  {
-    id: 70,
-    concept: "Oasis",
-    filename: "desert_oasis.jpg",
-    pool: "landscapes",
-    prompt: "Desert oasis with palm trees and a small blue pool of water, surrounded by sand, refuge.",
-    tags: { gestalt: 'Natural Feature', color: 'Cool (Blue/Purp)', texture: 'Fluid / Wet', smell: 'Fresh / Nature', taste: 'Sweet / Savory', sound: 'Nature Sounds', emotion: 'Peaceful' }
-  },
-  {
-    id: 71,
-    concept: "Iceberg",
-    filename: "ice_iceberg.jpg",
-    pool: "landscapes",
-    prompt: "Massive white and blue iceberg floating in dark ocean, antarctica, cold, majestic structure.",
-    tags: { gestalt: 'Natural Feature', color: 'Cool (Blue/Purp)', texture: 'Hard / Smooth', smell: 'Fresh / Nature', taste: 'Salty / Mineral', sound: 'Silence', emotion: 'Peaceful' }
-  },
-  {
-    id: 72,
-    concept: "Snow Flake",
-    filename: "ice_snowflake.jpg",
-    pool: "landscapes",
-    prompt: "Extreme macro of a single unique snowflake, geometric crystal structure, blue background, cold.",
-    tags: { gestalt: 'Natural Feature', color: 'Cool (Blue/Purp)', texture: 'Hard / Smooth', smell: 'Fresh / Nature', taste: 'Neutral / Dry', sound: 'Silence', emotion: 'Peaceful' }
-  },
-  {
-    id: 73,
-    concept: "Icicles",
-    filename: "ice_icicles.jpg",
-    pool: "landscapes",
-    prompt: "Sharp icicles hanging from a roof edge, glistening in sun, melting drops, winter texture.",
-    tags: { gestalt: 'Natural Feature', color: 'Cool (Blue/Purp)', texture: 'Hard / Smooth', smell: 'Fresh / Nature', taste: 'Neutral / Dry', sound: 'Silence', emotion: 'Intense / Scary' }
-  },
-  {
-    id: 74,
-    concept: "Aurora Borealis",
-    filename: "ice_aurora.jpg",
-    pool: "landscapes",
-    prompt: "Northern lights aurora borealis, green and purple lights in night sky, snowy landscape below.",
-    tags: { gestalt: 'Natural Feature', color: 'Nature (Grn/Brn)', texture: 'Soft / Organic', smell: 'Fresh / Nature', taste: 'Neutral / Dry', sound: 'Silence', emotion: 'Peaceful' }
-  },
-  {
-    id: 75,
-    concept: "Tundra Moss",
-    filename: "ice_tundra.jpg",
-    pool: "landscapes",
-    prompt: "Frozen tundra ground with moss and lichen, patches of snow, rocky, cold desolate landscape.",
-    tags: { gestalt: 'Natural Feature', color: 'Nature (Grn/Brn)', texture: 'Soft / Organic', smell: 'Earthy / Musty', taste: 'Bitter / Slimy', sound: 'Nature Sounds', emotion: 'Melancholic' }
-  },
+  { id: 51, concept: "Snowy Peak", filename: "land_mountain.jpg", pool: "landscapes", prompt: "Majestic snow-capped mountain peak against blue sky.", tags: {} },
+  { id: 52, concept: "Grand Canyon", filename: "land_canyon.jpg", pool: "landscapes", prompt: "Vast view of the Grand Canyon, red rock layers.", tags: {} },
+  { id: 53, concept: "Volcano Eruption", filename: "land_volcano.jpg", pool: "landscapes", prompt: "Volcano erupting lava at night, glowing red magma.", tags: {} },
+  { id: 54, concept: "Cave Interior", filename: "land_cave.jpg", pool: "landscapes", prompt: "Inside a limestone cave with stalactites, dark.", tags: {} },
+  { id: 55, concept: "Green Hills", filename: "land_hills.jpg", pool: "landscapes", prompt: "Rolling green hills in Ireland, soft grass, overcast.", tags: {} },
+  { id: 56, concept: "Tropical Beach", filename: "water_beach.jpg", pool: "landscapes", prompt: "White sand beach with turquoise water, palm tree.", tags: {} },
+  { id: 57, concept: "Waterfall", filename: "water_waterfall.jpg", pool: "landscapes", prompt: "Powerful waterfall crashing into a pool, mist rising.", tags: {} },
+  { id: 58, concept: "Stormy Ocean", filename: "water_storm.jpg", pool: "landscapes", prompt: "Dark stormy ocean waves crashing, white foam, grey sky.", tags: {} },
+  { id: 59, concept: "Frozen Lake", filename: "water_ice.jpg", pool: "landscapes", prompt: "Cracked blue ice on a frozen lake, bubbles trapped in ice.", tags: {} },
+  { id: 60, concept: "River Stone", filename: "water_river.jpg", pool: "landscapes", prompt: "Smooth river stones under clear running water.", tags: {} },
+  { id: 61, concept: "Redwood Forest", filename: "forest_redwood.jpg", pool: "landscapes", prompt: "Giant redwood trees towering up, sunbeams through mist.", tags: {} },
+  { id: 62, concept: "Autumn Path", filename: "forest_autumn.jpg", pool: "landscapes", prompt: "Forest path covered in orange and red autumn leaves.", tags: {} },
+  { id: 63, concept: "Jungle Vines", filename: "forest_jungle.jpg", pool: "landscapes", prompt: "Dense tropical jungle, hanging vines, huge green leaves.", tags: {} },
+  { id: 64, concept: "Bamboo Grove", filename: "forest_bamboo.jpg", pool: "landscapes", prompt: "Tall green bamboo forest, vertical lines.", tags: {} },
+  { id: 65, concept: "Dead Tree", filename: "forest_dead.jpg", pool: "landscapes", prompt: "Lone dead tree in a barren field, twisted branches, grey sky.", tags: {} },
+  { id: 66, concept: "Sand Dunes", filename: "desert_dunes.jpg", pool: "landscapes", prompt: "Sahara desert sand dunes, smooth curves, golden sand.", tags: {} },
+  { id: 67, concept: "Cracked Earth", filename: "desert_cracked.jpg", pool: "landscapes", prompt: "Dry cracked earth texture, drought, beige clay.", tags: {} },
+  { id: 68, concept: "Cactus", filename: "desert_cactus.jpg", pool: "landscapes", prompt: "Close up of a green cactus with sharp spines.", tags: {} },
+  { id: 69, concept: "Salt Flats", filename: "desert_salt.jpg", pool: "landscapes", prompt: "Bolivia Salt Flats, endless white ground reflecting the sky.", tags: {} },
+  { id: 70, concept: "Oasis", filename: "desert_oasis.jpg", pool: "landscapes", prompt: "Desert oasis with palm trees and a small blue pool.", tags: {} },
+  { id: 71, concept: "Iceberg", filename: "ice_iceberg.jpg", pool: "landscapes", prompt: "Massive white and blue iceberg floating in dark ocean.", tags: {} },
+  { id: 72, concept: "Snow Flake", filename: "ice_snowflake.jpg", pool: "landscapes", prompt: "Extreme macro of a single unique snowflake, geometric crystal.", tags: {} },
+  { id: 73, concept: "Icicles", filename: "ice_icicles.jpg", pool: "landscapes", prompt: "Sharp icicles hanging from a roof edge, glistening.", tags: {} },
+  { id: 74, concept: "Aurora Borealis", filename: "ice_aurora.jpg", pool: "landscapes", prompt: "Northern lights aurora borealis, green and purple lights.", tags: {} },
+  { id: 75, concept: "Tundra Moss", filename: "ice_tundra.jpg", pool: "landscapes", prompt: "Frozen tundra ground with moss and lichen.", tags: {} },
 
   // --- POOL: OBJECTS ---
-  {
-    id: 76,
-    concept: "Formula 1 Car",
-    filename: "vehicle_racecar.jpg",
-    pool: "objects",
-    prompt: "Red Formula 1 race car speeding on track, motion blur, asphalt, aerodynamic design.",
-    tags: { gestalt: 'Machine', color: 'Warm (Red/Yel)', texture: 'Hard / Smooth', smell: 'Burnt / Smoky', taste: 'Metallic / Chem', sound: 'Chaotic / Loud', emotion: 'High Energy' }
-  },
-  {
-    id: 77,
-    concept: "Steam Train",
-    filename: "vehicle_train.jpg",
-    pool: "objects",
-    prompt: "Black steam locomotive train emitting white smoke, vintage, heavy metal wheels, powerful.",
-    tags: { gestalt: 'Machine', color: 'Mono (Grey/Wht)', texture: 'Hard / Smooth', smell: 'Burnt / Smoky', taste: 'Metallic / Chem', sound: 'Mechanical', emotion: 'High Energy' }
-  },
-  {
-    id: 78,
-    concept: "Vintage Tractor",
-    filename: "vehicle_tractor.jpg",
-    pool: "objects",
-    prompt: "Old rusted red tractor in a field, peeled paint, weathered tires, farming history.",
-    tags: { gestalt: 'Machine', color: 'Warm (Red/Yel)', texture: 'Rough / Coarse', smell: 'Chemical / City', taste: 'Metallic / Chem', sound: 'Mechanical', emotion: 'Melancholic' }
-  },
-  {
-    id: 79,
-    concept: "Motorcycle",
-    filename: "vehicle_motorcycle.jpg",
-    pool: "objects",
-    prompt: "Chrome motorcycle detail, engine block, leather seat, shiny metal, mechanical power.",
-    tags: { gestalt: 'Machine', color: 'Mono (Grey/Wht)', texture: 'Hard / Smooth', smell: 'Chemical / City', taste: 'Metallic / Chem', sound: 'Chaotic / Loud', emotion: 'High Energy' }
-  },
-  {
-    id: 80,
-    concept: "School Bus",
-    filename: "vehicle_bus.jpg",
-    pool: "objects",
-    prompt: "Classic yellow school bus parked, stop sign extended, front grille view.",
-    tags: { gestalt: 'Machine', color: 'Warm (Red/Yel)', texture: 'Hard / Smooth', smell: 'Chemical / City', taste: 'Metallic / Chem', sound: 'Mechanical', emotion: 'Peaceful' }
-  },
-  {
-    id: 81,
-    concept: "Hot Air Balloon",
-    filename: "vessel_balloon.jpg",
-    pool: "objects",
-    prompt: "Colorful hot air balloon floating in blue sky, fabric texture, burner flame, freedom.",
-    tags: { gestalt: 'Machine', color: 'Warm (Red/Yel)', texture: 'Soft / Organic', smell: 'Burnt / Smoky', taste: 'Neutral / Dry', sound: 'Nature Sounds', emotion: 'Peaceful' }
-  },
-  {
-    id: 82,
-    concept: "Fighter Jet",
-    filename: "vessel_jet.jpg",
-    pool: "objects",
-    prompt: "Grey fighter jet flying at high speed, afterburners glowing, clouds, military technology.",
-    tags: { gestalt: 'Machine', color: 'Mono (Grey/Wht)', texture: 'Hard / Smooth', smell: 'Chemical / City', taste: 'Metallic / Chem', sound: 'Chaotic / Loud', emotion: 'Intense / Scary' }
-  },
-  {
-    id: 83,
-    concept: "Sailboat",
-    filename: "vessel_sailboat.jpg",
-    pool: "objects",
-    prompt: "White sailboat with sails full of wind, blue ocean, leaning hull, adventure.",
-    tags: { gestalt: 'Machine', color: 'Mono (Grey/Wht)', texture: 'Soft / Organic', smell: 'Fresh / Nature', taste: 'Salty / Mineral', sound: 'Nature Sounds', emotion: 'Peaceful' }
-  },
-  {
-    id: 84,
-    concept: "Submarine",
-    filename: "vessel_submarine.jpg",
-    pool: "objects",
-    prompt: "Black submarine surfacing in choppy water, wet metal, periscope, stealth.",
-    tags: { gestalt: 'Machine', color: 'Mono (Grey/Wht)', texture: 'Hard / Smooth', smell: 'Chemical / City', taste: 'Metallic / Chem', sound: 'Mechanical', emotion: 'Intense / Scary' }
-  },
-  {
-    id: 85,
-    concept: "Space Shuttle",
-    filename: "vessel_shuttle.jpg",
-    pool: "objects",
-    prompt: "Space shuttle launching, massive smoke plume, fire exhaust, pointing towards sky.",
-    tags: { gestalt: 'Machine', color: 'Mono (Grey/Wht)', texture: 'Hard / Smooth', smell: 'Burnt / Smoky', taste: 'Metallic / Chem', sound: 'Chaotic / Loud', emotion: 'High Energy' }
-  },
-  {
-    id: 86,
-    concept: "Circuit Board",
-    filename: "tech_circuit.jpg",
-    pool: "objects",
-    prompt: "Macro of a green electronic circuit board, gold paths, chips, technology texture.",
-    tags: { gestalt: 'Machine', color: 'Nature (Grn/Brn)', texture: 'Hard / Smooth', smell: 'Chemical / City', taste: 'Metallic / Chem', sound: 'Silence', emotion: 'Peaceful' }
-  },
-  {
-    id: 87,
-    concept: "Vinyl Record",
-    filename: "tech_vinyl.jpg",
-    pool: "objects",
-    prompt: "Close up of black vinyl record grooves, light reflection, spinning on turntable, retro audio.",
-    tags: { gestalt: 'Machine', color: 'Mono (Grey/Wht)', texture: 'Hard / Smooth', smell: 'Chemical / City', taste: 'Neutral / Dry', sound: 'Nature Sounds', emotion: 'Peaceful' }
-  },
-  {
-    id: 88,
-    concept: "Light Bulb",
-    filename: "tech_bulb.jpg",
-    pool: "objects",
-    prompt: "Edison light bulb glowing filament, warm orange light, glass texture, dark background.",
-    tags: { gestalt: 'Machine', color: 'Warm (Red/Yel)', texture: 'Hard / Smooth', smell: 'Burnt / Smoky', taste: 'Metallic / Chem', sound: 'Silence', emotion: 'Peaceful' }
-  },
-  {
-    id: 89,
-    concept: "Vintage Camera",
-    filename: "tech_camera.jpg",
-    pool: "objects",
-    prompt: "Old silver and black film camera, lens reflection, leather texture, retro photography.",
-    tags: { gestalt: 'Machine', color: 'Mono (Grey/Wht)', texture: 'Hard / Smooth', smell: 'Stagnant / Dust', taste: 'Metallic / Chem', sound: 'Mechanical', emotion: 'Melancholic' }
-  },
-  {
-    id: 90,
-    concept: "Robot Hand",
-    filename: "tech_robot.jpg",
-    pool: "objects",
-    prompt: "White humanoid robot hand, mechanical joints, futuristic technology, clean background.",
-    tags: { gestalt: 'Machine', color: 'Mono (Grey/Wht)', texture: 'Hard / Smooth', smell: 'Chemical / City', taste: 'Metallic / Chem', sound: 'Mechanical', emotion: 'High Energy' }
-  },
-  {
-    id: 91,
-    concept: "Rusty Key",
-    filename: "tool_key.jpg",
-    pool: "objects",
-    prompt: "Old rusty iron skeleton key, textured metal, antique, lying on wood.",
-    tags: { gestalt: 'Machine', color: 'Warm (Red/Yel)', texture: 'Rough / Coarse', smell: 'Stagnant / Dust', taste: 'Metallic / Chem', sound: 'Silence', emotion: 'Melancholic' }
-  },
-  {
-    id: 92,
-    concept: "Sword",
-    filename: "tool_sword.jpg",
-    pool: "objects",
-    prompt: "Medieval steel sword, shining blade, leather hilt, sharp edge, weapon.",
-    tags: { gestalt: 'Machine', color: 'Mono (Grey/Wht)', texture: 'Hard / Smooth', smell: 'Metallic / Chem', taste: 'Metallic / Chem', sound: 'Mechanical', emotion: 'Intense / Scary' }
-  },
-  {
-    id: 93,
-    concept: "Compass",
-    filename: "tool_compass.jpg",
-    pool: "objects",
-    prompt: "Antique brass compass, north needle, glass face, map background, exploration.",
-    tags: { gestalt: 'Machine', color: 'Warm (Red/Yel)', texture: 'Hard / Smooth', smell: 'Stagnant / Dust', taste: 'Metallic / Chem', sound: 'Silence', emotion: 'Peaceful' }
-  },
-  {
-    id: 94,
-    concept: "Paint Palette",
-    filename: "tool_palette.jpg",
-    pool: "objects",
-    prompt: "Artist wooden palette with messy colorful oil paints, brush, creative mess.",
-    tags: { gestalt: 'Machine', color: 'Warm (Red/Yel)', texture: 'Fluid / Wet', smell: 'Chemical / City', taste: 'Bitter / Slimy', sound: 'Silence', emotion: 'High Energy' }
-  },
-  {
-    id: 95,
-    concept: "Anchor",
-    filename: "tool_anchor.jpg",
-    pool: "objects",
-    prompt: "Large rusty iron ship anchor sitting on a dock, heavy, nautical texture.",
-    tags: { gestalt: 'Machine', color: 'Mono (Grey/Wht)', texture: 'Rough / Coarse', smell: 'Salty / Mineral', taste: 'Metallic / Chem', sound: 'Silence', emotion: 'Melancholic' }
-  },
+  { id: 76, concept: "Formula 1 Car", filename: "vehicle_racecar.jpg", pool: "objects", prompt: "Red Formula 1 race car speeding on track.", tags: {} },
+  { id: 77, concept: "Steam Train", filename: "vehicle_train.jpg", pool: "objects", prompt: "Black steam locomotive train emitting white smoke.", tags: {} },
+  { id: 78, concept: "Vintage Tractor", filename: "vehicle_tractor.jpg", pool: "objects", prompt: "Old rusted red tractor in a field.", tags: {} },
+  { id: 79, concept: "Motorcycle", filename: "vehicle_motorcycle.jpg", pool: "objects", prompt: "Chrome motorcycle detail, engine block, leather seat.", tags: {} },
+  { id: 80, concept: "School Bus", filename: "vehicle_bus.jpg", pool: "objects", prompt: "Classic yellow school bus parked.", tags: {} },
+  { id: 81, concept: "Hot Air Balloon", filename: "vessel_balloon.jpg", pool: "objects", prompt: "Colorful hot air balloon floating in blue sky.", tags: {} },
+  { id: 82, concept: "Fighter Jet", filename: "vessel_jet.jpg", pool: "objects", prompt: "Grey fighter jet flying at high speed.", tags: {} },
+  { id: 83, concept: "Sailboat", filename: "vessel_sailboat.jpg", pool: "objects", prompt: "White sailboat with sails full of wind.", tags: {} },
+  { id: 84, concept: "Submarine", filename: "vessel_submarine.jpg", pool: "objects", prompt: "Black submarine surfacing in choppy water.", tags: {} },
+  { id: 85, concept: "Space Shuttle", filename: "vessel_shuttle.jpg", pool: "objects", prompt: "Space shuttle launching, massive smoke plume.", tags: {} },
+  { id: 86, concept: "Circuit Board", filename: "tech_circuit.jpg", pool: "objects", prompt: "Macro of a green electronic circuit board.", tags: {} },
+  { id: 87, concept: "Vinyl Record", filename: "tech_vinyl.jpg", pool: "objects", prompt: "Close up of black vinyl record grooves.", tags: {} },
+  { id: 88, concept: "Light Bulb", filename: "tech_bulb.jpg", pool: "objects", prompt: "Edison light bulb glowing filament.", tags: {} },
+  { id: 89, concept: "Vintage Camera", filename: "tech_camera.jpg", pool: "objects", prompt: "Old silver and black film camera, leather texture.", tags: {} },
+  { id: 90, concept: "Robot Hand", filename: "tech_robot.jpg", pool: "objects", prompt: "White humanoid robot hand, mechanical joints.", tags: {} },
+  { id: 91, concept: "Rusty Key", filename: "tool_key.jpg", pool: "objects", prompt: "Old rusty iron skeleton key, textured metal.", tags: {} },
+  { id: 92, concept: "Sword", filename: "tool_sword.jpg", pool: "objects", prompt: "Medieval steel sword, shining blade.", tags: {} },
+  { id: 93, concept: "Compass", filename: "tool_compass.jpg", pool: "objects", prompt: "Antique brass compass, north needle, glass face.", tags: {} },
+  { id: 94, concept: "Paint Palette", filename: "tool_palette.jpg", pool: "objects", prompt: "Artist wooden palette with messy colorful oil paints.", tags: {} },
+  { id: 95, concept: "Anchor", filename: "tool_anchor.jpg", pool: "objects", prompt: "Large rusty iron ship anchor sitting on a dock.", tags: {} },
 
   // --- POOL: FOOD ---
-  {
-    id: 96,
-    concept: "Fresh Lemon",
-    filename: "food_lemon.jpg",
-    pool: "food",
-    prompt: "Bright yellow lemon sliced in half, juice droplets, zest, fresh citrus, sunny background.",
-    tags: { gestalt: 'Biological', color: 'Warm (Red/Yel)', texture: 'Rough / Coarse', smell: 'Fresh / Nature', taste: 'Sour / Acidic', sound: 'Silence', emotion: 'High Energy' }
-  },
-  {
-    id: 97,
-    concept: "Coffee Beans",
-    filename: "food_coffee.jpg",
-    pool: "food",
-    prompt: "Pile of roasted brown coffee beans, oily texture, aromatic, macro shot.",
-    tags: { gestalt: 'Biological', color: 'Nature (Grn/Brn)', texture: 'Hard / Smooth', smell: 'Burnt / Smoky', taste: 'Bitter / Slimy', sound: 'Mechanical', emotion: 'High Energy' }
-  },
-  {
-    id: 98,
-    concept: "Strawberry Cake",
-    filename: "food_cake.jpg",
-    pool: "food",
-    prompt: "Slice of strawberry shortcake with whipped cream, red berries, fluffy sponge, delicious.",
-    tags: { gestalt: 'Biological', color: 'Warm (Red/Yel)', texture: 'Soft / Organic', smell: 'Sweet / Food', taste: 'Sweet / Savory', sound: 'Silence', emotion: 'High Energy' }
-  },
-  {
-    id: 99,
-    concept: "Red Wine",
-    filename: "food_wine.jpg",
-    pool: "food",
-    prompt: "Red wine being poured into a crystal glass, splash, dark red liquid, elegant.",
-    tags: { gestalt: 'Biological', color: 'Warm (Red/Yel)', texture: 'Fluid / Wet', smell: 'Sweet / Food', taste: 'Sweet / Savory', sound: 'Silence', emotion: 'Peaceful' }
-  },
-  {
-    id: 100,
-    concept: "Chili Pepper",
-    filename: "food_chili.jpg",
-    pool: "food",
-    prompt: "Red hot chili peppers, smooth skin, spicy food ingredient, fire concept.",
-    tags: { gestalt: 'Biological', color: 'Warm (Red/Yel)', texture: 'Hard / Smooth', smell: 'Chemical / City', taste: 'Spicy / Hot', sound: 'Silence', emotion: 'Intense / Scary' }
-  }
+  { id: 96, concept: "Fresh Lemon", filename: "food_lemon.jpg", pool: "food", prompt: "Bright yellow lemon sliced in half, juice droplets.", tags: {} },
+  { id: 97, concept: "Coffee Beans", filename: "food_coffee.jpg", pool: "food", prompt: "Pile of roasted brown coffee beans.", tags: {} },
+  { id: 98, concept: "Strawberry Cake", filename: "food_cake.jpg", pool: "food", prompt: "Slice of strawberry shortcake with whipped cream.", tags: {} },
+  { id: 99, concept: "Red Wine", filename: "food_wine.jpg", pool: "food", prompt: "Red wine being poured into a crystal glass.", tags: {} },
+  { id: 100, concept: "Chili Pepper", filename: "food_chili.jpg", pool: "food", prompt: "Red hot chili peppers, smooth skin.", tags: {} }
 ];
 
-// --- TAG INFERENCE ENGINE ---
-// This system programmatically determines specific tags for context-aware pools
-// so we don't have to manually rewrite the database.
+// --- OBJECTIVE INFERENCE ENGINE ---
+// Maps images to the new Objective Sensory Schema
 
 const inferSpecificTags = (level: LevelData, pool: string): Record<string, string> => {
-  // Start with universal tags as base
-  const tags = { ...level.tags };
+  const tags: Record<string, string> = {};
   const concept = level.concept.toLowerCase();
   const filename = level.filename.toLowerCase();
+  const prompt = level.prompt.toLowerCase();
+
+  // --- UNIVERSAL TAGS (Applied Logic) ---
+  
+  // COLOR
+  if (['red', 'orange', 'yellow', 'gold', 'lion', 'fire', 'sun', 'autumn', 'desert', 'rust', 'copper', 'candle'].some(k => prompt.includes(k) || concept.includes(k))) tags.color = 'Red / Warm';
+  else if (['blue', 'purple', 'cyan', 'ice', 'water', 'sky', 'night', 'shark', 'rain', 'neon'].some(k => prompt.includes(k) || concept.includes(k))) tags.color = 'Blue / Cool';
+  else if (['green', 'grass', 'forest', 'jungle', 'leaf', 'bamboo', 'moss', 'circuit', 'turtle', 'cact'].some(k => prompt.includes(k) || concept.includes(k))) tags.color = 'Green / Nature';
+  else tags.color = 'Grey / B&W';
+
+  // TEXTURE
+  if (pool === 'animals' && !['turtle', 'snail', 'fish', 'shark', 'dolphin', 'jelly', 'octo'].some(k => concept.includes(k))) tags.texture = 'Furry / Soft';
+  else if (['metal', 'glass', 'plastic', 'chrome', 'robot', 'car', 'sword', 'ice', 'gem', 'water'].some(k => prompt.includes(k) || concept.includes(k))) tags.texture = 'Hard / Smooth';
+  else if (['water', 'rain', 'ocean', 'wine', 'juice', 'soup', 'river', 'ink', 'paint'].some(k => prompt.includes(k) || concept.includes(k))) tags.texture = 'Wet / Fluid';
+  else tags.texture = 'Rough / Stone'; // Default for nature/ruins
+
+  // LUMINOSITY
+  if (['night', 'cave', 'dark', 'storm', 'space', 'abyss', 'shadow', 'deep'].some(k => prompt.includes(k) || concept.includes(k))) tags.luminosity = 'Dark / Night';
+  else if (['neon', 'lamp', 'bulb', 'fire', 'candle', 'glowing', 'monitor', 'screen', 'refinery'].some(k => prompt.includes(k) || concept.includes(k))) tags.luminosity = 'Artificial / Neon';
+  else if (['mist', 'fog', 'interior', 'room', 'library', 'church'].some(k => prompt.includes(k) || concept.includes(k))) tags.luminosity = 'Dim / Shadow';
+  else tags.luminosity = 'Bright / Day';
+
+  // FORM
+  if (pool === 'animals' || ['tree', 'plant', 'flower', 'fruit', 'human'].some(k => prompt.includes(k))) tags.form = 'Organic / Curvy';
+  else if (['building', 'structure', 'box', 'screen', 'road', 'rail', 'brick', 'pyramid', 'cube'].some(k => prompt.includes(k) || concept.includes(k))) tags.form = 'Geometric / Boxy';
+  else if (['water', 'smoke', 'fire', 'cloud', 'liquid', 'ghost'].some(k => prompt.includes(k) || concept.includes(k))) tags.form = 'Fluid / Flowing';
+  else tags.form = 'Cluster / Many'; // gravel, beans, coins
+
+  // --- SPECIFIC POOL LOGIC ---
 
   if (pool === 'animals') {
-    // 1. CLASS
-    if (filename.includes('marine') || ['shark', 'fish', 'octopus', 'jellyfish', 'turtle'].some(k => concept.includes(k))) tags.class = 'Marine';
-    else if (filename.includes('avian') || ['eagle', 'macaw', 'peacock', 'owl', 'swan'].some(k => concept.includes(k))) tags.class = 'Bird';
-    else if (filename.includes('insect') || ['butterfly', 'spider', 'bee', 'snail', 'dragonfly'].some(k => concept.includes(k))) tags.class = 'Insect/Bug';
-    else tags.class = 'Mammal'; // Default for predator/herbivore
+    // CLASS
+    if (['shark', 'fish', 'octopus', 'jellyfish', 'turtle', 'koi', 'whale'].some(k => concept.includes(k))) tags.class = 'Marine';
+    else if (['eagle', 'macaw', 'peacock', 'owl', 'swan'].some(k => concept.includes(k))) tags.class = 'Bird';
+    else if (['butterfly', 'spider', 'bee', 'snail', 'dragonfly'].some(k => concept.includes(k))) tags.class = 'Insect';
+    else tags.class = 'Mammal';
 
-    // 2. DIET
-    if (['lion', 'shark', 'wolf', 'tiger', 'eagle', 'spider', 'owl', 'jellyfish', 'octopus'].some(k => concept.includes(k))) tags.diet = 'Carnivore';
-    else if (['deer', 'giraffe', 'panda', 'rabbit', 'elephant', 'bee', 'butterfly', 'snail'].some(k => concept.includes(k))) tags.diet = 'Herbivore';
-    else if (['bear', 'clownfish', 'macaw'].some(k => concept.includes(k))) tags.diet = 'Omnivore';
-    else tags.diet = 'Filter/Scavenger';
+    // SKIN
+    if (tags.class === 'Bird') tags.skin = 'Feathers';
+    else if (tags.class === 'Insect' || ['turtle', 'armadillo'].some(k => concept.includes(k))) tags.skin = 'Shell / Exoskeleton';
+    else if (tags.class === 'Marine' || ['frog', 'salamander'].some(k => concept.includes(k))) tags.skin = 'Scales / Wet';
+    else tags.skin = 'Fur / Hair';
 
-    // 3. HABITAT
-    if (tags.class === 'Marine' || concept.includes('swan') || concept.includes('water')) tags.habitat = 'Water / Ocean';
-    else if (tags.class === 'Bird' || concept.includes('dragonfly') || concept.includes('bee')) tags.habitat = 'Air / Sky';
-    else if (['rabbit', 'dog', 'cat'].some(k => concept.includes(k))) tags.habitat = 'Domestic';
-    else tags.habitat = 'Land / Forest';
+    // ACTIVITY
+    if (['rest', 'sit', 'stand', 'wait'].some(k => prompt.includes(k))) tags.activity = 'Stationary / Resting';
+    else if (['swim', 'div', 'float'].some(k => prompt.includes(k))) tags.activity = 'Swimming';
+    else if (['fly', 'soar', 'wing'].some(k => prompt.includes(k))) tags.activity = 'Flying';
+    else tags.activity = 'Moving / Action';
   }
 
   if (pool === 'structures') {
-    // 1. ERA
-    if (filename.includes('ruin') || ['pyramid', 'mayan', 'colosseum', 'stonehenge', 'moai'].some(k => concept.includes(k))) tags.era = 'Ancient / Ruin';
-    else if (['skyscraper', 'neon', 'modern', 'refinery'].some(k => concept.includes(k))) tags.era = 'Modern / Industrial';
-    else if (['temple', 'torii', 'buddhist', 'stained glass', 'library'].some(k => concept.includes(k))) tags.era = 'Classical / Trad';
-    else tags.era = 'Modern / Industrial';
-
-    // 2. MATERIAL
-    if (concept.includes('glass') || concept.includes('neon') || concept.includes('refinery')) tags.material = 'Metal / Glass';
-    else if (concept.includes('wood') || concept.includes('bamboo') || concept.includes('tree')) tags.material = 'Wood / Organic';
-    else if (concept.includes('concrete')) tags.material = 'Concrete';
+    // MATERIAL
+    if (['glass', 'steel', 'metal', 'iron'].some(k => prompt.includes(k))) tags.material = 'Metal / Glass';
+    else if (['wood', 'timber', 'bamboo', 'log'].some(k => prompt.includes(k))) tags.material = 'Wood / Organic';
+    else if (['concrete', 'cement', 'brutalist'].some(k => prompt.includes(k))) tags.material = 'Concrete';
     else tags.material = 'Stone / Brick';
 
-    // 3. TYPE
-    if (['home', 'kitchen', 'bedroom', 'fireplace'].some(k => filename.includes(k))) tags.struct_type = 'Dwelling';
-    else if (['temple', 'church', 'shrine', 'altar', 'monument', 'pyramid', 'stonehenge'].some(k => concept.toLowerCase().includes(k) || filename.includes('sacred'))) tags.struct_type = 'Monument/Sacred';
-    else if (['bridge', 'dam', 'road', 'tracks', 'port', 'wind farm'].some(k => concept.toLowerCase().includes(k) || filename.includes('ind'))) tags.struct_type = 'Infrastructure';
-    else tags.struct_type = 'Commercial';
+    // AGE
+    if (['ancient', 'ruin', 'pyramid', 'stonehenge', 'temple', 'castle'].some(k => prompt.includes(k) || concept.includes(k))) tags.age = 'Ancient / Ruin';
+    else if (['modern', 'skyscraper', 'neon', 'city', 'future', 'space'].some(k => prompt.includes(k) || concept.includes(k))) tags.age = 'Modern / Industrial';
+    else if (['futuristic', 'cyber', 'scifi'].some(k => prompt.includes(k))) tags.age = 'Futuristic';
+    else tags.age = 'Classical / Trad';
+
+    // TYPE
+    if (['home', 'house', 'kitchen', 'bed', 'living', 'cabin'].some(k => prompt.includes(k) || concept.includes(k))) tags.struct_type = 'Dwelling / Home';
+    else if (['temple', 'church', 'shrine', 'altar', 'monument', 'pyramid', 'stonehenge'].some(k => prompt.includes(k) || concept.includes(k))) tags.struct_type = 'Monument / Sacred';
+    else if (['bridge', 'dam', 'road', 'tracks', 'port', 'wind', 'refinery'].some(k => prompt.includes(k) || concept.includes(k))) tags.struct_type = 'Infrastructure';
+    else tags.struct_type = 'Commercial / City';
   }
 
   if (pool === 'landscapes') {
-    // 1. ELEMENT
-    if (filename.includes('water') || filename.includes('ice') || concept.includes('ocean') || concept.includes('lake')) tags.element = 'Water / Ice';
-    else if (filename.includes('land') || filename.includes('desert') || concept.includes('mountain') || concept.includes('canyon')) tags.element = 'Earth / Rock';
-    else if (filename.includes('forest') || concept.includes('tree') || concept.includes('jungle') || concept.includes('green')) tags.element = 'Greenery / Plant';
+    // ELEMENT
+    if (['water', 'ocean', 'lake', 'river', 'ice', 'snow', 'rain'].some(k => prompt.includes(k) || concept.includes(k))) tags.element = 'Water / Ice';
+    else if (['mountain', 'canyon', 'rock', 'stone', 'desert', 'sand', 'cave'].some(k => prompt.includes(k) || concept.includes(k))) tags.element = 'Earth / Rock';
+    else if (['forest', 'tree', 'jungle', 'grass', 'plant'].some(k => prompt.includes(k) || concept.includes(k))) tags.element = 'Greenery / Plant';
     else tags.element = 'Air / Sky';
 
-    // 2. TEMP
-    if (filename.includes('ice') || concept.includes('snow') || concept.includes('frozen')) tags.temp = 'Cold / Frozen';
-    else if (filename.includes('desert') || concept.includes('volcano') || concept.includes('dunes')) tags.temp = 'Hot / Arid';
-    else if (filename.includes('jungle') || filename.includes('water') || concept.includes('rain')) tags.temp = 'Humid / Tropical';
-    else tags.temp = 'Temperate / Mild';
-
-    // 3. LIGHT
-    if (concept.includes('night') || concept.includes('cave') || concept.includes('dark')) tags.light = 'Dark / Night';
-    else if (concept.includes('storm') || concept.includes('overcast') || concept.includes('fog')) tags.light = 'Overcast / Stormy';
-    else if (concept.includes('sunset') || concept.includes('sunrise') || concept.includes('autumn')) tags.light = 'Golden Hour';
-    else tags.light = 'Bright / Sunny';
+    // TEMP
+    if (['ice', 'snow', 'frozen', 'glacier', 'cold', 'winter'].some(k => prompt.includes(k) || concept.includes(k))) tags.temp = 'Cold / Frozen';
+    else if (['desert', 'sun', 'hot', 'fire', 'volcano', 'lava'].some(k => prompt.includes(k) || concept.includes(k))) tags.temp = 'Hot / Arid';
+    else if (['jungle', 'rain', 'mist', 'fog', 'tropical'].some(k => prompt.includes(k) || concept.includes(k))) tags.temp = 'Humid / Tropical';
+    else tags.temp = 'Mild / Temperate';
   }
 
   if (pool === 'objects') {
-    // 1. MATERIAL
-    if (filename.includes('vehicle') || filename.includes('tech') || filename.includes('tool')) tags.obj_material = 'Metal';
-    else if (concept.includes('wood') || concept.includes('paper') || concept.includes('book')) tags.obj_material = 'Wood / Paper';
-    else if (concept.includes('glass') || concept.includes('composite') || concept.includes('circuit')) tags.obj_material = 'Composite / Glass';
+    // MATERIAL
+    if (['car', 'train', 'plane', 'metal', 'gold', 'silver', 'brass', 'key', 'sword'].some(k => prompt.includes(k) || concept.includes(k))) tags.obj_material = 'Metal';
+    else if (['wood', 'paper', 'book', 'palette'].some(k => prompt.includes(k) || concept.includes(k))) tags.obj_material = 'Wood / Paper';
+    else if (['glass', 'bulb', 'composite', 'circuit'].some(k => prompt.includes(k) || concept.includes(k))) tags.obj_material = 'Composite / Glass';
     else tags.obj_material = 'Plastic / Synthetic';
 
-    // 2. FUNCTION
-    if (filename.includes('vehicle') || filename.includes('vessel')) tags.function = 'Transport';
-    else if (filename.includes('tool') || filename.includes('tech') || concept.includes('robot')) tags.function = 'Tool / Device';
-    else if (concept.includes('statue') || concept.includes('painting') || concept.includes('decor')) tags.function = 'Art / Decor';
-    else tags.function = 'Container'; // box, bottle etc, defaulting if unknown
+    // SURFACE
+    if (['polished', 'chrome', 'clean', 'new', 'glass', 'mirror'].some(k => prompt.includes(k))) tags.surface = 'Polished / Shiny';
+    else if (['rust', 'old', 'weathered', 'dirty'].some(k => prompt.includes(k))) tags.surface = 'Rusted / Weathered';
+    else if (['circuit', 'ornate', 'detailed', 'complex'].some(k => prompt.includes(k))) tags.surface = 'Complex / Detailed';
+    else tags.surface = 'Matte / Dull';
 
-    // 3. COMPLEXITY
-    if (concept.includes('circuit') || concept.includes('robot') || concept.includes('engine')) tags.complexity = 'Electronic';
-    else if (filename.includes('vehicle') || concept.includes('clock') || concept.includes('camera')) tags.complexity = 'Mechanical';
-    else if (concept.includes('ornate') || concept.includes('vintage')) tags.complexity = 'Ornate';
+    // COMPLEXITY
+    if (['circuit', 'robot', 'computer', 'electronic'].some(k => prompt.includes(k))) tags.complexity = 'Electronic';
+    else if (['car', 'train', 'watch', 'camera', 'engine', 'bike'].some(k => prompt.includes(k))) tags.complexity = 'Mechanical';
+    else if (['ornate', 'jewelry', 'art', 'decor'].some(k => prompt.includes(k))) tags.complexity = 'Ornate / Art';
     else tags.complexity = 'Simple / Single';
   }
 
   if (pool === 'food') {
-    // 1. FLAVOR
-    if (concept.includes('lemon') || concept.includes('lime') || concept.includes('wine')) tags.flavor = 'Sour / Acidic';
-    else if (concept.includes('cake') || concept.includes('chocolate') || concept.includes('fruit')) tags.flavor = 'Sweet';
-    else if (concept.includes('chili') || concept.includes('pepper') || concept.includes('coffee')) tags.flavor = 'Bitter / Spicy';
+    // FLAVOR
+    if (['lemon', 'lime', 'citrus', 'sour', 'wine'].some(k => concept.includes(k))) tags.flavor = 'Sour / Acidic';
+    else if (['cake', 'sweet', 'fruit', 'berry', 'chocolate'].some(k => concept.includes(k))) tags.flavor = 'Sweet';
+    else if (['chili', 'spicy', 'pepper', 'coffee', 'bitter'].some(k => concept.includes(k))) tags.flavor = 'Bitter / Spicy';
     else tags.flavor = 'Savory / Salty';
 
-    // 2. STATE
-    if (concept.includes('wine') || concept.includes('juice') || concept.includes('soup')) tags.state = 'Liquid / Wet';
-    else if (concept.includes('cake') || concept.includes('bread') || concept.includes('cream')) tags.state = 'Soft / Creamy';
-    else if (concept.includes('cookie') || concept.includes('chip') || concept.includes('nut')) tags.state = 'Crunchy';
-    else tags.state = 'Solid / Dry';
+    // TEMP
+    if (['coffee', 'soup', 'tea', 'fire', 'cook'].some(k => prompt.includes(k))) tags.food_temp = 'Hot / Cooked';
+    else if (['ice', 'frozen', 'chill'].some(k => prompt.includes(k))) tags.food_temp = 'Cold / Frozen';
+    else if (['boil', 'steam'].some(k => prompt.includes(k))) tags.food_temp = 'Boiling / Steaming';
+    else tags.food_temp = 'Room Temp';
 
-    // 3. SOURCE
-    if (concept.includes('meat') || concept.includes('fish') || concept.includes('egg')) tags.source = 'Meat / Protein';
-    else if (concept.includes('cake') || concept.includes('bread') || concept.includes('pasta')) tags.source = 'Baked / Grain';
-    else if (concept.includes('wine') || concept.includes('coffee')) tags.source = 'Beverage';
-    else tags.source = 'Plant / Fruit';
+    // TEXTURE
+    if (['wine', 'juice', 'soup', 'drink'].some(k => concept.includes(k))) tags.food_texture = 'Liquid / Wet';
+    else if (['cake', 'bread', 'cream', 'soft'].some(k => concept.includes(k))) tags.food_texture = 'Soft / Creamy';
+    else if (['meat', 'steak', 'veg'].some(k => concept.includes(k))) tags.food_texture = 'Fibrous / Chewy';
+    else tags.food_texture = 'Crunchy / Hard';
   }
 
   return tags;
@@ -1050,7 +369,7 @@ export default function SensesApp() {
 
   // Initialize from LocalStorage & SessionStorage
   useEffect(() => {
-    const saved = localStorage.getItem('senses_history_v2');
+    const saved = localStorage.getItem('senses_history_v3_objective');
     if (saved) setHistory(JSON.parse(saved));
 
     const introSeen = sessionStorage.getItem('senses_intro_seen');
@@ -1061,17 +380,16 @@ export default function SensesApp() {
 
   // Persist History
   useEffect(() => {
-    localStorage.setItem('senses_history_v2', JSON.stringify(history));
+    localStorage.setItem('senses_history_v3_objective', JSON.stringify(history));
   }, [history]);
 
-  // Scoring Logic (Dynamic based on active config)
+  // Scoring Logic
   const calculateScore = (guesses: Record<string, string>, correctTags: Record<string, string>, config: PoolConfig) => {
     let matched = 0;
     let total = 0;
     
     Object.values(config).forEach(cat => {
       total++;
-      // Check if user has made a guess for this category
       if (guesses[cat.id] && guesses[cat.id] === correctTags[cat.id]) {
         matched++;
       }
@@ -1155,7 +473,7 @@ export default function SensesApp() {
             THE ORACLE GATE
             </h1>
             <p className="text-indigo-300 font-serif italic tracking-wide text-lg">
-            Grimoire v3.1 // Arcanum Protocol
+            Remote Viewing Trainer v3.1
             </p>
         </div>
       </div>
@@ -1163,8 +481,8 @@ export default function SensesApp() {
       {/* Intro Text */}
       <div className="max-w-lg mx-auto bg-slate-900/80 p-6 rounded-lg border border-indigo-900/50 text-slate-400 font-light leading-relaxed backdrop-blur-sm">
         <p>
-          Attune your inner eye to the frequencies of the divine. A target has been veiled from sight. 
-          Use your intuition to sense its essence, vibration, and form before the veil is lifted.
+          Attune your inner eye. A target has been veiled from sight. 
+          Use your intuition to describe its physical properties before the veil is lifted.
         </p>
       </div>
 
@@ -1210,14 +528,14 @@ export default function SensesApp() {
     return (
       <div className="w-full max-w-4xl mx-auto space-y-8 pb-24 animate-in slide-in-from-bottom-8 duration-700">
         
-        {/* Header / Target Status */}
+        {/* Header / Target Status (REFACTORED for Anti-Cheating) */}
         <div className="flex items-center justify-between border-b border-indigo-900/30 pb-4">
             <div className="flex items-center gap-3">
                 <div className="w-3 h-3 rounded-full bg-amber-500 animate-pulse shadow-[0_0_10px_rgba(245,158,11,0.5)]"></div>
-                <span className="font-mono text-xs text-amber-500 tracking-[0.2em]">ETHERIC SIGNATURE DETECTED</span>
+                <span className="font-serif text-sm md:text-base text-amber-100 tracking-wider">Predict the Qualities of the Image</span>
             </div>
-            <div className="text-indigo-400 text-xs font-serif italic">
-                Ritual Sequence: {currentLevel.id.toString().padStart(4, '0')} // {currentLevel.pool.toUpperCase()}
+            <div className="bg-indigo-900/30 px-3 py-1 rounded text-amber-500 text-xs font-bold uppercase tracking-widest border border-indigo-500/20">
+                 {currentLevel.pool === 'all' ? 'The Void' : currentLevel.pool}
             </div>
         </div>
 
@@ -1237,7 +555,7 @@ export default function SensesApp() {
 
                         <h2 className="text-2xl font-serif text-slate-300 mb-2">Target Veiled</h2>
                         <p className="text-sm text-slate-500 font-light">
-                            Quiet your mind. <br/>Feel the emanations.
+                           No visual data available. <br/>Rely on your inner senses.
                         </p>
                     </div>
                     {/* Corner accents */}
@@ -1271,19 +589,26 @@ export default function SensesApp() {
 
             {/* Right Column: Context-Aware Descriptors */}
             <div className="lg:col-span-7 space-y-6">
+                 {/* Instructional Text */}
+                 <div className="bg-indigo-950/20 p-4 rounded border-l-2 border-amber-500/50 mb-6">
+                     <p className="text-indigo-200 text-sm font-light italic">
+                         "Tune into the target. Select the sensory details that describe its physical reality."
+                     </p>
+                 </div>
+
                  {Object.values(currentConfig).map((cat) => (
                      <div key={cat.id} className="group">
                          <div className="flex items-center gap-2 mb-3">
                              <span className={`w-1 h-1 rounded-full ${guesses[cat.id] ? 'bg-amber-500' : 'bg-slate-700'}`}></span>
-                             <h3 className="font-serif text-slate-300 text-sm tracking-wide">{cat.label}</h3>
+                             <h3 className="font-serif text-slate-200 text-base tracking-wide font-medium">{cat.label}</h3>
                          </div>
-                         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                         <div className="grid grid-cols-2 gap-2">
                              {cat.options.map((opt) => (
                                  <button
                                     key={opt}
                                     onClick={() => handleGuess(cat.id, opt)}
                                     className={`
-                                        py-2 px-2 text-[10px] sm:text-xs uppercase tracking-wider rounded border transition-all duration-300
+                                        py-3 px-3 text-xs uppercase tracking-wider rounded border transition-all duration-300
                                         ${guesses[cat.id] === opt 
                                             ? 'bg-indigo-600 border-indigo-500 text-white shadow-[0_0_15px_rgba(79,70,229,0.4)]' 
                                             : 'bg-slate-800/50 border-slate-700 text-slate-500 hover:bg-slate-700 hover:text-slate-300'}
@@ -1395,7 +720,7 @@ export default function SensesApp() {
 
         {/* Bottom Section: The Analysis */}
         <div className="border-t border-indigo-900/30 pt-8">
-            <h3 className="text-center font-serif text-slate-400 text-lg mb-6">Psychic Data Analysis</h3>
+            <h3 className="text-center font-serif text-slate-400 text-lg mb-6">Objective Sensory Analysis</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {Object.values(currentConfig).map(cat => {
                     const userGuess = guesses[cat.id];
@@ -1469,7 +794,7 @@ export default function SensesApp() {
                         <div className="flex items-center gap-4">
                              <div className={`w-2 h-2 rounded-full ${record.score.percentage >= 60 ? 'bg-emerald-500' : 'bg-red-500'}`}></div>
                              <div>
-                                 <div className="text-slate-300 text-sm font-serif">Vision #{record.levelId}</div>
+                                 <div className="text-slate-300 text-sm font-serif">Vision Log #{idx + 1}</div>
                                  <div className="text-xs text-slate-600 uppercase">{record.pool}</div>
                              </div>
                         </div>
@@ -1505,7 +830,7 @@ export default function SensesApp() {
                         onClick={() => {
                             if(confirm("Purge all akashic records? This cannot be undone.")) {
                                 setHistory([]);
-                                localStorage.removeItem('senses_history_v2');
+                                localStorage.removeItem('senses_history_v3_objective');
                                 setShowSettings(false);
                             }
                         }}
@@ -1517,7 +842,7 @@ export default function SensesApp() {
                 </div>
 
                 <div className="text-xs text-slate-600 italic text-center pt-4">
-                    Grimoire v3.1 // Arcanum Protocol
+                    Remote Viewing Trainer v3.1
                 </div>
             </div>
           </div>
@@ -1544,19 +869,19 @@ export default function SensesApp() {
                         </p>
                         <div className="bg-indigo-950/30 p-4 rounded border border-indigo-900/50">
                             <h3 className="text-indigo-300 font-bold uppercase text-xs mb-2">How it Works</h3>
-                            <p>An image has been hidden behind the veil. Your task is not to 'guess' the picture, but to <span className="text-amber-400 font-medium">feel</span> its properties.</p>
+                            <p>An image has been hidden behind the veil. Your task is not to 'guess' the picture, but to <span className="text-amber-400 font-medium">sense</span> its physical facts.</p>
                         </div>
                         
                         <div className="space-y-2">
                             <h3 className="text-amber-500 font-serif uppercase tracking-widest text-xs">The Process</h3>
                             <ul className="space-y-2 list-disc pl-4 text-slate-400">
                                 <li><strong className="text-slate-200">Center Yourself:</strong> Take a deep breath. Clear your mind.</li>
-                                <li><strong className="text-slate-200">Sense, Don't Think:</strong> Do not look for a name (e.g., 'Eiffel Tower'). Look for sensations. Is it jagged? Is it metallic? Does it feel ancient?</li>
-                                <li><strong className="text-slate-200">Select a Realm:</strong> Choose a specific category (like <em>Animals</em>) to practice within a known archetype, or choose <em>The Void</em> to test your skills against the unknown.</li>
+                                <li><strong className="text-slate-200">Be Objective:</strong> Do not guess "Lion". Sense "Furry", "Warm Color", "Organic Form".</li>
+                                <li><strong className="text-slate-200">Select a Realm:</strong> Choose a specific category to focus your practice.</li>
                             </ul>
                         </div>
                         
-                        <p className="text-center italic text-indigo-400 pt-2">"Trust your first impression. It is usually the whisper of truth."</p>
+                        <p className="text-center italic text-indigo-400 pt-2">"True sight comes when the mind is silent."</p>
                     </div>
 
                     <Button onClick={closeInstructions} className="w-full">
@@ -1658,3 +983,5 @@ export default function SensesApp() {
     </main>
   );
 }
+
+// --- END OF FILE page.tsx ---
