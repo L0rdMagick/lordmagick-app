@@ -1286,7 +1286,7 @@ export default function SensesApp() {
                 <span className="font-serif text-sm md:text-base text-amber-100 tracking-wider">Predict the Qualities of the Image</span>
             </div>
             {/* HIDE Category Label if 'All Categories' is selected */}
-            {currentLevel.pool !== 'all' && (
+            {selectedPool !== 'all' && (
                 <div className="text-amber-500 text-xl font-bold font-serif uppercase tracking-widest drop-shadow-[0_2px_4px_rgba(245,158,11,0.3)]">
                     {POOLS.find(p => p.id === currentLevel.pool)?.label.toUpperCase()}
                 </div>
@@ -1305,12 +1305,14 @@ export default function SensesApp() {
                              <Lock className="w-8 h-8 text-indigo-400/80 drop-shadow-md" />
                         </div>
 
-                        <div className="relative z-10 bg-black/40 p-4 rounded-xl backdrop-blur-sm border border-white/5">
-                            <h2 className="text-2xl font-serif text-slate-200 mb-2 drop-shadow-md">Target Veiled</h2>
-                            <p className="text-sm text-slate-300 font-light drop-shadow-md">
-                            No visual data available. <br/>Rely on your inner senses.
-                            </p>
-                        </div>
+                        {cardBack === 'default' && (
+                            <div className="relative z-10 bg-black/40 p-4 rounded-xl backdrop-blur-sm border border-white/5">
+                                <h2 className="text-2xl font-serif text-slate-200 mb-2 drop-shadow-md">Target Veiled</h2>
+                                <p className="text-sm text-slate-300 font-light drop-shadow-md">
+                                No visual data available. <br/>Rely on your inner senses.
+                                </p>
+                            </div>
+                        )}
                     </div>
                     {/* Corner accents */}
                     <div className="absolute top-2 left-2 w-4 h-4 border-t border-l border-amber-500/30"></div>
