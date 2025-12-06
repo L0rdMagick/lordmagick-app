@@ -1,11 +1,11 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom'; // Added for Portal
+import { createPortal } from 'react-dom';
 import { 
   Eye, EyeOff, Play, RotateCcw, HelpCircle, X, Trophy, 
   Settings, Save, Activity, Sparkles, Volume2, VolumeX, Maximize, Minimize, Trash2,
-  ChevronsUp // Added for affordance
+  ChevronsUp, Maximize2
 } from 'lucide-react';
 import { createBrowserClient } from '@supabase/ssr';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
@@ -229,7 +229,7 @@ const useAudioEngine = () => {
 
 const InstructionModal = ({ onClose }: { onClose: () => void }) => (
   <div 
-    className="fixed inset-0 z-100 flex items-center justify-center bg-black/95 backdrop-blur-md p-6 animate-in fade-in duration-300"
+    className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-md p-6 animate-in fade-in duration-300"
     onClick={onClose}
   >
     <div 
@@ -283,7 +283,7 @@ const PsiStats = ({ stats, variant = 'floating' }: { stats: any, variant?: 'floa
     const [showModal, setShowModal] = useState(false);
     const [lifetimeStats, setLifetimeStats] = useState({ hits: 0, trials: 0 });
     const [loadingLifetime, setLoadingLifetime] = useState(false);
-    const [mounted, setMounted] = useState(false); // To handle Portal mounting
+    const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
         setMounted(true);
@@ -346,7 +346,7 @@ const PsiStats = ({ stats, variant = 'floating' }: { stats: any, variant?: 'floa
     const TriggerContent = () => (
       <>
         {variant === 'header' ? (
-           <>
+           <div className="flex items-center gap-6" title="Click to view full stats">
               <div className="flex items-center gap-3 border-r border-gray-700 pr-4">
                   <span className="text-yellow-400 font-bold flex items-center gap-1"><Trophy size={14} /> {stats.streak}</span>
               </div>
@@ -358,15 +358,20 @@ const PsiStats = ({ stats, variant = 'floating' }: { stats: any, variant?: 'floa
                   <span className="text-[10px] text-gray-400 uppercase tracking-widest">Psi (Z)</span>
                   <span className={`text-sm font-bold font-mono ${sessionZ >= 0 ? 'text-purple-300' : 'text-gray-400'}`}>{sessionZ.toFixed(2)}</span>
               </div>
-              <ChevronsUp size={14} className="text-gray-600 group-hover:text-purple-400 transition-colors ml-1 animate-pulse" />
-           </>
+              {/* Desktop Affordance: Maximize Icon on Hover */}
+              <Maximize2 size={16} className="text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity transform scale-75 group-hover:scale-100" />
+           </div>
         ) : (
            <>
-             {/* Mobile visual cue */}
-             <div className="absolute top-1 right-1 text-purple-500/50 group-hover:text-purple-400">
-               <ChevronsUp size={10} />
+             {/* Mobile Affordance: Distinct EXPAND label and visible Icon */}
+             <div className="absolute -top-3 right-0 bg-purple-900/80 border border-purple-500/30 text-[8px] font-bold px-1.5 rounded text-purple-200 tracking-wider shadow-sm">
+               EXPAND
              </div>
-             <div className="flex items-center gap-2">
+             <div className="absolute top-1 right-1 text-purple-400/70 group-hover:text-purple-300">
+               <ChevronsUp size={12} />
+             </div>
+             
+             <div className="flex items-center gap-2 mt-1">
               <span className="text-xs font-mono text-purple-400 group-hover:text-purple-300 transition-colors">N: {sessionTrials}</span>
               <div className="w-px h-3 bg-purple-500/20"></div>
               <span className="text-xl font-mono font-bold text-slate-200 group-hover:text-white transition-colors">
@@ -384,10 +389,10 @@ const PsiStats = ({ stats, variant = 'floating' }: { stats: any, variant?: 'floa
     // Modal Content Component to be Portaled
     const ModalContent = () => (
         <div 
-            className="fixed inset-0 z-9999 flex items-center justify-center bg-black/95 backdrop-blur-xl p-0 md:p-4 animate-in fade-in duration-300"
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/95 backdrop-blur-xl p-0 md:p-4 animate-in fade-in duration-300"
             onClick={() => setShowModal(false)}
         >
-          {/* Modal Container: Full Screen on Mobile, Centered Card on Desktop */}
+          {/* Modal Container */}
           <div 
             className="w-full h-full md:h-auto md:max-h-[95vh] md:max-w-4xl bg-slate-900 border-0 md:border md:border-purple-500/20 rounded-none md:rounded-xl p-6 relative overflow-y-auto shadow-[0_0_50px_rgba(168,85,247,0.2)] flex flex-col"
             onClick={(e) => e.stopPropagation()}
@@ -514,13 +519,12 @@ const CircularTimer = ({ duration, onComplete, isActive }: { duration: number, o
   const strokeDashoffset = circumference - (progress / 100) * circumference;
 
   return (
-    <div className="relative flex items-center justify-center">
+    <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
        {/* Background Glow */}
-      <div className="absolute w-64 h-64 rounded-full bg-black shadow-[0_0_80px_rgba(139,92,246,0.3)] border border-gray-800/50 z-0" />
+      <div className="absolute inset-0 rounded-full bg-black shadow-[0_0_80px_rgba(139,92,246,0.3)] border border-gray-800/50 z-0" />
       
-      {/* SVG Container with high z-index and SVG native rotation */}
-      <svg width={size} height={size} className="z-10 relative">
-        <g transform={`rotate(-90 ${center} ${center})`}>
+      {/* SVG Container: Applied viewBox and Tailwind rotation to Parent SVG instead of <g> */}
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="z-10 relative transform -rotate-90">
           <circle
             cx={center}
             cy={center}
@@ -542,7 +546,6 @@ const CircularTimer = ({ duration, onComplete, isActive }: { duration: number, o
             strokeLinecap="round"
             className="drop-shadow-[0_0_15px_rgba(34,211,238,1)] transition-all duration-75 ease-linear"
           />
-        </g>
       </svg>
       
       {isActive && (
