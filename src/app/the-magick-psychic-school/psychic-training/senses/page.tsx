@@ -5,63 +5,61 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Settings, RefreshCw, Eye, Check, X, BarChart2, ArrowLeft, 
-  Sparkles, Moon, Sun, Lock, Volume2, Home, LogOut, HelpCircle
+  Sparkles, Moon, Sun, Lock, Volume2, Home, LogOut
 } from 'lucide-react';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
 
 // --- CONFIGURATION ---
 
 const POOLS = [
-  { id: 'all', label: 'The Void (All Realms)' },
-  { id: 'animals', label: 'Animals' },
-  { id: 'structures', label: 'Structures' },
-  { id: 'landscapes', label: "Natural Formations" },
-  { id: 'objects', label: 'Random Objects' },
-  { id: 'food', label: 'Food' }
+  { id: 'all', label: 'Universal (All)' },
+  { id: 'animals', label: 'Biological Entities' },
+  { id: 'structures', label: 'Constructs & Ruins' },
+  { id: 'landscapes', label: 'Natural Vistas' },
+  { id: 'objects', label: 'Artifacts & Machines' },
+  { id: 'food', label: 'Sustenance' }
 ];
 
 // --- CONTEXT AWARE CATEGORY DEFINITIONS ---
-// NOTE: 'id' and 'options' remain unchanged to preserve inference logic. 
-// Only 'label' is updated to match the mystical tone.
 
 type CategoryOption = { id: string; label: string; options: string[] };
 type PoolConfig = Record<string, CategoryOption>;
 
 const UNIVERSAL_CATEGORIES: PoolConfig = {
-  GESTALT: { id: 'gestalt', label: 'Core Essence', options: ['Biological', 'Structure', 'Machine', 'Natural Feature'] },
-  COLOR: { id: 'color', label: 'Dominant Aura', options: ['Warm (Red/Yel)', 'Cool (Blue/Purp)', 'Nature (Grn/Brn)', 'Mono (Grey/Wht)'] },
-  TEXTURE: { id: 'texture', label: 'Tactile Sense', options: ['Soft / Organic', 'Hard / Smooth', 'Rough / Coarse', 'Fluid / Wet'] },
-  VIBE: { id: 'emotion', label: 'Energy Signature', options: ['Peaceful', 'High Energy', 'Melancholic', 'Intense / Scary'] }
+  GESTALT: { id: 'gestalt', label: 'Primary Gestalt', options: ['Biological', 'Structure', 'Machine', 'Natural Feature'] },
+  COLOR: { id: 'color', label: 'Dominant Color', options: ['Warm (Red/Yel)', 'Cool (Blue/Purp)', 'Nature (Grn/Brn)', 'Mono (Grey/Wht)'] },
+  TEXTURE: { id: 'texture', label: 'Texture', options: ['Soft / Organic', 'Hard / Smooth', 'Rough / Coarse', 'Fluid / Wet'] },
+  VIBE: { id: 'emotion', label: 'Energetic Vibe', options: ['Peaceful', 'High Energy', 'Melancholic', 'Intense / Scary'] }
 };
 
 const POOL_CONFIGS: Record<string, PoolConfig> = {
   all: UNIVERSAL_CATEGORIES,
   animals: {
-    CLASS: { id: 'class', label: 'Spirit Form', options: ['Mammal', 'Bird', 'Marine', 'Insect/Bug'] },
-    DIET: { id: 'diet', label: 'Energy Source', options: ['Carnivore', 'Herbivore', 'Omnivore', 'Filter/Scavenger'] },
-    HABITAT: { id: 'habitat', label: 'Native Plane', options: ['Land / Forest', 'Water / Ocean', 'Air / Sky', 'Domestic'] },
+    CLASS: { id: 'class', label: 'Biological Class', options: ['Mammal', 'Bird', 'Marine', 'Insect/Bug'] },
+    DIET: { id: 'diet', label: 'Dietary Archetype', options: ['Carnivore', 'Herbivore', 'Omnivore', 'Filter/Scavenger'] },
+    HABITAT: { id: 'habitat', label: 'Primary Habitat', options: ['Land / Forest', 'Water / Ocean', 'Air / Sky', 'Domestic'] },
     COLOR: UNIVERSAL_CATEGORIES.COLOR
   },
   structures: {
-    ERA: { id: 'era', label: 'Temporal Epoch', options: ['Ancient / Ruin', 'Classical / Trad', 'Modern / Industrial', 'Futuristic'] },
-    MATERIAL: { id: 'material', label: 'Base Matter', options: ['Stone / Brick', 'Metal / Glass', 'Wood / Organic', 'Concrete'] },
-    TYPE: { id: 'struct_type', label: 'Manifestation', options: ['Dwelling', 'Monument/Sacred', 'Infrastructure', 'Commercial'] },
+    ERA: { id: 'era', label: 'Temporal Era', options: ['Ancient / Ruin', 'Classical / Trad', 'Modern / Industrial', 'Futuristic'] },
+    MATERIAL: { id: 'material', label: 'Primary Material', options: ['Stone / Brick', 'Metal / Glass', 'Wood / Organic', 'Concrete'] },
+    TYPE: { id: 'struct_type', label: 'Function', options: ['Dwelling', 'Monument/Sacred', 'Infrastructure', 'Commercial'] },
     VIBE: UNIVERSAL_CATEGORIES.VIBE
   },
   landscapes: {
-    ELEMENT: { id: 'element', label: 'Ruling Element', options: ['Water / Ice', 'Earth / Rock', 'Greenery / Plant', 'Air / Sky'] },
-    TEMP: { id: 'temp', label: 'Atmosphere', options: ['Hot / Arid', 'Cold / Frozen', 'Temperate / Mild', 'Humid / Tropical'] },
-    LIGHT: { id: 'light', label: 'Illumination', options: ['Bright / Sunny', 'Dark / Night', 'Overcast / Stormy', 'Golden Hour'] },
+    ELEMENT: { id: 'element', label: 'Dominant Element', options: ['Water / Ice', 'Earth / Rock', 'Greenery / Plant', 'Air / Sky'] },
+    TEMP: { id: 'temp', label: 'Temperature', options: ['Hot / Arid', 'Cold / Frozen', 'Temperate / Mild', 'Humid / Tropical'] },
+    LIGHT: { id: 'light', label: 'Lighting Condition', options: ['Bright / Sunny', 'Dark / Night', 'Overcast / Stormy', 'Golden Hour'] },
     VIBE: UNIVERSAL_CATEGORIES.VIBE
   },
   objects: {
-    MATERIAL: { id: 'obj_material', label: 'Composition', options: ['Metal', 'Wood / Paper', 'Plastic / Synthetic', 'Composite / Glass'] },
-    FUNCTION: { id: 'function', label: 'Intent / Use', options: ['Transport', 'Tool / Device', 'Art / Decor', 'Container'] },
-    COMPLEXITY: { id: 'complexity', label: 'Intricacy', options: ['Simple / Single', 'Mechanical', 'Electronic', 'Ornate'] },
+    MATERIAL: { id: 'obj_material', label: 'Material', options: ['Metal', 'Wood / Paper', 'Plastic / Synthetic', 'Composite / Glass'] },
+    FUNCTION: { id: 'function', label: 'Utility', options: ['Transport', 'Tool / Device', 'Art / Decor', 'Container'] },
+    COMPLEXITY: { id: 'complexity', label: 'Complexity', options: ['Simple / Single', 'Mechanical', 'Electronic', 'Ornate'] },
     COLOR: UNIVERSAL_CATEGORIES.COLOR
   },
   food: {
-    FLAVOR: { id: 'flavor', label: 'Essence Profile', options: ['Sweet', 'Savory / Salty', 'Sour / Acidic', 'Bitter / Spicy'] },
+    FLAVOR: { id: 'flavor', label: 'Dominant Profile', options: ['Sweet', 'Savory / Salty', 'Sour / Acidic', 'Bitter / Spicy'] },
     STATE: { id: 'state', label: 'Physical State', options: ['Solid / Dry', 'Liquid / Wet', 'Soft / Creamy', 'Crunchy'] },
     SOURCE: { id: 'source', label: 'Origin', options: ['Plant / Fruit', 'Meat / Protein', 'Baked / Grain', 'Beverage'] },
     COLOR: UNIVERSAL_CATEGORIES.COLOR
@@ -1044,19 +1042,13 @@ export default function SensesApp() {
   const [history, setHistory] = useState<any[]>([]);
   const [selectedPool, setSelectedPool] = useState('all');
   
-  // Settings & Modal State
+  // Settings State
   const [showSettings, setShowSettings] = useState(false);
-  const [showInstructions, setShowInstructions] = useState(false);
 
-  // Initialize from LocalStorage & SessionStorage
+  // Initialize from LocalStorage
   useEffect(() => {
     const saved = localStorage.getItem('senses_history_v2');
     if (saved) setHistory(JSON.parse(saved));
-
-    const introSeen = sessionStorage.getItem('senses_intro_seen');
-    if (!introSeen) {
-        setShowInstructions(true);
-    }
   }, []);
 
   // Persist History
@@ -1131,11 +1123,6 @@ export default function SensesApp() {
     setHistory(prev => [resultRecord, ...prev].slice(0, 50)); 
   };
 
-  const closeInstructions = () => {
-      sessionStorage.setItem('senses_intro_seen', 'true');
-      setShowInstructions(false);
-  }
-
   // --- SUB-VIEWS ---
 
   const WelcomeView = () => (
@@ -1152,10 +1139,10 @@ export default function SensesApp() {
                  <Sun className="w-12 h-12 text-amber-500 opacity-60" />
             </div>
             <h1 className="text-4xl md:text-6xl font-serif text-transparent bg-clip-text bg-linear-to-b from-amber-100 to-amber-600 tracking-widest mb-2">
-            THE ORACLE GATE
+            REMOTE VIEWING
             </h1>
             <p className="text-indigo-300 font-serif italic tracking-wide text-lg">
-            Grimoire v3.1 // Arcanum Protocol
+            Protocol Omega // Psychic Training Tool
             </p>
         </div>
       </div>
@@ -1163,14 +1150,14 @@ export default function SensesApp() {
       {/* Intro Text */}
       <div className="max-w-lg mx-auto bg-slate-900/80 p-6 rounded-lg border border-indigo-900/50 text-slate-400 font-light leading-relaxed backdrop-blur-sm">
         <p>
-          Attune your inner eye to the frequencies of the divine. A target has been veiled from sight. 
-          Use your intuition to sense its essence, vibration, and form before the veil is lifted.
+          Connect with the unseen. A target has been hidden behind the veil. 
+          Use your intuition to describe its gestalt, sensory data, and energetic signature before it is revealed.
         </p>
       </div>
 
       {/* Pool Selector */}
       <div className="w-full max-w-lg space-y-3">
-          <label className="text-xs uppercase tracking-[0.2em] text-indigo-400 font-serif">Select Your Plane of Focus</label>
+          <label className="text-xs uppercase tracking-[0.2em] text-indigo-400 font-serif">Select Target Frequency</label>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {POOLS.map(pool => (
                   <button
@@ -1193,7 +1180,7 @@ export default function SensesApp() {
       <div className="flex gap-4 pt-4">
         <Button onClick={startRound} className="w-48 text-lg border-amber-500/30">
           <Sparkles className="w-5 h-5 text-amber-400" />
-          Open the Eye
+          Initiate
         </Button>
       </div>
     </div>
@@ -1214,10 +1201,10 @@ export default function SensesApp() {
         <div className="flex items-center justify-between border-b border-indigo-900/30 pb-4">
             <div className="flex items-center gap-3">
                 <div className="w-3 h-3 rounded-full bg-amber-500 animate-pulse shadow-[0_0_10px_rgba(245,158,11,0.5)]"></div>
-                <span className="font-mono text-xs text-amber-500 tracking-[0.2em]">ETHERIC SIGNATURE DETECTED</span>
+                <span className="font-mono text-xs text-amber-500 tracking-[0.2em]">TARGET COORDINATES LOCKED</span>
             </div>
             <div className="text-indigo-400 text-xs font-serif italic">
-                Ritual Sequence: {currentLevel.id.toString().padStart(4, '0')} // {currentLevel.pool.toUpperCase()}
+                Session ID: {currentLevel.id.toString().padStart(4, '0')} // {currentLevel.pool.toUpperCase()}
             </div>
         </div>
 
@@ -1235,9 +1222,9 @@ export default function SensesApp() {
                              <Lock className="w-8 h-8 text-indigo-400/50" />
                         </div>
 
-                        <h2 className="text-2xl font-serif text-slate-300 mb-2">Target Veiled</h2>
+                        <h2 className="text-2xl font-serif text-slate-300 mb-2">Target Concealed</h2>
                         <p className="text-sm text-slate-500 font-light">
-                            Quiet your mind. <br/>Feel the emanations.
+                            Focus your intent. <br/>receive the data streams.
                         </p>
                     </div>
                     {/* Corner accents */}
@@ -1249,7 +1236,7 @@ export default function SensesApp() {
                 
                 <div className="bg-slate-900/50 p-4 rounded-lg border border-indigo-900/30">
                     <div className="flex justify-between items-center mb-2">
-                        <span className="text-xs text-indigo-400 uppercase tracking-widest">Resonance</span>
+                        <span className="text-xs text-indigo-400 uppercase tracking-widest">Signal Strength</span>
                         <span className="text-xs text-amber-500 font-mono">{Math.round((answeredCount/totalCategories)*100)}%</span>
                     </div>
                     <div className="w-full h-1 bg-slate-800 rounded-full overflow-hidden">
@@ -1265,7 +1252,7 @@ export default function SensesApp() {
                   onClick={() => setView('welcome')}
                   className="w-full py-2 flex items-center justify-center gap-2 text-xs text-red-400/60 hover:text-red-400 border border-transparent hover:border-red-900/30 rounded transition-all"
                 >
-                   <LogOut className="w-3 h-3" /> Sever Connection
+                   <LogOut className="w-3 h-3" /> Abort Session
                 </button>
             </div>
 
@@ -1307,7 +1294,7 @@ export default function SensesApp() {
                 disabled={!allAnswered} 
                 className={`w-full shadow-2xl transition-all duration-500 ${allAnswered ? 'opacity-100 translate-y-0' : 'opacity-80 translate-y-2'}`}
             >
-                {allAnswered ? "Pierce the Veil" : "Awaiting Resonance..."}
+                {allAnswered ? "Manifest Truth" : "Awaiting Data Input..."}
             </Button>
           </div>
         </div>
@@ -1347,14 +1334,14 @@ export default function SensesApp() {
                 
                 <div className="absolute inset-0 bg-linear-to-t from-black/80 via-transparent to-transparent pointer-events-none"></div>
                 <div className="absolute bottom-0 left-0 p-6">
-                    <span className="block text-amber-500 text-xs font-mono mb-1 uppercase tracking-widest">Vision Confirmed</span>
+                    <span className="block text-amber-500 text-xs font-mono mb-1 uppercase tracking-widest">Target Identity Confirmed</span>
                     <h2 className="text-3xl font-serif text-white">{currentLevel.concept}</h2>
                 </div>
             </Card>
 
             <div className="space-y-6">
                 <div className="text-center md:text-left space-y-2">
-                    <h3 className="text-sm font-serif text-indigo-300 uppercase tracking-[0.2em]">Clairvoyance Accuracy</h3>
+                    <h3 className="text-sm font-serif text-indigo-300 uppercase tracking-[0.2em]">Intuition Accuracy</h3>
                     <div className="flex items-baseline justify-center md:justify-start gap-2">
                         <span className="text-6xl font-light text-white">{score.percentage}</span>
                         <span className="text-2xl text-amber-500">%</span>
@@ -1364,15 +1351,15 @@ export default function SensesApp() {
                 <div className="bg-slate-900/50 rounded-lg p-1 border border-indigo-900/30">
                      <div className="grid grid-cols-3 divide-x divide-indigo-900/30 text-center py-4">
                          <div>
-                             <div className="text-xs text-slate-500 uppercase mb-1">Aligned</div>
+                             <div className="text-xs text-slate-500 uppercase mb-1">Matched</div>
                              <div className="text-xl text-indigo-400 font-mono">{score.matched}</div>
                          </div>
                          <div>
-                             <div className="text-xs text-slate-500 uppercase mb-1">Elements</div>
+                             <div className="text-xs text-slate-500 uppercase mb-1">Total Datapoints</div>
                              <div className="text-xl text-slate-300 font-mono">{score.total}</div>
                          </div>
                          <div>
-                             <div className="text-xs text-slate-500 uppercase mb-1">Plane</div>
+                             <div className="text-xs text-slate-500 uppercase mb-1">Pool</div>
                              <div className="text-amber-500/80 font-serif capitalize text-sm pt-1">{currentLevel.pool}</div>
                          </div>
                      </div>
@@ -1384,10 +1371,10 @@ export default function SensesApp() {
 
                 <div className="flex gap-4 pt-4">
                     <Button onClick={startRound} className="flex-1">
-                        <RefreshCw className="w-4 h-4" /> Next Vision
+                        <RefreshCw className="w-4 h-4" /> Next Target
                     </Button>
                     <Button onClick={() => setView('welcome')} variant="outline">
-                        Exit Trance
+                        Exit
                     </Button>
                 </div>
             </div>
@@ -1437,7 +1424,7 @@ export default function SensesApp() {
       <div className="w-full max-w-3xl mx-auto space-y-6 animate-in slide-in-from-right duration-500">
         <div className="flex items-center justify-between mb-8 border-b border-slate-800 pb-4">
           <button onClick={() => setView('welcome')} className="text-slate-400 hover:text-white flex items-center gap-2 transition-colors">
-            <ArrowLeft className="w-4 h-4" /> Back to Gate
+            <ArrowLeft className="w-4 h-4" /> Back to Nexus
           </button>
           <h2 className="text-xl font-serif tracking-widest text-amber-500">AKASHIC RECORDS</h2>
         </div>
@@ -1455,12 +1442,12 @@ export default function SensesApp() {
             <div className="text-3xl font-light text-amber-500 mb-2 font-serif">
                 {history.filter((h: any) => h.score.percentage >= 80).length}
             </div>
-            <div className="text-[10px] text-slate-500 uppercase tracking-widest">Ascended</div>
+            <div className="text-[10px] text-slate-500 uppercase tracking-widest">High Accuracy</div>
           </div>
         </div>
 
         <div className="space-y-3">
-            <h3 className="text-xs text-slate-500 uppercase tracking-widest mb-4">Past Visions</h3>
+            <h3 className="text-xs text-slate-500 uppercase tracking-widest mb-4">Recent Transmissions</h3>
             {history.length === 0 ? (
                 <div className="text-center py-12 text-slate-600 italic font-serif">The records are empty. Begin your training.</div>
             ) : (
@@ -1469,7 +1456,7 @@ export default function SensesApp() {
                         <div className="flex items-center gap-4">
                              <div className={`w-2 h-2 rounded-full ${record.score.percentage >= 60 ? 'bg-emerald-500' : 'bg-red-500'}`}></div>
                              <div>
-                                 <div className="text-slate-300 text-sm font-serif">Vision #{record.levelId}</div>
+                                 <div className="text-slate-300 text-sm font-serif">Target #{record.levelId}</div>
                                  <div className="text-xs text-slate-600 uppercase">{record.pool}</div>
                              </div>
                         </div>
@@ -1517,7 +1504,7 @@ export default function SensesApp() {
                 </div>
 
                 <div className="text-xs text-slate-600 italic text-center pt-4">
-                    Grimoire v3.1 // Arcanum Protocol
+                    System Version 3.1.0 // Context Aware Protocol
                 </div>
             </div>
           </div>
@@ -1525,48 +1512,6 @@ export default function SensesApp() {
       </div>
     );
   };
-
-  const InstructionModal = () => {
-      if (!showInstructions) return null;
-
-      return (
-        <div className="fixed inset-0 bg-black/95 backdrop-blur-md z-110 flex items-center justify-center p-4 animate-in fade-in duration-500">
-            <Card className="w-full max-w-lg bg-slate-950 border border-indigo-500/30">
-                <div className="p-8 space-y-6">
-                    <div className="text-center space-y-2">
-                        <Eye className="w-12 h-12 text-amber-500 mx-auto animate-pulse" />
-                        <h2 className="text-2xl font-serif text-amber-100 tracking-widest">ATTUNING THE INNER EYE</h2>
-                    </div>
-
-                    <div className="space-y-4 text-slate-300 font-light leading-relaxed text-sm">
-                        <p>
-                            Welcome, Seer. This tool is designed to sharpen your remote viewing capabilities.
-                        </p>
-                        <div className="bg-indigo-950/30 p-4 rounded border border-indigo-900/50">
-                            <h3 className="text-indigo-300 font-bold uppercase text-xs mb-2">How it Works</h3>
-                            <p>An image has been hidden behind the veil. Your task is not to 'guess' the picture, but to <span className="text-amber-400 font-medium">feel</span> its properties.</p>
-                        </div>
-                        
-                        <div className="space-y-2">
-                            <h3 className="text-amber-500 font-serif uppercase tracking-widest text-xs">The Process</h3>
-                            <ul className="space-y-2 list-disc pl-4 text-slate-400">
-                                <li><strong className="text-slate-200">Center Yourself:</strong> Take a deep breath. Clear your mind.</li>
-                                <li><strong className="text-slate-200">Sense, Don't Think:</strong> Do not look for a name (e.g., 'Eiffel Tower'). Look for sensations. Is it jagged? Is it metallic? Does it feel ancient?</li>
-                                <li><strong className="text-slate-200">Select a Realm:</strong> Choose a specific category (like <em>Animals</em>) to practice within a known archetype, or choose <em>The Void</em> to test your skills against the unknown.</li>
-                            </ul>
-                        </div>
-                        
-                        <p className="text-center italic text-indigo-400 pt-2">"Trust your first impression. It is usually the whisper of truth."</p>
-                    </div>
-
-                    <Button onClick={closeInstructions} className="w-full">
-                        Begin Ritual
-                    </Button>
-                </div>
-            </Card>
-        </div>
-      )
-  }
 
   // --- RENDER ---
   return (
@@ -1592,19 +1537,10 @@ export default function SensesApp() {
            )}
         </div>
         
-        <div className="flex items-center gap-2">
-           <button 
-             onClick={() => setShowInstructions(true)} 
-             className="p-2 hover:bg-slate-900 rounded-full transition-colors text-indigo-400/50 hover:text-amber-400"
-             title="Instructions"
-           >
-             <HelpCircle className="w-5 h-5" />
-           </button>
-
+        <div className="flex items-center gap-4">
            <button 
              onClick={() => setShowSettings(true)} 
              className="p-2 hover:bg-slate-900 rounded-full transition-colors text-indigo-400/50 hover:text-indigo-300"
-             title="Settings"
            >
              <Settings className="w-5 h-5" />
            </button>
@@ -1612,7 +1548,6 @@ export default function SensesApp() {
            <button 
              onClick={() => setView('stats')} 
              className="p-2 hover:bg-slate-900 rounded-full transition-colors text-indigo-400/50 hover:text-amber-500"
-             title="Akashic Records"
            >
              <BarChart2 className="w-5 h-5" />
            </button>
@@ -1628,7 +1563,6 @@ export default function SensesApp() {
       </div>
 
       <SettingsModal />
-      <InstructionModal />
 
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap');
