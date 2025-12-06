@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Eye, EyeOff, Play, RotateCcw, HelpCircle, X, Trophy, 
   Settings, Save, Activity, Sparkles, Volume2, VolumeX, Maximize, Minimize 
@@ -10,7 +10,6 @@ import MagickalBackLink from '@/app/components/MagickalBackLink';
 
 // --- DATA ASSETS ---
 
-// We parse the filenames provided to create a database of subjects
 const IMAGE_BASE_PATH = '/images/the-gaze/';
 
 const RAW_FILES = [
@@ -44,7 +43,6 @@ const SUBJECTS = RAW_FILES.map(filename => {
     category = 'MEN';
   }
 
-  // Extract a readable name (e.g., "asian-man" -> "Asian Man")
   const nameSlug = filename.replace('-front-facing.jpg', '').replace('-looking-elsewhere.jpg', '');
   const name = nameSlug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 
@@ -67,7 +65,7 @@ const PHRASES = [
 
 const TIMER_DURATION = 5000;
 
-// --- STATS ENGINE (From Psi-Hunter) ---
+// --- STATS ENGINE ---
 
 const calculatePsiScore = (hits: number, trials: number, chance: number) => {
   if (trials === 0) return 0;
@@ -141,15 +139,14 @@ const useAudioEngine = () => {
     const ctx = ctxRef.current;
 
     if (active && !thetaOscRef.current) {
-      // Deep drone for staring detection
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(110, ctx.currentTime); // A2
+      osc.frequency.setValueAtTime(110, ctx.currentTime);
       
       const lfo = ctx.createOscillator();
       lfo.type = 'sine';
-      lfo.frequency.setValueAtTime(0.2, ctx.currentTime); // Slow breathing pulse
+      lfo.frequency.setValueAtTime(0.2, ctx.currentTime);
       
       const lfoGain = ctx.createGain();
       lfoGain.gain.setValueAtTime(20, ctx.currentTime);
@@ -229,8 +226,14 @@ const useAudioEngine = () => {
 // --- COMPONENTS ---
 
 const InstructionModal = ({ onClose }: { onClose: () => void }) => (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-md p-6 animate-in fade-in duration-300">
-    <div className="bg-gray-900 border border-purple-500/30 rounded-2xl max-w-md w-full p-6 shadow-2xl shadow-purple-900/20 relative animate-in zoom-in duration-300">
+  <div 
+    className="fixed inset-0 z-100 flex items-center justify-center bg-black/95 backdrop-blur-md p-6 animate-in fade-in duration-300"
+    onClick={onClose}
+  >
+    <div 
+      className="bg-gray-900 border border-purple-500/30 rounded-2xl max-w-md w-full p-6 shadow-2xl shadow-purple-900/20 relative animate-in zoom-in duration-300"
+      onClick={e => e.stopPropagation()}
+    >
       <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors">
         <X size={24} />
       </button>
@@ -247,15 +250,15 @@ const InstructionModal = ({ onClose }: { onClose: () => void }) => (
       
       <div className="space-y-4 text-gray-300 text-sm leading-relaxed">
         <p>
-          <strong className="text-white">The Goal:</strong> Detect if a hidden subject is staring at you using only your psychic sense (The Sense of Being Stared At).
+          <strong className="text-white">The Goal:</strong> Detect if a hidden subject is staring at you using only your psychic sense.
         </p>
         <div>
           <strong className="text-white">The Process:</strong>
           <ul className="list-disc pl-5 mt-2 space-y-2 text-gray-400">
             <li>Focus on the <span className="text-cyan-300">Focus Circle</span>.</li>
-            <li>A randomly selected subject (Human or Animal) will be chosen.</li>
-            <li>The computer will decide to make them <strong className="text-purple-300">STARE AT YOU</strong> or <strong className="text-purple-300">LOOK AWAY</strong>.</li>
-            <li>When the timer ends, answer the question: <strong>Are they staring at you?</strong></li>
+            <li>A randomly selected subject will be chosen.</li>
+            <li>The computer will decide to make them <strong className="text-purple-300">STARE</strong> or <strong className="text-purple-300">LOOK AWAY</strong>.</li>
+            <li>When the timer ends, answer: <strong>Are they staring at you?</strong></li>
           </ul>
         </div>
       </div>
@@ -270,7 +273,7 @@ const InstructionModal = ({ onClose }: { onClose: () => void }) => (
   </div>
 );
 
-const PsiStats = ({ stats, onClose }: { stats: any, onClose?: () => void }) => {
+const PsiStats = ({ stats, variant = 'floating' }: { stats: any, variant?: 'floating' | 'header' }) => {
     const [supabase] = useState(() => createBrowserClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -328,20 +331,33 @@ const PsiStats = ({ stats, onClose }: { stats: any, onClose?: () => void }) => {
     const lifeZ = calculatePsiScore(lifetimeStats.hits, lifetimeStats.trials, chance);
     const lifeProb = calculateProbability(lifeZ);
     const lifeTier = getPsiTier(lifeZ);
-  
-    return (
+
+    // Conditional Styles based on variant
+    const containerClasses = variant === 'header' 
+      ? "flex items-center gap-6 px-4 py-1 hover:bg-white/5 rounded-lg cursor-pointer transition-colors border border-transparent hover:border-white/10"
+      : "cursor-pointer group flex flex-col items-end justify-center bg-slate-800/90 hover:bg-slate-700/90 border border-purple-500/20 hover:border-purple-500/50 rounded-lg px-3 py-1 transition-all duration-300 min-w-20 h-[50px]";
+
+    const TriggerContent = () => (
       <>
-        <div 
-          onClick={() => setShowModal(true)}
-          className="
-              cursor-pointer group
-              flex flex-col items-end justify-center
-              bg-purple-950/30 hover:bg-purple-900/50 border border-purple-500/20 hover:border-purple-500/50
-              rounded-lg px-3 py-1 transition-all duration-300
-              min-w-20 h-[50px]
-          "
-        >
-            <div className="flex items-center gap-2">
+        {variant === 'header' ? (
+           // Header Variant Layout (Horizontal)
+           <>
+              <div className="flex items-center gap-3 border-r border-gray-700 pr-4">
+                  <span className="text-yellow-400 font-bold flex items-center gap-1"><Trophy size={14} /> {stats.streak}</span>
+              </div>
+              <div className="flex flex-col items-center">
+                  <span className="text-[10px] text-gray-400 uppercase tracking-widest">Accuracy</span>
+                  <span className={`text-sm font-bold font-mono ${sessionAccuracy > 50 ? 'text-green-400' : 'text-gray-300'}`}>{sessionAccuracy.toFixed(0)}%</span>
+              </div>
+              <div className="flex flex-col items-center">
+                  <span className="text-[10px] text-gray-400 uppercase tracking-widest">Psi (Z)</span>
+                  <span className={`text-sm font-bold font-mono ${sessionZ >= 0 ? 'text-purple-300' : 'text-gray-400'}`}>{sessionZ.toFixed(2)}</span>
+              </div>
+           </>
+        ) : (
+           // Floating Variant Layout (Compact/Vertical)
+           <>
+             <div className="flex items-center gap-2">
               <span className="text-xs font-mono text-purple-400 group-hover:text-purple-300 transition-colors">N: {sessionTrials}</span>
               <div className="w-px h-3 bg-purple-500/20"></div>
               <span className="text-xl font-mono font-bold text-slate-200 group-hover:text-white transition-colors">
@@ -351,15 +367,24 @@ const PsiStats = ({ stats, onClose }: { stats: any, onClose?: () => void }) => {
             <div className="text-[9px] text-slate-500 uppercase tracking-widest group-hover:text-purple-300 transition-colors">
               Z: {sessionZ.toFixed(2)}
             </div>
+           </>
+        )}
+      </>
+    );
+  
+    return (
+      <>
+        <div onClick={() => setShowModal(true)} className={containerClasses}>
+            <TriggerContent />
         </div>
   
         {showModal && (
           <div 
-              className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-xl p-4 animate-in fade-in duration-300"
+              className="fixed inset-0 z-100 flex items-center justify-center bg-black/95 backdrop-blur-xl p-4 animate-in fade-in duration-300"
               onClick={() => setShowModal(false)}
           >
             <div 
-              className="max-w-3xl w-full bg-slate-900 border border-purple-500/20 rounded-xl p-6 relative max-h-[90vh] overflow-y-auto shadow-[0_0_50px_rgba(168,85,247,0.2)]"
+              className="w-full max-w-4xl bg-slate-900 border border-purple-500/20 rounded-xl p-6 relative max-h-[95vh] overflow-y-auto shadow-[0_0_50px_rgba(168,85,247,0.2)]"
               onClick={(e) => e.stopPropagation()}
             >
               <button onClick={() => setShowModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white"><X /></button>
@@ -558,8 +583,6 @@ export default function TheGazeApp() {
       availableSubjects = SUBJECTS.filter(s => s.category === filterMode);
     }
     
-    // Pick a random subject from the filtered list
-    // The subject object itself contains the "Truth" (isStaring) because of how we built the DB
     const randomSubject = availableSubjects[Math.floor(Math.random() * availableSubjects.length)];
     setCurrentSubject(randomSubject);
   };
@@ -573,11 +596,6 @@ export default function TheGazeApp() {
 
     setUserGuess(guess);
     setGameState('REVEAL');
-    
-    // Logic: 
-    // Subject has property 'isStaring' (true/false).
-    // Guess 'STARE' matches isStaring=true.
-    // Guess 'AWAY' matches isStaring=false.
     
     const isCorrect = (guess === 'STARE' && currentSubject.isStaring) || (guess === 'AWAY' && !currentSubject.isStaring);
     
@@ -650,8 +668,14 @@ export default function TheGazeApp() {
         <div className="flex items-center gap-4">
           <MagickalBackLink href="/the-magick-psychic-school/psychic-training" text="Exit Training" className="text-sm" />
         </div>
+
+        {/* Desktop Stats (Hidden on mobile) */}
+        <div className="hidden md:flex items-center">
+            <PsiStats stats={stats} variant="header" />
+        </div>
+
         <div className="flex items-center gap-2">
-            <h1 className="font-bold text-xl tracking-wider text-transparent bg-clip-text bg-linear-to-r from-cyan-200 to-purple-200 hidden md:block">
+            <h1 className="font-bold text-xl tracking-wider text-transparent bg-clip-text bg-linear-to-r from-cyan-200 to-purple-200 hidden lg:block">
                 THE GAZE
             </h1>
             <button onClick={() => setShowInstructions(true)} className="p-2 hover:bg-gray-800 rounded-full transition-colors text-gray-400 hover:text-white" title="Instructions">
@@ -669,8 +693,8 @@ export default function TheGazeApp() {
       {/* Main Game Area */}
       <div className="relative z-10 flex-1 flex flex-col items-center justify-center p-6">
         
-        {/* Stats HUD */}
-        <div className="absolute top-6 left-0 right-0 flex justify-center pointer-events-none z-30">
+        {/* Mobile Stats HUD (Hidden on desktop) */}
+        <div className="absolute top-6 left-0 right-0 flex justify-center pointer-events-none z-30 md:hidden">
            <div className="flex items-center gap-4 px-6 py-2 bg-gray-900/80 rounded-full border border-gray-800 shadow-xl backdrop-blur-sm pointer-events-auto">
              <div className="flex flex-col items-center">
                <span className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Streak</span>
@@ -679,8 +703,8 @@ export default function TheGazeApp() {
                </span>
              </div>
              <div className="w-px h-8 bg-gray-800"></div>
-             {/* Use the new standardized PsiStats component */}
-             <PsiStats stats={stats} />
+             {/* Floating variant with lightened background handled in component */}
+             <PsiStats stats={stats} variant="floating" />
            </div>
         </div>
 
@@ -814,7 +838,7 @@ export default function TheGazeApp() {
 
       {/* SETTINGS DRAWER */}
       {showSettings && (
-        <div className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm" onClick={() => setShowSettings(false)}>
+        <div className="fixed inset-0 z-100 bg-black/50 backdrop-blur-sm" onClick={() => setShowSettings(false)}>
             <div 
                 className="absolute right-0 top-16 bottom-0 w-80 bg-gray-900 border-l border-purple-500/20 shadow-2xl p-6 overflow-y-auto animate-in slide-in-from-right duration-300"
                 onClick={(e) => e.stopPropagation()}
