@@ -19,10 +19,10 @@ const CATEGORIES: Record<string, { id: string; name: string; color: string; item
     name: 'The Family',
     color: '#D4AF37',
     items: [
-      { id: 'man', label: 'Man', src: `${IMG_PATH}man.jpg` },
-      { id: 'woman', label: 'Woman', src: `${IMG_PATH}woman.jpg` }, 
-      { id: 'boy', label: 'Boy', src: `${IMG_PATH}Boy.jpg` },
-      { id: 'girl', label: 'Girl', src: `${IMG_PATH}Girl.jpg` },
+      { id: 'man', label: 'The Man', src: `${IMG_PATH}man.jpg` },
+      { id: 'woman', label: 'The Woman', src: `${IMG_PATH}woman.jpg` }, 
+      { id: 'boy', label: 'The Boy', src: `${IMG_PATH}Boy.jpg` },
+      { id: 'girl', label: 'The Girl', src: `${IMG_PATH}Girl.jpg` },
     ]
   },
   COMPANIONS: {
@@ -30,10 +30,10 @@ const CATEGORIES: Record<string, { id: string; name: string; color: string; item
     name: 'The Companions',
     color: '#CD7F32',
     items: [
-      { id: 'wolf', label: 'Wolf', src: `${IMG_PATH}Wolf.jpg` },
-      { id: 'cat', label: 'Cat', src: `${IMG_PATH}Cat.jpg` },
-      { id: 'small', label: 'Small', src: `${IMG_PATH}Small.jpg` },
-      { id: 'fluffy', label: 'Fluffy', src: `${IMG_PATH}Fluffy.jpg` },
+      { id: 'wolf', label: 'The Wolf', src: `${IMG_PATH}Wolf.jpg` },
+      { id: 'cat', label: 'The Cat', src: `${IMG_PATH}Cat.jpg` },
+      { id: 'small', label: 'The Mouse', src: `${IMG_PATH}Small.jpg` },
+      { id: 'fluffy', label: 'The Bird', src: `${IMG_PATH}Fluffy.jpg` },
     ]
   },
   ELEMENTS: {
@@ -52,10 +52,10 @@ const CATEGORIES: Record<string, { id: string; name: string; color: string; item
     name: 'The Cosmos',
     color: '#8b5cf6',
     items: [
-      { id: 'sun', label: 'Sun', src: `${IMG_PATH}Sun.jpg` },
-      { id: 'moon', label: 'Moon', src: `${IMG_PATH}Moon.jpg` },
-      { id: 'planet', label: 'Planet', src: `${IMG_PATH}Planet.jpg` },
-      { id: 'star', label: 'Star', src: `${IMG_PATH}Star.jpg` },
+      { id: 'sun', label: 'The Sun', src: `${IMG_PATH}Sun.jpg` },
+      { id: 'moon', label: 'The Moon', src: `${IMG_PATH}Moon.jpg` },
+      { id: 'planet', label: 'The Planet', src: `${IMG_PATH}Planet.jpg` },
+      { id: 'star', label: 'The Star', src: `${IMG_PATH}Star.jpg` },
     ]
   },
   SEASONS: {
@@ -74,10 +74,10 @@ const CATEGORIES: Record<string, { id: string; name: string; color: string; item
     name: 'The Suits',
     color: '#3b82f6',
     items: [
-      { id: 'sword', label: 'Sword', src: `${IMG_PATH}Sword.jpg` },
-      { id: 'cup', label: 'Cup', src: `${IMG_PATH}Cup.jpg` },
-      { id: 'wand', label: 'Wand', src: `${IMG_PATH}Wand.jpg` },
-      { id: 'pentacle', label: 'Pentacle', src: `${IMG_PATH}Pentacle.jpg` },
+      { id: 'sword', label: 'Ace of Swords', src: `${IMG_PATH}Sword.jpg` },
+      { id: 'cup', label: 'Ace of Cups', src: `${IMG_PATH}Cup.jpg` },
+      { id: 'wand', label: 'Ace of Wands', src: `${IMG_PATH}Wand.jpg` },
+      { id: 'pentacle', label: 'Ace of Pentacles', src: `${IMG_PATH}Pentacle.jpg` },
     ]
   }
 };
@@ -118,14 +118,17 @@ const calculateProbability = (z: number) => {
 const getPsiTier = (z: number) => {
   if (z >= 4.0) return { name: "The Oracle", color: "text-amber-300 shadow-amber-500/50" };
   if (z >= 3.0) return { name: "The Medium", color: "text-purple-300 shadow-purple-500/50" };
-  if (z >= 1.96) return { name: "The Seer", color: "text-pink-300 shadow-pink-500/50" };
+  if (z >= 1.96) return { name: "The Clairvoyant", color: "text-pink-300 shadow-pink-500/50" };
   if (z >= 1.65) return { name: "The Channel", color: "text-indigo-300 shadow-indigo-500/50" };
   if (z >= 1.0) return { name: "The Adept", color: "text-cyan-300 shadow-cyan-500/50" };
   if (z >= 0.5) return { name: "The Spark", color: "text-teal-300 shadow-teal-500/50" };
   if (z >= 0.0) return { name: "The Initiate", color: "text-slate-200" };
   
   if (z <= -4.0) return { name: "The Void", color: "text-slate-500" };
+  if (z <= -3.0) return { name: "The Shadow", color: "text-slate-400" };
   if (z <= -2.0) return { name: "The Mirror", color: "text-slate-400" };
+  if (z <= -1.0) return { name: "The Blocker", color: "text-slate-400" };
+  if (z <= -0.5) return { name: "The Dreamer", color: "text-slate-400" };
   return { name: "The Sleeper", color: "text-slate-300" };
 };
 
@@ -267,7 +270,7 @@ const DoorVisionStats = ({ history }: { history: any[] }) => {
 
   const ModalContent = () => (
     <div 
-      className="fixed inset-0 flex items-center justify-center bg-black/95 backdrop-blur-md z-100"
+      className="fixed inset-0 flex items-center justify-center bg-black/95 backdrop-blur-md z-[100]"
       onClick={() => setShowModal(false)}
     >
       <div 
@@ -318,19 +321,24 @@ const DoorVisionStats = ({ history }: { history: any[] }) => {
             <div>
                 <h4 className="text-xs uppercase tracking-widest text-purple-400 mb-3 pb-2 border-b border-white/5">Psi-Hitting (Positive)</h4>
                 <div className="space-y-3 text-xs text-gray-400">
-                    <div><strong className="text-amber-200 block">The Oracle (Z &ge; 4.0)</strong> World Class Anomaly</div>
-                    <div><strong className="text-purple-300 block">The Medium (Z &ge; 3.0)</strong> Highly Significant</div>
-                    <div><strong className="text-pink-300 block">The Seer (Z &ge; 1.96)</strong> Statistically Significant</div>
-                    <div><strong className="text-indigo-300 block">The Channel (Z &ge; 1.65)</strong> 1 in 20 Odds</div>
-                    <div><strong className="text-cyan-300 block">The Adept (Z &ge; 1.0)</strong> Above Average</div>
+                    <div><strong className="text-amber-200 block">The Oracle (Z &ge; 4.0)</strong> World Class Anomaly (1 in 31,000+).</div>
+                    <div><strong className="text-purple-300 block">The Medium (Z &ge; 3.0)</strong> Highly Significant (1 in 740).</div>
+                    <div><strong className="text-pink-300 block">The Clairvoyant (Z &ge; 1.96)</strong> Statistically Significant (p &lt; 0.05).</div>
+                    <div><strong className="text-indigo-300 block">The Channel (Z &ge; 1.65)</strong> Tapping into something real (1 in 20).</div>
+                    <div><strong className="text-cyan-300 block">The Adept (Z &ge; 1.0)</strong> Finding flow. Beating odds of 1 in 6.</div>
+                    <div><strong className="text-teal-300 block">The Spark (Z &ge; 0.5)</strong> Pulse of intuition. Nudging past average.</div>
+                    <div><strong className="text-slate-200 block">The Initiate (Z &ge; 0.0)</strong> Above baseline. Better than random.</div>
                 </div>
             </div>
             <div>
                 <h4 className="text-xs uppercase tracking-widest text-slate-500 mb-3 pb-2 border-b border-white/5">Psi-Missing (Negative)</h4>
                 <div className="space-y-3 text-xs text-gray-500">
-                    <div><strong className="text-slate-400 block">The Sleeper (Z &lt; 0.0)</strong> Below Baseline</div>
-                    <div><strong className="text-slate-400 block">The Mirror (Z &le; -2.0)</strong> Significant Avoidance</div>
-                    <div><strong className="text-slate-500 block">The Void (Z &le; -4.0)</strong> Total Suppression</div>
+                    <div><strong className="text-slate-400 block">The Sleeper (Z &lt; 0.0)</strong> Just below baseline. Stop over-analyzing.</div>
+                    <div><strong className="text-slate-400 block">The Dreamer (Z &le; -0.5)</strong> Drifting. Intuition active but unfocused.</div>
+                    <div><strong className="text-slate-400 block">The Blocker (Z &le; -1.0)</strong> Dodging targets. Logic fighting gut.</div>
+                    <div><strong className="text-slate-400 block">The Mirror (Z &le; -2.0)</strong> Significant Avoidance. Flipping the signal.</div>
+                    <div><strong className="text-slate-500 block">The Shadow (Z &le; -3.0)</strong> Highly Significant Displacement. Inverted.</div>
+                    <div><strong className="text-slate-500 block">The Void (Z &le; -4.0)</strong> World Class Anomaly. Total suppression.</div>
                 </div>
             </div>
         </div>
@@ -354,7 +362,7 @@ const DoorVisionStats = ({ history }: { history: any[] }) => {
             </div>
         </div>
         <div className="w-full text-center border-t border-purple-500/10 pt-0.5 mt-0.5">
-             <span className="text-[8px] font-bold text-purple-500 group-hover:text-purple-300 tracking-widest uppercase">See All Stats</span>
+             <span className="text-[8px] font-bold text-purple-500 group-hover:text-purple-300 tracking-[0.1em] uppercase">See All Stats</span>
         </div>
       </div>
       {showModal && mounted && createPortal(<ModalContent />, document.body)}
@@ -398,7 +406,7 @@ const Door = ({ isOpen }: { isOpen: boolean }) => {
 
 // 3. Instruction Modal
 const InstructionModal = ({ onClose }: { onClose: () => void }) => (
-  <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/95 backdrop-blur-md p-6 overflow-y-auto">
+  <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/95 backdrop-blur-md p-6 overflow-y-auto">
     <div className="max-w-md w-full border border-purple-500/50 bg-[#120a1f] p-8 rounded-xl shadow-2xl shadow-purple-900/50 text-center animate-in fade-in zoom-in duration-500">
       <Eye className="w-12 h-12 text-purple-400 mx-auto mb-4" />
       <h1 className="text-3xl font-serif text-purple-100 mb-2 tracking-widest">DOOR VISION</h1>
@@ -426,6 +434,8 @@ const InstructionModal = ({ onClose }: { onClose: () => void }) => (
 
 // --- MAIN APP ---
 
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 export default function TheThresholdApp() {
   const [supabase] = useState(() => createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -446,18 +456,7 @@ export default function TheThresholdApp() {
   const [history, setHistory] = useState<any[]>([]);
   const [sessionId, setSessionId] = useState<string | null>(null);
 
-  // Refs
-  const spinInterval = useRef<NodeJS.Timeout | null>(null);
-  const spinTimeout = useRef<NodeJS.Timeout | null>(null);
-  
   const currentCategory = CATEGORIES[categoryKey];
-
-  useEffect(() => {
-    return () => {
-        if (spinInterval.current) clearInterval(spinInterval.current);
-        if (spinTimeout.current) clearTimeout(spinTimeout.current);
-    };
-  }, []);
 
   const saveSessionStats = async (newHistory: any[]) => {
       try {
@@ -492,54 +491,66 @@ export default function TheThresholdApp() {
       }
   };
 
-  const handleStart = () => {
+  const handleStart = async () => {
     if (gameState !== 'IDLE' && gameState !== 'RESULT') return;
     
+    // Init
     setTargetId(null);
     setUserGuess(null);
     setGameState('SPINNING');
     
-    // Start Visual Spin
-    const speed = 100;
-    playSound('click');
-    if (spinInterval.current) clearInterval(spinInterval.current);
-    
-    spinInterval.current = setInterval(() => {
-      setDisplayIndex(prev => (prev + 1) % 4);
-      playSound('click');
-    }, speed);
+    // ------------------------------------
+    // SLOT MACHINE ANIMATION SEQUENCE
+    // ------------------------------------
 
-    setTimeout(() => {
-      setGameState('CLOSED_SPIN');
-      playSound('thud');
-      
-      const buffer = new Uint32Array(1);
-      const win = (globalThis as any).window;
-      if (win && win.crypto) {
-          win.crypto.getRandomValues(buffer);
-          const rand = buffer[0] / (0xffffffff + 1);
-          const winningIndex = Math.floor(rand * 4);
-          setTargetId(currentCategory.items[winningIndex].id);
-          
-          if (spinInterval.current) clearInterval(spinInterval.current);
-          
-          let count = 0;
-          const totalTicks = 8;
-          const slowSpin = () => {
-            if (count >= totalTicks) {
-              setGameState('LOCKED');
-              playSound('lock');
-              setDisplayIndex(winningIndex); 
-              return;
-            }
-            setDisplayIndex(prev => (prev + 1) % 4); 
-            playSound('muffled-click');
-            count++;
-            spinTimeout.current = setTimeout(slowSpin, 200 + (count * 100)); 
-          };
-          slowSpin();
-      }
-    }, 2500); 
+    // Phase 1: 1.0s (1 cycle = 4 items)
+    for (let i = 0; i < 4; i++) {
+        setDisplayIndex(prev => (prev + 1) % 4);
+        playSound('click');
+        await delay(1000);
+    }
+
+    // Phase 2: 0.5s (1 cycle)
+    for (let i = 0; i < 4; i++) {
+        setDisplayIndex(prev => (prev + 1) % 4);
+        playSound('click');
+        await delay(500);
+    }
+
+    // Phase 3: 0.2s (1 cycle)
+    for (let i = 0; i < 4; i++) {
+        setDisplayIndex(prev => (prev + 1) % 4);
+        playSound('click');
+        await delay(200);
+    }
+
+    // Close Door
+    setGameState('CLOSED_SPIN');
+    playSound('thud');
+    await delay(800); // Wait for door closing transition
+
+    // Phase 4: 0.1s (2 cycles = 8 items) - Door is closed, sound only (muffled)
+    for (let i = 0; i < 8; i++) {
+        setDisplayIndex(prev => (prev + 1) % 4); // Still spinning behind the door logically
+        playSound('muffled-click');
+        await delay(100);
+    }
+
+    // RNG & Lock
+    const buffer = new Uint32Array(1);
+    const win = (globalThis as any).window;
+    if (win && win.crypto) {
+        win.crypto.getRandomValues(buffer);
+        const rand = buffer[0] / (0xffffffff + 1);
+        const winningIndex = Math.floor(rand * 4);
+        
+        // Silent set to winner behind door
+        setTargetId(currentCategory.items[winningIndex].id);
+        setDisplayIndex(winningIndex);
+        
+        setGameState('LOCKED');
+        playSound('lock');
+    }
   };
 
   const handleGuess = (id: string) => {
@@ -614,7 +625,7 @@ export default function TheThresholdApp() {
 
       {/* Settings Panel */}
       {showSettings && (
-        <div className="fixed inset-0 z-60 bg-black/50 backdrop-blur-sm" onClick={() => setShowSettings(false)}>
+        <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm" onClick={() => setShowSettings(false)}>
            <div 
              className="absolute top-0 right-0 bottom-0 w-80 bg-[#120a1f] border-l border-white/10 p-6 shadow-2xl overflow-y-auto"
              onClick={e => e.stopPropagation()}
@@ -678,18 +689,31 @@ export default function TheThresholdApp() {
              {/* Spinning/Revealed Item */}
              {currentCategory.items.map((item, idx) => {
                const isVisible = gameState === 'RESULT' ? item.id === targetId : idx === displayIndex;
+               
+               // Show image logic: Visible during Result or during spinning (before closed spin)
+               const showImage = isVisible && (gameState !== 'CLOSED_SPIN');
+
                return (
                  <div 
                   key={item.id}
-                  className={`absolute inset-0 flex items-center justify-center transition-all duration-100 ${isVisible ? 'opacity-100' : 'opacity-0'}`}
+                  className={`absolute inset-0 flex flex-col items-center justify-center transition-all duration-100 ${showImage ? 'opacity-100' : 'opacity-0'}`}
                  >
                    <img 
                      src={item.src} 
                      alt={item.label}
-                     className={`w-4/5 h-4/5 object-cover rounded-full border-4 border-opacity-50 shadow-[0_0_30px_currentColor] 
+                     className={`w-4/5 h-auto object-contain rounded-xl border-4 border-opacity-50 shadow-[0_0_30px_currentColor] mb-2
                        ${gameState === 'RESULT' && targetId === item.id ? 'animate-pulse border-white' : ''}`}
                      style={{ borderColor: currentCategory.color }}
                    />
+                   
+                   {/* Large Label Display while Spinning (Door Open) */}
+                   {gameState === 'SPINNING' && (
+                      <div className="bg-black/60 px-4 py-1 rounded-full backdrop-blur-sm border border-white/20">
+                        <span className="text-lg font-serif tracking-widest text-white uppercase" style={{ color: currentCategory.color }}>
+                            {item.label}
+                        </span>
+                      </div>
+                   )}
                  </div>
                );
              })}
