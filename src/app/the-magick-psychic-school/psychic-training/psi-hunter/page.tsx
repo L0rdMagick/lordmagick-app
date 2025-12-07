@@ -481,17 +481,14 @@ export default function FriendOrFoeApp() {
 
   // --- LAYOUT HELPERS ---
   const getGridClasses = () => {
-    // Mobile First approach:
-    // Level 1: 1 col, 1 row
-    // Level 2: 1 col, 2 rows (stack vertically to use height)
-    // Level 3/4: 2 cols, 2 rows
-
-    // MD (Desktop) approach:
-    // Level 2: 2 cols, 1 row (side by side)
+    // UPDATED LOGIC FOR FIT-TO-SCREEN
+    // Level 1: 1 col, 1 row (Centered)
+    // Level 2: 2 cols, 1 row (Side by Side) - as requested
+    // Level 3/4: 2 cols, 2 rows (2x2 Grid)
     
     switch(level) {
         case 1: return "grid-cols-1 grid-rows-1";
-        case 2: return "grid-cols-1 grid-rows-2 md:grid-cols-2 md:grid-rows-1"; 
+        case 2: return "grid-cols-2 grid-rows-1"; // Forced Side-by-Side
         case 3: 
         case 4: return "grid-cols-2 grid-rows-2";
         default: return "grid-cols-1 grid-rows-1";
@@ -508,7 +505,7 @@ export default function FriendOrFoeApp() {
 
       {showInstructions && <InstructionModal onClose={() => { setShowInstructions(false); startRound(1); }} />}
 
-      {/* HEADER */}
+      {/* HEADER - Fixed Height */}
       <header className="relative z-20 flex justify-between items-center px-4 py-3 border-b border-purple-900/30 backdrop-blur-sm bg-slate-950/60 shrink-0 h-16">
         <div className="flex items-center gap-4">
             <MagickalBackLink href="/the-magick-psychic-school/psychic-training" text="Exit" className="text-xs text-slate-500 hover:text-purple-400" />
@@ -536,9 +533,9 @@ export default function FriendOrFoeApp() {
         </div>
       </header>
 
-      {/* HUD */}
-      <div className="shrink-0 w-full flex items-center justify-between px-4 py-2 relative z-20 min-h-[60px]">
-          <div className="flex flex-col">
+      {/* HUD - Fixed Height */}
+      <div className="shrink-0 w-full flex items-center justify-between px-4 py-2 relative z-20 h-14">
+          <div className="flex flex-col justify-center">
             <span className="text-[9px] uppercase tracking-widest text-slate-500">Status</span>
             <div className="text-sm font-mono tracking-wider text-slate-300">
                 LEVEL <span className="text-purple-400 font-bold text-lg">{level}</span>
@@ -548,10 +545,10 @@ export default function FriendOrFoeApp() {
       </div>
 
       {/* MAIN GAME AREA - STRICT FLEX FIT */}
-      <main className="flex-1 w-full min-h-0 relative z-10 overflow-hidden p-2 flex flex-col items-center justify-center">
+      <main className="flex-1 w-full relative z-10 overflow-hidden p-2 flex flex-col items-center justify-center min-h-0">
          
          <div 
-            className={`grid gap-2 w-full h-full max-h-full max-w-full justify-items-center content-center ${getGridClasses()}`}
+            className={`grid gap-2 w-full h-full ${getGridClasses()}`}
          >
             {cards.map((card, index) => {
                 const isRevealed = gameState === 'RESULT';
@@ -563,49 +560,49 @@ export default function FriendOrFoeApp() {
                     imgSrc = card.target === 'good' ? card.data.angelic : card.data.evil;
                 }
 
+                // Conditional Border Colors based on state
+                const borderColor = isRevealed 
+                    ? (isCorrect ? 'border-green-500 shadow-[0_0_20px_rgba(34,197,94,0.3)]' : 'border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.3)]')
+                    : 'border-slate-700 bg-slate-900/50';
+
                 return (
                     <div 
                         key={card.instanceId} 
-                        className="flex flex-col gap-1 md:gap-2 relative group w-full h-full min-h-0 min-w-0 items-center justify-center"
+                        className="flex flex-col gap-1 relative w-full h-full min-h-0 min-w-0"
                     >
-                        {/* Image Area: Uses flex to center the variable-aspect-ratio image within the grid cell */}
-                        <div className="relative flex-1 min-h-0 w-full flex items-center justify-center overflow-hidden">
-                           {/* Wrapper that hugs the image exactly */}
-                           <div className={`
-                                relative flex items-center justify-center h-auto w-auto max-h-full max-w-full
-                                rounded-xl overflow-hidden border-2 transition-all duration-500
-                                ${isRevealed 
-                                    ? (isCorrect ? 'border-green-500 shadow-[0_0_30px_rgba(34,197,94,0.3)]' : 'border-red-500 shadow-[0_0_30px_rgba(239,68,68,0.3)]')
-                                    : 'border-slate-700 bg-slate-900'}
-                           `}>
-                                <img 
-                                    src={imgSrc} 
-                                    alt="Subject" 
-                                    className={`block w-auto h-auto max-h-full max-w-full object-contain transition-all duration-700 ${isRevealed ? 'scale-105' : 'filter sepia-[0.3]'}`}
-                                    style={{ maxHeight: '100%', maxWidth: '100%' }}
-                                />
-                                
-                                {/* OVERLAYS - Positioned absolutely within the tight wrapper */}
-                                {isRevealed && (
-                                    <div className="absolute inset-0 flex items-end justify-center pb-2 md:pb-6 bg-linear-to-t from-black/90 via-transparent to-transparent">
-                                        <span className={`text-2xl md:text-5xl font-black tracking-tighter uppercase drop-shadow-lg ${isCorrect ? 'text-green-500' : 'text-red-500'}`}>
-                                            {isCorrect ? 'CORRECT' : 'INCORRECT'}
-                                        </span>
-                                    </div>
-                                )}
+                        {/* 
+                           IMAGE WRAPPER: 
+                           - flex-1: Takes all available vertical space minus controls
+                           - min-h-0: Allows shrinking inside flex parent
+                           - relative: Context for absolute image
+                        */}
+                        <div className={`relative flex-1 min-h-0 w-full rounded-xl overflow-hidden border-2 transition-all duration-300 ${borderColor}`}>
+                             <img 
+                                src={imgSrc} 
+                                alt="Subject" 
+                                className={`absolute inset-0 w-full h-full object-contain transition-all duration-700 ${isRevealed ? 'scale-105' : 'filter sepia-[0.3]'}`}
+                             />
 
-                                {/* Selection Indicator (Pre-reveal) */}
-                                {!isRevealed && card.guess && (
-                                    <div className="absolute top-2 right-2 px-2 py-1 rounded bg-black/70 backdrop-blur text-[10px] md:text-xs font-bold uppercase tracking-wider border border-white/10">
-                                        {card.guess === 'good' ? <span className="text-green-400">ANGELIC</span> : <span className="text-red-400">EVIL</span>}
-                                    </div>
-                                )}
-                           </div>
+                             {/* OVERLAYS */}
+                             {isRevealed && (
+                                <div className="absolute inset-0 flex items-end justify-center pb-2 bg-linear-to-t from-black/80 via-transparent to-transparent pointer-events-none">
+                                    <span className={`text-xl md:text-3xl font-black tracking-tighter uppercase drop-shadow-md ${isCorrect ? 'text-green-400' : 'text-red-400'}`}>
+                                        {isCorrect ? 'CORRECT' : 'INCORRECT'}
+                                    </span>
+                                </div>
+                             )}
+
+                             {/* Selection Indicator (Pre-reveal) */}
+                             {!isRevealed && card.guess && (
+                                <div className="absolute top-2 right-2 px-2 py-1 rounded bg-black/70 backdrop-blur text-[10px] font-bold uppercase tracking-wider border border-white/10 z-10">
+                                    {card.guess === 'good' ? <span className="text-green-400">ANGELIC</span> : <span className="text-red-400">EVIL</span>}
+                                </div>
+                             )}
                         </div>
 
-                        {/* Controls (Only show if not revealed) - Fixed height to ensure image takes remaining space */}
+                        {/* CONTROLS: Shrink-0 to preserve button height */}
                         {!isRevealed && (
-                             <div className="grid grid-cols-2 gap-2 h-10 md:h-14 w-full max-w-[300px] shrink-0">
+                             <div className="grid grid-cols-2 gap-2 h-10 md:h-12 w-full shrink-0">
                                 <button 
                                     onClick={() => handleGuess(index, 'good')}
                                     className={`rounded border flex flex-col items-center justify-center transition-all ${
@@ -615,7 +612,7 @@ export default function FriendOrFoeApp() {
                                     }`}
                                 >
                                     <div className="flex items-center gap-1">
-                                        <Heart size={12} className={card.guess === 'good' ? 'fill-current' : ''} />
+                                        <Heart size={14} className={card.guess === 'good' ? 'fill-current' : ''} />
                                         <span className="text-[10px] uppercase font-bold tracking-widest hidden md:inline">Good</span>
                                     </div>
                                 </button>
@@ -628,7 +625,7 @@ export default function FriendOrFoeApp() {
                                     }`}
                                 >
                                     <div className="flex items-center gap-1">
-                                        <Skull size={12} className={card.guess === 'evil' ? 'fill-current' : ''} />
+                                        <Skull size={14} className={card.guess === 'evil' ? 'fill-current' : ''} />
                                         <span className="text-[10px] uppercase font-bold tracking-widest hidden md:inline">Evil</span>
                                     </div>
                                 </button>
@@ -640,8 +637,8 @@ export default function FriendOrFoeApp() {
          </div>
       </main>
 
-      {/* FOOTER ACTION BAR */}
-      <footer className="relative z-30 border-t border-purple-900/30 bg-slate-950/90 backdrop-blur shrink-0 min-h-[70px] flex items-center justify-center p-2">
+      {/* FOOTER - Fixed Height */}
+      <footer className="relative z-30 border-t border-purple-900/30 bg-slate-950/90 backdrop-blur shrink-0 h-16 flex items-center justify-center px-4">
          {gameState === 'INPUT' ? (
              <button 
                 onClick={submitRound}
