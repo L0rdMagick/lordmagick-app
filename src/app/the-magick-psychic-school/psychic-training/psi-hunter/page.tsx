@@ -583,7 +583,7 @@ export default function FriendOrFoeApp() {
           <PsiStats stats={stats} level={level} />
       </div>
 
-      {/* MAIN GAME AREA - STRICT FLEX FIT */}
+      {/* MAIN GAME AREA - STRICT FLEX FIT & OVERFLOW HANDLING */}
       <main className="flex-1 w-full relative z-10 overflow-hidden p-2 flex flex-col items-center justify-center min-h-0">
          
          <div 
@@ -599,8 +599,7 @@ export default function FriendOrFoeApp() {
                     imgSrc = card.target === 'good' ? card.data.angelic : card.data.evil;
                 }
 
-                // Styling Logic for Card Only (Not Outer Container)
-                // Default: Purple/Blue glow. Result: Green (Correct) or Red (Incorrect).
+                // Styling Logic for Card
                 let cardStyleClass = "border-2 border-slate-600 shadow-[0_0_15px_rgba(147,51,234,0.15)]"; // Default
                 if (isRevealed) {
                     if (isCorrect) {
@@ -616,39 +615,40 @@ export default function FriendOrFoeApp() {
                 return (
                     <div 
                         key={card.instanceId} 
-                        className="flex flex-col gap-1 relative w-full h-full min-h-0 min-w-0"
+                        className="flex flex-col gap-1 relative w-full h-full min-h-0 min-w-0 overflow-hidden"
                     >
                         {/* 
-                           OUTER CONTAINER (INVISIBLE FRAME): 
-                           - flex-1: Takes all available vertical space
-                           - flex items-center justify-center: Centers the card
-                           - No border or background here
+                           IMAGE AREA: 
+                           - flex-1: Takes available vertical space
+                           - overflow-hidden: Crucial for ensuring image doesn't push bounds
+                           - flex/justify-center: Centers the image
                         */}
-                        <div className="flex-1 flex items-center justify-center min-h-0 w-full relative">
+                        <div className="flex-1 flex items-center justify-center min-h-0 w-full relative overflow-hidden">
                              
                              {/* 
-                                IMAGE WRAPPER (THE FLOATING CARD):
-                                - Fits tight to the image dimensions via max-w/max-h and auto width/height
-                                - Rounded corners and Glow applied here
+                                IMAGE ELEMENT:
+                                - max-w/max-h full: Constrains to parent container size
+                                - w-auto/h-auto: Maintains aspect ratio
+                                - object-contain: Ensures scaling without cropping
+                                - Styling classes applied directly here
                              */}
-                             <div className={`relative h-auto w-auto max-w-full max-h-full rounded-2xl overflow-hidden transition-all duration-300 ${cardStyleClass}`}>
-                                 <img 
+                             <div className="relative inline-block max-w-full max-h-full">
+                                <img 
                                     src={imgSrc} 
                                     alt="Subject" 
-                                    className={`block w-auto h-auto max-w-full max-h-full object-contain rounded-2xl transition-all duration-700 ${isRevealed ? 'scale-105' : 'filter sepia-[0.3]'}`}
-                                    style={{ maxHeight: '100%', maxWidth: '100%' }}
-                                 />
+                                    className={`block max-w-full max-h-full w-auto h-auto object-contain rounded-2xl transition-all duration-700 ${cardStyleClass} ${isRevealed ? 'scale-105' : 'filter sepia-[0.3]'}`}
+                                />
 
-                                 {/* OVERLAYS (Inside the card) */}
+                                 {/* OVERLAYS */}
                                  {isRevealed && (
-                                    <div className="absolute inset-0 flex items-end justify-center pb-2 bg-linear-to-t from-black/80 via-transparent to-transparent pointer-events-none rounded-2xl">
+                                    <div className="absolute inset-0 flex items-end justify-center pb-4 bg-linear-to-t from-black/80 via-transparent to-transparent pointer-events-none rounded-2xl">
                                         <span className={`text-xl md:text-3xl font-black tracking-tighter uppercase drop-shadow-md ${isCorrect ? 'text-green-400' : 'text-red-400'}`}>
                                             {isCorrect ? 'CORRECT' : 'INCORRECT'}
                                         </span>
                                     </div>
                                  )}
 
-                                 {/* Selection Indicator (Pre-reveal) */}
+                                 {/* Selection Indicator */}
                                  {!isRevealed && card.guess && (
                                     <div className="absolute top-2 right-2 px-2 py-1 rounded bg-black/70 backdrop-blur text-[10px] font-bold uppercase tracking-wider border border-white/10 z-10">
                                         {card.guess === 'good' ? <span className="text-green-400">ANGELIC</span> : <span className="text-red-400">EVIL</span>}
@@ -657,7 +657,7 @@ export default function FriendOrFoeApp() {
                              </div>
                         </div>
 
-                        {/* CONTROLS: Shrink-0 to preserve button height */}
+                        {/* CONTROLS */}
                         {!isRevealed && (
                              <div className="grid grid-cols-2 gap-2 h-10 md:h-12 w-full shrink-0">
                                 <button 
