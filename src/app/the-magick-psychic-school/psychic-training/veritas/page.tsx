@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import { 
   Zap, Activity, Volume2, VolumeX, Eye, Brain, Settings, 
   X, Save, Trash2, Info, ArrowLeft, PauseCircle, Trophy, 
-  Sparkles, Maximize2, BarChart2 
+  Sparkles, Maximize2, BarChart2, ShieldAlert 
 } from 'lucide-react';
 import { createBrowserClient } from '@supabase/ssr';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
