@@ -184,7 +184,7 @@ const InstructionOverlay = ({ onStart }: { onStart: () => void }) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-sm p-6 overflow-y-auto">
     <div className="max-w-md w-full border border-purple-500/50 bg-gray-900/90 p-8 rounded-lg shadow-2xl shadow-purple-900/50 text-center animate-in fade-in zoom-in duration-500">
       <Eye className="w-16 h-16 text-purple-400 mx-auto mb-6" />
-      <h1 className="text-3xl font-serif text-purple-100 mb-2 tracking-widest">THE THRESHOLD</h1>
+      <h1 className="text-3xl font-serif text-purple-100 mb-2 tracking-widest">DOOR VISION</h1>
       <h2 className="text-sm font-mono text-purple-400 mb-6 uppercase tracking-widest">Remote Viewing Barrier Trainer</h2>
       
       <div className="text-left space-y-4 text-gray-300 font-light mb-8">
@@ -379,7 +379,7 @@ export default function TheThresholdApp() {
         </div>
         <div className="flex items-center gap-2">
             <h1 className="font-bold text-xl tracking-wider text-transparent bg-clip-text bg-linear-to-r from-purple-300 to-indigo-300 hidden md:block">
-                THE THRESHOLD
+                DOOR VISION
             </h1>
             <button onClick={() => setShowInstructions(true)} className="text-gray-500 hover:text-white transition p-2">
                 <HelpCircle className="w-5 h-5" />
