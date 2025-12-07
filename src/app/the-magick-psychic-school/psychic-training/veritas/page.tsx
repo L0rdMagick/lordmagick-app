@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import { 
   Zap, Activity, Volume2, VolumeX, Eye, Brain, Settings, 
   X, Save, Trash2, Info, ArrowLeft, PauseCircle, Trophy, 
-  Sparkles, Maximize2, ShieldAlert, BarChart2 
+  Sparkles, Maximize2, BarChart2 
 } from 'lucide-react';
 import { createBrowserClient } from '@supabase/ssr';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
@@ -606,11 +606,17 @@ export default function VeritasApp() {
     }
   }, [timeLeft, gameState, gameMode, feedback, isPaused]);
 
+  // Decoupled pause logic to prevent double-fire
   const togglePause = () => {
-    if (gameState === 'PLAYING' && !feedback) {
-      setIsPaused(!isPaused);
+    if (gameState === 'PLAYING' && !feedback && !isPaused) {
+      setIsPaused(true);
     }
   };
+
+  const toggleResume = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      setIsPaused(false);
+  }
 
   const handleGuess = (userGuessBoolean: boolean | null) => {
     if (feedback || isPaused) return; 
@@ -777,53 +783,56 @@ export default function VeritasApp() {
   );
 
   const renderMenu = () => (
-    <div className="flex flex-col items-center justify-center h-full w-full max-w-2xl mx-auto px-6 space-y-12 animate-in zoom-in duration-300">
-      <div className="text-center space-y-2">
-        <h1 className="text-5xl md:text-6xl font-black tracking-[0.15em] text-white mb-2 font-mono">VERITAS</h1>
-        <p className="text-cyan-500/80 font-mono text-sm tracking-widest uppercase">Select Training Module</p>
-      </div>
+    // Updated container to allow scrolling on mobile while centering contents
+    <div className="w-full h-full overflow-y-auto custom-scrollbar">
+      <div className="flex flex-col items-center justify-center min-h-full max-w-2xl mx-auto px-6 py-12 space-y-12 animate-in zoom-in duration-300">
+        <div className="text-center space-y-2">
+          <h1 className="text-5xl md:text-6xl font-black tracking-[0.15em] text-white mb-2 font-mono">VERITAS</h1>
+          <p className="text-cyan-500/80 font-mono text-sm tracking-widest uppercase">Select Training Module</p>
+        </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
-        {[
-          { id: 'QUICK_FIRE', label: 'Quick Fire', icon: Zap, desc: `${customTimeLimit}s Limit. Gut Instinct.` },
-          { id: 'DEEP_SCAN', label: 'Deep Scan', icon: Eye, desc: 'No Limit. Meditate.' },
-          { id: 'STREAK', label: 'Streak', icon: ShieldAlert, desc: 'One mistake ends it.' }
-        ].map(mode => (
-          <button
-            key={mode.id}
-            onClick={() => startGame(mode.id)}
-            className="group relative flex flex-col items-center p-6 border border-white/10 hover:border-cyan-500/50 bg-black hover:bg-cyan-950/10 transition-all duration-300"
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
+          {[
+            { id: 'QUICK_FIRE', label: 'Quick Fire', icon: Zap, desc: `${customTimeLimit}s Limit. Gut Instinct.` },
+            { id: 'DEEP_SCAN', label: 'Deep Scan', icon: Eye, desc: 'No Limit. Meditate.' },
+            { id: 'STREAK', label: 'Streak', icon: ShieldAlert, desc: 'One mistake ends it.' }
+          ].map(mode => (
+            <button
+              key={mode.id}
+              onClick={() => startGame(mode.id)}
+              className="group relative flex flex-col items-center p-6 border border-white/10 hover:border-cyan-500/50 bg-black hover:bg-cyan-950/10 transition-all duration-300"
+            >
+              <mode.icon className="w-8 h-8 text-white/70 group-hover:text-cyan-400 mb-4 transition-colors" />
+              <span className="text-white font-mono font-bold tracking-wider mb-2">{mode.label}</span>
+              <span className="text-xs text-gray-500 font-mono text-center">{mode.desc}</span>
+              <div className="absolute top-0 left-0 w-1 h-1 bg-white/20 group-hover:bg-cyan-400 transition-colors" />
+              <div className="absolute bottom-0 right-0 w-1 h-1 bg-white/20 group-hover:bg-cyan-400 transition-colors" />
+            </button>
+          ))}
+        </div>
+
+        <div className="flex flex-wrap justify-center gap-6 items-center">
+          {/* Link to Detailed Stats */}
+          <VeritasStats history={[]} variant="link" />
+
+          <div className="hidden md:block w-px h-4 bg-white/20"></div>
+
+          <button 
+            onClick={() => setGameState('SETTINGS')}
+            className="text-gray-500 hover:text-white font-mono text-xs tracking-widest flex items-center gap-2 transition-colors"
           >
-            <mode.icon className="w-8 h-8 text-white/70 group-hover:text-cyan-400 mb-4 transition-colors" />
-            <span className="text-white font-mono font-bold tracking-wider mb-2">{mode.label}</span>
-            <span className="text-xs text-gray-500 font-mono text-center">{mode.desc}</span>
-            <div className="absolute top-0 left-0 w-1 h-1 bg-white/20 group-hover:bg-cyan-400 transition-colors" />
-            <div className="absolute bottom-0 right-0 w-1 h-1 bg-white/20 group-hover:bg-cyan-400 transition-colors" />
+            <Settings size={14} /> SYSTEM CONFIG
           </button>
-        ))}
-      </div>
+          
+          <div className="hidden md:block w-px h-4 bg-white/20"></div>
 
-      <div className="flex gap-6 items-center">
-        {/* Link to Detailed Stats */}
-        <VeritasStats history={[]} variant="link" />
-
-        <div className="w-px h-4 bg-white/20"></div>
-
-        <button 
-          onClick={() => setGameState('SETTINGS')}
-          className="text-gray-500 hover:text-white font-mono text-xs tracking-widest flex items-center gap-2 transition-colors"
-        >
-          <Settings size={14} /> SYSTEM CONFIG
-        </button>
-        
-        <div className="w-px h-4 bg-white/20"></div>
-
-        <button 
-          onClick={() => setGameState('INSTRUCTIONS')}
-          className="text-gray-500 hover:text-white font-mono text-xs tracking-widest flex items-center gap-2 transition-colors"
-        >
-          <Info size={14} /> PROTOCOL BRIEF
-        </button>
+          <button 
+            onClick={() => setGameState('INSTRUCTIONS')}
+            className="text-gray-500 hover:text-white font-mono text-xs tracking-widest flex items-center gap-2 transition-colors"
+          >
+            <Info size={14} /> PROTOCOL BRIEF
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -831,10 +840,13 @@ export default function VeritasApp() {
   const renderGame = () => (
     <div 
       className="relative flex flex-col h-full w-full max-w-5xl mx-auto py-6 px-4 md:py-12 md:px-8 cursor-pointer"
-      onClick={togglePause}
+      onClick={togglePause} // Only pauses
     >
       {isPaused && (
-        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+        <div 
+          className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={toggleResume} // Explicitly resumes
+        >
            <PauseCircle size={64} className="text-cyan-500 mb-4 animate-pulse" />
            <h2 className="text-3xl font-black text-white tracking-widest font-mono">SYSTEM PAUSED</h2>
            <p className="text-cyan-500/70 mt-4 font-mono text-sm tracking-widest animate-pulse">TAP SCREEN TO RESUME</p>
@@ -977,7 +989,19 @@ export default function VeritasApp() {
     <div className="fixed inset-0 bg-zinc-950 text-white overflow-hidden select-none font-sans flex flex-col">
       <CRTOverlay />
       <header className="relative z-50 px-6 py-4 flex justify-between items-center border-b border-gray-800/50 bg-black/80 backdrop-blur-md">
-        <MagickalBackLink href="/the-magick-psychic-school/psychic-training" text="Exit Training" className="text-sm font-mono tracking-widest text-cyan-500 hover:text-cyan-300" />
+        
+        {/* Conditional Navigation Logic */}
+        {(gameState === 'INSTRUCTIONS' || gameState === 'MENU') ? (
+            <MagickalBackLink href="/the-magick-psychic-school/psychic-training" text="Exit Training" className="text-sm font-mono tracking-widest text-cyan-500 hover:text-cyan-300" />
+        ) : (
+            <button 
+              onClick={() => setGameState('MENU')}
+              className="flex items-center gap-2 text-cyan-500 hover:text-cyan-300 transition-colors font-mono tracking-widest text-sm"
+            >
+              <ArrowLeft size={16} /> EXIT SESSION
+            </button>
+        )}
+
         <button 
           onClick={toggleMute}
           className="text-white/30 hover:text-white transition-colors"
