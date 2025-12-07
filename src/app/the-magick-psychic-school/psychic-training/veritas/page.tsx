@@ -473,12 +473,12 @@ export default function VeritasApp() {
   
   const { initAudio, playSound, isMuted, toggleMute } = useAudioEngine();
 
-  // Handle Pause when Stats Modal Open
-  const handleStatsPause = (paused: boolean) => {
+  // Handle Pause when Stats Modal Open (FIX: Wrapped in useCallback to prevent re-creation loops)
+  const handleStatsPause = useCallback((paused: boolean) => {
     if (gameState === 'PLAYING') {
       setIsPaused(paused);
     }
-  };
+  }, [gameState]);
 
   /* --- LOGIC --- */
   const saveSessionStats = async (newHistory: any[]) => {
