@@ -1063,8 +1063,8 @@ export default function EmpathyApp() {
 
                             {/* IN-CARD FEEDBACK - INCORRECT */}
                             {card.status === 'revealed-wrong' && card.isClicked && (
-                                <div className="absolute bottom-4 left-0 right-0 text-center z-20">
-                                    <span className="text-xl md:text-2xl font-black text-red-600 uppercase tracking-widest drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
+                                <div className="absolute inset-0 flex items-center justify-center z-30 pointer-events-none">
+                                    <span className="text-3xl md:text-5xl font-black text-red-600 uppercase tracking-widest transform -rotate-45 border-4 border-red-600 px-4 py-2 rounded-lg bg-black/60 shadow-2xl drop-shadow-[0_5px_5px_rgba(0,0,0,1)]">
                                         INCORRECT
                                     </span>
                                 </div>
