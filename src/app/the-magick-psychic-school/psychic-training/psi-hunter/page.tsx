@@ -620,15 +620,15 @@ export default function FriendOrFoeApp() {
                         {/* 
                            IMAGE AREA (UPDATED): 
                            - flex-1: Takes available vertical space
+                           - h-full: Reinforces vertical height context
                            - overflow-hidden: Crucial for ensuring image doesn't push bounds
                            - flex/justify-center: Centers the image
                            - p-4: Adds padding so image doesn't touch edges
                         */}
-                        <div className="flex-1 flex items-center justify-center min-h-0 w-full relative overflow-hidden p-4">
+                        <div className="flex-1 h-full w-full min-h-0 relative flex items-center justify-center p-4 overflow-hidden">
                              
                              {/* 
-                                IMAGE WRAPPER (UPDATED):
-                                - Changed from inline-block to flex to respect max-height properly on large screens
+                                WRAPPER (UPDATED):
                                 - relative flex justify-center items-center: Centers the child image
                                 - max-w-full max-h-full: STRICTLY limits growth
                              */}
@@ -636,7 +636,8 @@ export default function FriendOrFoeApp() {
                                 <img 
                                     src={imgSrc} 
                                     alt="Subject" 
-                                    className={`block max-w-full max-h-full w-auto h-auto object-contain rounded-2xl transition-all duration-700 ${cardStyleClass} ${isRevealed ? 'scale-105' : 'filter sepia-[0.3]'}`}
+                                    style={{ width: 'auto', height: 'auto', maxWidth: '100%', maxHeight: '100%' }}
+                                    className={`block object-contain rounded-2xl transition-all duration-700 ${cardStyleClass} ${isRevealed ? 'scale-105' : 'filter sepia-[0.3]'}`}
                                 />
 
                                  {/* OVERLAYS */}
