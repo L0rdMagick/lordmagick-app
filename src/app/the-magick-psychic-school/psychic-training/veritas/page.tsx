@@ -395,7 +395,7 @@ export default function VeritasApp() {
     <div className="flex flex-col h-full w-full max-w-4xl mx-auto px-6 py-8 overflow-y-auto custom-scrollbar">
       <div className="flex-none mb-8 text-center animate-in fade-in slide-in-from-top-4 duration-700">
         <h1 className="text-4xl md:text-6xl font-black tracking-[0.2em] text-white/90 font-mono mb-2">VERITAS</h1>
-        <p className="text-cyan-500 font-mono tracking-widest text-sm">INTUITION TRAINING PROTOCOL</p>
+        <p className="text-cyan-500 font-mono tracking-widest text-md">LIE DETECTOR TRAINING</p>
       </div>
 
       <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-8 items-start mb-8">
