@@ -491,7 +491,7 @@ export default function FriendOrFoeApp() {
     
     switch(level) {
         case 1: return "grid-cols-1 grid-rows-1";
-        case 2: return "grid-cols-1 grid-rows-2 md:grid-cols-2 md:grid-rows-1"; // Stack on mobile, side-by-side on desktop
+        case 2: return "grid-cols-1 grid-rows-2 md:grid-cols-2 md:grid-rows-1"; 
         case 3: 
         case 4: return "grid-cols-2 grid-rows-2";
         default: return "grid-cols-1 grid-rows-1";
@@ -568,10 +568,12 @@ export default function FriendOrFoeApp() {
                         key={card.instanceId} 
                         className="flex flex-col gap-1 md:gap-2 relative group w-full h-full min-h-0 min-w-0 items-center justify-center"
                     >
-                        {/* Image Container: Uses aspect-square but constrained by parent height/width due to 'contain' logic needed */}
-                        <div className={`relative flex-1 min-h-0 w-full flex items-center justify-center`}>
+                        {/* Image Area: Uses flex to center the variable-aspect-ratio image within the grid cell */}
+                        <div className="relative flex-1 min-h-0 w-full flex items-center justify-center overflow-hidden">
+                           {/* Wrapper that hugs the image exactly */}
                            <div className={`
-                                relative h-full w-full max-h-full aspect-square rounded-xl overflow-hidden border-2 transition-all duration-500 mx-auto
+                                relative flex items-center justify-center h-auto w-auto max-h-full max-w-full
+                                rounded-xl overflow-hidden border-2 transition-all duration-500
                                 ${isRevealed 
                                     ? (isCorrect ? 'border-green-500 shadow-[0_0_30px_rgba(34,197,94,0.3)]' : 'border-red-500 shadow-[0_0_30px_rgba(239,68,68,0.3)]')
                                     : 'border-slate-700 bg-slate-900'}
@@ -579,10 +581,11 @@ export default function FriendOrFoeApp() {
                                 <img 
                                     src={imgSrc} 
                                     alt="Subject" 
-                                    className={`w-full h-full object-cover transition-all duration-700 ${isRevealed ? 'scale-110' : 'scale-100 filter sepia-[0.3]'}`}
+                                    className={`block w-auto h-auto max-h-full max-w-full object-contain transition-all duration-700 ${isRevealed ? 'scale-105' : 'filter sepia-[0.3]'}`}
+                                    style={{ maxHeight: '100%', maxWidth: '100%' }}
                                 />
                                 
-                                {/* OVERLAYS */}
+                                {/* OVERLAYS - Positioned absolutely within the tight wrapper */}
                                 {isRevealed && (
                                     <div className="absolute inset-0 flex items-end justify-center pb-2 md:pb-6 bg-linear-to-t from-black/90 via-transparent to-transparent">
                                         <span className={`text-2xl md:text-5xl font-black tracking-tighter uppercase drop-shadow-lg ${isCorrect ? 'text-green-500' : 'text-red-500'}`}>
@@ -602,7 +605,7 @@ export default function FriendOrFoeApp() {
 
                         {/* Controls (Only show if not revealed) - Fixed height to ensure image takes remaining space */}
                         {!isRevealed && (
-                             <div className="grid grid-cols-2 gap-2 h-10 md:h-14 w-full max-w-[calc(100vh/3)] shrink-0">
+                             <div className="grid grid-cols-2 gap-2 h-10 md:h-14 w-full max-w-[300px] shrink-0">
                                 <button 
                                     onClick={() => handleGuess(index, 'good')}
                                     className={`rounded border flex flex-col items-center justify-center transition-all ${
