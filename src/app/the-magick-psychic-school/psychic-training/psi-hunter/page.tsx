@@ -625,19 +625,23 @@ export default function FriendOrFoeApp() {
                            - flex/justify-center: Centers the image
                            - p-4: Adds padding so image doesn't touch edges
                         */}
-                        <div className="flex-1 h-full w-full min-h-0 relative flex items-center justify-center p-4 overflow-hidden">
+                        <div className="flex-1 w-full min-h-0 relative p-4 overflow-hidden">
                              
                              {/* 
                                 WRAPPER (UPDATED):
-                                - relative flex justify-center items-center: Centers the child image
-                                - max-w-full max-h-full: STRICTLY limits growth
+                                - Absolute inset-0: Fills the parent container exactly.
+                                - Flex center: Centers content.
+                                - Pointer-events-none on wrapper to pass clicks if needed, but wrapper is layout only.
                              */}
-                             <div className="relative flex justify-center items-center max-w-full max-h-full">
+                             <div className="absolute inset-4 flex items-center justify-center">
                                 <img 
                                     src={imgSrc} 
                                     alt="Subject" 
-                                    style={{ width: 'auto', height: 'auto', maxWidth: '100%', maxHeight: '100%' }}
-                                    className={`block object-contain rounded-2xl transition-all duration-700 ${cardStyleClass} ${isRevealed ? 'scale-105' : 'filter sepia-[0.3]'}`}
+                                    className={`
+                                      max-w-full max-h-full w-auto h-auto object-contain 
+                                      rounded-2xl transition-all duration-700 
+                                      ${cardStyleClass} ${isRevealed ? 'scale-105' : 'filter sepia-[0.3]'}
+                                    `}
                                 />
 
                                  {/* OVERLAYS */}
