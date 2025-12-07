@@ -247,12 +247,12 @@ const InstructionModal = ({ onClose }: { onClose: () => void }) => (
       </div>
 
       <h2 className="text-2xl font-bold text-center text-transparent bg-clip-text bg-linear-to-r from-purple-200 to-cyan-200 mb-4 font-serif">
-        Protocol: Scopaesthesia
+        Protocol: The Gaze
       </h2>
       
       <div className="space-y-4 text-gray-300 text-sm leading-relaxed">
         <p>
-          <strong className="text-white">The Goal:</strong> Detect if a hidden subject is staring at you using only your psychic sense.
+          <strong className="text-white">The Goal:</strong> Detect if a hidden subject is gazing at you (Scopaesthesia) using only your psychic sense.
         </p>
         <div>
           <strong className="text-white">The Process:</strong>
