@@ -415,8 +415,8 @@ const InstructionModal = ({ onClose }: { onClose: () => void }) => (
       <div className="text-left space-y-4 text-gray-300 font-light mb-8 text-sm">
         <p><strong className="text-purple-300">Protocol:</strong> You are testing your ability to perceive through solid matter.</p>
         <ol className="list-decimal pl-5 space-y-2">
-          <li>The target will be chosen. The <strong>DOOR</strong> will slam shut.</li>
-          <li>Behind the wall, the target is still active.</li>
+          <li>The target will be chosen. The <strong>DOORS</strong> will slam shut.</li>
+          <li>Behind the doors, the chosen target will be concealed.</li>
           <li>Project your consciousness past the barrier.</li>
           <li>When the lock clicks, <strong>select the image</strong> you see with your inner eye.</li>
         </ol>
