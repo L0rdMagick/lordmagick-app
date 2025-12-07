@@ -19,7 +19,7 @@ const CHARACTER_KEYS = [
   "abuela", "alt_guy", "barista_girl", "church_lady", 
   "construction_man", "corp_woman", "dad_guy", "doctor_woman", 
   "genz_teen", "hijabi_student", "island_man", "jazz_man", 
-  "native_man", "office_guy (1)", "retail_woman", "senior_asian_man", 
+  "native_man", "office_guy", "retail_woman", "senior_asian_man", 
   "student_girl", "suburban_mom", "teacher_man", "tech_guy"
 ];
 
