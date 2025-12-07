@@ -270,7 +270,7 @@ const DoorVisionStats = ({ history }: { history: any[] }) => {
 
   const ModalContent = () => (
     <div 
-      className="fixed inset-0 flex items-center justify-center bg-black/95 backdrop-blur-md z-[100]"
+      className="fixed inset-0 flex items-center justify-center bg-black/95 backdrop-blur-md z-100"
       onClick={() => setShowModal(false)}
     >
       <div 
@@ -362,7 +362,7 @@ const DoorVisionStats = ({ history }: { history: any[] }) => {
             </div>
         </div>
         <div className="w-full text-center border-t border-purple-500/10 pt-0.5 mt-0.5">
-             <span className="text-[8px] font-bold text-purple-500 group-hover:text-purple-300 tracking-[0.1em] uppercase">See All Stats</span>
+             <span className="text-[8px] font-bold text-purple-500 group-hover:text-purple-300 tracking-widest uppercase">See All Stats</span>
         </div>
       </div>
       {showModal && mounted && createPortal(<ModalContent />, document.body)}
@@ -406,7 +406,7 @@ const Door = ({ isOpen }: { isOpen: boolean }) => {
 
 // 3. Instruction Modal
 const InstructionModal = ({ onClose }: { onClose: () => void }) => (
-  <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/95 backdrop-blur-md p-6 overflow-y-auto">
+  <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/95 backdrop-blur-md p-6 overflow-y-auto">
     <div className="max-w-md w-full border border-purple-500/50 bg-[#120a1f] p-8 rounded-xl shadow-2xl shadow-purple-900/50 text-center animate-in fade-in zoom-in duration-500">
       <Eye className="w-12 h-12 text-purple-400 mx-auto mb-4" />
       <h1 className="text-3xl font-serif text-purple-100 mb-2 tracking-widest">DOOR VISION</h1>
@@ -625,7 +625,7 @@ export default function TheThresholdApp() {
 
       {/* Settings Panel */}
       {showSettings && (
-        <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm" onClick={() => setShowSettings(false)}>
+        <div className="fixed inset-0 z-60 bg-black/50 backdrop-blur-sm" onClick={() => setShowSettings(false)}>
            <div 
              className="absolute top-0 right-0 bottom-0 w-80 bg-[#120a1f] border-l border-white/10 p-6 shadow-2xl overflow-y-auto"
              onClick={e => e.stopPropagation()}
