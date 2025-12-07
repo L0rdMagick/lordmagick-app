@@ -207,7 +207,6 @@ const playSound = (type: string) => {
 
 // --- COMPONENTS ---
 
-// 1. Stats Component (Mini Widget + Modal)
 const DoorVisionStats = ({ history }: { history: any[] }) => {
   const [supabase] = useState(() => createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -220,7 +219,6 @@ const DoorVisionStats = ({ history }: { history: any[] }) => {
 
   useEffect(() => { setMounted(true); }, []);
 
-  // Stats Logic (1 in 4 chance)
   const chance = 0.25;
   const sessionTrials = history.length;
   const sessionHits = history.filter(h => h.correct).length;
@@ -287,7 +285,6 @@ const DoorVisionStats = ({ history }: { history: any[] }) => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          {/* Current Session */}
           <div className="bg-purple-900/10 border border-purple-500/20 p-4 rounded-lg">
             <h3 className="text-xs uppercase tracking-[0.2em] text-purple-400 mb-4 text-center">Current Session</h3>
             <div className="space-y-2 text-sm font-mono text-gray-300">
@@ -299,7 +296,6 @@ const DoorVisionStats = ({ history }: { history: any[] }) => {
             </div>
           </div>
 
-          {/* Lifetime */}
           <div className="bg-purple-900/10 border border-purple-500/20 p-4 rounded-lg relative">
             <h3 className="text-xs uppercase tracking-[0.2em] text-amber-400 mb-4 text-center">Lifetime Record</h3>
             {loadingLifetime ? (
@@ -316,7 +312,6 @@ const DoorVisionStats = ({ history }: { history: any[] }) => {
           </div>
         </div>
 
-        {/* Definitions Legend */}
         <div className="grid md:grid-cols-2 gap-8 border-t border-white/10 pt-6">
             <div>
                 <h4 className="text-xs uppercase tracking-widest text-purple-400 mb-3 pb-2 border-b border-white/5">Psi-Hitting (Positive)</h4>
@@ -370,11 +365,9 @@ const DoorVisionStats = ({ history }: { history: any[] }) => {
   );
 };
 
-// 2. Door Component
 const Door = ({ isOpen }: { isOpen: boolean }) => {
   return (
     <div className="absolute inset-0 z-20 flex pointer-events-none overflow-hidden rounded-t-full">
-      {/* Left Door Panel */}
       <div 
         className={`h-full w-1/2 bg-neutral-900 relative transition-transform duration-1000 ease-[cubic-bezier(0.25,1,0.5,1)] border-r-4 border-black shadow-2xl flex items-center justify-end
         ${isOpen ? '-translate-x-full' : 'translate-x-0'}`}
@@ -384,7 +377,6 @@ const Door = ({ isOpen }: { isOpen: boolean }) => {
         <div className="absolute right-4 w-2 h-32 bg-yellow-900/30 rounded-full blur-sm"></div>
       </div>
 
-      {/* Right Door Panel */}
       <div 
         className={`h-full w-1/2 bg-neutral-900 relative transition-transform duration-1000 ease-[cubic-bezier(0.25,1,0.5,1)] border-l-4 border-black shadow-2xl flex items-center justify-start
         ${isOpen ? 'translate-x-full' : 'translate-x-0'}`}
@@ -394,7 +386,6 @@ const Door = ({ isOpen }: { isOpen: boolean }) => {
         <div className="absolute left-4 w-2 h-32 bg-yellow-900/30 rounded-full blur-sm"></div>
       </div>
       
-      {/* Center Lock Visual */}
       <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 transition-opacity duration-300 pointer-events-none ${isOpen ? 'opacity-0' : 'opacity-100'}`}>
         <div className="w-16 h-16 rounded-full border-4 border-yellow-700/50 bg-black/80 flex items-center justify-center shadow-[0_0_30px_rgba(0,0,0,0.8)]">
           <div className="w-8 h-8 rounded-full border border-yellow-700/30 bg-yellow-900/10"></div>
@@ -404,7 +395,6 @@ const Door = ({ isOpen }: { isOpen: boolean }) => {
   );
 };
 
-// 3. Instruction Modal
 const InstructionModal = ({ onClose }: { onClose: () => void }) => (
   <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/95 backdrop-blur-md p-6 overflow-y-auto">
     <div className="max-w-md w-full border border-purple-500/50 bg-[#120a1f] p-8 rounded-xl shadow-2xl shadow-purple-900/50 text-center animate-in fade-in zoom-in duration-500">
@@ -442,17 +432,14 @@ export default function TheThresholdApp() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   ));
 
-  // State
-  const [showInstructions, setShowInstructions] = useState(true); // Always show on mount
+  const [showInstructions, setShowInstructions] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
   
   const [categoryKey, setCategoryKey] = useState('FAMILY');
-  const [gameState, setGameState] = useState('IDLE'); // IDLE, SPINNING, CLOSED_SPIN, LOCKED, REVEALING, RESULT
+  const [gameState, setGameState] = useState('IDLE');
   const [displayIndex, setDisplayIndex] = useState(0); 
   const [targetId, setTargetId] = useState<string | null>(null);
   const [userGuess, setUserGuess] = useState<string | null>(null);
-  
-  // History State for Stats
   const [history, setHistory] = useState<any[]>([]);
   const [sessionId, setSessionId] = useState<string | null>(null);
 
@@ -466,7 +453,7 @@ export default function TheThresholdApp() {
         const hits = newHistory.filter(h => h.correct).length;
         const total = newHistory.length;
         const streak = newHistory.length > 0 && newHistory[newHistory.length - 1].correct 
-            ? history.reduce((acc, curr) => curr.correct ? acc + 1 : 0, 0) + (newHistory[newHistory.length - 1].correct ? 1 : 0) // rough approx
+            ? history.reduce((acc, curr) => curr.correct ? acc + 1 : 0, 0) + (newHistory[newHistory.length - 1].correct ? 1 : 0)
             : 0;
 
         const statsObject = { hits, total, streak };
@@ -494,49 +481,52 @@ export default function TheThresholdApp() {
   const handleStart = async () => {
     if (gameState !== 'IDLE' && gameState !== 'RESULT') return;
     
-    // Init
+    // Init Sequence
     setTargetId(null);
     setUserGuess(null);
     setGameState('SPINNING');
     
-    // ------------------------------------
-    // SLOT MACHINE ANIMATION SEQUENCE
-    // ------------------------------------
-
-    // Phase 1: 1.0s (1 cycle = 4 items)
+    // Phase 1: 1s per item (1 full cycle = 4 items)
     for (let i = 0; i < 4; i++) {
         setDisplayIndex(prev => (prev + 1) % 4);
         playSound('click');
         await delay(1000);
     }
 
-    // Phase 2: 0.5s (1 cycle)
+    // Phase 2: 0.5s per item (1 full cycle)
     for (let i = 0; i < 4; i++) {
         setDisplayIndex(prev => (prev + 1) % 4);
         playSound('click');
         await delay(500);
     }
 
-    // Phase 3: 0.2s (1 cycle)
+    // Phase 3: 0.2s per item (1 full cycle)
     for (let i = 0; i < 4; i++) {
         setDisplayIndex(prev => (prev + 1) % 4);
         playSound('click');
         await delay(200);
     }
 
-    // Close Door
-    setGameState('CLOSED_SPIN');
-    playSound('thud');
-    await delay(800); // Wait for door closing transition
-
-    // Phase 4: 0.1s (2 cycles = 8 items) - Door is closed, sound only (muffled)
-    for (let i = 0; i < 8; i++) {
-        setDisplayIndex(prev => (prev + 1) % 4); // Still spinning behind the door logically
-        playSound('muffled-click');
+    // Phase 4: 0.1s per item (1 full cycle)
+    for (let i = 0; i < 4; i++) {
+        setDisplayIndex(prev => (prev + 1) % 4);
+        playSound('click');
         await delay(100);
     }
 
-    // RNG & Lock
+    // Doors Closing
+    setGameState('CLOSED_SPIN');
+    playSound('thud');
+    await delay(800); // Allow visual door close
+
+    // Phase 5: Closed Spin (3 Full Cycles @ 0.1s)
+    for (let i = 0; i < 12; i++) { // 3 * 4 = 12 items
+        setDisplayIndex(prev => (prev + 1) % 4);
+        playSound('click'); // Use same click sound per instruction
+        await delay(100);
+    }
+
+    // Determine Winner (RNG)
     const buffer = new Uint32Array(1);
     const win = (globalThis as any).window;
     if (win && win.crypto) {
@@ -544,9 +534,8 @@ export default function TheThresholdApp() {
         const rand = buffer[0] / (0xffffffff + 1);
         const winningIndex = Math.floor(rand * 4);
         
-        // Silent set to winner behind door
         setTargetId(currentCategory.items[winningIndex].id);
-        setDisplayIndex(winningIndex);
+        setDisplayIndex(winningIndex); // Snap visual to winner behind door
         
         setGameState('LOCKED');
         playSound('lock');
@@ -608,7 +597,6 @@ export default function TheThresholdApp() {
           <MagickalBackLink href="/the-magick-psychic-school/psychic-training" text="Exit" className="text-sm" />
         </div>
         
-        {/* Widget Center */}
         <div className="flex justify-center w-1/3">
            <DoorVisionStats history={history} />
         </div>
@@ -698,22 +686,27 @@ export default function TheThresholdApp() {
                   key={item.id}
                   className={`absolute inset-0 flex flex-col items-center justify-center transition-all duration-100 ${showImage ? 'opacity-100' : 'opacity-0'}`}
                  >
-                   <img 
-                     src={item.src} 
-                     alt={item.label}
-                     className={`w-4/5 h-auto object-contain rounded-xl border-4 border-opacity-50 shadow-[0_0_30px_currentColor] mb-2
-                       ${gameState === 'RESULT' && targetId === item.id ? 'animate-pulse border-white' : ''}`}
-                     style={{ borderColor: currentCategory.color }}
-                   />
-                   
-                   {/* Large Label Display while Spinning (Door Open) */}
-                   {gameState === 'SPINNING' && (
-                      <div className="bg-black/60 px-4 py-1 rounded-full backdrop-blur-sm border border-white/20">
-                        <span className="text-lg font-serif tracking-widest text-white uppercase" style={{ color: currentCategory.color }}>
-                            {item.label}
-                        </span>
-                      </div>
-                   )}
+                   {/* Container for Image + Label ensures correct layering */}
+                   <div className="relative w-4/5 h-4/5 flex items-center justify-center">
+                       <img 
+                         src={item.src} 
+                         alt={item.label}
+                         className={`w-full h-full object-cover rounded-xl border-4 border-opacity-50 shadow-[0_0_30px_currentColor] 
+                           ${gameState === 'RESULT' && targetId === item.id ? 'animate-pulse border-white' : ''}`}
+                         style={{ borderColor: currentCategory.color }}
+                       />
+                       
+                       {/* Large Label Display while Spinning (Door Open) - ABSOLUTE POSITIONED OVER IMAGE */}
+                       {gameState === 'SPINNING' && (
+                          <div className="absolute bottom-4 left-0 right-0 flex justify-center z-20">
+                              <div className="bg-black/70 px-4 py-1 rounded-full backdrop-blur-sm border border-white/20 shadow-lg">
+                                <span className="text-lg font-serif tracking-widest text-white uppercase" style={{ color: currentCategory.color, textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}>
+                                    {item.label}
+                                </span>
+                              </div>
+                          </div>
+                       )}
+                   </div>
                  </div>
                );
              })}
