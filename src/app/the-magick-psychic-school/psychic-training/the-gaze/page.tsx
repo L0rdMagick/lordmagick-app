@@ -229,7 +229,7 @@ const useAudioEngine = () => {
 
 const InstructionModal = ({ onClose }: { onClose: () => void }) => (
   <div 
-    className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-md p-6 animate-in fade-in duration-300"
+    className="fixed inset-0 z-100 flex items-center justify-center bg-black/95 backdrop-blur-md p-6 animate-in fade-in duration-300"
     onClick={onClose}
   >
     <div 
