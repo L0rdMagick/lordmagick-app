@@ -207,6 +207,7 @@ const playSound = (type: string) => {
 
 // --- COMPONENTS ---
 
+// 1. Stats Component (Mini Widget + Modal)
 const DoorVisionStats = ({ history }: { history: any[] }) => {
   const [supabase] = useState(() => createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -219,6 +220,7 @@ const DoorVisionStats = ({ history }: { history: any[] }) => {
 
   useEffect(() => { setMounted(true); }, []);
 
+  // Stats Logic (1 in 4 chance)
   const chance = 0.25;
   const sessionTrials = history.length;
   const sessionHits = history.filter(h => h.correct).length;
@@ -285,6 +287,7 @@ const DoorVisionStats = ({ history }: { history: any[] }) => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          {/* Current Session */}
           <div className="bg-purple-900/10 border border-purple-500/20 p-4 rounded-lg">
             <h3 className="text-xs uppercase tracking-[0.2em] text-purple-400 mb-4 text-center">Current Session</h3>
             <div className="space-y-2 text-sm font-mono text-gray-300">
@@ -296,6 +299,7 @@ const DoorVisionStats = ({ history }: { history: any[] }) => {
             </div>
           </div>
 
+          {/* Lifetime */}
           <div className="bg-purple-900/10 border border-purple-500/20 p-4 rounded-lg relative">
             <h3 className="text-xs uppercase tracking-[0.2em] text-amber-400 mb-4 text-center">Lifetime Record</h3>
             {loadingLifetime ? (
@@ -312,6 +316,7 @@ const DoorVisionStats = ({ history }: { history: any[] }) => {
           </div>
         </div>
 
+        {/* Definitions Legend */}
         <div className="grid md:grid-cols-2 gap-8 border-t border-white/10 pt-6">
             <div>
                 <h4 className="text-xs uppercase tracking-widest text-purple-400 mb-3 pb-2 border-b border-white/5">Psi-Hitting (Positive)</h4>
@@ -365,9 +370,11 @@ const DoorVisionStats = ({ history }: { history: any[] }) => {
   );
 };
 
+// 2. Door Component
 const Door = ({ isOpen }: { isOpen: boolean }) => {
   return (
     <div className="absolute inset-0 z-20 flex pointer-events-none overflow-hidden rounded-t-full">
+      {/* Left Door Panel */}
       <div 
         className={`h-full w-1/2 bg-neutral-900 relative transition-transform duration-1000 ease-[cubic-bezier(0.25,1,0.5,1)] border-r-4 border-black shadow-2xl flex items-center justify-end
         ${isOpen ? '-translate-x-full' : 'translate-x-0'}`}
@@ -377,6 +384,7 @@ const Door = ({ isOpen }: { isOpen: boolean }) => {
         <div className="absolute right-4 w-2 h-32 bg-yellow-900/30 rounded-full blur-sm"></div>
       </div>
 
+      {/* Right Door Panel */}
       <div 
         className={`h-full w-1/2 bg-neutral-900 relative transition-transform duration-1000 ease-[cubic-bezier(0.25,1,0.5,1)] border-l-4 border-black shadow-2xl flex items-center justify-start
         ${isOpen ? 'translate-x-full' : 'translate-x-0'}`}
@@ -386,6 +394,7 @@ const Door = ({ isOpen }: { isOpen: boolean }) => {
         <div className="absolute left-4 w-2 h-32 bg-yellow-900/30 rounded-full blur-sm"></div>
       </div>
       
+      {/* Center Lock Visual */}
       <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 transition-opacity duration-300 pointer-events-none ${isOpen ? 'opacity-0' : 'opacity-100'}`}>
         <div className="w-16 h-16 rounded-full border-4 border-yellow-700/50 bg-black/80 flex items-center justify-center shadow-[0_0_30px_rgba(0,0,0,0.8)]">
           <div className="w-8 h-8 rounded-full border border-yellow-700/30 bg-yellow-900/10"></div>
@@ -395,6 +404,7 @@ const Door = ({ isOpen }: { isOpen: boolean }) => {
   );
 };
 
+// 3. Instruction Modal
 const InstructionModal = ({ onClose }: { onClose: () => void }) => (
   <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/95 backdrop-blur-md p-6 overflow-y-auto">
     <div className="max-w-md w-full border border-purple-500/50 bg-[#120a1f] p-8 rounded-xl shadow-2xl shadow-purple-900/50 text-center animate-in fade-in zoom-in duration-500">
@@ -432,14 +442,16 @@ export default function TheThresholdApp() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   ));
 
-  const [showInstructions, setShowInstructions] = useState(true);
+  const [showInstructions, setShowInstructions] = useState(true); // Always show on mount
   const [showSettings, setShowSettings] = useState(false);
   
   const [categoryKey, setCategoryKey] = useState('FAMILY');
-  const [gameState, setGameState] = useState('IDLE');
+  const [gameState, setGameState] = useState('IDLE'); // IDLE, SPINNING, CLOSED_SPIN, LOCKED, REVEALING, RESULT
   const [displayIndex, setDisplayIndex] = useState(0); 
   const [targetId, setTargetId] = useState<string | null>(null);
   const [userGuess, setUserGuess] = useState<string | null>(null);
+  
+  // History State for Stats
   const [history, setHistory] = useState<any[]>([]);
   const [sessionId, setSessionId] = useState<string | null>(null);
 
@@ -453,7 +465,7 @@ export default function TheThresholdApp() {
         const hits = newHistory.filter(h => h.correct).length;
         const total = newHistory.length;
         const streak = newHistory.length > 0 && newHistory[newHistory.length - 1].correct 
-            ? history.reduce((acc, curr) => curr.correct ? acc + 1 : 0, 0) + (newHistory[newHistory.length - 1].correct ? 1 : 0)
+            ? history.reduce((acc, curr) => curr.correct ? acc + 1 : 0, 0) + (newHistory[newHistory.length - 1].correct ? 1 : 0) // rough approx
             : 0;
 
         const statsObject = { hits, total, streak };
@@ -686,12 +698,11 @@ export default function TheThresholdApp() {
                   key={item.id}
                   className={`absolute inset-0 flex flex-col items-center justify-center transition-all duration-100 ${showImage ? 'opacity-100' : 'opacity-0'}`}
                  >
-                   {/* Container for Image + Label ensures correct layering */}
-                   <div className="relative w-4/5 h-4/5 flex items-center justify-center">
+                   <div className="relative w-full h-full flex items-center justify-center">
                        <img 
                          src={item.src} 
                          alt={item.label}
-                         className={`w-full h-full object-cover rounded-xl border-4 border-opacity-50 shadow-[0_0_30px_currentColor] 
+                         className={`w-full h-full object-cover shadow-[0_0_30px_currentColor] 
                            ${gameState === 'RESULT' && targetId === item.id ? 'animate-pulse border-white' : ''}`}
                          style={{ borderColor: currentCategory.color }}
                        />
