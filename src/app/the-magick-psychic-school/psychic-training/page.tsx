@@ -6,7 +6,7 @@ import Image from 'next/image';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
 import RoomsButton from '@/app/components/RoomsButton';
 
-// Data configuration for the tools
+// Data configuration with CORRECTED LINKS based on original code
 const psychicTools = [
   {
     title: "The Gaze",
@@ -16,25 +16,25 @@ const psychicTools = [
   },
   {
     title: "Lie Detector",
-    href: "/the-magick-psychic-school/psychic-training/lie-detector",
+    href: "/the-magick-psychic-school/psychic-training/veritas", // Original: Veritas
     image: "/images/psychic-school/truth_or_lie.jpg",
     description: "Become a human polygraph. Truth resonates; lies dissonate. Train your gut to distinguish the pure ring of honesty from the murky vibration of deceit. Never be fooled by a smooth talker again."
   },
   {
     title: "Door Vision",
-    href: "/the-magick-psychic-school/psychic-training/door-vision",
+    href: "/the-magick-psychic-school/psychic-training/the-threshold", // Original: The Threshold
     image: "/images/psychic-school/door_vision_thumb.jpg",
     description: "Walls are just a suggestion. Develop your remote viewing abilities to see what lies behind closed doors. Pierce physical barriers with your mind’s eye and reveal what others try to keep hidden."
   },
   {
     title: "Emotional Radar",
-    href: "/the-magick-psychic-school/psychic-training/emotional-radar",
+    href: "/the-magick-psychic-school/psychic-training/empathy", // Original: Empathy
     image: "/images/psychic-school/emotional_radar_thumb.jpg",
     description: "Read the room before you even walk in. Every emotion hums with a specific frequency; learn to tune them in. Master the art of detecting hidden feelings and invisible tensions swirling within your relationships and environments."
   },
   {
     title: "Friend or Foe?",
-    href: "/the-magick-psychic-school/psychic-training/friend-or-foe",
+    href: "/the-magick-psychic-school/psychic-training/psi-hunter", // Original: Psi-Hunter
     image: "/images/psychic-school/friend_or_foe_thumb_circle.jpg",
     description: "Trust your gut? Prove it. Scan faces to intuitively divine who brings light and who harbors toxicity. Train your instincts to instantly recognize the energetic signature of a true ally—or a hidden enemy."
   },
@@ -46,13 +46,13 @@ const psychicTools = [
   },
   {
     title: "Zener ESP",
-    href: "/the-magick-psychic-school/psychic-training/zener-esp",
+    href: "/the-magick-psychic-school/psychic-training/statistical-eye", // Original: The Statistical Eye
     image: "/images/psychic-school/zener_esp_thumb_circle (1).jpg", 
     description: "Beat the odds. Test your intuition against the cold hard math of probability using the classic Zener cards. Track your stats and prove that your foresight is more than just luck."
   },
   {
     title: "Good vs Evil",
-    href: "/the-magick-psychic-school/psychic-training/good-vs-evil",
+    href: "/the-magick-psychic-school/psychic-training/psi-trainer", // Original: Psi-Trainer
     image: "/images/psychic-school/good_vs_evil_thumb_circle.jpg",
     description: "The oldest duality: Light and Dark. Train your soul to pierce the veil of appearance and detect the true nature of a spirit. Whether seeking the Angel or spotting the Devil, learn to recognize the energy even when it hides in plain sight."
   }
@@ -76,10 +76,10 @@ export default function PsychicTrainingPage() {
 
             {/* Psychic Explorer Header Image with Magickal Rotating Frame */}
             <div className="relative group mb-8">
-                {/* Rotating Glowing Line Container - Fixed class: bg-linear-to-r */}
+                {/* Rotating Glowing Line Container */}
                 <div className="absolute -inset-[3px] rounded-lg bg-linear-to-r from-transparent via-amber-500 to-transparent opacity-75 blur-sm animate-spin-slow" style={{ animationDuration: '4s' }}></div>
                 
-                {/* Secondary Static Glow for "Sigil" feel - Fixed class: -inset-px */}
+                {/* Secondary Static Glow for "Sigil" feel */}
                 <div className="absolute -inset-px rounded-lg border border-amber-500/30 shadow-[0_0_15px_rgba(245,158,11,0.5)]"></div>
 
                 {/* Main Image Container */}
@@ -90,7 +90,7 @@ export default function PsychicTrainingPage() {
                         fill
                         className="object-cover"
                     />
-                    {/* Overlay to darken slightly and integrate with theme - Fixed class: bg-linear-to-t */}
+                    {/* Overlay to darken slightly and integrate with theme */}
                     <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent"></div>
                 </div>
             </div>
@@ -134,7 +134,6 @@ export default function PsychicTrainingPage() {
                             <h2 className="text-2xl font-serif text-white mb-3 group-hover:text-amber-300 transition-colors">
                                 {tool.title}
                             </h2>
-                            {/* Fixed class: min-h-20 */}
                             <p className="text-sm text-gray-400 leading-relaxed min-h-20">
                                 {tool.description}
                             </p>
