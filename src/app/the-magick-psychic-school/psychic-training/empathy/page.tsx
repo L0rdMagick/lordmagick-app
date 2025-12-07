@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
-  Heart, CloudRain, Sun, Banknote, Flame, Zap, Crosshair, PartyPopper, 
   Settings, Eye, Volume2, VolumeX, 
   Sparkles, X, Activity, Maximize, Minimize,
   Info, RotateCcw, Save 
@@ -49,7 +48,6 @@ const calculateProbability = (z: number) => {
 };
 
 const getPsiTier = (z: number) => {
-  // POSITIVE SCALE (Psi-Hitting)
   if (z >= 4.0) return { name: "The Oracle", color: "text-amber-300 shadow-amber-500/50" };
   if (z >= 3.0) return { name: "The Medium", color: "text-purple-300 shadow-purple-500/50" };
   if (z >= 1.96) return { name: "The Clairvoyant", color: "text-pink-300 shadow-pink-500/50" };
@@ -58,14 +56,12 @@ const getPsiTier = (z: number) => {
   if (z >= 0.5) return { name: "The Spark", color: "text-teal-300 shadow-teal-500/50" };
   if (z >= 0.0) return { name: "The Initiate", color: "text-slate-200" };
 
-  // NEGATIVE SCALE (Psi-Missing)
   if (z <= -4.0) return { name: "The Void", color: "text-slate-500" };
   if (z <= -3.0) return { name: "The Shadow", color: "text-slate-400" };
   if (z <= -2.0) return { name: "The Mirror", color: "text-slate-400" };
   if (z <= -1.0) return { name: "The Blocker", color: "text-slate-400" };
   if (z <= -0.5) return { name: "The Dreamer", color: "text-slate-400" };
   
-  // Just below baseline
   return { name: "The Sleeper", color: "text-slate-300" };
 };
 
@@ -152,9 +148,6 @@ const RadarChart = ({ stats, emotions }: { stats: any, emotions: any[] }) => {
     );
 };
 
-/**
- * --- STATS GRID COMPONENT ---
- */
 const StatsGrid = ({ stats, emotions }: { stats: any, emotions: any[] }) => {
     return (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
@@ -314,7 +307,6 @@ const PsiStats = ({ stats, deckSize, onClose }: { stats: any, deckSize: number, 
                 <StatsGrid stats={stats} emotions={EMOTIONS} />
             </div>
 
-            {/* Definitions Legend - REVISED */}
             <div className="grid md:grid-cols-2 gap-8 border-t border-white/10 pt-6">
                 <div>
                     <h4 className="text-xs uppercase tracking-widest text-amber-400 mb-3 pb-2">Psi-Hitting (Positive)</h4>
@@ -351,22 +343,22 @@ const PsiStats = ({ stats, deckSize, onClose }: { stats: any, deckSize: number, 
 
 // --- 1. CONFIGURATION & ASSETS ---
 
+const IMG_PATH = '/images/empathy-app/';
+
 const EMOTIONS = [
-  { id: 'love', name: 'Love', icon: Heart, color: '#ec4899', desc: 'Resonance, Connection', aura: 'shadow-pink-500' },
-  { id: 'sad', name: 'Sadness', icon: CloudRain, color: '#94a3b8', desc: 'Rain, Tears, Grey', aura: 'shadow-slate-500' },
-  { id: 'happy', name: 'Joy', icon: Sun, color: '#facc15', desc: 'Sun, Radiance', aura: 'shadow-yellow-500' },
-  { id: 'rich', name: 'Wealth', icon: Banknote, color: '#fbbf24', desc: 'Gold, Abundance', aura: 'shadow-amber-500' },
-  { id: 'sexy', name: 'Desire', icon: Flame, color: '#ef4444', desc: 'Heat, Passion', aura: 'shadow-red-600' },
-  { id: 'angry', name: 'Rage', icon: Zap, color: '#dc2626', desc: 'Lightning, Force', aura: 'shadow-red-800' },
-  { id: 'focused', name: 'Focus', icon: Crosshair, color: '#10b981', desc: 'Precision, Laser', aura: 'shadow-emerald-500' },
-  { id: 'laughing', name: 'Laughter', icon: PartyPopper, color: '#d946ef', desc: 'Vibration, Release', aura: 'shadow-fuchsia-500' }
+  { id: 'love', name: 'Love', src: `${IMG_PATH}love.jpg`, color: '#ec4899', desc: 'Resonance, Connection', aura: 'shadow-pink-500' },
+  { id: 'sad', name: 'Sadness', src: `${IMG_PATH}sadness.jpg`, color: '#94a3b8', desc: 'Rain, Tears, Grey', aura: 'shadow-slate-500' },
+  { id: 'happy', name: 'Joy', src: `${IMG_PATH}joy_unbound.jpg`, color: '#facc15', desc: 'Sun, Radiance', aura: 'shadow-yellow-500' },
+  { id: 'rich', name: 'Wealth', src: `${IMG_PATH}wealth (1).jpg`, color: '#fbbf24', desc: 'Gold, Abundance', aura: 'shadow-amber-500' },
+  { id: 'sexy', name: 'Desire', src: `${IMG_PATH}desire.jpg`, color: '#ef4444', desc: 'Heat, Passion', aura: 'shadow-red-600' },
+  { id: 'angry', name: 'Rage', src: `${IMG_PATH}rage_scream.jpg`, color: '#dc2626', desc: 'Lightning, Force', aura: 'shadow-red-800' },
+  { id: 'focused', name: 'Focus', src: `${IMG_PATH}focus_clarity.jpg`, color: '#10b981', desc: 'Precision, Laser', aura: 'shadow-emerald-500' },
+  { id: 'laughing', name: 'Laughter', src: `${IMG_PATH}laughter.jpg`, color: '#d946ef', desc: 'Vibration, Release', aura: 'shadow-fuchsia-500' }
 ];
 
-// UPDATED CARD BACKS with Shadow & Gold Trim
 const CARD_BACKS: Record<string, { name: string; bg: string }> = {
   checkered: { 
     name: 'Checkered Gold', 
-    // Uses inset shadow to create interior depth
     bg: 'bg-[#2e1065] border-2 border-amber-300/50 bg-[linear-gradient(45deg,#1e1b4b_25%,transparent_25%,transparent_75%,#1e1b4b_75%,#1e1b4b),linear-gradient(45deg,#1e1b4b_25%,transparent_25%,transparent_75%,#1e1b4b_75%,#1e1b4b)] bg-[length:30px_30px] [background-position:0_0,15px_15px] shadow-[inset_0_0_40px_rgba(0,0,0,0.9)]' 
   },
   box: {
@@ -477,15 +469,11 @@ const useAudioEngine = () => {
     const now = ctx.currentTime;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
-    
-    // UPDATED SOUND: Low Thud (Triangle wave, ~150Hz drop to 50Hz, quick decay)
     osc.type = 'triangle';
     osc.frequency.setValueAtTime(150, now);
     osc.frequency.exponentialRampToValueAtTime(50, now + 0.3);
-    
     gain.gain.setValueAtTime(0.3, now);
     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
-    
     osc.connect(gain);
     gain.connect(ctx.destination);
     osc.start(now);
@@ -598,7 +586,9 @@ export default function EmpathyApp() {
   const [cards, setCards] = useState<any[]>([]);
   const [stats, setStats] = useState<any>({});
   
-  const [feedback, setFeedback] = useState<{show: boolean, type: 'hit'|'miss', text: string, subtext: string} | null>(null);
+  // New Feedback State Logic (no more full overlay)
+  // We keep feedback state for reference, but UI handling is different now
+  const [feedback, setFeedback] = useState<{type: 'hit'|'miss'} | null>(null);
 
   const [showSettings, setShowSettings] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -759,21 +749,18 @@ export default function EmpathyApp() {
       audio.playSuccess();
       const newCards = [...cards];
       newCards[index].status = 'revealed';
+      // Mark as explicitly clicked so we know where to show text
+      newCards[index].isClicked = true; 
+      
       setCards(newCards);
       setGameState('revealed');
-      
-      setFeedback({
-        show: true,
-        type: 'hit',
-        text: "CORRECT",
-        subtext: `You found ${targetEmotion.name}`
-      });
-      // Removed auto-timer
+      setFeedback({ type: 'hit' });
 
     } else {
       audio.playFailure();
       const newCards = [...cards];
       newCards[index].status = 'revealed-wrong';
+      newCards[index].isClicked = true;
       
       if (feedbackMode === 'training') {
         const truthIndex = cards.findIndex(c => c.isTarget);
@@ -782,22 +769,9 @@ export default function EmpathyApp() {
 
       setCards(newCards);
       setGameState('revealed');
-
-      setFeedback({
-        show: true,
-        type: 'miss',
-        text: "INCORRECT",
-        subtext: `You chose ${clickedCard.name}. Target was ${targetEmotion.name}.`
-      });
-      // Removed auto-timer
+      setFeedback({ type: 'miss' });
     }
   };
-
-  const handleFeedbackClick = () => {
-      startNewRound();
-  };
-
-  const TargetIcon = targetEmotion?.icon;
 
   const getLayoutConfig = () => {
     let cols = 2;
@@ -820,7 +794,6 @@ export default function EmpathyApp() {
   const { cols, rows } = getLayoutConfig();
 
   // Grid Aspect Ratio Logic to prevent overflow
-  // This calculates the overall aspect ratio of the GRID (not individual cards)
   const gridAspectRatio = `${cols} / ${rows * 1.5}`;
 
   return (
@@ -877,49 +850,28 @@ export default function EmpathyApp() {
       </header>
 
       {/* TOP BAR: Target Info & Scorecard in Flow */}
-      {/* Reduced min-height to allow better fit on small mobile screens */}
       <div className="shrink-0 w-full flex items-start justify-between px-4 py-1 relative z-20 min-h-[60px] md:min-h-20">
           
-          {/* Target Info - Left on Mobile, Center on Desktop */}
+          {/* Target Info */}
           <div className="flex flex-col items-start md:items-center justify-center md:absolute md:inset-0 md:pointer-events-none z-0">
              <p className="text-slate-500 text-[9px] md:text-[10px] uppercase tracking-[0.2em] mb-1">Target Frequency</p>
-             <div className="flex items-center gap-2">
-                {TargetIcon && <TargetIcon size={24} className="text-amber-400 w-5 h-5 md:w-6 md:h-6" />}
-                <h1 className="text-lg md:text-4xl font-serif text-slate-100">{targetEmotion?.name.toUpperCase()}</h1>
-                {TargetIcon && <TargetIcon size={24} className="text-amber-400 hidden md:block" />}
-             </div>
+             <h1 className="text-lg md:text-4xl font-serif text-slate-100">{targetEmotion?.name.toUpperCase()}</h1>
           </div>
 
-          {/* Right HUD (Relative Flow - Pushes Grid Down) */}
+          {/* Right HUD */}
           <div className="ml-auto relative z-30 pointer-events-auto">
               <PsiStats stats={stats} deckSize={deckSize} />
           </div>
       </div>
 
-      {/* MAGICKAL FEEDBACK OVERLAY (Click to Dismiss) */}
-      {feedback && feedback.show && (
+      {/* "TAP TO CONTINUE" - Invisible Layer covering whole screen when revealed */}
+      {gameState === 'revealed' && (
         <div 
-            className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/60 backdrop-blur-[2px] cursor-pointer"
-            onClick={handleFeedbackClick}
+            className="absolute inset-0 z-50 flex items-end justify-center cursor-pointer pb-8"
+            onClick={() => startNewRound()}
         >
-            <div className="animate-magick-zoom text-center px-4">
-                <h1 
-                  className={`
-                    text-5xl md:text-9xl font-serif font-black tracking-tighter mb-4
-                    ${feedback.type === 'hit' ? 'text-amber-300' : 'text-slate-400'}
-                  `}
-                  style={{
-                    textShadow: feedback.type === 'hit' 
-                      ? '4px 4px 0px #ec4899, -2px -2px 0px #facc15' 
-                      : '4px 4px 0px #1e293b, -2px -2px 0px #0f172a'
-                  }}
-                >
-                    {feedback.text}
-                </h1>
-                <p className="text-lg md:text-2xl text-white font-mono uppercase tracking-widest bg-black/80 px-6 py-2 rounded-full inline-block border border-white/20">
-                    {feedback.subtext}
-                </p>
-                <p className="text-xs text-slate-400 mt-8 animate-pulse uppercase tracking-widest">Tap anywhere to continue</p>
+            <div className="bg-black/50 text-slate-300 text-xs uppercase tracking-widest px-4 py-2 rounded-full border border-white/10 animate-pulse pointer-events-none">
+                Tap anywhere to continue
             </div>
         </div>
       )}
@@ -1026,18 +978,15 @@ export default function EmpathyApp() {
         </div>
       )}
 
-      {/* GAME AREA - Flex Centered to prevent cut-off */}
+      {/* GAME AREA - Flex Centered */}
       <main className="flex-1 w-full min-h-0 flex items-center justify-center relative z-10 overflow-hidden p-4 md:p-8">
             <div 
                 className="grid gap-2 sm:gap-4"
                 style={{
-                    // Auto width/height allows grid to shrink based on containment
                     width: 'auto',
                     height: 'auto',
-                    // Max-width/height forces it to stay within parent
                     maxWidth: '100%',
                     maxHeight: '100%',
-                    // Aspect ratio forces the shape, so one dimension will hit 100% and the other will be < 100%
                     aspectRatio: gridAspectRatio,
                     gridTemplateColumns: `repeat(${cols}, 1fr)`,
                     gridTemplateRows: `repeat(${rows}, 1fr)`
@@ -1057,13 +1006,14 @@ export default function EmpathyApp() {
                             w-full h-full
                             transition-transform duration-300 ease-out transform
                             ${gameState === 'sensing' ? 'group-hover:-translate-y-2 group-hover:shadow-[0_0_25px_rgba(255,255,255,0.2)]' : ''}
+                            ${card.isTarget && card.status === 'revealed' ? 'animate-breathe' : ''}
                         `}
                         style={{
                             transformStyle: 'preserve-3d',
                             transform: card.status !== 'face-down' ? 'rotateY(180deg)' : 'rotateY(0deg)',
                         }}
                     >
-                        {/* THE STRUT: Ensures card maintains 2:3 ratio internally if grid doesn't force it enough */}
+                        {/* THE STRUT: Ensures card maintains ratio */}
                         <svg 
                             viewBox="0 0 200 300"
                             className="block w-full h-full opacity-0 pointer-events-none select-none"
@@ -1081,7 +1031,6 @@ export default function EmpathyApp() {
                             ${cardBack === 'box' || cardBack === 'checkered' ? '' : 'border-2 border-slate-400 ring-1 ring-inset ring-black/80'}
                             `}
                         >
-                            {/* Metallic Sheen if needed */}
                             {cardBack === 'static' && <div className="absolute inset-0 border border-white/20 rounded-lg pointer-events-none"></div>}
                         </div>
 
@@ -1089,31 +1038,36 @@ export default function EmpathyApp() {
                         <div 
                             className={`
                             absolute inset-0 w-full h-full rounded-lg backface-hidden transform-[rotateY(180deg)] z-10
-                            flex flex-col items-center justify-center border-2
+                            overflow-hidden border-2
                             ${card.status === 'revealed-wrong' 
-                                ? 'bg-neutral-800 border-neutral-700 grayscale opacity-60' 
-                                : `bg-neutral-900 ${card.color === '#ec4899' ? 'border-pink-500' : 'border-slate-600'} ${card.aura}`
+                                ? 'border-neutral-700 grayscale opacity-60' 
+                                : `border-slate-600 ${card.aura}`
                             }
                             `}
                         >
+                            {/* Full Height Image */}
+                            <img 
+                                src={card.src} 
+                                alt={card.name} 
+                                className="w-full h-full object-cover" 
+                            />
+
+                            {/* IN-CARD FEEDBACK - CORRECT */}
                             {card.status === 'revealed' && card.isTarget && (
-                            <div className="absolute inset-0 bg-linear-to-t from-amber-500/20 to-transparent animate-pulse rounded-lg"></div>
+                                <div className="absolute bottom-4 left-0 right-0 text-center z-20">
+                                    <span className="text-xl md:text-2xl font-black text-amber-300 uppercase tracking-widest drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
+                                        CORRECT
+                                    </span>
+                                </div>
                             )}
 
-                            <div className={`p-4 rounded-full bg-white/5 mb-2 ${card.status === 'revealed' && card.isTarget ? 'text-amber-300 scale-110' : 'text-slate-300'}`}>
-                                <card.icon 
-                                    // Percentage based sizing ensures it scales with the card container
-                                    className="w-[40%] h-[40%]"
-                                    color={card.status === 'revealed-wrong' ? '#525252' : card.color} 
-                                    strokeWidth={1.5}
-                                />
-                            </div>
-                            <span className={`text-[8px] md:text-sm uppercase tracking-widest font-bold text-center px-1 ${card.status === 'revealed-wrong' ? 'text-neutral-500' : 'text-white'}`}>
-                            {card.name}
-                            </span>
-                            
-                            {card.isTarget && card.status === 'revealed' && (
-                            <Sparkles className="absolute top-2 right-2 text-amber-400 animate-spin-slow" size={20} />
+                            {/* IN-CARD FEEDBACK - INCORRECT */}
+                            {card.status === 'revealed-wrong' && card.isClicked && (
+                                <div className="absolute bottom-4 left-0 right-0 text-center z-20">
+                                    <span className="text-xl md:text-2xl font-black text-red-600 uppercase tracking-widest drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
+                                        INCORRECT
+                                    </span>
+                                </div>
                             )}
                         </div>
                   </div>
@@ -1136,24 +1090,17 @@ export default function EmpathyApp() {
         .perspective-[1000px] { perspective: 1000px; }
         .backface-hidden { backface-visibility: hidden; }
         
-        @keyframes spin-slow {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
+        @keyframes breathe {
+            0%, 100% { transform: rotateY(180deg) scale(1); }
+            50% { transform: rotateY(180deg) scale(1.05); }
         }
-        .animate-spin-slow { animation: spin-slow 3s linear infinite; }
+        .animate-breathe { animation: breathe 3s ease-in-out infinite; }
 
         @keyframes twinkle {
             0%, 100% { opacity: 0; transform: scale(0.5); }
             50% { opacity: 0.5; transform: scale(1); }
         }
         .animate-twinkle { animation: twinkle 3s ease-in-out infinite; }
-
-        @keyframes magick-zoom {
-            0% { transform: scale(0.5) translateY(50px); opacity: 0; }
-            50% { opacity: 1; }
-            100% { transform: scale(1) translateY(0); opacity: 1; }
-        }
-        .animate-magick-zoom { animation: magick-zoom 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
       `}</style>
     </div>
   );
