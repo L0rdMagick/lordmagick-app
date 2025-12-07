@@ -618,21 +618,21 @@ export default function FriendOrFoeApp() {
                         className="flex flex-col gap-1 relative w-full h-full min-h-0 min-w-0 overflow-hidden"
                     >
                         {/* 
-                           IMAGE AREA: 
+                           IMAGE AREA (UPDATED): 
                            - flex-1: Takes available vertical space
                            - overflow-hidden: Crucial for ensuring image doesn't push bounds
                            - flex/justify-center: Centers the image
+                           - p-4: Adds padding so image doesn't touch edges
                         */}
-                        <div className="flex-1 flex items-center justify-center min-h-0 w-full relative overflow-hidden">
+                        <div className="flex-1 flex items-center justify-center min-h-0 w-full relative overflow-hidden p-4">
                              
                              {/* 
-                                IMAGE ELEMENT:
-                                - max-w/max-h full: Constrains to parent container size
-                                - w-auto/h-auto: Maintains aspect ratio
-                                - object-contain: Ensures scaling without cropping
-                                - Styling classes applied directly here
+                                IMAGE WRAPPER (UPDATED):
+                                - Changed from inline-block to flex to respect max-height properly on large screens
+                                - relative flex justify-center items-center: Centers the child image
+                                - max-w-full max-h-full: STRICTLY limits growth
                              */}
-                             <div className="relative inline-block max-w-full max-h-full">
+                             <div className="relative flex justify-center items-center max-w-full max-h-full">
                                 <img 
                                     src={imgSrc} 
                                     alt="Subject" 
