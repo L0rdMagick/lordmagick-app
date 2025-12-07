@@ -229,7 +229,7 @@ const InstructionModal = ({ onClose }: { onClose: () => void }) => (
                   <span className="text-purple-400 font-bold">THE TASK:</span> View the subject. Use your intuition to sense their hidden nature.
               </p>
               <p className="leading-relaxed">
-                  <span className="text-slate-200 font-bold">THE CHOICE:</span> Decide if they are <span className="text-green-400">GOOD (Angelic)</span> or <span className="text-red-400">EVIL (Demonic)</span>.
+                  <span className="text-slate-200 font-bold">THE CHOICE:</span> Decide if they are <span className="text-blue-400">GOOD (Angelic)</span> or <span className="text-red-400">EVIL (Demonic)</span>.
               </p>
               <p className="leading-relaxed">
                   <span className="text-amber-400 font-bold">THE LADDER:</span>
@@ -542,6 +542,18 @@ export default function FriendOrFoeApp() {
       <div className="absolute inset-0 bg-[#020617] z-0" style={{ backgroundImage: 'linear-gradient(#1e1b4b 1px, transparent 1px), linear-gradient(90deg, #1e1b4b 1px, transparent 1px)', backgroundSize: '50px 50px', opacity: 0.1 }}></div>
       <div className="absolute inset-0 bg-radial-gradient from-transparent to-slate-950 z-0 opacity-80"></div>
 
+      {/* Glitter Effect Style */}
+      <style jsx>{`
+        .magickal-glitter {
+            background-image: 
+                radial-gradient(white, rgba(255,255,255,.2) 2px, transparent 3px),
+                radial-gradient(white, rgba(255,255,255,.15) 1px, transparent 2px),
+                radial-gradient(white, rgba(255,255,255,.1) 2px, transparent 3px);
+            background-size: 550px 550px, 350px 350px, 250px 250px;
+            background-position: 0 0, 40px 60px, 130px 270px;
+        }
+      `}</style>
+
       {showInstructions && <InstructionModal onClose={() => { setShowInstructions(false); startRound(1); }} />}
 
       {/* HEADER - Fixed Height */}
@@ -608,8 +620,12 @@ export default function FriendOrFoeApp() {
                         cardStyleClass = "border-2 border-red-500 shadow-[0_0_30px_rgba(239,68,68,0.6)]";
                     }
                 } else if (card.guess) {
-                    // Selected but not revealed
-                    cardStyleClass = "border-2 border-purple-400 shadow-[0_0_20px_rgba(168,85,247,0.4)]";
+                    // Selected but not revealed - BLUE FOR SELECTED "ANGELIC"
+                    if (card.guess === 'good') {
+                         cardStyleClass = "border-2 border-blue-400 shadow-[0_0_20px_rgba(96,165,250,0.4)]";
+                    } else {
+                         cardStyleClass = "border-2 border-red-400 shadow-[0_0_20px_rgba(248,113,113,0.4)]";
+                    }
                 }
 
                 return (
@@ -656,7 +672,7 @@ export default function FriendOrFoeApp() {
                                  {/* Selection Indicator */}
                                  {!isRevealed && card.guess && (
                                     <div className="absolute top-2 right-2 px-2 py-1 rounded bg-black/70 backdrop-blur text-[10px] font-bold uppercase tracking-wider border border-white/10 z-10">
-                                        {card.guess === 'good' ? <span className="text-green-400">ANGELIC</span> : <span className="text-red-400">EVIL</span>}
+                                        {card.guess === 'good' ? <span className="text-blue-400">ANGELIC</span> : <span className="text-red-400">EVIL</span>}
                                     </div>
                                  )}
                              </div>
@@ -664,32 +680,28 @@ export default function FriendOrFoeApp() {
 
                         {/* CONTROLS */}
                         {!isRevealed && (
-                             <div className="grid grid-cols-2 gap-2 h-10 md:h-12 w-full shrink-0">
+                             <div className="grid grid-cols-2 gap-2 h-12 w-full shrink-0">
                                 <button 
                                     onClick={() => handleGuess(index, 'good')}
-                                    className={`rounded-lg border flex flex-col items-center justify-center transition-all ${
+                                    className={`rounded-lg border flex flex-row items-center justify-center gap-2 transition-all magickal-glitter ${
                                         card.guess === 'good' 
-                                        ? 'bg-green-900/40 border-green-500 text-green-300 shadow-[0_0_10px_rgba(34,197,94,0.2)]' 
-                                        : 'bg-slate-900/80 border-slate-700 text-slate-400 hover:border-green-800 hover:text-green-400'
+                                        ? 'bg-blue-900/60 border-blue-500 text-blue-200 shadow-[0_0_10px_rgba(96,165,250,0.2)]' 
+                                        : 'bg-slate-900/80 border-slate-700 text-slate-400 hover:border-blue-800 hover:text-blue-400'
                                     }`}
                                 >
-                                    <div className="flex items-center gap-1">
-                                        <Heart size={14} className={card.guess === 'good' ? 'fill-current' : ''} />
-                                        <span className="text-[10px] uppercase font-bold tracking-widest hidden md:inline">Good</span>
-                                    </div>
+                                    <Heart size={16} className={card.guess === 'good' ? 'fill-current' : ''} />
+                                    <span className="text-[10px] md:text-xs uppercase font-bold tracking-widest">Good</span>
                                 </button>
                                 <button 
                                     onClick={() => handleGuess(index, 'evil')}
-                                    className={`rounded-lg border flex flex-col items-center justify-center transition-all ${
+                                    className={`rounded-lg border flex flex-row items-center justify-center gap-2 transition-all magickal-glitter ${
                                         card.guess === 'evil' 
-                                        ? 'bg-red-900/40 border-red-500 text-red-300 shadow-[0_0_10px_rgba(239,68,68,0.2)]' 
+                                        ? 'bg-red-900/60 border-red-500 text-red-200 shadow-[0_0_10px_rgba(239,68,68,0.2)]' 
                                         : 'bg-slate-900/80 border-slate-700 text-slate-400 hover:border-red-800 hover:text-red-400'
                                     }`}
                                 >
-                                    <div className="flex items-center gap-1">
-                                        <Skull size={14} className={card.guess === 'evil' ? 'fill-current' : ''} />
-                                        <span className="text-[10px] uppercase font-bold tracking-widest hidden md:inline">Evil</span>
-                                    </div>
+                                    <Skull size={16} className={card.guess === 'evil' ? 'fill-current' : ''} />
+                                    <span className="text-[10px] md:text-xs uppercase font-bold tracking-widest">Evil</span>
                                 </button>
                              </div>
                         )}
@@ -705,9 +717,9 @@ export default function FriendOrFoeApp() {
              <button 
                 onClick={submitRound}
                 disabled={cards.some(c => c.guess === null)}
-                className="w-full max-w-md py-3 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-lg shadow-[0_0_20px_rgba(147,51,234,0.3)] transition-all uppercase tracking-[0.2em] flex items-center justify-center gap-2 text-xs md:text-sm"
+                className="w-full max-w-md py-3 bg-[#0f0c29] border border-amber-500/50 hover:bg-[#1a1640] disabled:opacity-50 disabled:cursor-not-allowed text-amber-300 font-bold rounded-lg shadow-[0_0_15px_rgba(251,191,36,0.3)] transition-all uppercase tracking-[0.2em] flex items-center justify-center gap-2 text-xs md:text-sm magickal-glitter"
             >
-                <Target size={16} /> Manifest Outcome
+                <Target size={16} /> Commit Decision
              </button>
          ) : (
             <button 
