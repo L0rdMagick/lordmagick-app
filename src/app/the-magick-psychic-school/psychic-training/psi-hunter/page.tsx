@@ -3,9 +3,9 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
-  Target, Zap, Settings, Play, RotateCcw, 
-  Activity, Lock, X, Info, Volume2, VolumeX, Sparkles, Save,
-  Maximize, Minimize, Heart, Skull, ArrowRight
+  Target, Settings, RotateCcw, 
+  Activity, X, Info, Volume2, VolumeX, Sparkles, Save,
+  Heart, Skull, ArrowRight
 } from 'lucide-react';
 import { createBrowserClient } from '@supabase/ssr';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
@@ -112,7 +112,6 @@ const useAudioEngine = () => {
     const ctx = ctxRef.current;
 
     if (active && !thetaOscRef.current) {
-      // 40Hz Theta/Gamma for intuition
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = 'sine';
@@ -169,14 +168,12 @@ const useAudioEngine = () => {
     const gain = ctx.createGain();
     
     if (success) {
-        // Angelic chord
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(522.81, now); // C5
-        osc.frequency.exponentialRampToValueAtTime(1046.5, now + 0.5); // C6
+        osc.frequency.setValueAtTime(522.81, now); 
+        osc.frequency.exponentialRampToValueAtTime(1046.5, now + 0.5); 
         gain.gain.setValueAtTime(0.1, now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + 1.5);
     } else {
-        // Discordant low tone
         osc.type = 'sawtooth';
         osc.frequency.setValueAtTime(60, now);
         osc.frequency.linearRampToValueAtTime(40, now + 0.4);
@@ -214,14 +211,14 @@ const InstructionModal = ({ onClose }: { onClose: () => void }) => (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-md p-6 animate-in fade-in duration-500">
       <div className="max-w-md w-full border border-purple-500/30 bg-[#0f172a] p-8 rounded-xl shadow-[0_0_50px_rgba(168,85,247,0.2)] text-center relative">
           <h2 className="text-3xl font-black text-purple-400 mb-2 tracking-tighter font-serif">FRIEND OR FOE</h2>
-          <p className="text-xs font-mono text-slate-400 uppercase tracking-[0.2em] mb-6">Dualistic Intuition Trainer</p>
+          <p className="text-xs font-mono text-slate-400 uppercase tracking-[0.2em] mb-6">Intuition Defense System</p>
           
           <div className="text-left space-y-4 mb-8 bg-black/40 p-4 rounded border border-white/5 text-sm text-slate-300 font-mono">
               <p className="leading-relaxed">
                   <span className="text-purple-400 font-bold">THE TASK:</span> View the subject. Use your intuition to sense their hidden nature.
               </p>
               <p className="leading-relaxed">
-                  <span className="text-slate-200 font-bold">THE CHOICE:</span> Decide if they are <span className="text-green-400">GOOD (Angelic)</span> or <span className="text-red-400">EVIL (Demonic)</span>. The outcome is predetermined by the ether.
+                  <span className="text-slate-200 font-bold">THE CHOICE:</span> Decide if they are <span className="text-green-400">GOOD (Angelic)</span> or <span className="text-red-400">EVIL (Demonic)</span>.
               </p>
               <p className="leading-relaxed">
                   <span className="text-amber-400 font-bold">THE LADDER:</span>
@@ -426,8 +423,6 @@ export default function FriendOrFoeApp() {
 
     // Audio Feedback
     audio.playReveal(allCorrect);
-
-    // Progression Logic happens after user views result (via "Continue" button)
   };
 
   const handleContinue = () => {
@@ -484,11 +479,23 @@ export default function FriendOrFoeApp() {
     }
   };
 
-  // --- LAYOUT LOGIC ---
-  const getGridCols = () => {
-      if (level === 1) return 1;
-      if (level === 2) return 2;
-      return 2; // Levels 3 and 4 also use 2 cols for mobile friendliness
+  // --- LAYOUT HELPERS ---
+  const getGridClasses = () => {
+    // Mobile First approach:
+    // Level 1: 1 col, 1 row
+    // Level 2: 1 col, 2 rows (stack vertically to use height)
+    // Level 3/4: 2 cols, 2 rows
+
+    // MD (Desktop) approach:
+    // Level 2: 2 cols, 1 row (side by side)
+    
+    switch(level) {
+        case 1: return "grid-cols-1 grid-rows-1";
+        case 2: return "grid-cols-1 grid-rows-2 md:grid-cols-2 md:grid-rows-1"; // Stack on mobile, side-by-side on desktop
+        case 3: 
+        case 4: return "grid-cols-2 grid-rows-2";
+        default: return "grid-cols-1 grid-rows-1";
+    }
   };
 
   // --- RENDER ---
@@ -540,14 +547,11 @@ export default function FriendOrFoeApp() {
           <PsiStats stats={stats} level={level} />
       </div>
 
-      {/* MAIN GAME AREA */}
-      <main className="flex-1 w-full min-h-0 relative z-10 overflow-y-auto p-4 flex flex-col items-center">
+      {/* MAIN GAME AREA - STRICT FLEX FIT */}
+      <main className="flex-1 w-full min-h-0 relative z-10 overflow-hidden p-2 flex flex-col items-center justify-center">
          
          <div 
-            className="grid gap-4 w-full max-w-4xl mx-auto"
-            style={{ 
-                gridTemplateColumns: `repeat(${getGridCols()}, 1fr)` 
-            }}
+            className={`grid gap-2 w-full h-full max-h-full max-w-full justify-items-center content-center ${getGridClasses()}`}
          >
             {cards.map((card, index) => {
                 const isRevealed = gameState === 'RESULT';
@@ -560,39 +564,45 @@ export default function FriendOrFoeApp() {
                 }
 
                 return (
-                    <div key={card.instanceId} className="flex flex-col gap-2 relative group">
-                        {/* Image Container */}
-                        <div className={`relative aspect-square w-full rounded-xl overflow-hidden border-2 transition-all duration-500 ${
-                            isRevealed 
-                                ? (isCorrect ? 'border-green-500 shadow-[0_0_30px_rgba(34,197,94,0.3)]' : 'border-red-500 shadow-[0_0_30px_rgba(239,68,68,0.3)]')
-                                : 'border-slate-700 bg-slate-900'
-                        }`}>
-                            <img 
-                                src={imgSrc} 
-                                alt="Subject" 
-                                className={`w-full h-full object-cover transition-all duration-700 ${isRevealed ? 'scale-110' : 'scale-100 filter sepia-[0.3]'}`}
-                            />
-                            
-                            {/* OVERLAYS */}
-                            {isRevealed && (
-                                <div className="absolute inset-0 flex items-end justify-center pb-6 bg-linear-to-t from-black/90 via-transparent to-transparent">
-                                    <span className={`text-4xl md:text-5xl font-black tracking-tighter uppercase drop-shadow-lg ${isCorrect ? 'text-green-500' : 'text-red-500'}`}>
-                                        {isCorrect ? 'CORRECT' : 'INCORRECT'}
-                                    </span>
-                                </div>
-                            )}
+                    <div 
+                        key={card.instanceId} 
+                        className="flex flex-col gap-1 md:gap-2 relative group w-full h-full min-h-0 min-w-0 items-center justify-center"
+                    >
+                        {/* Image Container: Uses aspect-square but constrained by parent height/width due to 'contain' logic needed */}
+                        <div className={`relative flex-1 min-h-0 w-full flex items-center justify-center`}>
+                           <div className={`
+                                relative h-full w-full max-h-full aspect-square rounded-xl overflow-hidden border-2 transition-all duration-500 mx-auto
+                                ${isRevealed 
+                                    ? (isCorrect ? 'border-green-500 shadow-[0_0_30px_rgba(34,197,94,0.3)]' : 'border-red-500 shadow-[0_0_30px_rgba(239,68,68,0.3)]')
+                                    : 'border-slate-700 bg-slate-900'}
+                           `}>
+                                <img 
+                                    src={imgSrc} 
+                                    alt="Subject" 
+                                    className={`w-full h-full object-cover transition-all duration-700 ${isRevealed ? 'scale-110' : 'scale-100 filter sepia-[0.3]'}`}
+                                />
+                                
+                                {/* OVERLAYS */}
+                                {isRevealed && (
+                                    <div className="absolute inset-0 flex items-end justify-center pb-2 md:pb-6 bg-linear-to-t from-black/90 via-transparent to-transparent">
+                                        <span className={`text-2xl md:text-5xl font-black tracking-tighter uppercase drop-shadow-lg ${isCorrect ? 'text-green-500' : 'text-red-500'}`}>
+                                            {isCorrect ? 'CORRECT' : 'INCORRECT'}
+                                        </span>
+                                    </div>
+                                )}
 
-                            {/* Selection Indicator (Pre-reveal) */}
-                            {!isRevealed && card.guess && (
-                                <div className="absolute top-2 right-2 px-2 py-1 rounded bg-black/70 backdrop-blur text-xs font-bold uppercase tracking-wider border border-white/10">
-                                    {card.guess === 'good' ? <span className="text-green-400">ANGELIC</span> : <span className="text-red-400">EVIL</span>}
-                                </div>
-                            )}
+                                {/* Selection Indicator (Pre-reveal) */}
+                                {!isRevealed && card.guess && (
+                                    <div className="absolute top-2 right-2 px-2 py-1 rounded bg-black/70 backdrop-blur text-[10px] md:text-xs font-bold uppercase tracking-wider border border-white/10">
+                                        {card.guess === 'good' ? <span className="text-green-400">ANGELIC</span> : <span className="text-red-400">EVIL</span>}
+                                    </div>
+                                )}
+                           </div>
                         </div>
 
-                        {/* Controls (Only show if not revealed) */}
+                        {/* Controls (Only show if not revealed) - Fixed height to ensure image takes remaining space */}
                         {!isRevealed && (
-                             <div className="grid grid-cols-2 gap-2 h-14">
+                             <div className="grid grid-cols-2 gap-2 h-10 md:h-14 w-full max-w-[calc(100vh/3)] shrink-0">
                                 <button 
                                     onClick={() => handleGuess(index, 'good')}
                                     className={`rounded border flex flex-col items-center justify-center transition-all ${
@@ -601,8 +611,10 @@ export default function FriendOrFoeApp() {
                                         : 'bg-slate-900 border-slate-700 text-slate-400 hover:border-green-800 hover:text-green-400'
                                     }`}
                                 >
-                                    <Heart size={16} className={card.guess === 'good' ? 'fill-current' : ''} />
-                                    <span className="text-[10px] uppercase font-bold tracking-widest mt-1">Good</span>
+                                    <div className="flex items-center gap-1">
+                                        <Heart size={12} className={card.guess === 'good' ? 'fill-current' : ''} />
+                                        <span className="text-[10px] uppercase font-bold tracking-widest hidden md:inline">Good</span>
+                                    </div>
                                 </button>
                                 <button 
                                     onClick={() => handleGuess(index, 'evil')}
@@ -612,8 +624,10 @@ export default function FriendOrFoeApp() {
                                         : 'bg-slate-900 border-slate-700 text-slate-400 hover:border-red-800 hover:text-red-400'
                                     }`}
                                 >
-                                    <Skull size={16} className={card.guess === 'evil' ? 'fill-current' : ''} />
-                                    <span className="text-[10px] uppercase font-bold tracking-widest mt-1">Evil</span>
+                                    <div className="flex items-center gap-1">
+                                        <Skull size={12} className={card.guess === 'evil' ? 'fill-current' : ''} />
+                                        <span className="text-[10px] uppercase font-bold tracking-widest hidden md:inline">Evil</span>
+                                    </div>
                                 </button>
                              </div>
                         )}
@@ -621,27 +635,24 @@ export default function FriendOrFoeApp() {
                 );
             })}
          </div>
-
-         {/* Spacer */}
-         <div className="h-24"></div>
       </main>
 
       {/* FOOTER ACTION BAR */}
-      <footer className="fixed bottom-0 left-0 right-0 z-30 border-t border-purple-900/30 bg-slate-950/90 backdrop-blur p-4 flex justify-center">
+      <footer className="relative z-30 border-t border-purple-900/30 bg-slate-950/90 backdrop-blur shrink-0 min-h-[70px] flex items-center justify-center p-2">
          {gameState === 'INPUT' ? (
              <button 
                 onClick={submitRound}
                 disabled={cards.some(c => c.guess === null)}
-                className="w-full max-w-md py-4 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-lg shadow-[0_0_20px_rgba(147,51,234,0.3)] transition-all uppercase tracking-[0.2em] flex items-center justify-center gap-2"
+                className="w-full max-w-md py-3 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-lg shadow-[0_0_20px_rgba(147,51,234,0.3)] transition-all uppercase tracking-[0.2em] flex items-center justify-center gap-2 text-xs md:text-sm"
             >
-                <Target size={18} /> Manifest Outcome
+                <Target size={16} /> Manifest Outcome
              </button>
          ) : (
             <button 
                 onClick={handleContinue}
-                className="w-full max-w-md py-4 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white font-bold rounded-lg transition-all uppercase tracking-[0.2em] flex items-center justify-center gap-2"
+                className="w-full max-w-md py-3 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white font-bold rounded-lg transition-all uppercase tracking-[0.2em] flex items-center justify-center gap-2 text-xs md:text-sm"
             >
-                {cards.every(c => c.guess === c.target) ? 'Ascend Level' : 'Restart Cycle'} <ArrowRight size={18} />
+                {cards.every(c => c.guess === c.target) ? 'Ascend Level' : 'Restart Cycle'} <ArrowRight size={16} />
             </button>
          )}
       </footer>
