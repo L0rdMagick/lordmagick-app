@@ -4,12 +4,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   Settings, HelpCircle, Eye, X, Trophy, Activity, 
-  Sparkles, Maximize2, Trash2, RotateCcw
+  Sparkles, Maximize2, Trash2, RotateCcw, Check
 } from 'lucide-react';
 import { createBrowserClient } from '@supabase/ssr';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
 
-// --- DATA ASSETS ---
+// --- ASSET DEFINITIONS ---
 
 const IMG_PATH = '/images/door-vision/';
 
@@ -342,19 +342,19 @@ const DoorVisionStats = ({ history }: { history: any[] }) => {
     <>
       <div 
         onClick={() => setShowModal(true)}
-        className="flex flex-col items-center gap-1 bg-neutral-900/50 hover:bg-neutral-800 border border-purple-500/30 hover:border-purple-400 rounded-lg cursor-pointer transition-all group p-2 min-w-[140px]"
+        className="flex flex-col items-center justify-center gap-0.5 bg-neutral-900/50 hover:bg-neutral-800 border border-purple-500/30 hover:border-purple-400 rounded-lg cursor-pointer transition-all group px-3 py-1.5"
       >
         <div className="flex items-center gap-4 w-full justify-center">
             <div className="flex items-center gap-2 border-r border-purple-500/30 pr-3">
-                <span className="text-yellow-400 font-bold flex items-center gap-1 font-mono"><Trophy size={14} /> {streak}</span>
+                <span className="text-yellow-400 font-bold flex items-center gap-1 font-mono text-sm"><Trophy size={14} /> {streak}</span>
             </div>
-            <div className="flex flex-col items-center">
-                <span className="text-[9px] text-purple-400 uppercase tracking-widest font-mono">Accuracy</span>
+            <div className="flex flex-col items-center leading-none">
+                <span className="text-[9px] text-purple-400 uppercase tracking-widest font-mono mb-0.5">Accuracy</span>
                 <span className={`text-xs font-bold font-mono ${sessionAccuracy > 25 ? 'text-green-400' : 'text-gray-400'}`}>{sessionAccuracy.toFixed(0)}%</span>
             </div>
         </div>
-        <div className="w-full text-center border-t border-purple-500/10 pt-1 mt-1">
-             <span className="text-[8px] font-bold text-purple-500 group-hover:text-purple-300 tracking-[0.2em] uppercase">See All Stats</span>
+        <div className="w-full text-center border-t border-purple-500/10 pt-0.5 mt-0.5">
+             <span className="text-[8px] font-bold text-purple-500 group-hover:text-purple-300 tracking-widest uppercase">See All Stats</span>
         </div>
       </div>
       {showModal && mounted && createPortal(<ModalContent />, document.body)}
@@ -445,7 +445,6 @@ export default function TheThresholdApp() {
   // History State for Stats
   const [history, setHistory] = useState<any[]>([]);
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
   // Refs
   const spinInterval = useRef<NodeJS.Timeout | null>(null);
@@ -586,8 +585,6 @@ export default function TheThresholdApp() {
      } catch(e) { console.error(e); }
   };
 
-  const getTargetItem = () => currentCategory.items.find(i => i.id === targetId);
-
   return (
     <main className="relative min-h-screen w-full bg-black bg-cover bg-center overflow-hidden flex flex-col font-sans" style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}>
       <div className="absolute inset-0 bg-[#0a0a0a]/90 backdrop-blur-sm z-0" />
@@ -595,17 +592,17 @@ export default function TheThresholdApp() {
       {showInstructions && <InstructionModal onClose={() => setShowInstructions(false)} />}
       
       {/* Header */}
-      <header className="relative z-40 p-3 md:p-4 flex justify-between items-center border-b border-white/10 bg-neutral-900/50 backdrop-blur-md">
-        <div className="flex items-center gap-4">
+      <header className="relative z-40 p-3 md:p-4 flex items-center justify-between border-b border-white/10 bg-neutral-900/50 backdrop-blur-md h-16">
+        <div className="flex items-center gap-4 w-1/3">
           <MagickalBackLink href="/the-magick-psychic-school/psychic-training" text="Exit" className="text-sm" />
         </div>
         
         {/* Widget Center */}
-        <div className="absolute left-1/2 -translate-x-1/2 top-2 z-50">
+        <div className="flex justify-center w-1/3">
            <DoorVisionStats history={history} />
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-end gap-2 w-1/3">
             <button onClick={() => setShowInstructions(true)} className="text-gray-500 hover:text-white transition p-2">
                 <HelpCircle className="w-5 h-5" />
             </button>
@@ -615,7 +612,7 @@ export default function TheThresholdApp() {
         </div>
       </header>
 
-      {/* Settings Panel (Click dead space to close) */}
+      {/* Settings Panel */}
       {showSettings && (
         <div className="fixed inset-0 z-60 bg-black/50 backdrop-blur-sm" onClick={() => setShowSettings(false)}>
            <div 
@@ -660,7 +657,7 @@ export default function TheThresholdApp() {
         </div>
       )}
 
-      {/* Main Stage - Optimized for Single Screen Mobile */}
+      {/* Main Stage */}
       <div className="relative z-10 flex-1 flex flex-col items-center justify-between py-4 w-full max-w-lg mx-auto px-4 overflow-y-auto min-h-0">
         
         {/* Status */}
@@ -673,8 +670,8 @@ export default function TheThresholdApp() {
           {gameState === 'RESULT' && <span className="font-mono text-xs text-white">SEQUENCE COMPLETE</span>}
         </div>
 
-        {/* The Wall & Door - Flexible Height */}
-        <div className="relative flex-1 w-full max-w-[280px] min-h-[250px] bg-neutral-950 rounded-t-full border-8 border-neutral-800 shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden ring-1 ring-white/10 my-2">
+        {/* The Wall & Door - Yellow Aura */}
+        <div className="relative flex-1 w-full max-w-[280px] min-h-[250px] bg-neutral-950 rounded-t-full border-8 border-neutral-800 shadow-[0_0_80px_rgba(250,204,21,0.4)] overflow-hidden ring-1 ring-white/10 my-2">
           
           {/* Content Behind Door */}
           <div className="absolute inset-0 flex items-center justify-center bg-[radial-gradient(circle_at_center,var(--tw-gradient-stops))] from-indigo-900/40 via-black to-black">
@@ -702,10 +699,13 @@ export default function TheThresholdApp() {
         </div>
 
         {/* Controls - Fixed Height Area */}
-        <div className="w-full max-w-sm space-y-4 flex-none">
+        <div className="w-full max-w-sm space-y-4 flex-none relative">
           
+          {/* Pinkish Glow Behind Mini Images */}
+          <div className="absolute inset-0 bg-pink-500/20 blur-xl rounded-full scale-110 -z-10" />
+
           {/* Thumbnails */}
-          <div className={`grid grid-cols-4 gap-3 transition-all duration-500 ${gameState === 'LOCKED' ? 'opacity-100 translate-y-0' : 'opacity-50 translate-y-4 pointer-events-none grayscale'}`}>
+          <div className={`grid grid-cols-4 gap-3 transition-all duration-500 relative z-0 ${gameState === 'LOCKED' ? 'opacity-100 translate-y-0' : 'opacity-50 translate-y-4 pointer-events-none grayscale'}`}>
             {currentCategory.items.map((item) => {
                const isSelected = userGuess === item.id;
                const isCorrect = item.id === targetId;
@@ -720,10 +720,10 @@ export default function TheThresholdApp() {
                 >
                   <img src={item.src} alt={item.label} className="w-full h-full object-cover opacity-70 group-hover:opacity-100" />
                   
-                  {/* Result Overlays */}
+                  {/* Result Overlays - Thick Icons */}
                   {gameState === 'RESULT' && isSelected && (
-                     <div className={`absolute inset-0 flex items-center justify-center bg-black/50 ${isCorrect ? 'text-green-500' : 'text-red-500'}`}>
-                        {isCorrect ? <span className="text-2xl font-bold">✓</span> : <span className="text-2xl font-bold">✕</span>}
+                     <div className={`absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-[1px] ${isCorrect ? 'text-green-500' : 'text-red-500'}`}>
+                        {isCorrect ? <Check strokeWidth={4} size={32} /> : <X strokeWidth={4} size={32} />}
                      </div>
                   )}
                 </button>
