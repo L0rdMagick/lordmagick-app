@@ -78,13 +78,24 @@ const calculateProbability = (z: number) => {
 };
 
 const getPsiTier = (z: number) => {
+  // POSITIVE SCALE (Psi-Hitting)
   if (z >= 4.0) return { name: "The Oracle", color: "text-amber-300 shadow-amber-500/50" };
   if (z >= 3.0) return { name: "The Medium", color: "text-purple-300 shadow-purple-500/50" };
   if (z >= 1.96) return { name: "The Clairvoyant", color: "text-pink-300 shadow-pink-500/50" };
+  if (z >= 1.65) return { name: "The Channel", color: "text-indigo-300 shadow-indigo-500/50" };
   if (z >= 1.0) return { name: "The Adept", color: "text-cyan-300 shadow-cyan-500/50" };
+  if (z >= 0.5) return { name: "The Spark", color: "text-teal-300 shadow-teal-500/50" };
   if (z >= 0.0) return { name: "The Initiate", color: "text-slate-200" };
-  if (z <= -3.0) return { name: "The Shadow", color: "text-red-400" };
-  return { name: "The Sleeper", color: "text-slate-400" };
+
+  // NEGATIVE SCALE (Psi-Missing)
+  if (z <= -4.0) return { name: "The Void", color: "text-slate-500" };
+  if (z <= -3.0) return { name: "The Shadow", color: "text-slate-400" };
+  if (z <= -2.0) return { name: "The Mirror", color: "text-slate-400" };
+  if (z <= -1.0) return { name: "The Blocker", color: "text-slate-400" };
+  if (z <= -0.5) return { name: "The Dreamer", color: "text-slate-400" };
+  
+  // Just below baseline
+  return { name: "The Sleeper", color: "text-slate-300" };
 };
 
 /**
@@ -280,7 +291,7 @@ const PsiStats = ({ stats, level }: { stats: any, level: number }) => {
               onClick={() => setShowModal(false)}
           >
             <div 
-              className="max-w-2xl w-full bg-slate-900 border border-purple-500/20 rounded-xl p-6 relative shadow-[0_0_50px_rgba(168,85,247,0.2)]"
+              className="max-w-4xl w-full bg-slate-900 border border-purple-500/20 rounded-xl p-6 relative max-h-[90vh] overflow-y-auto shadow-[0_0_50px_rgba(168,85,247,0.2)]"
               onClick={(e) => e.stopPropagation()}
             >
               <button onClick={() => setShowModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white"><X /></button>
@@ -288,20 +299,48 @@ const PsiStats = ({ stats, level }: { stats: any, level: number }) => {
                 <Activity className="text-purple-400" /> Performance Analysis
               </h2>
               
-              <div className="bg-black/20 rounded-lg p-4 border border-white/5 mb-6">
-                <div className="space-y-2 text-sm font-mono">
-                  <div className="flex justify-between border-b border-white/5 pb-1"><span>Total Hits / Images</span> <span className="text-white">{hits} / {trials}</span></div>
-                  <div className="flex justify-between border-b border-white/5 pb-1"><span>Accuracy</span> <span className="text-white">{accuracy.toFixed(1)}%</span></div>
-                  <div className="flex justify-between border-b border-white/5 pb-1"><span>Chance Baseline</span> <span className="text-slate-400">50%</span></div>
-                  <div className="flex justify-between border-b border-white/5 pb-1"><span>Psi Score (Z)</span> <span className={z >= 0 ? "text-amber-300" : "text-slate-400"}>{z.toFixed(2)}</span></div>
-                  <div className="flex justify-between"><span>Probability</span> <span className="text-green-300">{prob}</span></div>
-                  <div className="mt-4 text-center text-sm font-bold uppercase tracking-widest text-white border-t border-white/10 pt-2">{tier.name}</div>
+              {/* CURRENT STATS CARD */}
+              <div className="bg-black/20 rounded-lg p-4 border border-white/5 mb-8">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm font-mono text-center md:text-left">
+                  <div className="flex flex-col"><span className="text-slate-500 text-[10px] uppercase">Trials</span><span className="text-white text-lg">{trials}</span></div>
+                  <div className="flex flex-col"><span className="text-slate-500 text-[10px] uppercase">Hits</span><span className="text-white text-lg">{hits}</span></div>
+                  <div className="flex flex-col"><span className="text-slate-500 text-[10px] uppercase">Accuracy</span><span className="text-white text-lg">{accuracy.toFixed(1)}%</span></div>
+                  <div className="flex flex-col"><span className="text-slate-500 text-[10px] uppercase">Psi Score (Z)</span><span className={`text-lg ${z >= 0 ? "text-amber-300" : "text-slate-400"}`}>{z.toFixed(2)}</span></div>
+                  <div className="flex flex-col"><span className="text-slate-500 text-[10px] uppercase">Probability</span><span className="text-green-300 text-sm mt-1">{prob}</span></div>
                 </div>
+                <div className="mt-4 text-center text-sm font-bold uppercase tracking-widest text-white border-t border-white/10 pt-2">{tier.name}</div>
               </div>
 
-              <div className="text-xs text-slate-500 text-center font-mono">
-                  Probability calculates the odds of achieving these results by pure chance (50/50).
+              {/* DEFINITIONS LEGEND */}
+              <div className="grid md:grid-cols-2 gap-8 border-t border-white/10 pt-6">
+                  {/* Positive Column */}
+                  <div>
+                      <h4 className="text-xs uppercase tracking-widest text-amber-400 mb-3 pb-2 border-b border-white/5">Psi-Hitting (Positive)</h4>
+                      <div className="space-y-3 text-xs font-mono">
+                          <div><strong className="text-amber-200 block">The Oracle (Z &ge; 4.0)</strong><span className="text-slate-400">World Class Anomaly (1 in 31,000+).</span></div>
+                          <div><strong className="text-purple-300 block">The Medium (Z &ge; 3.0)</strong><span className="text-slate-400">Highly Significant (1 in 740).</span></div>
+                          <div><strong className="text-pink-300 block">The Clairvoyant (Z &ge; 1.96)</strong><span className="text-slate-400">Statistically Significant (p &lt; 0.05).</span></div>
+                          <div><strong className="text-indigo-300 block">The Channel (Z &ge; 1.65)</strong><span className="text-slate-400">Tapping into something real (1 in 20).</span></div>
+                          <div><strong className="text-cyan-300 block">The Adept (Z &ge; 1.0)</strong><span className="text-slate-400">Finding flow. Beating odds of 1 in 6.</span></div>
+                          <div><strong className="text-teal-300 block">The Spark (Z &ge; 0.5)</strong><span className="text-slate-400">Pulse of intuition. Nudging past average.</span></div>
+                          <div><strong className="text-slate-200 block">The Initiate (Z &ge; 0.0)</strong><span className="text-slate-500">Above baseline. Better than random.</span></div>
+                      </div>
+                  </div>
+                  
+                  {/* Negative Column */}
+                  <div>
+                      <h4 className="text-xs uppercase tracking-widest text-blue-400 mb-3 pb-2 border-b border-white/5">Psi-Missing (Negative)</h4>
+                      <div className="space-y-3 text-xs font-mono">
+                          <div><strong className="text-slate-300 block">The Sleeper (Z &lt; 0.0)</strong><span className="text-slate-500">Just below baseline. Stop over-analyzing.</span></div>
+                          <div><strong className="text-slate-400 block">The Dreamer (Z &le; -0.5)</strong><span className="text-slate-500">Drifting. Intuition active but unfocused.</span></div>
+                          <div><strong className="text-slate-400 block">The Blocker (Z &le; -1.0)</strong><span className="text-slate-500">Dodging targets. Logic fighting gut.</span></div>
+                          <div><strong className="text-slate-400 block">The Mirror (Z &le; -2.0)</strong><span className="text-slate-500">Significant Avoidance. Flipping the signal.</span></div>
+                          <div><strong className="text-slate-500 block">The Shadow (Z &le; -3.0)</strong><span className="text-slate-600">Highly Significant Displacement. Inverted.</span></div>
+                          <div><strong className="text-slate-500 block">The Void (Z &le; -4.0)</strong><span className="text-slate-600">World Class Anomaly. Total suppression.</span></div>
+                      </div>
+                  </div>
               </div>
+
             </div>
           </div>
         )}
@@ -560,10 +599,19 @@ export default function FriendOrFoeApp() {
                     imgSrc = card.target === 'good' ? card.data.angelic : card.data.evil;
                 }
 
-                // Conditional Border Colors based on state
-                const borderColor = isRevealed 
-                    ? (isCorrect ? 'border-green-500 shadow-[0_0_20px_rgba(34,197,94,0.3)]' : 'border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.3)]')
-                    : 'border-slate-700 bg-slate-900/50';
+                // Styling Logic for Card Only (Not Outer Container)
+                // Default: Purple/Blue glow. Result: Green (Correct) or Red (Incorrect).
+                let cardStyleClass = "border-2 border-slate-600 shadow-[0_0_15px_rgba(147,51,234,0.15)]"; // Default
+                if (isRevealed) {
+                    if (isCorrect) {
+                        cardStyleClass = "border-2 border-green-500 shadow-[0_0_30px_rgba(34,197,94,0.6)]";
+                    } else {
+                        cardStyleClass = "border-2 border-red-500 shadow-[0_0_30px_rgba(239,68,68,0.6)]";
+                    }
+                } else if (card.guess) {
+                    // Selected but not revealed
+                    cardStyleClass = "border-2 border-purple-400 shadow-[0_0_20px_rgba(168,85,247,0.4)]";
+                }
 
                 return (
                     <div 
@@ -571,33 +619,42 @@ export default function FriendOrFoeApp() {
                         className="flex flex-col gap-1 relative w-full h-full min-h-0 min-w-0"
                     >
                         {/* 
-                           IMAGE WRAPPER: 
-                           - flex-1: Takes all available vertical space minus controls
-                           - min-h-0: Allows shrinking inside flex parent
-                           - relative: Context for absolute image
+                           OUTER CONTAINER (INVISIBLE FRAME): 
+                           - flex-1: Takes all available vertical space
+                           - flex items-center justify-center: Centers the card
+                           - No border or background here
                         */}
-                        <div className={`relative flex-1 min-h-0 w-full rounded-xl overflow-hidden border-2 transition-all duration-300 ${borderColor}`}>
-                             <img 
-                                src={imgSrc} 
-                                alt="Subject" 
-                                className={`absolute inset-0 w-full h-full object-contain transition-all duration-700 ${isRevealed ? 'scale-105' : 'filter sepia-[0.3]'}`}
-                             />
+                        <div className="flex-1 flex items-center justify-center min-h-0 w-full relative">
+                             
+                             {/* 
+                                IMAGE WRAPPER (THE FLOATING CARD):
+                                - Fits tight to the image dimensions via max-w/max-h and auto width/height
+                                - Rounded corners and Glow applied here
+                             */}
+                             <div className={`relative h-auto w-auto max-w-full max-h-full rounded-2xl overflow-hidden transition-all duration-300 ${cardStyleClass}`}>
+                                 <img 
+                                    src={imgSrc} 
+                                    alt="Subject" 
+                                    className={`block w-auto h-auto max-w-full max-h-full object-contain rounded-2xl transition-all duration-700 ${isRevealed ? 'scale-105' : 'filter sepia-[0.3]'}`}
+                                    style={{ maxHeight: '100%', maxWidth: '100%' }}
+                                 />
 
-                             {/* OVERLAYS */}
-                             {isRevealed && (
-                                <div className="absolute inset-0 flex items-end justify-center pb-2 bg-linear-to-t from-black/80 via-transparent to-transparent pointer-events-none">
-                                    <span className={`text-xl md:text-3xl font-black tracking-tighter uppercase drop-shadow-md ${isCorrect ? 'text-green-400' : 'text-red-400'}`}>
-                                        {isCorrect ? 'CORRECT' : 'INCORRECT'}
-                                    </span>
-                                </div>
-                             )}
+                                 {/* OVERLAYS (Inside the card) */}
+                                 {isRevealed && (
+                                    <div className="absolute inset-0 flex items-end justify-center pb-2 bg-linear-to-t from-black/80 via-transparent to-transparent pointer-events-none rounded-2xl">
+                                        <span className={`text-xl md:text-3xl font-black tracking-tighter uppercase drop-shadow-md ${isCorrect ? 'text-green-400' : 'text-red-400'}`}>
+                                            {isCorrect ? 'CORRECT' : 'INCORRECT'}
+                                        </span>
+                                    </div>
+                                 )}
 
-                             {/* Selection Indicator (Pre-reveal) */}
-                             {!isRevealed && card.guess && (
-                                <div className="absolute top-2 right-2 px-2 py-1 rounded bg-black/70 backdrop-blur text-[10px] font-bold uppercase tracking-wider border border-white/10 z-10">
-                                    {card.guess === 'good' ? <span className="text-green-400">ANGELIC</span> : <span className="text-red-400">EVIL</span>}
-                                </div>
-                             )}
+                                 {/* Selection Indicator (Pre-reveal) */}
+                                 {!isRevealed && card.guess && (
+                                    <div className="absolute top-2 right-2 px-2 py-1 rounded bg-black/70 backdrop-blur text-[10px] font-bold uppercase tracking-wider border border-white/10 z-10">
+                                        {card.guess === 'good' ? <span className="text-green-400">ANGELIC</span> : <span className="text-red-400">EVIL</span>}
+                                    </div>
+                                 )}
+                             </div>
                         </div>
 
                         {/* CONTROLS: Shrink-0 to preserve button height */}
@@ -605,10 +662,10 @@ export default function FriendOrFoeApp() {
                              <div className="grid grid-cols-2 gap-2 h-10 md:h-12 w-full shrink-0">
                                 <button 
                                     onClick={() => handleGuess(index, 'good')}
-                                    className={`rounded border flex flex-col items-center justify-center transition-all ${
+                                    className={`rounded-lg border flex flex-col items-center justify-center transition-all ${
                                         card.guess === 'good' 
-                                        ? 'bg-green-900/40 border-green-500 text-green-300' 
-                                        : 'bg-slate-900 border-slate-700 text-slate-400 hover:border-green-800 hover:text-green-400'
+                                        ? 'bg-green-900/40 border-green-500 text-green-300 shadow-[0_0_10px_rgba(34,197,94,0.2)]' 
+                                        : 'bg-slate-900/80 border-slate-700 text-slate-400 hover:border-green-800 hover:text-green-400'
                                     }`}
                                 >
                                     <div className="flex items-center gap-1">
@@ -618,10 +675,10 @@ export default function FriendOrFoeApp() {
                                 </button>
                                 <button 
                                     onClick={() => handleGuess(index, 'evil')}
-                                    className={`rounded border flex flex-col items-center justify-center transition-all ${
+                                    className={`rounded-lg border flex flex-col items-center justify-center transition-all ${
                                         card.guess === 'evil' 
-                                        ? 'bg-red-900/40 border-red-500 text-red-300' 
-                                        : 'bg-slate-900 border-slate-700 text-slate-400 hover:border-red-800 hover:text-red-400'
+                                        ? 'bg-red-900/40 border-red-500 text-red-300 shadow-[0_0_10px_rgba(239,68,68,0.2)]' 
+                                        : 'bg-slate-900/80 border-slate-700 text-slate-400 hover:border-red-800 hover:text-red-400'
                                     }`}
                                 >
                                     <div className="flex items-center gap-1">
