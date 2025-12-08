@@ -1,3 +1,4 @@
+// --- START OF FILE src/app/spell-room/love-spells-app/soul-connect-love-spell/page.tsx ---
 /// <reference lib="dom" />
 "use client";
 
@@ -7,11 +8,13 @@ import Link from 'next/link';
 
 /**
  * TWO SOULS CONNECTION - LOVE SPELL RITUAL
- * Features:
- * - New Order: Petition -> Insert -> (Charge->Drop Loop) -> Honey -> Chant -> Mix -> Candle -> Release
- * - Touch interactions fixed (no browser menus)
- * - Candle Wick logic fixed
- * - Layout optimized for single-screen view
+ * 
+ * FEATURES:
+ * - Order: Petition -> Insert -> (Herb Loop: Charge->Drop) -> Honey -> Incantation -> Mix -> Candle -> Release
+ * - Touch interactions: "no-select" and "touch-action: none" to prevent browser menus.
+ * - Single Screen Layout (100dvh).
+ * - Unified Jar Visuals (SVG).
+ * - Audio capped at 350Hz.
  */
 
 // --- AUDIO ENGINE ---
@@ -41,16 +44,28 @@ class MagicAudio {
     const osc1 = this.ctx.createOscillator();
     const osc2 = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
-    osc1.type = 'sawtooth'; osc1.frequency.value = 55; 
-    osc2.type = 'sawtooth'; osc2.frequency.value = 55.5; 
+    
+    osc1.type = 'sawtooth';
+    osc1.frequency.value = 55; 
+    osc2.type = 'sawtooth';
+    osc2.frequency.value = 55.5; 
+
     const filter = this.ctx.createBiquadFilter();
-    filter.type = 'lowpass'; filter.frequency.value = 200;
-    osc1.connect(filter); osc2.connect(filter);
-    filter.connect(gain); gain.connect(this.masterGain);
+    filter.type = 'lowpass';
+    filter.frequency.value = 200;
+
+    osc1.connect(filter);
+    osc2.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.masterGain);
+
     const now = this.ctx.currentTime;
     gain.gain.setValueAtTime(0, now);
     gain.gain.linearRampToValueAtTime(0.2, now + 2);
-    osc1.start(); osc2.start();
+    
+    osc1.start();
+    osc2.start();
+
     return { 
       stop: () => {
         if(!this.ctx) return;
@@ -58,7 +73,8 @@ class MagicAudio {
         gain.gain.cancelScheduledValues(stopTime);
         gain.gain.setValueAtTime(gain.gain.value, stopTime);
         gain.gain.exponentialRampToValueAtTime(0.001, stopTime + 2);
-        osc1.stop(stopTime + 2); osc2.stop(stopTime + 2);
+        osc1.stop(stopTime + 2);
+        osc2.stop(stopTime + 2);
       }
     };
   }
@@ -71,12 +87,17 @@ class MagicAudio {
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(440 * Math.pow(1.25, i), now + delay);
+      const freq = 440 * Math.pow(1.25, i); 
+      osc.frequency.setValueAtTime(freq, now + delay);
+      
       gain.gain.setValueAtTime(0, now + delay);
       gain.gain.linearRampToValueAtTime(0.1, now + delay + 0.05);
       gain.gain.exponentialRampToValueAtTime(0.001, now + delay + 1.5);
-      osc.connect(gain); gain.connect(this.masterGain);
-      osc.start(now + delay); osc.stop(now + delay + 1.5);
+      
+      osc.connect(gain);
+      gain.connect(this.masterGain);
+      osc.start(now + delay);
+      osc.stop(now + delay + 1.5);
     });
   }
 
@@ -86,12 +107,20 @@ class MagicAudio {
     const gain = this.ctx.createGain();
     osc.type = 'sawtooth';
     osc.frequency.setValueAtTime(100 + Math.random() * 50, this.ctx.currentTime);
+    
     const filter = this.ctx.createBiquadFilter();
-    filter.type = 'highpass'; filter.frequency.value = 2000;
-    osc.connect(filter); filter.connect(gain); gain.connect(this.masterGain);
+    filter.type = 'highpass';
+    filter.frequency.value = 2000;
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.masterGain);
+
     gain.gain.setValueAtTime(0.05, this.ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.1);
-    osc.start(); osc.stop(this.ctx.currentTime + 0.1);
+
+    osc.start();
+    osc.stop(this.ctx.currentTime + 0.1);
   }
 
   startCharge() {
@@ -99,20 +128,32 @@ class MagicAudio {
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
     const lfo = this.ctx.createOscillator(); 
-    osc.type = 'triangle'; osc.frequency.setValueAtTime(110, this.ctx.currentTime); 
+    const lfoGain = this.ctx.createGain();
+
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(110, this.ctx.currentTime); 
+    
     lfo.frequency.value = 10;
-    const lfoGain = this.ctx.createGain(); lfoGain.gain.value = 500;
-    lfo.connect(lfoGain); osc.connect(gain); gain.connect(this.masterGain);
+    lfoGain.gain.value = 500;
+
+    lfo.connect(lfoGain);
+
+    osc.connect(gain);
+    gain.connect(this.masterGain);
+
     gain.gain.setValueAtTime(0, this.ctx.currentTime);
     gain.gain.linearRampToValueAtTime(0.2, this.ctx.currentTime + 0.5);
-    osc.start(); lfo.start();
+
+    osc.start();
+    lfo.start();
+
     return { osc, gain, lfo, startTime: this.ctx.currentTime };
   }
 
   updateCharge(node: any, progress: number) { 
     if (!node || !this.ctx) return;
     const now = this.ctx.currentTime;
-    // PITCH CAP: 350Hz
+    // PITCH CAP: 350Hz (requested)
     const targetFreq = 110 + (progress * 2.4); 
     node.osc.frequency.setTargetAtTime(targetFreq, now, 0.1);
     node.lfo.frequency.setTargetAtTime(10 + (progress/2), now, 0.1);
@@ -130,12 +171,17 @@ class MagicAudio {
     if (this.isMuted || !this.ctx || !this.masterGain) return;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
+    
     osc.frequency.setValueAtTime(150, this.ctx.currentTime);
     osc.frequency.exponentialRampToValueAtTime(40, this.ctx.currentTime + 0.5);
+
     gain.gain.setValueAtTime(0.5, this.ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 2);
-    osc.connect(gain); gain.connect(this.masterGain);
-    osc.start(); osc.stop(this.ctx.currentTime + 2);
+
+    osc.connect(gain);
+    gain.connect(this.masterGain);
+    osc.start();
+    osc.stop(this.ctx.currentTime + 2);
   }
 
   startSwirl() {
@@ -143,25 +189,44 @@ class MagicAudio {
     const bufferSize = this.ctx.sampleRate * 2;
     const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
     const data = buffer.getChannelData(0);
-    for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = Math.random() * 2 - 1;
+    }
+
     const noise = this.ctx.createBufferSource();
-    noise.buffer = buffer; noise.loop = true;
+    noise.buffer = buffer;
+    noise.loop = true;
+
     const filter = this.ctx.createBiquadFilter();
-    filter.type = 'bandpass'; filter.Q.value = 10;
-    const gain = this.ctx.createGain(); gain.gain.value = 0;
-    noise.connect(filter); filter.connect(gain); gain.connect(this.masterGain);
+    filter.type = 'bandpass';
+    filter.Q.value = 10;
+    
+    const gain = this.ctx.createGain();
+    gain.gain.value = 0;
+
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.masterGain);
+    
     noise.start();
     gain.gain.setTargetAtTime(0.15, this.ctx.currentTime, 1);
+
     const lfo = this.ctx.createOscillator();
     lfo.frequency.value = 0.5;
-    const lfoGain = this.ctx.createGain(); lfoGain.gain.value = 1000;
-    lfo.connect(lfoGain); lfoGain.connect(filter.frequency); filter.frequency.value = 600;
+    const lfoGain = this.ctx.createGain();
+    lfoGain.gain.value = 1000;
+    
+    lfo.connect(lfoGain);
+    lfoGain.connect(filter.frequency);
+    filter.frequency.value = 600;
     lfo.start();
+
     return { noise, gain, lfo, stop: () => {
         if(!this.ctx) return;
         const now = this.ctx.currentTime;
         gain.gain.setTargetAtTime(0, now, 0.5);
-        noise.stop(now + 1); lfo.stop(now + 1);
+        noise.stop(now + 1);
+        lfo.stop(now + 1);
     }};
   }
 }
@@ -182,7 +247,7 @@ const GlobalStyles = () => (
       box-shadow: 0 0 25px rgba(251, 191, 36, 0.2), inset 0 0 20px rgba(251, 191, 36, 0.1);
     }
 
-    /* Disable selection for touch-hold */
+    /* Disable selection for touch-hold interactions */
     .no-select {
       -webkit-touch-callout: none;
       -webkit-user-select: none;
@@ -190,12 +255,13 @@ const GlobalStyles = () => (
       -moz-user-select: none;
       -ms-user-select: none;
       user-select: none;
-      touch-action: none;
+      touch-action: none !important;
     }
   `}</style>
 );
 
 // --- HELPER LOGIC ---
+
 const HERB_DATABASE: Record<string, any[]> = {
   blockage: [
     { name: 'Lemon Balm', icon: '🌿', desc: 'Clears away confusion.', color: 'text-yellow-300' },
@@ -222,14 +288,18 @@ const determineIngredients = (text: string) => {
   let b = HERB_DATABASE.blockage[0]; 
   let a = HERB_DATABASE.attract[0];
   let bind = HERB_DATABASE.bind[1];
+
   if (t.includes('ex') || t.includes('stop') || t.includes('fight')) b = HERB_DATABASE.blockage[1];
   if (t.includes('sad') || t.includes('cry')) b = HERB_DATABASE.blockage[0];
   if (t.includes('protect')) b = HERB_DATABASE.blockage[3];
+
   if (t.includes('sex') || t.includes('hot')) a = HERB_DATABASE.attract[1];
   if (t.includes('marriage')) a = HERB_DATABASE.attract[3];
   if (t.includes('talk')) a = HERB_DATABASE.attract[2];
+
   if (t.includes('forever')) bind = HERB_DATABASE.bind[2];
   if (t.includes('obey')) bind = HERB_DATABASE.bind[0];
+
   return [b, a, bind];
 };
 
@@ -249,9 +319,10 @@ const generateIncantation = (names: { user: string, target: string }, isForSelf:
   ];
 };
 
-// --- COMPONENT: JAR VISUAL (Shared) ---
-// Renders the jar, the honey level, the petition inside, and any accumulated ingredients
+// --- COMPONENT: JAR VISUAL (Shared across stages) ---
+// Renders the jar, the honey level, the petition inside, and any accumulated ingredients.
 const JarVisual = ({ names, honeyLevel = 0, parchmentIn = false, ingredients = [] }: { names: any, honeyLevel?: number, parchmentIn?: boolean, ingredients?: any[] }) => {
+  // Bottle SVG Path
   const bottlePath = "M70,20 C70,10 75,0 100,0 C125,0 130,10 130,20 L130,60 C130,70 170,80 180,120 C190,160 195,200 170,260 C145,300 55,300 30,260 C5,200 10,160 20,120 C30,80 70,70 70,60 Z";
   
   return (
@@ -268,13 +339,15 @@ const JarVisual = ({ names, honeyLevel = 0, parchmentIn = false, ingredients = [
                </linearGradient>
             </defs>
             
+            {/* Background Tint */}
             <path d={bottlePath} fill="rgba(255,255,255,0.03)" stroke="none" />
 
+            {/* Content Group (Clipped by Jar Shape) */}
             <g clipPath="url(#bottleClip)">
-                {/* Honey */}
+                {/* Honey Level */}
                 <rect x="0" y={300 - honeyLevel} width="200" height={honeyLevel} fill="url(#honeyGrad)" opacity="0.9" />
                 
-                {/* Parchment */}
+                {/* Parchment (Petition) */}
                 <g transform={`translate(100, ${parchmentIn ? 200 : -100})`} opacity={parchmentIn ? 1 : 0} style={{ transition: 'all 1s ease-in-out' }}>
                     <rect x="-30" y="-40" width="60" height="80" fill="#f3e5ab" stroke="#78350f" strokeWidth="0.5" />
                     <text x="0" y="-10" fontSize="6" textAnchor="middle" fill="#000" fontFamily="serif">{names.user}</text>
@@ -284,7 +357,7 @@ const JarVisual = ({ names, honeyLevel = 0, parchmentIn = false, ingredients = [
 
                 {/* Ingredients Dropped In */}
                 {ingredients.map((ing: any, i: number) => {
-                    // Simple deterministic pseudo-random position based on index
+                    // Stagger position for visual stacking
                     const xOffset = ((i + 1) * 33) % 80 - 40; 
                     const yOffset = 260 - (i * 15);
                     return (
@@ -295,6 +368,7 @@ const JarVisual = ({ names, honeyLevel = 0, parchmentIn = false, ingredients = [
                 })}
             </g>
 
+            {/* Glass Outline */}
             <path d={bottlePath} fill="none" stroke="rgba(251,191,36,0.5)" strokeWidth="1.5" />
             <path d="M40,140 Q60,140 60,180" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="2" />
          </svg>
@@ -321,6 +395,7 @@ const MagickPopup = ({ message, buttonText = "Continue", onContinue }: { message
   </div>
 );
 
+// --- COMPONENT: FINAL MODAL ---
 const FinalPopup = ({ onExit }: { onExit: () => void }) => {
   const router = typeof window !== 'undefined' ? (window as any).location : { reload: () => {} };
   return (
