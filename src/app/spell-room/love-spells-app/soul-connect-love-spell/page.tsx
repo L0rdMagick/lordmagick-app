@@ -3,14 +3,15 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Sparkles, Droplets, RotateCw, Hand, Check, Moon, Volume2, VolumeX, Users, User, Flame, LogOut, Repeat, Star, ArrowDown } from 'lucide-react';
+import { Sparkles, Droplets, RotateCw, Hand, Check, Moon, Volume2, VolumeX, Users, User, Flame, LogOut, Repeat, Star, ArrowDown, Scroll } from 'lucide-react';
 import Link from 'next/link';
 
 /**
  * TWO SOULS CONNECTION - LOVE SPELL RITUAL
  * Updates:
- * - CONTENT: Added gender-neutral incantations for every step (Self vs Couple).
- * - UI: Incantations displayed prominently above actions.
+ * - LOGIC: Added Pre-Step Incantation Modals for every action.
+ * - CONTENT: Dynamic rhyming incantations for Self/Couple contexts.
+ * - UI: Magickal buttons indicating the next action.
  */
 
 // --- AUDIO ENGINE ---
@@ -330,8 +331,98 @@ const GlobalStyles = () => (
   `}</style>
 );
 
-// --- HELPER LOGIC ---
+// --- RHYMING INCANTATION GENERATOR ---
+const getIncantation = (type: string, isForSelf: boolean, data: any) => {
+    const target = data.target || "my love";
+    const item = data.item || "this charm";
+    
+    const INCANTATIONS: any = {
+        sigil: {
+            self: {
+                text: "I trace this sign to open the way,\nFor my true love to come and stay.",
+                btn: "I Open The Way"
+            },
+            couple: {
+                text: "I trace this sign to open the way,\nFor their true love to come and stay.",
+                btn: "I Open The Way"
+            }
+        },
+        petition: {
+             self: {
+                text: "My written will, I place inside,\nWith open arms and nothing to hide.",
+                btn: "I Place My Will"
+            },
+            couple: {
+                text: "Their names written, I place inside,\nWith open arms and nothing to hide.",
+                btn: "I Place The Petition"
+            }
+        },
+        charge: {
+            self: {
+                text: `I wake this ${item} with power so bright,\nTo bring my heart its true delight.`,
+                btn: `I Charge This ${item}`
+            },
+            couple: {
+                text: `I wake this ${item} with power so bright,\nTo guide them to the loving light.`,
+                btn: `I Charge This ${item}`
+            }
+        },
+        drop: {
+            self: {
+                text: `Into the vessel, this ${item} I cast,\nTo make a love that's built to last.`,
+                btn: `I Cast It In`
+            },
+            couple: {
+                text: `Into the vessel, this ${item} I cast,\nTo bind their love and hold it fast.`,
+                btn: `I Cast It In`
+            }
+        },
+        honey: {
+            self: {
+                text: "I pour this sweetness, thick and gold,\nTo keep my love from growing cold.",
+                btn: "I Pour The Sweetness"
+            },
+            couple: {
+                text: "I pour this sweetness, thick and gold,\nTo keep their love from growing cold.",
+                btn: "I Pour The Sweetness"
+            }
+        },
+        mix: {
+            self: {
+                text: "Round and round, the energies blend,\nMy loneliness comes to an end.",
+                btn: "I Stir The Bond"
+            },
+            couple: {
+                text: "Round and round, the energies blend,\nA broken bond, I aim to mend.",
+                btn: "I Stir The Bond"
+            }
+        },
+        candle: {
+            self: {
+                text: `I light this flame, a beacon bright,\nTo draw ${target} through the night.`,
+                btn: "I Light The Flame"
+            },
+            couple: {
+                text: `I light this flame, a beacon bright,\nTo warm their hearts with loving light.`,
+                btn: "I Light The Flame"
+            }
+        },
+        release: {
+            self: {
+                text: "I send this spell into the air,\nTo find my love and bring them there.",
+                btn: "I Release The Spell"
+            },
+            couple: {
+                text: "I send this spell into the air,\nTo bind this couple, pair to pair.",
+                btn: "I Release The Spell"
+            }
+        }
+    };
 
+    return INCANTATIONS[type][isForSelf ? 'self' : 'couple'];
+};
+
+// --- HELPER LOGIC ---
 const HERB_DATABASE: Record<string, any[]> = {
   blockage: [
     { name: 'Lemon Balm', icon: '🌿', desc: 'Clears away confusion.', color: 'text-yellow-300' },
@@ -351,38 +442,6 @@ const HERB_DATABASE: Record<string, any[]> = {
     { name: 'Red String', icon: '🧶', desc: 'To tie fates together.', color: 'text-red-600' },
     { name: 'Magnetite', icon: '🧲', desc: 'Magnetic attraction.', color: 'text-gray-500' }
   ]
-};
-
-// --- INCANTATIONS DICTIONARY ---
-const INCANTATIONS = {
-    sigil: {
-        self: "By this sign, I open the way.",
-        couple: "By this sign, let their path be one."
-    },
-    charge: {
-        self: "Power of earth, wake for my desire.",
-        couple: "Power of earth, wake for their union."
-    },
-    drop: {
-        self: "Into the deep, my will is cast.",
-        couple: "Into the deep, the bond is cast."
-    },
-    honey: {
-        self: "Sweetness bind us, sticky and tight.",
-        couple: "Sweetness bind them, day and night."
-    },
-    mix: {
-        self: "Twist and turn, bring them to me.",
-        couple: "Twist and turn, bound they shall be."
-    },
-    candle: {
-        self: "Fire within, light the path to my love.",
-        couple: "Fire within, light the path between them."
-    },
-    release: {
-        self: "I release this spell to seek and find.",
-        couple: "I release this spell to seal and bind."
-    }
 };
 
 const determineIngredients = (text: string) => {
@@ -447,6 +506,38 @@ const StarField = () => (
     <div className="fixed inset-0 pointer-events-none bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.8)_100%)]"></div>
   </div>
 );
+
+// --- COMPONENT: PRE-STEP INCANTATION ---
+const PreStepIncantation = ({ type, isForSelf, data, onNext }: any) => {
+    const content = getIncantation(type, isForSelf, data);
+    
+    return (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md animate-in fade-in duration-500 p-6 no-select">
+            <div className="flex flex-col items-center text-center max-w-sm w-full">
+                <div className="w-16 h-16 bg-amber-900/20 rounded-full flex items-center justify-center mb-6 border border-amber-500/30 shadow-[0_0_30px_rgba(251,191,36,0.2)] animate-pulse">
+                     <Scroll className="text-amber-200 w-8 h-8" />
+                </div>
+                
+                <p className="text-[10px] text-amber-500/70 uppercase tracking-[0.2em] mb-4 font-bold">Repeat this Incantation</p>
+                
+                <h3 className="text-xl md:text-2xl font-magical text-amber-50 mb-8 leading-relaxed whitespace-pre-line drop-shadow-lg">
+                    "{content.text}"
+                </h3>
+
+                <button 
+                    onClick={() => {
+                        const globalAny = globalThis as any;
+                        audio.playClick('magick');
+                        onNext();
+                    }}
+                    className="w-full bg-amber-900/40 hover:bg-amber-800/40 border border-amber-600 text-amber-100 py-4 uppercase tracking-[0.2em] font-magical text-xs transition-colors active:scale-95 shadow-[0_0_20px_rgba(251,191,36,0.2)]"
+                >
+                    {content.btn}
+                </button>
+            </div>
+        </div>
+    );
+};
 
 // --- COMPONENT: POPUP MODAL ---
 const MagickPopup = ({ message, buttonText = "Continue", onContinue }: { message: string, buttonText?: string, onContinue: () => void }) => (
@@ -623,15 +714,15 @@ export default function SoulConnectSpellPage() {
 
           {/* LOOPS FOR INGREDIENTS */}
           {/* Ing 1 */}
-          {step === 3 && <StageThreeConsecrate ingredient={activeIngredients[0]} index={0} total={3} isForSelf={isForSelf} onComplete={() => handleStageComplete("The herb is charged.")} />}
+          {step === 3 && <StageThreeConsecrate ingredient={activeIngredients[0]} index={0} total={3} isForSelf={isForSelf} names={names} onComplete={() => handleStageComplete("The herb is charged.")} />}
           {step === 4 && <StageTwoJar mode="drop" droppingItem={activeIngredients[0]} isForSelf={isForSelf} filledIngredients={addedIngredients} names={names} onComplete={() => handleIngredientDrop(activeIngredients[0])} />}
 
           {/* Ing 2 */}
-          {step === 5 && <StageThreeConsecrate ingredient={activeIngredients[1]} index={1} total={3} isForSelf={isForSelf} onComplete={() => handleStageComplete("The ingredient is charged.")} />}
+          {step === 5 && <StageThreeConsecrate ingredient={activeIngredients[1]} index={1} total={3} isForSelf={isForSelf} names={names} onComplete={() => handleStageComplete("The ingredient is charged.")} />}
           {step === 6 && <StageTwoJar mode="drop" droppingItem={activeIngredients[1]} isForSelf={isForSelf} filledIngredients={addedIngredients} names={names} onComplete={() => handleIngredientDrop(activeIngredients[1])} />}
 
           {/* Ing 3 */}
-          {step === 7 && <StageThreeConsecrate ingredient={activeIngredients[2]} index={2} total={3} isForSelf={isForSelf} onComplete={() => handleStageComplete("The binding is charged.")} />}
+          {step === 7 && <StageThreeConsecrate ingredient={activeIngredients[2]} index={2} total={3} isForSelf={isForSelf} names={names} onComplete={() => handleStageComplete("The binding is charged.")} />}
           {step === 8 && <StageTwoJar mode="drop" droppingItem={activeIngredients[2]} isForSelf={isForSelf} filledIngredients={addedIngredients} names={names} onComplete={() => handleIngredientDrop(activeIngredients[2])} />}
 
           {/* STEP 9: JAR - POUR HONEY */}
@@ -652,10 +743,10 @@ export default function SoulConnectSpellPage() {
           {step === 11 && <StageFiveMixing ingredients={activeIngredients} names={names} isForSelf={isForSelf} onComplete={() => handleStageComplete("The spell is bound.")} />}
           
           {/* STEP 12: CANDLE */}
-          {step === 12 && <StageSixCandle isForSelf={isForSelf} onComplete={() => handleStageComplete("The spell is sealed in fire.")} />}
+          {step === 12 && <StageSixCandle isForSelf={isForSelf} names={names} onComplete={() => handleStageComplete("The spell is sealed in fire.")} />}
           
           {/* STEP 13: RELEASE */}
-          {step === 13 && <StageSevenRelease isForSelf={isForSelf} onComplete={() => setStep(14)} />}
+          {step === 13 && <StageSevenRelease isForSelf={isForSelf} names={names} onComplete={() => setStep(14)} />}
 
           {/* FINAL */}
           {step === 14 && <FinalPopup onExit={() => {}} />}
@@ -670,11 +761,18 @@ export default function SoulConnectSpellPage() {
 const StageOneIntention = ({ names, setNames, intention, setIntention, isForSelf, setIsForSelf, onComplete }: any) => {
   const [mode, setMode] = useState('form'); 
   const [traceProgress, setTraceProgress] = useState(0);
+  const [showIntro, setShowIntro] = useState(false);
 
   const handleTrace = () => {
     // New Sound Call: Pleasant trace tone
     if (Math.random() > 0.5) audio.playTraceTone(); 
     setTraceProgress(prev => Math.min(prev + 1, 100));
+  };
+
+  const handleFormSubmit = () => {
+      audio.playClick('medium'); 
+      setMode('sigil');
+      setShowIntro(true); // Show incantation before sigil
   };
 
   if (mode === 'form') {
@@ -735,7 +833,7 @@ const StageOneIntention = ({ names, setNames, intention, setIntention, isForSelf
           </div>
           <button 
             disabled={!names.user || !names.target || !intention}
-            onClick={() => { audio.playClick('medium'); setMode('sigil'); }}
+            onClick={handleFormSubmit}
             className="w-full mt-2 bg-gradient-to-r from-amber-900/40 to-amber-800/40 border border-amber-600/50 text-amber-100 py-3 uppercase tracking-[0.2em] font-magical text-sm hover:bg-amber-800/50 transition-all disabled:opacity-30 disabled:cursor-not-allowed active:scale-95"
           >
             Create Petition
@@ -745,14 +843,13 @@ const StageOneIntention = ({ names, setNames, intention, setIntention, isForSelf
     );
   }
 
+  if (showIntro) {
+      return <PreStepIncantation type="sigil" isForSelf={isForSelf} data={{}} onNext={() => setShowIntro(false)} />;
+  }
+
   return (
     <div className="text-center animate-in zoom-in duration-500 w-full h-full flex flex-col items-center justify-center">
       <h2 className="text-xl text-amber-100 mb-2 font-magical">Activate the Sigil</h2>
-      
-      {/* MAGICKAL INCANTATION */}
-      <p className="text-base text-amber-200 font-magical mb-1 px-4 drop-shadow-md">
-        "{isForSelf ? INCANTATIONS.sigil.self : INCANTATIONS.sigil.couple}"
-      </p>
       <p className="text-[10px] text-amber-400/60 mb-6 font-scroll italic uppercase tracking-wider">Trace to lock intention</p>
       
       <div 
@@ -811,6 +908,7 @@ const StageTwoJar = ({ mode, names, filledIngredients, droppingItem, onComplete,
   const [actionProgress, setActionProgress] = useState(0); 
   const [isPouring, setIsPouring] = useState(false);
   const [animState, setAnimState] = useState<'idle' | 'dropping' | 'done'>('idle');
+  const [showIntro, setShowIntro] = useState(true);
   
   // Honey Done Logic
   const [honeyDone, setHoneyDone] = useState(false);
@@ -873,12 +971,13 @@ const StageTwoJar = ({ mode, names, filledIngredients, droppingItem, onComplete,
 
   const handlePetitionInsert = () => { triggerDrop(); };
 
-  // Get the correct incantation based on mode
-  let incantationText = "";
-  if(mode === 'petition' || mode === 'drop') {
-      incantationText = isForSelf ? INCANTATIONS.drop.self : INCANTATIONS.drop.couple;
-  } else if (mode === 'honey') {
-      incantationText = isForSelf ? INCANTATIONS.honey.self : INCANTATIONS.honey.couple;
+  if (showIntro) {
+      let type = mode;
+      let data: any = { target: names.target };
+      if (mode === 'drop' && droppingItem) {
+          data.item = droppingItem.name.toLowerCase();
+      }
+      return <PreStepIncantation type={type} isForSelf={isForSelf} data={data} onNext={() => setShowIntro(false)} />;
   }
 
   return (
@@ -888,13 +987,6 @@ const StageTwoJar = ({ mode, names, filledIngredients, droppingItem, onComplete,
           {mode === 'drop' && "Add Ingredient"}
           {mode === 'honey' && "Sweeten the Jar"}
       </h2>
-
-      {/* MAGICKAL INCANTATION */}
-      {!honeyDone && (
-          <p className="text-sm md:text-base text-amber-200 font-magical mb-1 px-4 drop-shadow-md text-center">
-            "{incantationText}"
-          </p>
-      )}
 
       <p className="text-[10px] text-amber-400/60 mb-6 text-center font-scroll h-4 animate-in fade-in uppercase tracking-wider">
         {mode === 'petition' && (animState !== 'done' ? "Tap to place petition." : "Petition added.")}
@@ -1080,10 +1172,11 @@ const StageTwoJar = ({ mode, names, filledIngredients, droppingItem, onComplete,
 };
 
 // --- STAGE 3: CONSECRATE (One Ingredient) ---
-const StageThreeConsecrate = ({ ingredient, index, total, onComplete, isForSelf }: any) => {
+const StageThreeConsecrate = ({ ingredient, index, total, onComplete, isForSelf, names }: any) => {
   const [charge, setCharge] = useState(0);
   const [isCharging, setIsCharging] = useState(false);
   const [success, setSuccess] = useState(false); 
+  const [showIntro, setShowIntro] = useState(true);
   const soundRef = useRef<any>(null);
 
   useEffect(() => {
@@ -1113,14 +1206,13 @@ const StageThreeConsecrate = ({ ingredient, index, total, onComplete, isForSelf 
       }
   }, [charge, success, onComplete]);
 
+  if (showIntro) {
+      return <PreStepIncantation type="charge" isForSelf={isForSelf} data={{ item: ingredient.name.toLowerCase(), target: names.target }} onNext={() => setShowIntro(false)} />;
+  }
+
   return (
     <div className="flex flex-col items-center text-center w-full relative h-full justify-center">
       <h2 className="text-xl text-amber-100 mb-1 font-magical">Consecrate Herb</h2>
-      
-      {/* MAGICKAL INCANTATION */}
-      <p className="text-base text-amber-200 font-magical mb-1 px-4 drop-shadow-md">
-        "{isForSelf ? INCANTATIONS.charge.self : INCANTATIONS.charge.couple}"
-      </p>
       <p className="text-[10px] text-amber-400/60 mb-6 font-scroll italic uppercase tracking-wider">Hold to imbue energy</p>
 
       <div className="w-56 h-56 bg-slate-900/40 border border-amber-900/50 rounded-full flex flex-col items-center justify-center mb-8 relative overflow-hidden backdrop-blur-sm shadow-[0_0_30px_rgba(0,0,0,0.5)] group shrink-0">
@@ -1197,6 +1289,7 @@ const StageFourIncantation = ({ chant, onComplete }: any) => {
 const StageFiveMixing = ({ ingredients, names, onComplete, isForSelf }: any) => {
   const [progress, setProgress] = useState(0);
   const [isStirring, setIsStirring] = useState(false);
+  const [showIntro, setShowIntro] = useState(true);
   
   const [mixedDone, setMixedDone] = useState(false);
   const [showBindBtn, setShowBindBtn] = useState(false);
@@ -1238,17 +1331,14 @@ const StageFiveMixing = ({ ingredients, names, onComplete, isForSelf }: any) => 
     return () => { clearInterval(interval); if(soundRef.current) audio.stopCharge(soundRef.current); };
   }, [isStirring, progress, mixedDone]);
 
+  if (showIntro) {
+      return <PreStepIncantation type="mix" isForSelf={isForSelf} data={{}} onNext={() => setShowIntro(false)} />;
+  }
+
   return (
     <div className="flex flex-col items-center text-center w-full h-full justify-center">
       <h2 className="text-xl text-amber-100 mb-1 font-magical">Bind the Energy</h2>
       
-      {/* MAGICKAL INCANTATION */}
-      {!mixedDone && (
-          <p className="text-base text-amber-200 font-magical mb-1 px-4 drop-shadow-md">
-            "{isForSelf ? INCANTATIONS.mix.self : INCANTATIONS.mix.couple}"
-          </p>
-      )}
-
       <p className="text-[10px] text-amber-400/60 mb-8 font-scroll italic animate-in fade-in uppercase tracking-wider">
           {mixedDone ? " " : "Hold to stir the ingredients"}
       </p>
@@ -1326,10 +1416,11 @@ const StageFiveMixing = ({ ingredients, names, onComplete, isForSelf }: any) => 
 };
 
 // --- STAGE 6: CANDLE (Fixed Wick & Touch Area) ---
-const StageSixCandle = ({ onComplete, isForSelf }: any) => {
+const StageSixCandle = ({ onComplete, isForSelf, names }: any) => {
   const [lit, setLit] = useState(false);
   const [timeLeft, setTimeLeft] = useState(142); // 2:22 = 142s
   const maxTime = 142;
+  const [showIntro, setShowIntro] = useState(true);
   
   const formatTime = (s: number) => {
     const m = Math.floor(s / 60);
@@ -1351,14 +1442,13 @@ const StageSixCandle = ({ onComplete, isForSelf }: any) => {
   const initialHeight = 160;
   const waxHeight = 20 + ((initialHeight - 20) * (timeLeft / maxTime));
 
+  if (showIntro) {
+      return <PreStepIncantation type="candle" isForSelf={isForSelf} data={{ target: names.target }} onNext={() => setShowIntro(false)} />;
+  }
+
   return (
     <div className="flex flex-col items-center w-full h-full justify-center">
       <h2 className="text-xl text-amber-100 mb-1 font-magical">Seal with Fire</h2>
-      
-      {/* MAGICKAL INCANTATION */}
-      <p className="text-base text-amber-200 font-magical mb-1 px-4 drop-shadow-md">
-        "{isForSelf ? INCANTATIONS.candle.self : INCANTATIONS.candle.couple}"
-      </p>
 
       <p className="text-[10px] text-amber-400/60 mb-8 font-scroll italic uppercase tracking-wider">
           {lit ? "Focus on your desire..." : "Tap the wick to light the candle"}
@@ -1437,9 +1527,10 @@ const StageSixCandle = ({ onComplete, isForSelf }: any) => {
 };
 
 // --- STAGE 7: RELEASE (Uses High-Pass Charge) ---
-const StageSevenRelease = ({ onComplete, isForSelf }: any) => {
+const StageSevenRelease = ({ onComplete, isForSelf, names }: any) => {
   const [power, setPower] = useState(0);
   const [isCharging, setIsCharging] = useState(false);
+  const [showIntro, setShowIntro] = useState(true);
   const soundRef = useRef<any>(null);
 
   useEffect(() => {
@@ -1467,6 +1558,10 @@ const StageSevenRelease = ({ onComplete, isForSelf }: any) => {
       }
   }, [power, onComplete]);
 
+  if (showIntro) {
+      return <PreStepIncantation type="release" isForSelf={isForSelf} data={{}} onNext={() => setShowIntro(false)} />;
+  }
+
   return (
     <div className="flex flex-col items-center justify-center w-full h-full relative overflow-hidden">
       <div 
@@ -1480,12 +1575,6 @@ const StageSevenRelease = ({ onComplete, isForSelf }: any) => {
       >
         <div className="text-6xl mb-4">🕯️</div>
         <h2 className="text-2xl text-amber-100 font-magical mb-2">Manifestation</h2>
-        
-        {/* MAGICKAL INCANTATION */}
-        <p className="text-base text-amber-200 font-magical mb-1 px-4 drop-shadow-md">
-            "{isForSelf ? INCANTATIONS.release.self : INCANTATIONS.release.couple}"
-        </p>
-
         <p className="text-[10px] text-amber-500/50 font-scroll italic uppercase tracking-wider">Release your will into the universe</p>
       </div>
 
