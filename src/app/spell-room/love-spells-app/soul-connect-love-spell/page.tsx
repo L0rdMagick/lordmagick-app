@@ -957,7 +957,7 @@ const StageTwoJar = ({ mode, names, filledIngredients, droppingItem, onComplete 
                         width="200" 
                         height={actionProgress} 
                         fill="url(#honeyGrad)" 
-                        opacity="0.25"
+                        opacity="0.50"
                         style={{ pointerEvents: 'none' }}
                     />
                 )}
