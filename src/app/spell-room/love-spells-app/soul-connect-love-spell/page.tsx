@@ -9,9 +9,9 @@ import Link from 'next/link';
 /**
  * TWO SOULS CONNECTION - LOVE SPELL RITUAL
  * Updates:
- * - AUDIO: Complete redesign. Ethereal, Warm, Soft.
- * - AUDIO LIMIT: Strict 900Hz LowPass Global Filter.
- * - AUDIO STYLE: Detuned pads, liquid sparkles, harmonious chimes.
+ * - AUDIO: Activation/Charge sounds now sweep 200Hz -> 900Hz for a rising ethereal effect.
+ * - AUDIO: Added tiered click sounds (Soft, Medium, Magick) for every interaction.
+ * - AUDIO: Increased presence of holding sounds while strictly obeying the 900Hz limit.
  */
 
 // --- AUDIO ENGINE ---
@@ -31,17 +31,16 @@ class MagicAudio {
       if (AudioContextClass) {
         this.ctx = new AudioContextClass();
         this.masterGain = this.ctx.createGain();
-        // Lower volume to be supportive, not overbearing
-        this.masterGain.gain.value = 0.25;
+        // Slightly boosted from 0.25 to 0.35 for better presence
+        this.masterGain.gain.value = 0.35;
         
         // GLOBAL LOW PASS FILTER (The "Veil")
         // STRICT UPPER LIMIT: 900Hz
         this.globalFilter = this.ctx.createBiquadFilter();
         this.globalFilter.type = 'lowpass';
         this.globalFilter.frequency.value = 900; 
-        this.globalFilter.Q.value = 0.5; // Soft shoulder, no resonance spikes
+        this.globalFilter.Q.value = 0.5; // Soft shoulder
         
-        // Chain: Source -> Master -> Filter -> Destination
         this.masterGain.connect(this.globalFilter);
         this.globalFilter.connect(this.ctx.destination);
       }
@@ -56,7 +55,70 @@ class MagicAudio {
     if (this.ctx.state === 'suspended') this.ctx.resume();
   }
 
-  // A soft, warm, throbbing background presence
+  // --- INTERACTION SOUNDS ---
+
+  /**
+   * Plays a click sound based on importance.
+   * level: 'soft' (UI toggles), 'medium' (Steps), 'magick' (Confirmations/Casting)
+   */
+  playClick(level: 'soft' | 'medium' | 'magick') {
+    this.ensureContext();
+    if (this.isMuted) return;
+    const now = this.ctx.currentTime;
+
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.connect(gain);
+    gain.connect(this.masterGain);
+
+    if (level === 'soft') {
+        // Subtle wood-block style click
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(300, now);
+        osc.frequency.exponentialRampToValueAtTime(150, now + 0.1);
+        
+        gain.gain.setValueAtTime(0.1, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+        
+        osc.start(now);
+        osc.stop(now + 0.1);
+    } 
+    else if (level === 'medium') {
+        // A gentle chime/bell
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(440, now); // A4
+        
+        // Slight harmonic overtone
+        const osc2 = this.ctx.createOscillator();
+        osc2.type = 'sine';
+        osc2.frequency.value = 880;
+        const gain2 = this.ctx.createGain();
+        osc2.connect(gain2);
+        gain2.connect(this.masterGain);
+
+        gain.gain.setValueAtTime(0, now);
+        gain.gain.linearRampToValueAtTime(0.15, now + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+
+        gain2.gain.setValueAtTime(0, now);
+        gain2.gain.linearRampToValueAtTime(0.05, now + 0.02);
+        gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+
+        osc.start(now);
+        osc2.start(now);
+        osc.stop(now + 0.4);
+        osc2.stop(now + 0.4);
+    } 
+    else if (level === 'magick') {
+        // A resonant, sparkly impact
+        this.playSparkle(); // Trigger the existing sparkle
+        this.playImpact();  // Trigger the deep thud
+    }
+  }
+
+  // --- AMBIENCE ---
+
   playDeepDrone() {
     this.ensureContext();
     if (this.isMuted) return;
@@ -65,19 +127,17 @@ class MagicAudio {
     const osc2 = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
     
-    // Very low frequencies for grounding
     osc1.type = 'triangle';
-    osc1.frequency.value = 65.41; // C2
+    osc1.frequency.value = 110; // A2 (Higher base for visibility)
     
     osc2.type = 'sine';
-    osc2.frequency.value = 65.00; // Slight detune for "beating" effect
+    osc2.frequency.value = 109; // Detune
 
-    // LFO to make the drone "breathe"
     const lfo = this.ctx.createOscillator();
     lfo.type = 'sine';
-    lfo.frequency.value = 0.1; // Very slow breath
+    lfo.frequency.value = 0.2; 
     const lfoGain = this.ctx.createGain();
-    lfoGain.gain.value = 0.1;
+    lfoGain.gain.value = 0.15;
 
     lfo.connect(lfoGain);
     lfoGain.connect(gain.gain);
@@ -88,7 +148,7 @@ class MagicAudio {
 
     const now = this.ctx.currentTime;
     gain.gain.setValueAtTime(0, now);
-    gain.gain.linearRampToValueAtTime(0.2, now + 5); // Slow fade in
+    gain.gain.linearRampToValueAtTime(0.15, now + 5); 
     
     osc1.start();
     osc2.start();
@@ -108,35 +168,32 @@ class MagicAudio {
     };
   }
 
-  // "Water Drop" Arpeggio - Ethereal and liquid
   playSparkle() {
     this.ensureContext();
     if (this.isMuted) return;
     const now = this.ctx.currentTime;
     
-    // Play 3 notes from the scale randomly
-    [0, 0.15, 0.3].forEach((delay) => {
+    [0, 0.1, 0.2].forEach((delay, i) => {
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
       
       osc.type = 'sine';
-      // Pick random note from our warm scale
-      const freq = this.scale[Math.floor(Math.random() * this.scale.length)] * 2; // Octave up
+      // Pentatonic notes in the 400-800Hz range (Magickal zone)
+      const notes = [440, 493.88, 523.25, 587.33, 659.25, 783.99]; 
+      const freq = notes[Math.floor(Math.random() * notes.length)];
       osc.frequency.setValueAtTime(freq, now + delay);
       
-      // Envelope: Soft "plink"
       gain.gain.setValueAtTime(0, now + delay);
-      gain.gain.linearRampToValueAtTime(0.15, now + delay + 0.05);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + delay + 1.5); // Long tail
+      gain.gain.linearRampToValueAtTime(0.1, now + delay + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + delay + 1.2); 
       
       osc.connect(gain);
       gain.connect(this.masterGain);
       osc.start(now + delay);
-      osc.stop(now + delay + 1.5);
+      osc.stop(now + delay + 1.2);
     });
   }
 
-  // Pleasant activating sound for tracing
   playTraceTone() {
     this.ensureContext();
     if (this.isMuted) return;
@@ -145,12 +202,11 @@ class MagicAudio {
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
     
-    osc.type = 'triangle'; // Softer than sawtooth, richer than sine
-    // Random note from scale
+    osc.type = 'triangle'; 
+    // Soft pentatonic scale
     const freq = this.scale[Math.floor(Math.random() * this.scale.length)];
     osc.frequency.setValueAtTime(freq, now);
     
-    // Very short, gentle blip
     gain.gain.setValueAtTime(0, now);
     gain.gain.linearRampToValueAtTime(0.1, now + 0.05);
     gain.gain.linearRampToValueAtTime(0, now + 0.3);
@@ -162,71 +218,75 @@ class MagicAudio {
     osc.stop(now + 0.3);
   }
 
-  // Ethereal Pad Swell
+  // --- CHARGING / HOLDING LOGIC ---
+  // Re-engineered to sweep from 200Hz to 900Hz
   startCharge() {
     this.ensureContext();
     if (this.isMuted) return null;
     
     const now = this.ctx.currentTime;
     
-    // Create a chord
+    const masterChargeGain = this.ctx.createGain();
+    masterChargeGain.gain.setValueAtTime(0, now);
+    masterChargeGain.gain.linearRampToValueAtTime(0.4, now + 1.0); // Faster fade in
+
+    // The Filter that will sweep
+    const sweepFilter = this.ctx.createBiquadFilter();
+    sweepFilter.type = 'lowpass';
+    sweepFilter.frequency.value = 200; // Start at 200Hz (Muffled)
+    sweepFilter.Q.value = 2; // Add some resonance for that "singing" quality
+
+    // Rich Pad Source (Triangle Waves)
     const nodes: any[] = [];
-    const mainGain = this.ctx.createGain();
-    mainGain.gain.setValueAtTime(0, now);
-    mainGain.gain.linearRampToValueAtTime(0.2, now + 2); // Slow fade in
-
-    // Vibrato LFO
-    const lfo = this.ctx.createOscillator();
-    lfo.frequency.value = 3; 
-    const lfoGain = this.ctx.createGain();
-    lfoGain.gain.value = 2; // Depth
-    lfo.connect(lfoGain);
-    lfo.start();
-
-    // 3 Oscillators for a chord
-    [1, 1.25, 1.5].forEach(ratio => {
+    // Frequencies centered around 200-300Hz so the filter reveals them
+    const chord = [196.00, 246.94, 293.66]; // G3, B3, D4 (G Major)
+    
+    chord.forEach(freq => {
         const osc = this.ctx.createOscillator();
-        osc.type = 'sine';
-        osc.frequency.value = 130.81 * ratio; // C3 Major Chord
-        lfoGain.connect(osc.frequency); // Apply vibrato
-        osc.connect(mainGain);
+        osc.type = 'triangle';
+        osc.frequency.value = freq;
+        osc.connect(sweepFilter);
         osc.start();
         nodes.push(osc);
     });
 
-    mainGain.connect(this.masterGain);
+    sweepFilter.connect(masterChargeGain);
+    masterChargeGain.connect(this.masterGain);
 
-    return { nodes, mainGain, lfo, lfoGain };
+    return { nodes, masterChargeGain, sweepFilter };
   }
 
   updateCharge(node: any, progress: number) { 
     if (!node || !this.ctx) return;
     const now = this.ctx.currentTime;
     
-    // Instead of pitch rising (which gets anxious), 
-    // we increase volume and vibrato speed for intensity.
+    // Sweep Logic: Map 0-100 to 200Hz-900Hz
+    // Use exponential mapping for natural hearing
+    const minFreq = 200;
+    const maxFreq = 900;
+    const normalized = Math.max(0, Math.min(1, progress / 100));
     
-    // Max vibrato speed: 3hz -> 8hz
-    const vibSpeed = 3 + (progress * 0.05); 
-    node.lfo.frequency.setTargetAtTime(vibSpeed, now, 0.1);
-
-    // Slight volume swell
-    const vol = 0.2 + (progress * 0.002);
-    node.mainGain.gain.setTargetAtTime(Math.min(vol, 0.5), now, 0.1);
+    // Calculate target frequency
+    const targetFreq = minFreq + (normalized * (maxFreq - minFreq));
+    
+    // Smooth transition
+    node.sweepFilter.frequency.setTargetAtTime(targetFreq, now, 0.1);
+    
+    // Volume swell based on progress
+    const vol = 0.4 + (normalized * 0.1);
+    node.masterChargeGain.gain.setTargetAtTime(vol, now, 0.1);
   }
 
   stopCharge(node: any) {
     if (!node || !this.ctx) return;
     const now = this.ctx.currentTime;
     try {
-        node.mainGain.gain.cancelScheduledValues(now);
-        node.mainGain.gain.setTargetAtTime(0, now, 0.5); // Soft release
-        node.nodes.forEach((osc: any) => osc.stop(now + 1));
-        node.lfo.stop(now + 1);
+        node.masterChargeGain.gain.cancelScheduledValues(now);
+        node.masterChargeGain.gain.setTargetAtTime(0, now, 0.3); 
+        node.nodes.forEach((osc: any) => osc.stop(now + 0.5));
     } catch(e) {}
   }
 
-  // Soft "Heartbeat" Thud
   playImpact() {
     this.ensureContext();
     if (this.isMuted) return;
@@ -235,34 +295,31 @@ class MagicAudio {
     const gain = this.ctx.createGain();
     
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(80, this.ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(30, this.ctx.currentTime + 0.3); // Quick drop
+    osc.frequency.setValueAtTime(150, this.ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(40, this.ctx.currentTime + 0.4);
 
-    gain.gain.setValueAtTime(0.4, this.ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 1.0); // Long booming tail
+    gain.gain.setValueAtTime(0.5, this.ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 1.2); 
 
     osc.connect(gain);
     gain.connect(this.masterGain);
     osc.start();
-    osc.stop(this.ctx.currentTime + 1.0);
+    osc.stop(this.ctx.currentTime + 1.2);
   }
 
-  // Liquid Swirl - Filtered Pink Noise
   startSwirl() {
     this.ensureContext();
     if (this.isMuted) return null;
     
-    // Generate Brown/Pink-ish noise buffer
     const bufferSize = this.ctx.sampleRate * 2;
     const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
     const data = buffer.getChannelData(0);
     let lastOut = 0;
     for (let i = 0; i < bufferSize; i++) {
         const white = Math.random() * 2 - 1;
-        // Brown noise algorithm (smoother than white)
         data[i] = (lastOut + (0.02 * white)) / 1.02;
         lastOut = data[i];
-        data[i] *= 3.5; // Compensate gain
+        data[i] *= 3.5; 
     }
 
     const noise = this.ctx.createBufferSource();
@@ -271,7 +328,7 @@ class MagicAudio {
 
     const filter = this.ctx.createBiquadFilter();
     filter.type = 'lowpass';
-    filter.frequency.value = 200; // Start very muffled
+    filter.frequency.value = 200; 
     
     const gain = this.ctx.createGain();
     gain.gain.value = 0;
@@ -283,11 +340,10 @@ class MagicAudio {
     noise.start();
     gain.gain.setTargetAtTime(0.3, this.ctx.currentTime, 1);
 
-    // LFO to modulate filter (Swishing sound)
     const lfo = this.ctx.createOscillator();
     lfo.frequency.value = 0.8;
     const lfoGain = this.ctx.createGain();
-    lfoGain.gain.value = 150; 
+    lfoGain.gain.value = 200; // Sweep up to ~400Hz
     
     lfo.connect(lfoGain);
     lfoGain.connect(filter.frequency);
@@ -442,7 +498,14 @@ const MagickPopup = ({ message, buttonText = "Continue", onContinue }: { message
         </div>
         <h3 className="text-lg font-magical text-amber-100 mb-4">{message}</h3>
         <button 
-            onClick={onContinue}
+            onClick={() => {
+                // Clicking 'Continue' is a medium action (advancing)
+                const globalAny = globalThis as any;
+                // Since this component is outside the main page scope, we can't easily access the 'audio' instance unless it's global or passed down.
+                // However, since 'audio' is defined at module scope in this file, we can access it directly.
+                audio.playClick('medium');
+                onContinue();
+            }}
             className="w-full bg-amber-900/40 hover:bg-amber-800/40 border border-amber-600 text-amber-100 py-3 uppercase tracking-widest font-magical text-sm transition-colors active:scale-95"
         >
             {buttonText}
@@ -468,13 +531,14 @@ const FinalPopup = ({ onExit }: { onExit: () => void }) => {
             
             <div className="flex flex-col gap-4">
                 <button 
-                    onClick={() => router.reload()}
+                    onClick={() => { audio.playClick('medium'); router.reload(); }}
                     className="w-full flex items-center justify-center gap-2 bg-amber-900/30 border border-amber-600/50 text-amber-100 py-3 uppercase tracking-widest font-magical text-xs hover:bg-amber-800/40 transition-colors"
                 >
                     <Repeat size={14} /> Cast Another Spell
                 </button>
                 <Link 
                     href="/spell-room/love-spells-app"
+                    onClick={() => audio.playClick('medium')}
                     className="w-full flex items-center justify-center gap-2 bg-slate-900/50 border border-slate-600/50 text-slate-300 py-3 uppercase tracking-widest font-magical text-xs hover:bg-slate-800/50 transition-colors"
                 >
                     <LogOut size={14} /> Exit Room
@@ -505,12 +569,13 @@ export default function SoulConnectSpellPage() {
 
   const startRitual = () => {
     audio.init();
+    audio.playClick('magick'); // Start is a major event
     bgDroneRef.current = audio.playDeepDrone();
-    audio.playSparkle();
     setStarted(true);
   };
 
   const toggleMute = () => {
+    audio.playClick('soft');
     setMuted(!muted);
     audio.isMuted = !muted;
   };
@@ -521,7 +586,7 @@ export default function SoulConnectSpellPage() {
 
   const nextStep = () => {
     setShowSuccess(null);
-    audio.playSparkle();
+    audio.playClick('medium');
     setStep(s => s + 1);
   };
 
@@ -569,7 +634,7 @@ export default function SoulConnectSpellPage() {
       
       {/* Navbar */}
       <div className="flex justify-between items-center p-4 z-50 shrink-0 h-16">
-        <Link href="/spell-room/love-spells-app" className="text-amber-500/50 hover:text-amber-200 text-xs font-bold uppercase tracking-wider flex items-center gap-1">
+        <Link href="/spell-room/love-spells-app" onClick={() => audio.playClick('medium')} className="text-amber-500/50 hover:text-amber-200 text-xs font-bold uppercase tracking-wider flex items-center gap-1">
           &larr; Exit
         </Link>
         <div className="text-amber-200/60 text-[10px] tracking-[0.2em] uppercase font-magical flex items-center gap-2">
@@ -667,13 +732,13 @@ const StageOneIntention = ({ names, setNames, intention, setIntention, isForSelf
         <div className="flex justify-center mb-2 shrink-0">
             <div className="flex bg-slate-900/80 rounded-full border border-amber-800/50 p-1">
                 <button 
-                    onClick={() => setIsForSelf(true)}
+                    onClick={() => { audio.playClick('soft'); setIsForSelf(true); }}
                     className={`flex items-center gap-2 px-4 py-2 rounded-full text-[10px] uppercase tracking-wider transition-all ${isForSelf ? 'bg-amber-700 text-white shadow-lg' : 'text-slate-400 hover:text-amber-200'}`}
                 >
                     <User size={12} /> For Me
                 </button>
                 <button 
-                    onClick={() => setIsForSelf(false)}
+                    onClick={() => { audio.playClick('soft'); setIsForSelf(false); }}
                     className={`flex items-center gap-2 px-4 py-2 rounded-full text-[10px] uppercase tracking-wider transition-all ${!isForSelf ? 'bg-amber-700 text-white shadow-lg' : 'text-slate-400 hover:text-amber-200'}`}
                 >
                     <Users size={12} /> For Couple
@@ -715,7 +780,7 @@ const StageOneIntention = ({ names, setNames, intention, setIntention, isForSelf
           </div>
           <button 
             disabled={!names.user || !names.target || !intention}
-            onClick={() => { audio.playImpact(); setMode('sigil'); }}
+            onClick={() => { audio.playClick('medium'); setMode('sigil'); }}
             className="w-full mt-2 bg-gradient-to-r from-amber-900/40 to-amber-800/40 border border-amber-600/50 text-amber-100 py-3 uppercase tracking-[0.2em] font-magical text-sm hover:bg-amber-800/50 transition-all disabled:opacity-30 disabled:cursor-not-allowed active:scale-95"
           >
             Create Petition
@@ -764,7 +829,7 @@ const StageOneIntention = ({ names, setNames, intention, setIntention, isForSelf
       </div>
 
       {traceProgress >= 100 && (
-         <button onClick={onComplete} className="mt-8 bg-amber-700/80 text-white font-magical px-8 py-2 uppercase tracking-widest animate-pulse rounded border border-amber-500 shadow-lg text-sm active:scale-95">
+         <button onClick={() => { audio.playClick('magick'); onComplete(); }} className="mt-8 bg-amber-700/80 text-white font-magical px-8 py-2 uppercase tracking-widest animate-pulse rounded border border-amber-500 shadow-lg text-sm active:scale-95">
            Confirm Sigil
          </button>
       )}
@@ -817,7 +882,7 @@ const StageTwoJar = ({ mode, names, filledIngredients, droppingItem, onComplete 
                 setFailed(true);
                 setIsPouring(false);
                 if(soundRef.current) { audio.stopCharge(soundRef.current); soundRef.current = null; }
-                audio.playImpact();
+                audio.playClick('magick'); // Impact on overflow
             } else {
                 // Pouring - SLOWER 50%
                 const next = current + 1.2; 
@@ -834,12 +899,12 @@ const StageTwoJar = ({ mode, names, filledIngredients, droppingItem, onComplete 
     };
   }, [isPouring, failed, mode]);
 
-  const resetHoney = () => { setActionProgress(0); setFailed(false); audio.playSparkle(); };
+  const resetHoney = () => { setActionProgress(0); setFailed(false); audio.playClick('medium'); };
 
   // Handle Dropping Logic - VISUAL UPDATE
   const triggerDrop = () => {
       setAnimState('dropping');
-      audio.playSparkle();
+      audio.playClick('medium'); // Drop Sound
       
       // Start Drop Animation via State
       requestAnimationFrame(() => {
@@ -970,7 +1035,7 @@ const StageTwoJar = ({ mode, names, filledIngredients, droppingItem, onComplete 
       {/* CONTROLS */}
       {mode === 'petition' && (
           animState === 'done' ? (
-            <button onClick={onComplete} className="px-8 py-2 bg-amber-800 text-amber-100 font-magical font-bold text-sm rounded shadow-lg animate-in zoom-in">
+            <button onClick={() => { audio.playClick('medium'); onComplete(); }} className="px-8 py-2 bg-amber-800 text-amber-100 font-magical font-bold text-sm rounded shadow-lg animate-in zoom-in">
                 Next Step
             </button>
           ) : (
@@ -982,7 +1047,7 @@ const StageTwoJar = ({ mode, names, filledIngredients, droppingItem, onComplete 
 
       {mode === 'drop' && (
           animState === 'done' ? (
-            <button onClick={onComplete} className="px-8 py-2 bg-amber-800 text-amber-100 font-magical font-bold text-sm rounded shadow-lg animate-in zoom-in">
+            <button onClick={() => { audio.playClick('magick'); onComplete(); }} className="px-8 py-2 bg-amber-800 text-amber-100 font-magical font-bold text-sm rounded shadow-lg animate-in zoom-in">
                 Confirm
             </button>
           ) : (
@@ -1001,7 +1066,7 @@ const StageTwoJar = ({ mode, names, filledIngredients, droppingItem, onComplete 
           ) : (
             <>
               {(actionProgress / 230) * 100 > 80 && (actionProgress / 230) * 100 < 100 && !isPouring ? (
-                 <button onClick={onComplete} className="bg-green-900/40 border border-green-500 text-green-200 px-8 py-2 uppercase tracking-[0.2em] font-magical text-sm animate-pulse active:scale-95">
+                 <button onClick={() => { audio.playClick('magick'); onComplete(); }} className="bg-green-900/40 border border-green-500 text-green-200 px-8 py-2 uppercase tracking-[0.2em] font-magical text-sm animate-pulse active:scale-95">
                    Seal Vessel
                  </button>
               ) : (
@@ -1055,7 +1120,7 @@ const StageThreeConsecrate = ({ ingredient, index, total, onComplete }: any) => 
   useEffect(() => {
       if(charge >= 100 && !success) {
         setIsCharging(false);
-        audio.playSparkle();
+        audio.playClick('magick'); // Success sound
         setSuccess(true); 
         setTimeout(onComplete, 1500); // Auto advance slightly faster
       }
@@ -1107,9 +1172,13 @@ const StageFourIncantation = ({ chant, onComplete }: any) => {
   const [lineIdx, setLineIdx] = useState(0);
 
   const handleTap = () => {
-    audio.playImpact();
-    if (lineIdx < chant.length - 1) setLineIdx(p => p + 1);
-    else onComplete();
+    if (lineIdx < chant.length - 1) {
+        audio.playClick('medium');
+        setLineIdx(p => p + 1);
+    } else {
+        audio.playClick('magick');
+        onComplete();
+    }
   };
 
   return (
@@ -1208,7 +1277,7 @@ const StageFiveMixing = ({ ingredients, names, onComplete }: any) => {
       </div>
 
       {progress >= 100 ? (
-        <button onClick={onComplete} className="px-8 py-2 bg-amber-600 text-white font-magical uppercase tracking-widest text-sm rounded shadow-lg animate-bounce active:scale-95">
+        <button onClick={() => { audio.playClick('magick'); onComplete(); }} className="px-8 py-2 bg-amber-600 text-white font-magical uppercase tracking-widest text-sm rounded shadow-lg animate-bounce active:scale-95">
           Mixture Bound
         </button>
       ) : (
@@ -1305,7 +1374,7 @@ const StageSixCandle = ({ onComplete }: any) => {
              <div 
                className="absolute z-50 w-24 h-24 cursor-pointer flex items-center justify-center"
                style={{ bottom: `${waxHeight - 20}px` }}
-               onClick={() => { setLit(true); audio.playSparkle(); }}
+               onClick={() => { setLit(true); audio.playClick('medium'); }}
              >
                  {/* Visual Hint */}
                  <div className="w-6 h-6 rounded-full border border-orange-500/50 animate-ping opacity-50"></div>
@@ -1322,7 +1391,7 @@ const StageSixCandle = ({ onComplete }: any) => {
                    {formatTime(timeLeft)}
                 </div>
             ) : (
-                <button onClick={onComplete} className="px-8 py-2 bg-pink-700 text-white font-magical uppercase tracking-widest text-sm rounded shadow-[0_0_20px_rgba(236,72,153,0.5)] animate-in zoom-in active:scale-95">
+                <button onClick={() => { audio.playClick('magick'); onComplete(); }} className="px-8 py-2 bg-pink-700 text-white font-magical uppercase tracking-widest text-sm rounded shadow-[0_0_20px_rgba(236,72,153,0.5)] animate-in zoom-in active:scale-95">
                     Seal Completed
                 </button>
             )}
@@ -1359,7 +1428,7 @@ const StageSevenRelease = ({ onComplete }: any) => {
 
   useEffect(() => {
       if(power >= 100) {
-          audio.playSparkle();
+          audio.playClick('magick');
           setTimeout(onComplete, 1200); 
       }
   }, [power, onComplete]);
