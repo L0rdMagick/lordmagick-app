@@ -9,8 +9,10 @@ import Link from 'next/link';
 /**
  * TWO SOULS CONNECTION - LOVE SPELL RITUAL
  * Updates:
- * - AUDIO: Added Pulsing Charge (120bpm) for Mixing and Release phases.
- * - VISUAL: Added semi-transparent honey overlay to immerse ingredients.
+ * - AUDIO: Mixing & Release now use High-Pass Filtered (300Hz) version of Charge sound. No pulsing.
+ * - VISUAL: Honey immersion layer increased to 50% opacity.
+ * - FLOW: Jar filling stops at line, glows, waits 3s before seal button.
+ * - FLOW: Mixing waits 3s with glow before bind button.
  */
 
 // --- AUDIO ENGINE ---
@@ -64,7 +66,6 @@ class MagicAudio {
     for (let i = 0; i < length; i++) {
         const n = length - i;
         const multi = Math.pow(n / length, decay);
-        // Low amplitude noise to prevent digital distortion
         left[i] = (Math.random() * 2 - 1) * 0.05 * multi;
         right[i] = (Math.random() * 2 - 1) * 0.05 * multi;
     }
@@ -173,7 +174,6 @@ class MagicAudio {
   }
 
   // --- BASE SOUND: THE "SUNRISE" EFFECT ---
-  // Helper to create the oscillator nodes for charging sounds
   createChargeNodes(mainGain: any) {
     const nodes: any[] = [];
     const now = this.ctx.currentTime;
@@ -225,42 +225,31 @@ class MagicAudio {
     return { nodes, mainGain, type: 'steady' };
   }
 
-  // --- PULSING CHARGE (Mixing / Release) ---
-  // 120 BPM = 2 Hz Pulse
-  startPulseCharge() {
+  // --- HIGH-PASS CHARGING (Mixing / Release) ---
+  // Identical source, but filtered at 300Hz HPF
+  startHighPassCharge() {
     this.ensureContext();
     if (this.isMuted) return null;
 
     const now = this.ctx.currentTime;
     
-    // Create the Main Gain that controls the swell
+    // Create Main Gain
     const mainGain = this.ctx.createGain();
     mainGain.gain.setValueAtTime(0, now);
     mainGain.gain.linearRampToValueAtTime(0.4, now + 0.05);
     
-    // Pulse Effect LFO Chain
-    // Signal Flow: Nodes -> MainGain (Swell) -> PulseGain (LFO) -> Master
-    const pulseGain = this.ctx.createGain();
-    pulseGain.gain.value = 0.7; // Base volume center
+    // High Pass Filter
+    const hpf = this.ctx.createBiquadFilter();
+    hpf.type = 'highpass';
+    hpf.frequency.value = 300;
 
-    const lfo = this.ctx.createOscillator();
-    lfo.type = 'sine';
-    lfo.frequency.value = 2.0; // 120 beats per minute (2Hz)
+    mainGain.connect(hpf);
+    hpf.connect(this.masterGain);
 
-    const lfoAmp = this.ctx.createGain();
-    lfoAmp.gain.value = 0.3; // Depth of pulse (0.7 +/- 0.3)
-
-    lfo.connect(lfoAmp);
-    lfoAmp.connect(pulseGain.gain);
-    lfo.start(now);
-
-    mainGain.connect(pulseGain);
-    pulseGain.connect(this.masterGain);
-
-    // Reuse the same sound sources as standard charge
+    // Reuse the same sound sources
     const nodes = this.createChargeNodes(mainGain);
 
-    return { nodes, mainGain, lfo, pulseGain, type: 'pulse' };
+    return { nodes, mainGain, type: 'hpf' };
   }
 
   updateCharge(node: any, progress: number) { 
@@ -270,16 +259,13 @@ class MagicAudio {
 
     node.nodes.forEach((n: any) => {
         if (n.type === 'pad') {
-            // Filter opens: 600Hz -> 1200Hz
             const targetFreq = 600 + (p * 600);
             n.filter.frequency.setTargetAtTime(targetFreq, now, 0.1);
         } else if (n.type === 'shimmer') {
-            // High note fades up: 0.1 -> 0.4
             n.gain.gain.setTargetAtTime(0.1 + (p * 0.3), now, 0.1);
         }
     });
     
-    // Volume Swell: 0.4 -> 0.8
     const vol = 0.4 + (p * 0.4);
     node.mainGain.gain.setTargetAtTime(vol, now, 0.1);
   }
@@ -291,16 +277,8 @@ class MagicAudio {
         node.mainGain.gain.cancelScheduledValues(now);
         node.mainGain.gain.setTargetAtTime(0, now, 0.3); 
         node.nodes.forEach((n: any) => n.osc.stop(now + 0.5));
-        
-        if (node.type === 'pulse' && node.lfo) {
-            node.lfo.stop(now + 0.5);
-            // Quick fade out pulse gain just in case
-            node.pulseGain.gain.setTargetAtTime(0, now, 0.3); 
-        }
     } catch(e) {}
   }
-
-  // --- STIRRING: Removed old singing bowl in favor of pulse charge ---
 }
 
 const audio = new MagicAudio();
@@ -330,7 +308,6 @@ const GlobalStyles = () => (
         user-select: text !important;
     }
 
-    /* LEAF SWAY ANIMATION (X-Axis & Rotation only) */
     @keyframes leaf-sway {
         0% { transform: translateX(0px) rotate(0deg); }
         25% { transform: translateX(10px) rotate(5deg); }
@@ -343,6 +320,15 @@ const GlobalStyles = () => (
         animation: leaf-sway 4s ease-in-out infinite;
         transform-box: fill-box;
         transform-origin: center;
+    }
+
+    @keyframes glow-pulse {
+        0%, 100% { filter: drop-shadow(0 0 5px rgba(251, 191, 36, 0.5)); }
+        50% { filter: drop-shadow(0 0 20px rgba(251, 191, 36, 0.8)); }
+    }
+    
+    .glow-active {
+        animation: glow-pulse 2s infinite ease-in-out;
     }
   `}</style>
 );
@@ -788,41 +774,45 @@ const StageTwoJar = ({ mode, names, filledIngredients, droppingItem, onComplete 
   const [actionProgress, setActionProgress] = useState(0); 
   const [isPouring, setIsPouring] = useState(false);
   const [animState, setAnimState] = useState<'idle' | 'dropping' | 'done'>('idle');
-  const [failed, setFailed] = useState(false);
   
-  // Animation State for Drop Logic
-  const [dropY, setDropY] = useState(30); // Start inside neck (safe zone)
+  // Honey Done Logic
+  const [honeyDone, setHoneyDone] = useState(false);
+  const [showSealBtn, setShowSealBtn] = useState(false);
   
+  const [dropY, setDropY] = useState(30); 
   const progressRef = useRef(0);
   const soundRef = useRef<any>(null);
 
-  // Sync ref with state
   useEffect(() => { progressRef.current = actionProgress; }, [actionProgress]);
 
-  // SVG Coordinate System: 0 0 200 300
   const bottlePath = "M70,20 C70,10 75,0 100,0 C125,0 130,10 130,20 L130,60 C130,70 170,80 180,120 C190,160 195,200 170,260 C145,300 55,300 30,260 C5,200 10,160 20,120 C30,80 70,70 70,60 Z";
-
-  // Calculate Stack Height for current drop
   const stackIndex = filledIngredients.length + (mode === 'petition' ? 0 : 1);
   const targetY = 250 - (stackIndex * 30);
+  const honeyMax = 200; // Line Level (Approx y=100)
 
-  // Handle Honey Pouring Logic with Ref-based Interval
+  // Honey Pouring Logic
   useEffect(() => {
     let interval: any;
     
-    if (isPouring && !failed && mode === 'honey') {
+    if (isPouring && !honeyDone && mode === 'honey') {
         if (!soundRef.current) soundRef.current = audio.startCharge();
 
         interval = setInterval(() => {
             const current = progressRef.current;
-            if (current >= 280) {
-                // Overflow Logic
-                setFailed(true);
+            if (current >= honeyMax) {
+                // DONE LOGIC
+                setActionProgress(honeyMax);
                 setIsPouring(false);
+                setHoneyDone(true);
                 if(soundRef.current) { audio.stopCharge(soundRef.current); soundRef.current = null; }
-                audio.playClick('magick'); // Impact on overflow
+                
+                audio.playClick('magick'); // Success sound
+                
+                // Wait 3 seconds to show Seal Button
+                setTimeout(() => setShowSealBtn(true), 3000);
+
             } else {
-                // Pouring - SLOWER 50%
+                // Pouring
                 const next = current + 1.2; 
                 setActionProgress(next);
                 if(soundRef.current) audio.updateCharge(soundRef.current, next/2);
@@ -835,29 +825,16 @@ const StageTwoJar = ({ mode, names, filledIngredients, droppingItem, onComplete 
         clearInterval(interval); 
         if(soundRef.current) { audio.stopCharge(soundRef.current); soundRef.current = null; }
     };
-  }, [isPouring, failed, mode]);
+  }, [isPouring, honeyDone, mode]);
 
-  const resetHoney = () => { setActionProgress(0); setFailed(false); audio.playClick('medium'); };
-
-  // Handle Dropping Logic - VISUAL UPDATE
   const triggerDrop = () => {
       setAnimState('dropping');
-      audio.playClick('medium'); // Drop Sound
-      
-      // Start Drop Animation via State
-      requestAnimationFrame(() => {
-         setDropY(targetY);
-      });
-
-      // Wait for 4s fall
-      setTimeout(() => {
-          setAnimState('done');
-      }, 4000);
+      audio.playClick('medium'); 
+      requestAnimationFrame(() => setDropY(targetY));
+      setTimeout(() => setAnimState('done'), 4000);
   };
 
-  const handlePetitionInsert = () => {
-    triggerDrop();
-  };
+  const handlePetitionInsert = () => { triggerDrop(); };
 
   return (
     <div className="flex flex-col items-center w-full h-full justify-center">
@@ -866,15 +843,23 @@ const StageTwoJar = ({ mode, names, filledIngredients, droppingItem, onComplete 
           {mode === 'drop' && "Add Ingredient"}
           {mode === 'honey' && "Sweeten the Jar"}
       </h2>
-      <p className="text-xs text-amber-400/60 mb-6 text-center font-scroll h-4">
+      <p className="text-xs text-amber-400/60 mb-6 text-center font-scroll h-4 animate-in fade-in">
         {mode === 'petition' && (animState !== 'done' ? "Tap to place petition." : "Petition added.")}
         {mode === 'drop' && (animState !== 'done' ? `Tap to add ${droppingItem.name}.` : "Added.")}
-        {mode === 'honey' && "Hold button to pour honey."}
+        {mode === 'honey' && !honeyDone && "Hold button to pour honey."}
+        {mode === 'honey' && honeyDone && "Ingredients have been sweetened."}
       </p>
 
       {/* JAR VISUAL */}
-      <div className="relative w-56 h-[40vh] max-h-80 mb-6 shrink-0">
-         <svg viewBox="0 0 200 300" className="w-full h-full drop-shadow-[0_0_20px_rgba(0,0,0,0.6)]">
+      <div 
+        className={`relative w-56 h-[40vh] max-h-80 mb-6 shrink-0 transition-all duration-1000 ${honeyDone ? 'scale-105' : ''}`}
+      >
+         {/* Back Glow Logic */}
+         {honeyDone && (
+             <div className="absolute inset-0 bg-amber-500/20 blur-3xl animate-pulse rounded-full z-0"></div>
+         )}
+
+         <svg viewBox="0 0 200 300" className="w-full h-full drop-shadow-[0_0_20px_rgba(0,0,0,0.6)] relative z-10">
             <defs>
                <clipPath id="bottleClip">
                   <path d={bottlePath} />
@@ -886,13 +871,11 @@ const StageTwoJar = ({ mode, names, filledIngredients, droppingItem, onComplete 
                </linearGradient>
             </defs>
             
-            {/* Background Glass Tint */}
             <path d={bottlePath} fill="rgba(255,255,255,0.03)" stroke="none" />
 
-            {/* Content Group (Clipped) */}
             <g clipPath="url(#bottleClip)">
                 
-                {/* Honey (Only visible if pouring or done) - BOTTOM LAYER */}
+                {/* Honey Bottom Layer */}
                 {mode === 'honey' && (
                     <rect 
                         x="0" 
@@ -911,7 +894,7 @@ const StageTwoJar = ({ mode, names, filledIngredients, droppingItem, onComplete 
                            transition: mode === 'petition' && animState === 'dropping' ? 'transform 4s ease-in-out' : 'none',
                            transform: mode === 'petition' && animState === 'dropping' 
                                ? `translate(100px, ${dropY}px)` 
-                               : `translate(100px, 250px)` // Final static position
+                               : `translate(100px, 250px)` 
                        }}
                     >
                        <g className={mode === 'petition' && animState === 'dropping' ? "leaf-motion" : ""}>
@@ -925,7 +908,7 @@ const StageTwoJar = ({ mode, names, filledIngredients, droppingItem, onComplete 
                     </g>
                 )}
 
-                {/* 2. Previously Added Ingredients (Static Stack) */}
+                {/* 2. Ingredients */}
                 {filledIngredients.map((ing, i) => (
                     <g key={i} transform={`translate(100, ${250 - ((i+1) * 30)})`}>
                         <text fontSize="28" textAnchor="middle" filter="drop-shadow(0px 2px 2px rgba(0,0,0,0.5))">
@@ -934,7 +917,7 @@ const StageTwoJar = ({ mode, names, filledIngredients, droppingItem, onComplete 
                     </g>
                 ))}
 
-                {/* 3. Currently Dropping Item */}
+                {/* 3. Dropping Item */}
                 {mode === 'drop' && animState !== 'idle' && (
                     <g 
                         style={{ 
@@ -948,8 +931,7 @@ const StageTwoJar = ({ mode, names, filledIngredients, droppingItem, onComplete 
                     </g>
                 )}
 
-                {/* 4. IMMERSION LAYER: Semi-transparent Honey Overlay */}
-                {/* This makes ingredients look like they are inside the honey */}
+                {/* 4. IMMERSION LAYER: 50% Opacity */}
                 {mode === 'honey' && (
                     <rect 
                         x="0" 
@@ -957,19 +939,24 @@ const StageTwoJar = ({ mode, names, filledIngredients, droppingItem, onComplete 
                         width="200" 
                         height={actionProgress} 
                         fill="url(#honeyGrad)" 
-                        opacity="0.50"
+                        opacity="0.5"
                         style={{ pointerEvents: 'none' }}
                     />
                 )}
 
-                {/* Target Line for Honey */}
+                {/* Target Line - Glows when done */}
                 {mode === 'honey' && (
-                    <line x1="0" y1="100" x2="200" y2="100" stroke="rgba(255,255,255,0.2)" strokeWidth="1" strokeDasharray="4 2" />
+                    <line 
+                        x1="0" y1="100" x2="200" y2="100" 
+                        stroke={honeyDone ? "#fbbf24" : "rgba(255,255,255,0.2)"} 
+                        strokeWidth={honeyDone ? "3" : "1"} 
+                        strokeDasharray={honeyDone ? "" : "4 2"} 
+                        className={honeyDone ? "glow-active" : ""}
+                    />
                 )}
             </g>
 
-            {/* Glass Outline Overlay */}
-            <path d={bottlePath} fill="none" stroke="rgba(251,191,36,0.5)" strokeWidth="1.5" />
+            <path d={bottlePath} fill="none" stroke={honeyDone ? "rgba(251,191,36,0.8)" : "rgba(251,191,36,0.5)"} strokeWidth="1.5" />
             <path d="M40,140 Q60,140 60,180" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="2" />
          </svg>
       </div>
@@ -1000,34 +987,29 @@ const StageTwoJar = ({ mode, names, filledIngredients, droppingItem, onComplete 
       )}
 
       {mode === 'honey' && (
-          failed ? (
-            <div className="flex flex-col items-center z-50">
-                <div className="text-red-400 text-xs mb-2 font-magical bg-red-900/20 px-4 py-1 rounded">Overflow!</div>
-                <button onClick={resetHoney} className="px-6 py-2 border border-red-500 text-red-400 font-magical text-xs uppercase tracking-wider active:scale-95 hover:bg-red-900/20 transition-colors">Clean Jar</button>
-            </div>
-          ) : (
-            <>
-              {(actionProgress / 230) * 100 > 80 && (actionProgress / 230) * 100 < 100 && !isPouring ? (
-                 <button onClick={() => { audio.playClick('magick'); onComplete(); }} className="bg-green-900/40 border border-green-500 text-green-200 px-8 py-2 uppercase tracking-[0.2em] font-magical text-sm animate-pulse active:scale-95">
+        <>
+            {showSealBtn ? (
+                <button onClick={() => { audio.playClick('magick'); onComplete(); }} className="bg-green-900/40 border border-green-500 text-green-200 px-8 py-2 uppercase tracking-[0.2em] font-magical text-sm animate-in zoom-in active:scale-95">
                    Seal Vessel
                  </button>
-              ) : (
-                <button 
-                  onMouseDown={() => setIsPouring(true)}
-                  onMouseUp={() => setIsPouring(false)}
-                  onTouchStart={() => setIsPouring(true)}
-                  onTouchEnd={() => setIsPouring(false)}
-                  className="group relative w-20 h-20 rounded-full bg-slate-800 border border-amber-500/30 flex items-center justify-center overflow-hidden active:scale-95 transition-transform"
-                >
-                   <div className={`absolute inset-0 bg-amber-600 transition-transform duration-300 ${isPouring ? 'translate-y-0' : 'translate-y-full'}`}></div>
-                   <div className="relative z-10 flex flex-col items-center pointer-events-none">
-                     <Droplets className={`w-6 h-6 ${isPouring ? 'text-white' : 'text-amber-500'}`} />
-                     <span className="text-[8px] uppercase font-bold mt-1 text-amber-200/70">(Hold)</span>
-                   </div>
-                </button>
-              )}
-            </>
-          )
+            ) : (
+                !honeyDone && (
+                    <button 
+                      onMouseDown={() => setIsPouring(true)}
+                      onMouseUp={() => setIsPouring(false)}
+                      onTouchStart={() => setIsPouring(true)}
+                      onTouchEnd={() => setIsPouring(false)}
+                      className="group relative w-20 h-20 rounded-full bg-slate-800 border border-amber-500/30 flex items-center justify-center overflow-hidden active:scale-95 transition-transform"
+                    >
+                       <div className={`absolute inset-0 bg-amber-600 transition-transform duration-300 ${isPouring ? 'translate-y-0' : 'translate-y-full'}`}></div>
+                       <div className="relative z-10 flex flex-col items-center pointer-events-none">
+                         <Droplets className={`w-6 h-6 ${isPouring ? 'text-white' : 'text-amber-500'}`} />
+                         <span className="text-[8px] uppercase font-bold mt-1 text-amber-200/70">(Hold)</span>
+                       </div>
+                    </button>
+                )
+            )}
+        </>
       )}
     </div>
   );
@@ -1046,7 +1028,6 @@ const StageThreeConsecrate = ({ ingredient, index, total, onComplete }: any) => 
       if (!soundRef.current) soundRef.current = audio.startCharge(); 
       interval = setInterval(() => {
         setCharge(prev => {
-            // SLOWER CHARGE 50%
             const next = Math.min(prev + 1.5, 100); 
             if(soundRef.current) audio.updateCharge(soundRef.current, next);
             return next;
@@ -1064,7 +1045,7 @@ const StageThreeConsecrate = ({ ingredient, index, total, onComplete }: any) => 
         setIsCharging(false);
         audio.playClick('magick'); // Success sound
         setSuccess(true); 
-        setTimeout(onComplete, 1500); // Auto advance slightly faster
+        setTimeout(onComplete, 1500); 
       }
   }, [charge, success, onComplete]);
 
@@ -1073,7 +1054,6 @@ const StageThreeConsecrate = ({ ingredient, index, total, onComplete }: any) => 
       <h2 className="text-xl text-amber-100 mb-1 font-magical">Consecrate Herb</h2>
       <p className="text-xs text-amber-400/60 mb-6 font-scroll italic">Hold to imbue energy.</p>
 
-      {/* Ingredient Display with Glitter Fill */}
       <div className="w-56 h-56 bg-slate-900/40 border border-amber-900/50 rounded-full flex flex-col items-center justify-center mb-8 relative overflow-hidden backdrop-blur-sm shadow-[0_0_30px_rgba(0,0,0,0.5)] group shrink-0">
          <div 
             className="absolute inset-0 bg-amber-500/20 transition-all duration-100 ease-linear rounded-full"
@@ -1144,10 +1124,14 @@ const StageFourIncantation = ({ chant, onComplete }: any) => {
   );
 };
 
-// --- STAGE 5: MIXING (Uses Pulse Charge) ---
+// --- STAGE 5: MIXING (Uses High-Pass Charge) ---
 const StageFiveMixing = ({ ingredients, names, onComplete }: any) => {
   const [progress, setProgress] = useState(0);
   const [isStirring, setIsStirring] = useState(false);
+  
+  const [mixedDone, setMixedDone] = useState(false);
+  const [showBindBtn, setShowBindBtn] = useState(false);
+
   const soundRef = useRef<any>(null);
 
   const PetitionIcon = () => (
@@ -1162,12 +1146,18 @@ const StageFiveMixing = ({ ingredients, names, onComplete }: any) => {
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    if (isStirring) {
-      if (!soundRef.current) soundRef.current = audio.startPulseCharge(); // Use New Pulse Sound
+    if (isStirring && !mixedDone) {
+      if (!soundRef.current) soundRef.current = audio.startHighPassCharge(); // Use High Pass Sound
       interval = setInterval(() => {
         setProgress(prev => {
-          if (prev >= 100) { if(soundRef.current) audio.stopCharge(soundRef.current); return 100; }
-          // Sync Pulse Update (Volume Swell + Pulse LFO runs auto)
+          if (prev >= 100) { 
+              // DONE
+              if(soundRef.current) audio.stopCharge(soundRef.current); 
+              setMixedDone(true);
+              audio.playClick('magick');
+              setTimeout(() => setShowBindBtn(true), 3000);
+              return 100; 
+          }
           if(soundRef.current) audio.updateCharge(soundRef.current, prev + 0.8);
           return prev + 0.8; 
         });
@@ -1177,15 +1167,17 @@ const StageFiveMixing = ({ ingredients, names, onComplete }: any) => {
       if(progress < 100) setProgress(0); 
     }
     return () => { clearInterval(interval); if(soundRef.current) audio.stopCharge(soundRef.current); };
-  }, [isStirring, progress]);
+  }, [isStirring, progress, mixedDone]);
 
   return (
     <div className="flex flex-col items-center text-center w-full h-full justify-center">
       <h2 className="text-xl text-amber-100 mb-1 font-magical">Bind the Energy</h2>
-      <p className="text-xs text-amber-400/60 mb-8 font-scroll italic">Hold to stir the ingredients.</p>
+      <p className="text-xs text-amber-400/60 mb-8 font-scroll italic animate-in fade-in">
+          {mixedDone ? "The energies have merged." : "Hold to stir the ingredients."}
+      </p>
 
       <div className="relative w-56 h-56 mb-8 flex items-center justify-center shrink-0">
-        <div className="absolute inset-0 border border-slate-700 rounded-full bg-black/40"></div>
+        <div className={`absolute inset-0 border border-slate-700 rounded-full bg-black/40 transition-all duration-1000 ${mixedDone ? 'shadow-[0_0_50px_rgba(251,191,36,0.3)] scale-110' : ''}`}></div>
         
         <div 
           className="w-48 h-48 rounded-full bg-gradient-to-br from-amber-900 to-black flex items-center justify-center shadow-inner overflow-hidden relative"
@@ -1220,21 +1212,23 @@ const StageFiveMixing = ({ ingredients, names, onComplete }: any) => {
         </svg>
       </div>
 
-      {progress >= 100 ? (
-        <button onClick={() => { audio.playClick('magick'); onComplete(); }} className="px-8 py-2 bg-amber-600 text-white font-magical uppercase tracking-widest text-sm rounded shadow-lg animate-bounce active:scale-95">
-          Mixture Bound
+      {showBindBtn ? (
+        <button onClick={() => { audio.playClick('magick'); onComplete(); }} className="px-8 py-2 bg-amber-600 text-white font-magical uppercase tracking-widest text-sm rounded shadow-lg animate-in zoom-in active:scale-95">
+          Bind Energy
         </button>
       ) : (
-        <button
-          onMouseDown={() => setIsStirring(true)}
-          onMouseUp={() => setIsStirring(false)}
-          onTouchStart={() => setIsStirring(true)}
-          onTouchEnd={() => setIsStirring(false)}
-          className="w-20 h-20 rounded-full bg-slate-800 border border-slate-600 flex flex-col items-center justify-center active:bg-amber-900/20 active:border-amber-500 transition-colors active:scale-95"
-        >
-          <RotateCw className={`w-6 h-6 text-amber-100 mb-1 ${isStirring ? 'animate-spin' : ''}`} />
-          <span className="text-[8px] uppercase font-bold text-amber-200/70 pointer-events-none">(Hold)</span>
-        </button>
+        !mixedDone && (
+            <button
+              onMouseDown={() => setIsStirring(true)}
+              onMouseUp={() => setIsStirring(false)}
+              onTouchStart={() => setIsStirring(true)}
+              onTouchEnd={() => setIsStirring(false)}
+              className="w-20 h-20 rounded-full bg-slate-800 border border-slate-600 flex flex-col items-center justify-center active:bg-amber-900/20 active:border-amber-500 transition-colors active:scale-95"
+            >
+              <RotateCw className={`w-6 h-6 text-amber-100 mb-1 ${isStirring ? 'animate-spin' : ''}`} />
+              <span className="text-[8px] uppercase font-bold text-amber-200/70 pointer-events-none">(Hold)</span>
+            </button>
+        )
       )}
     </div>
   );
@@ -1345,7 +1339,7 @@ const StageSixCandle = ({ onComplete }: any) => {
   );
 };
 
-// --- STAGE 7: RELEASE (Uses Pulse Charge) ---
+// --- STAGE 7: RELEASE (Uses High-Pass Charge) ---
 const StageSevenRelease = ({ onComplete }: any) => {
   const [power, setPower] = useState(0);
   const [isCharging, setIsCharging] = useState(false);
@@ -1354,10 +1348,9 @@ const StageSevenRelease = ({ onComplete }: any) => {
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isCharging) {
-      if (!soundRef.current) soundRef.current = audio.startPulseCharge(); // Use New Pulse Sound
+      if (!soundRef.current) soundRef.current = audio.startHighPassCharge(); // Use High Pass Sound
       interval = setInterval(() => {
         setPower(prev => {
-            // SLOWER CHARGE 50%
             const next = Math.min(prev + 0.8, 100); 
             if(soundRef.current) audio.updateCharge(soundRef.current, next);
             return next;
