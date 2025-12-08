@@ -3,18 +3,17 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Sparkles, Droplets, RotateCw, Hand, Check, Moon, Volume2, VolumeX, Users, User, Flame, ScrollText } from 'lucide-react';
+import { Sparkles, Droplets, RotateCw, Hand, Check, Moon, Volume2, VolumeX, Users, User, Flame, ScrollText, LogOut, Repeat } from 'lucide-react';
 import Link from 'next/link';
 
 /**
  * TWO SOULS CONNECTION - LOVE SPELL RITUAL
  * Updates:
- * - Honey fits Jar perfectly (Unified Path)
- * - Audio capped at 350Hz
- * - Ingredients fill with glitter
- * - Mixing includes Petition
- * - Candle burns for 2:22
- * - Global Exit Link
+ * - Unified SVG Jar (Perfect fit)
+ * - Candle SVG (No artifacts)
+ * - Incantation Text Size Increased
+ * - Final Popup Menu
+ * - Audio Pitch Cap (350Hz)
  */
 
 // --- AUDIO ENGINE ---
@@ -39,7 +38,6 @@ class MagicAudio {
     }
   }
 
-  // 1. DEEP DRONE
   playDeepDrone() {
     if (this.isMuted || !this.ctx || !this.masterGain) return;
     const osc1 = this.ctx.createOscillator();
@@ -80,7 +78,6 @@ class MagicAudio {
     };
   }
 
-  // 2. SPARKLES
   playSparkle() {
     if (this.isMuted || !this.ctx || !this.masterGain) return;
     const now = this.ctx.currentTime;
@@ -89,7 +86,7 @@ class MagicAudio {
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
       osc.type = 'sine';
-      const freq = 440 * Math.pow(1.25, i); // Major 3rds
+      const freq = 440 * Math.pow(1.25, i); 
       osc.frequency.setValueAtTime(freq, now + delay);
       
       gain.gain.setValueAtTime(0, now + delay);
@@ -103,7 +100,6 @@ class MagicAudio {
     });
   }
 
-  // 3. ETCHING
   playEtch() {
     if (this.isMuted || !this.ctx || !this.masterGain) return;
     const osc = this.ctx.createOscillator();
@@ -126,7 +122,6 @@ class MagicAudio {
     osc.stop(this.ctx.currentTime + 0.1);
   }
 
-  // 4. CHARGING UP (Clamped to 350Hz)
   startCharge() {
     if (this.isMuted || !this.ctx || !this.masterGain) return null;
     const osc = this.ctx.createOscillator();
@@ -157,7 +152,7 @@ class MagicAudio {
   updateCharge(node: any, progress: number) { 
     if (!node || !this.ctx) return;
     const now = this.ctx.currentTime;
-    // PITCH FIX: 110Hz to 350Hz max
+    // PITCH CAP: 350Hz
     const targetFreq = 110 + (progress * 2.4); 
     node.osc.frequency.setTargetAtTime(targetFreq, now, 0.1);
     node.lfo.frequency.setTargetAtTime(10 + (progress/2), now, 0.1);
@@ -171,7 +166,6 @@ class MagicAudio {
     node.lfo.stop(now + 0.2);
   }
 
-  // 5. DEEP IMPACT
   playImpact() {
     if (this.isMuted || !this.ctx || !this.masterGain) return;
     const osc = this.ctx.createOscillator();
@@ -189,7 +183,6 @@ class MagicAudio {
     osc.stop(this.ctx.currentTime + 2);
   }
 
-  // 6. SWIRL
   startSwirl() {
     if (this.isMuted || !this.ctx || !this.masterGain) return null;
     const bufferSize = this.ctx.sampleRate * 2;
@@ -348,16 +341,51 @@ const MagickPopup = ({ message, buttonText = "Continue", onContinue }: { message
         <div className="w-12 h-12 mx-auto bg-amber-900/20 rounded-full flex items-center justify-center mb-4 border border-amber-500/30">
             <Sparkles className="text-amber-200 w-6 h-6" />
         </div>
-        <h3 className="text-lg font-magical text-amber-100 mb-2">{message}</h3>
+        <h3 className="text-lg font-magical text-amber-100 mb-4">{message}</h3>
         <button 
             onClick={onContinue}
-            className="w-full bg-amber-900/40 hover:bg-amber-800/40 border border-amber-600 text-amber-100 py-2 uppercase tracking-widest font-magical text-xs transition-colors"
+            className="w-full bg-amber-900/40 hover:bg-amber-800/40 border border-amber-600 text-amber-100 py-3 uppercase tracking-widest font-magical text-sm transition-colors"
         >
             {buttonText}
         </button>
      </div>
   </div>
 );
+
+// --- COMPONENT: FINAL MODAL ---
+const FinalPopup = ({ onExit }: { onExit: () => void }) => {
+  const router = typeof window !== 'undefined' ? (window as any).location : { reload: () => {} };
+  
+  return (
+    <div className="absolute inset-0 z-100 flex items-center justify-center bg-black/90 backdrop-blur-md animate-in zoom-in duration-500">
+       <div className="bg-[#1a1528] border border-amber-500/50 p-8 rounded-xl max-w-sm w-full text-center shadow-[0_0_60px_rgba(251,191,36,0.2)] mx-6 relative overflow-hidden">
+          <div className="absolute inset-0 bg-[url('/images/noise.png')] opacity-10"></div>
+          <div className="relative z-10">
+            <div className="w-20 h-20 mx-auto bg-amber-500/10 rounded-full flex items-center justify-center mb-6 border border-amber-500/30 shadow-[0_0_20px_rgba(245,158,11,0.3)] animate-pulse">
+                <Check className="w-10 h-10 text-amber-200" />
+            </div>
+            <h2 className="text-2xl font-magical text-amber-100 mb-2">It is Done</h2>
+            <p className="text-amber-400/60 font-scroll italic mb-8">The energy has been released.</p>
+            
+            <div className="flex flex-col gap-4">
+                <button 
+                    onClick={() => router.reload()}
+                    className="w-full flex items-center justify-center gap-2 bg-amber-900/30 border border-amber-600/50 text-amber-100 py-3 uppercase tracking-widest font-magical text-xs hover:bg-amber-800/40 transition-colors"
+                >
+                    <Repeat size={14} /> Cast Another Spell
+                </button>
+                <Link 
+                    href="/spell-room/love-spells-app"
+                    className="w-full flex items-center justify-center gap-2 bg-slate-900/50 border border-slate-600/50 text-slate-300 py-3 uppercase tracking-widest font-magical text-xs hover:bg-slate-800/50 transition-colors"
+                >
+                    <LogOut size={14} /> Exit Room
+                </Link>
+            </div>
+          </div>
+       </div>
+    </div>
+  );
+};
 
 // --- COMPONENT: MAIN PAGE ---
 
@@ -471,27 +499,12 @@ export default function SoulConnectSpellPage() {
           
           {step === 4 && <StageFourIncantation chant={generatedChant} onComplete={() => handleStageComplete("The words have been spoken.")} />}
           
-          {/* Mixing includes Petition Name Scroll now */}
           {step === 5 && <StageFiveMixing ingredients={activeIngredients} names={names} onComplete={() => handleStageComplete("The spell is bound.")} />}
           
           {step === 6 && <StageSixCandle onComplete={() => handleStageComplete("The spell is sealed in fire.")} />}
           {step === 7 && <StageSevenRelease onComplete={() => setStep(8)} />}
 
-          {step === 8 && (
-            <div className="text-center animate-in zoom-in duration-700 flex flex-col items-center">
-              <div className="w-20 h-20 mb-6 rounded-full bg-amber-500/10 flex items-center justify-center border border-amber-500/50 shadow-[0_0_30px_rgba(245,158,11,0.3)]">
-                <Check className="w-10 h-10 text-amber-200" />
-              </div>
-              <h1 className="text-3xl mb-4 text-amber-200 font-magical">It is Done</h1>
-              <p className="opacity-70 font-scroll text-base max-w-xs mx-auto mb-8">The spell is woven into the fabric of reality.</p>
-              <button 
-                onClick={() => { const g = globalThis as any; if (g.window) g.window.location.reload(); }} 
-                className="text-xs border border-amber-900/50 px-8 py-3 rounded hover:bg-amber-900/20 uppercase tracking-widest font-magical text-amber-400"
-              >
-                Cast Another
-              </button>
-            </div>
-          )}
+          {step === 8 && <FinalPopup onExit={() => {}} />}
       </div>
 
       {showSuccess && <MagickPopup message={showSuccess.msg} buttonText={showSuccess.btn} onContinue={nextStep} />}
@@ -620,7 +633,7 @@ const StageOneIntention = ({ names, setNames, intention, setIntention, isForSelf
   );
 };
 
-// --- STAGE 2: JAR ---
+// --- STAGE 2: JAR (Unified SVG for Perfect Fit) ---
 const StageTwoJar = ({ names, onComplete }: any) => {
   const [honeyLevel, setHoneyLevel] = useState(0);
   const [isPouring, setIsPouring] = useState(false);
@@ -628,9 +641,9 @@ const StageTwoJar = ({ names, onComplete }: any) => {
   const [failed, setFailed] = useState(false);
   const soundRef = useRef<any>(null);
 
-  // UNIFIED PATH: Used for both clipPath and Stroke to ensure perfect match
-  // A symmetric potion bottle shape
-  const jarPath = "M70,20 C70,10 75,0 96,0 C117,0 122,10 122,20 L122,60 C122,70 160,80 170,120 C180,160 192,200 160,260 C128,300 64,300 32,260 C0,200 12,160 22,120 C32,80 70,70 70,60 Z";
+  // SVG Coordinate System: 0 0 200 300
+  // Bottle Path Definition
+  const bottlePath = "M70,20 C70,10 75,0 100,0 C125,0 130,10 130,20 L130,60 C130,70 170,80 180,120 C190,160 195,200 170,260 C145,300 55,300 30,260 C5,200 10,160 20,120 C30,80 70,70 70,60 Z";
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -638,16 +651,16 @@ const StageTwoJar = ({ names, onComplete }: any) => {
       if (!soundRef.current) soundRef.current = audio.startCharge();
       interval = setInterval(() => {
         setHoneyLevel(prev => {
-          if (prev >= 115) { 
+          if (prev >= 280) { // SVG Height check approx
             setFailed(true); setIsPouring(false);
             if(soundRef.current) { audio.stopCharge(soundRef.current); soundRef.current = null; }
             audio.playImpact();
             return prev;
           }
-          if(soundRef.current) audio.updateCharge(soundRef.current, prev);
-          return prev + 1;
+          if(soundRef.current) audio.updateCharge(soundRef.current, prev/2);
+          return prev + 2; // Pixel growth
         });
-      }, 50); 
+      }, 30); 
     } else {
         if(soundRef.current) { audio.stopCharge(soundRef.current); soundRef.current = null; }
     }
@@ -656,6 +669,9 @@ const StageTwoJar = ({ names, onComplete }: any) => {
 
   const reset = () => { setHoneyLevel(0); setFailed(false); audio.playSparkle(); };
 
+  // Calculate percentage for progress check
+  const pct = (honeyLevel / 230) * 100;
+
   return (
     <div className="flex flex-col items-center w-full">
       <h2 className="text-xl text-amber-100 mb-1 font-magical">The Sweetening Jar</h2>
@@ -663,45 +679,53 @@ const StageTwoJar = ({ names, onComplete }: any) => {
         {!parchmentIn ? "Tap to place petition." : "Hold button to pour honey."}
       </p>
 
-      {/* ORNATE JAR VISUAL */}
-      <div className="relative w-48 h-64 mb-6">
-        <svg width="0" height="0">
+      {/* Unified SVG Jar */}
+      <div className="relative w-56 h-80 mb-6">
+         <svg viewBox="0 0 200 300" className="w-full h-full drop-shadow-[0_0_20px_rgba(0,0,0,0.6)]">
             <defs>
-                <clipPath id="jarClipUnique">
-                    <path d={jarPath} />
-                </clipPath>
+               <clipPath id="bottleClip">
+                  <path d={bottlePath} />
+               </clipPath>
+               <linearGradient id="honeyGrad" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0%" stopColor="#d97706" />
+                  <stop offset="50%" stopColor="#b45309" />
+                  <stop offset="100%" stopColor="#78350f" />
+               </linearGradient>
             </defs>
-        </svg>
+            
+            {/* Background Glass Tint */}
+            <path d={bottlePath} fill="rgba(255,255,255,0.03)" stroke="none" />
 
-        <div className="relative w-full h-full drop-shadow-[0_0_15px_rgba(0,0,0,0.8)]">
-            {/* The Liquid Container (Clipped) */}
-            <div className="absolute inset-0 w-full h-full" style={{ clipPath: 'url(#jarClipUnique)', background: 'rgba(255,255,255,0.02)' }}>
-                {/* Honey */}
-                <div 
-                    className="absolute bottom-0 w-full bg-linear-to-t from-amber-900 via-amber-600 to-amber-500/90 transition-all duration-100 ease-linear"
-                    style={{ height: `${honeyLevel}%` }}
-                >
-                   <div className="absolute w-1 h-1 bg-white/30 rounded-full bottom-4 left-1/2 animate-ping"></div>
-                </div>
+            {/* Liquid Group (Clipped) */}
+            <g clipPath="url(#bottleClip)">
+                {/* Honey Rect - Y grows from bottom (300) upwards */}
+                <rect 
+                    x="0" 
+                    y={300 - honeyLevel} 
+                    width="200" 
+                    height={honeyLevel} 
+                    fill="url(#honeyGrad)" 
+                    opacity="0.9"
+                />
+                
+                {/* Target Line (at y=100 roughly) */}
+                <line x1="0" y1="100" x2="200" y2="100" stroke={pct > 75 && pct < 100 ? "lime" : "rgba(255,255,255,0.2)"} strokeWidth="1" strokeDasharray="4 2" />
 
-                {/* Target Line */}
-                <div className={`absolute top-[20%] w-full h-0.5 z-10 ${honeyLevel > 75 && honeyLevel < 100 ? 'bg-green-400 shadow-[0_0_10px_lime]' : 'bg-white/20'}`}></div>
+                {/* Parchment Logic inside SVG */}
+                <g transform={`translate(100, ${parchmentIn ? 180 : -50})`} opacity={parchmentIn ? 1 : 0} style={{ transition: 'all 1s ease-in-out' }}>
+                    <rect x="-30" y="-40" width="60" height="80" fill="#f3e5ab" stroke="#78350f" strokeWidth="0.5" />
+                    <text x="0" y="-10" fontSize="6" textAnchor="middle" fill="#000" fontFamily="serif">{names.user}</text>
+                    <text x="0" y="5" fontSize="6" textAnchor="middle" fill="#b91c1c" fontFamily="serif">&</text>
+                    <text x="0" y="20" fontSize="6" textAnchor="middle" fill="#000" fontFamily="serif">{names.target}</text>
+                </g>
+            </g>
 
-                {/* Parchment */}
-                <div className={`absolute left-1/2 -translate-x-1/2 transition-all duration-1000 z-0 ${parchmentIn ? 'top-[50%] opacity-80' : '-top-[100px]'}`}>
-                   <div className="w-12 h-16 bg-[#f3e5ab] text-[6px] p-1 text-center border border-amber-900 shadow-md flex items-center justify-center font-serif leading-none text-black">
-                       {names.user}<br/>&<br/>{names.target}
-                   </div>
-                </div>
-            </div>
-
-            {/* The Glass Outline (Stroke) */}
-            <svg viewBox="0 0 192 300" className="absolute inset-0 w-full h-full z-20 pointer-events-none drop-shadow-md">
-                <path d={jarPath} fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="2" />
-                <path d="M30,130 Q96,150 162,130" fill="none" stroke="rgba(251,191,36,0.4)" strokeWidth="1" />
-                <path d="M32,260 Q96,280 160,260" fill="none" stroke="rgba(251,191,36,0.4)" strokeWidth="1" />
-            </svg>
-        </div>
+            {/* Glass Outline Overlay */}
+            <path d={bottlePath} fill="none" stroke="rgba(251,191,36,0.5)" strokeWidth="1.5" />
+            
+            {/* Highlights */}
+            <path d="M40,140 Q60,140 60,180" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="2" />
+         </svg>
       </div>
 
       {failed && <div className="text-red-400 text-xs mb-4 font-magical bg-red-900/20 px-3 py-1 rounded">Overflow. Try again.</div>}
@@ -716,7 +740,7 @@ const StageTwoJar = ({ names, onComplete }: any) => {
             <button onClick={reset} className="px-6 py-2 border border-red-500 text-red-400 font-magical text-xs uppercase tracking-wider">Clean Jar</button>
           ) : (
             <>
-              {honeyLevel > 75 && honeyLevel < 100 && !isPouring ? (
+              {pct > 80 && pct < 100 && !isPouring ? (
                  <button onClick={onComplete} className="bg-green-900/40 border border-green-500 text-green-200 px-8 py-2 uppercase tracking-[0.2em] font-magical text-sm animate-pulse">
                    Seal Vessel
                  </button>
@@ -795,14 +819,12 @@ const StageThreeHerbs = ({ ingredients, onComplete }: any) => {
 
       {/* Ingredient Display with Glitter Fill */}
       <div className="w-64 h-64 bg-slate-900/40 border border-amber-900/50 rounded-full flex flex-col items-center justify-center mb-8 relative overflow-hidden backdrop-blur-sm shadow-[0_0_30px_rgba(0,0,0,0.5)] group">
-         {/* Charge Progress as Glitter Fill */}
          <div 
             className="absolute inset-0 bg-amber-500/20 transition-all duration-100 ease-linear rounded-full"
             style={{ 
-                clipPath: `circle(${charge}% at 50% 100%)`, // Fill from bottom up circular
+                clipPath: `circle(${charge}% at 50% 100%)`, 
             }}
          >
-            {/* Glitter Particles Effect */}
             <div className="absolute inset-0 animate-[pulse_0.5s_infinite] opacity-50 bg-[url('/images/noise.png')] mix-blend-overlay"></div>
             <div className="absolute top-1/2 left-1/4 w-2 h-2 bg-white rounded-full animate-ping"></div>
             <div className="absolute top-3/4 right-1/3 w-1 h-1 bg-amber-200 rounded-full animate-ping delay-100"></div>
@@ -851,8 +873,11 @@ const StageFourIncantation = ({ chant, onComplete }: any) => {
 
   return (
     <div className="flex flex-col items-center justify-center w-full h-full cursor-pointer" onClick={handleTap}>
-      <h2 className="text-[10px] font-magical uppercase tracking-[0.2em] text-slate-500 mb-2">Tap to Chant</h2>
-      <p className="text-xs text-amber-500/60 mb-8 font-scroll italic">Speak aloud or internally with power.</p>
+      {/* Updated Text Header */}
+      <h2 className="text-base md:text-xl font-magical uppercase tracking-[0.2em] text-amber-200/80 mb-2 text-center leading-tight max-w-xs">
+          REPEAT THE CHANT, ALOUD OR INTERNALLY WITH POWER
+      </h2>
+      <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mb-12">TAP WHEN DONE</p>
       
       <div className="relative w-full text-center px-4 min-h-[200px] flex items-center justify-center">
          <div key={lineIdx} className="animate-in zoom-in slide-in-from-bottom-4 duration-500">
@@ -868,13 +893,12 @@ const StageFourIncantation = ({ chant, onComplete }: any) => {
   );
 };
 
-// --- STAGE 5: MIXING (With Petition) ---
+// --- STAGE 5: MIXING ---
 const StageFiveMixing = ({ ingredients, names, onComplete }: any) => {
   const [progress, setProgress] = useState(0);
   const [isStirring, setIsStirring] = useState(false);
   const soundRef = useRef<any>(null);
 
-  // Add Petition to mixing items
   const mixItems = [...ingredients, { icon: <ScrollText size={32} className="text-amber-100" />, name: 'Petition' }];
 
   useEffect(() => {
@@ -902,14 +926,12 @@ const StageFiveMixing = ({ ingredients, names, onComplete }: any) => {
       <div className="relative w-56 h-56 mb-8 flex items-center justify-center">
         <div className="absolute inset-0 border border-slate-700 rounded-full bg-black/40"></div>
         
-        {/* Swirling Liquid Container */}
         <div 
           className="w-48 h-48 rounded-full bg-linear-to-br from-amber-900 to-black flex items-center justify-center shadow-inner overflow-hidden relative"
           style={{ transform: `rotate(${progress * 15}deg)`, transition: isStirring ? 'transform 0.1s linear' : 'transform 1s ease-out' }}
         >
            <div className="absolute w-full h-full opacity-30 bg-[url('/images/noise.png')]"></div>
            
-           {/* Floating Ingredients + Petition */}
            {mixItems.map((item: any, i: number) => {
              const angle = (i / mixItems.length) * 2 * Math.PI;
              const r = 60; 
@@ -931,7 +953,6 @@ const StageFiveMixing = ({ ingredients, names, onComplete }: any) => {
            <div className="absolute w-full h-full bg-linear-to-r from-transparent via-amber-500/10 to-transparent animate-spin duration-700 opacity-50"></div>
         </div>
 
-        {/* Progress Ring */}
         <svg className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none">
           <circle cx="112" cy="112" r="105" stroke="#1e293b" strokeWidth="2" fill="none" />
           <circle cx="112" cy="112" r="105" stroke="#f59e0b" strokeWidth="4" fill="none" strokeDasharray="660" strokeDashoffset={660 - (660 * progress) / 100} strokeLinecap="round" />
@@ -958,10 +979,10 @@ const StageFiveMixing = ({ ingredients, names, onComplete }: any) => {
   );
 };
 
-// --- STAGE 6: CANDLE (Timer: 2:22 = 142s) ---
+// --- STAGE 6: CANDLE (SVG to prevent artifacts) ---
 const StageSixCandle = ({ onComplete }: any) => {
   const [lit, setLit] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(142); // 2:22
+  const [timeLeft, setTimeLeft] = useState(142); // 2:22 = 142s
   const maxTime = 142;
   
   const formatTime = (s: number) => {
@@ -980,44 +1001,70 @@ const StageSixCandle = ({ onComplete }: any) => {
     return () => clearInterval(interval);
   }, [lit, timeLeft]);
 
-  // Calculate wax height reduction. Start full (160px), end low (20px)
-  const waxHeight = 20 + (140 * (timeLeft / maxTime));
+  // Calculate wax height reduction.
+  const initialHeight = 160;
+  const waxHeight = 20 + ((initialHeight - 20) * (timeLeft / maxTime));
 
   return (
     <div className="flex flex-col items-center w-full">
       <h2 className="text-xl text-amber-100 mb-1 font-magical">Seal with Fire</h2>
       <p className="text-xs text-amber-400/60 mb-8 font-scroll italic">
-          {lit ? "Focus on your desire..." : "Light the candle to seal the spell."}
+          {lit ? "Focus on your desire..." : "Tap the wick to light the candle."}
       </p>
 
-      <div className="relative h-64 w-full flex flex-col items-center justify-end mb-6">
+      {/* SVG Candle to avoid lines */}
+      <div className="relative h-64 w-32 flex flex-col items-center justify-end mb-6">
+        
+        {/* Flame SVG */}
         {lit && timeLeft > 0 && (
-          <div className="absolute z-20 mix-blend-screen animate-in fade-in duration-1000" style={{ bottom: `${waxHeight}px`, transition: 'bottom 1s linear' }}>
-            <div className="w-6 h-16 bg-orange-500 rounded-full blur-sm animate-[pulse_0.1s_infinite]"></div>
-            <div className="absolute top-2 left-1.5 w-3 h-10 bg-yellow-100 rounded-full blur-[1px]"></div>
-            <div className="absolute -top-10 -left-6 w-20 h-20 bg-orange-600/20 rounded-full blur-2xl animate-pulse"></div>
+          <div className="absolute z-20 mix-blend-screen animate-in fade-in duration-500" style={{ bottom: `${waxHeight}px`, transition: 'bottom 1s linear' }}>
+             <svg width="40" height="60" viewBox="0 0 40 60">
+                <path d="M20,0 Q35,30 20,60 Q5,30 20,0" fill="orange" className="animate-[pulse_0.1s_infinite]" />
+                <path d="M20,10 Q28,35 20,50 Q12,35 20,10" fill="#fef3c7" className="blur-[1px]" />
+             </svg>
+             <div className="absolute -top-10 -left-6 w-24 h-24 bg-orange-600/20 rounded-full blur-2xl animate-pulse"></div>
           </div>
         )}
 
-        <div 
-            className="w-20 bg-linear-to-r from-pink-300 via-pink-100 to-pink-300 rounded-t-md relative shadow-inner flex flex-col items-center transition-all duration-1000 ease-linear" 
-            style={{ height: `${waxHeight}px` }}
-        >
-          <div className="absolute -top-3 w-1 h-4 bg-black"></div>
-          {!lit && (
+        {/* Wax SVG Body */}
+        <svg width="80" height="180" viewBox="0 0 80 180" className="drop-shadow-lg">
+             {/* Wick */}
+             <rect x="38" y={180 - waxHeight - 10} width="4" height="10" fill="black" />
+             
+             {/* Body */}
+             <rect 
+                x="10" 
+                y={180 - waxHeight} 
+                width="60" 
+                height={waxHeight} 
+                fill="url(#candleGrad)" 
+                rx="4"
+                style={{ transition: 'all 1s linear' }}
+             />
+             
+             {/* Gradient Def */}
+             <defs>
+                <linearGradient id="candleGrad" x1="0" x2="1" y1="0" y2="0">
+                    <stop offset="0%" stopColor="#f9a8d4" />
+                    <stop offset="50%" stopColor="#fce7f3" />
+                    <stop offset="100%" stopColor="#f9a8d4" />
+                </linearGradient>
+             </defs>
+        </svg>
+
+        {/* Tap Area for Lighting */}
+        {!lit && (
              <div 
-               className="absolute -top-10 -left-10 right-10 bottom-full w-40 h-24 z-50 flex items-center justify-center"
-               onMouseEnter={() => { setLit(true); audio.playEtch(); }}
-               onTouchMove={() => { setLit(true); audio.playEtch(); }}
+               className="absolute z-50 w-20 h-20 -mt-32 cursor-pointer flex items-center justify-center"
+               onClick={() => { setLit(true); audio.playEtch(); }}
              >
-                 <Flame className="text-white/20 animate-bounce" />
+                 <div className="w-8 h-8 rounded-full bg-white/10 animate-ping"></div>
              </div>
-          )}
-        </div>
+        )}
       </div>
 
       {!lit ? (
-        <div className="text-xs uppercase tracking-widest text-pink-300 animate-pulse border-b border-pink-500/50 pb-1">Swipe wick to light</div>
+        <div className="text-xs uppercase tracking-widest text-pink-300 animate-pulse border-b border-pink-500/50 pb-1">Tap wick to light</div>
       ) : (
         <>
             {timeLeft > 0 ? (
