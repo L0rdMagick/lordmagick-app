@@ -9,10 +9,8 @@ import Link from 'next/link';
 /**
  * TWO SOULS CONNECTION - LOVE SPELL RITUAL
  * Updates:
- * - VISUAL: Fixed layout shifting by enforcing fixed height on control areas.
- * - VISUAL: Success messages now overlay the Jar/Bowl directly.
- * - VISUAL: Enhanced Glow and Expansion effects for visibility.
- * - LOGIC: 3-second delay implemented with stable layout.
+ * - LOGIC: Final release delay increased to 5 seconds.
+ * - VISUAL: Final star now has a persistent, large glowing white light effect.
  */
 
 // --- AUDIO ENGINE ---
@@ -1390,7 +1388,7 @@ const StageSevenRelease = ({ onComplete }: any) => {
   useEffect(() => {
       if(power >= 100) {
           audio.playClick('magick');
-          setTimeout(onComplete, 1200); 
+          setTimeout(onComplete, 5000); 
       }
   }, [power, onComplete]);
 
@@ -1427,9 +1425,15 @@ const StageSevenRelease = ({ onComplete }: any) => {
       {/* Glittering Star Effect */}
       {power >= 100 && (
           <div className="absolute inset-0 z-50 flex items-center justify-center pointer-events-none">
-             <div className="relative animate-in zoom-in duration-500 fade-out-0 fill-mode-forwards">
-                <Star size={64} className="text-white fill-white animate-spin-slow drop-shadow-[0_0_50px_white]" />
-                <div className="absolute inset-0 bg-white blur-xl animate-pulse"></div>
+             <div className="relative animate-in zoom-in duration-1000">
+                {/* Enhanced Back Glow */}
+                <div className="absolute inset-0 bg-white/80 blur-[80px] scale-150 animate-pulse"></div>
+                
+                {/* Star */}
+                <Star size={80} className="relative z-10 text-white fill-white animate-[spin_3s_linear_infinite] drop-shadow-[0_0_60px_rgba(255,255,255,1)]" />
+                
+                {/* Inner White Core */}
+                <div className="absolute inset-0 bg-white blur-md animate-pulse z-0"></div>
              </div>
           </div>
       )}
