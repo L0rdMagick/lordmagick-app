@@ -419,7 +419,7 @@ const StarField = () => (
 
 // --- COMPONENT: POPUP MODAL ---
 const MagickPopup = ({ message, buttonText = "Continue", onContinue }: { message: string, buttonText?: string, onContinue: () => void }) => (
-  <div className="absolute inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-300 no-select">
+  <div className="absolute inset-0 z-100 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-300 no-select">
      <div className="bg-[#1a1528] border border-amber-600/50 p-6 rounded-lg max-w-xs w-full text-center shadow-[0_0_50px_rgba(251,191,36,0.3)] transform scale-100 mx-4">
         <div className="w-12 h-12 mx-auto bg-amber-900/20 rounded-full flex items-center justify-center mb-4 border border-amber-500/30">
             <Sparkles className="text-amber-200 w-6 h-6" />
@@ -444,7 +444,7 @@ const FinalPopup = ({ onExit }: { onExit: () => void }) => {
   const router = typeof window !== 'undefined' ? (window as any).location : { reload: () => {} };
   
   return (
-    <div className="absolute inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-md animate-in zoom-in duration-500 no-select">
+    <div className="absolute inset-0 z-100 flex items-center justify-center bg-black/90 backdrop-blur-md animate-in zoom-in duration-500 no-select">
        <div className="bg-[#1a1528] border border-amber-500/50 p-8 rounded-xl max-w-sm w-full text-center shadow-[0_0_60px_rgba(251,191,36,0.2)] mx-6 relative overflow-hidden">
           <div className="absolute inset-0 bg-[url('/images/noise.png')] opacity-10"></div>
           <div className="relative z-10">
@@ -525,7 +525,7 @@ export default function SoulConnectSpellPage() {
 
   if (!started) {
     return (
-      <div className="min-h-[100dvh] bg-[#0f0a1e] text-amber-50 flex flex-col items-center justify-center p-6 font-magical text-center cursor-pointer overflow-hidden no-select" onClick={startRitual}>
+      <div className="min-h-dvh bg-[#0f0a1e] text-amber-50 flex flex-col items-center justify-center p-6 font-magical text-center cursor-pointer overflow-hidden no-select" onClick={startRitual}>
         <GlobalStyles />
         <StarField />
         
@@ -550,7 +550,7 @@ export default function SoulConnectSpellPage() {
   }
 
   return (
-    <div className="h-[100dvh] w-full bg-[#0f0a1e] text-amber-50 overflow-hidden flex flex-col relative no-select touch-none">
+    <div className="h-dvh w-full bg-[#0f0a1e] text-amber-50 overflow-hidden flex flex-col relative no-select touch-none">
       <GlobalStyles />
       <StarField />
       
@@ -568,7 +568,7 @@ export default function SoulConnectSpellPage() {
       </div>
 
       {/* Main Content Area - Justify Evenly to avoid scroll */}
-      <div className="flex-grow relative z-10 flex flex-col items-center justify-evenly p-4 w-full max-w-md mx-auto h-full max-h-[calc(100dvh-4rem)]">
+      <div className="grow relative z-10 flex flex-col items-center justify-evenly p-4 w-full max-w-md mx-auto h-full max-h-[calc(100dvh-4rem)]">
           {/* STEP 1: PETITION */}
           {step === 1 && (
             <StageOneIntention 
@@ -703,7 +703,7 @@ const StageOneIntention = ({ names, setNames, intention, setIntention, isForSelf
           <button 
             disabled={!names.user || !names.target || !intention}
             onClick={() => { audio.playClick('medium'); setMode('sigil'); }}
-            className="w-full mt-2 bg-gradient-to-r from-amber-900/40 to-amber-800/40 border border-amber-600/50 text-amber-100 py-3 uppercase tracking-[0.2em] font-magical text-sm hover:bg-amber-800/50 transition-all disabled:opacity-30 disabled:cursor-not-allowed active:scale-95"
+            className="w-full mt-2 bg-linear-to-r from-amber-900/40 to-amber-800/40 border border-amber-600/50 text-amber-100 py-3 uppercase tracking-[0.2em] font-magical text-sm hover:bg-amber-800/50 transition-all disabled:opacity-30 disabled:cursor-not-allowed active:scale-95"
           >
             Create Petition
           </button>
@@ -1199,7 +1199,7 @@ const StageFiveMixing = ({ ingredients, names, onComplete }: any) => {
         )}
 
         <div 
-          className="w-48 h-48 rounded-full bg-gradient-to-br from-amber-900 to-black flex items-center justify-center shadow-inner overflow-hidden relative"
+          className="w-48 h-48 rounded-full bg-linear-to-br from-amber-900 to-black flex items-center justify-center shadow-inner overflow-hidden relative"
           style={{ transform: `rotate(${progress * 15}deg)`, transition: isStirring ? 'transform 0.1s linear' : 'transform 1s ease-out' }}
         >
            <div className="absolute w-full h-full opacity-30 bg-[url('/images/noise.png')]"></div>
@@ -1222,7 +1222,7 @@ const StageFiveMixing = ({ ingredients, names, onComplete }: any) => {
              );
            })}
            
-           <div className="absolute w-full h-full bg-gradient-to-r from-transparent via-amber-500/10 to-transparent animate-spin duration-700 opacity-50"></div>
+           <div className="absolute w-full h-full bg-linear-to-r from-transparent via-amber-500/10 to-transparent animate-spin duration-700 opacity-50"></div>
         </div>
 
         <svg className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none">
