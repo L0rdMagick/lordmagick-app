@@ -9,10 +9,9 @@ import Link from 'next/link';
 /**
  * TWO SOULS CONNECTION - LOVE SPELL RITUAL
  * Updates:
- * - AUDIO: Global 800Hz LowPass Filter.
- * - VISUAL: Fixed disappearing ingredients (Separated Sway/Gravity transforms).
- * - VISUAL: Ingredient stays in jar after landing (Persistence).
- * - VISUAL: Start position adjusted to ensure visibility inside bottle neck.
+ * - AUDIO: Complete redesign. Ethereal, Warm, Soft.
+ * - AUDIO LIMIT: Strict 900Hz LowPass Global Filter.
+ * - AUDIO STYLE: Detuned pads, liquid sparkles, harmonious chimes.
  */
 
 // --- AUDIO ENGINE ---
@@ -21,6 +20,9 @@ class MagicAudio {
   masterGain: any = null;
   globalFilter: any = null;
   isMuted: boolean = false;
+  
+  // A warm, loving pentatonic scale (C3 - C4 range)
+  scale = [130.81, 146.83, 164.81, 196.00, 220.00, 261.63, 293.66]; 
 
   init() {
     const globalAny = globalThis as any;
@@ -29,13 +31,15 @@ class MagicAudio {
       if (AudioContextClass) {
         this.ctx = new AudioContextClass();
         this.masterGain = this.ctx.createGain();
-        this.masterGain.gain.value = 0.4;
+        // Lower volume to be supportive, not overbearing
+        this.masterGain.gain.value = 0.25;
         
         // GLOBAL LOW PASS FILTER (The "Veil")
-        // STRICT UPPER LIMIT: 800Hz
+        // STRICT UPPER LIMIT: 900Hz
         this.globalFilter = this.ctx.createBiquadFilter();
         this.globalFilter.type = 'lowpass';
-        this.globalFilter.frequency.value = 800; 
+        this.globalFilter.frequency.value = 900; 
+        this.globalFilter.Q.value = 0.5; // Soft shoulder, no resonance spikes
         
         // Chain: Source -> Master -> Filter -> Destination
         this.masterGain.connect(this.globalFilter);
@@ -52,6 +56,7 @@ class MagicAudio {
     if (this.ctx.state === 'suspended') this.ctx.resume();
   }
 
+  // A soft, warm, throbbing background presence
   playDeepDrone() {
     this.ensureContext();
     if (this.isMuted) return;
@@ -60,10 +65,22 @@ class MagicAudio {
     const osc2 = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
     
-    osc1.type = 'sine';
-    osc1.frequency.value = 45; 
-    osc2.type = 'triangle';
-    osc2.frequency.value = 45.5; 
+    // Very low frequencies for grounding
+    osc1.type = 'triangle';
+    osc1.frequency.value = 65.41; // C2
+    
+    osc2.type = 'sine';
+    osc2.frequency.value = 65.00; // Slight detune for "beating" effect
+
+    // LFO to make the drone "breathe"
+    const lfo = this.ctx.createOscillator();
+    lfo.type = 'sine';
+    lfo.frequency.value = 0.1; // Very slow breath
+    const lfoGain = this.ctx.createGain();
+    lfoGain.gain.value = 0.1;
+
+    lfo.connect(lfoGain);
+    lfoGain.connect(gain.gain);
 
     osc1.connect(gain);
     osc2.connect(gain);
@@ -71,10 +88,11 @@ class MagicAudio {
 
     const now = this.ctx.currentTime;
     gain.gain.setValueAtTime(0, now);
-    gain.gain.linearRampToValueAtTime(0.3, now + 4);
+    gain.gain.linearRampToValueAtTime(0.2, now + 5); // Slow fade in
     
     osc1.start();
     osc2.start();
+    lfo.start();
 
     return { 
       stop: () => {
@@ -82,118 +100,133 @@ class MagicAudio {
         const stopTime = this.ctx.currentTime;
         gain.gain.cancelScheduledValues(stopTime);
         gain.gain.setValueAtTime(gain.gain.value, stopTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, stopTime + 3);
-        osc1.stop(stopTime + 3);
-        osc2.stop(stopTime + 3);
+        gain.gain.exponentialRampToValueAtTime(0.001, stopTime + 4);
+        osc1.stop(stopTime + 4);
+        osc2.stop(stopTime + 4);
+        lfo.stop(stopTime + 4);
       }
     };
   }
 
+  // "Water Drop" Arpeggio - Ethereal and liquid
   playSparkle() {
     this.ensureContext();
     if (this.isMuted) return;
     const now = this.ctx.currentTime;
     
-    // Low frequency "bubbles"
-    [0, 0.15, 0.3].forEach((delay, i) => {
+    // Play 3 notes from the scale randomly
+    [0, 0.15, 0.3].forEach((delay) => {
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
       
       osc.type = 'sine';
-      // Freqs tuned to stay nice under 800Hz
-      const freq = 150 + (i * 50); 
+      // Pick random note from our warm scale
+      const freq = this.scale[Math.floor(Math.random() * this.scale.length)] * 2; // Octave up
       osc.frequency.setValueAtTime(freq, now + delay);
       
+      // Envelope: Soft "plink"
       gain.gain.setValueAtTime(0, now + delay);
-      gain.gain.linearRampToValueAtTime(0.2, now + delay + 0.1);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.8);
+      gain.gain.linearRampToValueAtTime(0.15, now + delay + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + delay + 1.5); // Long tail
       
       osc.connect(gain);
       gain.connect(this.masterGain);
       osc.start(now + delay);
-      osc.stop(now + delay + 0.8);
+      osc.stop(now + delay + 1.5);
     });
   }
 
-  playEtch() {
+  // Pleasant activating sound for tracing
+  playTraceTone() {
     this.ensureContext();
     if (this.isMuted) return;
+    const now = this.ctx.currentTime;
+    
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(80, this.ctx.currentTime);
-    osc.frequency.linearRampToValueAtTime(50, this.ctx.currentTime + 0.1);
     
-    gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.15);
+    osc.type = 'triangle'; // Softer than sawtooth, richer than sine
+    // Random note from scale
+    const freq = this.scale[Math.floor(Math.random() * this.scale.length)];
+    osc.frequency.setValueAtTime(freq, now);
+    
+    // Very short, gentle blip
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(0.1, now + 0.05);
+    gain.gain.linearRampToValueAtTime(0, now + 0.3);
 
     osc.connect(gain);
     gain.connect(this.masterGain);
 
     osc.start();
-    osc.stop(this.ctx.currentTime + 0.15);
+    osc.stop(now + 0.3);
   }
 
+  // Ethereal Pad Swell
   startCharge() {
     this.ensureContext();
     if (this.isMuted) return null;
     
     const now = this.ctx.currentTime;
-    const osc1 = this.ctx.createOscillator();
-    osc1.type = 'sawtooth';
-    osc1.frequency.setValueAtTime(55, now);
-
-    const osc2 = this.ctx.createOscillator();
-    osc2.type = 'sawtooth';
-    osc2.frequency.setValueAtTime(55.5, now);
-
-    const gain = this.ctx.createGain();
     
-    // Individual filter for the pad swell effect
-    const filter = this.ctx.createBiquadFilter();
-    filter.type = 'lowpass';
-    filter.frequency.value = 150; 
+    // Create a chord
+    const nodes: any[] = [];
+    const mainGain = this.ctx.createGain();
+    mainGain.gain.setValueAtTime(0, now);
+    mainGain.gain.linearRampToValueAtTime(0.2, now + 2); // Slow fade in
 
-    osc1.connect(filter);
-    osc2.connect(filter);
-    filter.connect(gain);
-    gain.connect(this.masterGain);
+    // Vibrato LFO
+    const lfo = this.ctx.createOscillator();
+    lfo.frequency.value = 3; 
+    const lfoGain = this.ctx.createGain();
+    lfoGain.gain.value = 2; // Depth
+    lfo.connect(lfoGain);
+    lfo.start();
 
-    gain.gain.setValueAtTime(0, now);
-    gain.gain.linearRampToValueAtTime(0.2, now + 1);
+    // 3 Oscillators for a chord
+    [1, 1.25, 1.5].forEach(ratio => {
+        const osc = this.ctx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.value = 130.81 * ratio; // C3 Major Chord
+        lfoGain.connect(osc.frequency); // Apply vibrato
+        osc.connect(mainGain);
+        osc.start();
+        nodes.push(osc);
+    });
 
-    osc1.start();
-    osc2.start();
+    mainGain.connect(this.masterGain);
 
-    return { osc1, osc2, filter, gain };
+    return { nodes, mainGain, lfo, lfoGain };
   }
 
   updateCharge(node: any, progress: number) { 
     if (!node || !this.ctx) return;
     const now = this.ctx.currentTime;
     
-    // Swell freq up to ~110Hz, Filter opens to ~450Hz
-    const targetFreq = 55 + (progress * 0.55); 
-    const targetFilter = 150 + (progress * 3.0);
-
-    node.osc1.frequency.setTargetAtTime(targetFreq, now, 0.2);
-    node.osc2.frequency.setTargetAtTime(targetFreq * 1.01, now, 0.2); 
-    node.filter.frequency.setTargetAtTime(targetFilter, now, 0.2);
+    // Instead of pitch rising (which gets anxious), 
+    // we increase volume and vibrato speed for intensity.
     
-    node.gain.gain.setTargetAtTime(0.2 + (progress * 0.001), now, 0.1);
+    // Max vibrato speed: 3hz -> 8hz
+    const vibSpeed = 3 + (progress * 0.05); 
+    node.lfo.frequency.setTargetAtTime(vibSpeed, now, 0.1);
+
+    // Slight volume swell
+    const vol = 0.2 + (progress * 0.002);
+    node.mainGain.gain.setTargetAtTime(Math.min(vol, 0.5), now, 0.1);
   }
 
   stopCharge(node: any) {
     if (!node || !this.ctx) return;
     const now = this.ctx.currentTime;
     try {
-        node.gain.gain.cancelScheduledValues(now);
-        node.gain.gain.setTargetAtTime(0, now, 0.5); 
-        node.osc1.stop(now + 1);
-        node.osc2.stop(now + 1);
+        node.mainGain.gain.cancelScheduledValues(now);
+        node.mainGain.gain.setTargetAtTime(0, now, 0.5); // Soft release
+        node.nodes.forEach((osc: any) => osc.stop(now + 1));
+        node.lfo.stop(now + 1);
     } catch(e) {}
   }
 
+  // Soft "Heartbeat" Thud
   playImpact() {
     this.ensureContext();
     if (this.isMuted) return;
@@ -201,27 +234,35 @@ class MagicAudio {
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
     
-    osc.frequency.setValueAtTime(100, this.ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(30, this.ctx.currentTime + 0.5);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(80, this.ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(30, this.ctx.currentTime + 0.3); // Quick drop
 
-    gain.gain.setValueAtTime(0.6, this.ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 1.5);
+    gain.gain.setValueAtTime(0.4, this.ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 1.0); // Long booming tail
 
     osc.connect(gain);
     gain.connect(this.masterGain);
     osc.start();
-    osc.stop(this.ctx.currentTime + 1.5);
+    osc.stop(this.ctx.currentTime + 1.0);
   }
 
+  // Liquid Swirl - Filtered Pink Noise
   startSwirl() {
     this.ensureContext();
     if (this.isMuted) return null;
     
+    // Generate Brown/Pink-ish noise buffer
     const bufferSize = this.ctx.sampleRate * 2;
     const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
     const data = buffer.getChannelData(0);
+    let lastOut = 0;
     for (let i = 0; i < bufferSize; i++) {
-      data[i] = Math.random() * 2 - 1;
+        const white = Math.random() * 2 - 1;
+        // Brown noise algorithm (smoother than white)
+        data[i] = (lastOut + (0.02 * white)) / 1.02;
+        lastOut = data[i];
+        data[i] *= 3.5; // Compensate gain
     }
 
     const noise = this.ctx.createBufferSource();
@@ -230,8 +271,7 @@ class MagicAudio {
 
     const filter = this.ctx.createBiquadFilter();
     filter.type = 'lowpass';
-    filter.frequency.value = 100;
-    filter.Q.value = 5;
+    filter.frequency.value = 200; // Start very muffled
     
     const gain = this.ctx.createGain();
     gain.gain.value = 0;
@@ -241,12 +281,13 @@ class MagicAudio {
     gain.connect(this.masterGain);
     
     noise.start();
-    gain.gain.setTargetAtTime(0.15, this.ctx.currentTime, 1);
+    gain.gain.setTargetAtTime(0.3, this.ctx.currentTime, 1);
 
+    // LFO to modulate filter (Swishing sound)
     const lfo = this.ctx.createOscillator();
-    lfo.frequency.value = 0.5;
+    lfo.frequency.value = 0.8;
     const lfoGain = this.ctx.createGain();
-    lfoGain.gain.value = 50; 
+    lfoGain.gain.value = 150; 
     
     lfo.connect(lfoGain);
     lfoGain.connect(filter.frequency);
@@ -290,7 +331,6 @@ const GlobalStyles = () => (
     }
 
     /* LEAF SWAY ANIMATION (X-Axis & Rotation only) */
-    /* Separated from Gravity Y-Axis to avoid transform conflicts */
     @keyframes leaf-sway {
         0% { transform: translateX(0px) rotate(0deg); }
         25% { transform: translateX(10px) rotate(5deg); }
@@ -612,7 +652,8 @@ const StageOneIntention = ({ names, setNames, intention, setIntention, isForSelf
   const [traceProgress, setTraceProgress] = useState(0);
 
   const handleTrace = () => {
-    if (Math.random() > 0.8) audio.playEtch(); 
+    // New Sound Call: Pleasant trace tone
+    if (Math.random() > 0.5) audio.playTraceTone(); 
     setTraceProgress(prev => Math.min(prev + 1, 100));
   };
 
@@ -999,7 +1040,7 @@ const StageThreeConsecrate = ({ ingredient, index, total, onComplete }: any) => 
       interval = setInterval(() => {
         setCharge(prev => {
             // SLOWER CHARGE 50%
-            const next = Math.min(prev + 1.5, 100); // Was 3.0
+            const next = Math.min(prev + 1.5, 100); 
             if(soundRef.current) audio.updateCharge(soundRef.current, next);
             return next;
         }); 
@@ -1264,7 +1305,7 @@ const StageSixCandle = ({ onComplete }: any) => {
              <div 
                className="absolute z-50 w-24 h-24 cursor-pointer flex items-center justify-center"
                style={{ bottom: `${waxHeight - 20}px` }}
-               onClick={() => { setLit(true); audio.playEtch(); }}
+               onClick={() => { setLit(true); audio.playSparkle(); }}
              >
                  {/* Visual Hint */}
                  <div className="w-6 h-6 rounded-full border border-orange-500/50 animate-ping opacity-50"></div>
@@ -1304,7 +1345,7 @@ const StageSevenRelease = ({ onComplete }: any) => {
       interval = setInterval(() => {
         setPower(prev => {
             // SLOWER CHARGE 50%
-            const next = Math.min(prev + 0.8, 100); // Was 1.5
+            const next = Math.min(prev + 0.8, 100); 
             if(soundRef.current) audio.updateCharge(soundRef.current, next);
             return next;
         }); 
