@@ -431,7 +431,7 @@ const HERB_DATABASE: Record<string, any[]> = {
     { name: 'Black Pepper', icon: '⚫', desc: 'Banishes jealousy.', color: 'text-gray-400' }
   ],
   attract: [
-    { name: 'Rose Petals', icon: '🌹', desc: 'Invites soft romance.', color: 'text-pink-400' },
+    { name: 'Rose', icon: '🌹', desc: 'Invites soft romance.', color: 'text-pink-400' },
     { name: 'Cinnamon Stick', icon: '🪵', desc: 'Ignites passion.', color: 'text-orange-500' },
     { name: 'Lavender', icon: '🪻', desc: 'Brings understanding.', color: 'text-purple-400' },
     { name: 'Sugar Crystals', icon: '✨', desc: 'Sweetens thoughts.', color: 'text-blue-200' }
