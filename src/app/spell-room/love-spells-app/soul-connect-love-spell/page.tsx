@@ -3,30 +3,32 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Sparkles, Droplets, RotateCw, Hand, Check, Moon, Volume2, VolumeX } from 'lucide-react';
+import { Sparkles, Droplets, RotateCw, Hand, Check, Moon, Volume2, VolumeX, Users, User } from 'lucide-react';
 import Link from 'next/link';
 
 /**
- * THE DIGITAL HONEY JAR - LOVE SPELL RITUAL (AUDIO-ENCHANTED EDITION)
- * * Features: Real-time Web Audio Synthesis for immersive, non-repetitive soundscapes.
+ * TWO SOULS CONNECTION - LOVE SPELL RITUAL
+ * Features: 
+ * - Single Page View (No Scroll)
+ * - Self vs Couple Logic
+ * - Ornate Jar Visuals
+ * - Clamped Audio Pitch (Max 450Hz)
  */
 
 // --- AUDIO ENGINE ---
-// A self-contained synthesizer for magical effects
 class MagicAudio {
   ctx: any = null;
   masterGain: any = null;
   isMuted: boolean = false;
 
   init() {
-    // FIX: Safe global access
     const globalAny = globalThis as any;
     if (typeof globalAny.window !== 'undefined' && !this.ctx) {
       const AudioContextClass = globalAny.window.AudioContext || globalAny.window.webkitAudioContext;
       if (AudioContextClass) {
         this.ctx = new AudioContextClass();
         this.masterGain = this.ctx.createGain();
-        this.masterGain.gain.value = 0.3; // Safe volume
+        this.masterGain.gain.value = 0.3;
         this.masterGain.connect(this.ctx.destination);
       }
     }
@@ -35,42 +37,18 @@ class MagicAudio {
     }
   }
 
-  // Helper to create an oscillator with envelope
-  playTone({ freq = 440, type = 'sine', duration = 1, vol = 1, slideTo = null }: { freq?: number, type?: string, duration?: number, vol?: number, slideTo?: number | null }) {
-    if (this.isMuted || !this.ctx || !this.masterGain) return;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    
-    osc.type = type as any;
-    osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
-    if (slideTo) {
-      osc.frequency.exponentialRampToValueAtTime(slideTo, this.ctx.currentTime + duration);
-    }
-
-    gain.gain.setValueAtTime(0, this.ctx.currentTime);
-    gain.gain.linearRampToValueAtTime(vol, this.ctx.currentTime + 0.05);
-    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
-
-    osc.connect(gain);
-    gain.connect(this.masterGain);
-    osc.start();
-    osc.stop(this.ctx.currentTime + duration);
-  }
-
-  // 1. DEEP DRONE (For intros/waiting)
+  // 1. DEEP DRONE
   playDeepDrone() {
     if (this.isMuted || !this.ctx || !this.masterGain) return;
     const osc1 = this.ctx.createOscillator();
     const osc2 = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
     
-    // Detuned low saws for texture
     osc1.type = 'sawtooth';
-    osc1.frequency.value = 55; // Low A
+    osc1.frequency.value = 55; 
     osc2.type = 'sawtooth';
-    osc2.frequency.value = 55.5; // Slight detune
+    osc2.frequency.value = 55.5; 
 
-    // Lowpass filter to make it dark and mysterious
     const filter = this.ctx.createBiquadFilter();
     filter.type = 'lowpass';
     filter.frequency.value = 200;
@@ -82,7 +60,7 @@ class MagicAudio {
 
     const now = this.ctx.currentTime;
     gain.gain.setValueAtTime(0, now);
-    gain.gain.linearRampToValueAtTime(0.2, now + 2); // Slow fade in
+    gain.gain.linearRampToValueAtTime(0.2, now + 2);
     
     osc1.start();
     osc2.start();
@@ -100,18 +78,16 @@ class MagicAudio {
     };
   }
 
-  // 2. SPARKLES (For success/magic)
+  // 2. SPARKLES
   playSparkle() {
     if (this.isMuted || !this.ctx || !this.masterGain) return;
     const now = this.ctx.currentTime;
-    // Play a cascade of high bells
     [0, 0.1, 0.2, 0.3, 0.4].forEach((delay, i) => {
       if(!this.ctx || !this.masterGain) return;
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
       osc.type = 'sine';
-      // Pentatonic high notes
-      const freq = 880 * Math.pow(1.5, i); // Fifths stacking up
+      const freq = 440 * Math.pow(1.25, i); // Major 3rds
       osc.frequency.setValueAtTime(freq, now + delay);
       
       gain.gain.setValueAtTime(0, now + delay);
@@ -125,10 +101,9 @@ class MagicAudio {
     });
   }
 
-  // 3. ETCHING (For Sigil)
+  // 3. ETCHING
   playEtch() {
     if (this.isMuted || !this.ctx || !this.masterGain) return;
-    // Harsh, electrical buzzing sound
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
     osc.type = 'sawtooth';
@@ -149,22 +124,21 @@ class MagicAudio {
     osc.stop(this.ctx.currentTime + 0.1);
   }
 
-  // 4. CHARGING UP (Continuous rising pitch)
+  // 4. CHARGING UP (Clamped to 450Hz)
   startCharge() {
     if (this.isMuted || !this.ctx || !this.masterGain) return null;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
-    const lfo = this.ctx.createOscillator(); // Tremolo
+    const lfo = this.ctx.createOscillator(); 
     const lfoGain = this.ctx.createGain();
 
     osc.type = 'triangle';
-    osc.frequency.setValueAtTime(110, this.ctx.currentTime); // Start low
+    osc.frequency.setValueAtTime(110, this.ctx.currentTime); 
     
-    lfo.frequency.value = 10; // 10Hz shake
+    lfo.frequency.value = 10;
     lfoGain.gain.value = 500;
 
     lfo.connect(lfoGain);
-    // lfoGain.connect(osc.frequency); // Vibrato effect
 
     osc.connect(gain);
     gain.connect(this.masterGain);
@@ -178,13 +152,12 @@ class MagicAudio {
     return { osc, gain, lfo, startTime: this.ctx.currentTime };
   }
 
-  updateCharge(node: any, progress: number) { // progress 0 to 100
+  updateCharge(node: any, progress: number) { 
     if (!node || !this.ctx) return;
     const now = this.ctx.currentTime;
-    // Pitch rises from 110Hz to 880Hz
-    const targetFreq = 110 + (progress * 8); 
+    // PITCH FIX: 110Hz to 450Hz max
+    const targetFreq = 110 + (progress * 3.4); 
     node.osc.frequency.setTargetAtTime(targetFreq, now, 0.1);
-    // Tremolo speed increases
     node.lfo.frequency.setTargetAtTime(10 + (progress/2), now, 0.1);
   }
 
@@ -196,17 +169,17 @@ class MagicAudio {
     node.lfo.stop(now + 0.2);
   }
 
-  // 5. DEEP IMPACT (For Chant Taps)
+  // 5. DEEP IMPACT
   playImpact() {
     if (this.isMuted || !this.ctx || !this.masterGain) return;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
     
     osc.frequency.setValueAtTime(150, this.ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(40, this.ctx.currentTime + 0.5); // Pitch drop
+    osc.frequency.exponentialRampToValueAtTime(40, this.ctx.currentTime + 0.5);
 
     gain.gain.setValueAtTime(0.5, this.ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 2); // Long tail
+    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 2);
 
     osc.connect(gain);
     gain.connect(this.masterGain);
@@ -214,11 +187,10 @@ class MagicAudio {
     osc.stop(this.ctx.currentTime + 2);
   }
 
-  // 6. SWIRL (For stirring)
+  // 6. SWIRL
   startSwirl() {
     if (this.isMuted || !this.ctx || !this.masterGain) return null;
-    // Filtered noise sweep
-    const bufferSize = this.ctx.sampleRate * 2; // 2 sec buffer
+    const bufferSize = this.ctx.sampleRate * 2;
     const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
     const data = buffer.getChannelData(0);
     for (let i = 0; i < bufferSize; i++) {
@@ -231,7 +203,7 @@ class MagicAudio {
 
     const filter = this.ctx.createBiquadFilter();
     filter.type = 'bandpass';
-    filter.Q.value = 10; // Narrow resonance
+    filter.Q.value = 10;
     
     const gain = this.ctx.createGain();
     gain.gain.value = 0;
@@ -243,15 +215,14 @@ class MagicAudio {
     noise.start();
     gain.gain.setTargetAtTime(0.15, this.ctx.currentTime, 1);
 
-    // Auto sweep the filter
     const lfo = this.ctx.createOscillator();
-    lfo.frequency.value = 0.5; // 1 cycle every 2 sec
+    lfo.frequency.value = 0.5;
     const lfoGain = this.ctx.createGain();
-    lfoGain.gain.value = 1000; // Range of sweep
+    lfoGain.gain.value = 1000;
     
     lfo.connect(lfoGain);
     lfoGain.connect(filter.frequency);
-    filter.frequency.value = 600; // Center freq
+    filter.frequency.value = 600;
     lfo.start();
 
     return { noise, gain, lfo, stop: () => {
@@ -266,8 +237,7 @@ class MagicAudio {
 
 const audio = new MagicAudio();
 
-
-// --- GOOGLE FONTS & GLOBAL STYLES ---
+// --- GLOBAL STYLES ---
 const GlobalStyles = () => (
   <style>{`
     @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
@@ -275,48 +245,37 @@ const GlobalStyles = () => (
     .font-magical { font-family: 'Cinzel', serif; }
     .font-scroll { font-family: 'Crimson Text', serif; }
     
-    @keyframes float {
-      0% { transform: translateY(0px); }
-      50% { transform: translateY(-10px); }
-      100% { transform: translateY(0px); }
-    }
-    
-    .animate-float { animation: float 6s ease-in-out infinite; }
+    /* Custom Scrollbar Hide */
+    ::-webkit-scrollbar { display: none; }
     
     .magical-glow {
-      box-shadow: 0 0 15px rgba(251, 191, 36, 0.3), inset 0 0 20px rgba(251, 191, 36, 0.1);
-    }
-
-    .ingredient-aura {
-      background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, rgba(0,0,0,0) 70%);
+      box-shadow: 0 0 25px rgba(251, 191, 36, 0.2), inset 0 0 20px rgba(251, 191, 36, 0.1);
     }
   `}</style>
 );
 
-// --- DATA & MAGIC ASSETS ---
+// --- HELPER LOGIC ---
 
 const HERB_DATABASE: Record<string, any[]> = {
   blockage: [
-    { name: 'Lemon Balm', icon: '🌿', desc: 'Clears away confusion and bitter feelings.', color: 'text-yellow-300', glow: 'shadow-yellow-500/50' },
-    { name: 'Chilli Flakes', icon: '🌶️', desc: 'Burns away obstacles and third parties.', color: 'text-red-500', glow: 'shadow-red-500/50' },
-    { name: 'Sea Salt', icon: '🧂', desc: 'Neutralizes past negativity.', color: 'text-white', glow: 'shadow-white/50' },
-    { name: 'Black Pepper', icon: '⚫', desc: 'Banishes jealousy and the evil eye.', color: 'text-gray-400', glow: 'shadow-gray-500/50' }
+    { name: 'Lemon Balm', icon: '🌿', desc: 'Clears away confusion.', color: 'text-yellow-300', glow: 'shadow-yellow-500/50' },
+    { name: 'Chilli Flakes', icon: '🌶️', desc: 'Burns away obstacles.', color: 'text-red-500', glow: 'shadow-red-500/50' },
+    { name: 'Sea Salt', icon: '🧂', desc: 'Neutralizes the past.', color: 'text-white', glow: 'shadow-white/50' },
+    { name: 'Black Pepper', icon: '⚫', desc: 'Banishes jealousy.', color: 'text-gray-400', glow: 'shadow-gray-500/50' }
   ],
   attract: [
-    { name: 'Rose Petals', icon: '🌹', desc: 'Invites soft, romantic love.', color: 'text-pink-400', glow: 'shadow-pink-500/50' },
-    { name: 'Cinnamon Stick', icon: '🪵', desc: 'Speeds up contact and heats up passion.', color: 'text-orange-500', glow: 'shadow-orange-500/50' },
-    { name: 'Lavender', icon: '🪻', desc: 'Brings peace and understanding.', color: 'text-purple-400', glow: 'shadow-purple-500/50' },
-    { name: 'Sugar Crystals', icon: '✨', desc: 'Sweetens their thoughts of you.', color: 'text-blue-200', glow: 'shadow-blue-200/50' }
+    { name: 'Rose Petals', icon: '🌹', desc: 'Invites soft romance.', color: 'text-pink-400', glow: 'shadow-pink-500/50' },
+    { name: 'Cinnamon Stick', icon: '🪵', desc: 'Ignites passion.', color: 'text-orange-500', glow: 'shadow-orange-500/50' },
+    { name: 'Lavender', icon: '🪻', desc: 'Brings understanding.', color: 'text-purple-400', glow: 'shadow-purple-500/50' },
+    { name: 'Sugar Crystals', icon: '✨', desc: 'Sweetens thoughts.', color: 'text-blue-200', glow: 'shadow-blue-200/50' }
   ],
   bind: [
-    { name: 'Licorice Root', icon: '🎋', desc: 'Domination and commanding control.', color: 'text-slate-400', glow: 'shadow-slate-500/50' },
-    { name: 'Ivy Leaf', icon: '🍃', desc: 'Makes them cling to you faithfully.', color: 'text-green-500', glow: 'shadow-green-500/50' },
-    { name: 'Red String', icon: '🧶', desc: 'Ties their fate to yours eternally.', color: 'text-red-600', glow: 'shadow-red-600/50' },
-    { name: 'Magnetite', icon: '🧲', desc: 'Magnetic attraction that cannot be broken.', color: 'text-gray-500', glow: 'shadow-gray-500/50' }
+    { name: 'Licorice Root', icon: '🎋', desc: 'For commanding control.', color: 'text-slate-400', glow: 'shadow-slate-500/50' },
+    { name: 'Ivy Leaf', icon: '🍃', desc: 'To cling faithfully.', color: 'text-green-500', glow: 'shadow-green-500/50' },
+    { name: 'Red String', icon: '🧶', desc: 'To tie fates together.', color: 'text-red-600', glow: 'shadow-red-600/50' },
+    { name: 'Magnetite', icon: '🧲', desc: 'Magnetic attraction.', color: 'text-gray-500', glow: 'shadow-gray-500/50' }
   ]
 };
-
-// --- HELPER LOGIC ---
 
 const determineIngredients = (text: string) => {
   const t = text.toLowerCase();
@@ -328,7 +287,7 @@ const determineIngredients = (text: string) => {
   if (t.includes('sad') || t.includes('cry') || t.includes('hurt')) b = HERB_DATABASE.blockage[0];
   if (t.includes('protect') || t.includes('safe')) b = HERB_DATABASE.blockage[3];
 
-  if (t.includes('sex') || t.includes('hot') || t.includes('now') || t.includes('fast')) a = HERB_DATABASE.attract[1];
+  if (t.includes('sex') || t.includes('hot') || t.includes('now')) a = HERB_DATABASE.attract[1];
   if (t.includes('marriage') || t.includes('wife') || t.includes('husband')) a = HERB_DATABASE.attract[3];
   if (t.includes('talk') || t.includes('message')) a = HERB_DATABASE.attract[2];
 
@@ -338,46 +297,70 @@ const determineIngredients = (text: string) => {
   return [b, a, bind];
 };
 
-const generateIncantation = (targetName: string) => {
-  return [
-    `By earth and air, by fire and sea,`,
-    `I clear the path to ${targetName} and me.`,
-    `No wall stands high, no gate remains,`,
-    `Love flows freely through our veins.`,
-    `As I stir, the honey binds,`,
-    `Two hearts, two souls, two tangled minds.`,
-    `I seal this spell, so mote it be,`,
-    `${targetName} returns, only to me.`
-  ];
+const generateIncantation = (names: { user: string, target: string }, isForSelf: boolean) => {
+  if (isForSelf) {
+    return [
+      `By earth and air, by fire and sea,`,
+      `I clear the path to ${names.target} and me.`,
+      `No wall stands high, no gate remains,`,
+      `Love flows freely through our veins.`,
+      `As I stir, the honey binds,`,
+      `Two hearts, two souls, two tangled minds.`,
+      `I seal this spell, so mote it be,`,
+      `${names.target} returns, only to me.`
+    ];
+  } else {
+    // Rhyming chant for 3rd person
+    return [
+      `By earth and air, by fire and sea,`,
+      `I clear the path for ${names.target} and ${names.user}.`,
+      `No wall stands high, no gate remains,`,
+      `Love flows freely through their veins.`,
+      `As I stir, the honey binds,`,
+      `Two hearts, two souls, two tangled minds.`,
+      `I seal this spell, so mote it be,`,
+      `${names.target} returns to ${names.user}, faithfully.`
+    ];
+  }
 };
 
-// --- VISUAL COMPONENTS ---
+// --- COMPONENT: BACKGROUND ---
+const StarField = () => (
+  <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden bg-[#0f0a1e]">
+    {Array.from({ length: 15 }).map((_, i) => (
+      <div key={i} className="absolute rounded-full bg-amber-100 opacity-20 animate-pulse"
+        style={{
+          top: `${Math.random() * 100}%`, left: `${Math.random() * 100}%`,
+          width: `${Math.random() * 2 + 1}px`, height: `${Math.random() * 2 + 1}px`,
+          animationDuration: `${Math.random() * 3 + 2}s`
+        }}
+      />
+    ))}
+    <div className="absolute top-10 right-10 opacity-10 text-amber-100"><Moon size={64} /></div>
+    <div className="fixed inset-0 pointer-events-none bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.8)_100%)]"></div>
+  </div>
+);
 
-const StarField = () => {
-  return (
-    <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-      {Array.from({ length: 20 }).map((_, i) => (
-        <div 
-          key={i}
-          className="absolute rounded-full bg-amber-100 opacity-20 animate-pulse"
-          style={{
-            top: `${Math.random() * 100}%`,
-            left: `${Math.random() * 100}%`,
-            width: `${Math.random() * 3 + 1}px`,
-            height: `${Math.random() * 3 + 1}px`,
-            animationDuration: `${Math.random() * 3 + 2}s`,
-            animationDelay: `${Math.random() * 2}s`
-          }}
-        />
-      ))}
-      <div className="absolute top-10 right-10 opacity-10 text-amber-100">
-        <Moon size={64} />
-      </div>
-    </div>
-  );
-};
+// --- COMPONENT: SUCCESS MODAL ---
+const SuccessModal = ({ message, onContinue }: { message: string, onContinue: () => void }) => (
+  <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
+     <div className="bg-[#1a1528] border border-amber-600/50 p-6 rounded-lg max-w-sm text-center shadow-[0_0_50px_rgba(251,191,36,0.3)] transform scale-100">
+        <div className="w-16 h-16 mx-auto bg-amber-900/20 rounded-full flex items-center justify-center mb-4 border border-amber-500/30">
+            <Sparkles className="text-amber-200 w-8 h-8" />
+        </div>
+        <h3 className="text-xl font-magical text-amber-100 mb-2">Ritual Complete</h3>
+        <p className="text-amber-400/80 font-scroll italic mb-6">{message}</p>
+        <button 
+            onClick={onContinue}
+            className="w-full bg-amber-900/40 hover:bg-amber-800/40 border border-amber-600 text-amber-100 py-3 uppercase tracking-widest font-magical text-sm transition-colors"
+        >
+            Continue Ritual
+        </button>
+     </div>
+  </div>
+);
 
-// --- MAIN APP COMPONENT ---
+// --- COMPONENT: MAIN PAGE ---
 
 export default function SoulConnectSpellPage() {
   const [started, setStarted] = useState(false);
@@ -385,11 +368,14 @@ export default function SoulConnectSpellPage() {
   const [step, setStep] = useState(1);
   const [names, setNames] = useState({ user: '', target: '' });
   const [intention, setIntention] = useState('');
+  const [isForSelf, setIsForSelf] = useState(true);
+  
   const [activeIngredients, setActiveIngredients] = useState<any[]>([]);
   const [generatedChant, setGeneratedChant] = useState<string[]>([]);
+  const [showSuccess, setShowSuccess] = useState<string | null>(null);
+  
   const bgDroneRef = useRef<any>(null);
 
-  // Initializer to bypass browser audio restrictions
   const startRitual = () => {
     audio.init();
     bgDroneRef.current = audio.playDeepDrone();
@@ -402,180 +388,173 @@ export default function SoulConnectSpellPage() {
     audio.isMuted = !muted;
   };
   
+  const handleStageComplete = (msg: string) => {
+    setShowSuccess(msg);
+  };
+
   const nextStep = () => {
-    // FIX: Safe window access
-    const globalAny = globalThis as any;
-    if (typeof globalAny.window !== 'undefined') {
-        globalAny.window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-    audio.playSparkle(); // Transition sound
+    setShowSuccess(null);
+    audio.playSparkle();
     setStep(s => s + 1);
   };
 
-  // Intro Screen
   if (!started) {
     return (
-      <div className="min-h-screen bg-[#0f0a1e] text-amber-50 flex flex-col items-center justify-center p-6 font-magical text-center selection:bg-amber-900 cursor-pointer" onClick={startRitual}>
-        <Link href="/spell-room/love-spells-app" className="absolute top-6 left-6 text-amber-500/50 hover:text-amber-200 z-50 transition-colors flex items-center gap-2 font-sans text-sm">
-            &larr; Exit Spell
-        </Link>
+      <div className="min-h-screen bg-[#0f0a1e] text-amber-50 flex flex-col items-center justify-center p-6 font-magical text-center cursor-pointer overflow-hidden" onClick={startRitual}>
         <GlobalStyles />
         <StarField />
         <div className="z-10 animate-in zoom-in duration-700 flex flex-col items-center">
-           <div className="w-24 h-24 rounded-full border border-amber-500/30 flex items-center justify-center mb-8 shadow-[0_0_30px_rgba(251,191,36,0.2)] animate-pulse">
-             <Sparkles size={48} className="text-amber-200" />
+           <div className="w-24 h-24 rounded-full border border-amber-500/30 flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(251,191,36,0.2)] animate-pulse">
+             <Sparkles size={40} className="text-amber-200" />
            </div>
-           <h1 className="text-4xl mb-4 tracking-widest">The Digital Grimoire</h1>
-           <p className="text-amber-200/50 font-scroll text-lg max-w-md mb-12">
-             A sound-immersive ritual for love and connection.
-             <br/><br/>
-             <span className="text-sm uppercase tracking-widest border border-amber-500/30 px-4 py-2 rounded hover:bg-amber-900/20 transition-colors">
-               Click to Enter the Temple
-             </span>
+           <h1 className="text-3xl md:text-4xl mb-4 tracking-widest drop-shadow-[0_0_10px_rgba(251,191,36,0.5)]">Two Souls Connection</h1>
+           <p className="text-amber-200/50 font-scroll text-lg max-w-md mb-8">
+             A ritual to bind, heal, and attract.
            </p>
+           <span className="text-xs uppercase tracking-widest border border-amber-500/30 px-6 py-3 rounded hover:bg-amber-900/20 transition-colors">
+               Enter the Circle
+           </span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0f0a1e] text-amber-50 selection:bg-amber-900 overflow-x-hidden font-scroll">
+    <div className="h-screen w-full bg-[#0f0a1e] text-amber-50 overflow-hidden flex flex-col relative">
       <GlobalStyles />
       <StarField />
       
-      {/* Back Link */}
-      <Link href="/spell-room/love-spells-app" className="fixed top-6 left-6 z-50 text-amber-500/50 hover:text-amber-200 transition-colors flex items-center gap-2 font-sans text-sm font-bold uppercase tracking-wider">
-        &larr; Leave
-      </Link>
+      {/* Navbar */}
+      <div className="flex justify-between items-center p-4 z-50 shrink-0">
+        <Link href="/spell-room/love-spells-app" className="text-amber-500/50 hover:text-amber-200 text-xs font-bold uppercase tracking-wider flex items-center gap-1">
+          &larr; Exit
+        </Link>
+        <div className="text-amber-200/60 text-[10px] tracking-[0.2em] uppercase font-magical flex items-center gap-2">
+            <Sparkles size={10} /> Step {step} / 7
+        </div>
+        <button onClick={toggleMute} className="text-amber-500/50 hover:text-amber-200">
+          {muted ? <VolumeX size={20} /> : <Volume2 size={20} />}
+        </button>
+      </div>
 
-      {/* Mute Toggle */}
-      <button 
-        onClick={toggleMute} 
-        className="fixed top-6 right-6 z-50 text-amber-500/50 hover:text-amber-200 transition-colors"
-      >
-        {muted ? <VolumeX size={24} /> : <Volume2 size={24} />}
-      </button>
-
-      {/* Vignette & Texture */}
-      <div className="fixed inset-0 pointer-events-none bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.8)_100%)] z-0"></div>
-      
-      {/* Main Container */}
-      <div className="relative z-10 max-w-md mx-auto min-h-screen flex flex-col items-center justify-center p-6">
-        
-        {/* Header */}
-        <header className="absolute top-6 w-full flex justify-center items-center opacity-60 text-xs tracking-[0.2em] uppercase font-magical text-amber-200 border-b border-amber-900/30 pb-2">
-          <span className="flex items-center gap-2"><Sparkles size={12} /> Ritual {step} / 7</span>
-        </header>
-
-        {/* STAGE RENDERER */}
-        <div className="w-full mt-12">
+      {/* Main Content Area - Flex Grow to fill space without scrolling */}
+      <div className="flex-grow relative z-10 flex flex-col items-center justify-evenly p-4 w-full max-w-md mx-auto">
           {step === 1 && (
             <StageOneIntention 
-              names={names} 
-              setNames={setNames} 
-              intention={intention} 
-              setIntention={setIntention} 
+              names={names} setNames={setNames} 
+              intention={intention} setIntention={setIntention} 
+              isForSelf={isForSelf} setIsForSelf={setIsForSelf}
               onComplete={() => {
                 setActiveIngredients(determineIngredients(intention));
-                setGeneratedChant(generateIncantation(names.target));
-                nextStep();
+                setGeneratedChant(generateIncantation(names, isForSelf));
+                handleStageComplete("The Sigil is active. The path is open.");
               }} 
             />
           )}
 
-          {step === 2 && <StageTwoJar names={names} onComplete={nextStep} />}
-          {step === 3 && <StageThreeHerbs ingredients={activeIngredients} onComplete={nextStep} />}
-          {step === 4 && <StageFourStir onComplete={nextStep} />}
-          {step === 5 && <StageFiveIncantation chant={generatedChant} onComplete={nextStep} />}
-          {step === 6 && <StageSixCandle targetName={names.target} onComplete={nextStep} />}
+          {step === 2 && <StageTwoJar names={names} onComplete={() => handleStageComplete("The Vessel is sweetened and sealed.")} />}
+          {step === 3 && <StageThreeHerbs ingredients={activeIngredients} onComplete={() => handleStageComplete("The ingredients are consecrated.")} />}
+          {step === 4 && <StageFourStir onComplete={() => handleStageComplete("The energies are bound together.")} />}
+          {step === 5 && <StageFiveIncantation chant={generatedChant} onComplete={() => handleStageComplete("The words have been spoken.")} />}
+          {step === 6 && <StageSixCandle onComplete={() => handleStageComplete("The spell is sealed in fire.")} />}
           {step === 7 && <StageSevenRelease onComplete={() => setStep(8)} />}
 
           {step === 8 && (
-            <div className="text-center animate-pulse flex flex-col items-center">
-              <div className="w-24 h-24 mb-6 rounded-full bg-amber-500/10 flex items-center justify-center border border-amber-500/50 shadow-[0_0_30px_rgba(245,158,11,0.3)]">
-                <Check className="w-12 h-12 text-amber-200" />
+            <div className="text-center animate-in zoom-in duration-700 flex flex-col items-center">
+              <div className="w-20 h-20 mb-6 rounded-full bg-amber-500/10 flex items-center justify-center border border-amber-500/50 shadow-[0_0_30px_rgba(245,158,11,0.3)]">
+                <Check className="w-10 h-10 text-amber-200" />
               </div>
-              <h1 className="text-4xl mb-4 text-amber-200 font-magical">It is Done</h1>
-              <p className="opacity-70 font-scroll text-lg max-w-xs mx-auto">The spell is woven into the fabric of reality. Trust the process.</p>
+              <h1 className="text-3xl mb-4 text-amber-200 font-magical">It is Done</h1>
+              <p className="opacity-70 font-scroll text-base max-w-xs mx-auto mb-8">The spell is woven into the fabric of reality.</p>
               <button 
-                onClick={() => {
-                    // FIX: Safe global access
-                    const globalAny = globalThis as any;
-                    if (typeof globalAny.window !== 'undefined') globalAny.window.location.reload();
-                }} 
-                className="mt-12 text-xs border border-amber-900/50 px-6 py-3 rounded hover:bg-amber-900/20 uppercase tracking-widest font-magical text-amber-400"
+                onClick={() => { const g = globalThis as any; if (g.window) g.window.location.reload(); }} 
+                className="text-xs border border-amber-900/50 px-8 py-3 rounded hover:bg-amber-900/20 uppercase tracking-widest font-magical text-amber-400"
               >
-                Cast Another Spell
+                Cast Another
               </button>
             </div>
           )}
-        </div>
       </div>
+
+      {showSuccess && <SuccessModal message={showSuccess} onContinue={nextStep} />}
     </div>
   );
-};
+}
 
 // --- STAGE 1: INTENTION & SIGIL ---
-
-const StageOneIntention = ({ names, setNames, intention, setIntention, onComplete }: any) => {
+const StageOneIntention = ({ names, setNames, intention, setIntention, isForSelf, setIsForSelf, onComplete }: any) => {
   const [mode, setMode] = useState('form'); 
-  const [isDrawing, setIsDrawing] = useState(false);
   const [traceProgress, setTraceProgress] = useState(0);
 
-  const handleStart = () => setIsDrawing(true);
-  const handleEnd = () => setIsDrawing(false);
-  
-  const handleMove = () => {
-    if (!isDrawing) return;
-    if (Math.random() > 0.7) audio.playEtch(); 
-    setTraceProgress(prev => Math.min(prev + 0.5, 100));
+  const handleTrace = () => {
+    if (Math.random() > 0.8) audio.playEtch(); 
+    setTraceProgress(prev => Math.min(prev + 1, 100));
   };
 
   if (mode === 'form') {
     return (
-      <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-        <h2 className="text-3xl text-center text-amber-100 mb-8 font-magical drop-shadow-md">The Petition</h2>
-        <div className="space-y-8 bg-slate-900/40 p-6 rounded-xl border border-amber-900/30 shadow-xl backdrop-blur-sm">
+      <div className="w-full animate-in fade-in slide-in-from-bottom-4 duration-500 relative">
+        {/* Glowing Background Effect */}
+        <div className="absolute inset-0 bg-amber-600/10 blur-3xl animate-pulse rounded-full pointer-events-none"></div>
+
+        <h2 className="text-2xl text-center text-amber-100 mb-4 font-magical drop-shadow-md">The Petition</h2>
+        
+        {/* Self vs Other Toggle */}
+        <div className="flex justify-center mb-6">
+            <div className="flex bg-slate-900/80 rounded-full border border-amber-800/50 p-1">
+                <button 
+                    onClick={() => setIsForSelf(true)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-full text-[10px] uppercase tracking-wider transition-all ${isForSelf ? 'bg-amber-700 text-white shadow-lg' : 'text-slate-400 hover:text-amber-200'}`}
+                >
+                    <User size={12} /> For Me
+                </button>
+                <button 
+                    onClick={() => setIsForSelf(false)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-full text-[10px] uppercase tracking-wider transition-all ${!isForSelf ? 'bg-amber-700 text-white shadow-lg' : 'text-slate-400 hover:text-amber-200'}`}
+                >
+                    <Users size={12} /> For Couple
+                </button>
+            </div>
+        </div>
+
+        <div className="space-y-4 bg-slate-900/60 p-5 rounded-xl border border-amber-900/50 shadow-xl backdrop-blur-md relative z-10">
           <div>
-            <label className="block text-xs uppercase tracking-wider text-amber-500 mb-2 font-magical">Your Name</label>
+            <label className="block text-[10px] uppercase tracking-wider text-amber-500 mb-1 font-magical">
+                {isForSelf ? "Your Name" : "First Person's Name"}
+            </label>
             <input 
               value={names.user}
-              // FIX: Cast e.target to any to access value safely
-              onChange={(e) => setNames({...names, user: (e.target as any).value})}
-              className="w-full bg-slate-950 border-b border-amber-700/50 p-3 text-amber-100 font-scroll text-lg focus:outline-none focus:border-amber-400 transition-colors placeholder:text-slate-700"
-              placeholder="Enter your full name"
+              onChange={(e) => setNames({...names, user: e.target.value})}
+              className="w-full bg-slate-950/50 border-b border-amber-700/50 p-2 text-amber-100 font-scroll text-base focus:outline-none focus:border-amber-400 transition-colors placeholder:text-slate-700"
+              placeholder="Full Name"
             />
           </div>
           <div>
-            <label className="block text-xs uppercase tracking-wider text-amber-500 mb-2 font-magical">Target Name</label>
+            <label className="block text-[10px] uppercase tracking-wider text-amber-500 mb-1 font-magical">
+                {isForSelf ? "Target Name" : "Second Person's Name"}
+            </label>
             <input 
               value={names.target}
-              // FIX: Cast e.target to any to access value safely
-              onChange={(e) => setNames({...names, target: (e.target as any).value})}
-              className="w-full bg-slate-950 border-b border-amber-700/50 p-3 text-amber-100 font-scroll text-lg focus:outline-none focus:border-amber-400 transition-colors placeholder:text-slate-700"
-              placeholder="Who do you desire?"
+              onChange={(e) => setNames({...names, target: e.target.value})}
+              className="w-full bg-slate-950/50 border-b border-amber-700/50 p-2 text-amber-100 font-scroll text-base focus:outline-none focus:border-amber-400 transition-colors placeholder:text-slate-700"
+              placeholder="Whom to bind?"
             />
           </div>
           <div>
-            <label className="block text-xs uppercase tracking-wider text-amber-500 mb-2 font-magical">Your Intention</label>
+            <label className="block text-[10px] uppercase tracking-wider text-amber-500 mb-1 font-magical">Intention</label>
             <textarea 
               value={intention}
-              // FIX: Cast e.target to any to access value safely
-              onChange={(e) => setIntention((e.target as any).value)}
-              className="w-full bg-slate-950 border border-amber-700/30 p-3 text-amber-100 font-scroll text-lg focus:outline-none focus:border-amber-400 transition-colors h-32 resize-none placeholder:text-slate-700 rounded-sm"
-              placeholder="Be specific. Speak from the heart."
+              onChange={(e) => setIntention(e.target.value)}
+              className="w-full bg-slate-950/50 border border-amber-700/30 p-2 text-amber-100 font-scroll text-sm focus:outline-none focus:border-amber-400 transition-colors h-20 resize-none placeholder:text-slate-700 rounded-sm"
+              placeholder="e.g. Faithful love, Return to me..."
             />
           </div>
           <button 
             disabled={!names.user || !names.target || !intention}
-            onClick={() => {
-                audio.playImpact(); 
-                setMode('sigil');
-            }}
-            // FIX: bg-linear-to-r syntax
-            className="w-full mt-4 bg-linear-to-r from-amber-900/20 to-amber-800/20 border border-amber-600/50 text-amber-100 py-4 uppercase tracking-[0.2em] font-magical hover:bg-amber-800/30 transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:shadow-[0_0_15px_rgba(245,158,11,0.2)]"
+            onClick={() => { audio.playImpact(); setMode('sigil'); }}
+            className="w-full mt-2 bg-gradient-to-r from-amber-900/40 to-amber-800/40 border border-amber-600/50 text-amber-100 py-3 uppercase tracking-[0.2em] font-magical text-sm hover:bg-amber-800/50 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
           >
-            Seal the Petition
+            Create Petition
           </button>
         </div>
       </div>
@@ -583,31 +562,27 @@ const StageOneIntention = ({ names, setNames, intention, setIntention, onComplet
   }
 
   return (
-    <div className="text-center animate-in zoom-in duration-500">
-      <h2 className="text-2xl text-amber-100 mb-4 font-magical">Activate the Sigil</h2>
-      <p className="text-sm text-amber-400/60 mb-8 font-scroll italic">Trace the symbol of Venus to lock your intention.</p>
+    <div className="text-center animate-in zoom-in duration-500 w-full">
+      <h2 className="text-xl text-amber-100 mb-2 font-magical">Activate the Sigil</h2>
+      <p className="text-xs text-amber-400/60 mb-6 font-scroll italic">Trace the symbol to lock your intention.</p>
       
       <div 
-        className="relative w-72 h-72 mx-auto border-2 border-amber-900/30 rounded-full flex items-center justify-center bg-slate-900/30 touch-none select-none cursor-crosshair shadow-[0_0_50px_rgba(0,0,0,0.5)]"
-        onMouseDown={handleStart}
-        onMouseUp={handleEnd}
-        onMouseMove={handleMove}
-        onTouchStart={handleStart}
-        onTouchEnd={handleEnd}
-        onTouchMove={handleMove}
+        className="relative w-64 h-64 mx-auto flex items-center justify-center cursor-crosshair touch-none"
+        onMouseMove={(e) => { if(e.buttons === 1) handleTrace(); }}
+        onTouchMove={handleTrace}
       >
-        {/* Background Sigil (Dim) */}
-        <svg viewBox="0 0 100 100" className="w-48 h-48 absolute opacity-20 stroke-amber-800 fill-none stroke-2">
-           <circle cx="50" cy="35" r="25" />
-           <line x1="50" y1="60" x2="50" y2="95" />
-           <line x1="35" y1="80" x2="65" y2="80" />
+        <div className="absolute inset-0 border-2 border-amber-900/30 rounded-full animate-[spin_10s_linear_infinite]"></div>
+        <div className="absolute inset-2 border border-amber-900/20 rounded-full animate-[spin_15s_linear_infinite_reverse]"></div>
+
+        {/* Sigil SVG */}
+        <svg viewBox="0 0 100 100" className="w-40 h-40 absolute stroke-amber-800/50 fill-none stroke-2">
+           <path d="M50 10 L90 90 L10 90 Z" />
+           <circle cx="50" cy="55" r="15" />
         </svg>
 
-        {/* Foreground Sigil (Fills up) */}
-        <svg viewBox="0 0 100 100" className="w-48 h-48 absolute stroke-amber-200 fill-none stroke-[3px] drop-shadow-[0_0_10px_rgba(251,191,36,0.8)]" style={{ clipPath: `inset(${100 - traceProgress}% 0 0 0)` }}>
-           <circle cx="50" cy="35" r="25" />
-           <line x1="50" y1="60" x2="50" y2="95" />
-           <line x1="35" y1="80" x2="65" y2="80" />
+        <svg viewBox="0 0 100 100" className="w-40 h-40 absolute stroke-amber-200 fill-none stroke-[3px] drop-shadow-[0_0_10px_rgba(251,191,36,0.8)]" style={{ clipPath: `inset(${100 - traceProgress}% 0 0 0)` }}>
+           <path d="M50 10 L90 90 L10 90 Z" />
+           <circle cx="50" cy="55" r="15" />
         </svg>
 
         {traceProgress < 100 && (
@@ -617,25 +592,20 @@ const StageOneIntention = ({ names, setNames, intention, setIntention, onComplet
         )}
       </div>
 
-      <div className="mt-8 h-1 w-48 mx-auto bg-slate-800 rounded-full overflow-hidden border border-slate-700">
-        <div className="h-full bg-amber-500 transition-all duration-75 shadow-[0_0_10px_#f59e0b]" style={{ width: `${traceProgress}%` }}></div>
+      <div className="mt-6 h-1 w-32 mx-auto bg-slate-800 rounded-full overflow-hidden">
+        <div className="h-full bg-amber-500 transition-all duration-75" style={{ width: `${traceProgress}%` }}></div>
       </div>
 
       {traceProgress >= 100 && (
-         <button 
-         onClick={onComplete}
-         // FIX: bg-linear-to-r syntax
-         className="w-full mt-10 bg-linear-to-r from-amber-700 to-amber-600 text-white font-magical font-bold py-4 uppercase tracking-[0.2em] animate-pulse rounded border border-amber-400 shadow-lg"
-       >
-         Sigil Activated
-       </button>
+         <button onClick={onComplete} className="mt-8 bg-amber-700/80 text-white font-magical px-8 py-2 uppercase tracking-widest animate-pulse rounded border border-amber-500 shadow-lg text-sm">
+           Confirm Sigil
+         </button>
       )}
     </div>
   );
 };
 
-// --- STAGE 2: THE JAR ---
-
+// --- STAGE 2: THE ORNATE JAR ---
 const StageTwoJar = ({ names, onComplete }: any) => {
   const [honeyLevel, setHoneyLevel] = useState(0);
   const [isPouring, setIsPouring] = useState(false);
@@ -646,117 +616,109 @@ const StageTwoJar = ({ names, onComplete }: any) => {
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isPouring && parchmentIn && !failed) {
-      // Start sound if not playing
       if (!soundRef.current) soundRef.current = audio.startCharge();
-      
       interval = setInterval(() => {
         setHoneyLevel(prev => {
-          if (prev >= 110) { 
-            setFailed(true);
-            setIsPouring(false);
-            // Stop sound
+          if (prev >= 115) { 
+            setFailed(true); setIsPouring(false);
             if(soundRef.current) { audio.stopCharge(soundRef.current); soundRef.current = null; }
-            // Play fail sound
             audio.playImpact();
             return prev;
           }
-          // Update Sound Pitch
           if(soundRef.current) audio.updateCharge(soundRef.current, prev);
           return prev + 1;
         });
       }, 50); 
     } else {
-        // Stop sound if we let go
         if(soundRef.current) { audio.stopCharge(soundRef.current); soundRef.current = null; }
     }
-    return () => {
-        clearInterval(interval);
-        if(soundRef.current) { audio.stopCharge(soundRef.current); soundRef.current = null; }
-    };
+    return () => { clearInterval(interval); if(soundRef.current) audio.stopCharge(soundRef.current); };
   }, [isPouring, parchmentIn, failed]);
 
-  const reset = () => {
-    setHoneyLevel(0);
-    setFailed(false);
-    audio.playSparkle();
-  };
+  const reset = () => { setHoneyLevel(0); setFailed(false); audio.playSparkle(); };
 
   return (
-    <div className="flex flex-col items-center">
-      <h2 className="text-2xl text-amber-100 mb-2 font-magical">The Vessel</h2>
-      <p className="text-sm text-amber-400/60 mb-10 text-center max-w-xs font-scroll">
-        {!parchmentIn 
-          ? "Tap the parchment to place your petition." 
-          : "Hold the button to pour the honey. Stop at the line."}
+    <div className="flex flex-col items-center w-full">
+      <h2 className="text-xl text-amber-100 mb-1 font-magical">The Sweetening Jar</h2>
+      <p className="text-xs text-amber-400/60 mb-6 text-center font-scroll h-4">
+        {!parchmentIn ? "Tap to place petition." : "Hold button to pour honey."}
       </p>
 
-      {/* The Jar Visual */}
-      <div className="relative w-40 h-56 border-4 border-slate-600 rounded-b-3xl bg-slate-900/30 backdrop-blur-sm overflow-hidden mb-12 border-t-0 shadow-2xl">
-        <div className="absolute top-0 left-0 right-0 h-1 bg-slate-600/50"></div>
-        
-        {/* Target Line */}
-        <div className={`absolute top-[15%] left-0 right-0 h-0.5 z-20 transition-all duration-300 ${honeyLevel > 80 && honeyLevel < 95 ? 'bg-green-400 shadow-[0_0_15px_lime] h-1' : 'bg-amber-500/50'}`}></div>
+      {/* ORNATE JAR VISUAL */}
+      <div className="relative w-48 h-64 mb-6">
+        {/* SVG Definition for Shape Masking */}
+        <svg width="0" height="0">
+            <defs>
+                <clipPath id="jarClip">
+                    <path d="M70,10 C70,5 75,0 96,0 C117,0 122,5 122,10 L122,50 C122,60 160,70 170,110 C180,150 192,200 160,240 C128,280 64,280 32,240 C0,200 12,150 22,110 C32,70 70,60 70,50 Z" />
+                </clipPath>
+            </defs>
+        </svg>
 
-        {/* Honey */}
-        <div 
-          // FIX: bg-linear-to-t syntax
-          className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-amber-800 to-amber-600/90 transition-all duration-100 ease-linear flex items-center justify-center"
-          style={{ height: `${honeyLevel}%` }}
-        >
-          <div className="absolute w-2 h-2 bg-amber-200/30 rounded-full bottom-4 left-4 animate-ping"></div>
-          <div className="absolute w-1 h-1 bg-amber-200/30 rounded-full bottom-10 right-8 animate-ping delay-300"></div>
-        </div>
+        {/* The Container with Mask */}
+        <div className="relative w-full h-full drop-shadow-[0_0_15px_rgba(0,0,0,0.8)]">
+            {/* Glass Jar Body (Border/Stroke visual) */}
+            <svg viewBox="0 0 192 280" className="absolute inset-0 w-full h-full z-20 pointer-events-none drop-shadow-md">
+                <path d="M70,10 C70,5 75,0 96,0 C117,0 122,5 122,10 L122,50 C122,60 160,70 170,110 C180,150 192,200 160,240 C128,280 64,280 32,240 C0,200 12,150 22,110 C32,70 70,60 70,50 Z" 
+                      fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="2" />
+                {/* Decorative bands */}
+                <path d="M30,120 Q96,140 162,120" fill="none" stroke="rgba(251,191,36,0.4)" strokeWidth="1" />
+                <path d="M32,240 Q96,260 160,240" fill="none" stroke="rgba(251,191,36,0.4)" strokeWidth="1" />
+            </svg>
 
-        {/* Parchment inside */}
-        <div className={`absolute left-1/2 -translate-x-1/2 transition-all duration-1000 ${parchmentIn ? 'top-[40%] rotate-12' : '-top-[120px]'}`}>
-          <div className="w-20 h-24 bg-[#f3e5ab] text-slate-900 text-[8px] p-2 shadow-lg writing-vertical text-center border border-amber-300 font-magical flex flex-col items-center justify-center leading-tight">
-            <span>{names.user}</span>
-            <span className="text-red-800 text-xs my-1">❤</span>
-            <span>{names.target}</span>
-          </div>
+            {/* Liquid Container (Clipped) */}
+            <div className="absolute inset-0 w-full h-full" style={{ clipPath: 'url(#jarClip)', background: 'rgba(255,255,255,0.05)' }}>
+                {/* The Honey Liquid */}
+                <div 
+                    className="absolute bottom-0 w-full bg-gradient-to-t from-amber-900 via-amber-600 to-amber-500/90 transition-all duration-100 ease-linear"
+                    style={{ height: `${honeyLevel}%` }}
+                >
+                   {/* Bubbles */}
+                   <div className="absolute w-1 h-1 bg-white/30 rounded-full bottom-4 left-1/2 animate-ping"></div>
+                </div>
+
+                {/* Target Line */}
+                <div className={`absolute top-[20%] w-full h-0.5 z-10 ${honeyLevel > 75 && honeyLevel < 100 ? 'bg-green-400 shadow-[0_0_10px_lime]' : 'bg-white/20'}`}></div>
+
+                {/* Parchment */}
+                <div className={`absolute left-1/2 -translate-x-1/2 transition-all duration-1000 z-0 ${parchmentIn ? 'top-[50%] opacity-80' : '-top-[100px]'}`}>
+                   <div className="w-12 h-16 bg-[#f3e5ab] text-[6px] p-1 text-center border border-amber-900 shadow-md flex items-center justify-center font-serif leading-none text-black">
+                       {names.user}<br/>&<br/>{names.target}
+                   </div>
+                </div>
+            </div>
         </div>
       </div>
 
-      {failed && (
-        <div className="text-red-400 text-sm mb-6 animate-bounce font-magical bg-red-900/20 px-4 py-2 rounded border border-red-800">
-          The honey spilled. The flow must be precise.
-        </div>
-      )}
+      {failed && <div className="text-red-400 text-xs mb-4 font-magical bg-red-900/20 px-3 py-1 rounded">Overflow. Try again.</div>}
 
-      {/* Controls */}
       {!parchmentIn ? (
-        <button 
-          onClick={() => {
-              setParchmentIn(true);
-              audio.playSparkle(); // Drop sound
-          }}
-          className="px-10 py-4 bg-[#f3e5ab] text-slate-900 rounded-sm font-magical font-bold shadow-[0_0_20px_rgba(251,191,36,0.2)] hover:scale-105 transition-transform border-4 border-double border-amber-600"
-        >
-          Place Petition
+        <button onClick={() => { setParchmentIn(true); audio.playSparkle(); }} className="px-8 py-2 bg-[#f3e5ab] text-slate-900 font-magical font-bold text-sm shadow-[0_0_15px_rgba(251,191,36,0.3)] hover:scale-105 transition-transform">
+          Insert Petition
         </button>
       ) : (
         <>
           {failed ? (
-            <button onClick={reset} className="px-8 py-3 border border-red-500 text-red-400 font-magical rounded hover:bg-red-900/20 uppercase tracking-wider">Clean & Reset</button>
+            <button onClick={reset} className="px-6 py-2 border border-red-500 text-red-400 font-magical text-xs uppercase tracking-wider">Clean Jar</button>
           ) : (
             <>
-              {honeyLevel > 80 && honeyLevel < 95 && !isPouring ? (
-                 <button 
-                 onClick={onComplete}
-                 className="w-full bg-green-900/30 border border-green-500 text-green-200 py-4 uppercase tracking-[0.2em] font-magical animate-in fade-in"
-               >
-                 Jar Sweetened
-               </button>
+              {honeyLevel > 75 && honeyLevel < 100 && !isPouring ? (
+                 <button onClick={onComplete} className="bg-green-900/40 border border-green-500 text-green-200 px-8 py-2 uppercase tracking-[0.2em] font-magical text-sm animate-pulse">
+                   Seal Vessel
+                 </button>
               ) : (
                 <button 
                   onMouseDown={() => setIsPouring(true)}
                   onMouseUp={() => setIsPouring(false)}
                   onTouchStart={() => setIsPouring(true)}
                   onTouchEnd={() => setIsPouring(false)}
-                  className="group relative w-24 h-24 rounded-full bg-slate-800 border-2 border-amber-500/50 shadow-[0_0_30px_rgba(245,158,11,0.1)] active:scale-95 transition-all flex items-center justify-center overflow-hidden"
+                  className="group relative w-20 h-20 rounded-full bg-slate-800 border border-amber-500/30 flex items-center justify-center overflow-hidden active:scale-95 transition-transform"
                 >
-                  <div className={`absolute inset-0 bg-amber-600 transition-transform duration-300 ${isPouring ? 'translate-y-0' : 'translate-y-full'}`}></div>
-                  <Droplets className={`w-8 h-8 relative z-10 transition-colors ${isPouring ? 'text-amber-100' : 'text-amber-500'}`} />
+                   <div className={`absolute inset-0 bg-amber-600 transition-transform duration-300 ${isPouring ? 'translate-y-0' : 'translate-y-full'}`}></div>
+                   <div className="relative z-10 flex flex-col items-center">
+                     <Droplets className={`w-6 h-6 ${isPouring ? 'text-white' : 'text-amber-500'}`} />
+                     <span className="text-[8px] uppercase font-bold mt-1 text-amber-200/70">(Hold)</span>
+                   </div>
                 </button>
               )}
             </>
@@ -767,117 +729,79 @@ const StageTwoJar = ({ names, onComplete }: any) => {
   );
 };
 
-// --- STAGE 3: THE HERBS ---
-
+// --- STAGE 3: HERBS ---
 const StageThreeHerbs = ({ ingredients, onComplete }: any) => {
   const [currentIdx, setCurrentIdx] = useState(0);
   const [charge, setCharge] = useState(0);
   const [isCharging, setIsCharging] = useState(false);
   const soundRef = useRef<any>(null);
+  const currentHerb = ingredients[currentIdx];
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isCharging) {
-      if (!soundRef.current) soundRef.current = audio.startCharge(); // Rising Pitch
+      if (!soundRef.current) soundRef.current = audio.startCharge(); 
       interval = setInterval(() => {
         setCharge(prev => {
-            const next = Math.min(prev + 2, 100);
+            const next = Math.min(prev + 2.5, 100); // Faster charge
             if(soundRef.current) audio.updateCharge(soundRef.current, next);
             return next;
         }); 
       }, 50);
     } else {
         if(soundRef.current) { audio.stopCharge(soundRef.current); soundRef.current = null; }
-        interval = setInterval(() => {
-            setCharge(prev => Math.max(prev - 5, 0)); 
-        }, 50);
+        setCharge(0); // Reset on let go
     }
-    return () => {
-        clearInterval(interval);
-        if(soundRef.current) { audio.stopCharge(soundRef.current); soundRef.current = null; }
-    };
+    return () => { clearInterval(interval); if(soundRef.current) audio.stopCharge(soundRef.current); };
   }, [isCharging]);
 
-  const handleChargeComplete = () => {
-    if (currentIdx < ingredients.length - 1) {
-      setCurrentIdx(p => p + 1);
-      setCharge(0);
-      setIsCharging(false);
-      audio.playSparkle(); // Success per herb
-    } else {
-      onComplete();
-    }
-  };
-
-  const currentHerb = ingredients[currentIdx];
+  useEffect(() => {
+      if(charge >= 100) {
+        setIsCharging(false);
+        audio.playSparkle();
+        if(currentIdx < ingredients.length - 1) {
+            setCurrentIdx(p => p + 1);
+            setCharge(0);
+        } else {
+            onComplete();
+        }
+      }
+  }, [charge, currentIdx, ingredients.length, onComplete]);
 
   return (
-    <div className="flex flex-col items-center text-center">
-      <h2 className="text-2xl text-amber-100 mb-2 font-magical">Consecrate Ingredients</h2>
-      <p className="text-sm text-amber-400/60 mb-8 font-scroll italic">
-        Press and hold to imbue the ingredient with your will.
-      </p>
+    <div className="flex flex-col items-center text-center w-full">
+      <h2 className="text-xl text-amber-100 mb-1 font-magical">Consecrate Herbs</h2>
+      <p className="text-xs text-amber-400/60 mb-6 font-scroll italic">Hold to imbue energy.</p>
 
-      {/* Ingredient Card */}
-      <div className="w-full bg-slate-900/60 border border-amber-900/50 p-8 rounded-xl mb-10 relative overflow-hidden backdrop-blur-md shadow-2xl">
-        <div className="absolute top-4 right-4 text-xs font-magical text-amber-500/50">
-          {currentIdx + 1} / 3
-        </div>
-        
-        {/* Ingredient Icon Display */}
-        <div className={`mx-auto w-32 h-32 mb-6 flex items-center justify-center text-7xl rounded-full bg-black/30 border border-white/5 ingredient-aura transition-all duration-300 ${isCharging ? 'scale-110 ' + currentHerb.glow : ''}`}>
-          <span className="drop-shadow-lg filter">{currentHerb.icon}</span>
-        </div>
-
-        <h3 className={`text-3xl font-magical mb-2 ${currentHerb.color} drop-shadow-md`}>{currentHerb.name}</h3>
-        <p className="text-lg text-slate-300 font-scroll leading-relaxed">"{currentHerb.desc}"</p>
-        
-        {/* Visual Charge Overlay */}
-        <div 
-            // FIX: bg-linear-to-t syntax
-            className="absolute inset-0 bg-linear-to-t from-amber-500/20 to-transparent pointer-events-none transition-opacity duration-100 mix-blend-overlay"
-            style={{ opacity: charge / 100 }}
-        ></div>
+      <div className="w-64 h-64 bg-slate-900/40 border border-amber-900/50 rounded-full flex flex-col items-center justify-center mb-8 relative overflow-hidden backdrop-blur-sm shadow-[0_0_30px_rgba(0,0,0,0.5)]">
+         <div className="absolute inset-0 bg-amber-500/10 rounded-full scale-0 transition-transform duration-200 ease-linear" style={{ transform: `scale(${charge/40})` }}></div>
+         <div className={`text-6xl mb-4 filter drop-shadow-lg transition-transform duration-300 ${isCharging ? 'scale-125' : 'scale-100'}`}>
+            {currentHerb.icon}
+         </div>
+         <h3 className={`text-2xl font-magical ${currentHerb.color} mb-1`}>{currentHerb.name}</h3>
+         <p className="text-sm text-slate-400 font-scroll italic px-4">"{currentHerb.desc}"</p>
+         <div className="absolute top-4 text-[10px] text-slate-600 font-bold tracking-widest">{currentIdx + 1} / 3</div>
       </div>
 
-      {/* Progress Bar */}
-      <div className="w-full max-w-xs h-1 bg-slate-800 rounded-full mb-12 overflow-hidden">
-        <div 
-          // FIX: bg-linear-to-r syntax
-          className="h-full bg-linear-to-r from-purple-500 via-amber-400 to-white transition-all duration-75 shadow-[0_0_10px_white]"
-          style={{ width: `${charge}%` }}
-        ></div>
-      </div>
-
-      {charge >= 100 ? (
-        <button 
-          onClick={handleChargeComplete}
-          className="px-10 py-3 bg-white text-slate-900 font-magical font-bold uppercase tracking-widest animate-pulse shadow-[0_0_30px_rgba(255,255,255,0.5)] rounded-sm"
-        >
-          Add to Jar
-        </button>
-      ) : (
-        <button
-          onMouseDown={() => setIsCharging(true)}
-          onMouseUp={() => setIsCharging(false)}
-          onTouchStart={() => setIsCharging(true)}
-          onTouchEnd={() => setIsCharging(false)}
-          className="w-28 h-28 rounded-full border-2 border-amber-500/30 flex items-center justify-center relative overflow-hidden active:border-amber-200 active:shadow-[0_0_30px_rgba(245,158,11,0.4)] transition-all"
-        >
-          <div className="absolute inset-0 bg-amber-600/20 scale-0 transition-transform duration-1000 rounded-full" style={{ transform: isCharging ? 'scale(1.5)' : 'scale(0)' }}></div>
-          <span className="relative z-10 text-xs font-magical uppercase tracking-widest text-amber-200">Charge</span>
-        </button>
-      )}
+      <button
+        onMouseDown={() => setIsCharging(true)}
+        onMouseUp={() => setIsCharging(false)}
+        onTouchStart={() => setIsCharging(true)}
+        onTouchEnd={() => setIsCharging(false)}
+        className="w-24 h-24 rounded-full border border-amber-500/40 flex flex-col items-center justify-center relative overflow-hidden active:scale-95 transition-all bg-slate-900"
+      >
+        <div className="absolute bottom-0 w-full bg-amber-600/30 transition-all duration-75" style={{ height: `${charge}%` }}></div>
+        <Sparkles className="w-6 h-6 text-amber-200 mb-1" />
+        <span className="relative z-10 text-[9px] font-magical uppercase tracking-widest text-amber-100">(Hold)</span>
+      </button>
     </div>
   );
 };
 
-// --- STAGE 4: THE STIR ---
-
+// --- STAGE 4: STIR ---
 const StageFourStir = ({ onComplete }: any) => {
   const [progress, setProgress] = useState(0);
   const [isStirring, setIsStirring] = useState(false);
-  const [message, setMessage] = useState("Hold to Stir");
   const soundRef = useRef<any>(null);
 
   useEffect(() => {
@@ -886,76 +810,44 @@ const StageFourStir = ({ onComplete }: any) => {
       if (!soundRef.current) soundRef.current = audio.startSwirl();
       interval = setInterval(() => {
         setProgress(prev => {
-          if (prev >= 100) {
-            if(soundRef.current) { soundRef.current.stop(); soundRef.current = null; }
-            return 100;
-          }
-          return prev + 0.5; 
+          if (prev >= 100) { if(soundRef.current) soundRef.current.stop(); return 100; }
+          return prev + 0.8; 
         });
       }, 50);
     } else {
       if(soundRef.current) { soundRef.current.stop(); soundRef.current = null; }
-      if (progress > 0 && progress < 100) {
-        setProgress(0);
-        audio.playImpact(); // Fail sound
-        setMessage("The circle broke. Begin again.");
-        setTimeout(() => setMessage("Hold to Stir"), 2000);
-      }
+      if(progress < 100) setProgress(0); // Reset if let go early
     }
-    return () => {
-        clearInterval(interval);
-        if(soundRef.current) { soundRef.current.stop(); soundRef.current = null; }
-    };
+    return () => { clearInterval(interval); if(soundRef.current) soundRef.current.stop(); };
   }, [isStirring, progress]);
 
   return (
-    <div className="flex flex-col items-center text-center">
-      <h2 className="text-2xl text-amber-100 mb-2 font-magical">Awaken the Mixture</h2>
-      <p className="text-sm text-amber-400/60 mb-10 font-scroll italic">
-        Create a vortex of energy. Do not stop until the circle closes.
-      </p>
+    <div className="flex flex-col items-center text-center w-full">
+      <h2 className="text-xl text-amber-100 mb-1 font-magical">Bind the Energy</h2>
+      <p className="text-xs text-amber-400/60 mb-8 font-scroll italic">Hold to stir. Do not break the circle.</p>
 
-      {/* Visual Mixer */}
-      <div className="relative w-72 h-72 mb-10 flex items-center justify-center">
-        {/* Jar Rim */}
-        <div className="absolute w-56 h-56 border border-slate-600/50 rounded-full"></div>
+      <div className="relative w-56 h-56 mb-8 flex items-center justify-center">
+        <div className="absolute inset-0 border border-slate-700 rounded-full"></div>
         
-        {/* Spinning Ingredients */}
+        {/* Swirling Liquid */}
         <div 
-          // FIX: bg-linear-to-br syntax
-          className="w-48 h-48 rounded-full bg-linear-to-br from-amber-900 via-amber-950 to-black flex items-center justify-center transition-transform duration-100 ease-linear shadow-inner"
-          style={{ transform: `rotate(${progress * 15}deg)` }}
+          className="w-40 h-40 rounded-full bg-gradient-to-br from-amber-900 to-black flex items-center justify-center shadow-inner overflow-hidden"
+          style={{ transform: `rotate(${progress * 20}deg)`, transition: isStirring ? 'transform 0.1s linear' : 'none' }}
         >
-          <div className="absolute top-6 left-12 text-2xl opacity-70 filter blur-xs">🌹</div>
-          <div className="absolute bottom-8 right-12 text-xl opacity-70 filter blur-xs">🌶️</div>
-          <div className="absolute top-1/2 left-6 w-8 h-1 bg-amber-200/20 rotate-45 blur-sm"></div>
-          <div className="text-amber-500/20 text-8xl font-magical">🍯</div>
+           <div className="absolute w-full h-full opacity-30 bg-[url('/images/noise.png')]"></div>
+           <div className="text-4xl filter blur-sm opacity-50">🍯</div>
         </div>
 
         {/* Progress Ring */}
-        <svg className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none drop-shadow-[0_0_10px_rgba(245,158,11,0.5)]">
-          <circle cx="144" cy="144" r="130" stroke="#1e293b" strokeWidth="2" fill="none" />
-          <circle 
-            cx="144" cy="144" r="130" 
-            stroke="#f59e0b" 
-            strokeWidth="3" 
-            fill="none" 
-            strokeDasharray="816"
-            strokeDashoffset={816 - (816 * progress) / 100}
-            strokeLinecap="round"
-            className="transition-all duration-100 ease-linear"
-          />
+        <svg className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none">
+          <circle cx="112" cy="112" r="100" stroke="#1e293b" strokeWidth="2" fill="none" />
+          <circle cx="112" cy="112" r="100" stroke="#f59e0b" strokeWidth="4" fill="none" strokeDasharray="628" strokeDashoffset={628 - (628 * progress) / 100} strokeLinecap="round" />
         </svg>
       </div>
 
-      <div className={`h-6 text-sm font-magical uppercase tracking-widest mb-6 ${message.includes("broke") ? "text-red-400" : "text-amber-500/50"}`}>{message}</div>
-
       {progress >= 100 ? (
-        <button 
-          onClick={onComplete}
-          className="px-10 py-3 bg-amber-500 text-slate-900 font-magical font-bold uppercase tracking-widest animate-bounce shadow-[0_0_30px_rgba(245,158,11,0.6)] rounded-sm"
-        >
-          It is Mixed
+        <button onClick={onComplete} className="px-8 py-2 bg-amber-600 text-white font-magical uppercase tracking-widest text-sm rounded shadow-lg animate-bounce">
+          Mixture Bound
         </button>
       ) : (
         <button
@@ -963,149 +855,100 @@ const StageFourStir = ({ onComplete }: any) => {
           onMouseUp={() => setIsStirring(false)}
           onTouchStart={() => setIsStirring(true)}
           onTouchEnd={() => setIsStirring(false)}
-          className="p-8 rounded-full bg-slate-900 border border-slate-700 active:bg-amber-900/30 active:border-amber-500/50 transition-colors shadow-2xl"
+          className="w-20 h-20 rounded-full bg-slate-800 border border-slate-600 flex flex-col items-center justify-center active:bg-amber-900/20 active:border-amber-500 transition-colors"
         >
-          <RotateCw className={`w-10 h-10 text-amber-100 ${isStirring ? 'animate-spin' : ''}`} />
+          <RotateCw className={`w-6 h-6 text-amber-100 mb-1 ${isStirring ? 'animate-spin' : ''}`} />
+          <span className="text-[8px] uppercase font-bold text-amber-200/70">(Hold)</span>
         </button>
       )}
     </div>
   );
 };
 
-// --- STAGE 5: THE INCANTATION ---
-
+// --- STAGE 5: INCANTATION ---
 const StageFiveIncantation = ({ chant, onComplete }: any) => {
   const [lineIdx, setLineIdx] = useState(0);
 
   const handleTap = () => {
-    audio.playImpact(); // Deep Drum/Bell Sound
-    if (lineIdx < chant.length - 1) {
-      setLineIdx(p => p + 1);
-    } else {
-      onComplete();
-    }
+    audio.playImpact();
+    if (lineIdx < chant.length - 1) setLineIdx(p => p + 1);
+    else onComplete();
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] cursor-pointer" onClick={handleTap}>
-      <h2 className="text-xs font-magical uppercase tracking-[0.3em] text-slate-500 mb-16">Tap rhythmically to Chant</h2>
-      
-      <div className="relative w-full text-center px-6 min-h-[250px] flex items-center justify-center">
-        {chant.map((line: string, idx: number) => {
-          if (idx !== lineIdx) return null;
-          return (
-            <div key={idx} className="animate-in zoom-in slide-in-from-bottom-8 duration-700">
-               <h3 className="text-3xl md:text-4xl font-magical text-amber-50 leading-relaxed drop-shadow-[0_0_20px_rgba(251,191,36,0.5)]">
-                 "{line}"
-               </h3>
-               <div className="mt-8 flex justify-center">
-                 <div className="w-16 h-1 bg-amber-900/30 rounded-full overflow-hidden">
-                    <div className="h-full bg-amber-500 w-full animate-[ping_2s_infinite]"></div>
-                 </div>
-               </div>
+    <div className="flex flex-col items-center justify-center w-full h-full cursor-pointer" onClick={handleTap}>
+      <h2 className="text-[10px] font-magical uppercase tracking-[0.3em] text-slate-500 mb-8">Tap screen to Chant</h2>
+      <div className="relative w-full text-center px-4 min-h-[200px] flex items-center justify-center">
+         <div key={lineIdx} className="animate-in zoom-in slide-in-from-bottom-4 duration-500">
+            <h3 className="text-2xl md:text-3xl font-magical text-amber-50 leading-relaxed drop-shadow-md">"{chant[lineIdx]}"</h3>
+            <div className="mt-6 flex justify-center">
+                <div className="w-12 h-1 bg-amber-900/30 rounded-full overflow-hidden">
+                    <div className="h-full bg-amber-500 w-full animate-[ping_1.5s_infinite]"></div>
+                </div>
             </div>
-          )
-        })}
+         </div>
       </div>
-      
-      <p className="mt-12 text-xs text-amber-500/30 font-magical uppercase tracking-widest">(Tap to speak)</p>
     </div>
   );
 };
 
-// --- STAGE 6: THE CANDLE SEAL ---
-
-const StageSixCandle = ({ targetName, onComplete }: any) => {
+// --- STAGE 6: CANDLE ---
+const StageSixCandle = ({ onComplete }: any) => {
   const [lit, setLit] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(120); 
-  const [waxHeight, setWaxHeight] = useState(0);
+  const [progress, setProgress] = useState(0);
   
-  const formatTime = (s: number) => {
-    const mins = Math.floor(s / 60);
-    const secs = s % 60;
-    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
-  };
-
   useEffect(() => {
-    if (lit && timeLeft > 0) {
-      const interval = setInterval(() => {
-        setTimeLeft(t => t - 1);
-        setWaxHeight(prev => prev + 0.83); 
-      }, 1000);
+    if (lit && progress < 100) {
+      const interval = setInterval(() => { setProgress(p => p + 2); }, 100);
       return () => clearInterval(interval);
     }
-  }, [lit, timeLeft]);
+  }, [lit, progress]);
 
   return (
-    <div className="flex flex-col items-center">
-      <h2 className="text-2xl text-amber-100 mb-2 font-magical">Seal with Fire</h2>
-      <p className="text-sm text-amber-400/60 mb-10 text-center font-scroll max-w-xs">
-        Light the wick. Gaze into the flame until the work is finished.
-      </p>
+    <div className="flex flex-col items-center w-full">
+      <h2 className="text-xl text-amber-100 mb-1 font-magical">Seal with Fire</h2>
+      <p className="text-xs text-amber-400/60 mb-8 font-scroll italic">Gaze into the flame.</p>
 
-      {/* Candle Visual */}
-      <div className="relative w-full h-72 flex flex-col items-center justify-end mb-8">
-        
-        {/* Flame */}
-        {lit && timeLeft > 0 && (
-          <div className="absolute bottom-[180px] z-20 mix-blend-screen" style={{ marginBottom: `-${waxHeight * 1.5}px` }}>
-            <div className="w-6 h-16 bg-orange-500 rounded-full blur-xs animate-[pulse_0.1s_infinite]"></div>
-            <div className="absolute top-4 left-1.5 w-3 h-10 bg-yellow-100 rounded-full blur-[2px]"></div>
-            <div className="absolute -top-10 -left-6 w-20 h-20 bg-orange-600/20 rounded-full blur-2xl animate-pulse"></div>
+      <div className="relative h-64 w-full flex flex-col items-center justify-end mb-6">
+        {lit && (
+          <div className="absolute bottom-[160px] z-20 mix-blend-screen animate-in fade-in duration-1000">
+            <div className="w-4 h-12 bg-orange-500 rounded-full blur-sm animate-pulse"></div>
+            <div className="absolute top-2 left-1 w-2 h-8 bg-yellow-100 rounded-full blur-[1px]"></div>
           </div>
         )}
 
-        {/* Candle Body */}
-        <div 
-          // FIX: bg-linear-to-r syntax
-          className="w-20 bg-linear-to-r from-pink-300 via-pink-200 to-pink-300 rounded-t-lg relative transition-all duration-1000 overflow-hidden shadow-[inset_-10px_0_20px_rgba(0,0,0,0.3)]"
-          style={{ height: `${180 - (waxHeight * 1.5)}px` }}
-        >
-          <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-1.5 h-6 bg-slate-900"></div>
-          
+        <div className="w-16 bg-gradient-to-r from-pink-300 via-pink-100 to-pink-300 rounded-t-md relative shadow-inner" style={{ height: '160px' }}>
+          <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-1 h-4 bg-black"></div>
           {!lit && (
              <div 
-               className="absolute inset-0 z-50 cursor-ew-resize"
-               onMouseEnter={() => {
-                   setLit(true);
-                   audio.playEtch(); // Igniting sound
-               }}
-               onTouchMove={() => {
-                   setLit(true);
-                   audio.playEtch(); 
-               }}
-             >
-                <div className="w-full h-full flex items-center justify-center opacity-0 hover:opacity-100 bg-black/40 text-[10px] text-white font-bold font-magical tracking-widest backdrop-blur-sm">SWIPE TO LIGHT</div>
-             </div>
+               className="absolute -top-10 -left-10 right-10 bottom-full w-40 h-20 z-50"
+               onMouseEnter={() => { setLit(true); audio.playEtch(); }}
+               onTouchMove={() => { setLit(true); audio.playEtch(); }}
+             ></div>
           )}
         </div>
-
-        {/* Melted Wax Pool */}
-        <div className="w-40 h-6 bg-pink-400/30 rounded-full mt-1 blur-md transition-all duration-1000" style={{ width: `${80 + waxHeight}px`, opacity: waxHeight/100 }}></div>
       </div>
 
-      <div className="text-4xl font-magical text-amber-500 mb-8 drop-shadow-lg">
-        {timeLeft === 0 ? "SEALED" : formatTime(timeLeft)}
-      </div>
-
-      {timeLeft === 0 ? (
-         <button 
-         onClick={onComplete}
-         className="px-10 py-3 bg-pink-700 text-pink-100 font-magical font-bold uppercase tracking-widest shadow-[0_0_30px_rgba(236,72,153,0.5)] animate-pulse rounded-sm border border-pink-500"
-       >
-         Complete Seal
-       </button>
+      {!lit ? (
+        <div className="text-xs uppercase tracking-widest text-pink-300 animate-pulse border-b border-pink-500/50 pb-1">Swipe wick to light</div>
       ) : (
-        <div className="h-12 flex items-center justify-center text-xs text-slate-500 font-magical uppercase tracking-widest">
-           {lit ? "Focus on your desire..." : "Swipe across wick"}
-        </div>
+        <>
+            {progress < 100 ? (
+                <div className="w-48 h-1 bg-slate-800 rounded-full overflow-hidden">
+                    <div className="h-full bg-pink-500 transition-all duration-100" style={{ width: `${progress}%` }}></div>
+                </div>
+            ) : (
+                <button onClick={onComplete} className="px-8 py-2 bg-pink-700 text-white font-magical uppercase tracking-widest text-sm rounded shadow-[0_0_20px_rgba(236,72,153,0.5)]">
+                    Seal Completed
+                </button>
+            )}
+        </>
       )}
     </div>
   );
 };
 
-// --- STAGE 7: THE RELEASE ---
-
+// --- STAGE 7: RELEASE ---
 const StageSevenRelease = ({ onComplete }: any) => {
   const [power, setPower] = useState(0);
   const [isCharging, setIsCharging] = useState(false);
@@ -1114,54 +957,33 @@ const StageSevenRelease = ({ onComplete }: any) => {
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isCharging) {
-      // FIX: Safe global access for navigator
-      const globalAny = globalThis as any;
-      if (typeof globalAny.navigator !== 'undefined' && globalAny.navigator.vibrate) {
-          globalAny.navigator.vibrate(50); 
-      }
       if (!soundRef.current) soundRef.current = audio.startCharge();
       interval = setInterval(() => {
         setPower(prev => {
-            const next = Math.min(prev + 1, 100); 
+            const next = Math.min(prev + 1.5, 100); 
             if(soundRef.current) audio.updateCharge(soundRef.current, next);
             return next;
         }); 
-      }, 60); 
+      }, 50); 
     } else {
       setPower(0);
       if(soundRef.current) { audio.stopCharge(soundRef.current); soundRef.current = null; }
     }
-    return () => {
-        clearInterval(interval);
-        if(soundRef.current) { audio.stopCharge(soundRef.current); soundRef.current = null; }
-    };
+    return () => { clearInterval(interval); if(soundRef.current) audio.stopCharge(soundRef.current); };
   }, [isCharging]);
 
   useEffect(() => {
-    if (power >= 100) {
-      audio.playSparkle();
-      setTimeout(onComplete, 1000);
-    }
+      if(power >= 100) {
+          audio.playSparkle();
+          setTimeout(onComplete, 500);
+      }
   }, [power, onComplete]);
 
   return (
-    <div className="flex flex-col items-center justify-center h-[80vh]">
-      <div 
-        className="transition-all duration-100 text-center mb-16"
-        style={{ 
-          opacity: 1 - (power / 100), 
-          transform: `scale(${1 + (power/200)}) translateY(-${power}px)` 
-        }}
-      >
-        <div className="text-7xl mb-6 filter drop-shadow-[0_0_20px_rgba(251,191,36,0.6)]">🕯️</div>
-        <h2 className="text-3xl text-amber-100 font-magical">The Work is Done</h2>
-        <p className="text-amber-500/50 mt-4 font-scroll italic">Release your intention to the universe.</p>
-      </div>
-
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        {power > 20 && <div className="w-72 h-72 bg-amber-500/10 rounded-full blur-3xl animate-pulse"></div>}
-        {power > 50 && <div className="w-[500px] h-[500px] bg-purple-600/20 rounded-full blur-3xl animate-pulse delay-75"></div>}
-        {power > 80 && <div className="w-full h-full bg-white/20 blur-3xl transition-opacity duration-1000"></div>}
+    <div className="flex flex-col items-center justify-center w-full h-full">
+      <div className="text-center mb-12 transition-all duration-100" style={{ opacity: 1 - (power/100), transform: `scale(${1+(power/200)})` }}>
+        <h2 className="text-2xl text-amber-100 font-magical mb-2">Manifestation</h2>
+        <p className="text-amber-500/50 font-scroll italic">Release your will into the universe.</p>
       </div>
 
       <button
@@ -1169,21 +991,14 @@ const StageSevenRelease = ({ onComplete }: any) => {
         onMouseUp={() => setIsCharging(false)}
         onTouchStart={() => setIsCharging(true)}
         onTouchEnd={() => setIsCharging(false)}
-        disabled={power >= 100}
-        className="relative z-50 w-48 h-48 rounded-full border border-amber-500/30 flex flex-col items-center justify-center overflow-hidden group active:border-amber-200 transition-all shadow-[0_0_50px_rgba(0,0,0,0.5)] bg-slate-900/50 backdrop-blur-sm"
+        className="relative w-40 h-40 rounded-full border border-amber-500/30 flex flex-col items-center justify-center overflow-hidden bg-slate-900/50 backdrop-blur-sm group active:border-amber-200 transition-all"
       >
-        <div 
-          className="absolute bottom-0 left-0 right-0 bg-amber-100 transition-all duration-75 ease-linear mix-blend-overlay"
-          style={{ height: `${power}%` }}
-        ></div>
-        <span className="relative z-10 text-amber-100 font-magical font-bold tracking-[0.2em] uppercase text-sm">
-          {power >= 100 ? "RELEASED" : "MANIFEST"}
+        <div className="absolute bottom-0 left-0 right-0 bg-amber-100 mix-blend-overlay transition-all duration-75" style={{ height: `${power}%` }}></div>
+        <span className="relative z-10 text-amber-100 font-magical font-bold tracking-widest uppercase text-xs">
+          {power >= 100 ? "RELEASED" : "RELEASE"}
         </span>
+        <span className="relative z-10 text-[8px] text-amber-500/70 mt-1 uppercase font-bold">(Hold)</span>
       </button>
-      
-      <p className="mt-10 text-xs text-amber-500/40 animate-pulse font-magical uppercase tracking-widest">
-        {isCharging ? "Sending Energy..." : "Hold to Release"}
-      </p>
     </div>
   );
 };
