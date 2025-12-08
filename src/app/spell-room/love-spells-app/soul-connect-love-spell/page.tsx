@@ -9,10 +9,10 @@ import Link from 'next/link';
 /**
  * TWO SOULS CONNECTION - LOVE SPELL RITUAL
  * Updates:
- * - AUDIO: Mixing & Release now use High-Pass Filtered (300Hz) version of Charge sound. No pulsing.
- * - VISUAL: Honey immersion layer increased to 50% opacity.
- * - FLOW: Jar filling stops at line, glows, waits 3s before seal button.
- * - FLOW: Mixing waits 3s with glow before bind button.
+ * - VISUAL: Fixed layout shifting by enforcing fixed height on control areas.
+ * - VISUAL: Success messages now overlay the Jar/Bowl directly.
+ * - VISUAL: Enhanced Glow and Expansion effects for visibility.
+ * - LOGIC: 3-second delay implemented with stable layout.
  */
 
 // --- AUDIO ENGINE ---
@@ -847,16 +847,26 @@ const StageTwoJar = ({ mode, names, filledIngredients, droppingItem, onComplete 
         {mode === 'petition' && (animState !== 'done' ? "Tap to place petition." : "Petition added.")}
         {mode === 'drop' && (animState !== 'done' ? `Tap to add ${droppingItem.name}.` : "Added.")}
         {mode === 'honey' && !honeyDone && "Hold button to pour honey."}
-        {mode === 'honey' && honeyDone && "Ingredients have been sweetened."}
       </p>
 
       {/* JAR VISUAL */}
       <div 
-        className={`relative w-56 h-[40vh] max-h-80 mb-6 shrink-0 transition-all duration-1000 ${honeyDone ? 'scale-105' : ''}`}
+        className={`relative w-56 h-[40vh] max-h-80 mb-6 shrink-0 transition-all duration-1000 ${honeyDone ? 'scale-110' : ''}`}
       >
          {/* Back Glow Logic */}
          {honeyDone && (
-             <div className="absolute inset-0 bg-amber-500/20 blur-3xl animate-pulse rounded-full z-0"></div>
+             <div className="absolute inset-0 bg-amber-500/60 blur-[60px] animate-pulse rounded-full z-0 transition-opacity duration-1000"></div>
+         )}
+         
+         {/* OVERLAY MESSAGE */}
+         {honeyDone && (
+             <div className="absolute inset-0 flex items-center justify-center z-50 animate-in zoom-in duration-700">
+                 <div className="bg-black/60 backdrop-blur-md px-6 py-3 rounded-full border border-amber-500/50 shadow-[0_0_20px_rgba(251,191,36,0.5)]">
+                     <span className="text-amber-100 font-magical uppercase tracking-widest text-xs font-bold drop-shadow-md">
+                         Ingredients Sweetened
+                     </span>
+                 </div>
+             </div>
          )}
 
          <svg viewBox="0 0 200 300" className="w-full h-full drop-shadow-[0_0_20px_rgba(0,0,0,0.6)] relative z-10">
@@ -961,34 +971,34 @@ const StageTwoJar = ({ mode, names, filledIngredients, droppingItem, onComplete 
          </svg>
       </div>
 
-      {/* CONTROLS */}
-      {mode === 'petition' && (
-          animState === 'done' ? (
-            <button onClick={() => { audio.playClick('medium'); onComplete(); }} className="px-8 py-2 bg-amber-800 text-amber-100 font-magical font-bold text-sm rounded shadow-lg animate-in zoom-in">
-                Next Step
-            </button>
-          ) : (
-            <button onClick={handlePetitionInsert} className={`px-8 py-2 bg-[#f3e5ab] text-slate-900 font-magical font-bold text-sm shadow-[0_0_15px_rgba(251,191,36,0.3)] hover:scale-105 transition-transform active:scale-95 ${animState === 'dropping' ? 'opacity-50 pointer-events-none' : ''}`}>
-                {animState === 'dropping' ? "Placing..." : "Insert Petition"}
-            </button>
-          )
-      )}
+      {/* CONTROLS - FIXED HEIGHT CONTAINER TO PREVENT SHIFT */}
+      <div className="h-24 flex items-center justify-center w-full">
+        {mode === 'petition' && (
+            animState === 'done' ? (
+                <button onClick={() => { audio.playClick('medium'); onComplete(); }} className="px-8 py-2 bg-amber-800 text-amber-100 font-magical font-bold text-sm rounded shadow-lg animate-in zoom-in">
+                    Next Step
+                </button>
+            ) : (
+                <button onClick={handlePetitionInsert} className={`px-8 py-2 bg-[#f3e5ab] text-slate-900 font-magical font-bold text-sm shadow-[0_0_15px_rgba(251,191,36,0.3)] hover:scale-105 transition-transform active:scale-95 ${animState === 'dropping' ? 'opacity-50 pointer-events-none' : ''}`}>
+                    {animState === 'dropping' ? "Placing..." : "Insert Petition"}
+                </button>
+            )
+        )}
 
-      {mode === 'drop' && (
-          animState === 'done' ? (
-            <button onClick={() => { audio.playClick('magick'); onComplete(); }} className="px-8 py-2 bg-amber-800 text-amber-100 font-magical font-bold text-sm rounded shadow-lg animate-in zoom-in">
-                Confirm
-            </button>
-          ) : (
-             <button onClick={triggerDrop} className={`group flex items-center gap-2 px-8 py-2 border border-amber-500/50 text-amber-100 font-magical text-sm hover:bg-amber-900/30 transition-all active:scale-95 ${animState === 'dropping' ? 'opacity-50 pointer-events-none' : ''}`}>
-                {animState === 'dropping' ? "Dropping..." : `Drop ${droppingItem.name}`} {animState !== 'dropping' && <ArrowDown size={14} />}
-             </button>
-          )
-      )}
+        {mode === 'drop' && (
+            animState === 'done' ? (
+                <button onClick={() => { audio.playClick('magick'); onComplete(); }} className="px-8 py-2 bg-amber-800 text-amber-100 font-magical font-bold text-sm rounded shadow-lg animate-in zoom-in">
+                    Confirm
+                </button>
+            ) : (
+                <button onClick={triggerDrop} className={`group flex items-center gap-2 px-8 py-2 border border-amber-500/50 text-amber-100 font-magical text-sm hover:bg-amber-900/30 transition-all active:scale-95 ${animState === 'dropping' ? 'opacity-50 pointer-events-none' : ''}`}>
+                    {animState === 'dropping' ? "Dropping..." : `Drop ${droppingItem.name}`} {animState !== 'dropping' && <ArrowDown size={14} />}
+                </button>
+            )
+        )}
 
-      {mode === 'honey' && (
-        <>
-            {showSealBtn ? (
+        {mode === 'honey' && (
+            showSealBtn ? (
                 <button onClick={() => { audio.playClick('magick'); onComplete(); }} className="bg-green-900/40 border border-green-500 text-green-200 px-8 py-2 uppercase tracking-[0.2em] font-magical text-sm animate-in zoom-in active:scale-95">
                    Seal Vessel
                  </button>
@@ -1008,9 +1018,9 @@ const StageTwoJar = ({ mode, names, filledIngredients, droppingItem, onComplete 
                        </div>
                     </button>
                 )
-            )}
-        </>
-      )}
+            )
+        )}
+      </div>
     </div>
   );
 };
@@ -1173,12 +1183,23 @@ const StageFiveMixing = ({ ingredients, names, onComplete }: any) => {
     <div className="flex flex-col items-center text-center w-full h-full justify-center">
       <h2 className="text-xl text-amber-100 mb-1 font-magical">Bind the Energy</h2>
       <p className="text-xs text-amber-400/60 mb-8 font-scroll italic animate-in fade-in">
-          {mixedDone ? "The energies have merged." : "Hold to stir the ingredients."}
+          {mixedDone ? " " : "Hold to stir the ingredients."}
       </p>
 
       <div className="relative w-56 h-56 mb-8 flex items-center justify-center shrink-0">
-        <div className={`absolute inset-0 border border-slate-700 rounded-full bg-black/40 transition-all duration-1000 ${mixedDone ? 'shadow-[0_0_50px_rgba(251,191,36,0.3)] scale-110' : ''}`}></div>
+        <div className={`absolute inset-0 border border-slate-700 rounded-full bg-black/40 transition-all duration-1000 ${mixedDone ? 'shadow-[0_0_80px_rgba(251,191,36,0.5)] scale-110' : ''}`}></div>
         
+        {/* OVERLAY MESSAGE */}
+        {mixedDone && (
+             <div className="absolute inset-0 flex items-center justify-center z-50 animate-in zoom-in duration-700">
+                 <div className="bg-black/60 backdrop-blur-md px-6 py-3 rounded-full border border-amber-500/50 shadow-[0_0_20px_rgba(251,191,36,0.5)]">
+                     <span className="text-amber-100 font-magical uppercase tracking-widest text-xs font-bold drop-shadow-md">
+                         Energies Merged
+                     </span>
+                 </div>
+             </div>
+        )}
+
         <div 
           className="w-48 h-48 rounded-full bg-gradient-to-br from-amber-900 to-black flex items-center justify-center shadow-inner overflow-hidden relative"
           style={{ transform: `rotate(${progress * 15}deg)`, transition: isStirring ? 'transform 0.1s linear' : 'transform 1s ease-out' }}
@@ -1212,24 +1233,27 @@ const StageFiveMixing = ({ ingredients, names, onComplete }: any) => {
         </svg>
       </div>
 
-      {showBindBtn ? (
-        <button onClick={() => { audio.playClick('magick'); onComplete(); }} className="px-8 py-2 bg-amber-600 text-white font-magical uppercase tracking-widest text-sm rounded shadow-lg animate-in zoom-in active:scale-95">
-          Bind Energy
-        </button>
-      ) : (
-        !mixedDone && (
-            <button
-              onMouseDown={() => setIsStirring(true)}
-              onMouseUp={() => setIsStirring(false)}
-              onTouchStart={() => setIsStirring(true)}
-              onTouchEnd={() => setIsStirring(false)}
-              className="w-20 h-20 rounded-full bg-slate-800 border border-slate-600 flex flex-col items-center justify-center active:bg-amber-900/20 active:border-amber-500 transition-colors active:scale-95"
-            >
-              <RotateCw className={`w-6 h-6 text-amber-100 mb-1 ${isStirring ? 'animate-spin' : ''}`} />
-              <span className="text-[8px] uppercase font-bold text-amber-200/70 pointer-events-none">(Hold)</span>
+      {/* FIXED HEIGHT CONTROLS */}
+      <div className="h-24 flex items-center justify-center w-full">
+        {showBindBtn ? (
+            <button onClick={() => { audio.playClick('magick'); onComplete(); }} className="px-8 py-2 bg-amber-600 text-white font-magical uppercase tracking-widest text-sm rounded shadow-lg animate-in zoom-in active:scale-95">
+            Bind Energy
             </button>
-        )
-      )}
+        ) : (
+            !mixedDone && (
+                <button
+                onMouseDown={() => setIsStirring(true)}
+                onMouseUp={() => setIsStirring(false)}
+                onTouchStart={() => setIsStirring(true)}
+                onTouchEnd={() => setIsStirring(false)}
+                className="w-20 h-20 rounded-full bg-slate-800 border border-slate-600 flex flex-col items-center justify-center active:bg-amber-900/20 active:border-amber-500 transition-colors active:scale-95"
+                >
+                <RotateCw className={`w-6 h-6 text-amber-100 mb-1 ${isStirring ? 'animate-spin' : ''}`} />
+                <span className="text-[8px] uppercase font-bold text-amber-200/70 pointer-events-none">(Hold)</span>
+                </button>
+            )
+        )}
+      </div>
     </div>
   );
 };
