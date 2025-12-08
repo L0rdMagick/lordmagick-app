@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -12,30 +12,27 @@ interface TraditionInfo {
   customHref?: string; 
 }
 
+// REORDERED LIST based on request
 const traditions: TraditionInfo[] = [
-  {
-    name: "Hoodoo (Rootwork)",
-    image: "/images/spell-room/hoodoo-magick-button.png",
-    isAvailable: true,
-  },
-  {
-    name: "Chaos Magick",
-    image: "/images/spell-room/chaos-magick-button.png",
-    isAvailable: true,
-  },
   {
     name: "Wicca Magick",
     image: "/images/spell-room/wicca-witchcraft-magick-button.png",
     isAvailable: true,
   },
   {
-    name: "Ceremonial Magick",
-    image: "/images/spell-room/ceremonial-magick-button.png",
+    name: "Hoodoo (Rootwork)",
+    image: "/images/spell-room/hoodoo-magick-button.png",
     isAvailable: true,
   },
   {
-    name: "Folk Magick",
-    image: "/images/spell-room/folk-magick-button.png",
+    name: "Grimoire of Magickal Servitors",
+    image: "/images/spell-room/servitor-magick.png", 
+    isAvailable: true,
+    customHref: "/spell-room/grimoire-of-digital-servitors"
+  },
+  {
+    name: "Love",
+    image: "/images/spell-room/love-spells-app-page.png", 
     isAvailable: true,
   },
   {
@@ -44,16 +41,19 @@ const traditions: TraditionInfo[] = [
     isAvailable: true,
   },
   {
-    name: "Love",
-    image: "/images/spell-room/love-spells-app-page.png", 
+    name: "Chaos Magick",
+    image: "/images/spell-room/chaos-magick-button.png",
     isAvailable: true,
   },
-  // NEW ENTRY: Servitor Magick
   {
-    name: "Grimoire of Magickal Servitors",
-    image: "/images/spell-room/servitor-magick.png", 
-    isAvailable: true,
-    customHref: "/spell-room/grimoire-of-digital-servitors"
+    name: "Ceremonial Magick",
+    image: "/images/spell-room/ceremonial-magick-button.png",
+    isAvailable: false, // Set to false per request
+  },
+  {
+    name: "Folk Magick",
+    image: "/images/spell-room/folk-magick-button.png",
+    isAvailable: false, // Set to false per request
   },
 ];
 
@@ -69,30 +69,68 @@ interface TraditionButtonProps {
 }
 
 const TraditionButton: React.FC<TraditionButtonProps> = ({ tradition }) => {
-    // Use customHref if present, otherwise generate slug
-    // FIXED: Added backticks around the string template below
+    const [showMessage, setShowMessage] = useState(false);
+
+    // Auto-hide the message after 3 seconds
+    useEffect(() => {
+        if (showMessage) {
+            const timer = setTimeout(() => setShowMessage(false), 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [showMessage]);
+
+    const handleClick = (e: React.MouseEvent) => {
+        if (!tradition.isAvailable) {
+            e.preventDefault();
+            setShowMessage(true);
+        }
+    };
+
     const href = tradition.customHref || `/spell-room/${slugifyTradition(tradition.name)}`;
 
     return (
-        <Link href={href} className="group relative block w-full max-w-sm mx-auto">
-            <div
-                className={`transition-transform duration-300 ease-in-out ${tradition.isAvailable ? 'group-hover:scale-105 active:scale-95' : ''}`}
-                style={{ filter: 'drop-shadow(5px 8px 15px rgba(0,0,0,0.7))' }}
+        <div className="relative w-full max-w-sm mx-auto">
+            <Link 
+                href={href} 
+                onClick={handleClick}
+                className={`group relative block w-full transition-all duration-300 ${!tradition.isAvailable ? 'cursor-pointer' : ''}`}
             >
-                <Image
-                    src={tradition.image}
-                    alt={tradition.name}
-                    width={500}
-                    height={700}
-                    className="w-full h-auto group-hover:brightness-110"
-                />
-            </div>
-            {!tradition.isAvailable && (
-                <div className="absolute bottom-[8%] left-1/2 -translate-x-1/2 bg-black/70 text-yellow-400 text-xs md:text-sm font-bold px-3 py-1 rounded-full uppercase tracking-wider">
-                    Coming Soon
+                {/* Image Container */}
+                <div
+                    className={`
+                        transition-transform duration-300 ease-in-out 
+                        ${tradition.isAvailable ? 'group-hover:scale-105 active:scale-95' : 'grayscale opacity-70 group-hover:scale-100'}
+                    `}
+                    style={{ filter: tradition.isAvailable ? 'drop-shadow(5px 8px 15px rgba(0,0,0,0.7))' : 'none' }}
+                >
+                    <Image
+                        src={tradition.image}
+                        alt={tradition.name}
+                        width={500}
+                        height={700}
+                        className={`w-full h-auto ${tradition.isAvailable ? 'group-hover:brightness-110' : ''}`}
+                    />
+                </div>
+
+                {/* "Coming Soon" Badge for unavailable items (Optional, kept for clarity) */}
+                {!tradition.isAvailable && !showMessage && (
+                    <div className="absolute bottom-[10%] left-1/2 -translate-x-1/2 opacity-80">
+                         <span className="text-gray-400 text-xs uppercase tracking-widest font-serif border-b border-gray-600 pb-1">Locked</span>
+                    </div>
+                )}
+            </Link>
+
+            {/* Magickal Pop-up Message */}
+            {showMessage && (
+                <div className="absolute inset-0 z-20 flex items-center justify-center animate-fade-in">
+                    <div className="bg-black/90 border border-purple-500/50 p-4 rounded-lg shadow-[0_0_20px_rgba(168,85,247,0.4)] backdrop-blur-sm text-center transform scale-110 transition-all">
+                        <p className="text-purple-200 font-serif text-sm md:text-base italic tracking-wide" style={{ textShadow: '0 0 10px rgba(168,85,247,0.8)' }}>
+                            This Ritual is in Preparation
+                        </p>
+                    </div>
                 </div>
             )}
-        </Link>
+        </div>
     );
 };
 
@@ -101,12 +139,11 @@ const SpellRoom: React.FC = () => {
   return (
     <div className="w-full h-full animate-fade-in p-4 md:p-8">
        {/* 
-         Responsive Grid Layout:
-         - Mobile: 1 column
-         - Medium: 2 columns
-         - Large: 3 columns
+         Updated Grid Layout:
+         - Mobile: 2 columns (grid-cols-2)
+         - Large: 5 columns (lg:grid-cols-5)
        */}
-       <div className="w-full max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-start justify-center">
+       <div className="w-full max-w-360 mx-auto grid grid-cols-2 lg:grid-cols-5 gap-4 md:gap-8 items-start justify-center">
         {traditions.map((tradition) => (
           <TraditionButton 
             key={tradition.name}
