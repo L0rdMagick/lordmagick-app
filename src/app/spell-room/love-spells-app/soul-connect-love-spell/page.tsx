@@ -3,15 +3,15 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Sparkles, Droplets, RotateCw, Hand, Check, Moon, Volume2, VolumeX, Users, User, Flame, LogOut, Repeat, Star, ArrowDown, Scroll } from 'lucide-react';
+import { Sparkles, Droplets, RotateCw, Hand, Check, Moon, Volume2, VolumeX, Users, User, Flame, LogOut, Repeat, Star, ArrowDown, Scroll, Heart } from 'lucide-react';
 import Link from 'next/link';
 
 /**
  * TWO SOULS CONNECTION - LOVE SPELL RITUAL
  * Updates:
- * - LOGIC: Added Pre-Step Incantation Modals for every action.
- * - CONTENT: Dynamic rhyming incantations for Self/Couple contexts.
- * - UI: Magickal buttons indicating the next action.
+ * - UI: "Repeat this incantation" text doubled in size and brightened.
+ * - UI: Buttons text size increased by 25% and brightened.
+ * - UI: Incantation popups now feature specific icons/images for the step (e.g., Ivy Leaf, Candle, Honey).
  */
 
 // --- AUDIO ENGINE ---
@@ -511,26 +511,42 @@ const StarField = () => (
 const PreStepIncantation = ({ type, isForSelf, data, onNext }: any) => {
     const content = getIncantation(type, isForSelf, data);
     
+    // Determine the Visual Icon based on Type or Data
+    let visual = <Scroll className="text-amber-200 w-8 h-8" />;
+    
+    if (type === 'sigil') visual = <Hand className="text-amber-200 w-8 h-8" />;
+    else if (type === 'petition') visual = <Scroll className="text-amber-200 w-8 h-8" />;
+    else if (type === 'honey') visual = <Droplets className="text-amber-400 w-8 h-8" />;
+    else if (type === 'mix') visual = <RotateCw className="text-amber-200 w-8 h-8" />;
+    else if (type === 'candle') visual = <Flame className="text-orange-400 w-8 h-8" />;
+    else if (type === 'release') visual = <Star className="text-white w-8 h-8" />;
+    else if ((type === 'charge' || type === 'drop') && data.icon) {
+        // Render Ingredient Emoji/Icon
+        visual = <span className="text-3xl filter drop-shadow-[0_0_10px_rgba(251,191,36,0.8)]">{data.icon}</span>;
+    }
+
     return (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md animate-in fade-in duration-500 p-6 no-select">
             <div className="flex flex-col items-center text-center max-w-sm w-full">
-                <div className="w-16 h-16 bg-amber-900/20 rounded-full flex items-center justify-center mb-6 border border-amber-500/30 shadow-[0_0_30px_rgba(251,191,36,0.2)] animate-pulse">
-                     <Scroll className="text-amber-200 w-8 h-8" />
+                <div className="w-20 h-20 bg-amber-900/20 rounded-full flex items-center justify-center mb-6 border border-amber-500/30 shadow-[0_0_30px_rgba(251,191,36,0.2)] animate-pulse">
+                     {visual}
                 </div>
                 
-                <p className="text-[10px] text-amber-500/70 uppercase tracking-[0.2em] mb-4 font-bold">Repeat this Incantation</p>
+                {/* Doubled Size & Brightened for Label */}
+                <p className="text-lg text-amber-300 uppercase tracking-[0.2em] mb-6 font-bold font-magical">Repeat this Incantation</p>
                 
                 <h3 className="text-xl md:text-2xl font-magical text-amber-50 mb-8 leading-relaxed whitespace-pre-line drop-shadow-lg">
                     "{content.text}"
                 </h3>
 
+                {/* Button Font Size +25% and Brighter */}
                 <button 
                     onClick={() => {
                         const globalAny = globalThis as any;
                         audio.playClick('magick');
                         onNext();
                     }}
-                    className="w-full bg-amber-900/40 hover:bg-amber-800/40 border border-amber-600 text-amber-100 py-4 uppercase tracking-[0.2em] font-magical text-xs transition-colors active:scale-95 shadow-[0_0_20px_rgba(251,191,36,0.2)]"
+                    className="w-full bg-amber-900/40 hover:bg-amber-800/40 border border-amber-600 text-amber-50 py-4 uppercase tracking-[0.2em] font-magical text-base transition-colors active:scale-95 shadow-[0_0_20px_rgba(251,191,36,0.2)]"
                 >
                     {content.btn}
                 </button>
@@ -553,7 +569,7 @@ const MagickPopup = ({ message, buttonText = "Continue", onContinue }: { message
                 audio.playClick('medium');
                 onContinue();
             }}
-            className="w-full bg-amber-900/40 hover:bg-amber-800/40 border border-amber-600 text-amber-100 py-3 uppercase tracking-widest font-magical text-sm transition-colors active:scale-95"
+            className="w-full bg-amber-900/40 hover:bg-amber-800/40 border border-amber-600 text-amber-50 py-3 uppercase tracking-widest font-magical text-base transition-colors active:scale-95"
         >
             {buttonText}
         </button>
@@ -579,7 +595,7 @@ const FinalPopup = ({ onExit }: { onExit: () => void }) => {
             <div className="flex flex-col gap-4">
                 <button 
                     onClick={() => { audio.playClick('medium'); router.reload(); }}
-                    className="w-full flex items-center justify-center gap-2 bg-amber-900/30 border border-amber-600/50 text-amber-100 py-3 uppercase tracking-widest font-magical text-xs hover:bg-amber-800/40 transition-colors"
+                    className="w-full flex items-center justify-center gap-2 bg-amber-900/30 border border-amber-600/50 text-amber-50 py-3 uppercase tracking-widest font-magical text-xs hover:bg-amber-800/40 transition-colors"
                 >
                     <Repeat size={14} /> Cast Another Spell
                 </button>
@@ -976,6 +992,7 @@ const StageTwoJar = ({ mode, names, filledIngredients, droppingItem, onComplete,
       let data: any = { target: names.target };
       if (mode === 'drop' && droppingItem) {
           data.item = droppingItem.name.toLowerCase();
+          data.icon = droppingItem.icon; // PASS ICON
       }
       return <PreStepIncantation type={type} isForSelf={isForSelf} data={data} onNext={() => setShowIntro(false)} />;
   }
@@ -1207,7 +1224,8 @@ const StageThreeConsecrate = ({ ingredient, index, total, onComplete, isForSelf,
   }, [charge, success, onComplete]);
 
   if (showIntro) {
-      return <PreStepIncantation type="charge" isForSelf={isForSelf} data={{ item: ingredient.name.toLowerCase(), target: names.target }} onNext={() => setShowIntro(false)} />;
+      // Pass the icon directly to the modal
+      return <PreStepIncantation type="charge" isForSelf={isForSelf} data={{ item: ingredient.name.toLowerCase(), target: names.target, icon: ingredient.icon }} onNext={() => setShowIntro(false)} />;
   }
 
   return (
