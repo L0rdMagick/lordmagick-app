@@ -9,15 +9,18 @@ import Link from 'next/link';
 /**
  * TWO SOULS CONNECTION - LOVE SPELL RITUAL
  * Updates:
- * - FIXED: Jar Overflow Logic (Refactored to use Ref for stability)
- * - Flow: Petition -> Jar(Petition) -> [Consecrate -> Drop in Jar]x3 -> Jar(Honey) -> Incantation -> Mixing -> Candle -> Release
- * - UI: Fixed Viewport (No Scroll), No Touch Callouts, Candle Wick Fix
+ * - AUDIO: Global 300Hz LowPass Filter (Submarine/Deep vibe).
+ * - AUDIO: Charging is now a swelling Pad (Detuned Saws).
+ * - VISUAL: Ingredients float down like leaves (CSS Keyframes).
+ * - TIMING: Charging and Pouring slowed by 50%.
+ * - FIXED: Jar Overflow Logic retained.
  */
 
 // --- AUDIO ENGINE ---
 class MagicAudio {
   ctx: any = null;
   masterGain: any = null;
+  globalFilter: any = null;
   isMuted: boolean = false;
 
   init() {
@@ -27,8 +30,17 @@ class MagicAudio {
       if (AudioContextClass) {
         this.ctx = new AudioContextClass();
         this.masterGain = this.ctx.createGain();
-        this.masterGain.gain.value = 0.3;
-        this.masterGain.connect(this.ctx.destination);
+        this.masterGain.gain.value = 0.4;
+        
+        // GLOBAL LOW PASS FILTER (The "Veil")
+        // STRICT UPPER LIMIT: 300Hz
+        this.globalFilter = this.ctx.createBiquadFilter();
+        this.globalFilter.type = 'lowpass';
+        this.globalFilter.frequency.value = 300; 
+        
+        // Chain: Source -> Master -> Filter -> Destination
+        this.masterGain.connect(this.globalFilter);
+        this.globalFilter.connect(this.ctx.destination);
       }
     }
     if (this.ctx && this.ctx.state === 'suspended') {
@@ -36,29 +48,33 @@ class MagicAudio {
     }
   }
 
+  // Helper to ensure we don't blow speakers with low freq energy
+  ensureContext() {
+    if (!this.ctx) this.init();
+    if (this.ctx.state === 'suspended') this.ctx.resume();
+  }
+
   playDeepDrone() {
-    if (this.isMuted || !this.ctx || !this.masterGain) return;
+    this.ensureContext();
+    if (this.isMuted) return;
+
     const osc1 = this.ctx.createOscillator();
     const osc2 = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
     
-    osc1.type = 'sawtooth';
-    osc1.frequency.value = 55; 
-    osc2.type = 'sawtooth';
-    osc2.frequency.value = 55.5; 
+    // Very low drone
+    osc1.type = 'sine'; // Sine works best for sub-bass
+    osc1.frequency.value = 45; 
+    osc2.type = 'triangle';
+    osc2.frequency.value = 45.5; // Slight beating
 
-    const filter = this.ctx.createBiquadFilter();
-    filter.type = 'lowpass';
-    filter.frequency.value = 200;
-
-    osc1.connect(filter);
-    osc2.connect(filter);
-    filter.connect(gain);
+    osc1.connect(gain);
+    osc2.connect(gain);
     gain.connect(this.masterGain);
 
     const now = this.ctx.currentTime;
     gain.gain.setValueAtTime(0, now);
-    gain.gain.linearRampToValueAtTime(0.2, now + 2);
+    gain.gain.linearRampToValueAtTime(0.3, now + 4); // Slow fade in
     
     osc1.start();
     osc2.start();
@@ -69,124 +85,153 @@ class MagicAudio {
         const stopTime = this.ctx.currentTime;
         gain.gain.cancelScheduledValues(stopTime);
         gain.gain.setValueAtTime(gain.gain.value, stopTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, stopTime + 2);
-        osc1.stop(stopTime + 2);
-        osc2.stop(stopTime + 2);
+        gain.gain.exponentialRampToValueAtTime(0.001, stopTime + 3);
+        osc1.stop(stopTime + 3);
+        osc2.stop(stopTime + 3);
       }
     };
   }
 
   playSparkle() {
-    if (this.isMuted || !this.ctx || !this.masterGain) return;
+    this.ensureContext();
+    if (this.isMuted) return;
     const now = this.ctx.currentTime;
-    [0, 0.1, 0.2, 0.3, 0.4].forEach((delay, i) => {
-      if(!this.ctx || !this.masterGain) return;
+    
+    // Low frequency "bubbles" instead of high sparkles due to 300Hz limit
+    [0, 0.15, 0.3].forEach((delay, i) => {
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
+      
       osc.type = 'sine';
-      const freq = 440 * Math.pow(1.25, i); 
+      // Frequencies must be audible within <300Hz window
+      // 100Hz - 200Hz range
+      const freq = 100 + (i * 40); 
       osc.frequency.setValueAtTime(freq, now + delay);
       
       gain.gain.setValueAtTime(0, now + delay);
-      gain.gain.linearRampToValueAtTime(0.1, now + delay + 0.05);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + delay + 1.5);
+      gain.gain.linearRampToValueAtTime(0.2, now + delay + 0.1);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.8);
       
       osc.connect(gain);
       gain.connect(this.masterGain);
       osc.start(now + delay);
-      osc.stop(now + delay + 1.5);
+      osc.stop(now + delay + 0.8);
     });
   }
 
   playEtch() {
-    if (this.isMuted || !this.ctx || !this.masterGain) return;
+    this.ensureContext();
+    if (this.isMuted) return;
+    // A low scratch/thud
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
     osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(100 + Math.random() * 50, this.ctx.currentTime);
+    osc.frequency.setValueAtTime(60, this.ctx.currentTime);
+    osc.frequency.linearRampToValueAtTime(40, this.ctx.currentTime + 0.1);
     
-    const filter = this.ctx.createBiquadFilter();
-    filter.type = 'highpass';
-    filter.frequency.value = 2000;
-
-    osc.connect(filter);
-    filter.connect(gain);
-    gain.connect(this.masterGain);
-
-    gain.gain.setValueAtTime(0.05, this.ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.1);
-
-    osc.start();
-    osc.stop(this.ctx.currentTime + 0.1);
-  }
-
-  startCharge() {
-    if (this.isMuted || !this.ctx || !this.masterGain) return null;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    const lfo = this.ctx.createOscillator(); 
-    const lfoGain = this.ctx.createGain();
-
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(110, this.ctx.currentTime); 
-    
-    lfo.frequency.value = 10;
-    lfoGain.gain.value = 500;
-
-    lfo.connect(lfoGain);
+    gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.15);
 
     osc.connect(gain);
     gain.connect(this.masterGain);
 
-    gain.gain.setValueAtTime(0, this.ctx.currentTime);
-    gain.gain.linearRampToValueAtTime(0.2, this.ctx.currentTime + 0.5);
-
     osc.start();
-    lfo.start();
+    osc.stop(this.ctx.currentTime + 0.15);
+  }
 
-    return { osc, gain, lfo, startTime: this.ctx.currentTime };
+  // CHANGED: From Sine/Triangle to Detuned Saws (Pad)
+  startCharge() {
+    this.ensureContext();
+    if (this.isMuted) return null;
+    
+    const now = this.ctx.currentTime;
+    
+    // Oscillator 1
+    const osc1 = this.ctx.createOscillator();
+    osc1.type = 'sawtooth';
+    osc1.frequency.setValueAtTime(55, now); // Low A
+
+    // Oscillator 2 (Detuned)
+    const osc2 = this.ctx.createOscillator();
+    osc2.type = 'sawtooth';
+    osc2.frequency.setValueAtTime(55.5, now);
+
+    const gain = this.ctx.createGain();
+    
+    // LowPass specific to this sound to smooth the saws before the global filter
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 150; // Start very muffled
+
+    osc1.connect(filter);
+    osc2.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.masterGain);
+
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(0.2, now + 1);
+
+    osc1.start();
+    osc2.start();
+
+    return { osc1, osc2, filter, gain };
   }
 
   updateCharge(node: any, progress: number) { 
     if (!node || !this.ctx) return;
     const now = this.ctx.currentTime;
-    // PITCH CAP: 350Hz
-    const targetFreq = 110 + (progress * 2.4); 
-    node.osc.frequency.setTargetAtTime(targetFreq, now, 0.1);
-    node.lfo.frequency.setTargetAtTime(10 + (progress/2), now, 0.1);
+    
+    // Pad Rising Effect
+    // Freq: 55Hz -> 110Hz (Octave)
+    // Filter: 150Hz -> 280Hz (Opening up, but staying under global 300Hz)
+    
+    const targetFreq = 55 + (progress * 0.55); 
+    const targetFilter = 150 + (progress * 1.3);
+
+    node.osc1.frequency.setTargetAtTime(targetFreq, now, 0.2);
+    node.osc2.frequency.setTargetAtTime(targetFreq * 1.01, now, 0.2); // Keep detune
+    node.filter.frequency.setTargetAtTime(targetFilter, now, 0.2);
+    
+    // Slight volume swell
+    node.gain.gain.setTargetAtTime(0.2 + (progress * 0.001), now, 0.1);
   }
 
   stopCharge(node: any) {
     if (!node || !this.ctx) return;
     const now = this.ctx.currentTime;
     try {
-        node.gain.gain.setTargetAtTime(0, now, 0.1);
-        node.osc.stop(now + 0.2);
-        node.lfo.stop(now + 0.2);
-    } catch(e) {
-        // Ignore already stopped nodes
-    }
+        node.gain.gain.cancelScheduledValues(now);
+        node.gain.gain.setTargetAtTime(0, now, 0.5); // Long release
+        node.osc1.stop(now + 1);
+        node.osc2.stop(now + 1);
+    } catch(e) {}
   }
 
   playImpact() {
-    if (this.isMuted || !this.ctx || !this.masterGain) return;
+    this.ensureContext();
+    if (this.isMuted) return;
+    
+    // Deep Thud (Kick drum like)
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
     
-    osc.frequency.setValueAtTime(150, this.ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(40, this.ctx.currentTime + 0.5);
+    osc.frequency.setValueAtTime(100, this.ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(30, this.ctx.currentTime + 0.5);
 
-    gain.gain.setValueAtTime(0.5, this.ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 2);
+    gain.gain.setValueAtTime(0.6, this.ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 1.5);
 
     osc.connect(gain);
     gain.connect(this.masterGain);
     osc.start();
-    osc.stop(this.ctx.currentTime + 2);
+    osc.stop(this.ctx.currentTime + 1.5);
   }
 
   startSwirl() {
-    if (this.isMuted || !this.ctx || !this.masterGain) return null;
+    this.ensureContext();
+    if (this.isMuted) return null;
+    
+    // Noise is naturally full spectrum, heavily filtered
     const bufferSize = this.ctx.sampleRate * 2;
     const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
     const data = buffer.getChannelData(0);
@@ -199,8 +244,9 @@ class MagicAudio {
     noise.loop = true;
 
     const filter = this.ctx.createBiquadFilter();
-    filter.type = 'bandpass';
-    filter.Q.value = 10;
+    filter.type = 'lowpass';
+    filter.frequency.value = 100; // Deep rumble
+    filter.Q.value = 5;
     
     const gain = this.ctx.createGain();
     gain.gain.value = 0;
@@ -212,14 +258,14 @@ class MagicAudio {
     noise.start();
     gain.gain.setTargetAtTime(0.15, this.ctx.currentTime, 1);
 
+    // LFO to modulate filter for "swirling"
     const lfo = this.ctx.createOscillator();
     lfo.frequency.value = 0.5;
     const lfoGain = this.ctx.createGain();
-    lfoGain.gain.value = 1000;
+    lfoGain.gain.value = 50; // Modulate +/- 50Hz
     
     lfo.connect(lfoGain);
     lfoGain.connect(filter.frequency);
-    filter.frequency.value = 600;
     lfo.start();
 
     return { noise, gain, lfo, stop: () => {
@@ -262,6 +308,23 @@ const GlobalStyles = () => (
     input, textarea {
         -webkit-user-select: text !important;
         user-select: text !important;
+    }
+
+    /* LEAF DROP ANIMATION */
+    /* Simulates a falling leaf with X-axis sway and Y-axis gravity */
+    @keyframes leaf-drop {
+        0% { transform: translate(0px, 0px) rotate(0deg); opacity: 0; }
+        10% { opacity: 1; }
+        25% { transform: translate(15px, 60px) rotate(15deg); }
+        50% { transform: translate(-15px, 140px) rotate(-10deg); }
+        75% { transform: translate(10px, 200px) rotate(5deg); }
+        100% { transform: translate(0px, 260px) rotate(0deg); opacity: 1; }
+    }
+
+    .falling-leaf {
+        animation: leaf-drop 4s ease-in-out forwards;
+        transform-box: fill-box;
+        transform-origin: center;
     }
   `}</style>
 );
@@ -745,8 +808,8 @@ const StageTwoJar = ({ mode, names, filledIngredients, droppingItem, onComplete 
                 if(soundRef.current) { audio.stopCharge(soundRef.current); soundRef.current = null; }
                 audio.playImpact();
             } else {
-                // Pouring
-                const next = current + 2;
+                // Pouring - SLOWER 50%
+                const next = current + 1.2; // Was 2
                 setActionProgress(next);
                 if(soundRef.current) audio.updateCharge(soundRef.current, next/2);
             }
@@ -762,13 +825,14 @@ const StageTwoJar = ({ mode, names, filledIngredients, droppingItem, onComplete 
 
   const resetHoney = () => { setActionProgress(0); setFailed(false); audio.playSparkle(); };
 
-  // Handle Dropping Logic
+  // Handle Dropping Logic - VISUAL UPDATE
   const triggerDrop = () => {
       setAnimState('dropping');
       audio.playSparkle();
+      // Drop takes 4 seconds now (leaf drop)
       setTimeout(() => {
           setAnimState('done');
-      }, 1000);
+      }, 4000);
   };
 
   const handlePetitionInsert = () => {
@@ -822,12 +886,35 @@ const StageTwoJar = ({ mode, names, filledIngredients, droppingItem, onComplete 
                 
                 {/* 1. Petition (If inserted) */}
                 {(mode !== 'petition' || animState !== 'idle') && (
-                    <g transform={`translate(100, ${mode === 'petition' && animState === 'dropping' ? 100 : 250})`} 
-                       style={{ transition: 'transform 1s ease-in' }}>
-                        <rect x="-30" y="-40" width="60" height="80" fill="#f3e5ab" stroke="#78350f" strokeWidth="0.5" transform="rotate(-10)" />
-                        <text x="0" y="-10" fontSize="6" textAnchor="middle" fill="#000" fontFamily="serif" transform="rotate(-10)">{names.user}</text>
-                        <text x="0" y="5" fontSize="6" textAnchor="middle" fill="#b91c1c" fontFamily="serif" transform="rotate(-10)">&</text>
-                        <text x="0" y="20" fontSize="6" textAnchor="middle" fill="#000" fontFamily="serif" transform="rotate(-10)">{names.target}</text>
+                    <g 
+                       className={mode === 'petition' && animState === 'dropping' ? "falling-leaf" : ""}
+                       transform={mode === 'petition' && animState === 'dropping' 
+                         ? "" // Animation handles transform
+                         : `translate(100, 250)` // Static pos
+                       }
+                    >
+                       {/* If animating, position at 0,0 relative to parent and let keyframes move it. 
+                           If done, parent g is translated to 100,250. 
+                           Wait, mixing transform and animation can be tricky in SVG.
+                           Strategy: Use inner group for shape, outer group for static pos.
+                       */}
+                       {mode === 'petition' && animState === 'dropping' ? (
+                            // Animating Element - Start at top
+                           <g transform="translate(100, 50)"> 
+                               <rect x="-30" y="-40" width="60" height="80" fill="#f3e5ab" stroke="#78350f" strokeWidth="0.5" />
+                               <text x="0" y="-10" fontSize="6" textAnchor="middle" fill="#000" fontFamily="serif">{names.user}</text>
+                               <text x="0" y="5" fontSize="6" textAnchor="middle" fill="#b91c1c" fontFamily="serif">&</text>
+                               <text x="0" y="20" fontSize="6" textAnchor="middle" fill="#000" fontFamily="serif">{names.target}</text>
+                           </g>
+                       ) : (
+                           // Static Element
+                           <g transform="rotate(-10)">
+                               <rect x="-30" y="-40" width="60" height="80" fill="#f3e5ab" stroke="#78350f" strokeWidth="0.5" />
+                               <text x="0" y="-10" fontSize="6" textAnchor="middle" fill="#000" fontFamily="serif">{names.user}</text>
+                               <text x="0" y="5" fontSize="6" textAnchor="middle" fill="#b91c1c" fontFamily="serif">&</text>
+                               <text x="0" y="20" fontSize="6" textAnchor="middle" fill="#000" fontFamily="serif">{names.target}</text>
+                           </g>
+                       )}
                     </g>
                 )}
 
@@ -838,11 +925,11 @@ const StageTwoJar = ({ mode, names, filledIngredients, droppingItem, onComplete 
                     </text>
                 ))}
 
-                {/* 3. Currently Dropping Item */}
-                {mode === 'drop' && animState !== 'idle' && (
-                    <text x="100" y={animState === 'dropping' ? 100 : 240 - (filledIngredients.length * 20)} fontSize="30" textAnchor="middle" style={{ transition: 'y 0.8s cubic-bezier(0.6, -0.28, 0.735, 0.045)' }}>
-                        {droppingItem.icon}
-                    </text>
+                {/* 3. Currently Dropping Item (Leaf Drop Animation) */}
+                {mode === 'drop' && animState === 'dropping' && (
+                    <g transform="translate(100, 50)" className="falling-leaf">
+                         <text fontSize="30" textAnchor="middle">{droppingItem.icon}</text>
+                    </g>
                 )}
 
                 {/* Target Line for Honey */}
@@ -864,8 +951,8 @@ const StageTwoJar = ({ mode, names, filledIngredients, droppingItem, onComplete 
                 Next Step
             </button>
           ) : (
-            <button onClick={handlePetitionInsert} className="px-8 py-2 bg-[#f3e5ab] text-slate-900 font-magical font-bold text-sm shadow-[0_0_15px_rgba(251,191,36,0.3)] hover:scale-105 transition-transform active:scale-95">
-                Insert Petition
+            <button onClick={handlePetitionInsert} className={`px-8 py-2 bg-[#f3e5ab] text-slate-900 font-magical font-bold text-sm shadow-[0_0_15px_rgba(251,191,36,0.3)] hover:scale-105 transition-transform active:scale-95 ${animState === 'dropping' ? 'opacity-50 pointer-events-none' : ''}`}>
+                {animState === 'dropping' ? "Placing..." : "Insert Petition"}
             </button>
           )
       )}
@@ -876,8 +963,8 @@ const StageTwoJar = ({ mode, names, filledIngredients, droppingItem, onComplete 
                 Confirm
             </button>
           ) : (
-             <button onClick={triggerDrop} className="group flex items-center gap-2 px-8 py-2 border border-amber-500/50 text-amber-100 font-magical text-sm hover:bg-amber-900/30 transition-all active:scale-95">
-                Drop {droppingItem.name} <ArrowDown size={14} />
+             <button onClick={triggerDrop} className={`group flex items-center gap-2 px-8 py-2 border border-amber-500/50 text-amber-100 font-magical text-sm hover:bg-amber-900/30 transition-all active:scale-95 ${animState === 'dropping' ? 'opacity-50 pointer-events-none' : ''}`}>
+                {animState === 'dropping' ? "Dropping..." : `Drop ${droppingItem.name}`} {animState !== 'dropping' && <ArrowDown size={14} />}
              </button>
           )
       )}
@@ -929,7 +1016,8 @@ const StageThreeConsecrate = ({ ingredient, index, total, onComplete }: any) => 
       if (!soundRef.current) soundRef.current = audio.startCharge(); 
       interval = setInterval(() => {
         setCharge(prev => {
-            const next = Math.min(prev + 3.0, 100); 
+            // SLOWER CHARGE 50%
+            const next = Math.min(prev + 1.5, 100); // Was 3.0
             if(soundRef.current) audio.updateCharge(soundRef.current, next);
             return next;
         }); 
@@ -1233,7 +1321,8 @@ const StageSevenRelease = ({ onComplete }: any) => {
       if (!soundRef.current) soundRef.current = audio.startCharge();
       interval = setInterval(() => {
         setPower(prev => {
-            const next = Math.min(prev + 1.5, 100); 
+            // SLOWER CHARGE 50%
+            const next = Math.min(prev + 0.8, 100); // Was 1.5
             if(soundRef.current) audio.updateCharge(soundRef.current, next);
             return next;
         }); 
