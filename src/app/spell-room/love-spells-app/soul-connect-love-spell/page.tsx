@@ -9,6 +9,7 @@ import Link from 'next/link';
 /**
  * TWO SOULS CONNECTION - LOVE SPELL RITUAL
  * Updates:
+ * - FIXED: Jar Overflow Logic (Refactored to use Ref for stability)
  * - Flow: Petition -> Jar(Petition) -> [Consecrate -> Drop in Jar]x3 -> Jar(Honey) -> Incantation -> Mixing -> Candle -> Release
  * - UI: Fixed Viewport (No Scroll), No Touch Callouts, Candle Wick Fix
  */
@@ -158,9 +159,13 @@ class MagicAudio {
   stopCharge(node: any) {
     if (!node || !this.ctx) return;
     const now = this.ctx.currentTime;
-    node.gain.gain.setTargetAtTime(0, now, 0.1);
-    node.osc.stop(now + 0.2);
-    node.lfo.stop(now + 0.2);
+    try {
+        node.gain.gain.setTargetAtTime(0, now, 0.1);
+        node.osc.stop(now + 0.2);
+        node.lfo.stop(now + 0.2);
+    } catch(e) {
+        // Ignore already stopped nodes
+    }
   }
 
   playImpact() {
@@ -710,39 +715,50 @@ interface JarProps {
 }
 
 const StageTwoJar = ({ mode, names, filledIngredients, droppingItem, onComplete }: JarProps) => {
-  const [actionProgress, setActionProgress] = useState(0); // Used for pouring honey
+  const [actionProgress, setActionProgress] = useState(0); 
   const [isPouring, setIsPouring] = useState(false);
   const [animState, setAnimState] = useState<'idle' | 'dropping' | 'done'>('idle');
   const [failed, setFailed] = useState(false);
+  
+  const progressRef = useRef(0);
   const soundRef = useRef<any>(null);
+
+  // Sync ref with state
+  useEffect(() => { progressRef.current = actionProgress; }, [actionProgress]);
 
   // SVG Coordinate System: 0 0 200 300
   const bottlePath = "M70,20 C70,10 75,0 100,0 C125,0 130,10 130,20 L130,60 C130,70 170,80 180,120 C190,160 195,200 170,260 C145,300 55,300 30,260 C5,200 10,160 20,120 C30,80 70,70 70,60 Z";
 
-  // Handle Honey Pouring Logic
+  // Handle Honey Pouring Logic with Ref-based Interval
   useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (mode === 'honey') {
-        if (isPouring && !failed && actionProgress < 280) {
-            if (!soundRef.current) soundRef.current = audio.startCharge();
-            interval = setInterval(() => {
-                setActionProgress(prev => {
-                if (prev >= 280) {
-                    setFailed(true); setIsPouring(false);
-                    if(soundRef.current) { audio.stopCharge(soundRef.current); soundRef.current = null; }
-                    audio.playImpact();
-                    return prev;
-                }
-                if(soundRef.current) audio.updateCharge(soundRef.current, prev/2);
-                return prev + 2; 
-                });
-            }, 30); 
-        } else {
-            if(soundRef.current) { audio.stopCharge(soundRef.current); soundRef.current = null; }
-        }
+    let interval: any;
+    
+    if (isPouring && !failed && mode === 'honey') {
+        if (!soundRef.current) soundRef.current = audio.startCharge();
+
+        interval = setInterval(() => {
+            const current = progressRef.current;
+            if (current >= 280) {
+                // Overflow Logic
+                setFailed(true);
+                setIsPouring(false);
+                if(soundRef.current) { audio.stopCharge(soundRef.current); soundRef.current = null; }
+                audio.playImpact();
+            } else {
+                // Pouring
+                const next = current + 2;
+                setActionProgress(next);
+                if(soundRef.current) audio.updateCharge(soundRef.current, next/2);
+            }
+        }, 30); 
+    } else {
+        if(soundRef.current) { audio.stopCharge(soundRef.current); soundRef.current = null; }
     }
-    return () => { clearInterval(interval); if(soundRef.current) audio.stopCharge(soundRef.current); };
-  }, [isPouring, failed, mode, actionProgress]);
+    return () => { 
+        clearInterval(interval); 
+        if(soundRef.current) { audio.stopCharge(soundRef.current); soundRef.current = null; }
+    };
+  }, [isPouring, failed, mode]);
 
   const resetHoney = () => { setActionProgress(0); setFailed(false); audio.playSparkle(); };
 
@@ -868,9 +884,9 @@ const StageTwoJar = ({ mode, names, filledIngredients, droppingItem, onComplete 
 
       {mode === 'honey' && (
           failed ? (
-            <div className="flex flex-col items-center">
-                <div className="text-red-400 text-xs mb-2 font-magical">Overflow!</div>
-                <button onClick={resetHoney} className="px-6 py-2 border border-red-500 text-red-400 font-magical text-xs uppercase tracking-wider active:scale-95">Clean Jar</button>
+            <div className="flex flex-col items-center z-50">
+                <div className="text-red-400 text-xs mb-2 font-magical bg-red-900/20 px-4 py-1 rounded">Overflow!</div>
+                <button onClick={resetHoney} className="px-6 py-2 border border-red-500 text-red-400 font-magical text-xs uppercase tracking-wider active:scale-95 hover:bg-red-900/20 transition-colors">Clean Jar</button>
             </div>
           ) : (
             <>
