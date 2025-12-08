@@ -1,5 +1,3 @@
-// --- START OF FILE src/app/components/SpellRoom.tsx ---
-
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -11,9 +9,7 @@ interface TraditionInfo {
   name: Tradition;
   image: string;
   isAvailable: boolean;
-  positionClasses: string;
-  widthClasses: string;
-  customHref?: string; // Added to support custom URLs like the new page
+  customHref?: string; 
 }
 
 const traditions: TraditionInfo[] = [
@@ -21,58 +17,42 @@ const traditions: TraditionInfo[] = [
     name: "Hoodoo (Rootwork)",
     image: "/images/spell-room/hoodoo-magick-button.png",
     isAvailable: true,
-    positionClasses: "md:absolute md:top-[1%] md:left-1/2 md:-translate-x-1/2",
-    widthClasses: "w-4/5 md:w-[26%] lg:w-[22%]",
   },
   {
     name: "Chaos Magick",
     image: "/images/spell-room/chaos-magick-button.png",
     isAvailable: true,
-    positionClasses: "md:absolute md:top-[33%] md:left-[1%] lg:left-[4%]",
-    widthClasses: "w-4/5 md:w-[25%] lg:w-[21%]",
   },
   {
     name: "Wicca Magick",
     image: "/images/spell-room/wicca-witchcraft-magick-button.png",
     isAvailable: true,
-    positionClasses: "md:absolute md:top-[33%] md:right-[1%] lg:right-[4%]",
-    widthClasses: "w-4/5 md:w-[25%] lg:w-[21%]",
   },
   {
     name: "Ceremonial Magick",
     image: "/images/spell-room/ceremonial-magick-button.png",
     isAvailable: true,
-    positionClasses: "md:absolute md:bottom-[1%] md:left-[15%] lg:left-[22%]",
-    widthClasses: "w-4/5 md:w-[26%] lg:w-[23%]",
   },
   {
     name: "Folk Magick",
     image: "/images/spell-room/folk-magick-button.png",
     isAvailable: true,
-    positionClasses: "md:absolute md:bottom-[1%] md:right-[15%] lg:right-[22%]",
-    widthClasses: "w-4/5 md:w-[26%] lg:w-[23%]",
   },
   {
     name: "Electric Magick",
     image: "/images/spell-room/electric-magick-button.png", 
     isAvailable: true,
-    positionClasses: "md:absolute md:bottom-[5%] md:left-1/2 md:-translate-x-1/2",
-    widthClasses: "w-4/5 md:w-[26%] lg:w-[22%]",
   },
   {
     name: "Love",
     image: "/images/spell-room/love-spells-app-page.png", 
     isAvailable: true,
-    positionClasses: "md:absolute md:top-[1%] md:right-[5%] lg:right-[10%]", 
-    widthClasses: "w-4/5 md:w-[24%] lg:w-[20%]",
   },
   // NEW ENTRY: Servitor Magick
   {
     name: "Grimoire of Magickal Servitors",
     image: "/images/spell-room/servitor-magick.png", 
     isAvailable: true,
-    positionClasses: "md:absolute md:top-[1%] md:left-[5%] lg:left-[10%]", 
-    widthClasses: "w-4/5 md:w-[24%] lg:w-[20%]",
     customHref: "/spell-room/grimoire-of-digital-servitors"
   },
 ];
@@ -90,10 +70,11 @@ interface TraditionButtonProps {
 
 const TraditionButton: React.FC<TraditionButtonProps> = ({ tradition }) => {
     // Use customHref if present, otherwise generate slug
+    // FIXED: Added backticks around the string template below
     const href = tradition.customHref || `/spell-room/${slugifyTradition(tradition.name)}`;
 
-    const buttonContent = (
-        <div className="relative">
+    return (
+        <Link href={href} className="group relative block w-full max-w-sm mx-auto">
             <div
                 className={`transition-transform duration-300 ease-in-out ${tradition.isAvailable ? 'group-hover:scale-105 active:scale-95' : ''}`}
                 style={{ filter: 'drop-shadow(5px 8px 15px rgba(0,0,0,0.7))' }}
@@ -111,14 +92,6 @@ const TraditionButton: React.FC<TraditionButtonProps> = ({ tradition }) => {
                     Coming Soon
                 </div>
             )}
-        </div>
-    );
-
-    const wrapperClasses = `${tradition.positionClasses} ${tradition.widthClasses} mx-auto md:mx-0 group`;
-    
-    return (
-        <Link href={href} className={wrapperClasses}>
-            {buttonContent}
         </Link>
     );
 };
@@ -126,8 +99,14 @@ const TraditionButton: React.FC<TraditionButtonProps> = ({ tradition }) => {
 
 const SpellRoom: React.FC = () => {
   return (
-    <div className="w-full h-full animate-fade-in">
-       <div className="w-full max-w-7xl mx-auto flex flex-col items-center gap-y-6 py-6 md:h-[85vh] md:relative md:block md:py-0 md:gap-y-0">
+    <div className="w-full h-full animate-fade-in p-4 md:p-8">
+       {/* 
+         Responsive Grid Layout:
+         - Mobile: 1 column
+         - Medium: 2 columns
+         - Large: 3 columns
+       */}
+       <div className="w-full max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-start justify-center">
         {traditions.map((tradition) => (
           <TraditionButton 
             key={tradition.name}
@@ -140,4 +119,3 @@ const SpellRoom: React.FC = () => {
 }
 
 export default SpellRoom;
-// --- END OF FILE ---
