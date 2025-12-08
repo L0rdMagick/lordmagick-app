@@ -3,17 +3,16 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Sparkles, Droplets, RotateCw, Hand, Check, Moon, Volume2, VolumeX, Users, User, Flame, ScrollText, LogOut, Repeat } from 'lucide-react';
+import { Sparkles, Droplets, RotateCw, Hand, Check, Moon, Volume2, VolumeX, Users, User, Flame, LogOut, Repeat, Star } from 'lucide-react';
 import Link from 'next/link';
 
 /**
  * TWO SOULS CONNECTION - LOVE SPELL RITUAL
  * Updates:
- * - Unified SVG Jar (Perfect fit)
- * - Candle SVG (No artifacts)
- * - Incantation Text Size Increased
- * - Final Popup Menu
- * - Audio Pitch Cap (350Hz)
+ * - Venus Sigil Restored
+ * - Real Petition in Mixing Bowl
+ * - Incantation Updated ("Loves only me")
+ * - Release Animation: Faster expansion + Star Flash
  */
 
 // --- AUDIO ENGINE ---
@@ -301,7 +300,7 @@ const generateIncantation = (names: { user: string, target: string }, isForSelf:
       `As I stir, the honey binds,`,
       `Two hearts, two souls, two tangled minds.`,
       `I seal this spell, so mote it be,`,
-      `${names.target} returns, only to me.`
+      `${names.target} loves only me.`
     ];
   } else {
     return [
@@ -312,7 +311,7 @@ const generateIncantation = (names: { user: string, target: string }, isForSelf:
       `As I stir, the honey binds,`,
       `Two hearts, two souls, two tangled minds.`,
       `I seal this spell, so mote it be,`,
-      `${names.target} returns to ${names.user}, faithfully.`
+      `${names.target} loves only ${names.user}.`
     ];
   }
 };
@@ -336,7 +335,7 @@ const StarField = () => (
 
 // --- COMPONENT: POPUP MODAL ---
 const MagickPopup = ({ message, buttonText = "Continue", onContinue }: { message: string, buttonText?: string, onContinue: () => void }) => (
-  <div className="absolute inset-0 z-100 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
+  <div className="absolute inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
      <div className="bg-[#1a1528] border border-amber-600/50 p-6 rounded-lg max-w-xs w-full text-center shadow-[0_0_50px_rgba(251,191,36,0.3)] transform scale-100 mx-4">
         <div className="w-12 h-12 mx-auto bg-amber-900/20 rounded-full flex items-center justify-center mb-4 border border-amber-500/30">
             <Sparkles className="text-amber-200 w-6 h-6" />
@@ -357,7 +356,7 @@ const FinalPopup = ({ onExit }: { onExit: () => void }) => {
   const router = typeof window !== 'undefined' ? (window as any).location : { reload: () => {} };
   
   return (
-    <div className="absolute inset-0 z-100 flex items-center justify-center bg-black/90 backdrop-blur-md animate-in zoom-in duration-500">
+    <div className="absolute inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-md animate-in zoom-in duration-500">
        <div className="bg-[#1a1528] border border-amber-500/50 p-8 rounded-xl max-w-sm w-full text-center shadow-[0_0_60px_rgba(251,191,36,0.2)] mx-6 relative overflow-hidden">
           <div className="absolute inset-0 bg-[url('/images/noise.png')] opacity-10"></div>
           <div className="relative z-10">
@@ -480,7 +479,7 @@ export default function SoulConnectSpellPage() {
       </div>
 
       {/* Main Content Area */}
-      <div className="grow relative z-10 flex flex-col items-center justify-evenly p-4 w-full max-w-md mx-auto">
+      <div className="flex-grow relative z-10 flex flex-col items-center justify-evenly p-4 w-full max-w-md mx-auto">
           {step === 1 && (
             <StageOneIntention 
               names={names} setNames={setNames} 
@@ -499,6 +498,7 @@ export default function SoulConnectSpellPage() {
           
           {step === 4 && <StageFourIncantation chant={generatedChant} onComplete={() => handleStageComplete("The words have been spoken.")} />}
           
+          {/* Mixing includes Petition Name Scroll now */}
           {step === 5 && <StageFiveMixing ingredients={activeIngredients} names={names} onComplete={() => handleStageComplete("The spell is bound.")} />}
           
           {step === 6 && <StageSixCandle onComplete={() => handleStageComplete("The spell is sealed in fire.")} />}
@@ -581,7 +581,7 @@ const StageOneIntention = ({ names, setNames, intention, setIntention, isForSelf
           <button 
             disabled={!names.user || !names.target || !intention}
             onClick={() => { audio.playImpact(); setMode('sigil'); }}
-            className="w-full mt-2 bg-linear-to-r from-amber-900/40 to-amber-800/40 border border-amber-600/50 text-amber-100 py-3 uppercase tracking-[0.2em] font-magical text-sm hover:bg-amber-800/50 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+            className="w-full mt-2 bg-gradient-to-r from-amber-900/40 to-amber-800/40 border border-amber-600/50 text-amber-100 py-3 uppercase tracking-[0.2em] font-magical text-sm hover:bg-amber-800/50 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
           >
             Create Petition
           </button>
@@ -603,14 +603,18 @@ const StageOneIntention = ({ names, setNames, intention, setIntention, isForSelf
         <div className="absolute inset-0 border-2 border-amber-900/30 rounded-full animate-[spin_10s_linear_infinite]"></div>
         <div className="absolute inset-2 border border-amber-900/20 rounded-full animate-[spin_15s_linear_infinite_reverse]"></div>
 
+        {/* Venus Sigil Background */}
         <svg viewBox="0 0 100 100" className="w-40 h-40 absolute stroke-amber-800/50 fill-none stroke-2">
-           <path d="M50 10 L90 90 L10 90 Z" />
-           <circle cx="50" cy="55" r="15" />
+           <circle cx="50" cy="35" r="25" />
+           <line x1="50" y1="60" x2="50" y2="95" />
+           <line x1="35" y1="80" x2="65" y2="80" />
         </svg>
 
+        {/* Venus Sigil Foreground */}
         <svg viewBox="0 0 100 100" className="w-40 h-40 absolute stroke-amber-200 fill-none stroke-[3px] drop-shadow-[0_0_10px_rgba(251,191,36,0.8)]" style={{ clipPath: `inset(${100 - traceProgress}% 0 0 0)` }}>
-           <path d="M50 10 L90 90 L10 90 Z" />
-           <circle cx="50" cy="55" r="15" />
+           <circle cx="50" cy="35" r="25" />
+           <line x1="50" y1="60" x2="50" y2="95" />
+           <line x1="35" y1="80" x2="65" y2="80" />
         </svg>
 
         {traceProgress < 100 && (
@@ -893,13 +897,22 @@ const StageFourIncantation = ({ chant, onComplete }: any) => {
   );
 };
 
-// --- STAGE 5: MIXING ---
+// --- STAGE 5: MIXING (With Petition Real Icon) ---
 const StageFiveMixing = ({ ingredients, names, onComplete }: any) => {
   const [progress, setProgress] = useState(0);
   const [isStirring, setIsStirring] = useState(false);
   const soundRef = useRef<any>(null);
 
-  const mixItems = [...ingredients, { icon: <ScrollText size={32} className="text-amber-100" />, name: 'Petition' }];
+  // Petition Element to render inside
+  const PetitionIcon = () => (
+      <div className="w-8 h-10 bg-[#f3e5ab] border border-amber-900 flex flex-col items-center justify-center text-[3px] leading-tight shadow-sm text-black font-serif">
+         <span>{names.user}</span>
+         <span className="text-red-800">&</span>
+         <span>{names.target}</span>
+      </div>
+  );
+
+  const mixItems = [...ingredients, { component: <PetitionIcon />, type: 'petition' }];
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -927,7 +940,7 @@ const StageFiveMixing = ({ ingredients, names, onComplete }: any) => {
         <div className="absolute inset-0 border border-slate-700 rounded-full bg-black/40"></div>
         
         <div 
-          className="w-48 h-48 rounded-full bg-linear-to-br from-amber-900 to-black flex items-center justify-center shadow-inner overflow-hidden relative"
+          className="w-48 h-48 rounded-full bg-gradient-to-br from-amber-900 to-black flex items-center justify-center shadow-inner overflow-hidden relative"
           style={{ transform: `rotate(${progress * 15}deg)`, transition: isStirring ? 'transform 0.1s linear' : 'transform 1s ease-out' }}
         >
            <div className="absolute w-full h-full opacity-30 bg-[url('/images/noise.png')]"></div>
@@ -942,15 +955,15 @@ const StageFiveMixing = ({ ingredients, names, onComplete }: any) => {
                  style={{
                     top: `calc(50% + ${Math.sin(angle) * r}px)`,
                     left: `calc(50% + ${Math.cos(angle) * r}px)`,
-                    transform: `rotate(${-progress * 15}deg)` 
+                    transform: `rotate(${-progress * 15}deg) translate(-50%, -50%)` // Center the item
                  }}
                >
-                 {item.icon}
+                 {item.type === 'petition' ? item.component : item.icon}
                </div>
              );
            })}
            
-           <div className="absolute w-full h-full bg-linear-to-r from-transparent via-amber-500/10 to-transparent animate-spin duration-700 opacity-50"></div>
+           <div className="absolute w-full h-full bg-gradient-to-r from-transparent via-amber-500/10 to-transparent animate-spin duration-700 opacity-50"></div>
         </div>
 
         <svg className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none">
@@ -1082,7 +1095,7 @@ const StageSixCandle = ({ onComplete }: any) => {
   );
 };
 
-// --- STAGE 7: RELEASE ---
+// --- STAGE 7: RELEASE (With Flash Star Effect) ---
 const StageSevenRelease = ({ onComplete }: any) => {
   const [power, setPower] = useState(0);
   const [isCharging, setIsCharging] = useState(false);
@@ -1109,18 +1122,19 @@ const StageSevenRelease = ({ onComplete }: any) => {
   useEffect(() => {
       if(power >= 100) {
           audio.playSparkle();
-          setTimeout(onComplete, 1500); 
+          setTimeout(onComplete, 1200); 
       }
   }, [power, onComplete]);
 
   return (
     <div className="flex flex-col items-center justify-center w-full h-full relative overflow-hidden">
       <div 
-        className="text-center mb-12 transition-all duration-1000 ease-in-out" 
+        className="text-center mb-12" 
         style={{ 
             opacity: power >= 100 ? 0 : 1 - (power/100), 
             transform: power >= 100 ? `scale(0.5) translateY(-500px)` : `scale(${1+(power/200)})`,
-            filter: power >= 100 ? 'blur(10px)' : 'none'
+            filter: power >= 100 ? 'blur(10px)' : 'none',
+            transition: 'all 0.5s ease-in' // Faster acceleration
         }}
       >
         <div className="text-6xl mb-4">🕯️</div>
@@ -1133,7 +1147,7 @@ const StageSevenRelease = ({ onComplete }: any) => {
         onMouseUp={() => setIsCharging(false)}
         onTouchStart={() => setIsCharging(true)}
         onTouchEnd={() => setIsCharging(false)}
-        className={`relative w-40 h-40 rounded-full border border-amber-500/30 flex flex-col items-center justify-center overflow-hidden bg-slate-900/50 backdrop-blur-sm group active:border-amber-200 transition-all ${power >= 100 ? 'opacity-0 duration-1000' : ''}`}
+        className={`relative w-40 h-40 rounded-full border border-amber-500/30 flex flex-col items-center justify-center overflow-hidden bg-slate-900/50 backdrop-blur-sm group active:border-amber-200 transition-all ${power >= 100 ? 'opacity-0 duration-500' : ''}`}
       >
         <div className="absolute bottom-0 left-0 right-0 bg-amber-100 mix-blend-overlay transition-all duration-75" style={{ height: `${power}%` }}></div>
         <span className="relative z-10 text-amber-100 font-magical font-bold tracking-widest uppercase text-xs">
@@ -1142,11 +1156,13 @@ const StageSevenRelease = ({ onComplete }: any) => {
         <span className="relative z-10 text-[8px] text-amber-500/70 mt-1 uppercase font-bold">(Hold)</span>
       </button>
 
-      {/* Floating particles on release */}
+      {/* Glittering Star Effect */}
       {power >= 100 && (
-          <div className="absolute inset-0 z-0">
-             <div className="absolute top-1/2 left-1/2 w-2 h-2 bg-white rounded-full animate-[ping_1s_ease-out_infinite]"></div>
-             <div className="absolute top-1/2 left-1/2 w-1 h-50 bg-amber-200/50 animate-[pulse_0.5s_infinite]"></div>
+          <div className="absolute inset-0 z-50 flex items-center justify-center">
+             <div className="relative animate-in zoom-in duration-500 fade-out-0 fill-mode-forwards">
+                <Star size={64} className="text-white fill-white animate-spin-slow drop-shadow-[0_0_50px_white]" />
+                <div className="absolute inset-0 bg-white blur-xl animate-pulse"></div>
+             </div>
           </div>
       )}
     </div>
