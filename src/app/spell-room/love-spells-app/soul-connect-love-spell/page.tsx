@@ -9,11 +9,10 @@ import Link from 'next/link';
 /**
  * TWO SOULS CONNECTION - LOVE SPELL RITUAL
  * Updates:
- * - AUDIO: Removed low drone loop.
- * - AUDIO: Added Convolution Reverb (Synthetic Impulse) for "Cave/Temple" tails.
- * - AUDIO: "Stirring" is now a synthesized Singing Bowl (Beating Sine Waves).
- * - AUDIO: "Charging" sounds rise in octave and brightness (The "Sunrise" effect).
- * - AUDIO: Sparkles are high-pitched and reverb-heavy.
+ * - AUDIO FIX: Reduced Reverb Impulse amplitude to eliminate "static/distortion" (digital clipping).
+ * - AUDIO FIX: "Charge" & "Release" sounds now start audible immediately (no silence at start).
+ * - AUDIO FIX: Smoother attack/release envelopes using `setTargetAtTime` to prevent clicking.
+ * - AUDIO: Maintained ethereal, rising, magickal soundscape.
  */
 
 // --- AUDIO ENGINE ---
@@ -24,7 +23,6 @@ class MagicAudio {
   isMuted: boolean = false;
   
   // Ethereal Pentatonic Scale (Higher Octave for "Sparkle")
-  // C5, D5, E5, G5, A5 range
   scale = [523.25, 587.33, 659.25, 783.99, 880.00, 1046.50]; 
 
   init() {
@@ -34,16 +32,17 @@ class MagicAudio {
       if (AudioContextClass) {
         this.ctx = new AudioContextClass();
         this.masterGain = this.ctx.createGain();
-        this.masterGain.gain.value = 0.3; // Gentle Master Volume
+        this.masterGain.gain.value = 0.4; // Slightly louder master to compensate for cleaner signals
 
         // REVERB SETUP (Convolution)
         this.reverbNode = this.ctx.createConvolver();
-        this.reverbNode.buffer = this.createImpulseResponse(2.5, 2.0); // 2.5s tail
+        // Generate a softer impulse to avoid the "static" distortion
+        this.reverbNode.buffer = this.createImpulseResponse(2.5, 2.0); 
         
-        // Routing: Master -> Split -> (Dry + Wet) -> Dest
-        // Wet Path
+        // Wet Path (Reverb)
         const wetGain = this.ctx.createGain();
-        wetGain.gain.value = 0.6; // Heavy Reverb
+        wetGain.gain.value = 0.4; // Reduced from 0.6 to prevent muddy clipping
+        
         this.masterGain.connect(this.reverbNode);
         this.reverbNode.connect(wetGain);
         wetGain.connect(this.ctx.destination);
@@ -58,6 +57,7 @@ class MagicAudio {
   }
 
   // Generate a synthetic "Hall" impulse response
+  // FIXED: Scaled down noise amplitude to prevent digital distortion
   createImpulseResponse(duration: number, decay: number) {
     const rate = this.ctx.sampleRate;
     const length = rate * duration;
@@ -67,10 +67,10 @@ class MagicAudio {
 
     for (let i = 0; i < length; i++) {
         const n = length - i;
-        const multi = Math.pow(n / length, decay); // Exponential decay
-        // White noise burst fading out
-        left[i] = (Math.random() * 2 - 1) * multi;
-        right[i] = (Math.random() * 2 - 1) * multi;
+        const multi = Math.pow(n / length, decay);
+        // Scale noise by 0.05 to keep it clean and ethereal, not static-y
+        left[i] = (Math.random() * 2 - 1) * 0.05 * multi;
+        right[i] = (Math.random() * 2 - 1) * 0.05 * multi;
     }
     return impulse;
   }
@@ -96,7 +96,8 @@ class MagicAudio {
         // High, tiny glass tick
         osc.type = 'sine';
         osc.frequency.setValueAtTime(800, now);
-        gain.gain.setValueAtTime(0.05, now);
+        gain.gain.setValueAtTime(0, now);
+        gain.gain.linearRampToValueAtTime(0.05, now + 0.01);
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
         osc.start(now);
         osc.stop(now + 0.1);
@@ -107,21 +108,25 @@ class MagicAudio {
         osc.frequency.setValueAtTime(659.25, now); // E5
         gain.gain.setValueAtTime(0, now);
         gain.gain.linearRampToValueAtTime(0.1, now + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5); // Reverb carries the tail
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5); 
         osc.start(now);
         osc.stop(now + 0.5);
     } 
     else if (level === 'magick') {
         // Bright Flash
         this.playSparkle(); 
+        
         // Underlying "Thump" for body
         const thump = this.ctx.createOscillator();
         const thumpGain = this.ctx.createGain();
         thump.type = 'triangle';
         thump.frequency.setValueAtTime(150, now);
         thump.frequency.exponentialRampToValueAtTime(60, now + 0.3);
-        thumpGain.gain.setValueAtTime(0.3, now);
+        
+        thumpGain.gain.setValueAtTime(0, now);
+        thumpGain.gain.linearRampToValueAtTime(0.3, now + 0.05);
         thumpGain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+        
         thump.connect(thumpGain);
         thumpGain.connect(this.masterGain);
         thump.start(now);
@@ -137,18 +142,17 @@ class MagicAudio {
     const now = this.ctx.currentTime;
     
     // High pitched, rapid arpeggio
-    [0, 0.08, 0.16, 0.24].forEach((delay, i) => {
+    [0, 0.08, 0.16, 0.24].forEach((delay) => {
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
       
       osc.type = 'sine';
-      // High range (C6 - C7)
       const freq = this.scale[Math.floor(Math.random() * this.scale.length)] * 2; 
       osc.frequency.setValueAtTime(freq, now + delay);
       
       gain.gain.setValueAtTime(0, now + delay);
-      gain.gain.linearRampToValueAtTime(0.1, now + delay + 0.05); // Sharp attack
-      gain.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.8); // Reverb handles the long tail
+      gain.gain.linearRampToValueAtTime(0.08, now + delay + 0.05); 
+      gain.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.8); 
       
       osc.connect(gain);
       gain.connect(this.masterGain);
@@ -162,11 +166,10 @@ class MagicAudio {
     if (this.isMuted) return;
     const now = this.ctx.currentTime;
     
-    // Wind Chime effect
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
     
-    osc.type = 'sine'; // Pure
+    osc.type = 'sine';
     const freq = this.scale[Math.floor(Math.random() * this.scale.length)];
     osc.frequency.setValueAtTime(freq, now);
     
@@ -188,8 +191,11 @@ class MagicAudio {
     
     const now = this.ctx.currentTime;
     const mainGain = this.ctx.createGain();
+    
+    // FIXED: Immediate onset. Start at 0, fade to audible base quickly (0.1s).
+    // This solves the "delay" issue.
     mainGain.gain.setValueAtTime(0, now);
-    mainGain.gain.linearRampToValueAtTime(0.5, now + 1.5); 
+    mainGain.gain.linearRampToValueAtTime(0.2, now + 0.1); 
     mainGain.connect(this.masterGain);
 
     const nodes: any[] = [];
@@ -198,9 +204,11 @@ class MagicAudio {
     const padOsc = this.ctx.createOscillator();
     padOsc.type = 'triangle';
     padOsc.frequency.value = 261.63; // C4
+    
     const padFilter = this.ctx.createBiquadFilter();
     padFilter.type = 'lowpass';
-    padFilter.frequency.value = 400; // Starts closed
+    padFilter.frequency.value = 300; // Starts slightly open so it's not silent
+    
     padOsc.connect(padFilter);
     padFilter.connect(mainGain);
     padOsc.start();
@@ -210,8 +218,10 @@ class MagicAudio {
     const shimmerOsc = this.ctx.createOscillator();
     shimmerOsc.type = 'sine';
     shimmerOsc.frequency.value = 523.25; // C5
+    
     const shimmerGain = this.ctx.createGain();
-    shimmerGain.gain.value = 0; // Starts silent
+    shimmerGain.gain.value = 0; // Starts silent, fades in via update
+    
     shimmerOsc.connect(shimmerGain);
     shimmerGain.connect(mainGain);
     shimmerOsc.start();
@@ -227,19 +237,19 @@ class MagicAudio {
 
     node.nodes.forEach((n: any) => {
         if (n.type === 'pad') {
-            // Filter opens up (Sunrise) 400Hz -> 1200Hz
-            const targetFreq = 400 + (p * 800);
+            // Filter opens: 300Hz -> 1000Hz
+            // Smooth transition using setTargetAtTime
+            const targetFreq = 300 + (p * 700);
             n.filter.frequency.setTargetAtTime(targetFreq, now, 0.1);
         } else if (n.type === 'shimmer') {
-            // High note fades in 0 -> 0.3
+            // High note fades in: 0 -> 0.3
             n.gain.gain.setTargetAtTime(p * 0.3, now, 0.1);
-            // Slight pitch rise for tension? 
-            // n.osc.frequency.setTargetAtTime(523.25 + (p * 20), now, 0.1);
         }
     });
     
-    // Overall volume swell
-    const vol = 0.3 + (p * 0.2);
+    // Volume Swell: 0.2 -> 0.6
+    // Starts audible (0.2) and grows
+    const vol = 0.2 + (p * 0.4);
     node.mainGain.gain.setTargetAtTime(vol, now, 0.1);
   }
 
@@ -247,10 +257,10 @@ class MagicAudio {
     if (!node || !this.ctx) return;
     const now = this.ctx.currentTime;
     try {
-        // Quick release, let reverb handle the tail
+        // Smooth release
         node.mainGain.gain.cancelScheduledValues(now);
-        node.mainGain.gain.setTargetAtTime(0, now, 0.5); 
-        node.nodes.forEach((n: any) => n.osc.stop(now + 1.0));
+        node.mainGain.gain.setTargetAtTime(0, now, 0.3); 
+        node.nodes.forEach((n: any) => n.osc.stop(now + 0.5));
     } catch(e) {}
   }
 
@@ -259,11 +269,12 @@ class MagicAudio {
     this.ensureContext();
     if (this.isMuted) return null;
     
-    // Ethereal Singing Bowl = Sine waves + Beating + Long Attack
     const now = this.ctx.currentTime;
     const bowlGain = this.ctx.createGain();
+    
+    // FIXED: Smoother start
     bowlGain.gain.setValueAtTime(0, now);
-    bowlGain.gain.linearRampToValueAtTime(0.3, now + 1.0); // Slow attack
+    bowlGain.gain.linearRampToValueAtTime(0.2, now + 0.5); 
     bowlGain.connect(this.masterGain);
 
     // Two sines close in frequency to create "wah-wah" beating
@@ -284,9 +295,9 @@ class MagicAudio {
     return { osc1, osc2, bowlGain, stop: () => {
         if(!this.ctx) return;
         const stopTime = this.ctx.currentTime;
-        bowlGain.gain.setTargetAtTime(0, stopTime, 1.5); // Long fade out (Bowl resonance)
-        osc1.stop(stopTime + 2);
-        osc2.stop(stopTime + 2);
+        bowlGain.gain.setTargetAtTime(0, stopTime, 1.0); 
+        osc1.stop(stopTime + 1.5);
+        osc2.stop(stopTime + 1.5);
     }};
   }
 }
