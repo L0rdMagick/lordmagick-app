@@ -9,11 +9,10 @@ import Link from 'next/link';
 /**
  * TWO SOULS CONNECTION - LOVE SPELL RITUAL
  * Updates:
- * - AUDIO: Global 300Hz LowPass Filter (Submarine/Deep vibe).
- * - AUDIO: Charging is now a swelling Pad (Detuned Saws).
- * - VISUAL: Ingredients float down like leaves (CSS Keyframes).
- * - TIMING: Charging and Pouring slowed by 50%.
- * - FIXED: Jar Overflow Logic retained.
+ * - AUDIO: Global 600Hz LowPass Filter.
+ * - VISUAL: Ingredients stack physically in the jar.
+ * - VISUAL: Drop animation constrained to jar interior, lands perfectly on stack.
+ * - TIMING: Slow, leaf-like drift (4s).
  */
 
 // --- AUDIO ENGINE ---
@@ -36,7 +35,7 @@ class MagicAudio {
         // STRICT UPPER LIMIT: 600Hz
         this.globalFilter = this.ctx.createBiquadFilter();
         this.globalFilter.type = 'lowpass';
-        this.globalFilter.frequency.value = 800; 
+        this.globalFilter.frequency.value = 600; 
         
         // Chain: Source -> Master -> Filter -> Destination
         this.masterGain.connect(this.globalFilter);
@@ -48,7 +47,6 @@ class MagicAudio {
     }
   }
 
-  // Helper to ensure we don't blow speakers with low freq energy
   ensureContext() {
     if (!this.ctx) this.init();
     if (this.ctx.state === 'suspended') this.ctx.resume();
@@ -62,11 +60,10 @@ class MagicAudio {
     const osc2 = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
     
-    // Very low drone
-    osc1.type = 'sine'; // Sine works best for sub-bass
+    osc1.type = 'sine';
     osc1.frequency.value = 45; 
     osc2.type = 'triangle';
-    osc2.frequency.value = 45.5; // Slight beating
+    osc2.frequency.value = 45.5; 
 
     osc1.connect(gain);
     osc2.connect(gain);
@@ -74,7 +71,7 @@ class MagicAudio {
 
     const now = this.ctx.currentTime;
     gain.gain.setValueAtTime(0, now);
-    gain.gain.linearRampToValueAtTime(0.3, now + 4); // Slow fade in
+    gain.gain.linearRampToValueAtTime(0.3, now + 4);
     
     osc1.start();
     osc2.start();
@@ -97,15 +94,14 @@ class MagicAudio {
     if (this.isMuted) return;
     const now = this.ctx.currentTime;
     
-    // Low frequency "bubbles" instead of high sparkles due to 300Hz limit
+    // Low frequency "bubbles"
     [0, 0.15, 0.3].forEach((delay, i) => {
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
       
       osc.type = 'sine';
-      // Frequencies must be audible within <300Hz window
-      // 100Hz - 200Hz range
-      const freq = 100 + (i * 40); 
+      // Freqs tuned to stay nice under 600Hz
+      const freq = 150 + (i * 50); 
       osc.frequency.setValueAtTime(freq, now + delay);
       
       gain.gain.setValueAtTime(0, now + delay);
@@ -122,12 +118,11 @@ class MagicAudio {
   playEtch() {
     this.ensureContext();
     if (this.isMuted) return;
-    // A low scratch/thud
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
     osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(60, this.ctx.currentTime);
-    osc.frequency.linearRampToValueAtTime(40, this.ctx.currentTime + 0.1);
+    osc.frequency.setValueAtTime(80, this.ctx.currentTime);
+    osc.frequency.linearRampToValueAtTime(50, this.ctx.currentTime + 0.1);
     
     gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.15);
@@ -139,29 +134,25 @@ class MagicAudio {
     osc.stop(this.ctx.currentTime + 0.15);
   }
 
-  // CHANGED: From Sine/Triangle to Detuned Saws (Pad)
   startCharge() {
     this.ensureContext();
     if (this.isMuted) return null;
     
     const now = this.ctx.currentTime;
-    
-    // Oscillator 1
     const osc1 = this.ctx.createOscillator();
     osc1.type = 'sawtooth';
-    osc1.frequency.setValueAtTime(55, now); // Low A
+    osc1.frequency.setValueAtTime(55, now);
 
-    // Oscillator 2 (Detuned)
     const osc2 = this.ctx.createOscillator();
     osc2.type = 'sawtooth';
     osc2.frequency.setValueAtTime(55.5, now);
 
     const gain = this.ctx.createGain();
     
-    // LowPass specific to this sound to smooth the saws before the global filter
+    // Individual filter for the pad swell effect
     const filter = this.ctx.createBiquadFilter();
     filter.type = 'lowpass';
-    filter.frequency.value = 150; // Start very muffled
+    filter.frequency.value = 150; 
 
     osc1.connect(filter);
     osc2.connect(filter);
@@ -181,18 +172,14 @@ class MagicAudio {
     if (!node || !this.ctx) return;
     const now = this.ctx.currentTime;
     
-    // Pad Rising Effect
-    // Freq: 55Hz -> 110Hz (Octave)
-    // Filter: 150Hz -> 280Hz (Opening up, but staying under global 300Hz)
-    
+    // Swell freq up to ~110Hz, Filter opens to ~450Hz
     const targetFreq = 55 + (progress * 0.55); 
-    const targetFilter = 150 + (progress * 1.3);
+    const targetFilter = 150 + (progress * 3.0);
 
     node.osc1.frequency.setTargetAtTime(targetFreq, now, 0.2);
-    node.osc2.frequency.setTargetAtTime(targetFreq * 1.01, now, 0.2); // Keep detune
+    node.osc2.frequency.setTargetAtTime(targetFreq * 1.01, now, 0.2); 
     node.filter.frequency.setTargetAtTime(targetFilter, now, 0.2);
     
-    // Slight volume swell
     node.gain.gain.setTargetAtTime(0.2 + (progress * 0.001), now, 0.1);
   }
 
@@ -201,7 +188,7 @@ class MagicAudio {
     const now = this.ctx.currentTime;
     try {
         node.gain.gain.cancelScheduledValues(now);
-        node.gain.gain.setTargetAtTime(0, now, 0.5); // Long release
+        node.gain.gain.setTargetAtTime(0, now, 0.5); 
         node.osc1.stop(now + 1);
         node.osc2.stop(now + 1);
     } catch(e) {}
@@ -211,7 +198,6 @@ class MagicAudio {
     this.ensureContext();
     if (this.isMuted) return;
     
-    // Deep Thud (Kick drum like)
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
     
@@ -231,7 +217,6 @@ class MagicAudio {
     this.ensureContext();
     if (this.isMuted) return null;
     
-    // Noise is naturally full spectrum, heavily filtered
     const bufferSize = this.ctx.sampleRate * 2;
     const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
     const data = buffer.getChannelData(0);
@@ -245,7 +230,7 @@ class MagicAudio {
 
     const filter = this.ctx.createBiquadFilter();
     filter.type = 'lowpass';
-    filter.frequency.value = 100; // Deep rumble
+    filter.frequency.value = 100;
     filter.Q.value = 5;
     
     const gain = this.ctx.createGain();
@@ -258,11 +243,10 @@ class MagicAudio {
     noise.start();
     gain.gain.setTargetAtTime(0.15, this.ctx.currentTime, 1);
 
-    // LFO to modulate filter for "swirling"
     const lfo = this.ctx.createOscillator();
     lfo.frequency.value = 0.5;
     const lfoGain = this.ctx.createGain();
-    lfoGain.gain.value = 50; // Modulate +/- 50Hz
+    lfoGain.gain.value = 50; 
     
     lfo.connect(lfoGain);
     lfoGain.connect(filter.frequency);
@@ -290,11 +274,6 @@ const GlobalStyles = () => (
     
     ::-webkit-scrollbar { display: none; }
     
-    .magical-glow {
-      box-shadow: 0 0 25px rgba(251, 191, 36, 0.2), inset 0 0 20px rgba(251, 191, 36, 0.1);
-    }
-    
-    /* Disable Callouts/Selection for immersive feel */
     .no-select {
         -webkit-touch-callout: none;
         -webkit-user-select: none;
@@ -310,19 +289,18 @@ const GlobalStyles = () => (
         user-select: text !important;
     }
 
-    /* LEAF DROP ANIMATION */
-    /* Simulates a falling leaf with X-axis sway and Y-axis gravity */
-    @keyframes leaf-drop {
-        0% { transform: translate(0px, 0px) rotate(0deg); opacity: 0; }
+    /* LEAF SWAY ANIMATION (X-Axis only) */
+    @keyframes leaf-sway {
+        0% { transform: translateX(0px) rotate(0deg); opacity: 0; }
         10% { opacity: 1; }
-        25% { transform: translate(15px, 60px) rotate(15deg); }
-        50% { transform: translate(-15px, 140px) rotate(-10deg); }
-        75% { transform: translate(10px, 200px) rotate(5deg); }
-        100% { transform: translate(0px, 260px) rotate(0deg); opacity: 1; }
+        25% { transform: translateX(10px) rotate(5deg); }
+        50% { transform: translateX(-10px) rotate(-5deg); }
+        75% { transform: translateX(5px) rotate(2deg); }
+        100% { transform: translateX(0px) rotate(0deg); opacity: 1; }
     }
 
-    .falling-leaf {
-        animation: leaf-drop 4s ease-in-out forwards;
+    .leaf-motion {
+        animation: leaf-sway 4s ease-in-out forwards;
         transform-box: fill-box;
         transform-origin: center;
     }
@@ -506,21 +484,6 @@ export default function SoulConnectSpellPage() {
     audio.playSparkle();
     setStep(s => s + 1);
   };
-
-  // --- FLOW LOGIC ---
-  // Step 1: Intention -> Set Names/Intention -> goto 2
-  // Step 2: Jar Mode: 'petition' -> Insert Petition -> goto 3
-  // Step 3: Consecrate Ing 0 -> goto 4
-  // Step 4: Jar Mode: 'drop' Ing 0 -> goto 5
-  // Step 5: Consecrate Ing 1 -> goto 6
-  // Step 6: Jar Mode: 'drop' Ing 1 -> goto 7
-  // Step 7: Consecrate Ing 2 -> goto 8
-  // Step 8: Jar Mode: 'drop' Ing 2 -> goto 9
-  // Step 9: Jar Mode: 'honey' -> Fill Honey -> goto 10
-  // Step 10: Incantation -> goto 11
-  // Step 11: Mixing -> goto 12
-  // Step 12: Candle -> goto 13
-  // Step 13: Release -> goto 14 (Final)
 
   const handlePetitionDone = () => {
       setActiveIngredients(determineIngredients(intention));
@@ -783,6 +746,9 @@ const StageTwoJar = ({ mode, names, filledIngredients, droppingItem, onComplete 
   const [animState, setAnimState] = useState<'idle' | 'dropping' | 'done'>('idle');
   const [failed, setFailed] = useState(false);
   
+  // Animation State for Drop Logic
+  const [dropY, setDropY] = useState(40); // Start near top (Neck)
+  
   const progressRef = useRef(0);
   const soundRef = useRef<any>(null);
 
@@ -791,6 +757,12 @@ const StageTwoJar = ({ mode, names, filledIngredients, droppingItem, onComplete 
 
   // SVG Coordinate System: 0 0 200 300
   const bottlePath = "M70,20 C70,10 75,0 100,0 C125,0 130,10 130,20 L130,60 C130,70 170,80 180,120 C190,160 195,200 170,260 C145,300 55,300 30,260 C5,200 10,160 20,120 C30,80 70,70 70,60 Z";
+
+  // Calculate Stack Height for current drop
+  // Max items ~ 5 (petition + 3 herbs). 
+  // Base Y = 250. Stack up by 30px each.
+  const stackIndex = filledIngredients.length + (mode === 'petition' ? 0 : 1); // If dropping ingredient, it sits on petition
+  const targetY = 250 - (stackIndex * 30);
 
   // Handle Honey Pouring Logic with Ref-based Interval
   useEffect(() => {
@@ -809,7 +781,7 @@ const StageTwoJar = ({ mode, names, filledIngredients, droppingItem, onComplete 
                 audio.playImpact();
             } else {
                 // Pouring - SLOWER 50%
-                const next = current + 1.2; // Was 2
+                const next = current + 1.2; 
                 setActionProgress(next);
                 if(soundRef.current) audio.updateCharge(soundRef.current, next/2);
             }
@@ -829,7 +801,14 @@ const StageTwoJar = ({ mode, names, filledIngredients, droppingItem, onComplete 
   const triggerDrop = () => {
       setAnimState('dropping');
       audio.playSparkle();
-      // Drop takes 4 seconds now (leaf drop)
+      
+      // Start Drop Animation via State
+      // Uses CSS transition for smooth Y movement to calculated target
+      requestAnimationFrame(() => {
+         setDropY(targetY);
+      });
+
+      // Wait for 4s fall
       setTimeout(() => {
           setAnimState('done');
       }, 4000);
@@ -884,51 +863,46 @@ const StageTwoJar = ({ mode, names, filledIngredients, droppingItem, onComplete 
                     />
                 )}
                 
-                {/* 1. Petition (If inserted) */}
+                {/* 1. Petition Logic */}
+                {/* If mode is petition and idle: not shown. If dropping, animating. If done (or later steps), shown statically at bottom */}
                 {(mode !== 'petition' || animState !== 'idle') && (
                     <g 
-                       className={mode === 'petition' && animState === 'dropping' ? "falling-leaf" : ""}
-                       transform={mode === 'petition' && animState === 'dropping' 
-                         ? "" // Animation handles transform
-                         : `translate(100, 250)` // Static pos
-                       }
+                       className={mode === 'petition' && animState === 'dropping' ? "leaf-motion" : ""}
+                       style={{ 
+                           transition: mode === 'petition' && animState === 'dropping' ? 'transform 4s ease-in-out' : 'none',
+                           transform: mode === 'petition' && animState === 'dropping' 
+                               ? `translate(100px, ${dropY}px)` 
+                               : `translate(100px, 250px)` // Static resting place for petition (base)
+                       }}
                     >
-                       {/* If animating, position at 0,0 relative to parent and let keyframes move it. 
-                           If done, parent g is translated to 100,250. 
-                           Wait, mixing transform and animation can be tricky in SVG.
-                           Strategy: Use inner group for shape, outer group for static pos.
-                       */}
-                       {mode === 'petition' && animState === 'dropping' ? (
-                            // Animating Element - Start at top
-                           <g transform="translate(100, 50)"> 
-                               <rect x="-30" y="-40" width="60" height="80" fill="#f3e5ab" stroke="#78350f" strokeWidth="0.5" />
-                               <text x="0" y="-10" fontSize="6" textAnchor="middle" fill="#000" fontFamily="serif">{names.user}</text>
-                               <text x="0" y="5" fontSize="6" textAnchor="middle" fill="#b91c1c" fontFamily="serif">&</text>
-                               <text x="0" y="20" fontSize="6" textAnchor="middle" fill="#000" fontFamily="serif">{names.target}</text>
-                           </g>
-                       ) : (
-                           // Static Element
-                           <g transform="rotate(-10)">
-                               <rect x="-30" y="-40" width="60" height="80" fill="#f3e5ab" stroke="#78350f" strokeWidth="0.5" />
-                               <text x="0" y="-10" fontSize="6" textAnchor="middle" fill="#000" fontFamily="serif">{names.user}</text>
-                               <text x="0" y="5" fontSize="6" textAnchor="middle" fill="#b91c1c" fontFamily="serif">&</text>
-                               <text x="0" y="20" fontSize="6" textAnchor="middle" fill="#000" fontFamily="serif">{names.target}</text>
-                           </g>
-                       )}
+                       <g transform="rotate(-10)">
+                           <rect x="-25" y="-35" width="50" height="70" fill="#f3e5ab" stroke="#78350f" strokeWidth="0.5" />
+                           <text x="0" y="-8" fontSize="5" textAnchor="middle" fill="#000" fontFamily="serif">{names.user}</text>
+                           <text x="0" y="4" fontSize="5" textAnchor="middle" fill="#b91c1c" fontFamily="serif">&</text>
+                           <text x="0" y="16" fontSize="5" textAnchor="middle" fill="#000" fontFamily="serif">{names.target}</text>
+                       </g>
                     </g>
                 )}
 
-                {/* 2. Previously Added Ingredients */}
+                {/* 2. Previously Added Ingredients (Static Stack) */}
                 {filledIngredients.map((ing, i) => (
-                    <text key={i} x={100 + (Math.sin(i)*40)} y={240 - (i*20)} fontSize="30" textAnchor="middle" filter="drop-shadow(0px 2px 2px rgba(0,0,0,0.5))">
-                        {ing.icon}
-                    </text>
+                    <g key={i} transform={`translate(100, ${250 - ((i+1) * 30)})`}>
+                        <text fontSize="28" textAnchor="middle" filter="drop-shadow(0px 2px 2px rgba(0,0,0,0.5))">
+                            {ing.icon}
+                        </text>
+                    </g>
                 ))}
 
-                {/* 3. Currently Dropping Item (Leaf Drop Animation) */}
+                {/* 3. Currently Dropping Item */}
                 {mode === 'drop' && animState === 'dropping' && (
-                    <g transform="translate(100, 50)" className="falling-leaf">
-                         <text fontSize="30" textAnchor="middle">{droppingItem.icon}</text>
+                    <g 
+                        className="leaf-motion"
+                        style={{ 
+                            transition: 'transform 4s ease-in-out',
+                            transform: `translate(100px, ${dropY}px)`
+                        }}
+                    >
+                         <text fontSize="28" textAnchor="middle">{droppingItem.icon}</text>
                     </g>
                 )}
 
