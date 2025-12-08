@@ -3,7 +3,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Sparkles, Droplets, RotateCw, Hand, Check, Moon, Volume2, VolumeX, Users, User } from 'lucide-react';
+import { Sparkles, Droplets, RotateCw, Hand, Check, Moon, Volume2, VolumeX, Users, User, Flame } from 'lucide-react';
 import Link from 'next/link';
 
 /**
@@ -11,8 +11,9 @@ import Link from 'next/link';
  * Features: 
  * - Single Page View (No Scroll)
  * - Self vs Couple Logic
- * - Ornate Jar Visuals
+ * - Ornate Jar with Perfect Masking
  * - Clamped Audio Pitch (Max 450Hz)
+ * - Step-by-Step Confirmation
  */
 
 // --- AUDIO ENGINE ---
@@ -245,7 +246,6 @@ const GlobalStyles = () => (
     .font-magical { font-family: 'Cinzel', serif; }
     .font-scroll { font-family: 'Crimson Text', serif; }
     
-    /* Custom Scrollbar Hide */
     ::-webkit-scrollbar { display: none; }
     
     .magical-glow {
@@ -258,22 +258,22 @@ const GlobalStyles = () => (
 
 const HERB_DATABASE: Record<string, any[]> = {
   blockage: [
-    { name: 'Lemon Balm', icon: '🌿', desc: 'Clears away confusion.', color: 'text-yellow-300', glow: 'shadow-yellow-500/50' },
-    { name: 'Chilli Flakes', icon: '🌶️', desc: 'Burns away obstacles.', color: 'text-red-500', glow: 'shadow-red-500/50' },
-    { name: 'Sea Salt', icon: '🧂', desc: 'Neutralizes the past.', color: 'text-white', glow: 'shadow-white/50' },
-    { name: 'Black Pepper', icon: '⚫', desc: 'Banishes jealousy.', color: 'text-gray-400', glow: 'shadow-gray-500/50' }
+    { name: 'Lemon Balm', icon: '🌿', desc: 'Clears away confusion.', color: 'text-yellow-300' },
+    { name: 'Chilli Flakes', icon: '🌶️', desc: 'Burns away obstacles.', color: 'text-red-500' },
+    { name: 'Sea Salt', icon: '🧂', desc: 'Neutralizes the past.', color: 'text-white' },
+    { name: 'Black Pepper', icon: '⚫', desc: 'Banishes jealousy.', color: 'text-gray-400' }
   ],
   attract: [
-    { name: 'Rose Petals', icon: '🌹', desc: 'Invites soft romance.', color: 'text-pink-400', glow: 'shadow-pink-500/50' },
-    { name: 'Cinnamon Stick', icon: '🪵', desc: 'Ignites passion.', color: 'text-orange-500', glow: 'shadow-orange-500/50' },
-    { name: 'Lavender', icon: '🪻', desc: 'Brings understanding.', color: 'text-purple-400', glow: 'shadow-purple-500/50' },
-    { name: 'Sugar Crystals', icon: '✨', desc: 'Sweetens thoughts.', color: 'text-blue-200', glow: 'shadow-blue-200/50' }
+    { name: 'Rose Petals', icon: '🌹', desc: 'Invites soft romance.', color: 'text-pink-400' },
+    { name: 'Cinnamon Stick', icon: '🪵', desc: 'Ignites passion.', color: 'text-orange-500' },
+    { name: 'Lavender', icon: '🪻', desc: 'Brings understanding.', color: 'text-purple-400' },
+    { name: 'Sugar Crystals', icon: '✨', desc: 'Sweetens thoughts.', color: 'text-blue-200' }
   ],
   bind: [
-    { name: 'Licorice Root', icon: '🎋', desc: 'For commanding control.', color: 'text-slate-400', glow: 'shadow-slate-500/50' },
-    { name: 'Ivy Leaf', icon: '🍃', desc: 'To cling faithfully.', color: 'text-green-500', glow: 'shadow-green-500/50' },
-    { name: 'Red String', icon: '🧶', desc: 'To tie fates together.', color: 'text-red-600', glow: 'shadow-red-600/50' },
-    { name: 'Magnetite', icon: '🧲', desc: 'Magnetic attraction.', color: 'text-gray-500', glow: 'shadow-gray-500/50' }
+    { name: 'Licorice Root', icon: '🎋', desc: 'For commanding control.', color: 'text-slate-400' },
+    { name: 'Ivy Leaf', icon: '🍃', desc: 'To cling faithfully.', color: 'text-green-500' },
+    { name: 'Red String', icon: '🧶', desc: 'To tie fates together.', color: 'text-red-600' },
+    { name: 'Magnetite', icon: '🧲', desc: 'Magnetic attraction.', color: 'text-gray-500' }
   ]
 };
 
@@ -284,15 +284,15 @@ const determineIngredients = (text: string) => {
   let bind = HERB_DATABASE.bind[1];
 
   if (t.includes('ex') || t.includes('stop') || t.includes('fight')) b = HERB_DATABASE.blockage[1];
-  if (t.includes('sad') || t.includes('cry') || t.includes('hurt')) b = HERB_DATABASE.blockage[0];
-  if (t.includes('protect') || t.includes('safe')) b = HERB_DATABASE.blockage[3];
+  if (t.includes('sad') || t.includes('cry')) b = HERB_DATABASE.blockage[0];
+  if (t.includes('protect')) b = HERB_DATABASE.blockage[3];
 
-  if (t.includes('sex') || t.includes('hot') || t.includes('now')) a = HERB_DATABASE.attract[1];
-  if (t.includes('marriage') || t.includes('wife') || t.includes('husband')) a = HERB_DATABASE.attract[3];
-  if (t.includes('talk') || t.includes('message')) a = HERB_DATABASE.attract[2];
+  if (t.includes('sex') || t.includes('hot')) a = HERB_DATABASE.attract[1];
+  if (t.includes('marriage')) a = HERB_DATABASE.attract[3];
+  if (t.includes('talk')) a = HERB_DATABASE.attract[2];
 
-  if (t.includes('forever') || t.includes('always')) bind = HERB_DATABASE.bind[2];
-  if (t.includes('obey') || t.includes('listen')) bind = HERB_DATABASE.bind[0];
+  if (t.includes('forever')) bind = HERB_DATABASE.bind[2];
+  if (t.includes('obey')) bind = HERB_DATABASE.bind[0];
 
   return [b, a, bind];
 };
@@ -310,7 +310,6 @@ const generateIncantation = (names: { user: string, target: string }, isForSelf:
       `${names.target} returns, only to me.`
     ];
   } else {
-    // Rhyming chant for 3rd person
     return [
       `By earth and air, by fire and sea,`,
       `I clear the path for ${names.target} and ${names.user}.`,
@@ -341,20 +340,19 @@ const StarField = () => (
   </div>
 );
 
-// --- COMPONENT: SUCCESS MODAL ---
-const SuccessModal = ({ message, onContinue }: { message: string, onContinue: () => void }) => (
-  <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
-     <div className="bg-[#1a1528] border border-amber-600/50 p-6 rounded-lg max-w-sm text-center shadow-[0_0_50px_rgba(251,191,36,0.3)] transform scale-100">
-        <div className="w-16 h-16 mx-auto bg-amber-900/20 rounded-full flex items-center justify-center mb-4 border border-amber-500/30">
-            <Sparkles className="text-amber-200 w-8 h-8" />
+// --- COMPONENT: POPUP MODAL ---
+const MagickPopup = ({ message, buttonText = "Continue", onContinue }: { message: string, buttonText?: string, onContinue: () => void }) => (
+  <div className="absolute inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
+     <div className="bg-[#1a1528] border border-amber-600/50 p-6 rounded-lg max-w-xs w-full text-center shadow-[0_0_50px_rgba(251,191,36,0.3)] transform scale-100 mx-4">
+        <div className="w-12 h-12 mx-auto bg-amber-900/20 rounded-full flex items-center justify-center mb-4 border border-amber-500/30">
+            <Sparkles className="text-amber-200 w-6 h-6" />
         </div>
-        <h3 className="text-xl font-magical text-amber-100 mb-2">Ritual Complete</h3>
-        <p className="text-amber-400/80 font-scroll italic mb-6">{message}</p>
+        <h3 className="text-lg font-magical text-amber-100 mb-2">{message}</h3>
         <button 
             onClick={onContinue}
-            className="w-full bg-amber-900/40 hover:bg-amber-800/40 border border-amber-600 text-amber-100 py-3 uppercase tracking-widest font-magical text-sm transition-colors"
+            className="w-full bg-amber-900/40 hover:bg-amber-800/40 border border-amber-600 text-amber-100 py-2 uppercase tracking-widest font-magical text-xs transition-colors"
         >
-            Continue Ritual
+            {buttonText}
         </button>
      </div>
   </div>
@@ -372,7 +370,7 @@ export default function SoulConnectSpellPage() {
   
   const [activeIngredients, setActiveIngredients] = useState<any[]>([]);
   const [generatedChant, setGeneratedChant] = useState<string[]>([]);
-  const [showSuccess, setShowSuccess] = useState<string | null>(null);
+  const [showSuccess, setShowSuccess] = useState<{msg: string, btn?: string} | null>(null);
   
   const bgDroneRef = useRef<any>(null);
 
@@ -388,8 +386,8 @@ export default function SoulConnectSpellPage() {
     audio.isMuted = !muted;
   };
   
-  const handleStageComplete = (msg: string) => {
-    setShowSuccess(msg);
+  const handleStageComplete = (msg: string, btnText: string = "Continue") => {
+    setShowSuccess({ msg, btn: btnText });
   };
 
   const nextStep = () => {
@@ -419,6 +417,15 @@ export default function SoulConnectSpellPage() {
     );
   }
 
+  // STAGE MAPPING:
+  // 1: Petition
+  // 2: Jar
+  // 3: Herbs
+  // 4: Incantation (Swapped per request)
+  // 5: Mixing (Swapped per request)
+  // 6: Candle
+  // 7: Release
+
   return (
     <div className="h-screen w-full bg-[#0f0a1e] text-amber-50 overflow-hidden flex flex-col relative">
       <GlobalStyles />
@@ -437,7 +444,7 @@ export default function SoulConnectSpellPage() {
         </button>
       </div>
 
-      {/* Main Content Area - Flex Grow to fill space without scrolling */}
+      {/* Main Content Area */}
       <div className="flex-grow relative z-10 flex flex-col items-center justify-evenly p-4 w-full max-w-md mx-auto">
           {step === 1 && (
             <StageOneIntention 
@@ -453,9 +460,14 @@ export default function SoulConnectSpellPage() {
           )}
 
           {step === 2 && <StageTwoJar names={names} onComplete={() => handleStageComplete("The Vessel is sweetened and sealed.")} />}
-          {step === 3 && <StageThreeHerbs ingredients={activeIngredients} onComplete={() => handleStageComplete("The ingredients are consecrated.")} />}
-          {step === 4 && <StageFourStir onComplete={() => handleStageComplete("The energies are bound together.")} />}
-          {step === 5 && <StageFiveIncantation chant={generatedChant} onComplete={() => handleStageComplete("The words have been spoken.")} />}
+          {step === 3 && <StageThreeHerbs ingredients={activeIngredients} onComplete={() => handleStageComplete("All ingredients are consecrated.")} />}
+          
+          {/* Swapped Order: Incantation first */}
+          {step === 4 && <StageFourIncantation chant={generatedChant} onComplete={() => handleStageComplete("The words have been spoken.")} />}
+          
+          {/* Mixing second, passing ingredients for visuals */}
+          {step === 5 && <StageFiveMixing ingredients={activeIngredients} onComplete={() => handleStageComplete("The spell is bound.")} />}
+          
           {step === 6 && <StageSixCandle onComplete={() => handleStageComplete("The spell is sealed in fire.")} />}
           {step === 7 && <StageSevenRelease onComplete={() => setStep(8)} />}
 
@@ -476,12 +488,12 @@ export default function SoulConnectSpellPage() {
           )}
       </div>
 
-      {showSuccess && <SuccessModal message={showSuccess} onContinue={nextStep} />}
+      {showSuccess && <MagickPopup message={showSuccess.msg} buttonText={showSuccess.btn} onContinue={nextStep} />}
     </div>
   );
 }
 
-// --- STAGE 1: INTENTION & SIGIL ---
+// --- STAGE 1: INTENTION ---
 const StageOneIntention = ({ names, setNames, intention, setIntention, isForSelf, setIsForSelf, onComplete }: any) => {
   const [mode, setMode] = useState('form'); 
   const [traceProgress, setTraceProgress] = useState(0);
@@ -494,13 +506,11 @@ const StageOneIntention = ({ names, setNames, intention, setIntention, isForSelf
   if (mode === 'form') {
     return (
       <div className="w-full animate-in fade-in slide-in-from-bottom-4 duration-500 relative">
-        {/* Glowing Background Effect */}
         <div className="absolute inset-0 bg-amber-600/10 blur-3xl animate-pulse rounded-full pointer-events-none"></div>
 
         <h2 className="text-2xl text-center text-amber-100 mb-4 font-magical drop-shadow-md">The Petition</h2>
         
-        {/* Self vs Other Toggle */}
-        <div className="flex justify-center mb-6">
+        <div className="flex justify-center mb-4">
             <div className="flex bg-slate-900/80 rounded-full border border-amber-800/50 p-1">
                 <button 
                     onClick={() => setIsForSelf(true)}
@@ -574,7 +584,6 @@ const StageOneIntention = ({ names, setNames, intention, setIntention, isForSelf
         <div className="absolute inset-0 border-2 border-amber-900/30 rounded-full animate-[spin_10s_linear_infinite]"></div>
         <div className="absolute inset-2 border border-amber-900/20 rounded-full animate-[spin_15s_linear_infinite_reverse]"></div>
 
-        {/* Sigil SVG */}
         <svg viewBox="0 0 100 100" className="w-40 h-40 absolute stroke-amber-800/50 fill-none stroke-2">
            <path d="M50 10 L90 90 L10 90 Z" />
            <circle cx="50" cy="55" r="15" />
@@ -605,13 +614,16 @@ const StageOneIntention = ({ names, setNames, intention, setIntention, isForSelf
   );
 };
 
-// --- STAGE 2: THE ORNATE JAR ---
+// --- STAGE 2: JAR ---
 const StageTwoJar = ({ names, onComplete }: any) => {
   const [honeyLevel, setHoneyLevel] = useState(0);
   const [isPouring, setIsPouring] = useState(false);
   const [parchmentIn, setParchmentIn] = useState(false);
   const [failed, setFailed] = useState(false);
   const soundRef = useRef<any>(null);
+
+  // Unified Path for Clip and Stroke to ensure perfect fit
+  const jarPath = "M70,20 C70,10 75,0 96,0 C117,0 122,10 122,20 L122,60 C122,70 160,80 170,120 C180,160 192,200 160,260 C128,300 64,300 32,260 C0,200 12,160 22,120 C32,80 70,70 70,60 Z";
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -646,34 +658,22 @@ const StageTwoJar = ({ names, onComplete }: any) => {
 
       {/* ORNATE JAR VISUAL */}
       <div className="relative w-48 h-64 mb-6">
-        {/* SVG Definition for Shape Masking */}
         <svg width="0" height="0">
             <defs>
-                <clipPath id="jarClip">
-                    <path d="M70,10 C70,5 75,0 96,0 C117,0 122,5 122,10 L122,50 C122,60 160,70 170,110 C180,150 192,200 160,240 C128,280 64,280 32,240 C0,200 12,150 22,110 C32,70 70,60 70,50 Z" />
+                <clipPath id="jarClipUnique">
+                    <path d={jarPath} />
                 </clipPath>
             </defs>
         </svg>
 
-        {/* The Container with Mask */}
         <div className="relative w-full h-full drop-shadow-[0_0_15px_rgba(0,0,0,0.8)]">
-            {/* Glass Jar Body (Border/Stroke visual) */}
-            <svg viewBox="0 0 192 280" className="absolute inset-0 w-full h-full z-20 pointer-events-none drop-shadow-md">
-                <path d="M70,10 C70,5 75,0 96,0 C117,0 122,5 122,10 L122,50 C122,60 160,70 170,110 C180,150 192,200 160,240 C128,280 64,280 32,240 C0,200 12,150 22,110 C32,70 70,60 70,50 Z" 
-                      fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="2" />
-                {/* Decorative bands */}
-                <path d="M30,120 Q96,140 162,120" fill="none" stroke="rgba(251,191,36,0.4)" strokeWidth="1" />
-                <path d="M32,240 Q96,260 160,240" fill="none" stroke="rgba(251,191,36,0.4)" strokeWidth="1" />
-            </svg>
-
-            {/* Liquid Container (Clipped) */}
-            <div className="absolute inset-0 w-full h-full" style={{ clipPath: 'url(#jarClip)', background: 'rgba(255,255,255,0.05)' }}>
-                {/* The Honey Liquid */}
+            {/* The Liquid Container (Clipped) */}
+            <div className="absolute inset-0 w-full h-full" style={{ clipPath: 'url(#jarClipUnique)', background: 'rgba(255,255,255,0.02)' }}>
+                {/* Honey */}
                 <div 
                     className="absolute bottom-0 w-full bg-gradient-to-t from-amber-900 via-amber-600 to-amber-500/90 transition-all duration-100 ease-linear"
                     style={{ height: `${honeyLevel}%` }}
                 >
-                   {/* Bubbles */}
                    <div className="absolute w-1 h-1 bg-white/30 rounded-full bottom-4 left-1/2 animate-ping"></div>
                 </div>
 
@@ -687,6 +687,13 @@ const StageTwoJar = ({ names, onComplete }: any) => {
                    </div>
                 </div>
             </div>
+
+            {/* The Glass Outline (Stroke) */}
+            <svg viewBox="0 0 192 300" className="absolute inset-0 w-full h-full z-20 pointer-events-none drop-shadow-md">
+                <path d={jarPath} fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="2" />
+                <path d="M30,130 Q96,150 162,130" fill="none" stroke="rgba(251,191,36,0.4)" strokeWidth="1" />
+                <path d="M32,260 Q96,280 160,260" fill="none" stroke="rgba(251,191,36,0.4)" strokeWidth="1" />
+            </svg>
         </div>
       </div>
 
@@ -734,42 +741,48 @@ const StageThreeHerbs = ({ ingredients, onComplete }: any) => {
   const [currentIdx, setCurrentIdx] = useState(0);
   const [charge, setCharge] = useState(0);
   const [isCharging, setIsCharging] = useState(false);
+  const [herbSuccess, setHerbSuccess] = useState(false); // New: Local success state
   const soundRef = useRef<any>(null);
   const currentHerb = ingredients[currentIdx];
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    if (isCharging) {
+    if (isCharging && !herbSuccess) {
       if (!soundRef.current) soundRef.current = audio.startCharge(); 
       interval = setInterval(() => {
         setCharge(prev => {
-            const next = Math.min(prev + 2.5, 100); // Faster charge
+            const next = Math.min(prev + 2.5, 100); 
             if(soundRef.current) audio.updateCharge(soundRef.current, next);
             return next;
         }); 
       }, 50);
     } else {
         if(soundRef.current) { audio.stopCharge(soundRef.current); soundRef.current = null; }
-        setCharge(0); // Reset on let go
+        if (!herbSuccess) setCharge(0); 
     }
     return () => { clearInterval(interval); if(soundRef.current) audio.stopCharge(soundRef.current); };
-  }, [isCharging]);
+  }, [isCharging, herbSuccess]);
 
   useEffect(() => {
-      if(charge >= 100) {
+      if(charge >= 100 && !herbSuccess) {
         setIsCharging(false);
         audio.playSparkle();
-        if(currentIdx < ingredients.length - 1) {
-            setCurrentIdx(p => p + 1);
-            setCharge(0);
-        } else {
-            onComplete();
-        }
+        setHerbSuccess(true); // Trigger popup instead of immediate next
       }
-  }, [charge, currentIdx, ingredients.length, onComplete]);
+  }, [charge, herbSuccess]);
+
+  const nextHerb = () => {
+    setHerbSuccess(false);
+    setCharge(0);
+    if(currentIdx < ingredients.length - 1) {
+        setCurrentIdx(p => p + 1);
+    } else {
+        onComplete();
+    }
+  };
 
   return (
-    <div className="flex flex-col items-center text-center w-full">
+    <div className="flex flex-col items-center text-center w-full relative">
       <h2 className="text-xl text-amber-100 mb-1 font-magical">Consecrate Herbs</h2>
       <p className="text-xs text-amber-400/60 mb-6 font-scroll italic">Hold to imbue energy.</p>
 
@@ -794,12 +807,49 @@ const StageThreeHerbs = ({ ingredients, onComplete }: any) => {
         <Sparkles className="w-6 h-6 text-amber-200 mb-1" />
         <span className="relative z-10 text-[9px] font-magical uppercase tracking-widest text-amber-100">(Hold)</span>
       </button>
+
+      {herbSuccess && (
+          <MagickPopup 
+            message={`${currentHerb.name} is Consecrated.`} 
+            buttonText={currentIdx < ingredients.length - 1 ? "Next Ingredient" : "Finish Herbs"} 
+            onContinue={nextHerb} 
+          />
+      )}
     </div>
   );
 };
 
-// --- STAGE 4: STIR ---
-const StageFourStir = ({ onComplete }: any) => {
+// --- STAGE 4: INCANTATION ---
+const StageFourIncantation = ({ chant, onComplete }: any) => {
+  const [lineIdx, setLineIdx] = useState(0);
+
+  const handleTap = () => {
+    audio.playImpact();
+    if (lineIdx < chant.length - 1) setLineIdx(p => p + 1);
+    else onComplete();
+  };
+
+  return (
+    <div className="flex flex-col items-center justify-center w-full h-full cursor-pointer" onClick={handleTap}>
+      <h2 className="text-[10px] font-magical uppercase tracking-[0.2em] text-slate-500 mb-2">Tap to Chant</h2>
+      <p className="text-xs text-amber-500/60 mb-8 font-scroll italic">Speak aloud or internally with power.</p>
+      
+      <div className="relative w-full text-center px-4 min-h-[200px] flex items-center justify-center">
+         <div key={lineIdx} className="animate-in zoom-in slide-in-from-bottom-4 duration-500">
+            <h3 className="text-2xl md:text-3xl font-magical text-amber-50 leading-relaxed drop-shadow-md">"{chant[lineIdx]}"</h3>
+            <div className="mt-6 flex justify-center">
+                <div className="w-12 h-1 bg-amber-900/30 rounded-full overflow-hidden">
+                    <div className="h-full bg-amber-500 w-full animate-[ping_1.5s_infinite]"></div>
+                </div>
+            </div>
+         </div>
+      </div>
+    </div>
+  );
+};
+
+// --- STAGE 5: MIXING (Visuals Restored) ---
+const StageFiveMixing = ({ ingredients, onComplete }: any) => {
   const [progress, setProgress] = useState(0);
   const [isStirring, setIsStirring] = useState(false);
   const soundRef = useRef<any>(null);
@@ -816,7 +866,7 @@ const StageFourStir = ({ onComplete }: any) => {
       }, 50);
     } else {
       if(soundRef.current) { soundRef.current.stop(); soundRef.current = null; }
-      if(progress < 100) setProgress(0); // Reset if let go early
+      if(progress < 100) setProgress(0); 
     }
     return () => { clearInterval(interval); if(soundRef.current) soundRef.current.stop(); };
   }, [isStirring, progress]);
@@ -824,24 +874,46 @@ const StageFourStir = ({ onComplete }: any) => {
   return (
     <div className="flex flex-col items-center text-center w-full">
       <h2 className="text-xl text-amber-100 mb-1 font-magical">Bind the Energy</h2>
-      <p className="text-xs text-amber-400/60 mb-8 font-scroll italic">Hold to stir. Do not break the circle.</p>
+      <p className="text-xs text-amber-400/60 mb-8 font-scroll italic">Hold to stir the ingredients.</p>
 
       <div className="relative w-56 h-56 mb-8 flex items-center justify-center">
-        <div className="absolute inset-0 border border-slate-700 rounded-full"></div>
+        <div className="absolute inset-0 border border-slate-700 rounded-full bg-black/40"></div>
         
-        {/* Swirling Liquid */}
+        {/* Swirling Liquid Container */}
         <div 
-          className="w-40 h-40 rounded-full bg-gradient-to-br from-amber-900 to-black flex items-center justify-center shadow-inner overflow-hidden"
-          style={{ transform: `rotate(${progress * 20}deg)`, transition: isStirring ? 'transform 0.1s linear' : 'none' }}
+          className="w-48 h-48 rounded-full bg-gradient-to-br from-amber-900 to-black flex items-center justify-center shadow-inner overflow-hidden relative"
+          style={{ transform: `rotate(${progress * 15}deg)`, transition: isStirring ? 'transform 0.1s linear' : 'transform 1s ease-out' }}
         >
            <div className="absolute w-full h-full opacity-30 bg-[url('/images/noise.png')]"></div>
-           <div className="text-4xl filter blur-sm opacity-50">🍯</div>
+           
+           {/* Floating Ingredients */}
+           {ingredients.map((ing: any, i: number) => {
+             // Calculate positions in a circle
+             const angle = (i / ingredients.length) * 2 * Math.PI;
+             const r = 60; // radius from center
+             return (
+               <div 
+                 key={i} 
+                 className="absolute text-2xl filter blur-[0.5px] animate-pulse"
+                 style={{
+                    top: `calc(50% + ${Math.sin(angle) * r}px)`,
+                    left: `calc(50% + ${Math.cos(angle) * r}px)`,
+                    transform: `rotate(${-progress * 15}deg)` // Counter-rotate to keep them upright relative to viewer? Or let them spin. Let them spin.
+                 }}
+               >
+                 {ing.icon}
+               </div>
+             );
+           })}
+           
+           {/* Center Vortex */}
+           <div className="absolute w-full h-full bg-gradient-to-r from-transparent via-amber-500/10 to-transparent animate-spin duration-700 opacity-50"></div>
         </div>
 
         {/* Progress Ring */}
         <svg className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none">
-          <circle cx="112" cy="112" r="100" stroke="#1e293b" strokeWidth="2" fill="none" />
-          <circle cx="112" cy="112" r="100" stroke="#f59e0b" strokeWidth="4" fill="none" strokeDasharray="628" strokeDashoffset={628 - (628 * progress) / 100} strokeLinecap="round" />
+          <circle cx="112" cy="112" r="105" stroke="#1e293b" strokeWidth="2" fill="none" />
+          <circle cx="112" cy="112" r="105" stroke="#f59e0b" strokeWidth="4" fill="none" strokeDasharray="660" strokeDashoffset={660 - (660 * progress) / 100} strokeLinecap="round" />
         </svg>
       </div>
 
@@ -865,66 +937,49 @@ const StageFourStir = ({ onComplete }: any) => {
   );
 };
 
-// --- STAGE 5: INCANTATION ---
-const StageFiveIncantation = ({ chant, onComplete }: any) => {
-  const [lineIdx, setLineIdx] = useState(0);
-
-  const handleTap = () => {
-    audio.playImpact();
-    if (lineIdx < chant.length - 1) setLineIdx(p => p + 1);
-    else onComplete();
-  };
-
-  return (
-    <div className="flex flex-col items-center justify-center w-full h-full cursor-pointer" onClick={handleTap}>
-      <h2 className="text-[10px] font-magical uppercase tracking-[0.3em] text-slate-500 mb-8">Tap screen to Chant</h2>
-      <div className="relative w-full text-center px-4 min-h-[200px] flex items-center justify-center">
-         <div key={lineIdx} className="animate-in zoom-in slide-in-from-bottom-4 duration-500">
-            <h3 className="text-2xl md:text-3xl font-magical text-amber-50 leading-relaxed drop-shadow-md">"{chant[lineIdx]}"</h3>
-            <div className="mt-6 flex justify-center">
-                <div className="w-12 h-1 bg-amber-900/30 rounded-full overflow-hidden">
-                    <div className="h-full bg-amber-500 w-full animate-[ping_1.5s_infinite]"></div>
-                </div>
-            </div>
-         </div>
-      </div>
-    </div>
-  );
-};
-
-// --- STAGE 6: CANDLE ---
+// --- STAGE 6: CANDLE (Timer Restored) ---
 const StageSixCandle = ({ onComplete }: any) => {
   const [lit, setLit] = useState(false);
-  const [progress, setProgress] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(10); // 10 seconds of focus
   
   useEffect(() => {
-    if (lit && progress < 100) {
-      const interval = setInterval(() => { setProgress(p => p + 2); }, 100);
-      return () => clearInterval(interval);
+    let interval: NodeJS.Timeout;
+    if (lit && timeLeft > 0) {
+      interval = setInterval(() => {
+        setTimeLeft(t => t - 1);
+      }, 1000);
+    } else if (timeLeft === 0) {
+        // done
     }
-  }, [lit, progress]);
+    return () => clearInterval(interval);
+  }, [lit, timeLeft]);
 
   return (
     <div className="flex flex-col items-center w-full">
       <h2 className="text-xl text-amber-100 mb-1 font-magical">Seal with Fire</h2>
-      <p className="text-xs text-amber-400/60 mb-8 font-scroll italic">Gaze into the flame.</p>
+      <p className="text-xs text-amber-400/60 mb-8 font-scroll italic">
+          {lit ? "Focus on your desire..." : "Light the candle to seal the spell."}
+      </p>
 
       <div className="relative h-64 w-full flex flex-col items-center justify-end mb-6">
-        {lit && (
+        {lit && timeLeft > 0 && (
           <div className="absolute bottom-[160px] z-20 mix-blend-screen animate-in fade-in duration-1000">
-            <div className="w-4 h-12 bg-orange-500 rounded-full blur-sm animate-pulse"></div>
-            <div className="absolute top-2 left-1 w-2 h-8 bg-yellow-100 rounded-full blur-[1px]"></div>
+            <div className="w-6 h-16 bg-orange-500 rounded-full blur-sm animate-[pulse_0.5s_infinite]"></div>
+            <div className="absolute top-2 left-1.5 w-3 h-10 bg-yellow-100 rounded-full blur-[1px]"></div>
+            <div className="absolute -top-10 -left-6 w-20 h-20 bg-orange-600/20 rounded-full blur-2xl animate-pulse"></div>
           </div>
         )}
 
-        <div className="w-16 bg-gradient-to-r from-pink-300 via-pink-100 to-pink-300 rounded-t-md relative shadow-inner" style={{ height: '160px' }}>
-          <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-1 h-4 bg-black"></div>
+        <div className="w-20 bg-gradient-to-r from-pink-300 via-pink-100 to-pink-300 rounded-t-md relative shadow-inner flex flex-col items-center" style={{ height: '160px' }}>
+          <div className="absolute -top-3 w-1 h-4 bg-black"></div>
           {!lit && (
              <div 
-               className="absolute -top-10 -left-10 right-10 bottom-full w-40 h-20 z-50"
+               className="absolute -top-10 -left-10 right-10 bottom-full w-40 h-24 z-50 flex items-center justify-center"
                onMouseEnter={() => { setLit(true); audio.playEtch(); }}
                onTouchMove={() => { setLit(true); audio.playEtch(); }}
-             ></div>
+             >
+                 <Flame className="text-white/20 animate-bounce" />
+             </div>
           )}
         </div>
       </div>
@@ -933,9 +988,9 @@ const StageSixCandle = ({ onComplete }: any) => {
         <div className="text-xs uppercase tracking-widest text-pink-300 animate-pulse border-b border-pink-500/50 pb-1">Swipe wick to light</div>
       ) : (
         <>
-            {progress < 100 ? (
-                <div className="w-48 h-1 bg-slate-800 rounded-full overflow-hidden">
-                    <div className="h-full bg-pink-500 transition-all duration-100" style={{ width: `${progress}%` }}></div>
+            {timeLeft > 0 ? (
+                <div className="text-2xl font-magical text-amber-200 animate-pulse">
+                   {timeLeft}s
                 </div>
             ) : (
                 <button onClick={onComplete} className="px-8 py-2 bg-pink-700 text-white font-magical uppercase tracking-widest text-sm rounded shadow-[0_0_20px_rgba(236,72,153,0.5)]">
@@ -948,7 +1003,7 @@ const StageSixCandle = ({ onComplete }: any) => {
   );
 };
 
-// --- STAGE 7: RELEASE ---
+// --- STAGE 7: RELEASE (Animation Restored) ---
 const StageSevenRelease = ({ onComplete }: any) => {
   const [power, setPower] = useState(0);
   const [isCharging, setIsCharging] = useState(false);
@@ -966,22 +1021,30 @@ const StageSevenRelease = ({ onComplete }: any) => {
         }); 
       }, 50); 
     } else {
-      setPower(0);
       if(soundRef.current) { audio.stopCharge(soundRef.current); soundRef.current = null; }
+      if(power < 100) setPower(0);
     }
     return () => { clearInterval(interval); if(soundRef.current) audio.stopCharge(soundRef.current); };
-  }, [isCharging]);
+  }, [isCharging, power]);
 
   useEffect(() => {
       if(power >= 100) {
           audio.playSparkle();
-          setTimeout(onComplete, 500);
+          setTimeout(onComplete, 1500); // Wait for animation
       }
   }, [power, onComplete]);
 
   return (
-    <div className="flex flex-col items-center justify-center w-full h-full">
-      <div className="text-center mb-12 transition-all duration-100" style={{ opacity: 1 - (power/100), transform: `scale(${1+(power/200)})` }}>
+    <div className="flex flex-col items-center justify-center w-full h-full relative overflow-hidden">
+      <div 
+        className="text-center mb-12 transition-all duration-1000 ease-in-out" 
+        style={{ 
+            opacity: power >= 100 ? 0 : 1 - (power/100), 
+            transform: power >= 100 ? `scale(0.5) translateY(-500px)` : `scale(${1+(power/200)})`,
+            filter: power >= 100 ? 'blur(10px)' : 'none'
+        }}
+      >
+        <div className="text-6xl mb-4">🕯️</div>
         <h2 className="text-2xl text-amber-100 font-magical mb-2">Manifestation</h2>
         <p className="text-amber-500/50 font-scroll italic">Release your will into the universe.</p>
       </div>
@@ -991,14 +1054,22 @@ const StageSevenRelease = ({ onComplete }: any) => {
         onMouseUp={() => setIsCharging(false)}
         onTouchStart={() => setIsCharging(true)}
         onTouchEnd={() => setIsCharging(false)}
-        className="relative w-40 h-40 rounded-full border border-amber-500/30 flex flex-col items-center justify-center overflow-hidden bg-slate-900/50 backdrop-blur-sm group active:border-amber-200 transition-all"
+        className={`relative w-40 h-40 rounded-full border border-amber-500/30 flex flex-col items-center justify-center overflow-hidden bg-slate-900/50 backdrop-blur-sm group active:border-amber-200 transition-all ${power >= 100 ? 'opacity-0 duration-1000' : ''}`}
       >
         <div className="absolute bottom-0 left-0 right-0 bg-amber-100 mix-blend-overlay transition-all duration-75" style={{ height: `${power}%` }}></div>
         <span className="relative z-10 text-amber-100 font-magical font-bold tracking-widest uppercase text-xs">
-          {power >= 100 ? "RELEASED" : "RELEASE"}
+          RELEASE
         </span>
         <span className="relative z-10 text-[8px] text-amber-500/70 mt-1 uppercase font-bold">(Hold)</span>
       </button>
+
+      {/* Floating particles on release */}
+      {power >= 100 && (
+          <div className="absolute inset-0 z-0">
+             <div className="absolute top-1/2 left-1/2 w-2 h-2 bg-white rounded-full animate-[ping_1s_ease-out_infinite]"></div>
+             <div className="absolute top-1/2 left-1/2 w-1 h-50 bg-amber-200/50 animate-[pulse_0.5s_infinite]"></div>
+          </div>
+      )}
     </div>
   );
 };
