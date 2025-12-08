@@ -9,10 +9,10 @@ import Link from 'next/link';
 /**
  * TWO SOULS CONNECTION - LOVE SPELL RITUAL
  * Updates:
- * - AUDIO: Global 600Hz LowPass Filter.
- * - VISUAL: Ingredients stack physically in the jar.
- * - VISUAL: Drop animation constrained to jar interior, lands perfectly on stack.
- * - TIMING: Slow, leaf-like drift (4s).
+ * - AUDIO: Global 800Hz LowPass Filter.
+ * - VISUAL: Fixed disappearing ingredients (Separated Sway/Gravity transforms).
+ * - VISUAL: Ingredient stays in jar after landing (Persistence).
+ * - VISUAL: Start position adjusted to ensure visibility inside bottle neck.
  */
 
 // --- AUDIO ENGINE ---
@@ -32,10 +32,10 @@ class MagicAudio {
         this.masterGain.gain.value = 0.4;
         
         // GLOBAL LOW PASS FILTER (The "Veil")
-        // STRICT UPPER LIMIT: 600Hz
+        // STRICT UPPER LIMIT: 800Hz
         this.globalFilter = this.ctx.createBiquadFilter();
         this.globalFilter.type = 'lowpass';
-        this.globalFilter.frequency.value = 600; 
+        this.globalFilter.frequency.value = 800; 
         
         // Chain: Source -> Master -> Filter -> Destination
         this.masterGain.connect(this.globalFilter);
@@ -100,7 +100,7 @@ class MagicAudio {
       const gain = this.ctx.createGain();
       
       osc.type = 'sine';
-      // Freqs tuned to stay nice under 600Hz
+      // Freqs tuned to stay nice under 800Hz
       const freq = 150 + (i * 50); 
       osc.frequency.setValueAtTime(freq, now + delay);
       
@@ -289,18 +289,18 @@ const GlobalStyles = () => (
         user-select: text !important;
     }
 
-    /* LEAF SWAY ANIMATION (X-Axis only) */
+    /* LEAF SWAY ANIMATION (X-Axis & Rotation only) */
+    /* Separated from Gravity Y-Axis to avoid transform conflicts */
     @keyframes leaf-sway {
-        0% { transform: translateX(0px) rotate(0deg); opacity: 0; }
-        10% { opacity: 1; }
+        0% { transform: translateX(0px) rotate(0deg); }
         25% { transform: translateX(10px) rotate(5deg); }
         50% { transform: translateX(-10px) rotate(-5deg); }
         75% { transform: translateX(5px) rotate(2deg); }
-        100% { transform: translateX(0px) rotate(0deg); opacity: 1; }
+        100% { transform: translateX(0px) rotate(0deg); }
     }
 
     .leaf-motion {
-        animation: leaf-sway 4s ease-in-out forwards;
+        animation: leaf-sway 4s ease-in-out infinite;
         transform-box: fill-box;
         transform-origin: center;
     }
@@ -747,7 +747,7 @@ const StageTwoJar = ({ mode, names, filledIngredients, droppingItem, onComplete 
   const [failed, setFailed] = useState(false);
   
   // Animation State for Drop Logic
-  const [dropY, setDropY] = useState(40); // Start near top (Neck)
+  const [dropY, setDropY] = useState(30); // Start inside neck (safe zone)
   
   const progressRef = useRef(0);
   const soundRef = useRef<any>(null);
@@ -759,9 +759,7 @@ const StageTwoJar = ({ mode, names, filledIngredients, droppingItem, onComplete 
   const bottlePath = "M70,20 C70,10 75,0 100,0 C125,0 130,10 130,20 L130,60 C130,70 170,80 180,120 C190,160 195,200 170,260 C145,300 55,300 30,260 C5,200 10,160 20,120 C30,80 70,70 70,60 Z";
 
   // Calculate Stack Height for current drop
-  // Max items ~ 5 (petition + 3 herbs). 
-  // Base Y = 250. Stack up by 30px each.
-  const stackIndex = filledIngredients.length + (mode === 'petition' ? 0 : 1); // If dropping ingredient, it sits on petition
+  const stackIndex = filledIngredients.length + (mode === 'petition' ? 0 : 1);
   const targetY = 250 - (stackIndex * 30);
 
   // Handle Honey Pouring Logic with Ref-based Interval
@@ -803,7 +801,6 @@ const StageTwoJar = ({ mode, names, filledIngredients, droppingItem, onComplete 
       audio.playSparkle();
       
       // Start Drop Animation via State
-      // Uses CSS transition for smooth Y movement to calculated target
       requestAnimationFrame(() => {
          setDropY(targetY);
       });
@@ -864,22 +861,27 @@ const StageTwoJar = ({ mode, names, filledIngredients, droppingItem, onComplete 
                 )}
                 
                 {/* 1. Petition Logic */}
-                {/* If mode is petition and idle: not shown. If dropping, animating. If done (or later steps), shown statically at bottom */}
+                {/* Visual Logic: 
+                    If mode is petition AND animating -> Show moving group.
+                    If mode is NOT petition (later steps) OR (petition & done) -> Show static group at bottom.
+                */}
                 {(mode !== 'petition' || animState !== 'idle') && (
                     <g 
-                       className={mode === 'petition' && animState === 'dropping' ? "leaf-motion" : ""}
                        style={{ 
                            transition: mode === 'petition' && animState === 'dropping' ? 'transform 4s ease-in-out' : 'none',
                            transform: mode === 'petition' && animState === 'dropping' 
                                ? `translate(100px, ${dropY}px)` 
-                               : `translate(100px, 250px)` // Static resting place for petition (base)
+                               : `translate(100px, 250px)` // Final static position
                        }}
                     >
-                       <g transform="rotate(-10)">
-                           <rect x="-25" y="-35" width="50" height="70" fill="#f3e5ab" stroke="#78350f" strokeWidth="0.5" />
-                           <text x="0" y="-8" fontSize="5" textAnchor="middle" fill="#000" fontFamily="serif">{names.user}</text>
-                           <text x="0" y="4" fontSize="5" textAnchor="middle" fill="#b91c1c" fontFamily="serif">&</text>
-                           <text x="0" y="16" fontSize="5" textAnchor="middle" fill="#000" fontFamily="serif">{names.target}</text>
+                       {/* Inner Group for Sway/Rotate - Only applies during drop */}
+                       <g className={mode === 'petition' && animState === 'dropping' ? "leaf-motion" : ""}>
+                           <g transform="rotate(-10)">
+                               <rect x="-25" y="-35" width="50" height="70" fill="#f3e5ab" stroke="#78350f" strokeWidth="0.5" />
+                               <text x="0" y="-8" fontSize="5" textAnchor="middle" fill="#000" fontFamily="serif">{names.user}</text>
+                               <text x="0" y="4" fontSize="5" textAnchor="middle" fill="#b91c1c" fontFamily="serif">&</text>
+                               <text x="0" y="16" fontSize="5" textAnchor="middle" fill="#000" fontFamily="serif">{names.target}</text>
+                           </g>
                        </g>
                     </g>
                 )}
@@ -894,15 +896,21 @@ const StageTwoJar = ({ mode, names, filledIngredients, droppingItem, onComplete 
                 ))}
 
                 {/* 3. Currently Dropping Item */}
-                {mode === 'drop' && animState === 'dropping' && (
+                {/* Only visible during 'drop' mode. 
+                    - If dropping: Animates down.
+                    - If done: Stays at targetY (persistence until Confirm click).
+                */}
+                {mode === 'drop' && animState !== 'idle' && (
                     <g 
-                        className="leaf-motion"
                         style={{ 
-                            transition: 'transform 4s ease-in-out',
+                            transition: animState === 'dropping' ? 'transform 4s ease-in-out' : 'none',
                             transform: `translate(100px, ${dropY}px)`
                         }}
                     >
-                         <text fontSize="28" textAnchor="middle">{droppingItem.icon}</text>
+                        {/* Nested Sway Group */}
+                        <g className={animState === 'dropping' ? "leaf-motion" : ""}>
+                             <text fontSize="28" textAnchor="middle">{droppingItem.icon}</text>
+                        </g>
                     </g>
                 )}
 
