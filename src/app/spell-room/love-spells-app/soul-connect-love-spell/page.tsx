@@ -9,9 +9,8 @@ import Link from 'next/link';
 /**
  * TWO SOULS CONNECTION - LOVE SPELL RITUAL
  * Updates:
- * - AUDIO: Added 'startPulsingCharge' for Mixing & Release stages.
- * - AUDIO: Mixing/Release sounds now share the DNA of the Charge sound but with a rhythmic pulse.
- * - VISUAL: Added semi-transparent (15%) honey overlay in Jar to create immersion depth.
+ * - AUDIO: Added Pulsing Charge (120bpm) for Mixing and Release phases.
+ * - VISUAL: Added semi-transparent honey overlay to immerse ingredients.
  */
 
 // --- AUDIO ENGINE ---
@@ -31,13 +30,13 @@ class MagicAudio {
       if (AudioContextClass) {
         this.ctx = new AudioContextClass();
         this.masterGain = this.ctx.createGain();
-        this.masterGain.gain.value = 0.45; 
+        this.masterGain.gain.value = 0.45; // Boost master volume for clarity
 
-        // REVERB SETUP
+        // REVERB SETUP (Convolution)
         this.reverbNode = this.ctx.createConvolver();
         this.reverbNode.buffer = this.createImpulseResponse(2.5, 2.0); 
         
-        // Wet Path
+        // Wet Path (Reverb)
         const wetGain = this.ctx.createGain();
         wetGain.gain.value = 0.35; 
         
@@ -54,6 +53,7 @@ class MagicAudio {
     }
   }
 
+  // Generate a clean, ethereal impulse response
   createImpulseResponse(duration: number, decay: number) {
     const rate = this.ctx.sampleRate;
     const length = rate * duration;
@@ -64,6 +64,7 @@ class MagicAudio {
     for (let i = 0; i < length; i++) {
         const n = length - i;
         const multi = Math.pow(n / length, decay);
+        // Low amplitude noise to prevent digital distortion
         left[i] = (Math.random() * 2 - 1) * 0.05 * multi;
         right[i] = (Math.random() * 2 - 1) * 0.05 * multi;
     }
@@ -171,8 +172,43 @@ class MagicAudio {
     osc.stop(now + 0.8);
   }
 
-  // --- STANDARD CHARGE (Rising, Smooth) ---
-  // Used for Ingredients & Pouring
+  // --- BASE SOUND: THE "SUNRISE" EFFECT ---
+  // Helper to create the oscillator nodes for charging sounds
+  createChargeNodes(mainGain: any) {
+    const nodes: any[] = [];
+    const now = this.ctx.currentTime;
+
+    // 1. The "Pad" - Warmth
+    const padOsc = this.ctx.createOscillator();
+    padOsc.type = 'triangle';
+    padOsc.frequency.value = 261.63; // C4
+    
+    const padFilter = this.ctx.createBiquadFilter();
+    padFilter.type = 'lowpass';
+    padFilter.frequency.value = 600; 
+    
+    padOsc.connect(padFilter);
+    padFilter.connect(mainGain);
+    padOsc.start(now);
+    nodes.push({ osc: padOsc, filter: padFilter, type: 'pad' });
+
+    // 2. The "Shimmer" - High Sine
+    const shimmerOsc = this.ctx.createOscillator();
+    shimmerOsc.type = 'sine';
+    shimmerOsc.frequency.value = 523.25; // C5
+    
+    const shimmerGain = this.ctx.createGain();
+    shimmerGain.gain.value = 0.1; 
+    
+    shimmerOsc.connect(shimmerGain);
+    shimmerGain.connect(mainGain);
+    shimmerOsc.start(now);
+    nodes.push({ osc: shimmerOsc, gain: shimmerGain, type: 'shimmer' });
+
+    return nodes;
+  }
+
+  // --- STANDARD CHARGING (Steady) ---
   startCharge() {
     this.ensureContext();
     if (this.isMuted) return null;
@@ -180,69 +216,51 @@ class MagicAudio {
     const now = this.ctx.currentTime;
     const mainGain = this.ctx.createGain();
     
-    // Instant start
     mainGain.gain.setValueAtTime(0, now);
     mainGain.gain.linearRampToValueAtTime(0.4, now + 0.05); 
     mainGain.connect(this.masterGain);
 
-    const nodes: any[] = [];
-    
-    // 1. Warm Pad
-    const padOsc = this.ctx.createOscillator();
-    padOsc.type = 'triangle';
-    padOsc.frequency.value = 261.63; // C4
-    const padFilter = this.ctx.createBiquadFilter();
-    padFilter.type = 'lowpass';
-    padFilter.frequency.value = 600; 
-    padOsc.connect(padFilter);
-    padFilter.connect(mainGain);
-    padOsc.start();
-    nodes.push({ osc: padOsc, filter: padFilter, type: 'pad' });
+    const nodes = this.createChargeNodes(mainGain);
 
-    // 2. High Shimmer
-    const shimmerOsc = this.ctx.createOscillator();
-    shimmerOsc.type = 'sine';
-    shimmerOsc.frequency.value = 523.25; // C5
-    const shimmerGain = this.ctx.createGain();
-    shimmerGain.gain.value = 0.1; 
-    shimmerOsc.connect(shimmerGain);
-    shimmerGain.connect(mainGain);
-    shimmerOsc.start();
-    nodes.push({ osc: shimmerOsc, gain: shimmerGain, type: 'shimmer' });
-
-    return { nodes, mainGain };
+    return { nodes, mainGain, type: 'steady' };
   }
 
-  // --- PULSING CHARGE (Rising, Rhythmic) ---
-  // Used for Mixing & Release
-  startPulsingCharge() {
+  // --- PULSING CHARGE (Mixing / Release) ---
+  // 120 BPM = 2 Hz Pulse
+  startPulseCharge() {
     this.ensureContext();
     if (this.isMuted) return null;
 
-    // Reuse the base sound structure of startCharge
-    const { nodes, mainGain } = this.startCharge()!;
-
-    // Add Pulsing LFO
-    // We insert a gain node before the master out to modulate volume
-    const pulseGain = this.ctx.createGain();
-    pulseGain.gain.value = 1.0;
+    const now = this.ctx.currentTime;
     
-    // Disconnect mainGain from master and route through pulseGain
-    mainGain.disconnect();
-    mainGain.connect(pulseGain);
-    pulseGain.connect(this.masterGain);
+    // Create the Main Gain that controls the swell
+    const mainGain = this.ctx.createGain();
+    mainGain.gain.setValueAtTime(0, now);
+    mainGain.gain.linearRampToValueAtTime(0.4, now + 0.05);
+    
+    // Pulse Effect LFO Chain
+    // Signal Flow: Nodes -> MainGain (Swell) -> PulseGain (LFO) -> Master
+    const pulseGain = this.ctx.createGain();
+    pulseGain.gain.value = 0.7; // Base volume center
 
     const lfo = this.ctx.createOscillator();
     lfo.type = 'sine';
-    lfo.frequency.value = 4; // 4Hz Pulse
-    const lfoGain = this.ctx.createGain();
-    lfoGain.gain.value = 0.3; // 30% modulation depth
+    lfo.frequency.value = 2.0; // 120 beats per minute (2Hz)
 
-    lfo.connect(lfoGain);
-    lfoGain.connect(pulseGain.gain); // Modulate volume
-    lfo.start();
+    const lfoAmp = this.ctx.createGain();
+    lfoAmp.gain.value = 0.3; // Depth of pulse (0.7 +/- 0.3)
 
-    return { nodes, mainGain, lfo };
+    lfo.connect(lfoAmp);
+    lfoAmp.connect(pulseGain.gain);
+    lfo.start(now);
+
+    mainGain.connect(pulseGain);
+    pulseGain.connect(this.masterGain);
+
+    // Reuse the same sound sources as standard charge
+    const nodes = this.createChargeNodes(mainGain);
+
+    return { nodes, mainGain, lfo, pulseGain, type: 'pulse' };
   }
 
   updateCharge(node: any, progress: number) { 
@@ -252,19 +270,16 @@ class MagicAudio {
 
     node.nodes.forEach((n: any) => {
         if (n.type === 'pad') {
+            // Filter opens: 600Hz -> 1200Hz
             const targetFreq = 600 + (p * 600);
             n.filter.frequency.setTargetAtTime(targetFreq, now, 0.1);
         } else if (n.type === 'shimmer') {
+            // High note fades up: 0.1 -> 0.4
             n.gain.gain.setTargetAtTime(0.1 + (p * 0.3), now, 0.1);
         }
     });
     
-    // Speed up pulse if it exists
-    if (node.lfo) {
-        // Pulse gets faster as intensity rises: 4Hz -> 8Hz
-        node.lfo.frequency.setTargetAtTime(4 + (p * 4), now, 0.1);
-    }
-    
+    // Volume Swell: 0.4 -> 0.8
     const vol = 0.4 + (p * 0.4);
     node.mainGain.gain.setTargetAtTime(vol, now, 0.1);
   }
@@ -276,9 +291,16 @@ class MagicAudio {
         node.mainGain.gain.cancelScheduledValues(now);
         node.mainGain.gain.setTargetAtTime(0, now, 0.3); 
         node.nodes.forEach((n: any) => n.osc.stop(now + 0.5));
-        if (node.lfo) node.lfo.stop(now + 0.5);
+        
+        if (node.type === 'pulse' && node.lfo) {
+            node.lfo.stop(now + 0.5);
+            // Quick fade out pulse gain just in case
+            node.pulseGain.gain.setTargetAtTime(0, now, 0.3); 
+        }
     } catch(e) {}
   }
+
+  // --- STIRRING: Removed old singing bowl in favor of pulse charge ---
 }
 
 const audio = new MagicAudio();
@@ -870,7 +892,7 @@ const StageTwoJar = ({ mode, names, filledIngredients, droppingItem, onComplete 
             {/* Content Group (Clipped) */}
             <g clipPath="url(#bottleClip)">
                 
-                {/* Honey (Only visible if pouring or done) */}
+                {/* Honey (Only visible if pouring or done) - BOTTOM LAYER */}
                 {mode === 'honey' && (
                     <rect 
                         x="0" 
@@ -892,7 +914,6 @@ const StageTwoJar = ({ mode, names, filledIngredients, droppingItem, onComplete 
                                : `translate(100px, 250px)` // Final static position
                        }}
                     >
-                       {/* Inner Group for Sway/Rotate - Only applies during drop */}
                        <g className={mode === 'petition' && animState === 'dropping' ? "leaf-motion" : ""}>
                            <g transform="rotate(-10)">
                                <rect x="-25" y="-35" width="50" height="70" fill="#f3e5ab" stroke="#78350f" strokeWidth="0.5" />
@@ -913,19 +934,6 @@ const StageTwoJar = ({ mode, names, filledIngredients, droppingItem, onComplete 
                     </g>
                 ))}
 
-                {/* NEW: Transparent Honey Overlay (Depth Effect) */}
-                {mode === 'honey' && (
-                    <rect 
-                        x="0" 
-                        y={300 - actionProgress} 
-                        width="200" 
-                        height={actionProgress} 
-                        fill="url(#honeyGrad)" 
-                        opacity="0.15"
-                        style={{ pointerEvents: 'none' }}
-                    />
-                )}
-
                 {/* 3. Currently Dropping Item */}
                 {mode === 'drop' && animState !== 'idle' && (
                     <g 
@@ -934,11 +942,24 @@ const StageTwoJar = ({ mode, names, filledIngredients, droppingItem, onComplete 
                             transform: `translate(100px, ${dropY}px)`
                         }}
                     >
-                        {/* Nested Sway Group */}
                         <g className={animState === 'dropping' ? "leaf-motion" : ""}>
                              <text fontSize="28" textAnchor="middle">{droppingItem.icon}</text>
                         </g>
                     </g>
+                )}
+
+                {/* 4. IMMERSION LAYER: Semi-transparent Honey Overlay */}
+                {/* This makes ingredients look like they are inside the honey */}
+                {mode === 'honey' && (
+                    <rect 
+                        x="0" 
+                        y={300 - actionProgress} 
+                        width="200" 
+                        height={actionProgress} 
+                        fill="url(#honeyGrad)" 
+                        opacity="0.25"
+                        style={{ pointerEvents: 'none' }}
+                    />
                 )}
 
                 {/* Target Line for Honey */}
@@ -1123,7 +1144,7 @@ const StageFourIncantation = ({ chant, onComplete }: any) => {
   );
 };
 
-// --- STAGE 5: MIXING ---
+// --- STAGE 5: MIXING (Uses Pulse Charge) ---
 const StageFiveMixing = ({ ingredients, names, onComplete }: any) => {
   const [progress, setProgress] = useState(0);
   const [isStirring, setIsStirring] = useState(false);
@@ -1142,14 +1163,13 @@ const StageFiveMixing = ({ ingredients, names, onComplete }: any) => {
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isStirring) {
-      // NEW: Use Pulsing Charge sound for Mixing
-      if (!soundRef.current) soundRef.current = audio.startPulsingCharge();
+      if (!soundRef.current) soundRef.current = audio.startPulseCharge(); // Use New Pulse Sound
       interval = setInterval(() => {
         setProgress(prev => {
-          if (prev >= 100) { if(soundRef.current) soundRef.current.stop(); return 100; }
-          const next = prev + 0.8;
-          if(soundRef.current) audio.updateCharge(soundRef.current, next); // Rise up
-          return next;
+          if (prev >= 100) { if(soundRef.current) audio.stopCharge(soundRef.current); return 100; }
+          // Sync Pulse Update (Volume Swell + Pulse LFO runs auto)
+          if(soundRef.current) audio.updateCharge(soundRef.current, prev + 0.8);
+          return prev + 0.8; 
         });
       }, 50);
     } else {
@@ -1325,7 +1345,7 @@ const StageSixCandle = ({ onComplete }: any) => {
   );
 };
 
-// --- STAGE 7: RELEASE ---
+// --- STAGE 7: RELEASE (Uses Pulse Charge) ---
 const StageSevenRelease = ({ onComplete }: any) => {
   const [power, setPower] = useState(0);
   const [isCharging, setIsCharging] = useState(false);
@@ -1334,8 +1354,7 @@ const StageSevenRelease = ({ onComplete }: any) => {
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isCharging) {
-      // NEW: Use Pulsing Charge sound for Release
-      if (!soundRef.current) soundRef.current = audio.startPulsingCharge();
+      if (!soundRef.current) soundRef.current = audio.startPulseCharge(); // Use New Pulse Sound
       interval = setInterval(() => {
         setPower(prev => {
             // SLOWER CHARGE 50%
