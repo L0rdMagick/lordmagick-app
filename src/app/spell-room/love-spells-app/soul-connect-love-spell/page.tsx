@@ -36,7 +36,7 @@ class MagicAudio {
         // STRICT UPPER LIMIT: 600Hz
         this.globalFilter = this.ctx.createBiquadFilter();
         this.globalFilter.type = 'lowpass';
-        this.globalFilter.frequency.value = 600; 
+        this.globalFilter.frequency.value = 800; 
         
         // Chain: Source -> Master -> Filter -> Destination
         this.masterGain.connect(this.globalFilter);
