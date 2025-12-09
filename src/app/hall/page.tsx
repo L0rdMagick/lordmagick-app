@@ -11,7 +11,7 @@ interface SparkleState { key: number; x: number; y: number; }
 
 const portals = [
     {
-    title: "Spell Room ",
+    title: "Spell Room",
     href: "/spell-room", 
     imageSrc: "/images/portal-spell.png",
     signImageSrc: "/images/spell-room-sign.png",
