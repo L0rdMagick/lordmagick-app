@@ -41,8 +41,8 @@ const portals = [
   {
     title: "Magickal Tools", // RENAMED
     href: "/magickal-tools", // UPDATED LINK
-    imageSrc: "/images/portal-marketplace.png",
-    signImageSrc: "/images/marketplace-sign.png",
+    imageSrc: "/images/portal-tools.png",
+    signImageSrc: "/images/tools-sign.png",
     glowClass: "group-hover:drop-shadow-[0_0_25px_rgba(74,222,128,0.6)]",
     soundSrc: "/audio/sfx-marketplace-portal.mp3",
     isExternal: false,
