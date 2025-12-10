@@ -1,9 +1,11 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Eye, Brain, Activity, RotateCcw, Zap } from 'lucide-react';
+import { Eye, Brain, Activity, RotateCcw, Lock } from 'lucide-react';
+import { createBrowserClient } from '@supabase/ssr';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
 import RoomsButton from '@/app/components/RoomsButton';
+import { useHaptics } from '@/hooks/useHaptics';
 
 // --- Zener Card Symbols ---
 const ZenerSymbol = ({ type }: { type: string }) => {
@@ -16,15 +18,10 @@ const ZenerSymbol = ({ type }: { type: string }) => {
 
   const getPath = () => {
     switch (type) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       case 'circle': return <circle cx="50" cy="50" r="35" {...(commonProps as any)} />;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       case 'cross': return <path d="M50 15V85M15 50H85" {...(commonProps as any)} />;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       case 'waves': return <path d="M20 35Q35 20 50 35T80 35M20 50Q35 35 50 50T80 50M20 65Q35 50 50 65T80 65" {...(commonProps as any)} />;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       case 'square': return <rect x="20" y="20" width="60" height="60" {...(commonProps as any)} />;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       case 'star': return <polygon points="50,15 61,35 85,35 65,50 73,75 50,60 27,75 35,50 15,35 39,35" {...(commonProps as any)} />;
       default: return null;
     }
@@ -38,7 +35,6 @@ const ZenerSymbol = ({ type }: { type: string }) => {
 };
 
 // --- Custom Pure SVG Line Chart ---
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const SimpleLineChart = ({ data }: { data: any[] }) => {
   if (!data || data.length < 2) {
     return (
@@ -84,13 +80,33 @@ const CHANCE_PROBABILITY = 0.20;
 
 export default function StatisticalEyeApp() {
   const [mode, setMode] = useState('clairvoyance');
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [history, setHistory] = useState<any[]>([]);
   const [currentHiddenCard, setCurrentHiddenCard] = useState<string | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [lastResult, setLastResult] = useState<any>(null);
   const [isRevealing, setIsRevealing] = useState(false);
   const [streak, setStreak] = useState(0);
+  
+  // Monetization State
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [loadingProfile, setLoadingProfile] = useState(true);
+
+  const haptics = useHaptics();
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+
+  useEffect(() => {
+    const checkSubscription = async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+            const { data } = await supabase.from('profiles').select('is_subscribed').eq('id', user.id).single();
+            if (data?.is_subscribed) setIsSubscribed(true);
+        }
+        setLoadingProfile(false);
+    };
+    checkSubscription();
+  }, [supabase]);
 
   const generateCard = () => SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
 
@@ -102,13 +118,12 @@ export default function StatisticalEyeApp() {
     }
   };
 
-  // Initialize card on mount
   useEffect(() => {
     prepareNextCard(mode);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const resetGame = () => {
+    haptics.triggerLight();
     setHistory([]);
     setStreak(0);
     setLastResult(null);
@@ -117,6 +132,7 @@ export default function StatisticalEyeApp() {
   };
 
   const toggleMode = (newMode: string) => {
+    haptics.triggerMedium();
     setMode(newMode);
     setHistory([]); 
     setStreak(0);
@@ -157,6 +173,7 @@ export default function StatisticalEyeApp() {
 
   const handleGuess = (guessSymbol: string) => {
     if (isRevealing) return;
+    haptics.triggerMedium(); // Selection haptic
 
     let actualSymbol = currentHiddenCard;
     if (mode === 'precognition') {
@@ -168,9 +185,11 @@ export default function StatisticalEyeApp() {
     if (isCorrect) {
         setStreak(prev => prev + 1);
         playSound('hit');
+        haptics.triggerHeavy(); // Success haptic
     } else {
         setStreak(0);
         playSound('miss');
+        haptics.triggerLight(); // Failure haptic
     }
 
     const newResult = {
@@ -192,7 +211,6 @@ export default function StatisticalEyeApp() {
     }, 1500);
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const calculateStats = (data: any[]) => {
     const total = data.length;
     if (total === 0) return { accuracy: 0, zScore: 0, hits: 0, total: 0 };
@@ -220,7 +238,6 @@ export default function StatisticalEyeApp() {
     <main className="relative min-h-screen w-full bg-black bg-cover bg-center p-8 flex flex-col" style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}>
       <div className="absolute inset-0 bg-[#09090b]/95 backdrop-blur-sm z-0" />
       
-      {/* Styles for animation */}
       <style jsx global>{`
         .perspective-1000 { perspective: 1000px; }
         .transform-style-3d { transform-style: preserve-3d; }
@@ -239,7 +256,6 @@ export default function StatisticalEyeApp() {
                 </h1>
             </div>
         </div>
-        
         <div className="flex items-center gap-2"><RoomsButton /></div>
       </header>
       
@@ -271,24 +287,10 @@ export default function StatisticalEyeApp() {
         
         {/* Mode Selector */}
         <div className="flex justify-center gap-4 text-xs">
-          <button
-            onClick={() => toggleMode('clairvoyance')}
-            className={`flex items-center gap-2 px-4 py-2 border transition-all duration-300 ${
-              mode === 'clairvoyance' 
-                ? 'border-cyan-500 bg-cyan-950/30 text-cyan-400' 
-                : 'border-zinc-800 text-zinc-600 hover:border-zinc-700'
-            }`}
-          >
+          <button onClick={() => toggleMode('clairvoyance')} className={`flex items-center gap-2 px-4 py-2 border transition-all duration-300 ${mode === 'clairvoyance' ? 'border-cyan-500 bg-cyan-950/30 text-cyan-400' : 'border-zinc-800 text-zinc-600 hover:border-zinc-700'}`}>
             <div style={{ width: 14 }}><Eye size={14} /></div> CLAIRVOYANCE
           </button>
-          <button
-            onClick={() => toggleMode('precognition')}
-            className={`flex items-center gap-2 px-4 py-2 border transition-all duration-300 ${
-              mode === 'precognition' 
-                ? 'border-purple-500 bg-purple-950/30 text-purple-400' 
-                : 'border-zinc-800 text-zinc-600 hover:border-zinc-700'
-            }`}
-          >
+          <button onClick={() => toggleMode('precognition')} className={`flex items-center gap-2 px-4 py-2 border transition-all duration-300 ${mode === 'precognition' ? 'border-purple-500 bg-purple-950/30 text-purple-400' : 'border-zinc-800 text-zinc-600 hover:border-zinc-700'}`}>
             <div style={{ width: 14 }}><Brain size={14} /></div> PRECOGNITION
           </button>
         </div>
@@ -297,7 +299,6 @@ export default function StatisticalEyeApp() {
         <div className="flex-1 flex flex-col items-center justify-center min-h-[300px]">
           <div className="relative w-48 h-72 perspective-1000">
             <div className={`relative w-full h-full transition-transform duration-700 transform-style-3d ${isRevealing ? 'rotate-y-180' : ''}`}>
-              
               {/* Back */}
               <div className="absolute w-full h-full backface-hidden bg-zinc-900 border-2 border-zinc-700 rounded-lg flex items-center justify-center shadow-2xl">
                 <div className="w-40 h-64 border border-zinc-800 rounded flex items-center justify-center opacity-50 bg-zinc-900">
@@ -306,7 +307,6 @@ export default function StatisticalEyeApp() {
                    </div>
                 </div>
               </div>
-
               {/* Front (Result) */}
               <div className="absolute w-full h-full backface-hidden rotate-y-180 bg-zinc-900 border-2 border-white rounded-lg flex flex-col items-center justify-center shadow-[0_0_30px_rgba(255,255,255,0.1)]">
                 {lastResult && (
@@ -356,8 +356,8 @@ export default function StatisticalEyeApp() {
           ))}
         </div>
 
-        {/* Analytics */}
-        <div className="w-full mt-8 border-t border-zinc-800 pt-8 flex flex-col gap-6">
+        {/* Analytics (Monetized) */}
+        <div className="w-full mt-8 border-t border-zinc-800 pt-8 flex flex-col gap-6 relative">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold uppercase text-zinc-500 flex items-center gap-2">
               <div style={{ width: 16 }}><Activity size={16} /></div> Performance Variance
@@ -367,19 +367,35 @@ export default function StatisticalEyeApp() {
             </button>
           </div>
           
-          <div className="h-48 w-full bg-zinc-900/50 border border-zinc-800 rounded p-4">
-            <SimpleLineChart data={chartData} />
+          <div className="relative h-48 w-full bg-zinc-900/50 border border-zinc-800 rounded p-4 overflow-hidden">
+            {loadingProfile ? (
+                <div className="absolute inset-0 flex items-center justify-center text-zinc-500 animate-pulse text-xs tracking-widest">
+                    CALIBRATING SOUL SIGNATURE...
+                </div>
+            ) : isSubscribed ? (
+                <SimpleLineChart data={chartData} />
+            ) : (
+                <div className="absolute inset-0 flex flex-col items-center justify-center backdrop-blur-md bg-black/40 z-10">
+                    <Lock className="text-amber-400 mb-2 w-8 h-8" />
+                    <p className="text-amber-200 font-serif text-sm tracking-widest mb-4">LIFETIME DATA LOCKED</p>
+                    <button className="px-6 py-2 bg-amber-900/30 border border-amber-500/50 text-amber-300 text-xs font-bold uppercase tracking-wider hover:bg-amber-800/40 transition-all rounded">
+                        Unlock Adept Analysis
+                    </button>
+                </div>
+            )}
+            {/* Render blurred chart for visual effect behind lock if needed, or just keep it hidden */}
+            {!isSubscribed && !loadingProfile && (
+                <div className="opacity-20 blur-sm pointer-events-none w-full h-full">
+                    <SimpleLineChart data={chartData} />
+                </div>
+            )}
           </div>
         </div>
 
       </div>
 
-      {/* Footer */}
       <footer className="mt-8 text-zinc-700 text-[10px] text-center max-w-2xl mx-auto pb-4 relative z-10">
         <p className="mb-2">THE STATISTICAL EYE v1.2 • ZERO-DEPENDENCY BUILD</p>
-        <p>
-          &quot;Clairvoyance&quot; generates target at round start. &quot;Precognition&quot; generates target at moment of observation.
-        </p>
       </footer>
     </main>
   );

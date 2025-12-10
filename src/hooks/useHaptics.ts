@@ -4,13 +4,11 @@ import { useCallback } from 'react';
 
 export const useHaptics = () => {
   const trigger = useCallback((pattern: number | number[]) => {
-    // Safety check: Ensure window and navigator exist (SSR safe) and vibrate is supported
     if (typeof window !== 'undefined' && navigator.vibrate) {
       try {
         navigator.vibrate(pattern);
       } catch (e) {
-        // Silently fail on devices that throw errors for vibration (rare but possible)
-        console.warn("Haptic feedback failed", e);
+        // Fail silently on unsupported devices
       }
     }
   }, []);
