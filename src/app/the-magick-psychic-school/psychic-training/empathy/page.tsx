@@ -291,10 +291,12 @@ const PsiStats = ({ stats, deckSize, onClose }: { stats: any, deckSize: number, 
             className="max-w-3xl w-full bg-neutral-900 border border-white/10 rounded-xl p-6 relative max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <button onClick={() => setShowModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white"><X /></button>
-            <h2 className="text-2xl font-serif text-white mb-6 flex items-center gap-2">
-              <Activity className="text-purple-400" /> Psychic Performance Record
-            </h2>
+            <div className="sticky top-0 bg-neutral-900/95 backdrop-blur z-10 flex justify-between items-center mb-6 pb-2 border-b border-white/5">
+                <h2 className="text-2xl font-serif text-white flex items-center gap-2">
+                <Activity className="text-purple-400" /> Psychic Performance Record
+                </h2>
+                <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-white p-2 rounded-full hover:bg-white/5"><X /></button>
+            </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
               {/* CURRENT */}
