@@ -5,83 +5,24 @@ import { createPortal } from 'react-dom';
 import { 
   Zap, Activity, Volume2, VolumeX, Eye, Brain, Settings, 
   X, Save, Trash2, Info, ArrowLeft, PauseCircle, Trophy, 
-  Sparkles, Maximize2, BarChart2, ShieldAlert 
+  Sparkles, Maximize2, BarChart2, ShieldAlert, Lock
 } from 'lucide-react';
 import { createBrowserClient } from '@supabase/ssr';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
-
-/* --- DATA ASSETS --- */
-const DEFAULT_PHRASES = [
-  "I did not take the money.", "I was home all night.", "I swear I didn't see anything.",
-  "I have no idea who he is.", "The gun wasn't mine.", "I was alone.", "I didn't touch the files.",
-  "I've never been there.", "I didn't sign that.", "I don't know the code.",
-  "I was driving alone.", "I lost my phone.", "It was like that when I got here.",
-  "I didn't delete the footage.", "I don't know her name.", "I have an alibi.",
-  "I love you.", "It’s not you, it’s me.", "I'm just tired.", "I've never met her before.",
-  "I'm fine.", "Nothing is wrong.", "I'll call you later.", "We need to talk.", "I promise.",
-  "You're the only one.", "I didn't mean it.", "I was just checking my phone.",
-  "This tastes delicious.", "I'm 5 minutes away.", "I’d love to come to your party.",
-  "You look great in that.", "I already ate.", "My phone died.", "I didn't see your text.",
-  "It's exactly what I wanted.", "I'm busy that night.", "Traffic was terrible.",
-  "I'll have that report by morning.", "It was a team effort.", "We are currently over budget.",
-  "I read the memo.", "The system is secure.", "We appreciate your feedback.",
-  "I'm working on it now.", "Let's circle back.", "My calendar is full.", "It's a glitch.",
-  "It feels right.", "I think we are alone.", "Someone is watching.", "I remember everything.",
-  "It wasn't a dream.", "They are coming.", "Leave it there.", "Don't open it.",
-  "I heard a noise.", "The door was open.", "I saw a light.", "It's gone."
-];
+import { useHaptics } from '@/hooks/useHaptics';
 
 /* --- STATS ENGINE --- */
-
 const calculatePsiScore = (hits: number, trials: number, chance: number) => {
   if (trials === 0) return 0;
   const expected = trials * chance;
   const stdDev = Math.sqrt(trials * chance * (1 - chance));
   return (hits - expected) / stdDev;
 };
+const erf = (x: number) => { const a1 = 0.254829592, a2 = -0.284496736, a3 = 1.421413741, a4 = -1.453152027, a5 = 1.061405429, p = 0.3275911; const sign = (x < 0) ? -1 : 1; x = Math.abs(x); const t = 1.0 / (1.0 + p * x); return sign * (1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-x * x)); };
+const calculateProbability = (z: number) => { const p = 0.5 * (1 - erf(Math.abs(z) / Math.sqrt(2))); return p <= 0 ? "1 in ∞" : `1 in ${Math.round(1/p)}`; };
+const getPsiTier = (z: number) => { if(z>=4)return {name:"The Singularity",color:"text-cyan-300"}; if(z>=3)return {name:"Human Polygraph",color:"text-cyan-400"}; if(z>=1.96)return {name:"Pattern Recognizer",color:"text-green-300"}; if(z>=1.0)return {name:"Analyst",color:"text-teal-300"}; if(z>=0)return {name:"Observer",color:"text-slate-200"}; return {name:"Desynchronized",color:"text-slate-600"}; };
 
-const erf = (x: number) => {
-  const a1 =  0.254829592;
-  const a2 = -0.284496736;
-  const a3 =  1.421413741;
-  const a4 = -1.453152027;
-  const a5 =  1.061405429;
-  const p  =  0.3275911;
-  const sign = (x < 0) ? -1 : 1;
-  x = Math.abs(x);
-  const t = 1.0 / (1.0 + p * x);
-  const y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
-  return sign * y;
-};
-
-const calculateProbability = (z: number) => {
-  const pValue = 0.5 * (1 - erf(Math.abs(z) / Math.sqrt(2)));
-  if (pValue <= 0) return "1 in ∞"; 
-  const oneInX = 1 / pValue;
-  if (oneInX > 1000000) return `1 in ${(oneInX / 1000000).toFixed(1)}M`;
-  if (oneInX > 1000) return `1 in ${(oneInX / 1000).toFixed(1)}k`;
-  if (oneInX < 2) return "1 in 2";
-  return `1 in ${Math.round(oneInX)}`;
-};
-
-const getPsiTier = (z: number) => {
-  if (z >= 4.0) return { name: "The Singularity", color: "text-cyan-300 shadow-cyan-500/50" };
-  if (z >= 3.0) return { name: "Human Polygraph", color: "text-cyan-400 shadow-cyan-500/50" };
-  if (z >= 1.96) return { name: "Pattern Recognizer", color: "text-green-300 shadow-green-500/50" };
-  if (z >= 1.65) return { name: "Truth Seeker", color: "text-emerald-300 shadow-emerald-500/50" };
-  if (z >= 1.0) return { name: "Analyst", color: "text-teal-300 shadow-teal-500/50" };
-  if (z >= 0.5) return { name: "Observer", color: "text-slate-200" };
-  
-  if (z >= 0.0) return { name: "Calibrating...", color: "text-slate-400" };
-  
-  if (z <= -4.0) return { name: "System Failure", color: "text-fuchsia-500" };
-  if (z <= -3.0) return { name: "Reality Inversion", color: "text-fuchsia-400" };
-  if (z <= -2.0) return { name: "Cognitive Dissonance", color: "text-pink-400" };
-  if (z <= -1.0) return { name: "Signal Noise", color: "text-slate-500" };
-  return { name: "Desynchronized", color: "text-slate-600" };
-};
-
-/* --- AUDIO ENGINE --- */
+/* --- AUDIO ENGINE (Veritas Specific) --- */
 const useAudioEngine = () => {
   const audioCtxRef = useRef<any>(null);
   const droneOscRef = useRef<any>(null);
@@ -238,6 +179,10 @@ const VeritasStats = ({
   const [lifetimeStats, setLifetimeStats] = useState({ hits: 0, trials: 0 });
   const [loadingLifetime, setLoadingLifetime] = useState(false);
   const [mounted, setMounted] = useState(false);
+  
+  // Monetization
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [loadingProfile, setLoadingProfile] = useState(true);
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -264,6 +209,18 @@ const VeritasStats = ({
   const fn = history.filter(h => h.actual === true && !h.correct).length;
   const tn = history.filter(h => h.actual === false && h.correct).length;
   const fp = history.filter(h => h.actual === false && !h.correct).length;
+
+  useEffect(() => {
+    const checkProfile = async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+            const { data } = await supabase.from('profiles').select('is_subscribed').eq('id', user.id).single();
+            if(data?.is_subscribed) setIsSubscribed(true);
+        }
+        setLoadingProfile(false);
+    }
+    checkProfile();
+  }, [supabase]);
 
   useEffect(() => {
     if (showModal) {
@@ -305,11 +262,11 @@ const VeritasStats = ({
   const ModalContent = () => (
     <div 
       className="fixed inset-0 flex items-center justify-center bg-black/90 backdrop-blur-md z-100"
-      onClick={() => setShowModal(false)} // Close when clicking dead space
+      onClick={() => setShowModal(false)}
     >
       <div 
         className="w-full h-full md:h-auto md:max-h-[95vh] md:max-w-5xl bg-[#0a0a0a] border border-cyan-500/30 p-6 relative overflow-y-auto shadow-[0_0_50px_rgba(34,211,238,0.1)] flex flex-col font-mono"
-        onClick={(e) => e.stopPropagation()} // Prevent close when clicking content
+        onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center mb-6 border-b border-cyan-500/20 pb-4">
           <h2 className="text-2xl text-cyan-400 flex items-center gap-2 font-bold tracking-widest">
@@ -333,12 +290,14 @@ const VeritasStats = ({
             </div>
           </div>
 
-          {/* Lifetime */}
-          <div className="bg-cyan-950/10 border border-cyan-500/20 p-4 rounded-sm relative">
+          {/* Lifetime (Monetized) */}
+          <div className="bg-cyan-950/10 border border-cyan-500/20 p-4 rounded-sm relative overflow-hidden">
             <h3 className="text-xs uppercase tracking-[0.2em] text-green-400 mb-4 text-center">Lifetime Record</h3>
-            {loadingLifetime ? (
+            
+            {loadingLifetime || loadingProfile ? (
                <div className="absolute inset-0 flex items-center justify-center"><Sparkles className="animate-spin text-cyan-500"/></div>
-            ) : (
+            ) : isSubscribed ? (
+               // Subscribed Content
                <div className="space-y-2 text-sm">
                    <div className="flex justify-between border-b border-white/5 pb-1"><span>Hits / Trials</span> <span className="text-white">{lifetimeStats.hits} / {lifetimeStats.trials}</span></div>
                    <div className="flex justify-between border-b border-white/5 pb-1"><span>Accuracy</span> <span className="text-white">{lifeAccuracy.toFixed(1)}%</span></div>
@@ -346,6 +305,22 @@ const VeritasStats = ({
                    <div className="flex justify-between"><span>Probability</span> <span className="text-green-300">{lifeProb}</span></div>
                    <div className="mt-4 text-center text-xs font-bold uppercase tracking-widest text-white border border-cyan-500/30 py-1">{lifeTier.name}</div>
                </div>
+            ) : (
+                // Locked Content
+                <>
+                    <div className="space-y-2 text-sm blur-sm opacity-50 select-none">
+                       <div className="flex justify-between border-b border-white/5 pb-1"><span>Hits / Trials</span> <span className="text-white">???? / ????</span></div>
+                       <div className="flex justify-between border-b border-white/5 pb-1"><span>Accuracy</span> <span className="text-white">??.?%</span></div>
+                       <div className="flex justify-between border-b border-white/5 pb-1"><span>Psi Score (Z)</span> <span className="text-fuchsia-400">0.00</span></div>
+                    </div>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-xs z-10 p-4 text-center">
+                        <Lock className="text-cyan-400 mb-2 w-8 h-8 animate-pulse" />
+                        <p className="text-cyan-200 font-serif text-sm tracking-widest mb-4">ADEPT ACCESS REQUIRED</p>
+                        <button className="px-6 py-2 bg-cyan-900/30 border border-cyan-500/50 text-cyan-300 text-xs font-bold uppercase tracking-wider hover:bg-cyan-800/40 transition-all rounded shadow-lg shadow-cyan-900/20">
+                            Unlock Lifetime Analysis
+                        </button>
+                    </div>
+                </>
             )}
           </div>
         </div>
@@ -442,7 +417,7 @@ const VeritasStats = ({
   );
 };
 
-
+/* --- MAIN VERITAS APP --- */
 export default function VeritasApp() {
   const [supabase] = useState(() => createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -472,8 +447,9 @@ export default function VeritasApp() {
   const [glitching, setGlitching] = useState(false);
   
   const { initAudio, playSound, isMuted, toggleMute } = useAudioEngine();
+  const haptics = useHaptics();
 
-  // Handle Pause when Stats Modal Open (FIX: Wrapped in useCallback to prevent re-creation loops)
+  // Handle Pause when Stats Modal Open
   const handleStatsPause = useCallback((paused: boolean) => {
     if (gameState === 'PLAYING') {
       setIsPaused(paused);
@@ -481,8 +457,30 @@ export default function VeritasApp() {
   }, [gameState]);
 
   /* --- LOGIC --- */
+  
+  // DATA ASSETS
+  const DEFAULT_PHRASES = [
+    "I did not take the money.", "I was home all night.", "I swear I didn't see anything.",
+    "I have no idea who he is.", "The gun wasn't mine.", "I was alone.", "I didn't touch the files.",
+    "I've never been there.", "I didn't sign that.", "I don't know the code.",
+    "I was driving alone.", "I lost my phone.", "It was like that when I got here.",
+    "I didn't delete the footage.", "I don't know her name.", "I have an alibi.",
+    "I love you.", "It’s not you, it’s me.", "I'm just tired.", "I've never met her before.",
+    "I'm fine.", "Nothing is wrong.", "I'll call you later.", "We need to talk.", "I promise.",
+    "You're the only one.", "I didn't mean it.", "I was just checking my phone.",
+    "This tastes delicious.", "I'm 5 minutes away.", "I’d love to come to your party.",
+    "You look great in that.", "I already ate.", "My phone died.", "I didn't see your text.",
+    "It's exactly what I wanted.", "I'm busy that night.", "Traffic was terrible.",
+    "I'll have that report by morning.", "It was a team effort.", "We are currently over budget.",
+    "I read the memo.", "The system is secure.", "We appreciate your feedback.",
+    "I'm working on it now.", "Let's circle back.", "My calendar is full.", "It's a glitch.",
+    "It feels right.", "I think we are alone.", "Someone is watching.", "I remember everything.",
+    "It wasn't a dream.", "They are coming.", "Leave it there.", "Don't open it.",
+    "I heard a noise.", "The door was open.", "I saw a light.", "It's gone."
+  ];
+
   const saveSessionStats = async (newHistory: any[]) => {
-      setSaveMessage("UPLOADING...");
+      setSaveMessage("Attuning to Cloud...");
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) { setSaveMessage(null); return; }
@@ -523,11 +521,11 @@ export default function VeritasApp() {
             if (error) throw error;
             if (data) setSessionId(data.id);
         }
-        setSaveMessage("SYNCED");
+        setSaveMessage("Energy Captured");
         setTimeout(() => setSaveMessage(null), 1500);
       } catch (err) {
           console.error("Save failed", err);
-          setSaveMessage("SYNC ERR");
+          setSaveMessage("Connection Severed");
       }
   };
 
@@ -589,7 +587,7 @@ export default function VeritasApp() {
       setTimeLeft(null);
     }
     playSound('voice');
-  }, [useDefaultPhrases, customPhrases, customTimeLimit, playSound]);
+  }, [useDefaultPhrases, customPhrases, customTimeLimit, playSound]); // Added dependencies
 
   const nextRound = useCallback(() => {
     startRound(gameMode);
@@ -606,7 +604,7 @@ export default function VeritasApp() {
     }
   }, [timeLeft, gameState, gameMode, feedback, isPaused]);
 
-  // Decoupled pause logic to prevent double-fire
+  // Decoupled pause logic
   const togglePause = () => {
     if (gameState === 'PLAYING' && !feedback && !isPaused) {
       setIsPaused(true);
@@ -620,16 +618,24 @@ export default function VeritasApp() {
 
   const handleGuess = (userGuessBoolean: boolean | null) => {
     if (feedback || isPaused) return; 
+
+    haptics.triggerMedium(); // SELECTION HAPTIC
+
     const correct = userGuessBoolean === isTrue;
     const isTimeout = userGuessBoolean === null;
     let msg = "";
     if (isTimeout) {
       msg = "TIMED OUT";
+      haptics.triggerLight();
     } else {
       const resultStr = correct ? "CORRECT" : "INCORRECT";
       const realityStr = isTrue ? "A TRUTH" : "A LIE";
       msg = `${resultStr}: IT WAS ${realityStr}`;
+      
+      if (correct) haptics.triggerHeavy();
+      else haptics.triggerLight();
     }
+
     setFeedback(correct ? 'CORRECT' : 'WRONG');
     setFeedbackMessage(msg);
     if (!correct) setGlitching(true);
@@ -990,7 +996,6 @@ export default function VeritasApp() {
       <CRTOverlay />
       <header className="relative z-50 px-6 py-4 flex justify-between items-center border-b border-gray-800/50 bg-black/80 backdrop-blur-md">
         
-        {/* Conditional Navigation Logic */}
         {(gameState === 'INSTRUCTIONS' || gameState === 'MENU') ? (
             <MagickalBackLink href="/the-magick-psychic-school/psychic-training" text="Exit Training" className="text-sm font-mono tracking-widest text-cyan-500 hover:text-cyan-300" />
         ) : (
