@@ -5,10 +5,11 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Target, Settings, RotateCcw, 
   Activity, X, Info, Volume2, VolumeX, Sparkles, Save,
-  Heart, Skull, ArrowRight
+  Heart, Skull, ArrowRight, Lock, ChevronsUp
 } from 'lucide-react';
 import { createBrowserClient } from '@supabase/ssr';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
+import { useHaptics } from '@/hooks/useHaptics';
 
 /**
  * --- ASSET CONFIGURATION ---
@@ -260,28 +261,95 @@ const PsiStats = ({ stats, level }: { stats: any, level: number }) => {
     ));
     const [showModal, setShowModal] = useState(false);
     
+    // Monetization Logic
+    const [isSubscribed, setIsSubscribed] = useState(false);
+    const [loadingProfile, setLoadingProfile] = useState(true);
+
+    // Lifetime Stats
+    const [lifetimeStats, setLifetimeStats] = useState({ hits: 0, trials: 0 });
+    const [loadingLifetime, setLoadingLifetime] = useState(false);
+    
     // Stats
-    const { hits, trials } = stats;
-    const accuracy = trials > 0 ? (hits / trials) * 100 : 0;
-    const z = calculatePsiScore(hits, trials);
-    const prob = calculateProbability(z);
-    const tier = getPsiTier(z);
+    const { hits: sessionHits, trials: sessionTrials } = stats;
+    const sessionAccuracy = sessionTrials > 0 ? (sessionHits / sessionTrials) * 100 : 0;
+    const sessionZ = calculatePsiScore(sessionHits, sessionTrials);
+    const sessionProb = calculateProbability(sessionZ);
+    const sessionTier = getPsiTier(sessionZ);
+
+    // Check Profile
+    useEffect(() => {
+        const checkProfile = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                const { data } = await supabase.from('profiles').select('is_subscribed').eq('id', user.id).single();
+                if(data?.is_subscribed) setIsSubscribed(true);
+            }
+            setLoadingProfile(false);
+        }
+        checkProfile();
+    }, [supabase]);
+
+    // Fetch Lifetime (Triggered on modal open)
+    useEffect(() => {
+      if (showModal) {
+          const fetchHistory = async () => {
+              setLoadingLifetime(true);
+              const { data: { user } } = await supabase.auth.getUser();
+              if (!user) { setLoadingLifetime(false); return; }
+
+              const { data, error } = await supabase
+                  .from('reports')
+                  .select('chart_data')
+                  .eq('user_id', user.id)
+                  .eq('category', 'training') 
+                  .eq('name', 'Friend or Foe');
+
+              if (!error && data) {
+                  let h = 0; 
+                  let t = 0;
+                  data.forEach((row: any) => {
+                      const chart = row.chart_data;
+                      if (chart) {
+                          h += chart.hits || 0;
+                          t += chart.trials || 0;
+                      }
+                  });
+                  setLifetimeStats({ hits: h + sessionHits, trials: t + sessionTrials });
+              }
+              setLoadingLifetime(false);
+          };
+          fetchHistory();
+      }
+    }, [showModal, sessionHits, sessionTrials, supabase]);
+
+    // Lifetime Calcs
+    const lifeAccuracy = lifetimeStats.trials > 0 ? (lifetimeStats.hits / lifetimeStats.trials) * 100 : 0;
+    const lifeZ = calculatePsiScore(lifetimeStats.hits, lifetimeStats.trials);
+    const lifeProb = calculateProbability(lifeZ);
+    const lifeTier = getPsiTier(lifeZ);
 
     return (
       <>
         <div 
           onClick={() => setShowModal(true)}
-          className="cursor-pointer group flex flex-col items-end justify-center bg-purple-950/30 hover:bg-purple-900/50 border border-purple-500/20 hover:border-purple-500/50 rounded-lg px-3 py-1 transition-all duration-300 min-w-24 h-[50px]"
+          className="cursor-pointer group flex flex-col items-end justify-center bg-purple-950/30 hover:bg-purple-900/50 border border-purple-500/20 hover:border-purple-500/50 rounded-lg px-3 py-1 transition-all duration-300 min-w-24 h-[50px] relative"
         >
+            <div className="absolute -top-3 right-0 bg-purple-900 border border-purple-500 text-[9px] font-bold px-2 py-0.5 rounded text-white tracking-widest shadow-md opacity-0 group-hover:opacity-100 transition-opacity">
+              TAP INFO
+            </div>
+            <div className="absolute top-1 right-1 text-purple-400 group-hover:text-white opacity-0 group-hover:opacity-100 transition-opacity">
+              <ChevronsUp size={12} />
+            </div>
+
             <div className="flex items-center gap-2">
               <span className="text-xs font-mono text-purple-400">LVL {level}</span>
               <div className="w-px h-3 bg-purple-500/20"></div>
               <span className="text-xl font-mono font-bold text-slate-200 group-hover:text-white transition-colors">
-                  {accuracy.toFixed(0)}%
+                  {sessionAccuracy.toFixed(0)}%
               </span>
             </div>
             <div className="text-[9px] text-slate-500 uppercase tracking-widest group-hover:text-purple-300 transition-colors">
-              Z: {z.toFixed(2)}
+              Z: {sessionZ.toFixed(2)}
             </div>
         </div>
   
@@ -299,16 +367,54 @@ const PsiStats = ({ stats, level }: { stats: any, level: number }) => {
                 <Activity className="text-purple-400" /> Performance Analysis
               </h2>
               
-              {/* CURRENT STATS CARD */}
-              <div className="bg-black/20 rounded-lg p-4 border border-white/5 mb-8">
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm font-mono text-center md:text-left">
-                  <div className="flex flex-col"><span className="text-slate-500 text-[10px] uppercase">Trials</span><span className="text-white text-lg">{trials}</span></div>
-                  <div className="flex flex-col"><span className="text-slate-500 text-[10px] uppercase">Hits</span><span className="text-white text-lg">{hits}</span></div>
-                  <div className="flex flex-col"><span className="text-slate-500 text-[10px] uppercase">Accuracy</span><span className="text-white text-lg">{accuracy.toFixed(1)}%</span></div>
-                  <div className="flex flex-col"><span className="text-slate-500 text-[10px] uppercase">Psi Score (Z)</span><span className={`text-lg ${z >= 0 ? "text-amber-300" : "text-slate-400"}`}>{z.toFixed(2)}</span></div>
-                  <div className="flex flex-col"><span className="text-slate-500 text-[10px] uppercase">Probability</span><span className="text-green-300 text-sm mt-1">{prob}</span></div>
-                </div>
-                <div className="mt-4 text-center text-sm font-bold uppercase tracking-widest text-white border-t border-white/10 pt-2">{tier.name}</div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                  {/* CURRENT SESSION */}
+                  <div className="bg-black/20 rounded-lg p-4 border border-white/5">
+                      <h3 className="text-xs uppercase tracking-[0.2em] text-purple-400 mb-4 text-center">Current Session</h3>
+                      <div className="space-y-2 text-sm font-mono text-slate-300">
+                          <div className="flex justify-between border-b border-white/5 pb-1"><span>Hits / Trials</span> <span className="text-white">{sessionHits} / {sessionTrials}</span></div>
+                          <div className="flex justify-between border-b border-white/5 pb-1"><span>Accuracy</span> <span className="text-white">{sessionAccuracy.toFixed(1)}%</span></div>
+                          <div className="flex justify-between border-b border-white/5 pb-1"><span>Psi Score (Z)</span> <span className={sessionZ >= 0 ? "text-amber-300" : "text-slate-400"}>{sessionZ.toFixed(2)}</span></div>
+                          <div className="flex justify-between"><span>Probability</span> <span className="text-green-300">{sessionProb}</span></div>
+                          <div className="mt-4 text-center text-xs font-bold uppercase tracking-widest text-white border border-purple-500/30 py-1">{sessionTier.name}</div>
+                      </div>
+                  </div>
+
+                  {/* LIFETIME (MONETIZED) */}
+                  <div className="bg-black/20 rounded-lg p-4 border border-white/5 relative overflow-hidden">
+                      <h3 className="text-xs uppercase tracking-[0.2em] text-amber-300 mb-4 text-center">Lifetime Record</h3>
+                      
+                      {loadingLifetime || loadingProfile ? (
+                          <div className="absolute inset-0 flex flex-col items-center justify-center">
+                              <Sparkles className="animate-spin text-purple-500 mb-2"/>
+                              <span className="text-[10px] text-purple-500 font-mono tracking-widest animate-pulse">Attuning to Cloud...</span>
+                          </div>
+                      ) : isSubscribed ? (
+                          <div className="space-y-2 text-sm font-mono text-slate-300">
+                              <div className="flex justify-between border-b border-white/5 pb-1"><span>Hits / Trials</span> <span className="text-white">{lifetimeStats.hits} / {lifetimeStats.trials}</span></div>
+                              <div className="flex justify-between border-b border-white/5 pb-1"><span>Accuracy</span> <span className="text-white">{lifeAccuracy.toFixed(1)}%</span></div>
+                              <div className="flex justify-between border-b border-white/5 pb-1"><span>Psi Score (Z)</span> <span className={lifeZ >= 0 ? "text-amber-300" : "text-slate-400"}>{lifeZ.toFixed(2)}</span></div>
+                              <div className="flex justify-between"><span>Probability</span> <span className="text-green-300">{lifeProb}</span></div>
+                              <div className="mt-4 text-center text-xs font-bold uppercase tracking-widest text-white border border-purple-500/30 py-1">{lifeTier.name}</div>
+                          </div>
+                      ) : (
+                          // LOCKED
+                          <>
+                              <div className="space-y-2 text-sm font-mono blur-sm opacity-50 select-none text-slate-300">
+                                  <div className="flex justify-between border-b border-white/5 pb-1"><span>Hits / Trials</span> <span className="text-white">???? / ????</span></div>
+                                  <div className="flex justify-between border-b border-white/5 pb-1"><span>Accuracy</span> <span className="text-white">??.?%</span></div>
+                                  <div className="flex justify-between border-b border-white/5 pb-1"><span>Psi Score (Z)</span> <span className="text-slate-400">0.00</span></div>
+                              </div>
+                              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-xs z-10 p-4 text-center">
+                                  <Lock className="text-amber-400 mb-2 w-8 h-8 animate-pulse" />
+                                  <p className="text-amber-200 font-serif text-sm tracking-widest mb-4">ADEPT ACCESS REQUIRED</p>
+                                  <button className="px-6 py-2 bg-amber-900/30 border border-amber-500/50 text-amber-300 text-xs font-bold uppercase tracking-wider hover:bg-amber-800/40 transition-all rounded shadow-lg shadow-amber-900/20">
+                                      Unlock Lifetime Analysis
+                                  </button>
+                              </div>
+                          </>
+                      )}
+                  </div>
               </div>
 
               {/* DEFINITIONS LEGEND */}
@@ -379,6 +485,7 @@ export default function FriendOrFoeApp() {
   const [stats, setStats] = useState({ trials: 0, hits: 0 });
 
   const audio = useAudioEngine();
+  const haptics = useHaptics();
 
   // Audio Init
   useEffect(() => {
@@ -426,6 +533,7 @@ export default function FriendOrFoeApp() {
   const handleGuess = (index: number, choice: 'good' | 'evil') => {
       if (gameState !== 'INPUT') return;
       
+      haptics.triggerMedium(); // SELECTION HAPTIC
       audio.playSelect();
 
       setCards(prev => {
@@ -460,8 +568,14 @@ export default function FriendOrFoeApp() {
         trials: prev.trials + roundTrials
     }));
 
-    // Audio Feedback
+    // Feedback
     audio.playReveal(allCorrect);
+    
+    if (allCorrect) {
+        haptics.triggerHeavy(); // SUCCESS
+    } else {
+        haptics.triggerLight(); // FAIL
+    }
   };
 
   const handleContinue = () => {
@@ -488,7 +602,7 @@ export default function FriendOrFoeApp() {
 
   const handleSaveResults = async () => {
     setSaving(true);
-    setSaveMessage("UPLOADING DATA...");
+    setSaveMessage("Attuning to Cloud..."); // VISUAL POLISH
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -498,6 +612,15 @@ export default function FriendOrFoeApp() {
         return;
       }
       
+      // Manual Save Check (Subscription)
+      const { data: profile } = await supabase.from('profiles').select('is_subscribed').eq('id', user.id).single();
+      if (!profile?.is_subscribed) {
+          setSaveMessage("ADEPT ACCESS REQUIRED");
+          setTimeout(() => setSaveMessage(null), 3000);
+          setSaving(false);
+          return;
+      }
+
       const { error } = await supabase
         .from('reports')
         .insert({
