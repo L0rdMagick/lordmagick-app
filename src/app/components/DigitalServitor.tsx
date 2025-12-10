@@ -1,14 +1,14 @@
-// --- START OF FILE src/app/components/DigitalServitor.tsx ---
 "use client";
 
 import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { X, Maximize2, Minimize2, Save, Trash2, BookOpen, Info } from 'lucide-react';
+import { X, Maximize2, Minimize2, Save, Trash2, BookOpen, Info, AlertTriangle, Lock } from 'lucide-react';
 import { createBrowserClient } from '@supabase/ssr';
+import { checkAndSpendCredits, getWalletStatus, COST_BIND_SERVITOR } from '@/lib/economy';
+import { saveServitorToGrimoire, getMyServitors } from '@/lib/services/spellService';
 
 // --- CONSTANTS ---
 
-// Define Saved Servitor Interface
 interface SavedServitor {
     id: string;
     name: string;
@@ -78,6 +78,14 @@ export default function DigitalServitor() {
     const [user, setUser] = useState<any>(null);
     const [savedServitors, setSavedServitors] = useState<SavedServitor[]>([]);
     const [loadingCabinet, setLoadingCabinet] = useState(false);
+    
+    // THE FIX: Added isUnlimited to the state type definition
+    const [wallet, setWallet] = useState<{ credits: number, tier: string, isUnlimited: boolean } | null>(null);
+
+    // Persistence & Economy State
+    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+    const [showExitWarning, setShowExitWarning] = useState(false);
+    const [showCreditModal, setShowCreditModal] = useState(false);
 
     // Appearance & Audio State
     const [config, setConfig] = useState({
@@ -120,83 +128,107 @@ export default function DigitalServitor() {
     const [fallingFood, setFallingFood] = useState<{id: number, left: number, top: number}[]>([]);
     const holdIntervalRef = useRef<any>(null);
 
-    // --- Supabase Init & Fetch ---
+    // --- Effects ---
+
+    // 1. Init User & Data
     useEffect(() => {
-        const getUser = async () => {
+        const init = async () => {
             const { data: { user } } = await supabase.auth.getUser();
             setUser(user);
-            if (user) fetchSavedServitors(user.id);
+            if (user) {
+                refreshCabinet(user.id);
+                const w = await getWalletStatus(user.id);
+                setWallet(w);
+            }
         };
-        getUser();
+        init();
     }, [supabase]);
 
-    const fetchSavedServitors = async (userId: string) => {
-        setLoadingCabinet(true);
-        const { data, error } = await supabase
-            .from('servitors')
-            .select('*')
-            .eq('user_id', userId)
-            .order('created_at', { ascending: false });
-        
-        if (!error && data) {
-            setSavedServitors(data);
+    // 2. Track Changes for Warning
+    useEffect(() => {
+        // Any change to name, purpose, or config flags the state as dirty
+        // We check if sName is present to ensure we aren't flagging empty initial state
+        if (sName || sPurpose) {
+            setHasUnsavedChanges(true);
         }
-        setLoadingCabinet(false);
+    }, [sName, sPurpose, config]);
+
+    // 3. Browser Back Button Protection
+    useEffect(() => {
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            if (hasUnsavedChanges) {
+                e.preventDefault();
+                e.returnValue = ''; // Chrome requires returnValue to be set
+            }
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [hasUnsavedChanges]);
+
+    const refreshCabinet = async (userId: string) => {
+        setLoadingCabinet(true);
+        try {
+            const data = await getMyServitors(userId);
+            setSavedServitors(data as SavedServitor[]);
+            // Also refresh wallet
+            const w = await getWalletStatus(userId);
+            setWallet(w);
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoadingCabinet(false);
+        }
     };
 
-    // --- Cabinet Actions ---
-    const handleSave = async () => {
+    // --- Actions ---
+
+    const handleBindToGrimoire = async () => {
         const win = (globalThis as any).window;
         if (!user) {
-            if (win) win.alert("You must be logged in to save servitors to your Grimoire.");
+            if (win) win.alert("You must be logged in to bind servitors.");
             return;
         }
         if (!sName) {
-            if (win) win.alert("Please name your servitor before binding it.");
+            if (win) win.alert("You must name the spirit before binding it.");
             return;
         }
 
-        const servitorData = {
-            user_id: user.id,
-            name: sName,
-            master_name: uName,
-            purpose: sPurpose,
-            config: config
-        };
+        // 1. Check & Spend Credits
+        const canAfford = await checkAndSpendCredits(user.id, COST_BIND_SERVITOR);
+        if (!canAfford) {
+            setShowCreditModal(true);
+            return;
+        }
 
-        const existing = savedServitors.find(s => s.name === sName);
-
-        if (existing) {
-            if (win && !win.confirm(`Overwrite existing servitor "${sName}"?`)) return;
+        // 2. Save to DB
+        try {
+            await saveServitorToGrimoire(user.id, {
+                name: sName,
+                master_name: uName,
+                purpose: sPurpose,
+                config: config
+            });
             
-            const { data, error } = await supabase
-                .from('servitors')
-                .update(servitorData)
-                .eq('id', existing.id)
-                .select();
-
-            if (!error && data) {
-                setSavedServitors(prev => prev.map(s => s.id === existing.id ? data[0] : s));
-                if(win) win.alert(`Servitor "${sName}" updated.`);
-            }
-        } else {
-            const { data, error } = await supabase
-                .from('servitors')
-                .insert([servitorData])
-                .select();
-
-            if (!error && data) {
-                setSavedServitors([data[0], ...savedServitors]);
-                if(win) win.alert(`Servitor "${sName}" bound to Grimoire.`);
-            }
+            // 3. Success State
+            setHasUnsavedChanges(false);
+            refreshCabinet(user.id);
+            if(win) win.alert(`Servitor "${sName}" successfully bound to Grimoire.`);
+            
+        } catch (error) {
+            console.error("Binding failed:", error);
+            if(win) win.alert("The binding ritual failed. Please try again.");
         }
     };
 
     const handleLoad = (servitor: SavedServitor) => {
+        // Loading an existing one resets the "dirty" state
         setSName(servitor.name);
         setUName(servitor.master_name || "");
         setSPurpose(servitor.purpose || "");
         setConfig(servitor.config);
+        
+        // Wait a tick then clear dirty flag so setting state doesn't trigger it immediately
+        setTimeout(() => setHasUnsavedChanges(false), 100);
     };
 
     const handleDelete = async (id: string, e: React.MouseEvent) => {
@@ -205,9 +237,22 @@ export default function DigitalServitor() {
         if (win && !win.confirm("Release this servitor back to the void?")) return;
 
         const { error } = await supabase.from('servitors').delete().eq('id', id);
-        if (!error) {
-            setSavedServitors(prev => prev.filter(s => s.id !== id));
+        if (!error && user) {
+            refreshCabinet(user.id);
         }
+    };
+
+    const handleSafeExit = () => {
+        if (hasUnsavedChanges) {
+            setShowExitWarning(true);
+        } else {
+            router.push('/spell-room'); 
+        }
+    };
+
+    const confirmExit = () => {
+        runningRef.current = false;
+        router.push('/spell-room');
     };
 
     // --- Helpers ---
@@ -348,7 +393,6 @@ export default function DigitalServitor() {
         const ctx = audioCtxRef.current;
         const now = ctx.currentTime;
 
-        // UPDATED: Strict pleasant range for both buttons
         const startFreq = 200;
         const endFreq = 350;
 
@@ -367,7 +411,6 @@ export default function DigitalServitor() {
                 oscRef.current = { osc, gain, startFreq };
             }
 
-            // Pitch Bend based on Progress within nice limits
             const { osc } = oscRef.current;
             const currentFreq = startFreq + ((endFreq - startFreq) * (progress / 100));
             osc.frequency.setTargetAtTime(currentFreq, now, 0.1);
@@ -376,7 +419,6 @@ export default function DigitalServitor() {
             // Stop / Reverse
             if (oscRef.current) {
                 const { osc, gain, startFreq } = oscRef.current;
-                // Pitch down effect back to startFreq
                 osc.frequency.exponentialRampToValueAtTime(startFreq, now + 0.5);
                 gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
                 osc.stop(now + 0.5);
@@ -421,7 +463,6 @@ export default function DigitalServitor() {
             const head = rig.querySelector('.head');
             if(head) {
                 head.classList.remove('face-stoic', 'face-determined', 'face-happy', 'face-discovery');
-                // Allow feeding animation override
                 if(!isFeeding) {
                    head.classList.add(config.face); 
                 }
@@ -443,13 +484,11 @@ export default function DigitalServitor() {
                 }
             }
 
-            // Chest Symbol
             const chestSigil = rig.querySelector('.chest-sigil');
             if(chestSigil) {
                 chestSigil.innerText = CHEST_SYMBOLS[config.chestSymbol] || '';
             }
 
-            // Wings
             const wings = rig.querySelector('.wings-container');
             if(wings) {
                 wings.style.display = config.hasWings ? 'block' : 'none';
@@ -550,7 +589,6 @@ export default function DigitalServitor() {
             if(els.status) els.status.innerText = `${sName || 'The Servitor'} seeks ${sPurpose || 'Result'}...`;
             stopAction();
             
-            // Movement Style
             const isFlying = config.movementType === 'fly';
             const moveClass = isFlying ? 'anim-fly' : 'walk-left';
             els.servitor.classList.add(moveClass);
@@ -605,7 +643,6 @@ export default function DigitalServitor() {
 
             stopAction();
             
-            // Return Movement
             const returnClass = isFlying ? 'anim-fly' : 'walk-right';
             els.servitor.classList.add(returnClass);
             if(isFlying) els.servitor.classList.add('fly-right'); 
@@ -618,7 +655,6 @@ export default function DigitalServitor() {
 
             if(els.status) els.status.innerText = `Depositing ${sPurpose || 'Result'} into your ${chestName}.`;
             
-            // Trigger chest open based on type
             els.chestWrapper.classList.add('chest-open');
             
             await wait(300);
@@ -632,13 +668,11 @@ export default function DigitalServitor() {
             els.chestWrapper.classList.remove('chest-open');
             els.chestShine.style.display = 'none';
             
-            // Update Deposit Counter and check Hunger using REF
             depositRef.current += 1;
             setDepositCount(depositRef.current);
             
             if (depositRef.current >= config.feedFreq) {
                 setHungerState('hungry');
-                // Break the loop to enter hungry state
                 break;
             }
             
@@ -646,7 +680,7 @@ export default function DigitalServitor() {
         }
     };
 
-    // --- Hold Button Handlers (Awaken & Feed) ---
+    // --- Hold Button Handlers ---
     const startHold = (type: 'awaken' | 'feed') => {
         initAudio();
         const startTime = Date.now();
@@ -663,7 +697,6 @@ export default function DigitalServitor() {
                 p = 100;
                 clearInterval(holdIntervalRef.current);
                 holdIntervalRef.current = null;
-                // Success
                 updateProgressSound(false, 100, type);
                 playSound('glitter');
                 if(type === 'awaken') completeAwakening();
@@ -673,9 +706,7 @@ export default function DigitalServitor() {
             }
             setProgress(p);
 
-            // Special Visuals during Feed
             if(type === 'feed') {
-                 // Add random falling food
                  if(Math.random() > 0.7) {
                      setFallingFood(prev => [...prev, {
                          id: Math.random(), 
@@ -683,7 +714,6 @@ export default function DigitalServitor() {
                          top: 0
                      }]);
                  }
-                 // Make servitor dance (Safe DOM Access)
                  const doc = (globalThis as any).document;
                  const rig = doc ? doc.getElementById('game-rig') : null;
                  if(rig) rig.classList.add('dance-happy');
@@ -700,7 +730,6 @@ export default function DigitalServitor() {
         
         updateProgressSound(false, 0, type);
         
-        // If not complete, reset
         if(type === 'awaken') {
             setIsAwakening(false);
             setAwakenProgress(0);
@@ -708,44 +737,40 @@ export default function DigitalServitor() {
         if(type === 'feed') {
             setIsFeeding(false);
             setFeedProgress(0);
-            setFallingFood([]); // Clear food
-            // Stop dance (Safe DOM Access)
+            setFallingFood([]); 
             const doc = (globalThis as any).document;
             const rig = doc ? doc.getElementById('game-rig') : null;
             if(rig) rig.classList.remove('dance-happy');
         }
     };
 
-    // --- Completion Handlers ---
     const completeAwakening = async () => {
         setAwakenComplete(true);
-        // Wait for visual effect
         await wait(1500);
         
-        // Start Game
         setIsRunning(true);
         runningRef.current = true;
-        depositRef.current = 0; // Reset ref
+        depositRef.current = 0;
         setDepositCount(0);
         setHungerState('sated');
         loopIdRef.current++;
         mainLoop(loopIdRef.current);
         
-        // Reset Awaken State for next time
         setAwakenComplete(false);
         setIsAwakening(false);
         setAwakenProgress(0);
+        
+        setHasUnsavedChanges(true);
     };
 
     const completeFeeding = () => {
         setHungerState('fed');
         setFeedProgress(100);
-        // Servitor says thank you logic handled in render via conditional
     };
 
     const handleResume = () => {
         setHungerState('sated');
-        depositRef.current = 0; // Reset ref
+        depositRef.current = 0;
         setDepositCount(0);
         setFeedProgress(0);
         setIsFeeding(false);
@@ -761,11 +786,6 @@ export default function DigitalServitor() {
         stopAction();
     };
 
-    const handleBack = () => {
-        runningRef.current = false;
-        router.push('/spell-room');
-    };
-
     useEffect(() => {
         return () => { 
             runningRef.current = false; 
@@ -773,10 +793,8 @@ export default function DigitalServitor() {
         };
     }, []);
 
-    // FIX: Show overlay if hungry OR actively feeding OR just finished feeding
     const isFeedingActive = hungerState === 'hungry' || isFeeding || hungerState === 'fed';
 
-    // --- JSX RENDER ---
     return (
         <div className="fixed inset-0 w-full h-full bg-[#0f0f1a] text-[#dcdcdc] overflow-hidden select-none font-sans flex flex-col">
             <style jsx global>{`
@@ -1015,13 +1033,13 @@ export default function DigitalServitor() {
 
             {/* Exit Button */}
             <button 
-                onClick={handleBack} 
+                onClick={handleSafeExit} 
                 className="absolute top-6 right-6 z-50 text-gray-500 hover:text-white transition-colors"
             >
                 <X size={24} />
             </button>
 
-            {/* Bottom Controls Container - Flex Row for Non-Overlapping Layout */}
+            {/* Bottom Controls Container */}
             {isRunning && !isFeedingActive && (
                 <div className="absolute bottom-6 left-0 w-full px-4 z-50 flex items-end justify-between pointer-events-none">
                     
@@ -1033,7 +1051,7 @@ export default function DigitalServitor() {
                         Edit Ritual
                     </button>
 
-                    {/* Center: Counter (Scoreboard Style) */}
+                    {/* Center: Counter */}
                     <div className="pointer-events-auto animate-in fade-in zoom-in duration-700 max-w-[40%] flex flex-col items-center">
                          <div className="bg-[#08080c]/80 border border-[#FFD700]/50 rounded px-3 py-1 shadow-[0_0_10px_rgba(0,0,0,0.8)] backdrop-blur-sm flex flex-col items-center w-full">
                              <p className="magick-font text-[#FFD700] text-[10px] tracking-widest uppercase opacity-80 mb-0.5 truncate w-full text-center">
@@ -1045,7 +1063,7 @@ export default function DigitalServitor() {
                          </div>
                     </div>
 
-                    {/* Right: Fullscreen Icon */}
+                    {/* Right: Fullscreen */}
                     <button
                         onClick={toggleFullscreen}
                         className="pointer-events-auto text-gray-500 hover:text-white bg-black/30 p-2 rounded-full border border-gray-700 hover:border-gray-500"
@@ -1075,15 +1093,22 @@ export default function DigitalServitor() {
                         <p className="text-[#FFD700]/70 uppercase tracking-widest text-sm font-serif mt-1">Your Servants of Magick</p>
                     </div>
                     
-                    {/* WITCH CABINET */}
+                    {/* WITCH CABINET & WALLET */}
                     {user && (
                         <div className="p-4 bg-gray-900/50 rounded border border-[#FFD700]/40 space-y-3">
-                            <h3 className="text-sm uppercase text-[#FFD700] tracking-wide font-bold flex items-center gap-2">
-                                <BookOpen size={16} /> Servitor Cabinet
-                            </h3>
+                            <div className="flex justify-between items-center">
+                                <h3 className="text-sm uppercase text-[#FFD700] tracking-wide font-bold flex items-center gap-2">
+                                    <BookOpen size={16} /> Servitor Cabinet
+                                </h3>
+                                {wallet && (
+                                    <span className="text-xs font-mono text-purple-400">
+                                        Aether: {wallet.isUnlimited ? "∞" : wallet.credits}
+                                    </span>
+                                )}
+                            </div>
                             <div className="flex gap-2 mb-4">
-                                <button onClick={handleSave} className="flex-1 bg-black/40 hover:bg-[#FFD700]/20 border border-[#FFD700]/50 text-[#FFD700] py-2 rounded text-xs uppercase tracking-wide flex items-center justify-center gap-2 transition-colors">
-                                    <Save size={14} /> Save Servitor
+                                <button onClick={handleBindToGrimoire} className="flex-1 bg-black/40 hover:bg-[#FFD700]/20 border border-[#FFD700]/50 text-[#FFD700] py-2 rounded text-xs uppercase tracking-wide flex items-center justify-center gap-2 transition-colors">
+                                    <Save size={14} /> Bind ({COST_BIND_SERVITOR} Credits)
                                 </button>
                             </div>
                             
@@ -1112,8 +1137,9 @@ export default function DigitalServitor() {
                         </div>
                     )}
 
+                    {/* Preview Rig */}
                     <div className="bg-[radial-gradient(circle_at_center,#2b1055_0%,#000_100%)] border border-[#FFD700] h-[260px] relative flex justify-center items-center mt-2 shadow-[inset_0_0_20px_#000]">
-                        <div id="preview-rig" className="servitor-rig" style={{left: 0, top: 0}}>
+                         <div id="preview-rig" className="servitor-rig" style={{left: 0, top: 0}}>
                             {/* Wings added behind body with specific z-index and container logic */}
                             <div className="wings-container">
                                 <div className="wing-shape wing left"></div>
@@ -1161,7 +1187,6 @@ export default function DigitalServitor() {
                              <div>
                                 <label className="text-gray-400 text-[10px] uppercase block mb-1">Your Servitor's Food</label>
                                 <input type="text" value={config.foodName} onChange={e => setConfig({...config, foodName: (e.target as any).value})} placeholder="e.g. Appreciation, Head Pats..." className="w-full text-xs p-2 bg-black border border-gray-700 rounded text-gray-300 outline-none" />
-                                <p className="text-[10px] text-gray-500 mt-1 italic">What does your Servitor feed on to survive?</p>
                              </div>
                              
                              <div>
@@ -1200,7 +1225,6 @@ export default function DigitalServitor() {
                                         className="w-20 text-xs p-1 bg-black border border-gray-700 rounded text-center"
                                     />
                                 </div>
-                                <p className="text-[10px] text-gray-500 mt-1 italic">Servitor pauses after {config.feedFreq} tasks to be fed.</p>
                              </div>
                         </div>
                     </div>
@@ -1413,7 +1437,7 @@ export default function DigitalServitor() {
                         >
                             <div className="absolute top-0 left-0 h-full bg-[#FFD700]/30 transition-all duration-75 ease-linear" style={{width: `${awakenProgress}%`}}></div>
                             <span className="relative z-10 text-[#FFD700] text-lg uppercase tracking-widest font-serif flex items-center justify-center gap-2">
-                                Press to Awaken Your Servitor
+                                Press to Awaken Your Servitor (Free)
                             </span>
                         </button>
                     </div>
@@ -1428,7 +1452,7 @@ export default function DigitalServitor() {
                     {hungerState === 'hungry' ? `${sName} is hungry...` : 'Awaiting summoning...'}
                 </div>
 
-                {/* AWAKEN GLITTER & TEXT */}
+                 {/* AWAKEN GLITTER & TEXT */}
                 {awakenComplete && (
                     <div className="awaken-overlay flex flex-col items-center justify-center z-500">
                          <h1 className="text-4xl md:text-6xl text-[#FFD700] font-bold text-center magick-font drop-shadow-[0_0_15px_rgba(255,215,0,0.8)] animate-bounce">
@@ -1437,7 +1461,7 @@ export default function DigitalServitor() {
                          <p className="text-xl text-white mt-4 font-serif italic opacity-80">...and is serving you now.</p>
                     </div>
                 )}
-
+                
                 {/* FEEDING OVERLAY */}
                 {isFeedingActive && (
                     <div className="absolute inset-0 z-200 bg-black/40 flex flex-col items-center justify-center pointer-events-auto">
@@ -1445,10 +1469,9 @@ export default function DigitalServitor() {
                             <div className="bg-black/90 p-8 rounded border-2 border-[#FFD700] text-center max-w-sm mx-4 shadow-[0_0_30px_#FFD700]">
                                 <div className="text-4xl mb-4 animate-spin">✨</div>
                                 <h2 className="text-2xl text-[#FFD700] magick-font mb-2">Thank You, Master!</h2>
-                                <p className="text-gray-300 mb-6 font-serif">I am revitalized by your {config.foodName}. Shall I resume searching for more {sPurpose || 'treasures'}?</p>
+                                <p className="text-gray-300 mb-6 font-serif">I am revitalized by your {config.foodName}. Shall I resume?</p>
                                 <div className="flex gap-4 justify-center">
                                     <button onClick={handleResume} className="bg-[#FFD700] text-black px-6 py-2 rounded font-bold hover:bg-white uppercase tracking-wider">Yes, Resume</button>
-                                    <button onClick={() => {}} className="border border-gray-600 text-gray-400 px-6 py-2 rounded font-bold hover:text-white uppercase tracking-wider">Wait</button>
                                 </div>
                             </div>
                         ) : (
@@ -1456,7 +1479,6 @@ export default function DigitalServitor() {
                                 <div className="text-[#FFD700] magick-font text-2xl mb-8 text-center drop-shadow-md bg-black/50 px-4 py-2 rounded-full border border-[#FFD700]/30">
                                     {sName} hungers for {config.foodName}...
                                 </div>
-                                
                                 <button
                                     onMouseDown={() => startHold('feed')}
                                     onMouseUp={() => stopHold('feed')}
@@ -1474,37 +1496,27 @@ export default function DigitalServitor() {
                     </div>
                 )}
                 
-                {/* FALLING FOOD PARTICLES */}
+                {/* PARTICLES & RIG */}
                 {fallingFood.map(f => (
                     <div key={f.id} className="falling-food" style={{left: f.left + '%', top: '10%'}}>
                         {config.foodIcon}
                     </div>
                 ))}
-
-                {/* MOUND */}
-                <div className="mound" id="mound">
-                    <div className="mound-spiral"></div>
-                </div>
+                
+                 <div className="mound" id="mound"><div className="mound-spiral"></div></div>
 
                 {/* ACTIVE SERVITOR */}
                 <div id="servitor" className="servitor-root">
                     <div className="servitor-rig" id="game-rig">
-                         <div className="wings-container">
-                            <div className="wing-shape wing left"></div>
-                            <div className="wing-shape wing right"></div>
-                        </div>
+                         <div className="wings-container"><div className="wing-shape wing left"></div><div className="wing-shape wing right"></div></div>
                         <div className="tool-carry" id="game-carry"></div>
                         <div className="hair-back game-hair"></div>
                         <div className="leg left game-clothes"><div className="calf game-clothes"><div className="foot"></div></div></div>
                         <div className="leg right game-clothes"><div className="calf game-clothes"><div className="foot"></div></div></div>
-                        <div className="body game-clothes">
-                            <div className="chest-sigil"></div>
-                        </div>
+                        <div className="body game-clothes"><div className="chest-sigil"></div></div>
                         <div className="arm left game-clothes"><div className="hand game-skin"></div></div>
                         <div className="head game-skin">
-                            <div className="face-container game-face-container">
-                                <div className="eye l"></div><div className="eye r"></div><div className="mouth"></div>
-                            </div>
+                            <div className="face-container game-face-container"><div className="eye l"></div><div className="eye r"></div><div className="mouth"></div></div>
                             <div className="beard game-beard"></div>
                         </div>
                         <div className="hair-front game-hair"></div>
@@ -1515,17 +1527,12 @@ export default function DigitalServitor() {
                     </div>
                 </div>
 
-                {/* CHEST - Dynamic Type */}
                 <div id="chest-container">
                     <div className={`chest-wrapper chest-${config.chestType}`} id="chest-wrapper">
-                        {/* Structure changes via CSS mainly, but we need base parts */}
                         <div className="chest-lid"></div>
-                        <div className="chest-interior">
-                            <div className="chest-shine" id="chest-shine">✨</div>
-                        </div>
+                        <div className="chest-interior"><div className="chest-shine" id="chest-shine">✨</div></div>
                         <div className="chest-base"></div>
-                        <div className="chest-seal left"></div>
-                        <div className="chest-seal right"></div>
+                        <div className="chest-seal left"></div><div className="chest-seal right"></div>
                     </div>
                     <div className="mt-1 text-gray-400 text-xs text-center drop-shadow-[0_0_5px_black] magick-font" id="chest-label">
                         {uName || 'Master'}'s {CHEST_NAMES[config.chestType]}
@@ -1534,7 +1541,54 @@ export default function DigitalServitor() {
 
                 <div id="ground"></div>
             </div>
+
+            {/* --- MODALS --- */}
+
+            {/* INSUFFICIENT CREDITS MODAL */}
+            {showCreditModal && (
+                <div className="fixed inset-0 z-500 flex items-center justify-center bg-black/80 backdrop-blur-md p-6">
+                    <div className="bg-[#1a1528] border border-amber-600/50 p-8 rounded-lg max-w-sm w-full text-center shadow-[0_0_50px_rgba(251,191,36,0.3)]">
+                        <Lock className="w-12 h-12 text-amber-500 mx-auto mb-4" />
+                        <h3 className="text-xl font-magical text-amber-100 mb-2">Insufficient Aether</h3>
+                        <p className="text-gray-400 text-sm mb-6">
+                            You need {COST_BIND_SERVITOR} Aether credits to bind this spirit to your Grimoire.
+                        </p>
+                        <button 
+                            onClick={() => setShowCreditModal(false)}
+                            className="w-full bg-amber-900/40 hover:bg-amber-800/40 border border-amber-600 text-amber-50 py-3 uppercase tracking-widest font-magical text-sm transition-colors"
+                        >
+                            Return
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* EXIT WARNING MODAL */}
+            {showExitWarning && (
+                <div className="fixed inset-0 z-500 flex items-center justify-center bg-black/90 backdrop-blur-md p-6">
+                    <div className="bg-[#2a1a1a] border border-red-600/50 p-8 rounded-lg max-w-sm w-full text-center shadow-[0_0_60px_rgba(220,38,38,0.2)]">
+                        <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4 animate-pulse" />
+                        <h3 className="text-xl font-magical text-red-100 mb-2">Unbound Spirit</h3>
+                        <p className="text-gray-400 text-sm mb-6">
+                            You have not bound this Servitor. If you leave now, it will be lost to the void forever. Are you sure?
+                        </p>
+                        <div className="flex flex-col gap-3">
+                            <button 
+                                onClick={confirmExit}
+                                className="w-full bg-red-900/40 hover:bg-red-800/40 border border-red-600 text-red-100 py-3 uppercase tracking-widest font-magical text-sm transition-colors"
+                            >
+                                Yes, Leave It Behind
+                            </button>
+                            <button 
+                                onClick={() => setShowExitWarning(false)}
+                                className="w-full bg-gray-800 hover:bg-gray-700 text-white py-3 uppercase tracking-widest font-magical text-sm transition-colors rounded"
+                            >
+                                Return to Bind
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
-// --- END OF FILE ---
