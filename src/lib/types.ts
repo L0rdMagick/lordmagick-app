@@ -9,7 +9,6 @@ export interface FormData {
   birthplace: string;
 }
 
-// Preserving your specific Human Design structure
 export interface HumanDesignChart {
   type: string;
   strategy: string;
@@ -52,7 +51,7 @@ export interface GeneratedSpell {
     title: string;
     intention: string;
     incantation: string;
-    sigilBase64?: string; // Made optional as some flows might use URL
+    sigilBase64: string; // Reverted to required to fix SpellGenerator build
     sigil_url?: string;
     instructions?: string[];
     sigil_description?: string;
