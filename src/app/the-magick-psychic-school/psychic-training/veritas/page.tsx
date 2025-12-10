@@ -460,7 +460,7 @@ export default function VeritasApp() {
   
   // DATA ASSETS
   const DEFAULT_PHRASES = [
-    "I did not take the money.", "I was home all night.", "I swear I didn't see anything.",
+    "I did not take the money.", "I was home all night .", "I swear I didn't see anything.",
     "I have no idea who he is.", "The gun wasn't mine.", "I was alone.", "I didn't touch the files.",
     "I've never been there.", "I didn't sign that.", "I don't know the code.",
     "I was driving alone.", "I lost my phone.", "It was like that when I got here.",
