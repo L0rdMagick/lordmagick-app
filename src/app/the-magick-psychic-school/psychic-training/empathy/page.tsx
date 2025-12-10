@@ -4,10 +4,11 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Settings, Eye, Volume2, VolumeX, 
   Sparkles, X, Activity, Maximize, Minimize,
-  Info, RotateCcw, Save 
+  Info, RotateCcw, Save, Lock, ChevronsUp 
 } from 'lucide-react';
 import { createBrowserClient } from '@supabase/ssr';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
+import { useHaptics } from '@/hooks/useHaptics';
 
 /**
  * --- PSI MATH ENGINE ---
@@ -178,6 +179,10 @@ const PsiStats = ({ stats, deckSize, onClose }: { stats: any, deckSize: number, 
   const [lifetimeStats, setLifetimeStats] = useState({ hits: 0, trials: 0 });
   const [loadingLifetime, setLoadingLifetime] = useState(false);
   
+  // Monetization
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [loadingProfile, setLoadingProfile] = useState(true);
+
   let sessionTrials = 0;
   let sessionHits = 0;
   Object.values(stats).forEach((s: any) => {
@@ -190,6 +195,19 @@ const PsiStats = ({ stats, deckSize, onClose }: { stats: any, deckSize: number, 
   const sessionZ = calculatePsiScore(sessionHits, sessionTrials, chance);
   const sessionProb = calculateProbability(sessionZ);
   const sessionTier = getPsiTier(sessionZ);
+
+  // Check Subscription
+  useEffect(() => {
+    const checkProfile = async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+            const { data } = await supabase.from('profiles').select('is_subscribed').eq('id', user.id).single();
+            if(data?.is_subscribed) setIsSubscribed(true);
+        }
+        setLoadingProfile(false);
+    }
+    checkProfile();
+  }, [supabase]);
 
   useEffect(() => {
     if (showModal) {
@@ -242,9 +260,16 @@ const PsiStats = ({ stats, deckSize, onClose }: { stats: any, deckSize: number, 
             flex flex-col items-end justify-center
             bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/20 
             rounded-lg px-3 py-1 transition-all duration-300
-            min-w-20 h-[50px]
+            min-w-20 h-[50px] relative
         "
       >
+          <div className="absolute -top-3 right-0 bg-purple-900 border border-purple-500 text-[9px] font-bold px-2 py-0.5 rounded text-white tracking-widest shadow-md opacity-0 group-hover:opacity-100 transition-opacity">
+            TAP INFO
+          </div>
+          <div className="absolute top-1 right-1 text-purple-400 group-hover:text-white opacity-0 group-hover:opacity-100 transition-opacity">
+            <ChevronsUp size={12} />
+          </div>
+
           <div className="flex items-center gap-2">
             <span className="text-xs font-mono text-slate-400 group-hover:text-white transition-colors">N: {sessionTrials}</span>
             <div className="w-px h-3 bg-white/20"></div>
@@ -253,7 +278,7 @@ const PsiStats = ({ stats, deckSize, onClose }: { stats: any, deckSize: number, 
             </span>
           </div>
           <div className="text-[9px] text-slate-500 uppercase tracking-widest group-hover:text-purple-300 transition-colors">
-            View Scores
+            Z: {sessionZ.toFixed(2)}
           </div>
       </div>
 
@@ -284,12 +309,17 @@ const PsiStats = ({ stats, deckSize, onClose }: { stats: any, deckSize: number, 
                 </div>
               </div>
 
-              {/* LIFETIME */}
-              <div className="bg-white/5 rounded-lg p-4 border border-white/5 relative">
+              {/* LIFETIME (MONETIZED) */}
+              <div className="bg-white/5 rounded-lg p-4 border border-white/5 relative overflow-hidden">
                  <h3 className="text-xs uppercase tracking-[0.2em] text-amber-300 mb-4 text-center">Lifetime Record</h3>
-                 {loadingLifetime ? (
-                    <div className="absolute inset-0 flex items-center justify-center"><Sparkles className="animate-spin text-amber-500"/></div>
-                 ) : (
+                 
+                 {loadingLifetime || loadingProfile ? (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                        <Sparkles className="animate-spin text-amber-500 mb-2"/>
+                        <span className="text-[10px] text-amber-500 font-mono tracking-widest animate-pulse">Attuning to Cloud...</span>
+                    </div>
+                 ) : isSubscribed ? (
+                    // SUBSCRIBED CONTENT
                     <div className="space-y-2 text-sm">
                         <div className="flex justify-between border-b border-white/5 pb-1"><span>Hits / Trials</span> <span className="text-white font-mono">{lifetimeStats.hits} / {lifetimeStats.trials}</span></div>
                         <div className="flex justify-between border-b border-white/5 pb-1"><span>Accuracy</span> <span className="text-white font-mono">{lifeAccuracy.toFixed(1)}%</span></div>
@@ -297,6 +327,22 @@ const PsiStats = ({ stats, deckSize, onClose }: { stats: any, deckSize: number, 
                         <div className="flex justify-between"><span>Probability</span> <span className="text-green-300 font-mono">{lifeProb}</span></div>
                         <div className="mt-2 text-center text-xs font-bold uppercase tracking-widest text-white">{lifeTier.name}</div>
                     </div>
+                 ) : (
+                    // LOCKED CONTENT
+                    <>
+                        <div className="space-y-2 text-sm blur-sm opacity-50 select-none">
+                            <div className="flex justify-between border-b border-white/5 pb-1"><span>Hits / Trials</span> <span className="text-white font-mono">???? / ????</span></div>
+                            <div className="flex justify-between border-b border-white/5 pb-1"><span>Accuracy</span> <span className="text-white font-mono">??.?%</span></div>
+                            <div className="flex justify-between border-b border-white/5 pb-1"><span>Psi Score (Z)</span> <span className="text-amber-300 font-mono">0.00</span></div>
+                        </div>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-xs z-10 p-4 text-center">
+                            <Lock className="text-amber-400 mb-2 w-8 h-8 animate-pulse" />
+                            <p className="text-amber-200 font-serif text-sm tracking-widest mb-4">ADEPT ACCESS REQUIRED</p>
+                            <button className="px-6 py-2 bg-amber-900/30 border border-amber-500/50 text-amber-300 text-xs font-bold uppercase tracking-wider hover:bg-amber-800/40 transition-all rounded shadow-lg shadow-amber-900/20">
+                                Unlock Lifetime Analysis
+                            </button>
+                        </div>
+                    </>
                  )}
               </div>
             </div>
@@ -586,8 +632,6 @@ export default function EmpathyApp() {
   const [cards, setCards] = useState<any[]>([]);
   const [stats, setStats] = useState<any>({});
   
-  // New Feedback State Logic (no more full overlay)
-  // We keep feedback state for reference, but UI handling is different now
   const [feedback, setFeedback] = useState<{type: 'hit'|'miss'} | null>(null);
 
   const [showSettings, setShowSettings] = useState(false);
@@ -597,6 +641,7 @@ export default function EmpathyApp() {
   const [isDesktop, setIsDesktop] = useState(false);
 
   const audio = useAudioEngine();
+  const haptics = useHaptics(); // Hook Integration
 
   useEffect(() => {
       const savedStats = localStorage.getItem('empathy_stats');
@@ -626,7 +671,7 @@ export default function EmpathyApp() {
 
   const handleSaveResults = async () => {
     setSaving(true);
-    setSaveMessage("Inscribing...");
+    setSaveMessage("Attuning to Cloud..."); // VISUAL POLISH
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -635,6 +680,16 @@ export default function EmpathyApp() {
         setSaving(false);
         return;
       }
+
+      // Check subscription before allowing save
+      const { data: profile } = await supabase.from('profiles').select('is_subscribed').eq('id', user.id).single();
+      if (!profile?.is_subscribed) {
+          setSaveMessage("ADEPT ACCESS REQUIRED");
+          setTimeout(() => setSaveMessage(null), 3000);
+          setSaving(false);
+          return;
+      }
+
       const totalAttempts = Object.values(stats).reduce((acc: number, curr: any) => acc + curr.attempts, 0);
       const { error } = await supabase
         .from('reports')
@@ -646,7 +701,7 @@ export default function EmpathyApp() {
           report_content: `Session completed. Total Attempts: ${totalAttempts}. Focus: ${targetFocus}. Deck Size: ${deckSize}.`,
         });
       if (error) throw error;
-      setSaveMessage("Inscribed in Grimoire");
+      setSaveMessage("Inscribed in Grimoire"); // VISUAL POLISH
     } catch (e) {
       console.error(e);
       setSaveMessage("Inscription Failed");
@@ -729,6 +784,9 @@ export default function EmpathyApp() {
   const handleCardClick = (index: number) => {
     if (gameState !== 'sensing') return;
     
+    // HAPTIC: SELECTION
+    haptics.triggerMedium();
+    
     const clickedCard = cards[index];
     const isMatch = clickedCard.isTarget;
     
@@ -747,6 +805,8 @@ export default function EmpathyApp() {
 
     if (isMatch) {
       audio.playSuccess();
+      haptics.triggerHeavy(); // HAPTIC: SUCCESS
+      
       const newCards = [...cards];
       newCards[index].status = 'revealed';
       // Mark as explicitly clicked so we know where to show text
@@ -758,6 +818,8 @@ export default function EmpathyApp() {
 
     } else {
       audio.playFailure();
+      haptics.triggerLight(); // HAPTIC: FAILURE
+      
       const newCards = [...cards];
       newCards[index].status = 'revealed-wrong';
       newCards[index].isClicked = true;
