@@ -5,7 +5,8 @@ import { createPortal } from 'react-dom';
 import { 
   Zap, Activity, Volume2, VolumeX, Eye, Brain, Settings, 
   X, Save, Trash2, Info, ArrowLeft, PauseCircle, Trophy, 
-  Sparkles, Maximize2, BarChart2, ShieldAlert, Lock
+  Sparkles, Maximize2, BarChart2, ShieldAlert, Lock,
+  ChevronsUp
 } from 'lucide-react';
 import { createBrowserClient } from '@supabase/ssr';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
@@ -22,7 +23,7 @@ const erf = (x: number) => { const a1 = 0.254829592, a2 = -0.284496736, a3 = 1.4
 const calculateProbability = (z: number) => { const p = 0.5 * (1 - erf(Math.abs(z) / Math.sqrt(2))); return p <= 0 ? "1 in ∞" : `1 in ${Math.round(1/p)}`; };
 const getPsiTier = (z: number) => { if(z>=4)return {name:"The Singularity",color:"text-cyan-300"}; if(z>=3)return {name:"Human Polygraph",color:"text-cyan-400"}; if(z>=1.96)return {name:"Pattern Recognizer",color:"text-green-300"}; if(z>=1.0)return {name:"Analyst",color:"text-teal-300"}; if(z>=0)return {name:"Observer",color:"text-slate-200"}; return {name:"Desynchronized",color:"text-slate-600"}; };
 
-/* --- AUDIO ENGINE (Veritas Specific) --- */
+/* --- AUDIO ENGINE --- */
 const useAudioEngine = () => {
   const audioCtxRef = useRef<any>(null);
   const droneOscRef = useRef<any>(null);
@@ -160,7 +161,7 @@ const Waveform = ({ intensity = 1, isPaused = false }) => {
   return <canvas ref={canvasRef} className="w-full h-32 md:h-48" />;
 };
 
-/* --- STATS COMPONENT & MODAL --- */
+/* --- STATS COMPONENT & MODAL (ADAPTED FOR VERITAS) --- */
 
 const VeritasStats = ({ 
   history, 
@@ -261,18 +262,19 @@ const VeritasStats = ({
 
   const ModalContent = () => (
     <div 
-      className="fixed inset-0 flex items-center justify-center bg-black/90 backdrop-blur-md z-100"
+      className="fixed inset-0 flex items-center justify-center bg-black/95 backdrop-blur-md z-100 p-0 md:p-4 animate-in fade-in duration-300"
+      style={{ zIndex: 9999 }}
       onClick={() => setShowModal(false)}
     >
       <div 
-        className="w-full h-full md:h-auto md:max-h-[95vh] md:max-w-5xl bg-[#0a0a0a] border border-cyan-500/30 p-6 relative overflow-y-auto shadow-[0_0_50px_rgba(34,211,238,0.1)] flex flex-col font-mono"
+        className="w-full h-full md:h-auto md:max-h-[95vh] md:max-w-5xl bg-[#0a0a0a] border-0 md:border md:border-cyan-500/30 p-6 relative overflow-y-auto shadow-[0_0_50px_rgba(34,211,238,0.1)] flex flex-col font-mono"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex justify-between items-center mb-6 border-b border-cyan-500/20 pb-4">
+        <div className="flex justify-between items-center mb-6 sticky top-0 bg-[#0a0a0a]/95 backdrop-blur z-10 py-2 border-b border-cyan-500/20 pb-4 md:border-0">
           <h2 className="text-2xl text-cyan-400 flex items-center gap-2 font-bold tracking-widest">
             <Activity size={24}/> DIAGNOSTIC REPORT
           </h2>
-          <button onClick={() => setShowModal(false)} className="text-gray-500 hover:text-white transition-colors">
+          <button onClick={() => setShowModal(false)} className="text-gray-500 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-full">
             <X size={24}/>
           </button>
         </div>
@@ -306,7 +308,7 @@ const VeritasStats = ({
                    <div className="mt-4 text-center text-xs font-bold uppercase tracking-widest text-white border border-cyan-500/30 py-1">{lifeTier.name}</div>
                </div>
             ) : (
-                // Locked Content
+                // Locked Content (Adept Gate)
                 <>
                     <div className="space-y-2 text-sm blur-sm opacity-50 select-none">
                        <div className="flex justify-between border-b border-white/5 pb-1"><span>Hits / Trials</span> <span className="text-white">???? / ????</span></div>
@@ -393,8 +395,15 @@ const VeritasStats = ({
     <>
       <div 
         onClick={() => setShowModal(true)}
-        className="flex flex-col items-center gap-1 bg-cyan-950/20 hover:bg-cyan-900/40 border border-cyan-500/30 hover:border-cyan-400 rounded cursor-pointer transition-all group p-2 min-w-[200px]"
+        className="flex flex-col items-center gap-1 bg-cyan-950/20 hover:bg-cyan-900/40 border border-cyan-500/30 hover:border-cyan-400 rounded cursor-pointer transition-all group p-2 min-w-[200px] relative"
       >
+        <div className="absolute -top-3 right-0 bg-cyan-900 border border-cyan-500 text-[9px] font-bold px-2 py-0.5 rounded text-white tracking-widest shadow-md opacity-0 group-hover:opacity-100 transition-opacity">
+            TAP INFO
+        </div>
+        <div className="absolute top-1 right-1 text-cyan-400 group-hover:text-white opacity-0 group-hover:opacity-100 transition-opacity">
+            <ChevronsUp size={12} />
+        </div>
+
         <div className="flex items-center gap-6 w-full justify-center">
             <div className="flex items-center gap-3 border-r border-cyan-500/30 pr-4">
                 <span className="text-yellow-400 font-bold flex items-center gap-1 font-mono"><Trophy size={14} /> {streak}</span>
@@ -460,7 +469,7 @@ export default function VeritasApp() {
   
   // DATA ASSETS
   const DEFAULT_PHRASES = [
-    "I did not take the money.", "I was home all night .", "I swear I didn't see anything.",
+    "I did not take the money.", "I was home all night.", "I swear I didn't see anything.",
     "I have no idea who he is.", "The gun wasn't mine.", "I was alone.", "I didn't touch the files.",
     "I've never been there.", "I didn't sign that.", "I don't know the code.",
     "I was driving alone.", "I lost my phone.", "It was like that when I got here.",
@@ -587,7 +596,7 @@ export default function VeritasApp() {
       setTimeLeft(null);
     }
     playSound('voice');
-  }, [useDefaultPhrases, customPhrases, customTimeLimit, playSound]); // Added dependencies
+  }, [useDefaultPhrases, customPhrases, customTimeLimit, playSound]); 
 
   const nextRound = useCallback(() => {
     startRound(gameMode);
@@ -619,19 +628,21 @@ export default function VeritasApp() {
   const handleGuess = (userGuessBoolean: boolean | null) => {
     if (feedback || isPaused) return; 
 
-    haptics.triggerMedium(); // SELECTION HAPTIC
+    // 1. Medium Haptic on interaction start
+    haptics.triggerMedium();
 
     const correct = userGuessBoolean === isTrue;
     const isTimeout = userGuessBoolean === null;
     let msg = "";
     if (isTimeout) {
       msg = "TIMED OUT";
-      haptics.triggerLight();
+      haptics.triggerLight(); // Negative result
     } else {
       const resultStr = correct ? "CORRECT" : "INCORRECT";
       const realityStr = isTrue ? "A TRUTH" : "A LIE";
       msg = `${resultStr}: IT WAS ${realityStr}`;
       
+      // 2. Result Haptic
       if (correct) haptics.triggerHeavy();
       else haptics.triggerLight();
     }
