@@ -5,10 +5,12 @@ import { createPortal } from 'react-dom';
 import { 
   Activity, Eye, Brain, X, Info, Volume2, VolumeX, 
   Sparkles, Save, RotateCcw, Settings, Flame, Zap,
-  RefreshCw, Trophy, Maximize, Minimize, BarChart3, ChevronDown
+  RefreshCw, Trophy, Maximize, Minimize, BarChart3, ChevronDown,
+  Lock, ChevronsUp
 } from 'lucide-react';
 import { createBrowserClient } from '@supabase/ssr';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
+import { useHaptics } from '@/hooks/useHaptics';
 
 /**
  * --- 1. MATH & HELPERS (GOLD STANDARD) ---
@@ -79,7 +81,6 @@ const RadarChart = ({ stats, categories }: { stats: any, categories: any[] }) =>
         const angle = (Math.PI * 2 * i) / categories.length - Math.PI / 2;
         const stat = stats[cat.id] || { hits: 0, attempts: 0 };
         const percentage = stat.attempts > 0 ? (stat.hits / stat.attempts) : 0;
-        // Limit radius to valid visualization even with 0 attempts
         const dist = radius * percentage; 
         
         return [
@@ -88,9 +89,6 @@ const RadarChart = ({ stats, categories }: { stats: any, categories: any[] }) =>
         ];
     });
 
-    // Fix for 2 points (Angel/Devil) to make a shape, we double back or create a width
-    // For general robustness, if points < 3, we adjust logic or just draw a line
-    // Here we will just draw the path. For 2 points it creates a straight line back and forth.
     const pathData = points.length > 0 
         ? points.map((p, i) => (i === 0 ? 'M' : 'L') + p[0] + ',' + p[1]).join(' ') + 'Z'
         : '';
@@ -102,7 +100,6 @@ const RadarChart = ({ stats, categories }: { stats: any, categories: any[] }) =>
             </h4>
             <div className="relative">
                 <svg width={size} height={size} className="overflow-visible">
-                    {/* Background Webs */}
                     {[0.25, 0.5, 0.75, 1].map((scale, k) => (
                         <polygon 
                             key={k}
@@ -116,7 +113,6 @@ const RadarChart = ({ stats, categories }: { stats: any, categories: any[] }) =>
                             strokeWidth="1"
                         />
                     ))}
-                    {/* Axis Lines */}
                     {categories.map((_, i) => {
                         const angle = (Math.PI * 2 * i) / categories.length - Math.PI / 2;
                         return (
@@ -130,10 +126,8 @@ const RadarChart = ({ stats, categories }: { stats: any, categories: any[] }) =>
                             />
                         );
                     })}
-                    {/* Data Shape */}
                     <path d={pathData} fill="rgba(99, 102, 241, 0.3)" stroke="#6366f1" strokeWidth="2" />
                     
-                    {/* Labels */}
                     {categories.map((cat, i) => {
                         const angle = (Math.PI * 2 * i) / categories.length - Math.PI / 2;
                         const labelRadius = radius + 20;
@@ -179,11 +173,15 @@ const StatsGrid = ({ stats, categories }: { stats: any, categories: any[] }) => 
     );
 };
 
-// --- 3. MAIN MODAL (Gold Standard) ---
+// --- 3. MAIN MODAL (Gold Standard with Adept Gate) ---
 const PsiStatsModal = ({ stats, deckSize, onClose, breakdown }: { stats: any, deckSize: number, onClose: () => void, breakdown: any }) => {
     const [supabase] = useState(() => createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!));
     const [lifetimeStats, setLifetimeStats] = useState({ hits: 0, trials: 0 });
     const [loadingLifetime, setLoadingLifetime] = useState(false);
+    
+    // Monetization
+    const [isSubscribed, setIsSubscribed] = useState(false);
+    const [loadingProfile, setLoadingProfile] = useState(true);
     
     const sessionTrials = stats.trials;
     const sessionHits = stats.hits;
@@ -197,7 +195,21 @@ const PsiStatsModal = ({ stats, deckSize, onClose, breakdown }: { stats: any, de
         { id: 'DEVIL', name: 'Threat', color: '#f87171' },
         { id: 'ANGEL', name: 'Safety', color: '#60a5fa' }
     ];
+
+    // Check Subscription
+    useEffect(() => {
+        const checkProfile = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                const { data } = await supabase.from('profiles').select('is_subscribed').eq('id', user.id).single();
+                if(data?.is_subscribed) setIsSubscribed(true);
+            }
+            setLoadingProfile(false);
+        }
+        checkProfile();
+    }, [supabase]);
   
+    // Fetch History (Only triggers, actual data display is gated in render)
     useEffect(() => {
         const fetchHistory = async () => {
           setLoadingLifetime(true);
@@ -233,13 +245,19 @@ const PsiStatsModal = ({ stats, deckSize, onClose, breakdown }: { stats: any, de
     const lifeTier = getPsiTier(lifeZ);
   
     return createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/95 backdrop-blur-md p-4 animate-in fade-in duration-300" onClick={onClose}>
-            <div className="max-w-3xl w-full bg-slate-900 border border-indigo-500/20 rounded-xl p-6 relative max-h-[85dvh] overflow-y-auto shadow-[0_0_50px_rgba(99,102,241,0.2)]" onClick={(e) => e.stopPropagation()}>
-                <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-white"><X /></button>
-                <h2 className="text-2xl font-serif text-white mb-6 flex items-center gap-2"><Activity className="text-indigo-400" /> Performance Analysis</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/95 backdrop-blur-md p-4 animate-in fade-in duration-300" style={{ zIndex: 9999 }} onClick={onClose}>
+            <div className="max-w-3xl w-full bg-slate-900 border border-indigo-500/20 rounded-xl p-6 relative max-h-[90dvh] overflow-y-auto shadow-[0_0_50px_rgba(99,102,241,0.2)]" onClick={(e) => e.stopPropagation()}>
+                
+                {/* Sticky Header */}
+                <div className="sticky top-0 bg-slate-900/95 backdrop-blur z-10 pb-4 mb-4 border-b border-white/5 flex justify-between items-center">
+                    <h2 className="text-2xl font-serif text-white flex items-center gap-2">
+                        <Activity className="text-indigo-400" /> Performance Analysis
+                    </h2>
+                    <button onClick={onClose} className="text-slate-400 hover:text-white p-1 hover:bg-white/10 rounded-full transition-colors"><X /></button>
+                </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                    {/* CURRENT */}
+                    {/* CURRENT SESSION */}
                     <div className="bg-black/20 rounded-lg p-4 border border-white/5">
                         <h3 className="text-xs uppercase tracking-[0.2em] text-indigo-400 mb-4 text-center">Current Session</h3>
                         <div className="space-y-2 text-sm font-mono">
@@ -251,12 +269,14 @@ const PsiStatsModal = ({ stats, deckSize, onClose, breakdown }: { stats: any, de
                         </div>
                     </div>
 
-                    {/* LIFETIME */}
-                    <div className="bg-black/20 rounded-lg p-4 border border-white/5 relative">
+                    {/* LIFETIME RECORD (MONETIZED GATE) */}
+                    <div className="bg-black/20 rounded-lg p-4 border border-white/5 relative overflow-hidden">
                         <h3 className="text-xs uppercase tracking-[0.2em] text-amber-300 mb-4 text-center">Lifetime Record</h3>
-                        {loadingLifetime ? (
+                        
+                        {loadingLifetime || loadingProfile ? (
                             <div className="absolute inset-0 flex items-center justify-center"><Sparkles className="animate-spin text-indigo-500"/></div>
-                        ) : (
+                        ) : isSubscribed ? (
+                             // SUBSCRIBED CONTENT
                             <div className="space-y-2 text-sm font-mono">
                                 <div className="flex justify-between border-b border-white/5 pb-1"><span>Hits / Trials</span> <span className="text-white">{lifetimeStats.hits} / {lifetimeStats.trials}</span></div>
                                 <div className="flex justify-between border-b border-white/5 pb-1"><span>Accuracy</span> <span className="text-white">{lifeAccuracy.toFixed(1)}%</span></div>
@@ -264,6 +284,22 @@ const PsiStatsModal = ({ stats, deckSize, onClose, breakdown }: { stats: any, de
                                 <div className="flex justify-between"><span>Probability</span> <span className="text-green-300">{lifeProb}</span></div>
                                 <div className={`mt-2 text-center text-xs font-bold uppercase tracking-widest ${lifeTier.color}`}>{lifeTier.name}</div>
                             </div>
+                        ) : (
+                            // LOCKED CONTENT
+                            <>
+                                <div className="space-y-2 text-sm font-mono blur-sm select-none opacity-50">
+                                    <div className="flex justify-between border-b border-white/5 pb-1"><span>Hits / Trials</span> <span className="text-white">???? / ????</span></div>
+                                    <div className="flex justify-between border-b border-white/5 pb-1"><span>Accuracy</span> <span className="text-white">??.?%</span></div>
+                                    <div className="flex justify-between border-b border-white/5 pb-1"><span>Psi Score (Z)</span> <span className="text-slate-400">0.00</span></div>
+                                </div>
+                                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-xs z-10 p-4 text-center">
+                                    <Lock className="text-amber-400 mb-2 w-8 h-8 animate-pulse" />
+                                    <p className="text-amber-200 font-serif text-sm tracking-widest mb-4">ADEPT ACCESS REQUIRED</p>
+                                    <button className="px-6 py-2 bg-amber-900/30 border border-amber-500/50 text-amber-300 text-xs font-bold uppercase tracking-wider hover:bg-amber-800/40 transition-all rounded shadow-lg shadow-amber-900/20">
+                                        Unlock Lifetime Analysis
+                                    </button>
+                                </div>
+                            </>
                         )}
                     </div>
                 </div>
@@ -284,8 +320,6 @@ const PsiStatsModal = ({ stats, deckSize, onClose, breakdown }: { stats: any, de
                             <div><strong className="text-pink-300">The Clairvoyant (Z &ge; 1.96)</strong> - Significant (p &lt; 0.05)</div>
                             <div><strong className="text-indigo-300">The Channel (Z &ge; 1.65)</strong> - Tapping into flow</div>
                             <div><strong className="text-cyan-300">The Adept (Z &ge; 1.0)</strong> - Above Chance</div>
-                            <div><strong className="text-cyan-300">The Spark (Z &ge; 0.5)</strong> - Pulse of intuition</div>
-                            <div><strong className="text-cyan-300">The Initiate (Z &ge; 0.0)</strong> - Above baseline</div>
                         </div>
                     </div>
                     <div>
@@ -296,7 +330,6 @@ const PsiStatsModal = ({ stats, deckSize, onClose, breakdown }: { stats: any, de
                             <div><strong className="text-slate-300">The Blocker (Z &lt; -1.0)</strong> - Dodging targets. Logic fighting gut</div>
                             <div><strong className="text-slate-400">The Mirror (Z &le; -2.0)</strong> - Significant Avoidance</div>
                             <div><strong className="text-slate-500">The Shadow (Z &le; -3.0)</strong> - Highly Significant Displacement</div>
-                            <div><strong className="text-slate-600">The Void (Z &le; -4.0)</strong> - Total Suppression</div>
                         </div>
                     </div>
                 </div>
@@ -515,6 +548,7 @@ export default function PsiTrainer() {
   const [feedback, setFeedback] = useState<any>(null);
 
   const audio = useAudioEngine();
+  const haptics = useHaptics(); // HAPTICS INTEGRATION
   const deckSize = 4; // Standard 1 in 4 chance
 
   useEffect(() => {
@@ -563,6 +597,7 @@ export default function PsiTrainer() {
     if (gameState === 'REVEALED') return;
 
     audio.playFlip();
+    haptics.triggerMedium(); // HAPTICS: SELECTION
 
     const selectedCards = [...cards];
     const clickedCard = selectedCards[index];
@@ -576,9 +611,11 @@ export default function PsiTrainer() {
     
     if (isHit) {
         audio.playHit();
+        haptics.triggerHeavy(); // HAPTICS: SUCCESS
         setFeedback({ type: 'success', message: 'INTUITION CONFIRMED' });
     } else {
         audio.playMiss();
+        haptics.triggerLight(); // HAPTICS: MISS
         setFeedback({ type: 'error', message: 'TARGET MISSED' });
     }
     
@@ -629,7 +666,7 @@ export default function PsiTrainer() {
 
   const handleSaveResults = async () => {
     setSaving(true);
-    setSaveMessage("UPLOADING DATA...");
+    setSaveMessage("Attuning to Cloud..."); // VISUAL POLISH
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -637,6 +674,15 @@ export default function PsiTrainer() {
         setTimeout(() => setSaveMessage(null), 3000);
         setSaving(false);
         return;
+      }
+
+      // Check for subscription before allowing manual save (Monetization Gate)
+      const { data: profile } = await supabase.from('profiles').select('is_subscribed').eq('id', user.id).single();
+      if (!profile?.is_subscribed) {
+          setSaveMessage("ADEPT ACCESS REQUIRED");
+          setTimeout(() => setSaveMessage(null), 3000);
+          setSaving(false);
+          return;
       }
       
       const { error } = await supabase
@@ -649,7 +695,7 @@ export default function PsiTrainer() {
           report_content: `Session completed. Trials: ${stats.trials}. Hits: ${stats.hits}. Mode: ${gameMode}.`,
         });
       if (error) throw error;
-      setSaveMessage("DATA ARCHIVED");
+      setSaveMessage("Archiving Energy..."); // VISUAL POLISH
     } catch (e) {
       console.error(e);
       setSaveMessage("UPLOAD FAILED");
@@ -692,32 +738,30 @@ export default function PsiTrainer() {
              </div>
         </div>
         
-        <button 
+        {/* STATS WIDGET - UPDATED FOR MONETIZATION UI CONSISTENCY */}
+        <div 
             onClick={() => setShowStatsModal(true)}
-            className="group flex items-center gap-2 md:gap-4 bg-indigo-900/40 hover:bg-indigo-900/60 border border-indigo-500/30 rounded-full px-3 py-1 md:px-4 md:py-2 transition-all cursor-pointer w-full md:w-auto justify-between md:justify-center"
+            className="group flex flex-col md:flex-row items-end md:items-center bg-slate-900/80 hover:bg-slate-800 border border-indigo-500/20 hover:border-indigo-500/50 rounded-lg px-4 py-2 cursor-pointer transition-all duration-300 relative min-w-[120px]"
         >
-            <div className="flex items-center gap-2 text-indigo-400">
-                <BarChart3 size={16} />
-                <div className="h-4 w-px bg-indigo-500/30"></div>
-            </div>
+             <div className="absolute -top-3 right-0 bg-indigo-900 border border-indigo-500 text-[9px] font-bold px-2 py-0.5 rounded text-white tracking-widest shadow-md opacity-0 group-hover:opacity-100 transition-opacity">
+               TAP INFO
+             </div>
+             <div className="absolute top-1 right-1 text-indigo-400 group-hover:text-white opacity-0 group-hover:opacity-100 transition-opacity">
+               <ChevronsUp size={12} />
+             </div>
 
-            <div className="flex items-center gap-3 md:gap-5 text-xs md:text-sm font-mono">
-                <div className="flex flex-col items-center leading-none">
-                    <span className="text-[9px] text-slate-400 uppercase">Acc</span>
-                    <span className={`font-bold ${getAccuracy() > 25 ? 'text-green-400' : 'text-slate-200'}`}>{getAccuracy()}%</span>
-                </div>
-                <div className="flex flex-col items-center leading-none">
-                    <span className="text-[9px] text-slate-400 uppercase">Strk</span>
-                    <span className="font-bold text-slate-200">{stats.streak}</span>
-                </div>
-                <div className="flex flex-col items-center leading-none">
-                    <span className="text-[9px] text-slate-400 uppercase">N</span>
-                    <span className="font-bold text-slate-200">{stats.trials}</span>
-                </div>
-            </div>
-
-            <ChevronDown size={14} className="text-indigo-400 group-hover:translate-y-0.5 transition-transform" />
-        </button>
+             <div className="flex items-center gap-4">
+                 <div className="flex flex-col items-center leading-none">
+                    <span className="text-[9px] text-slate-500 uppercase tracking-wider">Acc</span>
+                    <span className={`font-mono font-bold ${getAccuracy() > 25 ? 'text-green-400' : 'text-slate-300'}`}>{getAccuracy()}%</span>
+                 </div>
+                 <div className="w-px h-6 bg-slate-700"></div>
+                 <div className="flex flex-col items-center leading-none">
+                    <span className="text-[9px] text-slate-500 uppercase tracking-wider">Strk</span>
+                    <span className="font-mono font-bold text-amber-400">{stats.streak}</span>
+                 </div>
+             </div>
+        </div>
             
         <div className="hidden md:flex items-center gap-1 ml-4 pl-4 border-l border-slate-700">
             <button onClick={toggleSound} className="p-2 hover:bg-slate-800 rounded text-slate-400">{soundEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}</button>
@@ -877,6 +921,7 @@ export default function PsiTrainer() {
                             <RotateCcw size={14} /> REBOOT SYSTEM
                         </button>
                         
+                        {/* MANUAL SAVE BUTTON (GATED) */}
                         <button 
                             onClick={handleSaveResults} 
                             disabled={saving}
