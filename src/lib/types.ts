@@ -9,6 +9,7 @@ export interface FormData {
   birthplace: string;
 }
 
+// Preserving your specific Human Design structure
 export interface HumanDesignChart {
   type: string;
   strategy: string;
@@ -51,7 +52,10 @@ export interface GeneratedSpell {
     title: string;
     intention: string;
     incantation: string;
-    sigilBase64: string;
+    sigilBase64?: string; // Made optional as some flows might use URL
+    sigil_url?: string;
+    instructions?: string[];
+    sigil_description?: string;
 }
 
 export interface Spell {
@@ -61,31 +65,33 @@ export interface Spell {
     name: string;
     intention: string;
     incantation: string;
-    sigil_url: string;
-    element: string;
+    sigil_url?: string;
+    element?: string;
 }
 
-// --- Wiccan Spell Types ---
+// --- Wiccan Spell Types (UPDATED) ---
 export interface WiccanSpellFormData {
   intention: string;
   focalPoint: string;
   moonPhase: string;
+  situation?: string; // Added to support "Deep Weaving" (AI) context
 }
 
 export interface WiccanIngredient {
   name: string;
-  activation_phrase?: string; 
+  activation_phrase?: string; // Kept for backward compatibility
+  incantation?: string;       // Added: Required for the new AI ritual flow
 }
 
 export interface GeneratedWiccanSpell {
   title: string;
-  incantation: string;
+  incantation?: string; // Optional general incantation
   symbolic_ingredients: WiccanIngredient[];
   central_chant: string;
   affirmation: string;
 }
 
-// --- HOODOO & VOODOO TYPES (UPDATED) ---
+// --- HOODOO & VOODOO TYPES ---
 export interface HoodooVoodooPetition {
   petition: string;
 }
