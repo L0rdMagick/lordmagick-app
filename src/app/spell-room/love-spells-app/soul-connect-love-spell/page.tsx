@@ -1,17 +1,19 @@
-// --- START OF FILE src/app/spell-room/love-spells-app/soul-connect-love-spell/page.tsx ---
 /// <reference lib="dom" />
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Sparkles, Droplets, RotateCw, Hand, Check, Moon, Volume2, VolumeX, Users, User, Flame, LogOut, Repeat, Star, ArrowDown, Scroll, Heart } from 'lucide-react';
+import { Sparkles, Droplets, RotateCw, Hand, Check, Moon, Volume2, VolumeX, Users, User, Flame, LogOut, Repeat, Star, ArrowDown, Scroll, Heart, Brain, Wand2, Book, Save } from 'lucide-react';
 import Link from 'next/link';
+import { createBrowserClient } from '@supabase/ssr';
+import { generateLoveSpell, saveSpell } from '@/lib/services/geminiService';
 
 /**
  * TWO SOULS CONNECTION - LOVE SPELL RITUAL
  * Updates:
- * - UI: "Repeat this incantation" text doubled in size and brightened.
- * - UI: Buttons text size increased by 25% and brightened.
- * - UI: Incantation popups now feature specific icons/images for the step (e.g., Ivy Leaf, Candle, Honey).
+ * - Workflow: Added "Deep Weaving" (AI) vs Standard workflow.
+ * - API: Integrates with generateLoveSpell for custom rituals.
+ * - UI: Enhanced Petition screen for AI selection.
+ * - Feature: "Save to Grimoire" functionality.
  */
 
 // --- AUDIO ENGINE ---
@@ -578,8 +580,16 @@ const MagickPopup = ({ message, buttonText = "Continue", onContinue }: { message
 );
 
 // --- COMPONENT: FINAL MODAL ---
-const FinalPopup = ({ onExit }: { onExit: () => void }) => {
+const FinalPopup = ({ onExit, onSave, isSaving }: { onExit: () => void, onSave: () => void, isSaving: boolean }) => {
   const router = typeof window !== 'undefined' ? (window as any).location : { reload: () => {} };
+  const [saved, setSaved] = useState(false);
+
+  const handleSave = () => {
+    if (saved) return;
+    audio.playClick('magick');
+    onSave();
+    setSaved(true);
+  };
   
   return (
     <div className="absolute inset-0 z-100 flex items-center justify-center bg-black/90 backdrop-blur-md animate-in zoom-in duration-500 no-select">
@@ -593,6 +603,19 @@ const FinalPopup = ({ onExit }: { onExit: () => void }) => {
             <p className="text-amber-400/60 font-scroll italic mb-8">The energy has been released.</p>
             
             <div className="flex flex-col gap-4">
+                <button
+                    disabled={saved || isSaving}
+                    onClick={handleSave}
+                    className="w-full flex items-center justify-center gap-2 bg-indigo-900/40 border border-indigo-500/50 text-indigo-100 py-3 uppercase tracking-widest font-magical text-xs hover:bg-indigo-800/50 transition-colors disabled:opacity-50"
+                >
+                    {isSaving ? (
+                        <>Saving...</>
+                    ) : saved ? (
+                        <><Check size={14} /> Saved</>
+                    ) : (
+                        <><Save size={14} /> Save to Grimoire (1 Credit)</>
+                    )}
+                </button>
                 <button 
                     onClick={() => { audio.playClick('medium'); router.reload(); }}
                     className="w-full flex items-center justify-center gap-2 bg-amber-900/30 border border-amber-600/50 text-amber-50 py-3 uppercase tracking-widest font-magical text-xs hover:bg-amber-800/40 transition-colors"
@@ -627,6 +650,11 @@ export default function SoulConnectSpellPage() {
   const [addedIngredients, setAddedIngredients] = useState<any[]>([]);
   const [generatedChant, setGeneratedChant] = useState<string[]>([]);
   const [showSuccess, setShowSuccess] = useState<{msg: string, btn?: string} | null>(null);
+
+  // New State for Deep Weaving
+  const [isAI, setIsAI] = useState(false);
+  const [aiData, setAiData] = useState<any>(null);
+  const [isSaving, setIsSaving] = useState(false);
   
   const startRitual = () => {
     audio.init();
@@ -650,15 +678,60 @@ export default function SoulConnectSpellPage() {
     setStep(s => s + 1);
   };
 
-  const handlePetitionDone = () => {
-      setActiveIngredients(determineIngredients(intention));
-      setGeneratedChant(generateIncantation(names, isForSelf));
-      handleStageComplete("The Sigil is active. The path is open.");
+  const handlePetitionDone = (mode: 'standard' | 'ai', data?: any) => {
+      setIsAI(mode === 'ai');
+      
+      if (mode === 'ai' && data) {
+          // Map AI ingredients to match our visual system but keep their descriptions/names
+          const aiIngredients = data.ingredients.map((ing: any) => ({
+             ...ing,
+             // Ensure fallback color if API doesn't provide valid tailwind class
+             color: ing.color || 'text-amber-300'
+          }));
+          setActiveIngredients(aiIngredients);
+          setGeneratedChant(data.incantation);
+          setAiData(data); // Store for saving later
+      } else {
+          setActiveIngredients(determineIngredients(intention));
+          setGeneratedChant(generateIncantation(names, isForSelf));
+      }
+
+      handleStageComplete(mode === 'ai' ? "The spirits have spoken. The path is set." : "The Sigil is active. The path is open.");
   };
 
   const handleIngredientDrop = (ing: any) => {
     setAddedIngredients([...addedIngredients, ing]);
     nextStep();
+  };
+
+  const saveToGrimoire = async () => {
+     setIsSaving(true);
+     try {
+         // Construct text based on what was used
+         const finalIncantation = generatedChant.join('\n');
+         
+         const supabase = createBrowserClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+         );
+         
+         const { data: { session } } = await supabase.auth.getSession();
+         
+         if (session?.user) {
+             await saveSpell(session.user.id, {
+                 name: `Love Spell for ${names.target}`,
+                 intention: intention,
+                 incantation: finalIncantation,
+                 element: "love"
+             });
+         } else {
+             console.warn("User not logged in, cannot save to DB");
+         }
+     } catch (e) {
+         console.error("Failed to save", e);
+     } finally {
+         setIsSaving(false);
+     }
   };
 
   if (!started) {
@@ -730,16 +803,18 @@ export default function SoulConnectSpellPage() {
 
           {/* LOOPS FOR INGREDIENTS */}
           {/* Ing 1 */}
-          {step === 3 && <StageThreeConsecrate ingredient={activeIngredients[0]} index={0} total={3} isForSelf={isForSelf} names={names} onComplete={() => handleStageComplete("The herb is charged.")} />}
+          {step === 3 && <StageThreeConsecrate ingredient={activeIngredients[0]} index={0} total={activeIngredients.length} isForSelf={isForSelf} names={names} onComplete={() => handleStageComplete(`The ${activeIngredients[0].name.toLowerCase()} is charged.`)} />}
           {step === 4 && <StageTwoJar mode="drop" droppingItem={activeIngredients[0]} isForSelf={isForSelf} filledIngredients={addedIngredients} names={names} onComplete={() => handleIngredientDrop(activeIngredients[0])} />}
 
           {/* Ing 2 */}
-          {step === 5 && <StageThreeConsecrate ingredient={activeIngredients[1]} index={1} total={3} isForSelf={isForSelf} names={names} onComplete={() => handleStageComplete("The ingredient is charged.")} />}
+          {step === 5 && <StageThreeConsecrate ingredient={activeIngredients[1]} index={1} total={activeIngredients.length} isForSelf={isForSelf} names={names} onComplete={() => handleStageComplete(`The ${activeIngredients[1].name.toLowerCase()} is charged.`)} />}
           {step === 6 && <StageTwoJar mode="drop" droppingItem={activeIngredients[1]} isForSelf={isForSelf} filledIngredients={addedIngredients} names={names} onComplete={() => handleIngredientDrop(activeIngredients[1])} />}
 
           {/* Ing 3 */}
-          {step === 7 && <StageThreeConsecrate ingredient={activeIngredients[2]} index={2} total={3} isForSelf={isForSelf} names={names} onComplete={() => handleStageComplete("The binding is charged.")} />}
+          {step === 7 && <StageThreeConsecrate ingredient={activeIngredients[2]} index={2} total={activeIngredients.length} isForSelf={isForSelf} names={names} onComplete={() => handleStageComplete("The binding is charged.")} />}
           {step === 8 && <StageTwoJar mode="drop" droppingItem={activeIngredients[2]} isForSelf={isForSelf} filledIngredients={addedIngredients} names={names} onComplete={() => handleIngredientDrop(activeIngredients[2])} />}
+
+           {/* Support for extra AI ingredients if needed, can iterate later. For now fixed to 3 slots for visual simplicity */}
 
           {/* STEP 9: JAR - POUR HONEY */}
           {step === 9 && (
@@ -765,7 +840,7 @@ export default function SoulConnectSpellPage() {
           {step === 13 && <StageSevenRelease isForSelf={isForSelf} names={names} onComplete={() => setStep(14)} />}
 
           {/* FINAL */}
-          {step === 14 && <FinalPopup onExit={() => {}} />}
+          {step === 14 && <FinalPopup onExit={() => {}} onSave={saveToGrimoire} isSaving={isSaving} />}
       </div>
 
       {showSuccess && <MagickPopup message={showSuccess.msg} buttonText={showSuccess.btn} onContinue={nextStep} />}
@@ -773,22 +848,54 @@ export default function SoulConnectSpellPage() {
   );
 }
 
-// --- STAGE 1: INTENTION ---
+// --- STAGE 1: INTENTION (Upgraded with Dual Workflow) ---
 const StageOneIntention = ({ names, setNames, intention, setIntention, isForSelf, setIsForSelf, onComplete }: any) => {
-  const [mode, setMode] = useState('form'); 
+  const [mode, setMode] = useState<'form' | 'choice' | 'sigil'>('form'); 
   const [traceProgress, setTraceProgress] = useState(0);
   const [showIntro, setShowIntro] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleTrace = () => {
-    // New Sound Call: Pleasant trace tone
     if (Math.random() > 0.5) audio.playTraceTone(); 
     setTraceProgress(prev => Math.min(prev + 1, 100));
   };
 
   const handleFormSubmit = () => {
       audio.playClick('medium'); 
-      setMode('sigil');
-      setShowIntro(true); // Show incantation before sigil
+      setMode('choice');
+  };
+
+  const chooseWorkflow = async (workflow: 'standard' | 'ai') => {
+      audio.playClick(workflow === 'ai' ? 'magick' : 'medium');
+      
+      if (workflow === 'standard') {
+          setMode('sigil');
+          setShowIntro(true);
+      } else {
+          // AI Workflow
+          setIsLoading(true);
+          try {
+              // Mock check credits logic (In real app, fetch from Supabase)
+              // const hasCredits = await checkUserCredits(); 
+              // if (!hasCredits) throw new Error("Not enough credits");
+
+              const aiResult = await generateLoveSpell(
+                  intention, 
+                  names.target, 
+                  isForSelf ? `${names.user} seeking ${names.target}` : `Couple ${names.user} and ${names.target}`
+              );
+
+              // Transition to Sigil but pass data up
+              setIsLoading(false);
+              onComplete('ai', aiResult); // Skip local sigil completion logic here, we do it in parent for AI flow to keep data sync
+          } catch (e) {
+              console.error(e);
+              setIsLoading(false);
+              // Fallback to standard if error
+              setMode('sigil');
+              setShowIntro(true);
+          }
+      }
   };
 
   if (mode === 'form') {
@@ -852,11 +959,60 @@ const StageOneIntention = ({ names, setNames, intention, setIntention, isForSelf
             onClick={handleFormSubmit}
             className="w-full mt-2 bg-linear-to-r from-amber-900/40 to-amber-800/40 border border-amber-600/50 text-amber-100 py-3 uppercase tracking-[0.2em] font-magical text-sm hover:bg-amber-800/50 transition-all disabled:opacity-30 disabled:cursor-not-allowed active:scale-95"
           >
-            Create Petition
+            Review & Cast
           </button>
         </div>
       </div>
     );
+  }
+
+  if (mode === 'choice') {
+      if (isLoading) {
+          return (
+              <div className="flex flex-col items-center justify-center animate-in fade-in">
+                  <div className="w-24 h-24 relative mb-8">
+                      <div className="absolute inset-0 border-t-2 border-purple-500 rounded-full animate-spin"></div>
+                      <div className="absolute inset-2 border-r-2 border-amber-500 rounded-full animate-spin direction-reverse duration-200"></div>
+                      <div className="absolute inset-0 flex items-center justify-center">
+                          <Sparkles className="text-purple-200 animate-pulse" />
+                      </div>
+                  </div>
+                  <h3 className="text-amber-100 font-magical text-xl animate-pulse">Consulting Venus...</h3>
+                  <p className="text-purple-300/60 font-scroll italic mt-2">Weaving your fate</p>
+              </div>
+          );
+      }
+
+      return (
+          <div className="w-full animate-in zoom-in duration-300 flex flex-col items-center justify-center space-y-4">
+              <h2 className="text-xl text-amber-100 font-magical mb-4">Choose Your Path</h2>
+              
+              {/* Standard Card */}
+              <button 
+                onClick={() => chooseWorkflow('standard')}
+                className="w-full bg-slate-900/50 border border-slate-600 hover:border-amber-500/50 p-6 rounded-xl flex flex-col items-center gap-2 group transition-all hover:bg-slate-800/50"
+              >
+                  <Book className="w-8 h-8 text-slate-400 group-hover:text-amber-200 transition-colors" />
+                  <h3 className="text-amber-100 font-magical uppercase tracking-widest text-sm">Standard Ritual</h3>
+                  <p className="text-xs text-slate-500 font-scroll">Traditional methods. Fixed incantations.</p>
+                  <span className="mt-2 text-[10px] bg-slate-800 px-3 py-1 rounded-full text-slate-300">Free</span>
+              </button>
+
+              {/* AI Card */}
+              <button 
+                onClick={() => chooseWorkflow('ai')}
+                className="w-full bg-linear-to-br from-indigo-900/30 to-purple-900/30 border border-purple-500/30 hover:border-purple-400 p-6 rounded-xl flex flex-col items-center gap-2 group transition-all hover:bg-purple-900/20 shadow-[0_0_20px_rgba(168,85,247,0.1)] relative overflow-hidden"
+              >
+                  <div className="absolute inset-0 bg-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity animate-pulse"></div>
+                  <Wand2 className="w-8 h-8 text-purple-300 group-hover:text-white transition-colors" />
+                  <h3 className="text-purple-100 font-magical uppercase tracking-widest text-sm text-shadow-purple">Deep Weaving</h3>
+                  <p className="text-xs text-purple-300/60 font-scroll">AI-Generated custom ingredients & chant.</p>
+                  <span className="mt-2 text-[10px] bg-purple-900/60 border border-purple-500/50 px-3 py-1 rounded-full text-purple-200 flex items-center gap-1">
+                      <Sparkles size={10} /> 3 Credits
+                  </span>
+              </button>
+          </div>
+      );
   }
 
   if (showIntro) {
@@ -902,7 +1058,7 @@ const StageOneIntention = ({ names, setNames, intention, setIntention, isForSelf
       </div>
 
       {traceProgress >= 100 && (
-         <button onClick={() => { audio.playClick('magick'); onComplete(); }} className="mt-8 bg-amber-700/80 text-white font-magical px-8 py-2 uppercase tracking-widest animate-pulse rounded border border-amber-500 shadow-lg text-sm active:scale-95">
+         <button onClick={() => { audio.playClick('magick'); onComplete('standard'); }} className="mt-8 bg-amber-700/80 text-white font-magical px-8 py-2 uppercase tracking-widest animate-pulse rounded border border-amber-500 shadow-lg text-sm active:scale-95">
            Confirm Sigil
          </button>
       )}

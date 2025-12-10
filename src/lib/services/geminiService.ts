@@ -1,5 +1,3 @@
-// --- START OF FILE src/lib/services/geminiService.ts ---
-
 import { createBrowserClient } from '@supabase/ssr';
 import type { FormData, HumanDesignChart, Report, SpellFormData, GeneratedSpell, Spell, WiccanSpellFormData, GeneratedWiccanSpell } from '../types';
 
@@ -91,6 +89,31 @@ export const generateWiccanSpell = async (formData: WiccanSpellFormData): Promis
     return data as GeneratedWiccanSpell;
 };
 
+// --- Love Spell (Deep Weaving) Function ---
+export interface GeneratedLoveSpell {
+    incantation: string[];
+    ingredients: Array<{
+        name: string;
+        icon: string;
+        desc: string;
+        color: string;
+    }>;
+}
+
+export const generateLoveSpell = async (intention: string, targetName: string, situation: string): Promise<GeneratedLoveSpell> => {
+    const { data, error } = await supabase.functions.invoke('generate-love-spell', {
+        body: { intention, targetName, situation },
+    });
+
+    if (error) {
+        console.error("Error invoking generate-love-spell function:", error);
+        throw new Error(error.message || "The energies were too chaotic to weave the spell.");
+    }
+
+    return data as GeneratedLoveSpell;
+};
+
+
 // --- Hoodoo / Voodoo Functions ---
 export const generateHoodooVoodooWork = async (path: 'hoodoo' | 'voodoo', step: number, payload: any): Promise<any> => {
     const { data, error } = await supabase.functions.invoke('generate-hoodoo-voodoo-spell', {
@@ -168,7 +191,7 @@ export const uploadBase64Image = async (base64: string, path: string): Promise<s
     return publicUrl;
 };
 
-export const saveSpell = async (userId: string, spellData: {name: string, intention: string, incantation: string, sigil_url: string, element: string}): Promise<Spell> => {
+export const saveSpell = async (userId: string, spellData: {name: string, intention: string, incantation: string, sigil_url?: string, element?: string}): Promise<Spell> => {
     const { data, error } = await supabase
         .from('spells')
         .insert({ user_id: userId, ...spellData })
@@ -238,5 +261,3 @@ export const generateElectricLightPrism = async (colorName: string, intention: s
     }
     return data.result;
 };
-
-// --- END OF FILE ---
