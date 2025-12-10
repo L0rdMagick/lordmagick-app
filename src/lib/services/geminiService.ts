@@ -77,8 +77,9 @@ export const generateSpellAndSigil = async (formData: SpellFormData): Promise<Ge
     return data as GeneratedSpell;
 };
 
-// --- Wiccan Spell Function ---
+// --- Wiccan Spell Function (Deep Weaving) ---
 export const generateWiccanSpell = async (formData: WiccanSpellFormData): Promise<GeneratedWiccanSpell> => {
+    // Note: formData should now include 'situation' if provided by UI
     const { data, error } = await supabase.functions.invoke('generate-wiccan-spell', {
         body: formData,
     });

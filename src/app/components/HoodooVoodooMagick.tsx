@@ -6,12 +6,13 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Session } from '@/lib/types';
-import { generateHoodooVoodooWork } from '@/lib/services/geminiService'; 
+import { generateHoodooVoodooWork, saveSpell } from '@/lib/services/geminiService'; 
 import MagickalBackLink from './MagickalBackLink';
 import RoomsButton from './RoomsButton';
 import LoadingSpinner from './LoadingSpinner';
 import { Sprite } from './Sprite';
 import { findSprite } from '@/lib/spriteLibrary';
+import { Book, Skull, Sparkles, Save, Check } from 'lucide-react';
 
 // --- Configuration ---
 const ASSET_PATH = "/images/Spells/HooDoo Voo Doo";
@@ -20,50 +21,13 @@ const FADE_DURATION = 0.8;
 const SENDING_DURATION = 13000; // 13 seconds
 
 // --- Geometry Configuration for Ingredients ---
-// Calculated based on 1024x1024 source images provided by user
 const CONTAINER_GEOMETRY = {
-    // Hoodoo Jar Empty: W 412, H 578.5, X 315, Y 312.8
-    hoodoo_empty: { 
-        left: '30.76%', 
-        top: '30.55%', 
-        width: '40.23%', 
-        height: '56.49%' 
-    },
-    // Hoodoo Jar Fixed: W 412, H 578.5, X 315, Y 317.8
-    hoodoo_fixed: { 
-        left: '30.76%', 
-        top: '31.04%', 
-        width: '40.23%', 
-        height: '56.49%' 
-    },
-    // Hoodoo Manifestation: W 292.3, H 410.5, X 372.2, Y 519.3
-    hoodoo_manifestation: { 
-        left: '36.35%', 
-        top: '50.71%', 
-        width: '28.54%', 
-        height: '40.09%' 
-    },
-    // Voodoo Bottle Empty: W 318, H 468.5, X 358.4, Y 472.6
-    voodoo_empty: { 
-        left: '35.00%', 
-        top: '46.15%', 
-        width: '31.05%', 
-        height: '45.75%' 
-    },
-    // Voodoo Bottle Filled: W 282, H 398.5, X 371, Y 394.6
-    voodoo_filled: { 
-        left: '36.23%', 
-        top: '38.54%', 
-        width: '27.54%', 
-        height: '38.92%' 
-    },
-    // Voodoo Manifestation: Using same dims as filled based on visual similarity
-    voodoo_manifestation: { 
-        left: '36.23%', 
-        top: '38.54%', 
-        width: '27.54%', 
-        height: '38.92%' 
-    }
+    hoodoo_empty: { left: '30.76%', top: '30.55%', width: '40.23%', height: '56.49%' },
+    hoodoo_fixed: { left: '30.76%', top: '31.04%', width: '40.23%', height: '56.49%' },
+    hoodoo_manifestation: { left: '36.35%', top: '50.71%', width: '28.54%', height: '40.09%' },
+    voodoo_empty: { left: '35.00%', top: '46.15%', width: '31.05%', height: '45.75%' },
+    voodoo_filled: { left: '36.23%', top: '38.54%', width: '27.54%', height: '38.92%' },
+    voodoo_manifestation: { left: '36.23%', top: '38.54%', width: '27.54%', height: '38.92%' }
 };
 
 // --- Data ---
@@ -75,20 +39,29 @@ const PSALM_DATABASE: Record<string, string> = {
     "Psalm 7": "O Lord my God, in thee do I put my trust: save me from all them that persecute me, and deliver me: Lest he tear my soul like a lion, rending it in pieces, while there is none to deliver. O Lord my God, if I have done this; if there be iniquity in my hands; Arise, O Lord, in thine anger, lift up thyself because of the rage of mine enemies: and awake for me to the judgment that thou hast commanded. The Lord shall judge the people: judge me, O Lord, according to my righteousness, and according to mine integrity that is in me."
 };
 
+const STANDARD_HOODOO_MATERIA: MateriaSelection[] = [
+    { name: "Salt", incantation: "To cleanse and purify." },
+    { name: "Silver Dime", incantation: "To pay the spirits and protect." },
+    { name: "High John Root", incantation: "For power and mastery." }
+];
+
+const STANDARD_VOODOO_OFFERINGS: MateriaSelection[] = [
+    { name: "Rum", incantation: "To warm the spirit." },
+    { name: "Candy", incantation: "To sweeten the path." },
+    { name: "Cigar", incantation: "Smoke to carry my prayer." }
+];
+
 // --- Sound Utility ---
 const playSound = (src: string, volume: number = 0.5, loop: boolean = false): { play: () => void; stop: () => void; } => {
-    // FIX: Safe window access
     const win = (globalThis as any).window;
     if (typeof win === 'undefined') return { play: () => {}, stop: () => {} };
     
-    // FIX: Safe Audio access
     const AudioCtor = win.Audio;
     const audio = new AudioCtor(src);
     
     audio.volume = volume;
     audio.loop = loop;
     
-    // FIX: Explicit type for error
     const play = () => audio.play().catch((e: any) => console.error(`Failed to play sound: ${src}`, e));
     const stop = () => {
         audio.pause();
@@ -99,6 +72,7 @@ const playSound = (src: string, volume: number = 0.5, loop: boolean = false): { 
 
 // --- Type Definitions ---
 type RitualPath = 'hoodoo' | 'voodoo' | null;
+type RitualMode = 'standard' | 'ai';
 interface StepComponentProps { onNext: () => void; }
 interface StepContainerProps { stageTitle?: string; instruction?: string; children: React.ReactNode; button?: React.ReactNode; }
 interface RitualButtonProps { onClick: () => void; children: React.ReactNode; className?: string; disabled?: boolean; }
@@ -110,6 +84,7 @@ type GeometryVariant = keyof typeof CONTAINER_GEOMETRY;
 const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }> = ({ session }) => {
     const [step, setStep] = useState(0);
     const [path, setPath] = useState<RitualPath>(null);
+    const [mode, setMode] = useState<RitualMode>('standard');
     const [loading, setLoading] = useState(false);
     const [loadingMessage, setLoadingMessage] = useState('');
     const [error, setError] = useState<string | null>(null);
@@ -124,6 +99,8 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
     const [voodooOfferingSelections, setVoodooOfferingSelections] = useState<MateriaSelection[]>([]);
     const [finalAffirmation, setFinalAffirmation] = useState('');
     const [chargingIndex, setChargingIndex] = useState(0);
+    const [isSaving, setIsSaving] = useState(false);
+    const [isSaved, setIsSaved] = useState(false);
     
     const [psalmReaderOpen, setPsalmReaderOpen] = useState(false);
 
@@ -137,6 +114,7 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
         setStep(0); setPath(null); setPetition(''); setHoodooPsalmSelections([]);
         setSelectedPsalm(''); setIsPsalmLit(false); setHoodooMateriaSelections([]); setSelectedLwa('');
         setVoodooOfferingSelections([]); setFinalAffirmation(''); setChargingIndex(0);
+        setIsSaved(false);
     };
 
     const selectPath = (chosenPath: RitualPath) => {
@@ -150,6 +128,18 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
         setStep(prev => prev + 1);
     };
 
+    // --- HOODOO LOGIC HANDLERS ---
+    const handleHoodooPetitionComplete = (selectedMode: RitualMode) => {
+        setMode(selectedMode);
+        if (selectedMode === 'standard') {
+            setHoodooPsalmSelections(['Psalm 23', 'Psalm 91']);
+            setHoodooMateriaSelections(STANDARD_HOODOO_MATERIA);
+            advanceStep(); 
+        } else {
+            handleHoodooPsalmSearch();
+        }
+    };
+
     const handleHoodooPsalmSearch = async () => {
         if (!petition) { setError("You must write a petition first."); return; }
         setLoading(true); setLoadingMessage("Consulting the scriptures...");
@@ -160,50 +150,100 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
         } catch (err: any) { setError(err.message); } finally { setLoading(false); }
     };
 
-    const handleHoodooMateriaSearch = async () => {
-        if (!selectedPsalm || !isPsalmLit) { setError("You must select and fix a Psalm verse."); return; }
-        setLoading(true); setLoadingMessage("The spirits are gathering your materia...");
-        try {
-            const result = await generateHoodooVoodooWork('hoodoo', 4, { petition });
-            setHoodooMateriaSelections(result.selections);
-            advanceStep();
-        } catch (err: any) { setError(err.message); } finally { setLoading(false); }
+    const handleHoodooMateriaLogic = async () => {
+        if (mode === 'standard') {
+            advanceStep(); 
+        } else {
+            if (!selectedPsalm || !isPsalmLit) { setError("You must select and fix a Psalm verse."); return; }
+            setLoading(true); setLoadingMessage("The spirits are gathering your materia...");
+            try {
+                const result = await generateHoodooVoodooWork('hoodoo', 4, { petition });
+                setHoodooMateriaSelections(result.selections);
+                advanceStep();
+            } catch (err: any) { setError(err.message); } finally { setLoading(false); }
+        }
     };
     
     const handleHoodooFinalStep = async () => {
-        setLoading(true); setLoadingMessage("Sealing the Work...");
-        try {
-            const result = await generateHoodooVoodooWork('hoodoo', 7, { petition });
-            setFinalAffirmation(result.affirmation);
+        if (mode === 'standard') {
+            setFinalAffirmation("My petition is fixed and sealed. The work is done.");
             advanceStep();
-        } catch(err: any) { setError(err.message); } finally { setLoading(false); }
+        } else {
+            setLoading(true); setLoadingMessage("Sealing the Work...");
+            try {
+                const result = await generateHoodooVoodooWork('hoodoo', 7, { petition });
+                setFinalAffirmation(result.affirmation);
+                advanceStep();
+            } catch(err: any) { setError(err.message); } finally { setLoading(false); }
+        }
     };
 
-    const handleVoodooOfferingSearch = async () => {
-        if (!selectedLwa) { setError("You must serve a Lwa."); return; }
-        setLoading(true); setLoadingMessage("Divining the Lwa's desires...");
-        try {
-            const result = await generateHoodooVoodooWork('voodoo', 4, { petition, lwa: selectedLwa });
-            setVoodooOfferingSelections(result.selections);
+    // --- VOODOO LOGIC HANDLERS ---
+    const handleVoodooPetitionComplete = (selectedMode: RitualMode) => {
+        setMode(selectedMode);
+        if (selectedMode === 'standard') {
+            setSelectedLwa('Papa Legba');
+            setVoodooOfferingSelections(STANDARD_VOODOO_OFFERINGS);
             advanceStep();
-        } catch (err: any) { setError(err.message); } finally { setLoading(false); }
+        } else {
+            advanceStep();
+        }
+    };
+
+    const handleVoodooLwaLogic = async () => {
+        if (mode === 'standard') {
+             advanceStep();
+        } else {
+            if (!selectedLwa) { setError("You must serve a Lwa."); return; }
+            setLoading(true); setLoadingMessage("Divining the Lwa's desires...");
+            try {
+                const result = await generateHoodooVoodooWork('voodoo', 4, { petition, lwa: selectedLwa });
+                setVoodooOfferingSelections(result.selections);
+                advanceStep();
+            } catch (err: any) { setError(err.message); } finally { setLoading(false); }
+        }
     };
 
     const handleVoodooFinalStep = async () => {
-        setLoading(true); setLoadingMessage("Presenting the offering...");
-        try {
-            const result = await generateHoodooVoodooWork('voodoo', 7, { petition, lwa: selectedLwa });
-            setFinalAffirmation(result.affirmation);
+         if (mode === 'standard') {
+            setFinalAffirmation(`Papa Legba has accepted the gift. The gate is open.`);
             advanceStep();
-        } catch(err: any) { setError(err.message); } finally { setLoading(false); }
+         } else {
+            setLoading(true); setLoadingMessage("Presenting the offering...");
+            try {
+                const result = await generateHoodooVoodooWork('voodoo', 7, { petition, lwa: selectedLwa });
+                setFinalAffirmation(result.affirmation);
+                advanceStep();
+            } catch(err: any) { setError(err.message); } finally { setLoading(false); }
+         }
     };
 
+    // --- SHARED LOGIC ---
     const handleChargeNext = () => {
         const limit = path === 'hoodoo' ? hoodooMateriaSelections.length : voodooOfferingSelections.length;
         if (chargingIndex < limit - 1) {
             setChargingIndex(prev => prev + 1);
         } else {
             advanceStep();
+        }
+    };
+
+    const handleSaveToGrimoire = async () => {
+        if (isSaved) return;
+        setIsSaving(true);
+        try {
+            await saveSpell(session?.user?.id || 'anon', {
+                name: `${path === 'hoodoo' ? 'Hoodoo' : 'Voodoo'} Work: ${petition.substring(0, 30)}...`,
+                intention: petition,
+                incantation: finalAffirmation,
+                element: path === 'hoodoo' ? 'Earth' : 'Spirit'
+            });
+            setIsSaved(true);
+            playSound('/audio/sfx-chaos-activate.mp3', 0.5).play();
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -216,13 +256,13 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
         if (path === 'hoodoo') {
             switch (step) {
                 case 1: return <HoodooStep1_Ancestors onNext={advanceStep} />;
-                case 2: return <HoodooStep2_Petition petition={petition} setPetition={setPetition} onNext={handleHoodooPsalmSearch} />;
-                case 3: return <HoodooStep3_FindVerse onOpenReader={handleOpenPsalmReader} selections={hoodooPsalmSelections} selectedPsalm={selectedPsalm} isPsalmLit={isPsalmLit} onNext={handleHoodooMateriaSearch} />;
+                case 2: return <HoodooStep2_Petition petition={petition} setPetition={setPetition} onNext={handleHoodooPetitionComplete} />;
+                case 3: return <HoodooStep3_FindVerse onOpenReader={handleOpenPsalmReader} selections={hoodooPsalmSelections} selectedPsalm={selectedPsalm} isPsalmLit={isPsalmLit} onNext={handleHoodooMateriaLogic} />;
                 case 4: return <HoodooStep4_GatherMateria selections={hoodooMateriaSelections} onNext={advanceStep} />;
                 case 5: return <HoodooStep5_FixJar key={`charge-hoodoo-${chargingIndex}`} onNext={handleChargeNext} selections={hoodooMateriaSelections} index={chargingIndex} />;
                 case 6: return <HoodooStep6_SealJar onNext={handleHoodooFinalStep} selections={hoodooMateriaSelections} />;
                 case 7: return <Step7_Sending onNext={handleHoodooFinalStep} petition={petition} selections={hoodooMateriaSelections} variant="hoodoo_manifestation" image="hoodoo-manifestation-final.gif" />;
-                case 8: return <Step8_Manifestation affirmation={finalAffirmation} path={path} onFinish={resetState} selections={hoodooMateriaSelections} />;
+                case 8: return <Step8_Manifestation affirmation={finalAffirmation} path={path} onFinish={resetState} selections={hoodooMateriaSelections} onSave={handleSaveToGrimoire} isSaving={isSaving} isSaved={isSaved} />;
                 default: return <div onClick={resetState}>Invalid Step</div>;
             }
         }
@@ -230,13 +270,13 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
         if (path === 'voodoo') {
             switch (step) {
                 case 1: return <VoodooStep1_OpenGate onNext={advanceStep} />;
-                case 2: return <VoodooStep2_StateNeed petition={petition} setPetition={setPetition} onNext={advanceStep} />;
-                case 3: return <VoodooStep3_ServeLwa selectedLwa={selectedLwa} onSelect={setSelectedLwa} onNext={handleVoodooOfferingSearch} />;
+                case 2: return <VoodooStep2_StateNeed petition={petition} setPetition={setPetition} onNext={handleVoodooPetitionComplete} />;
+                case 3: return <VoodooStep3_ServeLwa selectedLwa={selectedLwa} onSelect={setSelectedLwa} onNext={handleVoodooLwaLogic} mode={mode} />;
                 case 4: return <VoodooStep4_PrepareOffering selections={voodooOfferingSelections} onNext={advanceStep} />;
                 case 5: return <VoodooStep5_MakeOffering key={`charge-voodoo-${chargingIndex}`} onNext={handleChargeNext} selections={voodooOfferingSelections} index={chargingIndex} />;
                 case 6: return <VoodooStep6_SealBottle onNext={handleVoodooFinalStep} selections={voodooOfferingSelections} lwa={selectedLwa} />;
                 case 7: return <Step7_Sending onNext={handleHoodooFinalStep} petition={petition} selections={voodooOfferingSelections} variant="voodoo_manifestation" image="voodoo-manifestation-final.png" />;
-                case 8: return <Step8_Manifestation affirmation={finalAffirmation} path={path} onFinish={resetState} selections={voodooOfferingSelections} />;
+                case 8: return <Step8_Manifestation affirmation={finalAffirmation} path={path} onFinish={resetState} selections={voodooOfferingSelections} onSave={handleSaveToGrimoire} isSaving={isSaving} isSaved={isSaved} />;
                 default: return <div onClick={resetState}>Invalid Step</div>;
             }
         }
@@ -252,7 +292,7 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
                 isOpen={psalmReaderOpen} 
                 onClose={() => setPsalmReaderOpen(false)} 
                 psalmName={selectedPsalm} 
-                psalmText={PSALM_DATABASE[selectedPsalm] || ""} 
+                psalmText={PSALM_DATABASE[selectedPsalm] || "Scripture not found in local database."} 
                 onBless={() => { setIsPsalmLit(true); setPsalmReaderOpen(false); }}
             />
             <main 
@@ -289,7 +329,8 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
     );
 };
 
-// --- Reusable UI Building Blocks ---
+// --- Sub-Components ---
+
 const RitualButton: React.FC<RitualButtonProps> = ({ onClick, children, className, disabled }) => (
     <button onClick={onClick} disabled={disabled} className={`px-8 py-3 bg-black/50 text-white font-serif rounded-lg border-2 border-amber-400/50 backdrop-blur-sm hover:bg-amber-900/50 hover:border-amber-300 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${className}`}>
         {children}
@@ -311,12 +352,10 @@ const StepContainer: React.FC<StepContainerProps> = ({ stageTitle, instruction, 
     </div>
 );
 
-// --- Helper Component: FilledContainer ---
-// UPDATED: Accepts 'variant' to pull specific geometry
 const FilledContainer: React.FC<{
     variant: GeometryVariant;
     items: MateriaSelection[];
-    count: number; // How many items to show
+    count: number;
 }> = ({ variant, items, count }) => {
     const geometry = CONTAINER_GEOMETRY[variant];
 
@@ -331,24 +370,18 @@ const FilledContainer: React.FC<{
                 const spriteData = findSprite(item.name);
                 if (!spriteData) return null;
                 
-                // Use deterministic math based on name/index for "random" positioning that persists
                 const seed = item.name.charCodeAt(0) + idx * 50;
                 const rand1 = Math.sin(seed) * 1000; 
                 const rand2 = Math.cos(seed) * 1000;
 
-                // 2 items per row
                 const col = idx % 2;
                 const row = Math.floor(idx / 2);
-                
-                // Larger size for realistic pile (55% of container width)
                 const size = '55%'; 
 
-                // Random jitter
-                const randomX = (rand1 % 10); // +/- 10%
-                const randomY = (rand2 % 5);  // +/- 5%
-                const randomRot = (rand1 % 30) - 15; // -15 to 15 deg
+                const randomX = (rand1 % 10); 
+                const randomY = (rand2 % 5); 
+                const randomRot = (rand1 % 30) - 15;
 
-                // Basic grid positions with randomness added
                 const leftPos = `${(col === 0 ? 5 : 45) + randomX}%`;
                 const bottomPos = `${(row * 12) + 2 + randomY}%`;
 
@@ -363,7 +396,7 @@ const FilledContainer: React.FC<{
                             width: size,
                             left: leftPos,
                             bottom: bottomPos,
-                            zIndex: 10 + idx, // Newer items on top
+                            zIndex: 10 + idx, 
                             rotate: `${randomRot}deg`
                         }}
                     >
@@ -383,7 +416,6 @@ const FilledContainer: React.FC<{
     );
 };
 
-// --- CHARGING COMPONENT ---
 const ChargingComponent: React.FC<{
     onCharge: () => void, 
     children: React.ReactNode, 
@@ -394,11 +426,12 @@ const ChargingComponent: React.FC<{
 }> = ({ onCharge, children, isCharged, duration = CHARGE_DURATION, onHoldStart, onHoldEnd }) => {
     const [progress, setProgress] = useState(0);
     const intervalRef = useRef<NodeJS.Timeout|null>(null);
-    const soundRef = useRef(playSound('/audio/sfx-chaos-hold.mp3', 0.2, true));
+    const soundRef = useRef<any>(null);
 
     const handleHoldStart = () => {
         if (isCharged) return;
         if (onHoldStart) onHoldStart();
+        soundRef.current = playSound('/audio/sfx-chaos-hold.mp3', 0.2, true);
         soundRef.current.play();
         const startTime = Date.now();
         intervalRef.current = setInterval(() => {
@@ -416,7 +449,7 @@ const ChargingComponent: React.FC<{
     const handleHoldEnd = () => {
         if (onHoldEnd) onHoldEnd();
         if (intervalRef.current) clearInterval(intervalRef.current);
-        soundRef.current.stop();
+        if (soundRef.current) soundRef.current.stop();
         if (!isCharged) setProgress(0);
     };
 
@@ -438,8 +471,8 @@ const ChargingComponent: React.FC<{
     );
 };
 
+// --- Ritual Step Components ---
 
-// --- Step 0: Path Selection ---
 const Step0_Crossroads: React.FC<{ onSelectPath: (path: RitualPath) => void }> = ({ onSelectPath }) => (
     <div className="relative w-full h-full flex flex-col items-center justify-center">
         <div className="relative z-10 flex flex-row items-center justify-center gap-4 md:gap-16">
@@ -453,18 +486,17 @@ const Step0_Crossroads: React.FC<{ onSelectPath: (path: RitualPath) => void }> =
     </div>
 );
 
-
-// --- Hoodoo Path Components ---
 const HoodooStep1_Ancestors: React.FC<StepComponentProps> = ({ onNext }) => {
     const [isLit, setIsLit] = useState(false);
     const [holdProgress, setHoldProgress] = useState(0);
     const holdInterval = useRef<NodeJS.Timeout | null>(null);
-    const fireSound = useMemo(() => playSound('/audio/fire.mp3', 0.3, true), []);
+    const fireSound = useRef<any>(null);
     const incantation = "I call to my ancestors, known and unknown, to witness and bless this sacred working.";
 
     const handleHoldStart = () => {
         if (isLit) return;
-        fireSound.play();
+        fireSound.current = playSound('/audio/fire.mp3', 0.3, true);
+        fireSound.current.play();
         const startTime = Date.now();
         holdInterval.current = setInterval(() => {
             const elapsedTime = Date.now() - startTime;
@@ -472,7 +504,7 @@ const HoodooStep1_Ancestors: React.FC<StepComponentProps> = ({ onNext }) => {
             setHoldProgress(progress);
             if (progress >= 100) {
                 clearInterval(holdInterval.current!);
-                fireSound.stop();
+                fireSound.current.stop();
                 setIsLit(true);
                 playSound('/audio/sfx-chaos-activate.mp3', 0.4).play();
             }
@@ -480,7 +512,7 @@ const HoodooStep1_Ancestors: React.FC<StepComponentProps> = ({ onNext }) => {
     };
     const handleHoldEnd = () => {
         if (holdInterval.current) clearInterval(holdInterval.current);
-        fireSound.stop();
+        if(fireSound.current) fireSound.current.stop();
         if(!isLit) setHoldProgress(0);
     };
 
@@ -493,7 +525,6 @@ const HoodooStep1_Ancestors: React.FC<StepComponentProps> = ({ onNext }) => {
                      <motion.div key="unlit" className="absolute inset-0" exit={{ opacity: 0 }}>
                         <Image src={`${ASSET_PATH}/hoodoo-ancestor-candle-unlit.png`} alt="Unlit Candle" layout="fill" objectFit="contain" />
                         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-3/4 h-2 bg-black/30 rounded-full overflow-hidden">
-                            {/* FIX: Cast objects to 'any' to bypass strict property checks on 'width' */}
                             <motion.div className="h-full bg-amber-400" initial={{width: '0%'} as any} animate={{width: `${holdProgress}%`} as any} transition={{duration: 0.05}}/>
                         </div>
                      </motion.div>
@@ -508,13 +539,30 @@ const HoodooStep1_Ancestors: React.FC<StepComponentProps> = ({ onNext }) => {
     );
 };
 
-const HoodooStep2_Petition: React.FC<{ petition: string; setPetition: (val: string) => void; onNext: () => void; }> = ({ petition, setPetition, onNext }) => (
-    <StepContainer stageTitle="Write Your Petition" instruction="State your intention for this Work. Be clear and direct." button={<RitualButton onClick={onNext} disabled={!petition}>Find a Verse</RitualButton>}>
-        <div className="relative w-full max-w-md aspect-square @container mx-auto">
-            <Image src={`${ASSET_PATH}/hoodoo-petition-paper.png`} alt="Petition Paper" layout="fill" objectFit="contain" />
-            <div className="absolute p-4" style={{ left: '15%', top: '25%', width: '70%', height: '50%' }}>
-                {/* FIX: Cast target to 'any' to access 'value' safely */}
-                <textarea value={petition} onChange={(e) => setPetition((e.target as any).value)} placeholder="e.g., To draw money to me for my rent." className="w-full h-full bg-transparent text-center text-[#4a2e1c] font-serif focus:outline-none resize-none" style={{ fontSize: 'clamp(0.6rem, 4cqw, 1.5rem)' }} />
+const HoodooStep2_Petition: React.FC<{ petition: string; setPetition: (val: string) => void; onNext: (mode: RitualMode) => void; }> = ({ petition, setPetition, onNext }) => (
+    <StepContainer stageTitle="Write Your Petition" instruction="State your intention for this Work. Be clear and direct.">
+        <div className="relative w-full h-full max-w-md mx-auto flex flex-col items-center justify-center gap-4">
+            <div className="relative w-full aspect-square @container">
+                <Image src={`${ASSET_PATH}/hoodoo-petition-paper.png`} alt="Petition Paper" layout="fill" objectFit="contain" />
+                <div className="absolute p-4" style={{ left: '15%', top: '25%', width: '70%', height: '50%' }}>
+                    <textarea value={petition} onChange={(e) => setPetition((e.target as any).value)} placeholder="e.g., To draw money to me for my rent." className="w-full h-full bg-transparent text-center text-[#4a2e1c] font-serif focus:outline-none resize-none" style={{ fontSize: 'clamp(0.6rem, 4cqw, 1.5rem)' }} />
+                </div>
+            </div>
+             <div className="flex flex-col gap-3 w-full max-w-xs">
+                <button onClick={() => onNext('standard')} disabled={!petition} className="flex items-center gap-3 p-3 bg-amber-900/60 border border-amber-600 rounded-lg hover:bg-amber-800 disabled:opacity-50 text-amber-100">
+                    <Book className="w-5 h-5" />
+                    <div className="text-left">
+                        <div className="font-serif">Traditional Work</div>
+                        <div className="text-xs text-amber-300/70">Fixed Psalm & Materia. Free.</div>
+                    </div>
+                </button>
+                <button onClick={() => onNext('ai')} disabled={!petition} className="flex items-center gap-3 p-3 bg-purple-900/60 border border-purple-500 rounded-lg hover:bg-purple-800 disabled:opacity-50 relative overflow-hidden group text-purple-100">
+                    <Skull className="w-5 h-5" />
+                    <div className="text-left relative z-10">
+                        <div className="font-serif flex items-center gap-2">Rootworker Consult <Sparkles size={12}/></div>
+                        <div className="text-xs text-purple-300">Custom scripture & ingredients. 3 Credits.</div>
+                    </div>
+                </button>
             </div>
         </div>
     </StepContainer>
@@ -633,8 +681,6 @@ const HoodooStep6_SealJar: React.FC<{ onNext: () => void, selections: MateriaSel
     );
 };
 
-
-// --- Voodoo Path Components ---
 const VoodooStep1_OpenGate: React.FC<StepComponentProps> = ({ onNext }) => {
     useEffect(() => { const timer = setTimeout(onNext, 2000); return () => clearTimeout(timer); }, [onNext]);
     return (
@@ -646,29 +692,50 @@ const VoodooStep1_OpenGate: React.FC<StepComponentProps> = ({ onNext }) => {
     );
 };
 
-const VoodooStep2_StateNeed: React.FC<{ petition: string; setPetition: (val: string) => void; onNext: () => void; }> = ({ petition, setPetition, onNext }) => (
-    <StepContainer stageTitle="State Your Need" instruction="Clearly present your petition to the spirits." button={<RitualButton onClick={onNext} disabled={!petition}>Serve the Lwa</RitualButton>}>
-        <div className="relative w-full max-w-md aspect-square @container mx-auto">
-            <Image src={`${ASSET_PATH}/voodoo-petition-scroll.png`} alt="Petition Scroll" layout="fill" objectFit="contain" />
-            <div className="absolute p-4" style={{ left: '22%', top: '30%', width: '56%', height: '40%' }}>
-                {/* FIX: Cast target to 'any' to access 'value' safely */}
-                <textarea value={petition} onChange={(e) => setPetition((e.target as any).value)} placeholder="e.g., I ask for protection on my journey." className="w-full h-full bg-transparent text-center text-[#4a2e1c] font-serif focus:outline-none resize-none" style={{ fontSize: 'clamp(0.6rem, 4cqw, 1.5rem)' }} />
+const VoodooStep2_StateNeed: React.FC<{ petition: string; setPetition: (val: string) => void; onNext: (mode: RitualMode) => void; }> = ({ petition, setPetition, onNext }) => (
+    <StepContainer stageTitle="State Your Need" instruction="Clearly present your petition to the spirits.">
+        <div className="relative w-full h-full max-w-md mx-auto flex flex-col items-center justify-center gap-4">
+             <div className="relative w-full aspect-square @container">
+                <Image src={`${ASSET_PATH}/voodoo-petition-scroll.png`} alt="Petition Scroll" layout="fill" objectFit="contain" />
+                <div className="absolute p-4" style={{ left: '22%', top: '30%', width: '56%', height: '40%' }}>
+                    <textarea value={petition} onChange={(e) => setPetition((e.target as any).value)} placeholder="e.g., I ask for protection on my journey." className="w-full h-full bg-transparent text-center text-[#4a2e1c] font-serif focus:outline-none resize-none" style={{ fontSize: 'clamp(0.6rem, 4cqw, 1.5rem)' }} />
+                </div>
+            </div>
+            <div className="flex flex-col gap-3 w-full max-w-xs">
+                <button onClick={() => onNext('standard')} disabled={!petition} className="flex items-center gap-3 p-3 bg-amber-900/60 border border-amber-600 rounded-lg hover:bg-amber-800 disabled:opacity-50 text-amber-100">
+                    <Book className="w-5 h-5" />
+                    <div className="text-left">
+                        <div className="font-serif">Serve Papa Legba</div>
+                        <div className="text-xs text-amber-300/70">Traditional offerings. Free.</div>
+                    </div>
+                </button>
+                <button onClick={() => onNext('ai')} disabled={!petition} className="flex items-center gap-3 p-3 bg-purple-900/60 border border-purple-500 rounded-lg hover:bg-purple-800 disabled:opacity-50 relative overflow-hidden group text-purple-100">
+                    <Skull className="w-5 h-5" />
+                    <div className="text-left relative z-10">
+                        <div className="font-serif flex items-center gap-2">Divine the Lwa <Sparkles size={12}/></div>
+                        <div className="text-xs text-purple-300">Consult the spirits. 3 Credits.</div>
+                    </div>
+                </button>
             </div>
         </div>
     </StepContainer>
 );
 
-const VoodooStep3_ServeLwa: React.FC<{ selectedLwa: string; onSelect: (lwa: string) => void; onNext: () => void; }> = ({ selectedLwa, onSelect, onNext }) => {
+const VoodooStep3_ServeLwa: React.FC<{ selectedLwa: string; onSelect: (lwa: string) => void; onNext: () => void; mode: RitualMode }> = ({ selectedLwa, onSelect, onNext, mode }) => {
     const lwas = [
+        { name: 'Papa Legba', img: 'voodoo-veve-legba.png' },
         { name: 'Erzulie Freda', img: 'voodoo-veve-erzulie-freda.png'},
         { name: 'Ogun', img: 'voodoo-veve-ogun.png'},
         { name: 'Damballah', img: 'voodoo-veve-damballah.png'},
         { name: 'Baron Samedi', img: 'voodoo-veve-baron-samedi.png'},
     ];
+    
+    const availableLwas = mode === 'standard' ? lwas.filter(l => l.name === 'Papa Legba') : lwas;
+
     return (
-        <StepContainer stageTitle="Serve the Lwa" instruction="Choose the Lwa whose domain aligns with your need." button={<RitualButton onClick={onNext} disabled={!selectedLwa}>Prepare Offerings</RitualButton>}>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {lwas.map(lwa => (
+        <StepContainer stageTitle="Serve the Lwa" instruction={mode === 'standard' ? "You serve Papa Legba to open the roads." : "Choose the Lwa whose domain aligns with your need."} button={<RitualButton onClick={onNext} disabled={!selectedLwa}>Prepare Offerings</RitualButton>}>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {availableLwas.map(lwa => (
                     <div key={lwa.name} onClick={() => onSelect(lwa.name)} className="flex flex-col items-center gap-2 cursor-pointer group p-2">
                         <div className={`relative w-28 h-28 md:w-36 md:h-36 bg-black/20 p-2 rounded-full border-2 transition-colors ${selectedLwa === lwa.name ? 'border-amber-300' : 'border-transparent group-hover:border-amber-300/50'}`}>
                              <Image src={`${ASSET_PATH}/${lwa.img}`} alt={lwa.name} layout="fill" objectFit="contain" className={`transition-all ${selectedLwa === lwa.name ? 'brightness-125' : 'brightness-75 group-hover:brightness-110'}`}/>
@@ -776,7 +843,6 @@ const VoodooStep6_SealBottle: React.FC<{ onNext: () => void; selections: Materia
     );
 };
 
-// Updated Step7_Sending to include the ingredient container persistence
 const Step7_Sending: React.FC<{onNext: () => void, petition: string, selections: MateriaSelection[], variant: GeometryVariant, image: string}> = ({ onNext, petition, selections, variant, image }) => {
     useEffect(() => {
         const timer = setTimeout(onNext, SENDING_DURATION);
@@ -788,7 +854,6 @@ const Step7_Sending: React.FC<{onNext: () => void, petition: string, selections:
             <div className="w-96 h-96 relative flex items-center justify-center">
                 <Image src={`${ASSET_PATH}/${image}`} alt="Final Manifestation" layout="fill" objectFit="contain" unoptimized={image.endsWith('.gif')} />
                 
-                {/* Persistence of ingredients into the final sending image */}
                 <div className="absolute inset-0 z-10">
                     <FilledContainer variant={variant} items={selections} count={selections.length} />
                 </div>
@@ -803,7 +868,7 @@ const Step7_Sending: React.FC<{onNext: () => void, petition: string, selections:
     );
 };
 
-const Step8_Manifestation: React.FC<{ affirmation: string, path: RitualPath, onFinish: () => void, selections?: MateriaSelection[] }> = ({ affirmation, path, onFinish, selections = [] }) => {
+const Step8_Manifestation: React.FC<{ affirmation: string, path: RitualPath, onFinish: () => void, selections?: MateriaSelection[], onSave: () => void, isSaving: boolean, isSaved: boolean }> = ({ affirmation, path, onFinish, selections = [], onSave, isSaving, isSaved }) => {
     const finalImage = path === 'hoodoo' ? 'hoodoo-manifestation-final.gif' : 'voodoo-manifestation-final.png';
     const variant = path === 'hoodoo' ? 'hoodoo_manifestation' : 'voodoo_manifestation';
     const particles = useMemo(() => Array.from({ length: 20 }).map((_, i) => ({
@@ -815,37 +880,45 @@ const Step8_Manifestation: React.FC<{ affirmation: string, path: RitualPath, onF
     })), []);
 
     return (
-        <StepContainer stageTitle={path === 'hoodoo' ? "The Work is Done" : "The Lwa is Served"} button={<RitualButton onClick={onFinish}>Return</RitualButton>}>
-            <div className="flex flex-row items-center justify-center gap-2 md:gap-8 w-full max-w-4xl">
-                <div className="relative w-1/2 aspect-square">
-                    <Image src={`${ASSET_PATH}/${finalImage}`} alt="Final Manifestation" layout="fill" objectFit="contain" unoptimized={finalImage.endsWith('.gif')} />
-                    
-                    {/* Ingredient Overlay in Final Step */}
-                    <div className="absolute inset-0 z-10">
-                        <FilledContainer variant={variant} items={selections} count={selections.length} />
-                    </div>
-
-                    {path === 'voodoo' && (
-                        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                            {particles.map(p => (
-                                <motion.div key={p.id} initial={{opacity: 0, y: 0}} animate={{opacity: [0, 0.8, 0], y: p.y}} transition={{duration: p.duration, delay: p.delay, repeat: Infinity, repeatType: "loop"}} style={{x: p.x}} className="absolute top-1/2 left-1/2 w-12 h-12">
-                                <Image src={`${ASSET_PATH}/ui-particle-spirit.png`} alt="spirit particle" layout="fill" />
-                                </motion.div>
-                            ))}
+        <StepContainer stageTitle={path === 'hoodoo' ? "The Work is Done" : "The Lwa is Served"}>
+            <div className="flex flex-col items-center justify-center gap-4 w-full h-full max-w-4xl">
+                 <div className="flex flex-row items-center justify-center gap-2 md:gap-8 w-full">
+                    <div className="relative w-1/2 aspect-square">
+                        <Image src={`${ASSET_PATH}/${finalImage}`} alt="Final Manifestation" layout="fill" objectFit="contain" unoptimized={finalImage.endsWith('.gif')} />
+                        
+                        <div className="absolute inset-0 z-10">
+                            <FilledContainer variant={variant} items={selections} count={selections.length} />
                         </div>
-                    )}
-                </div>
-                <div className="relative w-1/2 aspect-square @container">
-                    <Image src={`${ASSET_PATH}/hoodoo-petition-paper.png`} alt="Affirmation Parchment" layout="fill" objectFit="contain"/>
-                    <div className="absolute inset-0 flex items-center justify-center p-[22%]">
-                        <p className="text-center text-[#3a291c] font-serif font-semibold" style={{fontSize: 'clamp(0.7rem, 4.5cqw, 1.2rem)'}}>{affirmation}</p>
+
+                        {path === 'voodoo' && (
+                            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                                {particles.map(p => (
+                                    <motion.div key={p.id} initial={{opacity: 0, y: 0}} animate={{opacity: [0, 0.8, 0], y: p.y}} transition={{duration: p.duration, delay: p.delay, repeat: Infinity, repeatType: "loop"}} style={{x: p.x}} className="absolute top-1/2 left-1/2 w-12 h-12">
+                                    <Image src={`${ASSET_PATH}/ui-particle-spirit.png`} alt="spirit particle" layout="fill" />
+                                    </motion.div>
+                                ))}
+                            </div>
+                        )}
                     </div>
+                    <div className="relative w-1/2 aspect-square @container">
+                        <Image src={`${ASSET_PATH}/hoodoo-petition-paper.png`} alt="Affirmation Parchment" layout="fill" objectFit="contain"/>
+                        <div className="absolute inset-0 flex items-center justify-center p-[22%]">
+                            <p className="text-center text-[#3a291c] font-serif font-semibold" style={{fontSize: 'clamp(0.7rem, 4.5cqw, 1.2rem)'}}>{affirmation}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="flex flex-col gap-3 w-full max-w-xs mt-4">
+                    <button onClick={onSave} disabled={isSaved || isSaving} className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-amber-900/60 border border-amber-400 text-amber-100 font-serif rounded hover:bg-amber-800 disabled:opacity-50 transition-colors">
+                        {isSaved ? <Check size={18} /> : <Save size={18} />}
+                        {isSaved ? "Saved to Grimoire" : isSaving ? "Saving..." : "Save to Grimoire (1 Credit)"}
+                    </button>
+                    <RitualButton onClick={onFinish} className="w-full">Return</RitualButton>
                 </div>
             </div>
         </StepContainer>
     );
 };
-
 
 const PsalmReader: React.FC<{isOpen: boolean; onClose: () => void; psalmName: string; psalmText: string; onBless: () => void;}> = ({isOpen, onClose, psalmName, psalmText, onBless}) => {
     const [stage, setStage] = useState<'read' | 'fix'>('read');
@@ -904,3 +977,4 @@ const PsalmReader: React.FC<{isOpen: boolean; onClose: () => void; psalmName: st
 };
 
 export default HoodooVoodooMagick;
+// --- END OF FILE src/app/components/HoodooVoodooMagick.tsx ---
