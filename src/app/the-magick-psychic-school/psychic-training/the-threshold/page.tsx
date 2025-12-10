@@ -4,10 +4,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   Settings, HelpCircle, Eye, X, Trophy, Activity, 
-  Sparkles, Maximize2, Trash2, RotateCcw, Check
+  Sparkles, Maximize2, Trash2, RotateCcw, Check, Lock
 } from 'lucide-react';
 import { createBrowserClient } from '@supabase/ssr';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
+import { useHaptics } from '@/hooks/useHaptics';
 
 // --- ASSET DEFINITIONS ---
 
@@ -207,7 +208,7 @@ const playSound = (type: string) => {
 
 // --- COMPONENTS ---
 
-// 1. Stats Component (Mini Widget + Modal)
+// 1. Stats Component (Mini Widget + Modal + Adept Gate)
 const DoorVisionStats = ({ history }: { history: any[] }) => {
   const [supabase] = useState(() => createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -217,6 +218,10 @@ const DoorVisionStats = ({ history }: { history: any[] }) => {
   const [lifetimeStats, setLifetimeStats] = useState({ hits: 0, trials: 0 });
   const [loadingLifetime, setLoadingLifetime] = useState(false);
   const [mounted, setMounted] = useState(false);
+  
+  // Monetization
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [loadingProfile, setLoadingProfile] = useState(true);
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -230,6 +235,19 @@ const DoorVisionStats = ({ history }: { history: any[] }) => {
   const sessionZ = calculatePsiScore(sessionHits, sessionTrials, chance);
   const sessionProb = calculateProbability(sessionZ);
   const sessionTier = getPsiTier(sessionZ);
+
+  // Check subscription
+  useEffect(() => {
+    const checkProfile = async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+            const { data } = await supabase.from('profiles').select('is_subscribed').eq('id', user.id).single();
+            if(data?.is_subscribed) setIsSubscribed(true);
+        }
+        setLoadingProfile(false);
+    }
+    checkProfile();
+  }, [supabase]);
 
   useEffect(() => {
     if (showModal) {
@@ -299,12 +317,17 @@ const DoorVisionStats = ({ history }: { history: any[] }) => {
             </div>
           </div>
 
-          {/* Lifetime */}
-          <div className="bg-purple-900/10 border border-purple-500/20 p-4 rounded-lg relative">
+          {/* Lifetime Record (Monetized) */}
+          <div className="bg-purple-900/10 border border-purple-500/20 p-4 rounded-lg relative overflow-hidden">
             <h3 className="text-xs uppercase tracking-[0.2em] text-amber-400 mb-4 text-center">Lifetime Record</h3>
-            {loadingLifetime ? (
-               <div className="absolute inset-0 flex items-center justify-center"><Sparkles className="animate-spin text-purple-500"/></div>
-            ) : (
+            
+            {loadingLifetime || loadingProfile ? (
+               <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+                   <Sparkles className="animate-spin text-purple-500"/>
+                   <span className="text-[10px] text-purple-500 font-mono tracking-widest animate-pulse">Attuning to Cloud...</span>
+               </div>
+            ) : isSubscribed ? (
+               // Subscribed Content
                <div className="space-y-2 text-sm font-mono text-gray-300">
                    <div className="flex justify-between border-b border-white/5 pb-1"><span>Hits / Trials</span> <span className="text-white">{lifetimeStats.hits} / {lifetimeStats.trials}</span></div>
                    <div className="flex justify-between border-b border-white/5 pb-1"><span>Accuracy</span> <span className="text-white">{lifeAccuracy.toFixed(1)}%</span></div>
@@ -312,6 +335,22 @@ const DoorVisionStats = ({ history }: { history: any[] }) => {
                    <div className="flex justify-between"><span>Probability</span> <span className="text-green-300">{lifeProb}</span></div>
                    <div className="mt-4 text-center text-xs font-bold uppercase tracking-widest text-white border border-purple-500/30 py-1 rounded">{lifeTier.name}</div>
                </div>
+            ) : (
+                // Locked Content
+                <>
+                    <div className="space-y-2 text-sm font-mono text-gray-300 blur-sm opacity-50 select-none">
+                       <div className="flex justify-between border-b border-white/5 pb-1"><span>Hits / Trials</span> <span className="text-white">???? / ????</span></div>
+                       <div className="flex justify-between border-b border-white/5 pb-1"><span>Accuracy</span> <span className="text-white">??.?%</span></div>
+                       <div className="flex justify-between border-b border-white/5 pb-1"><span>Psi Score (Z)</span> <span className="text-gray-500">0.00</span></div>
+                    </div>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-xs z-10 p-4 text-center">
+                        <Lock className="text-amber-400 mb-2 w-8 h-8 animate-pulse" />
+                        <p className="text-amber-200 font-serif text-sm tracking-widest mb-4">ADEPT ACCESS REQUIRED</p>
+                        <button className="px-6 py-2 bg-amber-900/30 border border-amber-500/50 text-amber-300 text-xs font-bold uppercase tracking-wider hover:bg-amber-800/40 transition-all rounded shadow-lg shadow-amber-900/20">
+                            Unlock Lifetime Analysis
+                        </button>
+                    </div>
+                </>
             )}
           </div>
         </div>
@@ -457,6 +496,9 @@ export default function TheThresholdApp() {
 
   const currentCategory = CATEGORIES[categoryKey];
 
+  // Haptics Hook
+  const haptics = useHaptics();
+
   const saveSessionStats = async (newHistory: any[]) => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
@@ -556,6 +598,10 @@ export default function TheThresholdApp() {
 
   const handleGuess = (id: string) => {
     if (gameState !== 'LOCKED') return;
+    
+    // Selection Haptic
+    haptics.triggerMedium();
+    
     setUserGuess(id);
     setGameState('REVEALING');
     playSound('click');
@@ -563,8 +609,14 @@ export default function TheThresholdApp() {
     setTimeout(() => {
       const isCorrect = id === targetId;
       setGameState('RESULT');
-      if (isCorrect) playSound('success');
-      else playSound('fail');
+      
+      if (isCorrect) {
+          playSound('success');
+          haptics.triggerHeavy(); // Success Haptic
+      } else {
+          playSound('fail');
+          haptics.triggerLight(); // Fail Haptic
+      }
 
       const newRecord = {
         guess: id,
