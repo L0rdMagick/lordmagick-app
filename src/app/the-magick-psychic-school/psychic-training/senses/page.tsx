@@ -2,14 +2,15 @@
 
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Settings, RefreshCw, Eye, Check, X, BarChart2, ArrowLeft, 
-  Sparkles, Moon, Sun, Lock, Volume2, Home, LogOut, HelpCircle,
+  Sparkles, Moon, Sun, Lock, Volume2, VolumeX, Home, LogOut, HelpCircle,
   Save, Trash2, Cloud
 } from 'lucide-react';
 import { createBrowserClient } from '@supabase/ssr';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
+import { useHaptics } from '@/hooks/useHaptics';
 
 // --- CONFIGURATION & CATEGORY DEFINITIONS ---
 
@@ -102,19 +103,16 @@ const CARD_BACKS = [
   { 
     id: 'stars', 
     name: 'Deep Space', 
-    // CSS trick for stars
     css: "bg-black bg-[radial-gradient(white_1px,transparent_1px)] [background-size:16px_16px]" 
   },
   { 
     id: 'hypnotic', 
     name: 'Hypnotic', 
-    // Conic gradient rainbow
     css: "bg-[conic-gradient(at_center,red,orange,yellow,green,blue,indigo,violet,red)]" 
   },
   { 
     id: 'gold', 
     name: 'Golden Metal', 
-    // Metallic gradient
     css: "bg-linear-to-br from-yellow-700 via-yellow-200 to-yellow-800" 
   }
 ];
@@ -1116,6 +1114,9 @@ export default function SensesApp() {
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
+  // Hook Integration
+  const haptics = useHaptics();
+
   // Initialize from LocalStorage & SessionStorage
   useEffect(() => {
     const saved = localStorage.getItem('senses_history_v7_complete');
@@ -1176,6 +1177,7 @@ export default function SensesApp() {
   };
 
   const handleGuess = (categoryId: string, option: string) => {
+    haptics.triggerMedium(); // HAPTIC: SELECTION
     setGuesses(prev => ({ ...prev, [categoryId]: option }));
   };
 
@@ -1183,6 +1185,13 @@ export default function SensesApp() {
     if (!currentLevel) return;
     setIsRevealed(true);
     const scoreData = calculateScore(guesses, currentLevel.tags, currentConfig);
+    
+    // HAPTIC: RESULT
+    if (scoreData.percentage >= 50) {
+        haptics.triggerHeavy();
+    } else {
+        haptics.triggerLight();
+    }
     
     const resultRecord = {
       timestamp: Date.now(),
@@ -1516,9 +1525,25 @@ export default function SensesApp() {
     const lifetimeAvg = calculateAvg(history);
     const sessionAvg = calculateAvg(sessionHistory);
 
+    // Monetization Logic
+    const [isSubscribed, setIsSubscribed] = useState(false);
+    const [loadingProfile, setLoadingProfile] = useState(true);
+
+    useEffect(() => {
+        const checkProfile = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                const { data } = await supabase.from('profiles').select('is_subscribed').eq('id', user.id).single();
+                if(data?.is_subscribed) setIsSubscribed(true);
+            }
+            setLoadingProfile(false);
+        }
+        checkProfile();
+    }, []);
+
     const handleSaveToCloud = async () => {
         setSaving(true);
-        setSaveMessage("UPLOADING...");
+        setSaveMessage("Attuning to Cloud...");
         try {
           const { data: { user } } = await supabase.auth.getUser();
           if (!user) {
@@ -1526,6 +1551,14 @@ export default function SensesApp() {
             setTimeout(() => setSaveMessage(null), 3000);
             setSaving(false);
             return;
+          }
+
+          // Gated Save
+          if (!isSubscribed) {
+              setSaveMessage("ADEPT ACCESS REQUIRED");
+              setTimeout(() => setSaveMessage(null), 3000);
+              setSaving(false);
+              return;
           }
           
           const { error } = await supabase
@@ -1538,7 +1571,7 @@ export default function SensesApp() {
               report_content: `Session Completed. Lifetime Avg: ${lifetimeAvg}%. Session Avg: ${sessionAvg}%. Total Visions: ${history.length}.`,
             });
           if (error) throw error;
-          setSaveMessage("SAVED TO CLOUD");
+          setSaveMessage("Energy Captured");
         } catch (e) {
           console.error(e);
           setSaveMessage("UPLOAD FAILED");
@@ -1582,19 +1615,45 @@ export default function SensesApp() {
                 </div>
             </div>
 
-            {/* Lifetime Stats */}
-            <div className="bg-slate-900/50 p-6 rounded-lg border border-amber-500/20">
+            {/* Lifetime Stats (Adept Gate) */}
+            <div className="bg-slate-900/50 p-6 rounded-lg border border-amber-500/20 relative overflow-hidden">
                 <h3 className="text-sm text-amber-500/80 uppercase tracking-widest mb-4">Lifetime (Local)</h3>
-                <div className="grid grid-cols-2 gap-4 text-center">
-                    <div>
-                        <div className="text-4xl font-light text-white mb-1 font-serif">{history.length}</div>
-                        <div className="text-xs text-slate-400 uppercase">Total Visions</div>
+                
+                {loadingProfile ? (
+                    <div className="absolute inset-0 flex items-center justify-center"><Sparkles className="animate-spin text-amber-500"/></div>
+                ) : isSubscribed ? (
+                    <div className="grid grid-cols-2 gap-4 text-center">
+                        <div>
+                            <div className="text-4xl font-light text-white mb-1 font-serif">{history.length}</div>
+                            <div className="text-xs text-slate-400 uppercase">Total Visions</div>
+                        </div>
+                        <div>
+                            <div className="text-4xl font-light text-amber-500 mb-1 font-serif">{lifetimeAvg}%</div>
+                            <div className="text-xs text-slate-400 uppercase">Avg Resonance</div>
+                        </div>
                     </div>
-                    <div>
-                        <div className="text-4xl font-light text-amber-500 mb-1 font-serif">{lifetimeAvg}%</div>
-                        <div className="text-xs text-slate-400 uppercase">Avg Resonance</div>
-                    </div>
-                </div>
+                ) : (
+                    // LOCKED
+                    <>
+                        <div className="grid grid-cols-2 gap-4 text-center blur-sm opacity-50 select-none">
+                            <div>
+                                <div className="text-4xl font-light text-white mb-1 font-serif">{history.length}</div>
+                                <div className="text-xs text-slate-400 uppercase">Total Visions</div>
+                            </div>
+                            <div>
+                                <div className="text-4xl font-light text-amber-500 mb-1 font-serif">??%</div>
+                                <div className="text-xs text-slate-400 uppercase">Avg Resonance</div>
+                            </div>
+                        </div>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-xs z-10 p-4 text-center">
+                            <Lock className="text-amber-400 mb-2 w-8 h-8 animate-pulse" />
+                            <p className="text-amber-200 font-serif text-sm tracking-widest mb-4">ADEPT ACCESS REQUIRED</p>
+                            <button className="px-6 py-2 bg-amber-900/30 border border-amber-500/50 text-amber-300 text-xs font-bold uppercase tracking-wider hover:bg-amber-800/40 transition-all rounded shadow-lg shadow-amber-900/20">
+                                Unlock Lifetime Analysis
+                            </button>
+                        </div>
+                    </>
+                )}
             </div>
         </div>
 
