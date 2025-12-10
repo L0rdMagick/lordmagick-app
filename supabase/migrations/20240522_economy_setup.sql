@@ -1,5 +1,3 @@
---- START OF FILE supabase/migrations/20240522_economy_setup.sql ---
-
 -- 1. Add Economy Columns to Profiles
 ALTER TABLE profiles 
 ADD COLUMN IF NOT EXISTS credits INTEGER DEFAULT 3,
