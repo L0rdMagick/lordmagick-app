@@ -1,5 +1,9 @@
 import { createBrowserClient } from '@supabase/ssr';
 
+export const COST_AI_GENERATE = 3;
+export const COST_SAVE_SPELL = 1;
+export const COST_BIND_SERVITOR = 5;
+
 /**
  * Checks if the user has enough credits and deducts them if so.
  * Handles the 'adept' tier check and daily resets automatically via the SQL RPC.

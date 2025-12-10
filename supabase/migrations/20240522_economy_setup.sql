@@ -58,3 +58,61 @@ BEGIN
     END IF;
 END;
 $$;
+
+-- 3. Create Spells Table (Universal Storage)
+CREATE TABLE IF NOT EXISTS spells (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    tradition TEXT NOT NULL CHECK (tradition IN ('WICCA', 'HOODOO', 'VOODOO', 'ELECTRIC', 'CHAOS', 'LOVE')),
+    name TEXT NOT NULL,
+    intention TEXT,
+    incantation TEXT,
+    visual_assets JSONB DEFAULT '{}'::jsonb,
+    is_premium BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Enable RLS for Spells
+ALTER TABLE spells ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view their own spells" 
+ON spells FOR SELECT 
+USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own spells" 
+ON spells FOR INSERT 
+WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own spells" 
+ON spells FOR DELETE 
+USING (auth.uid() = user_id);
+
+-- 4. Create Servitors Table
+CREATE TABLE IF NOT EXISTS servitors (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    master_name TEXT,
+    purpose TEXT,
+    config JSONB DEFAULT '{}'::jsonb, -- Stores appearance/audio settings
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Enable RLS for Servitors
+ALTER TABLE servitors ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view their own servitors" 
+ON servitors FOR SELECT 
+USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own servitors" 
+ON servitors FOR INSERT 
+WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own servitors" 
+ON servitors FOR UPDATE 
+USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own servitors" 
+ON servitors FOR DELETE 
+USING (auth.uid() = user_id);
