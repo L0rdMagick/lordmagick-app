@@ -7,6 +7,7 @@ import type { Session, SpellFormData, GeneratedSpell, Spell } from '@/lib/types'
 import { generateSpellAndSigil, saveSpell, getSpells, uploadBase64Image } from '@/lib/services/geminiService';
 import LoadingSpinner from './LoadingSpinner';
 import { WandIcon, GrimoireFlourish, GrimoireDecoration, StoneTabletButton } from './icons';
+import { Sparkles, Zap, Save, Check, Book } from 'lucide-react';
 
 interface SpellGeneratorProps {
   session: Session;
@@ -43,7 +44,6 @@ const audioManager = {
     },
 
     init() {
-        // FIX: Use safe window access
         const win = (globalThis as any).window;
         if (typeof win === 'undefined') return;
 
@@ -183,9 +183,12 @@ const audioManager = {
 interface RitualDisplayProps {
     generatedSpell: GeneratedSpell;
     onComplete: () => void;
+    onSave: () => void;
+    isSaving: boolean;
+    isSaved: boolean;
 }
 
-const RitualDisplay: React.FC<RitualDisplayProps> = ({ generatedSpell, onComplete }) => {
+const RitualDisplay: React.FC<RitualDisplayProps> = ({ generatedSpell, onComplete, onSave, isSaving, isSaved }) => {
     const [ritualStep, setRitualStep] = useState(0);
     const [holdProgress, setHoldProgress] = useState(0);
     const [isHolding, setIsHolding] = useState(false);
@@ -296,8 +299,12 @@ const RitualDisplay: React.FC<RitualDisplayProps> = ({ generatedSpell, onComplet
                     </div>
                      <GrimoireDecoration className="w-[450px] h-auto text-yellow-400/70 transform scale-y-[-1]" />
                 </div>
-                <div className={`transition-opacity duration-1000 ${showButton ? 'opacity-100' : 'opacity-0'}`}>
-                    <StoneTabletButton onClick={onComplete} className="w-48 h-16 mt-16 font-serif text-lg text-purple-200">
+                <div className={`transition-opacity duration-1000 ${showButton ? 'opacity-100' : 'opacity-0'} flex flex-col gap-4 mt-16`}>
+                    <button onClick={onSave} disabled={isSaved || isSaving} className="w-48 h-12 flex items-center justify-center gap-2 bg-indigo-900/50 border border-indigo-400 text-indigo-100 font-serif rounded hover:bg-indigo-800 disabled:opacity-50 transition-colors">
+                        {isSaved ? <Check size={18} /> : <Save size={18} />}
+                        {isSaved ? "Saved" : isSaving ? "Saving..." : "Save (1 Credit)"}
+                    </button>
+                    <StoneTabletButton onClick={onComplete} className="w-48 h-12 font-serif text-lg text-purple-200">
                         Return
                     </StoneTabletButton>
                 </div>
@@ -364,6 +371,8 @@ const SpellGenerator: React.FC<SpellGeneratorProps> = ({ session, isSubscribed, 
   const [bookOfShadows, setBookOfShadows] = useState<Spell[]>([]);
   const [formData, setFormData] = useState<SpellFormData>({ outcome: '', target: 'Self', feeling: 'Hopeful', element: 'Spirit', timing: 'In divine timing', action: 'attract', name: '', });
   const [generatedSpell, setGeneratedSpell] = useState<GeneratedSpell | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
 
   const fetchData = useCallback(async () => {
     if (!isSubscribed) return;
@@ -388,27 +397,13 @@ const SpellGenerator: React.FC<SpellGeneratorProps> = ({ session, isSubscribed, 
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleGenerateSpell = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleGenerateSpell = async (mode: 'standard' | 'ai') => {
+    if (!formData.outcome) return;
     setLoading(true);
     setError(null);
     try {
-      const spell = await generateSpellAndSigil(formData);
+      const spell = await generateSpellAndSigil(formData, mode);
       setGeneratedSpell(spell);
-
-      if (isSubscribed) {
-        const sigilPath = `${session.user.id}/${new Date().toISOString()}.png`;
-        const sigilUrl = await uploadBase64Image(spell.sigilBase64, sigilPath);
-
-        await saveSpell(session.user.id, {
-          name: spell.title,
-          intention: spell.intention,
-          incantation: spell.incantation,
-          sigil_url: sigilUrl,
-          element: formData.element
-        });
-      }
-      
       setView('ritual');
     } catch (err: any) {
       setError(err.message || "The ethereal planes are busy. Please try again.");
@@ -417,11 +412,36 @@ const SpellGenerator: React.FC<SpellGeneratorProps> = ({ session, isSubscribed, 
     }
   };
 
+  const handleSave = async () => {
+      if (!generatedSpell || isSaved) return;
+      setIsSaving(true);
+      try {
+        const sigilPath = `${session.user.id}/${new Date().toISOString()}.png`;
+        // Handle optional sigilBase64. If missing, we might use a placeholder or handle it differently.
+        const sigilUrl = generatedSpell.sigilBase64 ? await uploadBase64Image(generatedSpell.sigilBase64, sigilPath) : '';
+
+        await saveSpell(session.user.id, {
+          name: generatedSpell.title,
+          intention: generatedSpell.intention,
+          incantation: generatedSpell.incantation,
+          sigil_url: sigilUrl,
+          element: formData.element
+        });
+        setIsSaved(true);
+      } catch (err: any) {
+          console.error(err);
+          setError("Failed to save to Grimoire.");
+      } finally {
+          setIsSaving(false);
+      }
+  };
+
   const handleRitualComplete = () => {
       fetchData();
       setGeneratedSpell(null);
       setFormData(prev => ({...prev, outcome: '', name: ''}));
       setView('form');
+      setIsSaved(false);
   }
 
   const renderForm = () => (
@@ -432,7 +452,7 @@ const SpellGenerator: React.FC<SpellGeneratorProps> = ({ session, isSubscribed, 
                 <button onClick={() => setView('book')} className="text-purple-400 hover:text-purple-300">View Book of Shadows &rarr;</button>
             )}
         </div>
-        <form onSubmit={handleGenerateSpell} className="space-y-6 bg-white/5 p-6 rounded-lg border border-white/10">
+        <div className="space-y-6 bg-white/5 p-6 rounded-lg border border-white/10">
             <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">What is your desired outcome?</label>
                 <textarea name="outcome" value={formData.outcome} onChange={handleFormChange} required className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:ring-2 focus:ring-purple-500" placeholder="e.g., Attract a new creative opportunity"/>
@@ -455,10 +475,25 @@ const SpellGenerator: React.FC<SpellGeneratorProps> = ({ session, isSubscribed, 
                     <option className="bg-[#1a1a3d]">Spirit</option><option className="bg-[#1a1a3d]">Fire</option><option className="bg-[#1a1a3d]">Water</option><option className="bg-[#1a1a3d]">Air</option><option className="bg-[#1a1a3d]">Earth</option>
                 </select>
             </div>
-            <button type="submit" className="w-full flex items-center justify-center gap-2 bg-linear-to-r from-purple-600 to-pink-600 text-white font-bold py-3 px-4 rounded-lg">
-                <WandIcon /> Generate Spell
-            </button>
-        </form>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                <button onClick={() => handleGenerateSpell('standard')} disabled={!formData.outcome} className="flex items-center justify-center gap-2 p-3 bg-slate-800/80 border border-slate-600 rounded-lg hover:bg-slate-700 disabled:opacity-50 text-slate-200">
+                    <Zap className="w-5 h-5" />
+                    <div className="text-left">
+                        <div className="font-bold text-sm">Quick Cast</div>
+                        <div className="text-xs opacity-70">Standard Sigil (Free)</div>
+                    </div>
+                </button>
+                <button onClick={() => handleGenerateSpell('ai')} disabled={!formData.outcome} className="flex items-center justify-center gap-2 p-3 bg-purple-900/60 border border-purple-500 rounded-lg hover:bg-purple-800 disabled:opacity-50 relative overflow-hidden group text-purple-100">
+                    <div className="absolute inset-0 bg-purple-500/10 animate-pulse group-hover:bg-purple-500/20"></div>
+                    <Sparkles className="w-5 h-5" />
+                    <div className="text-left relative z-10">
+                        <div className="font-bold text-sm">Deep Magick</div>
+                        <div className="text-xs opacity-70">AI Sigil + Mantra (3 Credits)</div>
+                    </div>
+                </button>
+            </div>
+        </div>
       </div>
   );
     
@@ -472,7 +507,8 @@ const SpellGenerator: React.FC<SpellGeneratorProps> = ({ session, isSubscribed, 
             <div className="space-y-6">
                 {bookOfShadows.map(spell => (
                     <div key={spell.id} className="bg-white/5 p-4 rounded-lg flex items-center gap-4 border border-white/10">
-                        <img src={spell.sigil_url} alt="Sigil" className="w-24 h-24 rounded-md bg-black" />
+                        {/* FIX: Handle potentially missing sigil_url gracefully if legacy data exists */}
+                        <img src={spell.sigil_url || '/images/placeholder_sigil.png'} alt="Sigil" className="w-24 h-24 rounded-md bg-black object-contain" />
                         <div>
                             <h3 className="text-xl font-bold font-serif text-gray-200">{spell.name}</h3>
                             <p className="text-sm text-gray-400">{new Date(spell.created_at).toLocaleDateString()}</p>
@@ -493,7 +529,7 @@ const SpellGenerator: React.FC<SpellGeneratorProps> = ({ session, isSubscribed, 
         case 'form': return renderForm();
         case 'ritual': 
             if (!generatedSpell) return <div>Something went wrong.</div>;
-            return <RitualDisplay generatedSpell={generatedSpell} onComplete={handleRitualComplete} />;
+            return <RitualDisplay generatedSpell={generatedSpell} onComplete={handleRitualComplete} onSave={handleSave} isSaving={isSaving} isSaved={isSaved} />;
         case 'book': return renderBook();
         default: return renderForm();
     }
@@ -507,3 +543,4 @@ const SpellGenerator: React.FC<SpellGeneratorProps> = ({ session, isSubscribed, 
 };
 
 export default SpellGenerator;
+// --- END OF FILE src/app/components/SpellGenerator.tsx ---

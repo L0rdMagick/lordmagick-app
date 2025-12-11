@@ -1,3 +1,5 @@
+// --- START OF FILE src/lib/services/geminiService.ts ---
+
 import { createBrowserClient } from '@supabase/ssr';
 import type { FormData, HumanDesignChart, Report, SpellFormData, GeneratedSpell, Spell, WiccanSpellFormData, GeneratedWiccanSpell } from '../types';
 
@@ -64,9 +66,10 @@ export const getThisMonthsReportCount = async (userId: string): Promise<number> 
 };
 
 // --- Chaos Magick Spell Function ---
-export const generateSpellAndSigil = async (formData: SpellFormData): Promise<GeneratedSpell> => {
+// UPDATED: Now accepts 'mode' as a second argument
+export const generateSpellAndSigil = async (formData: SpellFormData, mode: 'standard' | 'ai' = 'standard'): Promise<GeneratedSpell> => {
     const { data, error } = await supabase.functions.invoke('generate-spell', {
-        body: { formData },
+        body: { formData, mode },
     });
 
     if (error) {
@@ -79,7 +82,6 @@ export const generateSpellAndSigil = async (formData: SpellFormData): Promise<Ge
 
 // --- Wiccan Spell Function (Deep Weaving) ---
 export const generateWiccanSpell = async (formData: WiccanSpellFormData): Promise<GeneratedWiccanSpell> => {
-    // Note: formData should now include 'situation' if provided by UI
     const { data, error } = await supabase.functions.invoke('generate-wiccan-spell', {
         body: formData,
     });
@@ -146,16 +148,14 @@ export const generateElectricOracle = async (intention: string): Promise<string>
     });
     if (error) {
         console.error("Error invoking generate-electric-spell (oracle):", error);
-        // Fallback message to maintain immersion if API fails
         return "The static speaks: Look for the number 33."; 
     }
     return data.result;
 };
 
 export const generateDataScrying = async (): Promise<string> => {
-    // This calls the dedicated scrying function
     const { data, error } = await supabase.functions.invoke('generate-data-scry', {
-        body: { }, // No specific payload needed for general scrying
+        body: { }, 
     });
     if (error) {
         console.error("Error invoking generate-data-scry:", error);
@@ -213,7 +213,7 @@ export const getSpells = async (userId: string): Promise<Spell[]> => {
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
     
-    if (error && error.code !== '42P01') { // Ignore error if table doesn't exist yet
+    if (error && error.code !== '42P01') { 
         console.error("Error fetching spells:", error);
         throw new Error("Could not fetch your Book of Shadows.");
     }
@@ -262,3 +262,4 @@ export const generateElectricLightPrism = async (colorName: string, intention: s
     }
     return data.result;
 };
+// --- END OF FILE src/lib/services/geminiService.ts ---
