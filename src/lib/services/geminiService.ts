@@ -66,7 +66,7 @@ export const getThisMonthsReportCount = async (userId: string): Promise<number> 
 };
 
 // --- Chaos Magick Spell Function ---
-// UPDATED: Now accepts 'mode' as a second argument
+// UPDATED: Now accepts 'mode' as the second argument. This fixes the TS error in SpellGenerator.
 export const generateSpellAndSigil = async (formData: SpellFormData, mode: 'standard' | 'ai' = 'standard'): Promise<GeneratedSpell> => {
     const { data, error } = await supabase.functions.invoke('generate-spell', {
         body: { formData, mode },

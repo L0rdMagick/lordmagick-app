@@ -402,6 +402,7 @@ const SpellGenerator: React.FC<SpellGeneratorProps> = ({ session, isSubscribed, 
     setLoading(true);
     setError(null);
     try {
+      // This call should now be valid with the updated geminiService.ts
       const spell = await generateSpellAndSigil(formData, mode);
       setGeneratedSpell(spell);
       setView('ritual');
