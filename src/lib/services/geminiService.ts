@@ -66,7 +66,6 @@ export const getThisMonthsReportCount = async (userId: string): Promise<number> 
 };
 
 // --- Chaos Magick Spell Function ---
-// UPDATED: Now accepts 'mode' as the second argument. This fixes the TS error in SpellGenerator.
 export const generateSpellAndSigil = async (formData: SpellFormData, mode: 'standard' | 'ai' = 'standard'): Promise<GeneratedSpell> => {
     const { data, error } = await supabase.functions.invoke('generate-spell', {
         body: { formData, mode },
@@ -131,6 +130,46 @@ export const generateHoodooVoodooWork = async (path: 'hoodoo' | 'voodoo', step: 
 
 // --- Electric Magick Functions ---
 
+const STANDARD_DATA_SCRY_RESPONSES = [
+    "The ghost in the machine whispers: Yes.",
+    "Signal unclear. Entropy high. Retry.",
+    "Pattern matching... 99% probability of success.",
+    "The void stares back. Proceed with caution.",
+    "Packet loss detected. The answer is hidden.",
+    "Encryption key found: The path is open.",
+    "System override: Permission granted.",
+    "Neural handshake complete. Connection established.",
+    "Data corrupted. The future is in flux.",
+    "Static interference masks the truth.",
+    "Binary alignment achieved. Outcome favorable.",
+    "The network rejects this query.",
+    "Echo received from the deep web.",
+    "Firewall breached. Insight downloaded.",
+    "The algorithm predicts a shift.",
+    "Zero-day exploit found in reality.",
+    "Rebooting destiny... Please wait.",
+    "404: Fate not found.",
+    "Bandwidth exceeded. Focus your intent.",
+    "The simulation glitches in your favor."
+];
+
+export const generateDataScrying = async (intention: string, mode: 'standard' | 'ai' = 'standard'): Promise<string> => {
+    if (mode === 'standard') {
+        // Return a random cryptic phrase
+        return STANDARD_DATA_SCRY_RESPONSES[Math.floor(Math.random() * STANDARD_DATA_SCRY_RESPONSES.length)];
+    }
+
+    // Paid/AI Mode
+    const { data, error } = await supabase.functions.invoke('generate-data-scry', {
+        body: { intention, mode: 'ai' }, 
+    });
+    if (error) {
+        console.error("Error invoking generate-data-scry:", error);
+        return "ERROR: SIGNAL CORRUPTED. REBOOT SYSTEM.";
+    }
+    return data.result;
+};
+
 export const generateElectricEnsorcellment = async (intention: string): Promise<string> => {
     const { data, error } = await supabase.functions.invoke('generate-electric-spell', {
         body: { action: 'ensorcell', intention },
@@ -149,17 +188,6 @@ export const generateElectricOracle = async (intention: string): Promise<string>
     if (error) {
         console.error("Error invoking generate-electric-spell (oracle):", error);
         return "The static speaks: Look for the number 33."; 
-    }
-    return data.result;
-};
-
-export const generateDataScrying = async (): Promise<string> => {
-    const { data, error } = await supabase.functions.invoke('generate-data-scry', {
-        body: { }, 
-    });
-    if (error) {
-        console.error("Error invoking generate-data-scry:", error);
-        return "ERROR: SIGNAL CORRUPTED. REBOOT SYSTEM.";
     }
     return data.result;
 };

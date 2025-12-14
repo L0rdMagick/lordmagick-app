@@ -4,16 +4,72 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { 
-  Eye, X, Fingerprint, Radio, Binary, ChevronUp, ChevronDown
+  Eye, X, Fingerprint, Radio, Binary, ChevronUp, ChevronDown, Zap, Sparkles, Save, Check
 } from 'lucide-react';
-import { generateDataScrying } from '@/lib/services/geminiService';
+import { generateDataScrying, saveSpell } from '@/lib/services/geminiService';
 import { useAudioEngine, useParticleSystem, getMagickalNumber } from './hooks';
+import type { Session } from '@/lib/types'; // Ensure types are imported if needed for Session prop
 
-const DataScryingSpell = ({ onExit }: { onExit: () => void }) => {
-    const [stage, setStage] = useState(0); // 0: Intro, 1: Bio-Sync, 2: Tuning, 3: Focus, 4: Reveal
+const DataScryingSpell = ({ onExit, session }: { onExit: () => void, session?: Session }) => {
+    // Stage 0: Intention, 1: Bio-Sync, 2: Tuning, 3: Focus (Generation), 4: Reveal (Result & Save)
+    const [stage, setStage] = useState(0); 
     const { initAudio, playTone, playDrone, modulateFilter } = useAudioEngine();
     const { canvasRef, spawnExplosion } = useParticleSystem();
+    
+    // Spell Data
+    const [intention, setIntention] = useState("");
+    const [mode, setMode] = useState<'standard' | 'ai'>('standard');
     const [decodedMessage, setDecodedMessage] = useState("");
+    
+    // Saving State
+    const [isSaving, setIsSaving] = useState(false);
+    const [isSaved, setIsSaved] = useState(false);
+
+    // --- STAGE 0: INTENTION INPUT ---
+    const IntentionStage = () => {
+        return (
+            <div className="flex flex-col items-center justify-center h-full w-full p-6 animate-fade-in">
+                <h2 className="text-2xl font-serif text-cyan-400 mb-6 tracking-[0.3em] uppercase">Initialize Query</h2>
+                
+                <div className="w-full max-w-md mb-8">
+                    <input 
+                        type="text" 
+                        value={intention}
+                        onChange={(e) => setIntention(e.target.value)}
+                        placeholder="ENTER TARGET DATA / INTENTION"
+                        className="w-full bg-black/50 border-b-2 border-cyan-800 text-cyan-100 text-center font-mono py-4 focus:outline-none focus:border-cyan-400 placeholder:text-cyan-900 transition-colors uppercase tracking-widest"
+                    />
+                </div>
+
+                <div className="flex flex-col gap-4 w-full max-w-xs">
+                    <button 
+                        onClick={() => { setMode('standard'); setStage(1); }}
+                        disabled={!intention}
+                        className="flex items-center gap-4 p-4 border border-cyan-800 bg-black/40 hover:bg-cyan-900/20 hover:border-cyan-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed group text-left"
+                    >
+                        <Zap className="text-cyan-600 group-hover:text-cyan-400" size={24} />
+                        <div>
+                            <div className="text-cyan-200 font-mono text-sm tracking-wider font-bold">STANDARD SCAN</div>
+                            <div className="text-cyan-700 text-xs">Standard Protocols. Free.</div>
+                        </div>
+                    </button>
+
+                    <button 
+                        onClick={() => { setMode('ai'); setStage(1); }}
+                        disabled={!intention}
+                        className="flex items-center gap-4 p-4 border border-purple-500/50 bg-purple-900/10 hover:bg-purple-900/30 hover:border-purple-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed group text-left relative overflow-hidden"
+                    >
+                        <div className="absolute inset-0 bg-purple-500/5 group-hover:bg-purple-500/10 animate-pulse"></div>
+                        <Sparkles className="text-purple-400 group-hover:text-purple-200 relative z-10" size={24} />
+                        <div className="relative z-10">
+                            <div className="text-purple-200 font-mono text-sm tracking-wider font-bold">AI DECRYPTION</div>
+                            <div className="text-purple-400/70 text-xs">Deep Neural Analysis. 3 Credits.</div>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        );
+    };
 
     // --- STAGE 1: BIO-SYNC (Fingerprint) ---
     const BioSyncStage = () => {
@@ -31,7 +87,6 @@ const DataScryingSpell = ({ onExit }: { onExit: () => void }) => {
                     if (next >= 100) {
                         if (intervalRef.current) clearInterval(intervalRef.current);
                         
-                        // FIX: Access window safely via globalThis
                         const win = (globalThis as any).window;
                         if (win) {
                             spawnExplosion(win.innerWidth/2, win.innerHeight/2, '#06b6d4', 50);
@@ -53,8 +108,8 @@ const DataScryingSpell = ({ onExit }: { onExit: () => void }) => {
         };
 
         return (
-            <div className="flex flex-col items-center justify-center h-full w-full select-none touch-none">
-                <h2 className="text-2xl font-serif text-cyan-400 mb-12 tracking-[0.3em] uppercase animate-pulse">Bio-Sync Required</h2>
+            <div className="flex flex-col items-center justify-center h-full w-full select-none touch-none animate-fade-in">
+                <h2 className="text-xl font-serif text-cyan-400 mb-12 tracking-[0.3em] uppercase animate-pulse text-center">Bio-Sync Required</h2>
                 
                 <div 
                     className="relative w-32 h-32 flex items-center justify-center cursor-pointer active:scale-95 transition-transform"
@@ -64,18 +119,15 @@ const DataScryingSpell = ({ onExit }: { onExit: () => void }) => {
                     onTouchStart={handleStart}
                     onTouchEnd={handleEnd}
                 >
-                    {/* Ring */}
                     <div className="absolute inset-0 border-2 border-cyan-900 rounded-full"></div>
                     <div className="absolute inset-0 border-2 border-cyan-400 rounded-full" 
                          style={{ clipPath: `inset(${100 - progress}% 0 0 0)` }}></div>
                     
-                    {/* Icon */}
                     <Fingerprint 
                         size={64} 
                         className={`text-cyan-500 transition-all duration-200 ${progress > 0 ? 'scale-110 text-cyan-200' : 'scale-100'}`} 
                     />
                     
-                    {/* Glow */}
                     <div className="absolute inset-0 bg-cyan-500 blur-xl rounded-full transition-opacity duration-200"
                          style={{ opacity: progress / 100 }}></div>
                 </div>
@@ -90,49 +142,36 @@ const DataScryingSpell = ({ onExit }: { onExit: () => void }) => {
     // --- STAGE 2: TUNING (The Stream) ---
     const TuningStage = () => {
         const [tuning, setTuning] = useState(50); // 0-100
-        // Wider sweet spot range to make it easier
         const target = useRef(getMagickalNumber(15, 85)); 
         const [signalStrength, setSignalStrength] = useState(0);
         const [isLocked, setIsLocked] = useState(false);
         
         useEffect(() => {
-            playDrone(true, 110); // Base drone
+            playDrone(true, 110); 
             return () => playDrone(false);
         }, [playDrone]);
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const handleMove = (e: any) => {
-            // FIX: Access window safely via globalThis
             const win = (globalThis as any).window;
             if (!win) return;
 
-            // THE FIX: Explicitly get clientY (vertical), not clientX
-            const clientY = e.touches ? e.touches[0].clientY : e.clientX; // Fallback to X only if Y undefined (rare mouse edge case), but standard MouseEvent has Y
             const y = e.touches ? e.touches[0].clientY : e.clientY;
-
-            // Invert logic: Top of screen = 100%, Bottom = 0%
             const percent = 100 - (y / win.innerHeight) * 100;
             const clamped = Math.min(100, Math.max(0, percent));
             setTuning(clamped);
 
-            // Calculate closeness to target
             const distance = Math.abs(clamped - target.current);
-            
-            // Wider tolerance: within 15% you start hearing/seeing it
             const strength = Math.max(0, 100 - (distance * 6)); 
             setSignalStrength(strength);
 
-            // Audio feedback
-            modulateFilter(100 + (strength * 25)); // Open filter as signal gets stronger
+            modulateFilter(100 + (strength * 25)); 
             
-            // Success Threshold
             if (strength > 90 && !isLocked) {
-                 // Only lock if holding briefly (handled by debounce visual, but triggering logic here)
                  if (Math.random() > 0.92) {
-                     playTone(880, 'sine', 0.1, 0.1); // Geiger counter effect
+                     playTone(880, 'sine', 0.1, 0.1); 
                  }
                  
-                 // If extremely close, trigger next stage
                  if (strength > 96) {
                     setIsLocked(true);
                     playTone(1200, 'sine', 2, 0.5);
@@ -144,13 +183,11 @@ const DataScryingSpell = ({ onExit }: { onExit: () => void }) => {
         };
 
         return (
-            <div className="flex flex-col items-center justify-center h-full w-full select-none overflow-hidden touch-none"
+            <div className="flex flex-col items-center justify-center h-full w-full select-none overflow-hidden touch-none animate-fade-in"
                  onTouchMove={handleMove} 
                  onMouseMove={(e) => e.buttons === 1 && handleMove(e)}
-                 onMouseDown={handleMove} // Allow click-jump
+                 onMouseDown={handleMove} 
             >
-                
-                {/* Instructions Overlay (Fades out when finding signal) */}
                 <div className={`absolute top-24 text-center transition-opacity duration-500 ${signalStrength > 20 ? 'opacity-0' : 'opacity-100'}`}>
                      <div className="flex flex-col items-center text-cyan-800 animate-bounce">
                         <ChevronUp size={24} />
@@ -159,7 +196,6 @@ const DataScryingSpell = ({ onExit }: { onExit: () => void }) => {
                      </div>
                 </div>
 
-                {/* Background Matrix Rain Effect */}
                 <div className="absolute inset-0 pointer-events-none flex justify-between px-4 opacity-30">
                      {Array.from({length: 10}).map((_, i) => (
                          <div key={i} className="text-[10px] text-cyan-900 font-mono writing-vertical-rl text-orientation-upright animate-pulse"
@@ -174,14 +210,11 @@ const DataScryingSpell = ({ onExit }: { onExit: () => void }) => {
                         FREQUENCY: {tuning.toFixed(2)} MHz
                     </div>
 
-                    {/* Visualizer Box */}
                     <div className={`relative w-64 h-32 border-2 ${isLocked ? 'border-cyan-400 bg-cyan-900/20' : 'border-cyan-900 bg-black/50'} rounded-lg overflow-hidden transition-colors duration-300`}>
-                        {/* Static Noise Layer */}
                         <div className="absolute inset-0 bg-repeat opacity-40" 
                              style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='${2 - (signalStrength/60)}' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E")` }}>
                         </div>
                         
-                        {/* Signal Wave (Appears when close) */}
                         <div className="absolute inset-0 flex items-center justify-center">
                              <div className="w-full h-1 bg-cyan-400 shadow-[0_0_15px_#06b6d4] transition-all duration-100" 
                                   style={{ 
@@ -205,16 +238,11 @@ const DataScryingSpell = ({ onExit }: { onExit: () => void }) => {
                     </div>
                 </div>
 
-                {/* Right Side Slider Graphic (Interactive Area) */}
-                {/* FIX: Updated deprecated 'bg-gradient-to-l' to 'bg-linear-to-l' */}
                 <div className="absolute right-0 top-0 bottom-0 w-16 flex items-center justify-center bg-linear-to-l from-cyan-900/20 to-transparent">
-                    {/* Track */}
                     <div className="w-1 h-3/4 bg-cyan-900/50 rounded-full relative">
-                        {/* Target Hint (Subtle) */}
                         <div className="absolute w-2 h-2 bg-cyan-900/0 left-1/2 -translate-x-1/2" 
                              style={{ bottom: `${target.current}%` }}></div>
                         
-                        {/* Thumb */}
                         <div className="absolute w-6 h-6 bg-cyan-500 rounded-full left-1/2 -translate-x-1/2 shadow-[0_0_15px_#06b6d4] transition-all duration-75 ease-out"
                              style={{ bottom: `${tuning}%` }}>
                              <div className="absolute inset-0 bg-white rounded-full animate-ping opacity-30"></div>     
@@ -232,8 +260,8 @@ const DataScryingSpell = ({ onExit }: { onExit: () => void }) => {
         useEffect(() => {
             playDrone(true, 220); // Higher frequency drone
             
-            // Trigger the AI generation
-            generateDataScrying().then(text => setDecodedMessage(text));
+            // Trigger generation based on mode
+            generateDataScrying(intention, mode).then(text => setDecodedMessage(text));
 
             const interval = setInterval(() => {
                 setGazeTime(prev => {
@@ -258,8 +286,6 @@ const DataScryingSpell = ({ onExit }: { onExit: () => void }) => {
                 <div className="relative">
                     <div className="absolute inset-0 bg-cyan-500 blur-[100px] opacity-20 animate-pulse"></div>
                     
-                    {/* The Eye */}
-                    {/* FIX: Updated deprecated 'duration-[5000ms]' to 'duration-5000' */}
                     <div className="relative z-10 transition-all duration-5000" style={{ transform: `scale(${1 + gazeTime/50})` }}>
                         <Eye size={120} className="text-cyan-200" strokeWidth={0.5} />
                         <div className="absolute inset-0 flex items-center justify-center">
@@ -277,25 +303,58 @@ const DataScryingSpell = ({ onExit }: { onExit: () => void }) => {
 
     // --- STAGE 4: REVEAL (The Message) ---
     const RevealStage = () => {
+        
+        const handleBurnToDrive = async () => {
+            if (isSaved || isSaving) return;
+            setIsSaving(true);
+            try {
+                // Assuming session is passed or retrieved via context in real app.
+                // Using 'anon' or passed session ID.
+                const userId = session?.user?.id || 'anon';
+                await saveSpell(userId, {
+                    name: `Data Scry: ${intention.substring(0, 20)}...`,
+                    intention: intention,
+                    incantation: decodedMessage,
+                    element: "Air" // Electric magick maps well to Air/Spirit
+                });
+                setIsSaved(true);
+            } catch (error) {
+                console.error("Save failed:", error);
+            } finally {
+                setIsSaving(false);
+            }
+        };
+
         return (
             <div className="flex flex-col items-center justify-center h-full w-full px-8 text-center animate-fade-in">
                 <Binary className="text-cyan-700 mb-8 animate-bounce" size={48} />
                 
-                <div className="border-l-2 border-cyan-500 pl-6 py-4 bg-black/50 backdrop-blur-sm rounded-r-lg">
+                <div className="border-l-2 border-cyan-500 pl-6 py-4 bg-black/50 backdrop-blur-sm rounded-r-lg max-w-lg">
                     <h3 className="text-cyan-900 text-xs font-mono uppercase mb-4 text-left">
                         DAEMON.LOG // {new Date().toLocaleTimeString()}
                     </h3>
-                    <p className="text-xl md:text-3xl font-serif text-cyan-100 leading-relaxed drop-shadow-[0_0_8px_rgba(6,182,212,0.8)]">
+                    <p className="text-xl md:text-2xl font-serif text-cyan-100 leading-relaxed drop-shadow-[0_0_8px_rgba(6,182,212,0.8)]">
                         {decodedMessage || "PACKET LOSS DETECTED. RETRY."}
                     </p>
                 </div>
 
-                <button 
-                    onClick={onExit}
-                    className="mt-20 px-8 py-3 border border-cyan-900 text-cyan-700 hover:text-cyan-400 hover:border-cyan-400 transition-colors uppercase tracking-[0.2em] text-xs rounded"
-                >
-                    Terminate Session
-                </button>
+                <div className="flex flex-col gap-4 mt-12 w-full max-w-xs">
+                    <button 
+                        onClick={handleBurnToDrive}
+                        disabled={isSaved || isSaving}
+                        className="flex items-center justify-center gap-2 px-8 py-3 border border-cyan-500 bg-cyan-900/30 hover:bg-cyan-800/50 text-cyan-200 transition-colors uppercase tracking-[0.2em] text-xs rounded disabled:opacity-50"
+                    >
+                        {isSaved ? <Check size={16} /> : <Save size={16} />}
+                        {isSaved ? "SAVED TO DRIVE" : isSaving ? "BURNING..." : "BURN TO DRIVE (1 CREDIT)"}
+                    </button>
+
+                    <button 
+                        onClick={onExit}
+                        className="px-8 py-3 border border-cyan-900 text-cyan-700 hover:text-cyan-400 hover:border-cyan-400 transition-colors uppercase tracking-[0.2em] text-xs rounded"
+                    >
+                        Terminate Session
+                    </button>
+                </div>
             </div>
         );
     };
@@ -312,7 +371,8 @@ const DataScryingSpell = ({ onExit }: { onExit: () => void }) => {
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(6,182,212,0.1)_0%,rgba(0,0,0,1)_90%)] pointer-events-none z-0" />
             
             <div className="relative z-20 h-full w-full">
-                 {stage === 0 || stage === 1 ? <BioSyncStage /> : 
+                 {stage === 0 ? <IntentionStage /> : 
+                  stage === 1 ? <BioSyncStage /> : 
                   stage === 2 ? <TuningStage /> :
                   stage === 3 ? <FocusStage /> :
                   <RevealStage />}
@@ -323,3 +383,4 @@ const DataScryingSpell = ({ onExit }: { onExit: () => void }) => {
 };
 
 export default DataScryingSpell;
+// --- END OF FILE src/app/components/ElectricMagick/DataScryingSpell.tsx ---
