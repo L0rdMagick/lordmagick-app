@@ -2,13 +2,70 @@
 /// <reference lib="dom" />
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
-  Eye, X, Fingerprint, Radio, Binary, ChevronUp, ChevronDown, Zap, Sparkles, Save, Check
+  Eye, X, Fingerprint, Radio, Binary, ChevronUp, ChevronDown, Zap, Sparkles, Save, Check, Lock
 } from 'lucide-react';
 import { generateDataScrying, saveSpell } from '@/lib/services/geminiService';
 import { useAudioEngine, useParticleSystem, getMagickalNumber } from './hooks';
-import type { Session } from '@/lib/types'; // Ensure types are imported if needed for Session prop
+import type { Session } from '@/lib/types';
+
+// --- SUB-COMPONENTS (Defined outside to prevent re-render focus loss) ---
+
+interface IntentionStageProps {
+    intention: string;
+    setIntention: (val: string) => void;
+    onBegin: (mode: 'standard' | 'ai') => void;
+}
+
+const IntentionStage: React.FC<IntentionStageProps> = ({ intention, setIntention, onBegin }) => {
+    return (
+        <div className="flex flex-col items-center justify-center h-full w-full p-6 animate-fade-in">
+            <h2 className="text-2xl font-serif text-cyan-400 mb-6 tracking-[0.3em] uppercase text-center">Initialize Query</h2>
+            
+            <div className="w-full max-w-md mb-8 relative group">
+                <div className="absolute -inset-1 bg-cyan-500/20 blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-lg"></div>
+                <input 
+                    type="text" 
+                    value={intention}
+                    onChange={(e) => setIntention(e.target.value)}
+                    placeholder="ENTER TARGET DATA / INTENTION"
+                    className="relative w-full bg-black/80 border-b-2 border-cyan-900 text-cyan-100 text-center font-mono py-4 focus:outline-none focus:border-cyan-400 placeholder:text-cyan-900 transition-all uppercase tracking-widest text-lg z-10"
+                    autoFocus
+                />
+            </div>
+
+            <div className="flex flex-col gap-4 w-full max-w-xs z-10">
+                <button 
+                    onClick={() => onBegin('standard')}
+                    disabled={!intention}
+                    className="flex items-center gap-4 p-4 border border-cyan-800 bg-black/60 hover:bg-cyan-900/30 hover:border-cyan-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed group text-left backdrop-blur-sm"
+                >
+                    <Zap className="text-cyan-600 group-hover:text-cyan-400 transition-colors" size={24} />
+                    <div>
+                        <div className="text-cyan-200 font-mono text-sm tracking-wider font-bold">STANDARD SCAN</div>
+                        <div className="text-cyan-700 text-xs">Local Database. Instant. Free.</div>
+                    </div>
+                </button>
+
+                <button 
+                    onClick={() => onBegin('ai')}
+                    disabled={!intention}
+                    className="flex items-center gap-4 p-4 border border-purple-500/50 bg-purple-900/10 hover:bg-purple-900/30 hover:border-purple-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed group text-left relative overflow-hidden backdrop-blur-sm"
+                >
+                    <div className="absolute inset-0 bg-purple-500/5 group-hover:bg-purple-500/10 animate-pulse"></div>
+                    <Sparkles className="text-purple-400 group-hover:text-purple-200 relative z-10 transition-colors" size={24} />
+                    <div className="relative z-10">
+                        <div className="text-purple-200 font-mono text-sm tracking-wider font-bold">AI DECRYPTION</div>
+                        <div className="text-purple-400/70 text-xs">Deep Neural Analysis. 3 Credits.</div>
+                    </div>
+                </button>
+            </div>
+        </div>
+    );
+};
+
+// --- MAIN COMPONENT ---
 
 const DataScryingSpell = ({ onExit, session }: { onExit: () => void, session?: Session }) => {
     // Stage 0: Intention, 1: Bio-Sync, 2: Tuning, 3: Focus (Generation), 4: Reveal (Result & Save)
@@ -25,50 +82,9 @@ const DataScryingSpell = ({ onExit, session }: { onExit: () => void, session?: S
     const [isSaving, setIsSaving] = useState(false);
     const [isSaved, setIsSaved] = useState(false);
 
-    // --- STAGE 0: INTENTION INPUT ---
-    const IntentionStage = () => {
-        return (
-            <div className="flex flex-col items-center justify-center h-full w-full p-6 animate-fade-in">
-                <h2 className="text-2xl font-serif text-cyan-400 mb-6 tracking-[0.3em] uppercase">Initialize Query</h2>
-                
-                <div className="w-full max-w-md mb-8">
-                    <input 
-                        type="text" 
-                        value={intention}
-                        onChange={(e) => setIntention(e.target.value)}
-                        placeholder="ENTER TARGET DATA / INTENTION"
-                        className="w-full bg-black/50 border-b-2 border-cyan-800 text-cyan-100 text-center font-mono py-4 focus:outline-none focus:border-cyan-400 placeholder:text-cyan-900 transition-colors uppercase tracking-widest"
-                    />
-                </div>
-
-                <div className="flex flex-col gap-4 w-full max-w-xs">
-                    <button 
-                        onClick={() => { setMode('standard'); setStage(1); }}
-                        disabled={!intention}
-                        className="flex items-center gap-4 p-4 border border-cyan-800 bg-black/40 hover:bg-cyan-900/20 hover:border-cyan-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed group text-left"
-                    >
-                        <Zap className="text-cyan-600 group-hover:text-cyan-400" size={24} />
-                        <div>
-                            <div className="text-cyan-200 font-mono text-sm tracking-wider font-bold">STANDARD SCAN</div>
-                            <div className="text-cyan-700 text-xs">Standard Protocols. Free.</div>
-                        </div>
-                    </button>
-
-                    <button 
-                        onClick={() => { setMode('ai'); setStage(1); }}
-                        disabled={!intention}
-                        className="flex items-center gap-4 p-4 border border-purple-500/50 bg-purple-900/10 hover:bg-purple-900/30 hover:border-purple-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed group text-left relative overflow-hidden"
-                    >
-                        <div className="absolute inset-0 bg-purple-500/5 group-hover:bg-purple-500/10 animate-pulse"></div>
-                        <Sparkles className="text-purple-400 group-hover:text-purple-200 relative z-10" size={24} />
-                        <div className="relative z-10">
-                            <div className="text-purple-200 font-mono text-sm tracking-wider font-bold">AI DECRYPTION</div>
-                            <div className="text-purple-400/70 text-xs">Deep Neural Analysis. 3 Credits.</div>
-                        </div>
-                    </button>
-                </div>
-            </div>
-        );
+    const handleBegin = (selectedMode: 'standard' | 'ai') => {
+        setMode(selectedMode);
+        setStage(1);
     };
 
     // --- STAGE 1: BIO-SYNC (Fingerprint) ---
@@ -253,49 +269,102 @@ const DataScryingSpell = ({ onExit, session }: { onExit: () => void, session?: S
         );
     };
 
-    // --- STAGE 3: FOCUS (The Trance) ---
+    // --- STAGE 3: FOCUS (The Trance & Generation) ---
     const FocusStage = () => {
         const [gazeTime, setGazeTime] = useState(0);
+        const [isReady, setIsReady] = useState(false);
+        const [loadingStatus, setLoadingStatus] = useState("DECRYPTING...");
         
+        const loadingMessages = useMemo(() => [
+            "PARSING ETHERIC DATA...",
+            "TRAVERSING VOID GATES...",
+            "NEGOTIATING WITH THE MACHINE GOD...",
+            "BYPASSING REALITY FIREWALLS...",
+            "COMPILING FATE...",
+            "SYNCHRONIZING TIMELINES...",
+            "DECRYPTING SIGILS..."
+        ], []);
+
         useEffect(() => {
             playDrone(true, 220); // Higher frequency drone
-            
-            // Trigger generation based on mode
-            generateDataScrying(intention, mode).then(text => setDecodedMessage(text));
+            let messageIndex = 0;
+            let interval: NodeJS.Timeout;
+            let statusInterval: NodeJS.Timeout;
 
-            const interval = setInterval(() => {
+            // Trigger generation
+            generateDataScrying(intention, mode)
+                .then(text => {
+                    setDecodedMessage(text);
+                    setIsReady(true); // Signal that API is done
+                })
+                .catch(err => {
+                    console.error(err);
+                    setDecodedMessage("ERROR: SIGNAL LOST IN TRANSIT.");
+                    setIsReady(true);
+                });
+
+            // Status message cycler
+            statusInterval = setInterval(() => {
+                if (!isReady) {
+                    setLoadingStatus(loadingMessages[messageIndex % loadingMessages.length]);
+                    messageIndex++;
+                }
+            }, 2500);
+
+            // Progress bar logic
+            interval = setInterval(() => {
                 setGazeTime(prev => {
-                    if (prev >= 100) {
+                    // Fast track for Standard mode (simulated delay)
+                    const increment = mode === 'standard' ? 2 : 0.2; 
+                    const next = prev + increment;
+
+                    // Stall at 85% if API isn't ready
+                    if (next >= 85 && !isReady) {
+                        return 85; 
+                    }
+
+                    // Complete
+                    if (next >= 100) {
                         clearInterval(interval);
+                        clearInterval(statusInterval);
                         playTone(440, 'sine', 3, 0.2);
                         setTimeout(() => setStage(4), 2000);
                         return 100;
                     }
-                    return prev + 0.5; // Takes ~4 seconds to decode
+                    return next;
                 });
             }, 40);
             
             return () => {
                 clearInterval(interval);
+                clearInterval(statusInterval);
                 playDrone(false);
             };
-        }, [playDrone, playTone]);
+        }, [playDrone, playTone, isReady, loadingMessages, mode]);
 
         return (
-            <div className="flex flex-col items-center justify-center h-full w-full bg-black animate-fade-in">
+            <div className="flex flex-col items-center justify-center h-full w-full bg-black animate-fade-in px-4 text-center">
                 <div className="relative">
                     <div className="absolute inset-0 bg-cyan-500 blur-[100px] opacity-20 animate-pulse"></div>
                     
                     <div className="relative z-10 transition-all duration-5000" style={{ transform: `scale(${1 + gazeTime/50})` }}>
-                        <Eye size={120} className="text-cyan-200" strokeWidth={0.5} />
+                        <Eye size={120} className={isReady ? "text-cyan-100" : "text-cyan-800 animate-pulse"} strokeWidth={0.5} />
                         <div className="absolute inset-0 flex items-center justify-center">
-                             <div className="w-2 h-2 bg-white rounded-full animate-ping"></div>
+                             <div className={`w-2 h-2 bg-white rounded-full animate-ping ${isReady ? 'opacity-100' : 'opacity-20'}`}></div>
                         </div>
                     </div>
                 </div>
                 
-                <div className="mt-20 font-mono text-cyan-900 text-xs tracking-[1em] animate-pulse">
-                    DECRYPTING... {Math.floor(gazeTime)}%
+                <div className="mt-20 font-mono text-cyan-500 text-xs tracking-[0.2em] animate-pulse h-8">
+                    {Math.floor(gazeTime) === 85 && !isReady ? loadingStatus : `DECRYPTING... ${Math.floor(gazeTime)}%`}
+                </div>
+                
+                {/* Progress Bar Visual */}
+                <div className="w-64 h-1 bg-cyan-900/50 mt-4 rounded-full overflow-hidden">
+                    <div 
+                        className="h-full bg-cyan-400 transition-all duration-100 ease-linear"
+                        style={{ width: `${gazeTime}%` }}
+                    />
                 </div>
             </div>
         );
@@ -303,19 +372,16 @@ const DataScryingSpell = ({ onExit, session }: { onExit: () => void, session?: S
 
     // --- STAGE 4: REVEAL (The Message) ---
     const RevealStage = () => {
-        
         const handleBurnToDrive = async () => {
             if (isSaved || isSaving) return;
             setIsSaving(true);
             try {
-                // Assuming session is passed or retrieved via context in real app.
-                // Using 'anon' or passed session ID.
                 const userId = session?.user?.id || 'anon';
                 await saveSpell(userId, {
                     name: `Data Scry: ${intention.substring(0, 20)}...`,
                     intention: intention,
                     incantation: decodedMessage,
-                    element: "Air" // Electric magick maps well to Air/Spirit
+                    element: "Air" 
                 });
                 setIsSaved(true);
             } catch (error) {
@@ -329,16 +395,19 @@ const DataScryingSpell = ({ onExit, session }: { onExit: () => void, session?: S
             <div className="flex flex-col items-center justify-center h-full w-full px-8 text-center animate-fade-in">
                 <Binary className="text-cyan-700 mb-8 animate-bounce" size={48} />
                 
-                <div className="border-l-2 border-cyan-500 pl-6 py-4 bg-black/50 backdrop-blur-sm rounded-r-lg max-w-lg">
+                <div className="border-l-2 border-cyan-500 pl-6 py-4 bg-black/50 backdrop-blur-sm rounded-r-lg max-w-lg mb-8 relative">
+                    <div className="absolute top-0 right-0 p-2">
+                        <Lock size={12} className="text-cyan-900" />
+                    </div>
                     <h3 className="text-cyan-900 text-xs font-mono uppercase mb-4 text-left">
                         DAEMON.LOG // {new Date().toLocaleTimeString()}
                     </h3>
-                    <p className="text-xl md:text-2xl font-serif text-cyan-100 leading-relaxed drop-shadow-[0_0_8px_rgba(6,182,212,0.8)]">
+                    <p className="text-lg md:text-2xl font-serif text-cyan-100 leading-relaxed drop-shadow-[0_0_8px_rgba(6,182,212,0.8)] whitespace-pre-line">
                         {decodedMessage || "PACKET LOSS DETECTED. RETRY."}
                     </p>
                 </div>
 
-                <div className="flex flex-col gap-4 mt-12 w-full max-w-xs">
+                <div className="flex flex-col gap-4 w-full max-w-xs">
                     <button 
                         onClick={handleBurnToDrive}
                         disabled={isSaved || isSaving}
@@ -371,7 +440,7 @@ const DataScryingSpell = ({ onExit, session }: { onExit: () => void, session?: S
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(6,182,212,0.1)_0%,rgba(0,0,0,1)_90%)] pointer-events-none z-0" />
             
             <div className="relative z-20 h-full w-full">
-                 {stage === 0 ? <IntentionStage /> : 
+                 {stage === 0 ? <IntentionStage intention={intention} setIntention={setIntention} onBegin={handleBegin} /> : 
                   stage === 1 ? <BioSyncStage /> : 
                   stage === 2 ? <TuningStage /> :
                   stage === 3 ? <FocusStage /> :
