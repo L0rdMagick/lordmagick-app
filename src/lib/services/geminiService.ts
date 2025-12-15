@@ -159,12 +159,17 @@ const DATA_SCRY_PROGRAMMING = [
 // Helper to determine if input looks like a question or a command
 const getLocalDataScryResponse = (intention: string): string => {
     const lower = intention.toLowerCase().trim();
+    // Heuristic: Questions often start with helping verbs or end with '?'
     const isQuestion = lower.endsWith('?') || 
                        lower.startsWith('will') || 
                        lower.startsWith('does') || 
+                       lower.startsWith('do') || 
                        lower.startsWith('is') || 
                        lower.startsWith('should') ||
-                       lower.startsWith('can');
+                       lower.startsWith('can') ||
+                       lower.startsWith('what') ||
+                       lower.startsWith('when') ||
+                       lower.startsWith('how');
     
     if (isQuestion) {
         return DATA_SCRY_PREDICTIONS[Math.floor(Math.random() * DATA_SCRY_PREDICTIONS.length)];
