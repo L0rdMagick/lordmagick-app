@@ -155,11 +155,11 @@ const STANDARD_DATA_SCRY_RESPONSES = [
 
 export const generateDataScrying = async (intention: string, mode: 'standard' | 'ai' = 'standard'): Promise<string> => {
     if (mode === 'standard') {
-        // Return a random cryptic phrase
+        // Return a random cryptic phrase locally
         return STANDARD_DATA_SCRY_RESPONSES[Math.floor(Math.random() * STANDARD_DATA_SCRY_RESPONSES.length)];
     }
 
-    // Paid/AI Mode
+    // Paid/AI Mode - Call the Edge Function
     const { data, error } = await supabase.functions.invoke('generate-data-scry', {
         body: { intention, mode: 'ai' }, 
     });

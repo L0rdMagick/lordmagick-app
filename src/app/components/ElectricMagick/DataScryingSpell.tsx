@@ -4,13 +4,13 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
-  Eye, X, Fingerprint, Radio, Binary, ChevronUp, ChevronDown, Zap, Sparkles, Save, Check, Lock
+  Eye, X, Fingerprint, Radio, Binary, ChevronUp, ChevronDown, Zap, Sparkles, Save, Check, Lock, HardDrive
 } from 'lucide-react';
 import { generateDataScrying, saveSpell } from '@/lib/services/geminiService';
 import { useAudioEngine, useParticleSystem, getMagickalNumber } from './hooks';
 import type { Session } from '@/lib/types';
 
-// --- SUB-COMPONENTS ---
+// --- SUB-COMPONENTS (Defined outside to prevent re-render focus loss) ---
 
 interface IntentionStageProps {
     intention: string;
@@ -20,8 +20,8 @@ interface IntentionStageProps {
 
 const IntentionStage: React.FC<IntentionStageProps> = ({ intention, setIntention, onBegin }) => {
     return (
-        <div className="flex flex-col items-center justify-center h-full w-full p-6 animate-fade-in">
-            <h2 className="text-2xl font-serif text-cyan-400 mb-6 tracking-[0.3em] uppercase text-center">Initialize Query</h2>
+        <div className="flex flex-col items-center justify-center h-full w-full p-6 animate-fade-in relative z-20">
+            <h2 className="text-2xl font-serif text-cyan-400 mb-6 tracking-[0.3em] uppercase text-center drop-shadow-[0_0_10px_rgba(6,182,212,0.8)]">Initialize Query</h2>
             
             <div className="w-full max-w-md mb-8 relative group">
                 <div className="absolute -inset-1 bg-cyan-500/20 blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-lg"></div>
@@ -35,29 +35,35 @@ const IntentionStage: React.FC<IntentionStageProps> = ({ intention, setIntention
                 />
             </div>
 
-            <div className="flex flex-col gap-4 w-full max-w-xs z-10">
+            <div className="flex flex-col gap-4 w-full max-w-sm z-10">
                 <button 
                     onClick={() => onBegin('standard')}
                     disabled={!intention}
-                    className="flex items-center gap-4 p-4 border border-cyan-800 bg-black/60 hover:bg-cyan-900/30 hover:border-cyan-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed group text-left backdrop-blur-sm"
+                    className="flex items-center gap-4 p-4 border border-cyan-800 bg-black/60 hover:bg-cyan-900/30 hover:border-cyan-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed group text-left backdrop-blur-sm rounded-sm"
                 >
-                    <Zap className="text-cyan-600 group-hover:text-cyan-400 transition-colors" size={24} />
+                    <div className="bg-cyan-900/30 p-2 rounded-sm group-hover:bg-cyan-500/20 transition-colors">
+                        <Zap className="text-cyan-600 group-hover:text-cyan-400 transition-colors" size={20} />
+                    </div>
                     <div>
-                        <div className="text-cyan-200 font-mono text-sm tracking-wider font-bold">STANDARD SCAN</div>
-                        <div className="text-cyan-700 text-xs">Local Database. Instant. Free.</div>
+                        <div className="text-cyan-200 font-mono text-sm tracking-wider font-bold uppercase">Standard Protocol</div>
+                        <div className="text-cyan-700 text-[10px] tracking-wide mt-1">Local Database scan. Quick. Free.</div>
                     </div>
                 </button>
 
                 <button 
                     onClick={() => onBegin('ai')}
                     disabled={!intention}
-                    className="flex items-center gap-4 p-4 border border-purple-500/50 bg-purple-900/10 hover:bg-purple-900/30 hover:border-purple-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed group text-left relative overflow-hidden backdrop-blur-sm"
+                    className="flex items-center gap-4 p-4 border border-purple-500/50 bg-purple-900/10 hover:bg-purple-900/30 hover:border-purple-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed group text-left relative overflow-hidden backdrop-blur-sm rounded-sm"
                 >
                     <div className="absolute inset-0 bg-purple-500/5 group-hover:bg-purple-500/10 animate-pulse"></div>
-                    <Sparkles className="text-purple-400 group-hover:text-purple-200 relative z-10 transition-colors" size={24} />
+                    <div className="bg-purple-900/30 p-2 rounded-sm relative z-10 group-hover:bg-purple-500/20 transition-colors">
+                        <Sparkles className="text-purple-400 group-hover:text-purple-200 transition-colors" size={20} />
+                    </div>
                     <div className="relative z-10">
-                        <div className="text-purple-200 font-mono text-sm tracking-wider font-bold">AI DECRYPTION</div>
-                        <div className="text-purple-400/70 text-xs">Deep Neural Analysis. 3 Credits.</div>
+                        <div className="text-purple-200 font-mono text-sm tracking-wider font-bold uppercase flex items-center gap-2">
+                             Deep Net Decryption
+                        </div>
+                        <div className="text-purple-400/70 text-[10px] tracking-wide mt-1">Neural Analysis of Intent. 3 Credits.</div>
                     </div>
                 </button>
             </div>
@@ -87,7 +93,7 @@ const DataScryingSpell = ({ onExit, session }: { onExit: () => void, session?: S
         setStage(1);
     };
 
-    // --- STAGE 1: BIO-SYNC ---
+    // --- STAGE 1: BIO-SYNC (Fingerprint) ---
     const BioSyncStage = () => {
         const [progress, setProgress] = useState(0);
         const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -98,8 +104,8 @@ const DataScryingSpell = ({ onExit, session }: { onExit: () => void, session?: S
             playDrone(true, 60); 
             intervalRef.current = setInterval(() => {
                 setProgress(prev => {
-                    const next = prev + 2; 
-                    playTone(200 + next * 5, 'sawtooth', 0.1, 0.05); 
+                    const next = prev + 2; // Takes ~2.5 seconds
+                    playTone(200 + next * 5, 'sawtooth', 0.1, 0.05); // Climbing pitch
                     if (next >= 100) {
                         if (intervalRef.current) clearInterval(intervalRef.current);
                         
@@ -124,8 +130,9 @@ const DataScryingSpell = ({ onExit, session }: { onExit: () => void, session?: S
         };
 
         return (
-            <div className="flex flex-col items-center justify-center h-full w-full select-none touch-none animate-fade-in">
+            <div className="flex flex-col items-center justify-center h-full w-full select-none touch-none animate-fade-in relative z-20">
                 <h2 className="text-xl font-serif text-cyan-400 mb-12 tracking-[0.3em] uppercase animate-pulse text-center">Bio-Sync Required</h2>
+                
                 <div 
                     className="relative w-32 h-32 flex items-center justify-center cursor-pointer active:scale-95 transition-transform"
                     onMouseDown={handleStart}
@@ -135,18 +142,28 @@ const DataScryingSpell = ({ onExit, session }: { onExit: () => void, session?: S
                     onTouchEnd={handleEnd}
                 >
                     <div className="absolute inset-0 border-2 border-cyan-900 rounded-full"></div>
-                    <div className="absolute inset-0 border-2 border-cyan-400 rounded-full" style={{ clipPath: `inset(${100 - progress}% 0 0 0)` }}></div>
-                    <Fingerprint size={64} className={`text-cyan-500 transition-all duration-200 ${progress > 0 ? 'scale-110 text-cyan-200' : 'scale-100'}`} />
-                    <div className="absolute inset-0 bg-cyan-500 blur-xl rounded-full transition-opacity duration-200" style={{ opacity: progress / 100 }}></div>
+                    <div className="absolute inset-0 border-2 border-cyan-400 rounded-full" 
+                         style={{ clipPath: `inset(${100 - progress}% 0 0 0)` }}></div>
+                    
+                    <Fingerprint 
+                        size={64} 
+                        className={`text-cyan-500 transition-all duration-200 ${progress > 0 ? 'scale-110 text-cyan-200' : 'scale-100'}`} 
+                    />
+                    
+                    <div className="absolute inset-0 bg-cyan-500 blur-xl rounded-full transition-opacity duration-200"
+                         style={{ opacity: progress / 100 }}></div>
                 </div>
-                <p className="mt-12 text-cyan-700 text-[10px] font-mono tracking-widest animate-pulse">HOLD TO INTEGRATE</p>
+                
+                <p className="mt-12 text-cyan-700 text-[10px] font-mono tracking-widest animate-pulse">
+                    HOLD TO INTEGRATE NERVOUS SYSTEM
+                </p>
             </div>
         );
     };
 
-    // --- STAGE 2: TUNING ---
+    // --- STAGE 2: TUNING (The Stream) ---
     const TuningStage = () => {
-        const [tuning, setTuning] = useState(50);
+        const [tuning, setTuning] = useState(50); // 0-100
         const target = useRef(getMagickalNumber(15, 85)); 
         const [signalStrength, setSignalStrength] = useState(0);
         const [isLocked, setIsLocked] = useState(false);
@@ -173,18 +190,25 @@ const DataScryingSpell = ({ onExit, session }: { onExit: () => void, session?: S
             modulateFilter(100 + (strength * 25)); 
             
             if (strength > 90 && !isLocked) {
-                 if (Math.random() > 0.92) playTone(880, 'sine', 0.1, 0.1); 
+                 if (Math.random() > 0.92) {
+                     playTone(880, 'sine', 0.1, 0.1); 
+                 }
+                 
                  if (strength > 96) {
                     setIsLocked(true);
                     playTone(1200, 'sine', 2, 0.5);
-                    setTimeout(() => setStage(3), 1000);
+                    setTimeout(() => {
+                        setStage(3);
+                    }, 1000);
                  }
             }
         };
 
         return (
-            <div className="flex flex-col items-center justify-center h-full w-full select-none overflow-hidden touch-none animate-fade-in"
-                 onTouchMove={handleMove} onMouseMove={(e) => e.buttons === 1 && handleMove(e)} onMouseDown={handleMove} 
+            <div className="flex flex-col items-center justify-center h-full w-full select-none overflow-hidden touch-none animate-fade-in relative z-20"
+                 onTouchMove={handleMove} 
+                 onMouseMove={(e) => e.buttons === 1 && handleMove(e)}
+                 onMouseDown={handleMove} 
             >
                 <div className={`absolute top-24 text-center transition-opacity duration-500 ${signalStrength > 20 ? 'opacity-0' : 'opacity-100'}`}>
                      <div className="flex flex-col items-center text-cyan-800 animate-bounce">
@@ -193,20 +217,56 @@ const DataScryingSpell = ({ onExit, session }: { onExit: () => void, session?: S
                         <ChevronDown size={24} />
                      </div>
                 </div>
+
+                <div className="absolute inset-0 pointer-events-none flex justify-between px-4 opacity-30">
+                     {Array.from({length: 10}).map((_, i) => (
+                         <div key={i} className="text-[10px] text-cyan-900 font-mono writing-vertical-rl text-orientation-upright animate-pulse"
+                              style={{ animationDelay: `${i * 0.2}s` }}>
+                             {Array.from({length: 20}).map(() => Math.random() > 0.5 ? '1' : '0').join('')}
+                         </div>
+                     ))}
+                </div>
+
                 <div className="z-20 text-center space-y-8 pointer-events-none">
-                    <div className="text-cyan-400 font-mono text-xs tracking-widest mb-4">FREQUENCY: {tuning.toFixed(2)} MHz</div>
+                    <div className="text-cyan-400 font-mono text-xs tracking-widest mb-4">
+                        FREQUENCY: {tuning.toFixed(2)} MHz
+                    </div>
+
                     <div className={`relative w-64 h-32 border-2 ${isLocked ? 'border-cyan-400 bg-cyan-900/20' : 'border-cyan-900 bg-black/50'} rounded-lg overflow-hidden transition-colors duration-300`}>
-                        <div className="absolute inset-0 bg-repeat opacity-40" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='${2 - (signalStrength/60)}' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E")` }}></div>
-                        <div className="absolute inset-0 flex items-center justify-center">
-                             <div className="w-full h-1 bg-cyan-400 shadow-[0_0_15px_#06b6d4] transition-all duration-100" style={{ transform: `scaleY(${1 + (signalStrength/5)}) scaleX(${signalStrength/100})`, opacity: signalStrength / 100 }}></div>
+                        <div className="absolute inset-0 bg-repeat opacity-40" 
+                             style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='${2 - (signalStrength/60)}' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E")` }}>
                         </div>
-                        {isLocked && <div className="absolute inset-0 flex items-center justify-center bg-cyan-500/20"><span className="text-cyan-100 font-bold tracking-widest animate-pulse">LOCKED</span></div>}
+                        
+                        <div className="absolute inset-0 flex items-center justify-center">
+                             <div className="w-full h-1 bg-cyan-400 shadow-[0_0_15px_#06b6d4] transition-all duration-100" 
+                                  style={{ 
+                                      transform: `scaleY(${1 + (signalStrength/5)}) scaleX(${signalStrength/100})`,
+                                      opacity: signalStrength / 100
+                                  }}></div>
+                        </div>
+
+                        {isLocked && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-cyan-500/20">
+                                <span className="text-cyan-100 font-bold tracking-widest animate-pulse">LOCKED</span>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className={`flex items-center justify-center gap-4 ${isLocked ? 'text-white' : 'text-cyan-700'}`}>
+                        <Radio className={isLocked ? "animate-ping text-cyan-400" : ""} />
+                        <span className="text-xs font-serif uppercase tracking-widest">
+                            {isLocked ? "DOWNLOADING..." : "SCANNING ETHER..."}
+                        </span>
                     </div>
                 </div>
+
                 <div className="absolute right-0 top-0 bottom-0 w-16 flex items-center justify-center bg-linear-to-l from-cyan-900/20 to-transparent">
                     <div className="w-1 h-3/4 bg-cyan-900/50 rounded-full relative">
-                        <div className="absolute w-2 h-2 bg-cyan-900/0 left-1/2 -translate-x-1/2" style={{ bottom: `${target.current}%` }}></div>
-                        <div className="absolute w-6 h-6 bg-cyan-500 rounded-full left-1/2 -translate-x-1/2 shadow-[0_0_15px_#06b6d4] transition-all duration-75 ease-out" style={{ bottom: `${tuning}%` }}>
+                        <div className="absolute w-2 h-2 bg-cyan-900/0 left-1/2 -translate-x-1/2" 
+                             style={{ bottom: `${target.current}%` }}></div>
+                        
+                        <div className="absolute w-6 h-6 bg-cyan-500 rounded-full left-1/2 -translate-x-1/2 shadow-[0_0_15px_#06b6d4] transition-all duration-75 ease-out"
+                             style={{ bottom: `${tuning}%` }}>
                              <div className="absolute inset-0 bg-white rounded-full animate-ping opacity-30"></div>     
                         </div>
                     </div>
@@ -218,9 +278,8 @@ const DataScryingSpell = ({ onExit, session }: { onExit: () => void, session?: S
     // --- STAGE 3: FOCUS (The Trance & Generation) ---
     const FocusStage = () => {
         const [gazeTime, setGazeTime] = useState(0);
-        // Use a Ref for API completion status to avoid dependency loop in useEffect
-        const isReadyRef = useRef(false);
-        const [loadingStatus, setLoadingStatus] = useState("INITIALIZING...");
+        const [isReady, setIsReady] = useState(false);
+        const [loadingStatus, setLoadingStatus] = useState("DECRYPTING...");
         
         const loadingMessages = useMemo(() => [
             "PARSING ETHERIC DATA...",
@@ -233,52 +292,40 @@ const DataScryingSpell = ({ onExit, session }: { onExit: () => void, session?: S
         ], []);
 
         useEffect(() => {
-            playDrone(true, 220); 
-            
-            // 1. API Call Definition
-            const fetchData = async () => {
-                try {
-                    // Safety Timeout (15 seconds)
-                    const timeoutPromise = new Promise((_, reject) => 
-                        setTimeout(() => reject(new Error("Timeout")), 15000)
-                    );
-                    
-                    const apiPromise = generateDataScrying(intention, mode);
-
-                    // Race API vs Timeout
-                    const result = await Promise.race([apiPromise, timeoutPromise]);
-                    
-                    setDecodedMessage(result as string);
-                    isReadyRef.current = true; // Signal completion to the interval
-                } catch (err) {
-                    console.error("Scrying failed:", err);
-                    setDecodedMessage(mode === 'ai' 
-                        ? "SIGNAL WEAK. PACKET LOSS. TRY AGAIN." 
-                        : "DATA CORRUPTED.");
-                    isReadyRef.current = true; // Force completion so UI unblocks
-                }
-            };
-
-            // 2. Trigger API
-            fetchData();
-
-            // 3. Status Message Cycler
+            playDrone(true, 220); // Higher frequency drone
             let messageIndex = 0;
-            const statusInterval = setInterval(() => {
-                if (!isReadyRef.current) {
+            let interval: NodeJS.Timeout;
+            let statusInterval: NodeJS.Timeout;
+
+            // Trigger generation
+            generateDataScrying(intention, mode)
+                .then(text => {
+                    setDecodedMessage(text);
+                    setIsReady(true); // Signal that API is done
+                })
+                .catch(err => {
+                    console.error(err);
+                    setDecodedMessage("ERROR: SIGNAL LOST IN TRANSIT.");
+                    setIsReady(true);
+                });
+
+            // Status message cycler
+            statusInterval = setInterval(() => {
+                if (!isReady) {
                     setLoadingStatus(loadingMessages[messageIndex % loadingMessages.length]);
                     messageIndex++;
                 }
-            }, 2000);
+            }, 2500);
 
-            // 4. Progress Bar Animation
-            const interval = setInterval(() => {
+            // Progress bar logic
+            interval = setInterval(() => {
                 setGazeTime(prev => {
-                    const increment = mode === 'standard' ? 2 : 0.5;
+                    // Fast track for Standard mode (simulated delay)
+                    const increment = mode === 'standard' ? 2 : 0.2; 
                     const next = prev + increment;
 
                     // Stall at 85% if API isn't ready
-                    if (next >= 85 && !isReadyRef.current) {
+                    if (next >= 85 && !isReady) {
                         return 85; 
                     }
 
@@ -287,7 +334,7 @@ const DataScryingSpell = ({ onExit, session }: { onExit: () => void, session?: S
                         clearInterval(interval);
                         clearInterval(statusInterval);
                         playTone(440, 'sine', 3, 0.2);
-                        setTimeout(() => setStage(4), 500);
+                        setTimeout(() => setStage(4), 2000);
                         return 100;
                     }
                     return next;
@@ -299,26 +346,31 @@ const DataScryingSpell = ({ onExit, session }: { onExit: () => void, session?: S
                 clearInterval(statusInterval);
                 playDrone(false);
             };
-        }, []); // Empty dependency array ensures API is called exactly once
+        }, [playDrone, playTone, isReady, loadingMessages, mode, intention]);
 
         return (
-            <div className="flex flex-col items-center justify-center h-full w-full bg-black animate-fade-in px-4 text-center">
+            <div className="flex flex-col items-center justify-center h-full w-full bg-black animate-fade-in px-4 text-center relative z-20">
                 <div className="relative">
                     <div className="absolute inset-0 bg-cyan-500 blur-[100px] opacity-20 animate-pulse"></div>
+                    
                     <div className="relative z-10 transition-all duration-5000" style={{ transform: `scale(${1 + gazeTime/50})` }}>
-                        <Eye size={120} className={isReadyRef.current ? "text-cyan-100" : "text-cyan-800 animate-pulse"} strokeWidth={0.5} />
+                        <Eye size={120} className={isReady ? "text-cyan-100" : "text-cyan-800 animate-pulse"} strokeWidth={0.5} />
                         <div className="absolute inset-0 flex items-center justify-center">
-                             <div className={`w-2 h-2 bg-white rounded-full animate-ping ${isReadyRef.current ? 'opacity-100' : 'opacity-20'}`}></div>
+                             <div className={`w-2 h-2 bg-white rounded-full animate-ping ${isReady ? 'opacity-100' : 'opacity-20'}`}></div>
                         </div>
                     </div>
                 </div>
                 
                 <div className="mt-20 font-mono text-cyan-500 text-xs tracking-[0.2em] animate-pulse h-8">
-                    {Math.floor(gazeTime) >= 85 && !isReadyRef.current ? loadingStatus : `DECRYPTING... ${Math.floor(gazeTime)}%`}
+                    {Math.floor(gazeTime) === 85 && !isReady ? loadingStatus : `DECRYPTING... ${Math.floor(gazeTime)}%`}
                 </div>
                 
+                {/* Progress Bar Visual */}
                 <div className="w-64 h-1 bg-cyan-900/50 mt-4 rounded-full overflow-hidden">
-                    <div className="h-full bg-cyan-400 transition-all duration-100 ease-linear" style={{ width: `${gazeTime}%` }} />
+                    <div 
+                        className="h-full bg-cyan-400 transition-all duration-100 ease-linear"
+                        style={{ width: `${gazeTime}%` }}
+                    />
                 </div>
             </div>
         );
@@ -346,7 +398,7 @@ const DataScryingSpell = ({ onExit, session }: { onExit: () => void, session?: S
         };
 
         return (
-            <div className="flex flex-col items-center justify-center h-full w-full px-8 text-center animate-fade-in">
+            <div className="flex flex-col items-center justify-center h-full w-full px-8 text-center animate-fade-in relative z-20">
                 <Binary className="text-cyan-700 mb-8 animate-bounce" size={48} />
                 
                 <div className="border-l-2 border-cyan-500 pl-6 py-4 bg-black/50 backdrop-blur-sm rounded-r-lg max-w-lg mb-8 relative">
@@ -365,15 +417,15 @@ const DataScryingSpell = ({ onExit, session }: { onExit: () => void, session?: S
                     <button 
                         onClick={handleBurnToDrive}
                         disabled={isSaved || isSaving}
-                        className="flex items-center justify-center gap-2 px-8 py-3 border border-cyan-500 bg-cyan-900/30 hover:bg-cyan-800/50 text-cyan-200 transition-colors uppercase tracking-[0.2em] text-xs rounded disabled:opacity-50"
+                        className="flex items-center justify-center gap-3 px-8 py-4 border border-cyan-500 bg-cyan-900/30 hover:bg-cyan-800/50 text-cyan-200 transition-colors uppercase tracking-[0.2em] text-xs rounded-sm disabled:opacity-50 group"
                     >
-                        {isSaved ? <Check size={16} /> : <Save size={16} />}
-                        {isSaved ? "SAVED TO DRIVE" : isSaving ? "BURNING..." : "BURN TO DRIVE (1 CREDIT)"}
+                        {isSaved ? <Check size={16} /> : <HardDrive size={16} />}
+                        <span>{isSaved ? "SAVED TO ETHER" : isSaving ? "BURNING..." : "BURN TO ETHER DRIVE (1 CREDIT)"}</span>
                     </button>
 
                     <button 
                         onClick={onExit}
-                        className="px-8 py-3 border border-cyan-900 text-cyan-700 hover:text-cyan-400 hover:border-cyan-400 transition-colors uppercase tracking-[0.2em] text-xs rounded"
+                        className="px-8 py-3 border border-cyan-900/50 text-cyan-700 hover:text-cyan-400 hover:border-cyan-400 transition-colors uppercase tracking-[0.2em] text-xs rounded-sm"
                     >
                         Terminate Session
                     </button>
