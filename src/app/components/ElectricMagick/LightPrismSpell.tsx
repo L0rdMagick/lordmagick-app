@@ -3,351 +3,602 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Triangle, Sun, X, Zap } from 'lucide-react';
-import { generateElectricLightPrism } from '@/lib/services/geminiService';
+import { 
+    Triangle, Hexagon, Activity, Zap, Radio, 
+    Eye, Cloud, Lock, ShieldAlert, CheckCircle, 
+    Cpu, RefreshCw, X, Save, Power 
+} from 'lucide-react';
+import { generateElectricNeuralLink, saveSpell } from '@/lib/services/geminiService';
 import { useAudioEngine, useParticleSystem } from './hooks';
+import type { Session } from '@/lib/types';
 
 // --- CONFIGURATION ---
-const RAYS = [
-    { name: "CRIMSON", intent: "VITALITY & POWER", color: "#ef4444", freq: 396 },
-    { name: "AMBER", intent: "CREATIVITY & FLOW", color: "#f59e0b", freq: 417 },
-    { name: "EMERALD", intent: "GROWTH & WEALTH", color: "#10b981", freq: 528 },
-    { name: "AZURE", intent: "TRUTH & CLARITY", color: "#3b82f6", freq: 639 },
-    { name: "VIOLET", intent: "SPIRIT & MYSTERY", color: "#8b5cf6", freq: 852 },
-    { name: "PEARL", intent: "PURIFICATION", color: "#ffffff", freq: 963 },
+const COST = 5;
+
+const SECTORS = [
+    { 
+        id: 'ROOT', 
+        name: 'HARDWARE SECTOR', 
+        color: '#ef4444', 
+        context: 'Physical Reality, Safety, Resources',
+        task: 'STABILIZE',
+        desc: 'Detecting instability in base reality code. Anchor the signal.'
+    },
+    { 
+        id: 'SACRAL', 
+        name: 'FLOW SECTOR', 
+        color: '#f97316', 
+        context: 'Creativity, Desire, Momentum',
+        task: 'SYNCHRONIZE',
+        desc: 'Bandwidth throttled. Sync the waveform to restore flow.'
+    },
+    { 
+        id: 'SOLAR', 
+        name: 'POWER SECTOR', 
+        color: '#eab308', 
+        context: 'Willpower, Ego, Action',
+        task: 'CHARGE',
+        desc: 'Voltage critical. Manually cycle the capacitor.'
+    },
+    { 
+        id: 'HEART', 
+        name: 'NETWORK SECTOR', 
+        color: '#22c55e', 
+        context: 'Love, Connection, Empathy',
+        task: 'LINK',
+        desc: 'Node fragmentation detected. Re-establish the mesh.'
+    },
+    { 
+        id: 'THROAT', 
+        name: 'OUTPUT SECTOR', 
+        color: '#3b82f6', 
+        context: 'Truth, Expression, Code',
+        task: 'TUNE',
+        desc: 'Signal noise high. Calibrate the output frequency.'
+    },
+    { 
+        id: 'BROW', 
+        name: 'RENDER SECTOR', 
+        color: '#6366f1', 
+        context: 'Vision, Intuition, Perception',
+        task: 'ALIGN',
+        desc: 'Holographic misalignment. Focus the lens.'
+    },
+    { 
+        id: 'CROWN', 
+        name: 'SOURCE SECTOR', 
+        color: '#a855f7', 
+        context: 'Spirit, Void, Divine',
+        task: 'UPLOAD',
+        desc: 'Uplink offline. Inject code into the Subatomic Void.'
+    }
 ];
 
-// --- SUB-COMPONENTS ---
+// --- MINI-GAME COMPONENTS ---
 
-interface SelectionStageProps {
-    onSelect: (ray: typeof RAYS[0]) => void;
-}
+const ActivityStabilize = ({ onComplete, color }: { onComplete: () => void, color: string }) => {
+    const [stability, setStability] = useState(0);
+    const shake = Math.max(0, 10 - (stability / 10));
 
-const SelectionStage = ({ onSelect }: SelectionStageProps) => (
-    <div className="flex flex-col items-center justify-center h-full w-full px-6 animate-fade-in overflow-y-auto py-10">
-        <Triangle className="text-white mb-8 animate-spin-slow" size={48} strokeWidth={1} />
-        <h2 className="text-2xl font-serif text-white mb-8 tracking-[0.3em] text-center">CHOOSE YOUR RAY</h2>
-        
-        <div className="grid grid-cols-1 gap-4 w-full max-w-sm">
-            {RAYS.map((ray) => (
-                <button
-                    key={ray.name}
-                    onClick={() => onSelect(ray)}
-                    className="group relative overflow-hidden border border-white/20 p-6 rounded transition-all duration-300 hover:border-white hover:scale-105"
-                >
-                    <div className="absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity duration-500"
-                         style={{ backgroundColor: ray.color }}></div>
-                    <div className="relative z-10 flex justify-between items-center">
-                        <span className="font-serif text-lg tracking-widest text-white">{ray.name}</span>
-                        <span className="text-[10px] font-mono text-gray-400">{ray.intent}</span>
-                    </div>
-                </button>
-            ))}
-        </div>
-    </div>
-);
-
-interface GatheringStageProps {
-    onNext: () => void;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    playDrone: (active: boolean, freq?: number) => void;
-}
-
-const GatheringStage = ({ onNext, playDrone }: GatheringStageProps) => {
-    const [charge, setCharge] = useState(0);
-    const intervalRef = useRef<NodeJS.Timeout | null>(null);
-
-    const handleStart = (e: React.PointerEvent | React.TouchEvent | React.MouseEvent) => {
+    const handleHold = (e: React.PointerEvent) => {
         e.preventDefault();
-        playDrone(true, 100);
-        intervalRef.current = setInterval(() => {
-            setCharge(prev => {
-                if (prev >= 100) {
-                    if(intervalRef.current) clearInterval(intervalRef.current);
-                    onNext();
+        const interval = setInterval(() => {
+            setStability(p => {
+                if (p >= 100) {
+                    clearInterval(interval);
+                    onComplete();
                     return 100;
                 }
-                return prev + 1; // ~2 seconds to fill
+                return p + 1;
             });
-        }, 20);
-    };
-
-    const handleEnd = () => {
-        if (intervalRef.current) clearInterval(intervalRef.current);
-        setCharge(0);
-        playDrone(false);
+        }, 30);
+        const cleanup = () => clearInterval(interval);
+        e.currentTarget.addEventListener('pointerup', cleanup);
+        e.currentTarget.addEventListener('pointerleave', cleanup);
     };
 
     return (
-        <div className="flex flex-col items-center justify-center h-full w-full select-none bg-black transition-colors duration-100"
-             style={{ backgroundColor: `rgba(255,255,255,${charge/200})` }}>
-            
-            <div 
-                className="relative cursor-pointer touch-none"
-                onMouseDown={handleStart}
-                onMouseUp={handleEnd}
-                onMouseLeave={handleEnd}
-                onTouchStart={handleStart}
-                onTouchEnd={handleEnd}
-            >
-                <div className="absolute inset-0 bg-white rounded-full blur-[50px] transition-opacity duration-100"
-                     style={{ opacity: charge / 100 }}></div>
-                
-                <Sun 
-                    size={80} 
-                    className={`text-white transition-transform duration-200 ${charge > 0 ? 'scale-110' : 'scale-100'}`} 
-                />
+        <div className="flex flex-col items-center">
+            <div className="mb-8 w-32 h-32 border-4 flex items-center justify-center transition-all"
+                 style={{ 
+                     borderColor: color, 
+                     transform: `translate(${Math.random()*shake}px, ${Math.random()*shake}px)`,
+                     opacity: 0.5 + (stability/200)
+                 }}>
+                <ShieldAlert size={48} color={color} />
             </div>
-            
-            <p className={`mt-12 font-mono text-xs tracking-[0.3em] transition-colors ${charge > 50 ? 'text-black' : 'text-white'}`}>
-                HOLD TO DRAW DOWN THE WHITE LIGHT
-            </p>
+            <button onPointerDown={handleHold} className="px-8 py-4 border border-white/30 hover:bg-white/10 tracking-widest font-mono text-xs">
+                HOLD TO STABILIZE
+            </button>
+            <div className="w-64 h-1 bg-gray-800 mt-4"><div className="h-full transition-all" style={{ width: `${stability}%`, background: color }}/></div>
         </div>
     );
 };
 
-interface RefractionStageProps {
-    targetRay: typeof RAYS[0];
-    onNext: () => void;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    playTone: (freq: number, type?: any, dur?: number, vol?: number) => void;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    playDrone: (active: boolean, freq?: number) => void;
-    modulateFilter: (val: number) => void;
-}
-
-const RefractionStage = ({ targetRay, onNext, playTone, playDrone, modulateFilter }: RefractionStageProps) => {
-    const [angle, setAngle] = useState(0); // 0 to 100 slider value
-    const [intensity, setIntensity] = useState(0); // How close to perfect
-    const [locked, setLocked] = useState(false);
-    
-    // The "Sweet Spot" is random each time
-    const sweetSpot = useRef(Math.floor(Math.random() * 70) + 15);
-
-    useEffect(() => {
-        playDrone(true, 200);
-        return () => playDrone(false);
-    }, [playDrone]);
+const ActivitySync = ({ onComplete, color }: { onComplete: () => void, color: string }) => {
+    const [val, setVal] = useState(50);
+    const target = 82; // Arbitrary sweet spot
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handleChange = (e: any) => {
-        const val = parseInt(e.target.value);
-        setAngle(val);
-
-        const dist = Math.abs(val - sweetSpot.current);
-        const newIntensity = Math.max(0, 100 - (dist * 4)); // 25 unit range
-        setIntensity(newIntensity);
-
-        // Audio Feedback
-        // As we get closer, filter opens up (brighter sound) + pitch modulation
-        modulateFilter(200 + (newIntensity * 20)); 
-        
-        if (newIntensity > 95 && !locked) {
-            if (Math.random() > 0.8) {
-                playTone(targetRay.freq * 2, 'sine', 0.1, 0.1); // Sparkle sound
-            }
-        }
-    };
-
-    const handleHold = (e: React.PointerEvent | React.TouchEvent | React.MouseEvent) => {
-        e.preventDefault();
-        if (intensity > 90 && !locked) {
-            setLocked(true);
-            playTone(targetRay.freq, 'sawtooth', 2, 0.5);
-            setTimeout(onNext, 2000);
+        const v = parseInt(e.target.value);
+        setVal(v);
+        if (Math.abs(v - target) < 5) {
+            setTimeout(onComplete, 1000);
         }
     };
 
     return (
-        <div className="flex flex-col items-center justify-center h-full w-full px-6 overflow-hidden">
-            {/* The Prism Visual */}
-            <div className="relative w-full max-w-xs aspect-square flex items-center justify-center mb-12">
-                {/* The Beam Input (White) */}
-                {/* FIX: Updated deprecated 'bg-gradient-to-b' to 'bg-linear-to-b' */}
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2 h-1/2 bg-linear-to-b from-white to-transparent opacity-50" />
-                
-                {/* The Crystal */}
-                <div className="relative z-10 transition-transform duration-300" style={{ transform: `rotate(${angle - 50}deg)` }}>
-                     <Triangle 
-                        size={160} 
-                        className="text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.8)]" 
-                        strokeWidth={1}
-                        fill="rgba(255,255,255,0.1)"
-                     />
-                </div>
-
-                {/* The Refracted Beam (Output) */}
-                {/* This grows and colors as intensity increases */}
-                <div 
-                    className="absolute top-1/2 left-1/2 w-[200%] h-[200%] -translate-x-1/2 -translate-y-1/2 rounded-full pointer-events-none blur-3xl transition-all duration-100"
-                    style={{ 
-                        backgroundColor: targetRay.color,
-                        opacity: intensity / 100,
-                        transform: `scale(${0.5 + (intensity/100)})`
-                    }}
-                />
+        <div className="flex flex-col items-center w-full max-w-xs">
+            <div className="relative h-32 w-full overflow-hidden border-x border-white/10 mb-8">
+                {/* Static Wave */}
+                <svg className="absolute inset-0 w-full h-full opacity-30" preserveAspectRatio="none">
+                    <path d="M0,64 Q50,10 100,64 T200,64 T300,64" fill="none" stroke={color} strokeWidth="2" />
+                </svg>
+                {/* User Wave */}
+                <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none">
+                    <path d={`M0,64 Q50,${10 + (val - target)*2} 100,64 T200,64 T300,64`} fill="none" stroke="white" strokeWidth="2" />
+                </svg>
             </div>
-
-            {/* Slider */}
-            <div className="w-full max-w-md space-y-2">
-                <input 
-                    type="range" 
-                    min="0" max="100" 
-                    value={angle} 
-                    onChange={handleChange}
-                    className="w-full h-2 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-white"
-                />
-                <div className="flex justify-between text-[10px] font-mono text-gray-500 tracking-widest">
-                    <span>REFRACT</span>
-                    <span>FOCUS</span>
-                    <span>ALIGN</span>
-                </div>
-            </div>
-
-            {/* Lock Button */}
-            <button
-                onMouseDown={handleHold}
-                onTouchStart={handleHold}
-                disabled={intensity < 90}
-                className={`mt-12 w-24 h-24 rounded-full border-2 flex items-center justify-center transition-all duration-300
-                    ${intensity > 90 
-                        ? 'border-white bg-white/10 shadow-[0_0_30px_white] scale-110' 
-                        : 'border-gray-800 text-gray-800 opacity-50'
-                    }`}
-                style={{ borderColor: intensity > 90 ? targetRay.color : undefined }}
-            >
-                <Zap size={32} className={intensity > 90 ? "text-white animate-pulse" : "text-gray-800"} />
-            </button>
-
-            <p className="mt-8 text-gray-400 text-[10px] font-mono tracking-[0.2em] text-center">
-                {locked ? "RESONANCE CRITICAL" : "TUNE THE PRISM TO THE FREQUENCY"}
-            </p>
+            <input type="range" min="0" max="100" value={val} onChange={handleChange} className="w-full accent-white" />
+            <p className="mt-4 font-mono text-[10px] tracking-widest text-gray-400">MATCH THE WAVEFORM</p>
         </div>
     );
 };
 
-interface ProjectionStageProps {
-    ray: typeof RAYS[0];
-    onExit: () => void;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    playTone: (freq: number, type?: any, dur?: number, vol?: number) => void;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    spawnExplosion: (x: number, y: number, color?: string, count?: number) => void;
-}
+const ActivityCharge = ({ onComplete, color }: { onComplete: () => void, color: string }) => {
+    const [charge, setCharge] = useState(0);
 
-const ProjectionStage = ({ ray, onExit, playTone, spawnExplosion }: ProjectionStageProps) => {
-    const [message, setMessage] = useState("");
+    const handleTap = () => {
+        setCharge(p => {
+            const n = p + 10;
+            if (n >= 100) { onComplete(); return 100; }
+            return n;
+        });
+    };
 
     useEffect(() => {
-        const run = async () => {
-            // FIX: Safe window access via globalThis
-            const win = (globalThis as any).window;
-            if (win) {
-                spawnExplosion(win.innerWidth/2, win.innerHeight/2, ray.color, 100);
-            }
-            
-            playTone(ray.freq, 'sine', 3, 0.3); // The Solfeggio freq
-            
-            const msg = await generateElectricLightPrism(ray.name, ray.intent);
-            setMessage(msg);
-        };
-        run();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        const decay = setInterval(() => setCharge(p => Math.max(0, p - 2)), 100);
+        return () => clearInterval(decay);
     }, []);
 
     return (
-        <div 
-            className="flex flex-col items-center justify-center h-full w-full px-8 text-center animate-fade-in transition-colors duration-1000"
-            style={{ 
-                background: `radial-gradient(circle at center, ${ray.color}22 0%, black 100%)`
-            }}
-        >
-            <Sun className="mb-8 animate-spin-slow" size={80} style={{ color: ray.color }} />
-            
-            <div className="border-y border-white/20 py-8 w-full max-w-md backdrop-blur-sm">
-                <h3 className="text-white font-serif text-2xl tracking-widest mb-4">{ray.name} RAY PROJECTED</h3>
-                {message ? (
-                    <p className="font-serif text-lg leading-relaxed text-gray-200 animate-fade-in drop-shadow-md">
-                        &quot;{message}&quot;
-                    </p>
-                ) : (
-                    <p className="font-mono text-xs text-gray-500 animate-pulse">BURNING INTENTION INTO AETHER...</p>
-                )}
-            </div>
-
+        <div className="flex flex-col items-center">
             <button 
-                onClick={onExit}
-                className="mt-16 text-[10px] text-gray-400 hover:text-white uppercase tracking-[0.4em] transition-colors border-b border-transparent hover:border-white pb-1"
+                onPointerDown={handleTap}
+                className="w-32 h-32 rounded-full border-4 flex items-center justify-center active:scale-95 transition-transform mb-8"
+                style={{ borderColor: color, boxShadow: `0 0 ${charge}px ${color}` }}
             >
-                Dissipate
+                <Zap size={48} className={charge > 80 ? "text-white" : "text-gray-500"} />
             </button>
+            <p className="font-mono text-[10px] tracking-widest text-gray-400">RAPID TAP TO GENERATE VOLTAGE</p>
+            <div className="w-64 h-2 bg-gray-900 mt-4 rounded-full overflow-hidden">
+                <div className="h-full transition-all duration-75" style={{ width: `${charge}%`, background: color }} />
+            </div>
+        </div>
+    );
+};
+
+const ActivityLink = ({ onComplete, color }: { onComplete: () => void, color: string }) => {
+    const [nodes, setNodes] = useState([false, false, false]);
+
+    const toggleNode = (i: number) => {
+        const newNodes = [...nodes];
+        newNodes[i] = true;
+        setNodes(newNodes);
+        if (newNodes.every(Boolean)) setTimeout(onComplete, 500);
+    };
+
+    return (
+        <div className="relative w-64 h-64">
+            <svg className="absolute inset-0 w-full h-full pointer-events-none">
+                <line x1="50%" y1="10%" x2="10%" y2="90%" stroke={nodes[0] && nodes[1] ? color : "#333"} strokeWidth="2" />
+                <line x1="10%" y1="90%" x2="90%" y2="90%" stroke={nodes[1] && nodes[2] ? color : "#333"} strokeWidth="2" />
+                <line x1="90%" y1="90%" x2="50%" y2="10%" stroke={nodes[2] && nodes[0] ? color : "#333"} strokeWidth="2" />
+            </svg>
+            {[
+                { top: '10%', left: '50%' },
+                { top: '90%', left: '10%' },
+                { top: '90%', left: '90%' }
+            ].map((pos, i) => (
+                <button
+                    key={i}
+                    onClick={() => toggleNode(i)}
+                    className={`absolute w-12 h-12 -ml-6 -mt-6 rounded-full border-2 flex items-center justify-center transition-colors ${nodes[i] ? 'bg-white border-transparent' : 'bg-black border-gray-700'}`}
+                    style={{ ...pos, boxShadow: nodes[i] ? `0 0 20px ${color}` : 'none' }}
+                >
+                    <div className="w-2 h-2 rounded-full bg-black" />
+                </button>
+            ))}
+            <div className="absolute bottom-[-40px] w-full text-center font-mono text-[10px] text-gray-400">ACTIVATE NODES</div>
+        </div>
+    );
+};
+
+const ActivityTune = ({ onComplete, color }: { onComplete: () => void, color: string }) => {
+    const [freq, setFreq] = useState(0);
+    const target = 66;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const handleChange = (e: any) => {
+        const v = parseInt(e.target.value);
+        setFreq(v);
+        if (Math.abs(v - target) < 2) setTimeout(onComplete, 800);
+    };
+
+    return (
+        <div className="flex flex-col items-center w-full max-w-xs">
+            <Radio size={48} className="mb-8" color={Math.abs(freq - target) < 10 ? 'white' : '#333'} />
+            <div className="font-mono text-4xl mb-8" style={{ color: Math.abs(freq - target) < 2 ? color : '#555' }}>
+                {freq.toFixed(1)} MHz
+            </div>
+            <input type="range" min="0" max="100" step="0.1" value={freq} onChange={handleChange} className="w-full accent-white" />
+            <p className="mt-4 font-mono text-[10px] tracking-widest text-gray-400">FINE TUNE SIGNAL</p>
+        </div>
+    );
+};
+
+const ActivityAlign = ({ onComplete, color }: { onComplete: () => void, color: string }) => {
+    const [x, setX] = useState(20);
+    
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const handleChange = (e: any) => {
+        const v = parseInt(e.target.value);
+        setX(v);
+        if (v === 0) setTimeout(onComplete, 800);
+    };
+
+    return (
+        <div className="flex flex-col items-center">
+            <div className="relative w-48 h-48 mb-8 flex items-center justify-center">
+                <Triangle size={100} className="absolute text-gray-700" strokeWidth={1} />
+                <Triangle 
+                    size={100} 
+                    className="absolute transition-transform" 
+                    style={{ color, transform: `translateX(${x}px) rotate(${x}deg)` }} 
+                    strokeWidth={1}
+                />
+            </div>
+            <input type="range" min="-50" max="50" value={x} onChange={handleChange} className="w-64 accent-white" />
+            <p className="mt-4 font-mono text-[10px] tracking-widest text-gray-400">ALIGN THE OPTICS</p>
+        </div>
+    );
+};
+
+const ActivityUpload = ({ onComplete, color }: { onComplete: () => void, color: string }) => {
+    const [progress, setProgress] = useState(0);
+
+    const handleHold = (e: React.PointerEvent) => {
+        e.preventDefault();
+        const interval = setInterval(() => {
+            setProgress(p => {
+                if (p >= 100) {
+                    clearInterval(interval);
+                    onComplete();
+                    return 100;
+                }
+                return p + 2;
+            });
+        }, 50);
+        const cleanup = () => clearInterval(interval);
+        e.currentTarget.addEventListener('pointerup', cleanup);
+        e.currentTarget.addEventListener('pointerleave', cleanup);
+    };
+
+    return (
+        <div className="flex flex-col items-center">
+            <button 
+                onPointerDown={handleHold}
+                className="w-48 h-48 rounded-full border-2 border-dashed flex items-center justify-center mb-8 relative overflow-hidden"
+                style={{ borderColor: color }}
+            >
+                <div className="absolute inset-0 bg-white transition-transform duration-100 origin-bottom"
+                     style={{ transform: `scaleY(${progress/100})`, background: color, opacity: 0.2 }} />
+                <Cloud size={48} className="relative z-10 text-white" />
+            </button>
+            <p className="font-mono text-[10px] tracking-widest text-gray-400">HOLD TO INJECT CODE</p>
         </div>
     );
 };
 
 // --- MAIN ORCHESTRATOR ---
 
-const LightPrismSpell = ({ onExit }: { onExit: () => void }) => {
-    const [stage, setStage] = useState(0);
-    const [selectedRay, setSelectedRay] = useState<typeof RAYS[0] | null>(null);
+const RealityOverwriteSpell = ({ onExit, session }: { onExit: () => void, session?: Session }) => {
+    const [started, setStarted] = useState(false);
+    const [sectorIndex, setSectorIndex] = useState(0);
+    const [subStage, setSubStage] = useState<'input' | 'processing' | 'incantation' | 'activity' | 'complete'>('input');
+    const [userInput, setUserInput] = useState('');
+    const [aiResponse, setAiResponse] = useState('');
+    const [log, setLog] = useState<string[]>([]);
     
-    const { initAudio, playTone, playDrone, modulateFilter } = useAudioEngine();
+    // Final stages
+    const [finalStage, setFinalStage] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const [isSaved, setIsSaved] = useState(false);
+
+    const { initAudio, playTone, playDrone } = useAudioEngine();
     const { canvasRef, spawnExplosion } = useParticleSystem();
 
-    // Initialize audio on first interaction
-    useEffect(() => {
-        if (stage === 1) initAudio();
-    }, [stage, initAudio]);
+    const currentSector = SECTORS[sectorIndex];
 
-    const handleSelect = (ray: typeof RAYS[0]) => {
-        setSelectedRay(ray);
-        setStage(1);
+    // -- INTRO --
+    if (!started) {
+        return (
+            <div className="fixed inset-0 bg-black text-white flex flex-col items-center justify-center p-8 z-50">
+                <div className="max-w-lg border border-red-500/50 p-8 bg-black/90 relative shadow-[0_0_50px_rgba(220,38,38,0.2)]">
+                    <div className="absolute top-0 left-0 bg-red-900/20 px-2 py-1 text-[10px] font-mono text-red-400">SYS_ADMIN_ACCESS_REQ</div>
+                    <h1 className="text-3xl font-serif text-red-500 mb-6 tracking-widest text-center">CORE REALITY OVERWRITE</h1>
+                    <p className="text-gray-300 font-mono text-xs leading-relaxed mb-6 text-justify">
+                        WARNING: You are about to access the Central Universal Backend. This protocol initiates a 7-stage total system reboot, clearing corrupt karmic code from every layer of your existence.
+                        <br/><br/>
+                        This process is irreversible. It requires full participation in all 7 Sector Activations.
+                    </p>
+                    <div className="flex justify-between items-center border-t border-red-900/30 pt-6">
+                        <div className="flex flex-col">
+                            <span className="text-[10px] text-gray-500 font-mono">REQUIRED RESOURCES</span>
+                            <span className="text-xl font-serif text-white">{COST} AETHER (CREDITS)</span>
+                        </div>
+                        <button 
+                            onClick={() => { initAudio(); setStarted(true); }}
+                            className="bg-red-600 hover:bg-red-500 text-black font-bold px-8 py-3 font-mono text-xs tracking-widest transition-colors"
+                        >
+                            INITIATE REBOOT
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // -- HELPERS --
+
+    const addToLog = (msg: string) => {
+        setLog(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`]);
     };
 
-    const styles = `
-        @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        .animate-spin-slow { animation: spin-slow 10s linear infinite; }
-        @keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-fade-in { animation: fade-in 1s ease-out forwards; }
-    `;
+    const handleInputSubmit = async () => {
+        if (!userInput) return;
+        setSubStage('processing');
+        addToLog(`Scanning ${currentSector.name}...`);
+        playDrone(true, 100 + (sectorIndex * 50));
+
+        try {
+            // Use existing neural link service but frame it for this spell
+            const prompt = `Context: ${currentSector.name} (${currentSector.context}). User wants to overwrite: "${userInput}". Generate a short, cryptic, cyberpunk/magickal incantation (2 lines max) to execute this code patch.`;
+            const result = await generateElectricNeuralLink("CORE_SYSTEM", prompt, 'ai');
+            
+            // The service returns a struct, we just need the text essentially
+            setAiResponse(result.incantation1 || result.finalResult); 
+            setSubStage('incantation');
+            playTone(880, 'sine', 0.5);
+        } catch (e) {
+            console.error(e);
+            setAiResponse("ERROR: CONNECTION UNSTABLE. FORCING LOCAL OVERWRITE.");
+            setSubStage('incantation');
+        }
+    };
+
+    const handleIncantationRecited = () => {
+        playTone(440, 'square', 0.2);
+        setSubStage('activity');
+        addToLog("Incantation verified. Unlocking Activity Protocol.");
+    };
+
+    const handleActivityComplete = () => {
+        // FIX: Use globalThis for safe window access
+        const win = (globalThis as any).window;
+        if (win) {
+            spawnExplosion(win.innerWidth/2, win.innerHeight/2, currentSector.color, 50);
+        }
+        playTone(currentSector.id === 'CROWN' ? 1000 : 200 + (sectorIndex * 100), 'sawtooth', 1);
+        setSubStage('complete');
+    };
+
+    const advanceSector = () => {
+        if (sectorIndex < 6) {
+            setSectorIndex(prev => prev + 1);
+            setSubStage('input');
+            setUserInput('');
+            setAiResponse('');
+            playDrone(false);
+        } else {
+            setFinalStage(true);
+            playDrone(true, 50); // Deep drone for finale
+        }
+    };
+
+    const handleSave = async () => {
+        if (isSaved || isSaving) return;
+        setIsSaving(true);
+        try {
+            await saveSpell(session?.user?.id || 'anon', {
+                name: `System Reboot: ${new Date().toLocaleDateString()}`,
+                intention: "Total Reality Code Overwrite",
+                incantation: log.join('\n'),
+                element: "Spirit"
+            });
+            setIsSaved(true);
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    // -- RENDERERS --
+
+    if (finalStage) {
+        return (
+            <div className="fixed inset-0 bg-black flex flex-col items-center justify-center text-center p-8 z-40 animate-fade-in">
+                <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none z-0" style={{ mixBlendMode: 'screen' }} />
+                <div className="relative z-10 max-w-2xl">
+                    <CheckCircle className="mx-auto text-green-500 mb-8 animate-bounce" size={80} />
+                    <h2 className="text-4xl font-serif text-white mb-4 tracking-widest">SYSTEM REBOOT COMPLETE</h2>
+                    <p className="text-gray-400 font-mono text-sm mb-8">
+                        All sectors optimized. Reality code patched.
+                        <br/>Core frequency aligned with intended timeline.
+                    </p>
+                    
+                    <div className="bg-gray-900/50 p-4 rounded border border-gray-800 mb-8 text-left h-48 overflow-y-auto font-mono text-[10px] text-green-400/80">
+                        {log.map((l, i) => <div key={i}>{l}</div>)}
+                        <div className="text-white animate-pulse">{"> REBOOT_SUCCESSFUL. GOOD FORTUNE INITIALIZED."}</div>
+                    </div>
+
+                    <div className="flex gap-4 justify-center">
+                        <button 
+                            onClick={handleSave}
+                            disabled={isSaved || isSaving}
+                            className="flex items-center gap-2 px-8 py-3 border border-green-500 bg-green-900/20 text-green-400 hover:bg-green-900/40 transition-colors uppercase font-mono text-xs"
+                        >
+                            {isSaved ? <CheckCircle size={16}/> : <Save size={16}/>}
+                            {isSaved ? "LOG SAVED" : "SAVE LOG (5 CREDITS)"}
+                        </button>
+                        <button 
+                            onClick={onExit}
+                            className="flex items-center gap-2 px-8 py-3 border border-gray-700 text-gray-400 hover:border-white hover:text-white transition-colors uppercase font-mono text-xs"
+                        >
+                            <Power size={16}/>
+                            TERMINATE SESSION
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
-        <div className="fixed inset-0 bg-black text-white overflow-hidden select-none font-sans touch-none z-50">
+        <div className="fixed inset-0 bg-black text-white font-sans overflow-hidden select-none z-40 flex flex-col">
             <button onClick={onExit} className="absolute top-6 right-6 z-50 text-gray-600 hover:text-white transition-colors"><X size={24}/></button>
-            <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none z-10" style={{ mixBlendMode: 'screen' }} />
+            <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none z-0" style={{ mixBlendMode: 'screen' }} />
             
-            <div className="relative z-20 h-full w-full">
-                 {stage === 0 && <SelectionStage onSelect={handleSelect} />}
-                 
-                 {stage === 1 && selectedRay && (
-                    <GatheringStage 
-                        onNext={() => setStage(2)} 
-                        playDrone={playDrone} 
-                    />
-                 )}
-                 
-                 {stage === 2 && selectedRay && (
-                    <RefractionStage 
-                        targetRay={selectedRay} 
-                        onNext={() => setStage(3)} 
-                        playTone={playTone}
-                        playDrone={playDrone}
-                        modulateFilter={modulateFilter}
-                    />
-                 )}
-                 
-                 {stage === 3 && selectedRay && (
-                    <ProjectionStage 
-                        ray={selectedRay} 
-                        onExit={onExit}
-                        playTone={playTone}
-                        spawnExplosion={spawnExplosion}
-                    />
-                 )}
+            {/* Header / Progress */}
+            <div className="relative z-10 w-full p-6 border-b border-gray-900 bg-black/50 backdrop-blur-md flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                    <Cpu className="text-gray-500" size={20} />
+                    <div>
+                        <div className="text-[10px] font-mono text-gray-500 tracking-widest">CURRENT SECTOR</div>
+                        <div className="text-xl font-serif tracking-wider" style={{ color: currentSector.color }}>{currentSector.name}</div>
+                    </div>
+                </div>
+                <div className="flex gap-1">
+                    {SECTORS.map((s, i) => (
+                        <div key={s.id} className={`w-2 h-8 rounded-sm transition-all ${i === sectorIndex ? 'bg-white scale-y-125' : i < sectorIndex ? 'bg-gray-600' : 'bg-gray-900'}`} style={{ backgroundColor: i <= sectorIndex ? s.color : undefined, opacity: i === sectorIndex ? 1 : 0.5 }} />
+                    ))}
+                </div>
             </div>
-            <style>{styles}</style>
+
+            {/* Main Content Area */}
+            <div className="relative z-10 flex-1 flex flex-col items-center justify-center p-6 animate-fade-in" key={sectorIndex}>
+                
+                {/* 1. INPUT PHASE */}
+                {subStage === 'input' && (
+                    <div className="w-full max-w-md animate-fade-in-up">
+                        <div className="mb-8 text-center">
+                            <Activity size={48} className="mx-auto mb-4 animate-pulse" style={{ color: currentSector.color }} />
+                            <p className="text-gray-400 font-mono text-xs uppercase tracking-widest mb-2">DIAGNOSTIC:</p>
+                            <p className="text-lg font-serif italic text-white/90">{currentSector.desc}</p>
+                        </div>
+                        
+                        <div className="group relative">
+                            <label className="block text-[10px] font-mono text-gray-500 mb-2 tracking-widest uppercase">
+                                ENTER CORRUPT DATA TO OVERWRITE ({currentSector.context})
+                            </label>
+                            <textarea 
+                                value={userInput}
+                                onChange={(e) => setUserInput(e.target.value)}
+                                className="w-full bg-gray-900/50 border border-gray-700 p-4 text-white focus:outline-none focus:border-white font-mono text-sm h-32 resize-none rounded"
+                                placeholder="e.g. Constant anxiety about money..."
+                                autoFocus
+                            />
+                        </div>
+                        
+                        <button 
+                            onClick={handleInputSubmit}
+                            disabled={!userInput}
+                            className="w-full mt-6 py-4 border border-white/20 hover:bg-white/10 hover:border-white transition-all uppercase tracking-[0.2em] text-xs disabled:opacity-30"
+                        >
+                            <span className="flex items-center justify-center gap-2">
+                                <RefreshCw size={14} /> GENERATE PATCH CODE
+                            </span>
+                        </button>
+                    </div>
+                )}
+
+                {/* 2. PROCESSING */}
+                {subStage === 'processing' && (
+                    <div className="text-center">
+                        <div className="w-16 h-16 border-4 border-t-transparent rounded-full animate-spin mx-auto mb-8" style={{ borderColor: `${currentSector.color} transparent transparent transparent` }} />
+                        <p className="font-mono text-xs animate-pulse text-gray-400">COMPILING HEURISTIC OVERWRITE...</p>
+                    </div>
+                )}
+
+                {/* 3. INCANTATION */}
+                {subStage === 'incantation' && (
+                    <div className="w-full max-w-lg text-center animate-fade-in">
+                        <div className="bg-gray-900/80 border border-gray-700 p-8 rounded-lg relative overflow-hidden mb-8">
+                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-white to-transparent opacity-20" />
+                            <p className="font-serif text-2xl leading-relaxed text-white drop-shadow-md">
+                                &quot;{aiResponse}&quot;
+                            </p>
+                        </div>
+                        <p className="text-[10px] font-mono text-gray-500 uppercase tracking-widest mb-6">
+                            RECITE ALOUD TO INITIALIZE PATCH
+                        </p>
+                        <button 
+                            onClick={handleIncantationRecited}
+                            className="px-8 py-3 bg-white/5 border border-white/20 hover:bg-white/20 transition-all uppercase tracking-[0.2em] text-xs rounded"
+                        >
+                            CONFIRM VOCALIZATION
+                        </button>
+                    </div>
+                )}
+
+                {/* 4. ACTIVITY */}
+                {subStage === 'activity' && (
+                    <div className="animate-fade-in w-full flex flex-col items-center">
+                        <h3 className="text-xl font-mono text-gray-400 mb-12 tracking-widest uppercase">
+                            EXECUTE PROTOCOL: <span style={{ color: currentSector.color }}>{currentSector.task}</span>
+                        </h3>
+                        
+                        {sectorIndex === 0 && <ActivityStabilize onComplete={handleActivityComplete} color={currentSector.color} />}
+                        {sectorIndex === 1 && <ActivitySync onComplete={handleActivityComplete} color={currentSector.color} />}
+                        {sectorIndex === 2 && <ActivityCharge onComplete={handleActivityComplete} color={currentSector.color} />}
+                        {sectorIndex === 3 && <ActivityLink onComplete={handleActivityComplete} color={currentSector.color} />}
+                        {sectorIndex === 4 && <ActivityTune onComplete={handleActivityComplete} color={currentSector.color} />}
+                        {sectorIndex === 5 && <ActivityAlign onComplete={handleActivityComplete} color={currentSector.color} />}
+                        {sectorIndex === 6 && <ActivityUpload onComplete={handleActivityComplete} color={currentSector.color} />}
+                    </div>
+                )}
+
+                {/* 5. SECTOR COMPLETE */}
+                {subStage === 'complete' && (
+                    <div className="text-center animate-fade-in-up">
+                        <div className="w-24 h-24 rounded-full border-4 border-green-500 flex items-center justify-center mx-auto mb-6 shadow-[0_0_30px_#22c55e]">
+                            <CheckCircle size={48} className="text-green-500" />
+                        </div>
+                        <h2 className="text-2xl font-serif text-white mb-2">SECTOR OPTIMIZED</h2>
+                        <p className="font-mono text-xs text-gray-500 mb-8">Code injected. Reality shifting.</p>
+                        <button 
+                            onClick={advanceSector}
+                            className="px-12 py-4 bg-gray-100 text-black font-bold hover:bg-white hover:scale-105 transition-all uppercase tracking-[0.2em] text-xs rounded"
+                        >
+                            {sectorIndex < 6 ? "ADVANCE TO NEXT SECTOR" : "FINALIZE SYSTEM REBOOT"}
+                        </button>
+                    </div>
+                )}
+
+            </div>
+
+            {/* Styles */}
+            <style jsx global>{`
+                @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+                @keyframes fade-in-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+                .animate-fade-in { animation: fade-in 0.5s ease-out forwards; }
+                .animate-fade-in-up { animation: fade-in-up 0.5s ease-out forwards; }
+            `}</style>
         </div>
     );
 };
 
-export default LightPrismSpell;
+export default RealityOverwriteSpell;
+// --- END OF FILE src/app/components/ElectricMagick/LightPrismSpell.tsx ---
