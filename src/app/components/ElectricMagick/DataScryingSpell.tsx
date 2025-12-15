@@ -99,7 +99,9 @@ const DataScryingSpell = ({ onExit, session }: { onExit: () => void, session?: S
         const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
         const handleStart = (e: React.MouseEvent | React.TouchEvent | React.PointerEvent) => {
-            e.preventDefault();
+            // FIX: Check if event is cancelable to prevent "passive event listener" error
+            if (e.cancelable) e.preventDefault();
+            
             initAudio();
             playDrone(true, 60); 
             intervalRef.current = setInterval(() => {
@@ -175,6 +177,9 @@ const DataScryingSpell = ({ onExit, session }: { onExit: () => void, session?: S
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const handleMove = (e: any) => {
+            // FIX: Check cancelable to prevent console errors
+            if (e.cancelable) e.preventDefault();
+
             const win = (globalThis as any).window;
             if (!win) return;
 
@@ -209,6 +214,7 @@ const DataScryingSpell = ({ onExit, session }: { onExit: () => void, session?: S
                  onTouchMove={handleMove} 
                  onMouseMove={(e) => e.buttons === 1 && handleMove(e)}
                  onMouseDown={handleMove} 
+                 style={{ touchAction: 'none' }} // FIX: Explicitly disable browser touch actions
             >
                 <div className={`absolute top-24 text-center transition-opacity duration-500 ${signalStrength > 20 ? 'opacity-0' : 'opacity-100'}`}>
                      <div className="flex flex-col items-center text-cyan-800 animate-bounce">
@@ -280,6 +286,7 @@ const DataScryingSpell = ({ onExit, session }: { onExit: () => void, session?: S
         const [gazeTime, setGazeTime] = useState(0);
         const [isReady, setIsReady] = useState(false);
         const [loadingStatus, setLoadingStatus] = useState("DECRYPTING...");
+        const hasGenerated = useRef(false);
         
         const loadingMessages = useMemo(() => [
             "PARSING ETHERIC DATA...",
@@ -297,17 +304,20 @@ const DataScryingSpell = ({ onExit, session }: { onExit: () => void, session?: S
             let interval: NodeJS.Timeout;
             let statusInterval: NodeJS.Timeout;
 
-            // Trigger generation
-            generateDataScrying(intention, mode)
-                .then(text => {
-                    setDecodedMessage(text);
-                    setIsReady(true); // Signal that API is done
-                })
-                .catch(err => {
-                    console.error(err);
-                    setDecodedMessage("ERROR: SIGNAL LOST IN TRANSIT.");
-                    setIsReady(true);
-                });
+            // Trigger generation ONLY ONCE
+            if (!hasGenerated.current) {
+                hasGenerated.current = true;
+                generateDataScrying(intention, mode)
+                    .then(text => {
+                        setDecodedMessage(text);
+                        setIsReady(true);
+                    })
+                    .catch(err => {
+                        console.error("Scrying Error:", err);
+                        setDecodedMessage("ERROR: SIGNAL CORRUPTED. REBOOT SYSTEM.");
+                        setIsReady(true);
+                    });
+            }
 
             // Status message cycler
             statusInterval = setInterval(() => {

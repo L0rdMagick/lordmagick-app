@@ -163,9 +163,11 @@ export const generateDataScrying = async (intention: string, mode: 'standard' | 
     const { data, error } = await supabase.functions.invoke('generate-data-scry', {
         body: { intention, mode: 'ai' }, 
     });
-    if (error) {
-        console.error("Error invoking generate-data-scry:", error);
-        return "ERROR: SIGNAL CORRUPTED. REBOOT SYSTEM.";
+
+    // Check for both transport errors and empty data responses (common with Auth failures/406s)
+    if (error || !data || !data.result) {
+        console.error("Error invoking generate-data-scry:", error || "No data returned");
+        return "ERROR: SIGNAL CORRUPTED. AUTHENTICATION FAILURE OR NETWORK ENTROPY DETECTED.";
     }
     return data.result;
 };
