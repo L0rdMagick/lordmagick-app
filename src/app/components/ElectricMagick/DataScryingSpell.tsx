@@ -2,7 +2,7 @@
 /// <reference lib="dom" />
 "use client";
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Eye, X, Fingerprint, Radio, Binary, ChevronUp, ChevronDown, Zap, Sparkles, Save, Check, Lock, HardDrive
 } from 'lucide-react';
@@ -74,6 +74,7 @@ const IntentionStage: React.FC<IntentionStageProps> = ({ intention, setIntention
 // --- MAIN COMPONENT ---
 
 const DataScryingSpell = ({ onExit, session }: { onExit: () => void, session?: Session }) => {
+    // Stage 0: Intention, 1: Bio-Sync, 2: Tuning, 3: Focus (Generation), 4: Reveal (Result & Save)
     const [stage, setStage] = useState(0); 
     const { initAudio, playTone, playDrone, modulateFilter } = useAudioEngine();
     const { canvasRef, spawnExplosion } = useParticleSystem();
@@ -95,7 +96,8 @@ const DataScryingSpell = ({ onExit, session }: { onExit: () => void, session?: S
     // --- STAGE 1: BIO-SYNC ---
     const BioSyncStage = () => {
         const [progress, setProgress] = useState(0);
-        const intervalRef = useRef<NodeJS.Timeout | null>(null);
+        // eslint-disable-next-line no-undef
+        const intervalRef = React.useRef<NodeJS.Timeout | null>(null);
 
         const handleStart = (e: React.MouseEvent | React.TouchEvent | React.PointerEvent) => {
             if (e.cancelable) e.preventDefault();
@@ -158,7 +160,7 @@ const DataScryingSpell = ({ onExit, session }: { onExit: () => void, session?: S
     // --- STAGE 2: TUNING ---
     const TuningStage = () => {
         const [tuning, setTuning] = useState(50); 
-        const target = useRef(getMagickalNumber(15, 85)); 
+        const target = React.useRef(getMagickalNumber(15, 85)); 
         const [signalStrength, setSignalStrength] = useState(0);
         const [isLocked, setIsLocked] = useState(false);
         
@@ -268,9 +270,6 @@ const DataScryingSpell = ({ onExit, session }: { onExit: () => void, session?: S
     // --- STAGE 3: FOCUS (The Trance & Generation) ---
     const FocusStage = () => {
         const [gazeTime, setGazeTime] = useState(0);
-        const isReadyRef = useRef(false);
-        const hasGeneratedRef = useRef(false);
-        const [isReadyState, setIsReadyState] = useState(false);
         const [loadingStatus, setLoadingStatus] = useState("DECRYPTING...");
         
         const loadingMessages = useMemo(() => [
@@ -283,76 +282,81 @@ const DataScryingSpell = ({ onExit, session }: { onExit: () => void, session?: S
             "DECRYPTING SIGILS..."
         ], []);
 
+        // 1. DATA FETCHING EFFECT (Runs Once)
+        useEffect(() => {
+            let active = true;
+            
+            const fetchData = async () => {
+                // Safety Timeout wrapper to ensure we always get a result
+                const timeoutPromise = new Promise<string>((resolve) => 
+                    setTimeout(() => resolve("CONNECTION TIMEOUT. BACKUP PROTOCOL ENGAGED.\nOUTCOME: 88% PROBABILITY OF SUCCESS."), 12000)
+                );
+                
+                // Actual API call
+                const apiPromise = generateDataScrying(intention, mode);
+
+                try {
+                    const result = await Promise.race([apiPromise, timeoutPromise]);
+                    if (active) {
+                        setDecodedMessage(result);
+                    }
+                } catch (err) {
+                    console.error("Scrying Failed:", err);
+                    if (active) {
+                        setDecodedMessage("ERROR: SIGNAL CORRUPTED. REBOOT SYSTEM.");
+                    }
+                }
+            };
+
+            fetchData();
+            return () => { active = false; };
+        }, []); // Empty dependency array = runs once on mount
+
+        // 2. ANIMATION & SOUND EFFECT
         useEffect(() => {
             playDrone(true, 220); 
+
             let messageIndex = 0;
-            let interval: NodeJS.Timeout;
-            let statusInterval: NodeJS.Timeout;
-
-            // 1. Trigger Generation (Once)
-            if (!hasGeneratedRef.current) {
-                hasGeneratedRef.current = true;
-                
-                // Backup timeout to force completion if API hangs
-                const timeoutPromise = new Promise<string>((resolve) => 
-                    setTimeout(() => resolve("CONNECTION TIMEOUT. USING BACKUP PROTOCOL.\nOUTCOME: 88% PROBABILITY OF SUCCESS."), 12000)
-                );
-
-                const workPromise = generateDataScrying(intention, mode);
-
-                Promise.race([workPromise, timeoutPromise])
-                    .then(text => {
-                        setDecodedMessage(text);
-                        isReadyRef.current = true;
-                        setIsReadyState(true);
-                    })
-                    .catch(err => {
-                        console.error("Scrying Error:", err);
-                        // Fallback response prevents UI hang
-                        setDecodedMessage("ERROR: SIGNAL CORRUPTED. REBOOT SYSTEM.");
-                        isReadyRef.current = true;
-                        setIsReadyState(true);
-                    });
-            }
-
-            // 2. Status Message Cycler
-            statusInterval = setInterval(() => {
-                if (!isReadyRef.current) {
+            
+            // Text Cycling
+            const statusInterval = setInterval(() => {
+                if (!decodedMessage) {
                     setLoadingStatus(loadingMessages[messageIndex % loadingMessages.length]);
                     messageIndex++;
                 }
             }, 2500);
 
-            // 3. Progress Bar Logic
-            interval = setInterval(() => {
+            // Progress Bar Animation
+            const animInterval = setInterval(() => {
                 setGazeTime(prev => {
-                    const increment = mode === 'standard' ? 2.5 : 0.3; 
+                    const increment = mode === 'standard' ? 2.5 : 0.4; 
                     const next = prev + increment;
 
-                    // Stall at 85% if API isn't ready
-                    if (next >= 85 && !isReadyRef.current) {
+                    // STALL Logic: If we hit 85% and don't have the message yet, stop.
+                    if (next >= 85 && !decodedMessage) {
                         return 85; 
                     }
 
-                    // Complete
+                    // FINISH Logic
                     if (next >= 100) {
-                        clearInterval(interval);
+                        clearInterval(animInterval);
                         clearInterval(statusInterval);
                         playTone(440, 'sine', 3, 0.2);
-                        // Delay before stage switch
                         setTimeout(() => setStage(4), 1500);
                         return 100;
                     }
                     return next;
                 });
             }, 40);
-            
+
             return () => {
-                clearInterval(interval);
+                clearInterval(animInterval);
                 clearInterval(statusInterval);
                 playDrone(false);
             };
-        }, [playDrone, playTone, loadingMessages, mode, intention]);
+        }, [playDrone, playTone, loadingMessages, mode, decodedMessage]); // Re-runs/Updates when decodedMessage arrives
+
+        const isReadyState = !!decodedMessage;
 
         return (
             <div className="flex flex-col items-center justify-center h-full w-full bg-black animate-fade-in px-4 text-center relative z-20">
