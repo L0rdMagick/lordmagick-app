@@ -4,10 +4,11 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { 
-  Activity, X, Brain, Network, Lock
+  Activity, X, Brain, Network, Lock, Zap, Sparkles, HardDrive, Check, Save, Terminal
 } from 'lucide-react';
-import { generateElectricNeuralLink } from '@/lib/services/geminiService';
+import { generateElectricNeuralLink, saveSpell, NeuralLinkResult } from '@/lib/services/geminiService';
 import { useAudioEngine, useParticleSystem } from './hooks';
+import type { Session } from '@/lib/types';
 
 // ==========================================
 // SUB-COMPONENTS
@@ -18,25 +19,24 @@ interface TargetStageProps {
     setTarget: (val: string) => void;
     intent: string;
     setIntent: (val: string) => void;
-    onNext: () => void;
+    onBegin: (mode: 'standard' | 'ai') => void;
 }
 
-const TargetStage = ({ target, setTarget, intent, setIntent, onNext }: TargetStageProps) => {
+const TargetStage = ({ target, setTarget, intent, setIntent, onBegin }: TargetStageProps) => {
     return (
-        <div className="flex flex-col items-center justify-center h-full w-full px-8 animate-fade-in">
+        <div className="flex flex-col items-center justify-center h-full w-full px-6 animate-fade-in relative z-20">
             <Brain className="text-pink-500 mb-6 animate-pulse" size={48} />
             <h2 className="text-2xl font-serif text-pink-200 mb-8 tracking-widest text-center">NEURAL TARGET</h2>
             
             <div className="w-full max-w-md space-y-6">
                 <div className="group relative">
-                    <label className="block text-[10px] font-mono text-pink-500/70 mb-1 tracking-widest">DESTINATION (PERSON / ENTITY / CONCEPT)</label>
+                    <label className="block text-[10px] font-mono text-pink-500/70 mb-1 tracking-widest">DESTINATION (PERSON / ENTITY)</label>
                     <input 
                         type="text" 
                         value={target}
-                        // FIX: Explicitly cast target to any/HTMLInputElement to access value
-                        onChange={(e) => setTarget((e.target as any).value)}
-                        className="w-full bg-black/50 border-b border-pink-900/50 p-4 text-pink-100 focus:outline-none focus:border-pink-500 font-serif text-xl text-center placeholder:text-pink-900/30 transition-all"
-                        placeholder="WHO ARE WE LINKING TO?"
+                        onChange={(e) => setTarget(e.target.value)}
+                        className="w-full bg-black/50 border-b border-pink-900/50 p-4 text-pink-100 focus:outline-none focus:border-pink-500 font-serif text-xl text-center placeholder:text-pink-900/30 transition-all uppercase"
+                        placeholder="TARGET IDENTIFIER"
                         autoFocus
                     />
                 </div>
@@ -46,29 +46,51 @@ const TargetStage = ({ target, setTarget, intent, setIntent, onNext }: TargetSta
                     <input 
                         type="text" 
                         value={intent}
-                        // FIX: Explicitly cast target to any/HTMLInputElement to access value
-                        onChange={(e) => setIntent((e.target as any).value)}
-                        className="w-full bg-black/50 border-b border-pink-900/50 p-4 text-pink-100 focus:outline-none focus:border-pink-500 font-serif text-xl text-center placeholder:text-pink-900/30 transition-all"
-                        placeholder="WHAT IS THE COMMAND?"
+                        onChange={(e) => setIntent(e.target.value)}
+                        className="w-full bg-black/50 border-b border-pink-900/50 p-4 text-pink-100 focus:outline-none focus:border-pink-500 font-serif text-xl text-center placeholder:text-pink-900/30 transition-all uppercase"
+                        placeholder="COMMAND STRING"
                     />
                 </div>
 
-                <button 
-                    onClick={onNext}
-                    disabled={!target || !intent}
-                    className="w-full mt-8 py-4 border border-pink-900 text-pink-500 hover:bg-pink-900/20 hover:text-pink-200 transition-all uppercase tracking-[0.3em] text-xs disabled:opacity-30"
-                >
-                    Initialize Protocol
-                </button>
+                <div className="grid grid-cols-1 gap-4 pt-4">
+                     <button 
+                        onClick={() => onBegin('standard')}
+                        disabled={!target || !intent}
+                        className="flex items-center gap-4 p-4 border border-pink-900 bg-black/60 hover:bg-pink-900/30 hover:border-pink-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed group text-left backdrop-blur-sm rounded-sm"
+                    >
+                        <div className="bg-pink-900/30 p-2 rounded-sm group-hover:bg-pink-500/20 transition-colors">
+                            <Zap className="text-pink-600 group-hover:text-pink-400 transition-colors" size={20} />
+                        </div>
+                        <div>
+                            <div className="text-pink-200 font-mono text-sm tracking-wider font-bold uppercase">Standard Protocol</div>
+                            <div className="text-pink-700 text-[10px] tracking-wide mt-1">Direct Link. Instant. Free.</div>
+                        </div>
+                    </button>
+
+                    <button 
+                        onClick={() => onBegin('ai')}
+                        disabled={!target || !intent}
+                        className="flex items-center gap-4 p-4 border border-purple-500/50 bg-purple-900/10 hover:bg-purple-900/30 hover:border-purple-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed group text-left relative overflow-hidden backdrop-blur-sm rounded-sm"
+                    >
+                        <div className="absolute inset-0 bg-purple-500/5 group-hover:bg-purple-500/10 animate-pulse"></div>
+                        <div className="bg-purple-900/30 p-2 rounded-sm relative z-10 group-hover:bg-purple-500/20 transition-colors">
+                            <Sparkles className="text-purple-400 group-hover:text-purple-200 transition-colors" size={20} />
+                        </div>
+                        <div className="relative z-10">
+                            <div className="text-purple-200 font-mono text-sm tracking-wider font-bold uppercase flex items-center gap-2">
+                                Reality Overwrite
+                            </div>
+                            <div className="text-purple-400/70 text-[10px] tracking-wide mt-1">AI Incantations + Void Injection. 3 Credits.</div>
+                        </div>
+                    </button>
+                </div>
             </div>
         </div>
     );
 };
 
 interface CalibrationStageProps {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     playDrone: (active: boolean, freq?: number) => void;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     playTone: (freq: number, type?: any, dur?: number, vol?: number) => void;
     onNext: () => void;
 }
@@ -101,7 +123,7 @@ const CalibrationStage = ({ playDrone, playTone, onNext }: CalibrationStageProps
     };
 
     return (
-        <div className="flex flex-col items-center justify-center h-full w-full px-6 select-none">
+        <div className="flex flex-col items-center justify-center h-full w-full px-6 select-none relative z-20">
              <div className="absolute top-24 text-pink-500/50 text-[10px] font-mono tracking-[0.5em] animate-pulse">
                 CALIBRATING CARRIER WAVE
              </div>
@@ -119,8 +141,7 @@ const CalibrationStage = ({ playDrone, playTone, onNext }: CalibrationStageProps
                 type="range" 
                 min="0" max="100" 
                 value={freq} 
-                // FIX: Cast to 'any' to access value
-                onChange={(e) => setFreq(parseInt((e.target as any).value))}
+                onChange={(e) => setFreq(parseInt(e.target.value))}
                 className="w-64 mt-12 accent-pink-500"
              />
 
@@ -135,10 +156,118 @@ const CalibrationStage = ({ playDrone, playTone, onNext }: CalibrationStageProps
     );
 };
 
-interface SyncStageProps {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+interface IncantationStageProps {
+    text: string;
+    onNext: () => void;
+    title: string;
     playTone: (freq: number, type?: any, dur?: number, vol?: number) => void;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+}
+
+const IncantationStage = ({ text, onNext, title, playTone }: IncantationStageProps) => {
+    const [confirmed, setConfirmed] = useState(false);
+
+    const handleConfirm = () => {
+        playTone(400, 'square', 0.2);
+        setConfirmed(true);
+        setTimeout(onNext, 500);
+    };
+
+    return (
+        <div className="flex flex-col items-center justify-center h-full w-full px-8 animate-fade-in relative z-20">
+            <Terminal className="text-purple-400 mb-6 animate-pulse" size={48} />
+            <h2 className="text-xl font-mono text-purple-300 mb-8 tracking-widest text-center uppercase">{title}</h2>
+            
+            <div className="bg-black/60 border border-purple-500/30 p-8 max-w-lg w-full relative overflow-hidden group">
+                <div className="absolute inset-0 bg-purple-500/5 group-hover:bg-purple-500/10 transition-colors"></div>
+                <p className="text-lg md:text-2xl font-serif text-pink-100 text-center leading-relaxed drop-shadow-[0_0_5px_rgba(236,72,153,0.5)]">
+                    "{text}"
+                </p>
+            </div>
+            
+            <p className="mt-8 text-pink-500/50 text-[10px] font-mono tracking-widest uppercase">
+                Recite Aloud to Encode
+            </p>
+
+            <button 
+                onClick={handleConfirm}
+                disabled={confirmed}
+                className="mt-8 px-12 py-4 bg-purple-900/20 border border-purple-500/50 text-purple-200 hover:bg-purple-900/40 hover:border-purple-400 transition-all uppercase tracking-[0.2em] text-xs rounded-sm"
+            >
+                {confirmed ? "Encoding..." : "Confirm & Execute"}
+            </button>
+        </div>
+    );
+};
+
+interface VoidInjectionStageProps {
+    onNext: () => void;
+    playTone: (freq: number, type?: any, dur?: number, vol?: number) => void;
+}
+
+const VoidInjectionStage = ({ onNext, playTone }: VoidInjectionStageProps) => {
+    const [progress, setProgress] = useState(0);
+    // eslint-disable-next-line no-undef
+    const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+    const handleInject = (e: React.MouseEvent | React.TouchEvent) => {
+        if (e.cancelable) e.preventDefault();
+        
+        intervalRef.current = setInterval(() => {
+            setProgress(p => {
+                const next = p + 2; // Fast fill
+                playTone(100 + next * 8, 'sawtooth', 0.05, 0.1);
+                if (next >= 100) {
+                    if (intervalRef.current) clearInterval(intervalRef.current);
+                    playTone(880, 'square', 0.5);
+                    setTimeout(onNext, 500);
+                    return 100;
+                }
+                return next;
+            });
+        }, 30);
+    };
+
+    const handleStop = () => {
+        if (intervalRef.current) clearInterval(intervalRef.current);
+        setProgress(0);
+    };
+
+    return (
+        <div className="flex flex-col items-center justify-center h-full w-full select-none touch-none relative z-20">
+            <h2 className="text-xl font-mono text-pink-400 mb-12 tracking-widest text-center animate-pulse">
+                INJECTING CODE INTO VOID
+            </h2>
+
+            <div 
+                className="relative w-48 h-48 flex items-center justify-center cursor-pointer active:scale-95 transition-transform"
+                onMouseDown={handleInject}
+                onMouseUp={handleStop}
+                onMouseLeave={handleStop}
+                onTouchStart={handleInject}
+                onTouchEnd={handleStop}
+            >
+                {/* Rotating Outer Ring */}
+                <div className="absolute inset-0 border-2 border-dashed border-pink-900 rounded-full animate-[spin_10s_linear_infinite]"></div>
+                
+                {/* Progress Ring */}
+                <svg className="absolute inset-0 w-full h-full -rotate-90">
+                    <circle cx="96" cy="96" r="90" stroke="rgba(80,20,50,0.5)" strokeWidth="4" fill="transparent" />
+                    <circle cx="96" cy="96" r="90" stroke="#ec4899" strokeWidth="4" fill="transparent" strokeDasharray={565} strokeDashoffset={565 - (565 * progress) / 100} strokeLinecap="round" />
+                </svg>
+
+                <div className="absolute inset-0 bg-pink-500 rounded-full blur-[50px] transition-opacity duration-200" style={{ opacity: progress / 100 }}></div>
+                <HardDrive size={48} className={`text-pink-500 transition-all duration-200 ${progress > 50 ? 'animate-bounce text-white' : ''}`} />
+            </div>
+
+            <p className="mt-12 text-pink-700 text-[10px] font-mono tracking-widest animate-pulse">
+                HOLD TO UPLOAD REALITY PATCH
+            </p>
+        </div>
+    );
+};
+
+interface SyncStageProps {
+    playTone: (freq: number, type?: any, dur?: number, vol?: number) => void;
     spawnExplosion: (x: number, y: number, color?: string, count?: number) => void;
     onNext: () => void;
 }
@@ -171,7 +300,6 @@ const SyncStage = ({ playTone, spawnExplosion, onNext }: SyncStageProps) => {
                             playTone(200, 'sawtooth', 0.5);
                             setTimeout(() => playTone(880, 'sine', 2, 0), 500);
                             
-                            // FIX: Use safe globalThis cast to access window properties
                             const win = (globalThis as any).window;
                             if (win) {
                                 spawnExplosion(win.innerWidth/2, win.innerHeight/2, '#ffffff', 100);
@@ -183,7 +311,6 @@ const SyncStage = ({ playTone, spawnExplosion, onNext }: SyncStageProps) => {
                         return next;
                     });
                     
-                    // FIX: Use safe globalThis cast to access window properties
                     const win = (globalThis as any).window;
                     if (win) {
                         spawnExplosion(win.innerWidth/2, win.innerHeight/2, '#ec4899', 2);
@@ -201,7 +328,7 @@ const SyncStage = ({ playTone, spawnExplosion, onNext }: SyncStageProps) => {
 
     return (
         <div 
-            className="flex flex-col items-center justify-center h-full w-full select-none touch-none"
+            className="flex flex-col items-center justify-center h-full w-full select-none touch-none relative z-20"
             onTouchStart={checkTouches}
             onTouchEnd={checkTouches}
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -238,57 +365,69 @@ const SyncStage = ({ playTone, spawnExplosion, onNext }: SyncStageProps) => {
 };
 
 interface TransmitStageProps {
+    onExit: () => void;
+    finalLog: string;
     target: string;
     intent: string;
-    onExit: () => void;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    playDrone: (active: boolean, freq?: number) => void;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    playTone: (freq: number, type?: any, dur?: number, vol?: number) => void;
+    saveEnabled: boolean;
+    session?: Session;
 }
 
-const TransmitStage = ({ target, intent, onExit, playDrone, playTone }: TransmitStageProps) => {
-    const [result, setResult] = useState("");
-    const [statusLog, setStatusLog] = useState<string[]>([]);
+const TransmitStage = ({ onExit, finalLog, target, intent, saveEnabled, session }: TransmitStageProps) => {
+    const [isSaving, setIsSaving] = useState(false);
+    const [isSaved, setIsSaved] = useState(false);
 
-    useEffect(() => {
-        const run = async () => {
-            playDrone(true, 440); // High carrier
-            setStatusLog(prev => [...prev, "INITIALIZING UPLINK...", "ENCRYPTING PAYLOAD...", "SEARCHING FOR HOST..."]);
-            
-            // Call API
-            const aiResponse = await generateElectricNeuralLink(target, intent);
-            setResult(aiResponse);
-            
-            setStatusLog(prev => [...prev, "HANDSHAKE ACCEPTED.", "PAYLOAD DELIVERED.", "CLOSING PORT."]);
-            playDrone(false);
-            playTone(523.25, 'sine', 1);
-        };
-        run();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    const handleSave = async () => {
+        if (isSaved || isSaving) return;
+        setIsSaving(true);
+        try {
+            const userId = session?.user?.id || 'anon';
+            await saveSpell(userId, {
+                name: `Neural Link: ${target.substring(0, 15)}...`,
+                intention: `${target}: ${intent}`,
+                incantation: finalLog,
+                element: "Air" 
+            });
+            setIsSaved(true);
+        } catch (error) {
+            console.error("Save failed:", error);
+        } finally {
+            setIsSaving(false);
+        }
+    };
 
     return (
-        <div className="flex flex-col items-center justify-center h-full w-full px-8 text-center animate-fade-in">
+        <div className="flex flex-col items-center justify-center h-full w-full px-8 text-center animate-fade-in relative z-20">
             <Activity className="text-pink-500 mb-8 animate-bounce" size={64} />
             
             <div className="w-full max-w-md bg-black/50 border border-pink-900/50 p-6 rounded font-mono text-xs text-left space-y-2 mb-8">
-                {statusLog.map((log, i) => (
-                    <div key={i} className="text-pink-800">{`> ${log}`}</div>
-                ))}
-                {result && (
-                    <div className="text-pink-200 mt-4 pt-4 border-t border-pink-900/50 animate-pulse">
-                        {`>> ${result}`}
-                    </div>
-                )}
+                <div className="text-pink-800">{"> INITIALIZING UPLINK..."}</div>
+                <div className="text-pink-800">{"> ENCRYPTING PAYLOAD..."}</div>
+                <div className="text-pink-800">{"> HANDSHAKE ACCEPTED."}</div>
+                <div className="text-pink-200 mt-4 pt-4 border-t border-pink-900/50 animate-pulse whitespace-pre-wrap">
+                    {`>> ${finalLog}`}
+                </div>
             </div>
 
-            <button 
-                onClick={onExit}
-                className="mt-8 px-8 py-3 border border-pink-900 text-pink-600 hover:text-pink-300 hover:border-pink-400 transition-colors uppercase tracking-[0.2em] text-xs rounded"
-            >
-                Sever Connection
-            </button>
+            <div className="flex flex-col gap-4 w-full max-w-xs">
+                {saveEnabled && (
+                     <button 
+                        onClick={handleSave}
+                        disabled={isSaved || isSaving}
+                        className="flex items-center justify-center gap-3 px-8 py-4 border border-pink-500 bg-pink-900/30 hover:bg-pink-800/50 text-pink-200 transition-colors uppercase tracking-[0.2em] text-xs rounded-sm disabled:opacity-50 group"
+                    >
+                        {isSaved ? <Check size={16} /> : <Save size={16} />}
+                        <span>{isSaved ? "SAVED TO ETHER" : isSaving ? "BURNING..." : "BURN TO ETHER DRIVE (1 CREDIT)"}</span>
+                    </button>
+                )}
+
+                <button 
+                    onClick={onExit}
+                    className="px-8 py-3 border border-pink-900 text-pink-600 hover:text-pink-300 hover:border-pink-400 transition-colors uppercase tracking-[0.2em] text-xs rounded"
+                >
+                    Sever Connection
+                </button>
+            </div>
         </div>
     );
 };
@@ -297,32 +436,67 @@ const TransmitStage = ({ target, intent, onExit, playDrone, playTone }: Transmit
 // MAIN ORCHESTRATOR
 // ==========================================
 
-const NeuralLinkSpell = ({ onExit }: { onExit: () => void }) => {
-    const [stage, setStage] = useState(0); // 0: Target, 1: Calibrate, 2: Sync, 3: Transmit
+const NeuralLinkSpell = ({ onExit, session }: { onExit: () => void, session?: Session }) => {
+    const [stage, setStage] = useState(0); 
+    // Stages mapping:
+    // 0: Target
+    // 1: Calibration
+    // 2: Incantation 1 (AI Only)
+    // 3: Void Injection (AI Only)
+    // 4: Incantation 2 (AI Only)
+    // 5: Sync (Both)
+    // 6: Transmit (Both)
+
     const { initAudio, playTone, playDrone } = useAudioEngine();
     const { canvasRef, spawnExplosion } = useParticleSystem();
     
     const [target, setTarget] = useState("");
     const [intent, setIntent] = useState("");
+    const [mode, setMode] = useState<'standard' | 'ai'>('standard');
+    const [aiContent, setAiContent] = useState<NeuralLinkResult | null>(null);
 
-    const handleTargetNext = () => {
+    const handleBegin = async (selectedMode: 'standard' | 'ai') => {
         initAudio();
         playTone(440, 'sine', 0.5);
-        setStage(1);
+        setMode(selectedMode);
+        setStage(1); // Move to calibration immediately
+
+        // Prefetch content
+        const result = await generateElectricNeuralLink(target, intent, selectedMode);
+        setAiContent(result);
     };
 
     const handleCalibrationNext = () => {
-        setStage(2);
+        if (mode === 'ai') {
+            setStage(2); // Go to Incantation 1
+        } else {
+            setStage(5); // Skip to Sync for Standard
+        }
     };
 
-    const handleSyncNext = () => {
-        setStage(3);
-    };
+    const handleIncantation1Next = () => setStage(3); // Go to Injection
+    const handleInjectionNext = () => setStage(4); // Go to Incantation 2
+    const handleIncantation2Next = () => setStage(5); // Go to Sync
+    const handleSyncNext = () => setStage(6); // Go to Transmit
 
     const styles = `
         @keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fade-in { animation: fade-in 1s ease-out forwards; }
     `;
+
+    // Render logic based on Stage ID
+    const renderStage = () => {
+        switch(stage) {
+            case 0: return <TargetStage target={target} setTarget={setTarget} intent={intent} setIntent={setIntent} onBegin={handleBegin} />;
+            case 1: return <CalibrationStage playDrone={playDrone} playTone={playTone} onNext={handleCalibrationNext} />;
+            case 2: return <IncantationStage text={aiContent?.incantation1 || "Initializing..."} onNext={handleIncantation1Next} title="Primary Directive" playTone={playTone} />;
+            case 3: return <VoidInjectionStage onNext={handleInjectionNext} playTone={playTone} />;
+            case 4: return <IncantationStage text={aiContent?.incantation2 || "Finalizing..."} onNext={handleIncantation2Next} title="Reality Overwrite" playTone={playTone} />;
+            case 5: return <SyncStage playTone={playTone} spawnExplosion={spawnExplosion} onNext={handleSyncNext} />;
+            case 6: return <TransmitStage onExit={onExit} finalLog={aiContent?.finalResult || "Link Established."} target={target} intent={intent} saveEnabled={mode === 'ai'} session={session} />;
+            default: return null;
+        }
+    };
 
     return (
         <div className="fixed inset-0 bg-black text-pink-50 overflow-hidden select-none font-sans touch-none z-50">
@@ -331,32 +505,7 @@ const NeuralLinkSpell = ({ onExit }: { onExit: () => void }) => {
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(236,72,153,0.1)_0%,rgba(0,0,0,1)_90%)] pointer-events-none z-0" />
             
             <div className="relative z-20 h-full w-full">
-                 {stage === 0 ? 
-                    <TargetStage 
-                        target={target} setTarget={setTarget} 
-                        intent={intent} setIntent={setIntent} 
-                        onNext={handleTargetNext} 
-                    /> : 
-                  stage === 1 ? 
-                    <CalibrationStage 
-                        playDrone={playDrone} 
-                        playTone={playTone} 
-                        onNext={handleCalibrationNext} 
-                    /> :
-                  stage === 2 ? 
-                    <SyncStage 
-                        playTone={playTone} 
-                        spawnExplosion={spawnExplosion} 
-                        onNext={handleSyncNext} 
-                    /> :
-                    <TransmitStage 
-                        target={target} 
-                        intent={intent} 
-                        playDrone={playDrone} 
-                        playTone={playTone} 
-                        onExit={onExit} 
-                    />
-                }
+                 {renderStage()}
             </div>
             <style>{styles}</style>
         </div>
@@ -364,3 +513,4 @@ const NeuralLinkSpell = ({ onExit }: { onExit: () => void }) => {
 };
 
 export default NeuralLinkSpell;
+// --- END OF FILE src/app/components/ElectricMagick/NeuralLinkSpell.tsx ---

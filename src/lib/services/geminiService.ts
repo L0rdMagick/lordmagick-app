@@ -305,15 +305,46 @@ export const getTodaysSpellCount = async (userId: string): Promise<number> => {
     return count || 0;
 }
 
-export const generateElectricNeuralLink = async (target: string, intention: string): Promise<string> => {
-    const { data, error } = await supabase.functions.invoke('generate-electric-spell', {
-        body: { action: 'neural_link', target, intention },
-    });
-    if (error) {
-        console.error("Error invoking generate-electric-spell (neural_link):", error);
-        return "LINK ESTABLISHED. PACKET DELIVERED VIA BACKUP PROTOCOL."; 
+export interface NeuralLinkResult {
+    incantation1: string;
+    incantation2: string;
+    finalResult: string;
+}
+
+const STANDARD_NEURAL_RESULT: NeuralLinkResult = {
+    incantation1: "Standard Protocol Engaged. Carrier wave stable.",
+    incantation2: "Signal verified. Uplink established.",
+    finalResult: "Connection Status: NOMINAL. Packet sent."
+};
+
+export const generateElectricNeuralLink = async (target: string, intention: string, mode: 'standard' | 'ai' = 'standard'): Promise<NeuralLinkResult> => {
+    if (mode === 'standard') {
+        return STANDARD_NEURAL_RESULT;
     }
-    return data.result;
+
+    try {
+        const { data, error } = await supabase.functions.invoke('generate-electric-spell', {
+            body: { action: 'neural_link', target, intention, mode: 'ai' },
+        });
+        
+        if (!error && data && data.result) {
+            // The edge function might return JSON, or we might need to parse it if it comes back as a string
+            // For now, assuming the edge function returns a structured object if mode is 'ai'
+            // If the structure differs, we map it here.
+            return {
+                incantation1: data.incantation1 || "By the silicon root and fiber vein, I command this link.",
+                incantation2: data.incantation2 || "Override reality protocols. Injecting intent.",
+                finalResult: data.result || "Target acquired. Neural bridge secure."
+            };
+        }
+        
+        console.warn("AI Generation failed. Falling back to Standard.");
+        return STANDARD_NEURAL_RESULT;
+
+    } catch (e) {
+        console.error("Exception in generateElectricNeuralLink:", e);
+        return STANDARD_NEURAL_RESULT;
+    }
 };
 
 export const generateElectricLightPrism = async (colorName: string, intention: string): Promise<string> => {
