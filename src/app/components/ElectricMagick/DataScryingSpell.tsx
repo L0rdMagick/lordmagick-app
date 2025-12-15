@@ -99,7 +99,7 @@ const DataScryingSpell = ({ onExit, session }: { onExit: () => void, session?: S
         const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
         const handleStart = (e: React.MouseEvent | React.TouchEvent | React.PointerEvent) => {
-            // FIX: Check if event is cancelable to prevent "passive event listener" error
+            // Fix for passive event listener errors
             if (e.cancelable) e.preventDefault();
             
             initAudio();
@@ -177,7 +177,6 @@ const DataScryingSpell = ({ onExit, session }: { onExit: () => void, session?: S
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const handleMove = (e: any) => {
-            // FIX: Check cancelable to prevent console errors
             if (e.cancelable) e.preventDefault();
 
             const win = (globalThis as any).window;
@@ -214,7 +213,7 @@ const DataScryingSpell = ({ onExit, session }: { onExit: () => void, session?: S
                  onTouchMove={handleMove} 
                  onMouseMove={(e) => e.buttons === 1 && handleMove(e)}
                  onMouseDown={handleMove} 
-                 style={{ touchAction: 'none' }} // FIX: Explicitly disable browser touch actions
+                 style={{ touchAction: 'none' }}
             >
                 <div className={`absolute top-24 text-center transition-opacity duration-500 ${signalStrength > 20 ? 'opacity-0' : 'opacity-100'}`}>
                      <div className="flex flex-col items-center text-cyan-800 animate-bounce">
@@ -299,21 +298,30 @@ const DataScryingSpell = ({ onExit, session }: { onExit: () => void, session?: S
         ], []);
 
         useEffect(() => {
-            playDrone(true, 220); // Higher frequency drone
+            playDrone(true, 220); 
             let messageIndex = 0;
             let interval: NodeJS.Timeout;
             let statusInterval: NodeJS.Timeout;
+            let safetyTimeout: NodeJS.Timeout;
 
             // Trigger generation ONLY ONCE
             if (!hasGenerated.current) {
                 hasGenerated.current = true;
-                generateDataScrying(intention, mode)
+                
+                // SAFETY TIMEOUT: Ensure we never stall indefinitely even if API hangs
+                const generationPromise = generateDataScrying(intention, mode);
+                const timeoutPromise = new Promise<string>((resolve) => 
+                    setTimeout(() => resolve("CONNECTION TIMEOUT. USING BACKUP PROTOCOL.\nOUTCOME: 88% PROBABILITY OF SUCCESS."), 12000)
+                );
+
+                Promise.race([generationPromise, timeoutPromise])
                     .then(text => {
                         setDecodedMessage(text);
                         setIsReady(true);
                     })
                     .catch(err => {
                         console.error("Scrying Error:", err);
+                        // Fallback response if everything fails
                         setDecodedMessage("ERROR: SIGNAL CORRUPTED. REBOOT SYSTEM.");
                         setIsReady(true);
                     });
@@ -330,8 +338,7 @@ const DataScryingSpell = ({ onExit, session }: { onExit: () => void, session?: S
             // Progress bar logic
             interval = setInterval(() => {
                 setGazeTime(prev => {
-                    // Fast track for Standard mode (simulated delay)
-                    const increment = mode === 'standard' ? 2 : 0.2; 
+                    const increment = mode === 'standard' ? 2 : 0.25; 
                     const next = prev + increment;
 
                     // Stall at 85% if API isn't ready

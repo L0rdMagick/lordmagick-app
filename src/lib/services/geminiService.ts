@@ -130,46 +130,75 @@ export const generateHoodooVoodooWork = async (path: 'hoodoo' | 'voodoo', step: 
 
 // --- Electric Magick Functions ---
 
-const STANDARD_DATA_SCRY_RESPONSES = [
-    "The ghost in the machine whispers: Yes.",
-    "Signal unclear. Entropy high. Retry.",
-    "Pattern matching... 99% probability of success.",
-    "The void stares back. Proceed with caution.",
-    "Packet loss detected. The answer is hidden.",
-    "Encryption key found: The path is open.",
-    "System override: Permission granted.",
-    "Neural handshake complete. Connection established.",
-    "Data corrupted. The future is in flux.",
-    "Static interference masks the truth.",
-    "Binary alignment achieved. Outcome favorable.",
-    "The network rejects this query.",
-    "Echo received from the deep web.",
-    "Firewall breached. Insight downloaded.",
-    "The algorithm predicts a shift.",
-    "Zero-day exploit found in reality.",
-    "Rebooting destiny... Please wait.",
-    "404: Fate not found.",
-    "Bandwidth exceeded. Focus your intent.",
-    "The simulation glitches in your favor."
+const DATA_SCRY_PREDICTIONS = [
+    "Probability of success: 94%. Proceed with conviction.",
+    "Signal high. Outcome favorable.",
+    "The timeline converges on your desire.",
+    "Pattern match found. Victory is imminent.",
+    "The data stream flows in your direction.",
+    "Entropy levels critical. Outcome uncertain. Try again.",
+    "The Machine God smiles upon this query.",
+    "Access Granted. The path is clear.",
+    "Interference detected. Outcome delayed but positive.",
+    "The logic gates are opening. Yes."
 ];
 
+const DATA_SCRY_PROGRAMMING = [
+    "Intention compiled. Executing into the Aether...",
+    "Reality patch applied successfully.",
+    "Will transcribed. The universe is updating...",
+    "Daemon initialized with new parameters. It is done.",
+    "Rewriting source code of local reality...",
+    "Command accepted. Manifestation subroutine running.",
+    "System override complete. Your will is law.",
+    "Encryption bypass successful. Desire implanted.",
+    "Uploading intent to the Akashic Cloud...",
+    "Protocol 'MANIFEST' active. Stand by for results."
+];
+
+// Helper to determine if input looks like a question or a command
+const getLocalDataScryResponse = (intention: string): string => {
+    const lower = intention.toLowerCase().trim();
+    const isQuestion = lower.endsWith('?') || 
+                       lower.startsWith('will') || 
+                       lower.startsWith('does') || 
+                       lower.startsWith('is') || 
+                       lower.startsWith('should') ||
+                       lower.startsWith('can');
+    
+    if (isQuestion) {
+        return DATA_SCRY_PREDICTIONS[Math.floor(Math.random() * DATA_SCRY_PREDICTIONS.length)];
+    } else {
+        return DATA_SCRY_PROGRAMMING[Math.floor(Math.random() * DATA_SCRY_PROGRAMMING.length)];
+    }
+};
+
 export const generateDataScrying = async (intention: string, mode: 'standard' | 'ai' = 'standard'): Promise<string> => {
+    // Standard Mode: Use local heuristics (free, fast, robust)
     if (mode === 'standard') {
-        // Return a random cryptic phrase locally
-        return STANDARD_DATA_SCRY_RESPONSES[Math.floor(Math.random() * STANDARD_DATA_SCRY_RESPONSES.length)];
+        return getLocalDataScryResponse(intention);
     }
 
-    // Paid/AI Mode - Call the Edge Function
-    const { data, error } = await supabase.functions.invoke('generate-data-scry', {
-        body: { intention, mode: 'ai' }, 
-    });
+    // AI Mode: Try to call the Edge Function
+    try {
+        const { data, error } = await supabase.functions.invoke('generate-data-scry', {
+            body: { intention, mode: 'ai' }, 
+        });
 
-    // Check for both transport errors and empty data responses (common with Auth failures/406s)
-    if (error || !data || !data.result) {
-        console.error("Error invoking generate-data-scry:", error || "No data returned");
-        return "ERROR: SIGNAL CORRUPTED. AUTHENTICATION FAILURE OR NETWORK ENTROPY DETECTED.";
+        // Use AI result if successful
+        if (!error && data && data.result) {
+            return data.result;
+        }
+        
+        console.warn("AI Generation failed or returned empty. Falling back to Standard Mode logic.");
+        // Fallback to standard logic if AI fails (e.g. 406 error, credit check fail)
+        return getLocalDataScryResponse(intention);
+        
+    } catch (e) {
+        console.error("Exception in generateDataScrying:", e);
+        // Fallback to standard logic on exception
+        return getLocalDataScryResponse(intention);
     }
-    return data.result;
 };
 
 export const generateElectricEnsorcellment = async (intention: string): Promise<string> => {
