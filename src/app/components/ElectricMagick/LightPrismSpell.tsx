@@ -6,9 +6,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
     Triangle, Hexagon, Activity, Zap, Radio, 
     Eye, Cloud, Lock, ShieldAlert, CheckCircle, 
-    Cpu, RefreshCw, X, Save, Power 
+    Cpu, RefreshCw, X, Save, Power, Diamond, Gem, 
+    Square, Circle, Info
 } from 'lucide-react';
-import { generateElectricNeuralLink, saveSpell } from '@/lib/services/geminiService';
+import { generateRealityOverwrite, saveSpell } from '@/lib/services/geminiService';
 import { useAudioEngine, useParticleSystem } from './hooks';
 import type { Session } from '@/lib/types';
 
@@ -19,60 +20,91 @@ const SECTORS = [
     { 
         id: 'ROOT', 
         name: 'HARDWARE SECTOR', 
-        color: '#ef4444', 
+        crystalName: 'RUBY MATRIX',
+        color: '#ef4444', // Red
         context: 'Physical Reality, Safety, Resources',
         task: 'STABILIZE',
-        desc: 'Detecting instability in base reality code. Anchor the signal.'
+        desc: 'The Ruby Matrix anchors your digital spirit to the physical plane. It governs survival code and material abundance.',
+        exampleInput: 'e.g., "Constant financial struggle" or "Feeling unsafe in my body"',
+        icon: Square
     },
     { 
         id: 'SACRAL', 
         name: 'FLOW SECTOR', 
-        color: '#f97316', 
-        context: 'Creativity, Desire, Momentum',
+        crystalName: 'CARNELIAN DRIVE',
+        color: '#f97316', // Orange
+        context: 'Creativity, Desire, Relationships',
         task: 'SYNCHRONIZE',
-        desc: 'Bandwidth throttled. Sync the waveform to restore flow.'
+        desc: 'The Carnelian Drive manages your creative bandwidth and emotional input/output ports.',
+        exampleInput: 'e.g., "Creative block" or "Toxic relationship patterns"',
+        icon: Circle
     },
     { 
         id: 'SOLAR', 
         name: 'POWER SECTOR', 
-        color: '#eab308', 
+        crystalName: 'CITRINE CORE',
+        color: '#eab308', // Yellow
         context: 'Willpower, Ego, Action',
         task: 'CHARGE',
-        desc: 'Voltage critical. Manually cycle the capacitor.'
+        desc: 'The Citrine Core is your central processing unit for willpower and self-definition.',
+        exampleInput: 'e.g., "Lack of motivation" or "Low self-esteem"',
+        icon: Triangle
     },
     { 
         id: 'HEART', 
         name: 'NETWORK SECTOR', 
-        color: '#22c55e', 
+        crystalName: 'EMERALD NODE',
+        color: '#22c55e', // Green
         context: 'Love, Connection, Empathy',
         task: 'LINK',
-        desc: 'Node fragmentation detected. Re-establish the mesh.'
+        desc: 'The Emerald Node handles all peer-to-peer connections and the transmission of love packets.',
+        exampleInput: 'e.g., "Closed off to love" or "Unable to forgive"',
+        icon: Hexagon
     },
     { 
         id: 'THROAT', 
         name: 'OUTPUT SECTOR', 
-        color: '#3b82f6', 
+        crystalName: 'SAPPHIRE TRANSMITTER',
+        color: '#3b82f6', // Blue
         context: 'Truth, Expression, Code',
         task: 'TUNE',
-        desc: 'Signal noise high. Calibrate the output frequency.'
+        desc: 'The Sapphire Transmitter governs how you broadcast your truth into the shared simulation.',
+        exampleInput: 'e.g., "Fear of speaking up" or "Miscommunication"',
+        icon: Gem
     },
     { 
         id: 'BROW', 
         name: 'RENDER SECTOR', 
-        color: '#6366f1', 
+        crystalName: 'AMETHYST LENS',
+        color: '#6366f1', // Indigo
         context: 'Vision, Intuition, Perception',
         task: 'ALIGN',
-        desc: 'Holographic misalignment. Focus the lens.'
+        desc: 'The Amethyst Lens renders your future timeline. Clouds here cause confusion and lack of foresight.',
+        exampleInput: 'e.g., "Unable to see my path" or "Disconnected from intuition"',
+        icon: Eye
     },
     { 
         id: 'CROWN', 
         name: 'SOURCE SECTOR', 
-        color: '#a855f7', 
+        crystalName: 'DIAMOND UPLINK',
+        color: '#a855f7', // Violet/White
         context: 'Spirit, Void, Divine',
         task: 'UPLOAD',
-        desc: 'Uplink offline. Inject code into the Subatomic Void.'
+        desc: 'The Diamond Uplink connects you directly to the Subatomic Void—the admin console of reality.',
+        exampleInput: 'e.g., "Feeling separated from Source" or "Loss of faith"',
+        icon: Diamond
     }
 ];
+
+// --- DIGITAL CRYSTAL VISUALIZER ---
+// Updated to accept className prop
+const DigitalCrystal = ({ color, Icon, size = 64, pulse = false, className = '' }: { color: string, Icon: any, size?: number, pulse?: boolean, className?: string }) => (
+    <div className={`relative flex items-center justify-center ${pulse ? 'animate-pulse' : ''} ${className}`}>
+        <div className="absolute inset-0 opacity-20 blur-xl rounded-full" style={{ backgroundColor: color }}></div>
+        <Icon size={size} color={color} strokeWidth={1} className="drop-shadow-[0_0_10px_rgba(255,255,255,0.3)] relative z-10" />
+        <div className="absolute inset-0 border border-white/10 rounded-full animate-ping opacity-20"></div>
+    </div>
+);
 
 // --- MINI-GAME COMPONENTS ---
 
@@ -107,8 +139,9 @@ const ActivityStabilize = ({ onComplete, color }: { onComplete: () => void, colo
                  }}>
                 <ShieldAlert size={48} color={color} />
             </div>
-            <button onPointerDown={handleHold} className="px-8 py-4 border border-white/30 hover:bg-white/10 tracking-widest font-mono text-xs">
-                HOLD TO STABILIZE
+            <p className="mb-4 text-[10px] font-mono text-gray-400">HOLD BUTTON TO ANCHOR CODE</p>
+            <button onPointerDown={handleHold} className="px-8 py-4 border border-white/30 hover:bg-white/10 tracking-widest font-mono text-xs text-white">
+                STABILIZE SIGNAL
             </button>
             <div className="w-64 h-1 bg-gray-800 mt-4"><div className="h-full transition-all" style={{ width: `${stability}%`, background: color }}/></div>
         </div>
@@ -131,17 +164,15 @@ const ActivitySync = ({ onComplete, color }: { onComplete: () => void, color: st
     return (
         <div className="flex flex-col items-center w-full max-w-xs">
             <div className="relative h-32 w-full overflow-hidden border-x border-white/10 mb-8">
-                {/* Static Wave */}
                 <svg className="absolute inset-0 w-full h-full opacity-30" preserveAspectRatio="none">
                     <path d="M0,64 Q50,10 100,64 T200,64 T300,64" fill="none" stroke={color} strokeWidth="2" />
                 </svg>
-                {/* User Wave */}
                 <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none">
                     <path d={`M0,64 Q50,${10 + (val - target)*2} 100,64 T200,64 T300,64`} fill="none" stroke="white" strokeWidth="2" />
                 </svg>
             </div>
+            <p className="mb-4 text-[10px] font-mono text-gray-400">SLIDE TO MATCH WAVEFORM</p>
             <input type="range" min="0" max="100" value={val} onChange={handleChange} className="w-full accent-white" />
-            <p className="mt-4 font-mono text-[10px] tracking-widest text-gray-400">MATCH THE WAVEFORM</p>
         </div>
     );
 };
@@ -190,27 +221,29 @@ const ActivityLink = ({ onComplete, color }: { onComplete: () => void, color: st
     };
 
     return (
-        <div className="relative w-64 h-64">
-            <svg className="absolute inset-0 w-full h-full pointer-events-none">
-                <line x1="50%" y1="10%" x2="10%" y2="90%" stroke={nodes[0] && nodes[1] ? color : "#333"} strokeWidth="2" />
-                <line x1="10%" y1="90%" x2="90%" y2="90%" stroke={nodes[1] && nodes[2] ? color : "#333"} strokeWidth="2" />
-                <line x1="90%" y1="90%" x2="50%" y2="10%" stroke={nodes[2] && nodes[0] ? color : "#333"} strokeWidth="2" />
-            </svg>
-            {[
-                { top: '10%', left: '50%' },
-                { top: '90%', left: '10%' },
-                { top: '90%', left: '90%' }
-            ].map((pos, i) => (
-                <button
-                    key={i}
-                    onClick={() => toggleNode(i)}
-                    className={`absolute w-12 h-12 -ml-6 -mt-6 rounded-full border-2 flex items-center justify-center transition-colors ${nodes[i] ? 'bg-white border-transparent' : 'bg-black border-gray-700'}`}
-                    style={{ ...pos, boxShadow: nodes[i] ? `0 0 20px ${color}` : 'none' }}
-                >
-                    <div className="w-2 h-2 rounded-full bg-black" />
-                </button>
-            ))}
-            <div className="absolute bottom-[-40px] w-full text-center font-mono text-[10px] text-gray-400">ACTIVATE NODES</div>
+        <div className="flex flex-col items-center">
+            <div className="relative w-64 h-64 mb-8">
+                <svg className="absolute inset-0 w-full h-full pointer-events-none">
+                    <line x1="50%" y1="10%" x2="10%" y2="90%" stroke={nodes[0] && nodes[1] ? color : "#333"} strokeWidth="2" />
+                    <line x1="10%" y1="90%" x2="90%" y2="90%" stroke={nodes[1] && nodes[2] ? color : "#333"} strokeWidth="2" />
+                    <line x1="90%" y1="90%" x2="50%" y2="10%" stroke={nodes[2] && nodes[0] ? color : "#333"} strokeWidth="2" />
+                </svg>
+                {[
+                    { top: '10%', left: '50%' },
+                    { top: '90%', left: '10%' },
+                    { top: '90%', left: '90%' }
+                ].map((pos, i) => (
+                    <button
+                        key={i}
+                        onClick={() => toggleNode(i)}
+                        className={`absolute w-12 h-12 -ml-6 -mt-6 rounded-full border-2 flex items-center justify-center transition-colors ${nodes[i] ? 'bg-white border-transparent' : 'bg-black border-gray-700'}`}
+                        style={{ ...pos, boxShadow: nodes[i] ? `0 0 20px ${color}` : 'none' }}
+                    >
+                        <div className="w-2 h-2 rounded-full bg-black" />
+                    </button>
+                ))}
+            </div>
+            <p className="font-mono text-[10px] text-gray-400">TAP NODES TO RE-ESTABLISH MESH</p>
         </div>
     );
 };
@@ -233,7 +266,7 @@ const ActivityTune = ({ onComplete, color }: { onComplete: () => void, color: st
                 {freq.toFixed(1)} MHz
             </div>
             <input type="range" min="0" max="100" step="0.1" value={freq} onChange={handleChange} className="w-full accent-white" />
-            <p className="mt-4 font-mono text-[10px] tracking-widest text-gray-400">FINE TUNE SIGNAL</p>
+            <p className="mt-4 font-mono text-[10px] tracking-widest text-gray-400">FINE TUNE OUTPUT SIGNAL</p>
         </div>
     );
 };
@@ -260,7 +293,7 @@ const ActivityAlign = ({ onComplete, color }: { onComplete: () => void, color: s
                 />
             </div>
             <input type="range" min="-50" max="50" value={x} onChange={handleChange} className="w-64 accent-white" />
-            <p className="mt-4 font-mono text-[10px] tracking-widest text-gray-400">ALIGN THE OPTICS</p>
+            <p className="mt-4 font-mono text-[10px] tracking-widest text-gray-400">ALIGN THE LENS</p>
         </div>
     );
 };
@@ -296,7 +329,7 @@ const ActivityUpload = ({ onComplete, color }: { onComplete: () => void, color: 
                      style={{ transform: `scaleY(${progress/100})`, background: color, opacity: 0.2 }} />
                 <Cloud size={48} className="relative z-10 text-white" />
             </button>
-            <p className="font-mono text-[10px] tracking-widest text-gray-400">HOLD TO INJECT CODE</p>
+            <p className="font-mono text-[10px] tracking-widest text-gray-400">HOLD TO INJECT CODE INTO THE VOID</p>
         </div>
     );
 };
@@ -324,23 +357,37 @@ const RealityOverwriteSpell = ({ onExit, session }: { onExit: () => void, sessio
     // -- INTRO --
     if (!started) {
         return (
-            <div className="fixed inset-0 bg-black text-white flex flex-col items-center justify-center p-8 z-50">
-                <div className="max-w-lg border border-red-500/50 p-8 bg-black/90 relative shadow-[0_0_50px_rgba(220,38,38,0.2)]">
+            <div className="fixed inset-0 bg-black text-white flex flex-col items-center justify-center p-4 md:p-8 z-50 overflow-y-auto">
+                <div className="max-w-2xl border border-red-500/50 p-6 md:p-8 bg-black/90 relative shadow-[0_0_50px_rgba(220,38,38,0.2)] my-auto">
                     <div className="absolute top-0 left-0 bg-red-900/20 px-2 py-1 text-[10px] font-mono text-red-400">SYS_ADMIN_ACCESS_REQ</div>
-                    <h1 className="text-3xl font-serif text-red-500 mb-6 tracking-widest text-center">CORE REALITY OVERWRITE</h1>
+                    <h1 className="text-2xl md:text-3xl font-serif text-red-500 mb-6 tracking-widest text-center mt-4">CORE REALITY OVERWRITE</h1>
+                    
                     <p className="text-gray-300 font-mono text-xs leading-relaxed mb-6 text-justify">
                         WARNING: You are about to access the Central Universal Backend. This protocol initiates a 7-stage total system reboot, clearing corrupt karmic code from every layer of your existence.
                         <br/><br/>
-                        This process is irreversible. It requires full participation in all 7 Sector Activations.
+                        You will be required to interface with 7 specific Crystal Matrices. Each crystal governs a specific sector of your reality.
                     </p>
-                    <div className="flex justify-between items-center border-t border-red-900/30 pt-6">
-                        <div className="flex flex-col">
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-6">
+                        {SECTORS.map(s => (
+                            <div key={s.id} className="flex items-center gap-3 p-2 border border-gray-800 rounded bg-gray-900/30">
+                                <s.icon size={16} color={s.color} />
+                                <div>
+                                    <div className="text-[10px] font-bold text-gray-300">{s.name}</div>
+                                    <div className="text-[9px] text-gray-500">{s.crystalName}</div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="flex flex-col md:flex-row justify-between items-center border-t border-red-900/30 pt-6 gap-4">
+                        <div className="flex flex-col text-center md:text-left">
                             <span className="text-[10px] text-gray-500 font-mono">REQUIRED RESOURCES</span>
                             <span className="text-xl font-serif text-white">{COST} AETHER (CREDITS)</span>
                         </div>
                         <button 
                             onClick={() => { initAudio(); setStarted(true); }}
-                            className="bg-red-600 hover:bg-red-500 text-black font-bold px-8 py-3 font-mono text-xs tracking-widest transition-colors"
+                            className="bg-red-600 hover:bg-red-500 text-black font-bold px-8 py-3 font-mono text-xs tracking-widest transition-colors w-full md:w-auto"
                         >
                             INITIATE REBOOT
                         </button>
@@ -359,16 +406,12 @@ const RealityOverwriteSpell = ({ onExit, session }: { onExit: () => void, sessio
     const handleInputSubmit = async () => {
         if (!userInput) return;
         setSubStage('processing');
-        addToLog(`Scanning ${currentSector.name}...`);
+        addToLog(`Scanning ${currentSector.name} via ${currentSector.crystalName}...`);
         playDrone(true, 100 + (sectorIndex * 50));
 
         try {
-            // Use existing neural link service but frame it for this spell
-            const prompt = `Context: ${currentSector.name} (${currentSector.context}). User wants to overwrite: "${userInput}". Generate a short, cryptic, cyberpunk/magickal incantation (2 lines max) to execute this code patch.`;
-            const result = await generateElectricNeuralLink("CORE_SYSTEM", prompt, 'ai');
-            
-            // The service returns a struct, we just need the text essentially
-            setAiResponse(result.incantation1 || result.finalResult); 
+            const response = await generateRealityOverwrite(currentSector.name, userInput);
+            setAiResponse(response);
             setSubStage('incantation');
             playTone(880, 'sine', 0.5);
         } catch (e) {
@@ -472,12 +515,12 @@ const RealityOverwriteSpell = ({ onExit, session }: { onExit: () => void, sessio
             <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none z-0" style={{ mixBlendMode: 'screen' }} />
             
             {/* Header / Progress */}
-            <div className="relative z-10 w-full p-6 border-b border-gray-900 bg-black/50 backdrop-blur-md flex items-center justify-between">
+            <div className="relative z-10 w-full p-4 md:p-6 border-b border-gray-900 bg-black/50 backdrop-blur-md flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                    <Cpu className="text-gray-500" size={20} />
+                    <DigitalCrystal Icon={currentSector.icon} color={currentSector.color} size={32} />
                     <div>
-                        <div className="text-[10px] font-mono text-gray-500 tracking-widest">CURRENT SECTOR</div>
-                        <div className="text-xl font-serif tracking-wider" style={{ color: currentSector.color }}>{currentSector.name}</div>
+                        <div className="text-[10px] font-mono text-gray-500 tracking-widest uppercase">Accessing Archive</div>
+                        <div className="text-lg md:text-xl font-serif tracking-wider" style={{ color: currentSector.color }}>{currentSector.crystalName}</div>
                     </div>
                 </div>
                 <div className="flex gap-1">
@@ -492,22 +535,29 @@ const RealityOverwriteSpell = ({ onExit, session }: { onExit: () => void, sessio
                 
                 {/* 1. INPUT PHASE */}
                 {subStage === 'input' && (
-                    <div className="w-full max-w-md animate-fade-in-up">
-                        <div className="mb-8 text-center">
-                            <Activity size={48} className="mx-auto mb-4 animate-pulse" style={{ color: currentSector.color }} />
-                            <p className="text-gray-400 font-mono text-xs uppercase tracking-widest mb-2">DIAGNOSTIC:</p>
-                            <p className="text-lg font-serif italic text-white/90">{currentSector.desc}</p>
+                    <div className="w-full max-w-md animate-fade-in-up flex flex-col items-center">
+                        <div className="mb-8">
+                            <DigitalCrystal Icon={currentSector.icon} color={currentSector.color} size={100} pulse />
                         </div>
                         
-                        <div className="group relative">
-                            <label className="block text-[10px] font-mono text-gray-500 mb-2 tracking-widest uppercase">
-                                ENTER CORRUPT DATA TO OVERWRITE ({currentSector.context})
+                        <div className="mb-6 text-center">
+                            <p className="text-gray-400 font-mono text-xs uppercase tracking-widest mb-2">SYSTEM ANALYSIS:</p>
+                            <p className="text-lg font-serif italic text-white/90 mb-2">{currentSector.desc}</p>
+                            <div className="flex items-center justify-center gap-2 text-xs text-gray-500">
+                                <Info size={12} />
+                                <span>Governs: {currentSector.context}</span>
+                            </div>
+                        </div>
+                        
+                        <div className="group relative w-full">
+                            <label className="block text-[10px] font-mono text-gray-500 mb-2 tracking-widest uppercase text-center">
+                                IDENTIFY CORRUPTION TO OVERWRITE
                             </label>
                             <textarea 
                                 value={userInput}
                                 onChange={(e) => setUserInput(e.target.value)}
-                                className="w-full bg-gray-900/50 border border-gray-700 p-4 text-white focus:outline-none focus:border-white font-mono text-sm h-32 resize-none rounded"
-                                placeholder="e.g. Constant anxiety about money..."
+                                className="w-full bg-gray-900/50 border border-gray-700 p-4 text-white focus:outline-none focus:border-white font-mono text-sm h-32 resize-none rounded text-center placeholder:text-gray-700"
+                                placeholder={currentSector.exampleInput}
                                 autoFocus
                             />
                         </div>
@@ -528,21 +578,24 @@ const RealityOverwriteSpell = ({ onExit, session }: { onExit: () => void, sessio
                 {subStage === 'processing' && (
                     <div className="text-center">
                         <div className="w-16 h-16 border-4 border-t-transparent rounded-full animate-spin mx-auto mb-8" style={{ borderColor: `${currentSector.color} transparent transparent transparent` }} />
-                        <p className="font-mono text-xs animate-pulse text-gray-400">COMPILING HEURISTIC OVERWRITE...</p>
+                        <p className="font-mono text-xs animate-pulse text-gray-400">ACCESSING CENTRAL ARCHIVE...</p>
+                        <p className="font-mono text-[10px] text-gray-600 mt-2">RETRIEVING {currentSector.crystalName} PROTOCOLS</p>
                     </div>
                 )}
 
                 {/* 3. INCANTATION */}
                 {subStage === 'incantation' && (
                     <div className="w-full max-w-lg text-center animate-fade-in">
-                        <div className="bg-gray-900/80 border border-gray-700 p-8 rounded-lg relative overflow-hidden mb-8">
-                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-white to-transparent opacity-20" />
-                            <p className="font-serif text-2xl leading-relaxed text-white drop-shadow-md">
+                        <DigitalCrystal Icon={currentSector.icon} color={currentSector.color} size={48} className="mx-auto mb-6 opacity-50" />
+                        
+                        <div className="bg-gray-900/80 border border-gray-700 p-8 rounded-lg relative overflow-hidden mb-8 shadow-[0_0_30px_rgba(0,0,0,0.5)]">
+                            <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-transparent via-white to-transparent opacity-20" />
+                            <p className="font-serif text-xl md:text-2xl leading-relaxed text-white drop-shadow-md">
                                 &quot;{aiResponse}&quot;
                             </p>
                         </div>
                         <p className="text-[10px] font-mono text-gray-500 uppercase tracking-widest mb-6">
-                            RECITE ALOUD TO INITIALIZE PATCH
+                            SPEAK THIS COMMAND TO INITIALIZE THE PATCH
                         </p>
                         <button 
                             onClick={handleIncantationRecited}
@@ -556,9 +609,12 @@ const RealityOverwriteSpell = ({ onExit, session }: { onExit: () => void, sessio
                 {/* 4. ACTIVITY */}
                 {subStage === 'activity' && (
                     <div className="animate-fade-in w-full flex flex-col items-center">
-                        <h3 className="text-xl font-mono text-gray-400 mb-12 tracking-widest uppercase">
+                        <h3 className="text-xl font-mono text-gray-400 mb-4 tracking-widest uppercase">
                             EXECUTE PROTOCOL: <span style={{ color: currentSector.color }}>{currentSector.task}</span>
                         </h3>
+                        <p className="text-xs text-gray-500 mb-12 max-w-xs text-center">
+                            Interact with the {currentSector.crystalName} interface to physically embed the code.
+                        </p>
                         
                         {sectorIndex === 0 && <ActivityStabilize onComplete={handleActivityComplete} color={currentSector.color} />}
                         {sectorIndex === 1 && <ActivitySync onComplete={handleActivityComplete} color={currentSector.color} />}
@@ -573,11 +629,15 @@ const RealityOverwriteSpell = ({ onExit, session }: { onExit: () => void, sessio
                 {/* 5. SECTOR COMPLETE */}
                 {subStage === 'complete' && (
                     <div className="text-center animate-fade-in-up">
-                        <div className="w-24 h-24 rounded-full border-4 border-green-500 flex items-center justify-center mx-auto mb-6 shadow-[0_0_30px_#22c55e]">
-                            <CheckCircle size={48} className="text-green-500" />
+                        <div className="w-32 h-32 mx-auto mb-6 relative flex items-center justify-center">
+                            <div className="absolute inset-0 rounded-full animate-ping opacity-20" style={{ backgroundColor: currentSector.color }}></div>
+                            <CheckCircle size={64} style={{ color: currentSector.color }} />
                         </div>
                         <h2 className="text-2xl font-serif text-white mb-2">SECTOR OPTIMIZED</h2>
-                        <p className="font-mono text-xs text-gray-500 mb-8">Code injected. Reality shifting.</p>
+                        <p className="font-mono text-xs text-gray-500 mb-8">
+                            Corruption purged from {currentSector.name}.
+                            <br/>Code rewritten.
+                        </p>
                         <button 
                             onClick={advanceSector}
                             className="px-12 py-4 bg-gray-100 text-black font-bold hover:bg-white hover:scale-105 transition-all uppercase tracking-[0.2em] text-xs rounded"

@@ -228,6 +228,75 @@ export const generateElectricOracle = async (intention: string): Promise<string>
     return data.result;
 };
 
+// NEW: Reality Overwrite / Light Prism Logic
+export const generateRealityOverwrite = async (sectorName: string, corruptionToClear: string): Promise<string> => {
+    try {
+        // We reuse the 'ensorcell' action as a generic spell generator, but frame the prompt
+        // to force the specific style we need for the Reality Overwrite.
+        const prompt = `System Command: OVERWRITE SECTOR [${sectorName}]. 
+        Detected Corruption: "${corruptionToClear}". 
+        Task: Generate a short, authoritative, techno-magickal command string (incantation) to purge this corruption and rewrite the code for good fortune. 
+        Style: Cyberpunk, Divine Code, Subatomic Programming. Max 2 sentences.`;
+
+        const { data, error } = await supabase.functions.invoke('generate-electric-spell', {
+            body: { action: 'ensorcell', intention: prompt },
+        });
+
+        if (!error && data && data.result) {
+            return data.result;
+        }
+        return "ERROR: NETWORK CONGESTION. EXECUTING DEFAULT PURGE PROTOCOL. CORRUPTION DELETED.";
+    } catch (e) {
+        console.error("Exception in generateRealityOverwrite:", e);
+        return "ERROR: OFFLINE MODE. EXECUTING LOCAL OVERWRITE. SUCCESS CONFIRMED.";
+    }
+};
+
+export interface NeuralLinkResult {
+    incantation1: string;
+    incantation2: string;
+    finalResult: string;
+}
+
+const STANDARD_NEURAL_RESULT: NeuralLinkResult = {
+    incantation1: "Standard Protocol Engaged. Carrier wave stable.",
+    incantation2: "Signal verified. Uplink established.",
+    finalResult: "Connection Status: NOMINAL. Packet sent."
+};
+
+export const generateElectricNeuralLink = async (target: string, intention: string, mode: 'standard' | 'ai' = 'standard'): Promise<NeuralLinkResult> => {
+    if (mode === 'standard') {
+        return STANDARD_NEURAL_RESULT;
+    }
+    try {
+        const { data, error } = await supabase.functions.invoke('generate-electric-spell', {
+            body: { action: 'neural_link', target, intention, mode: 'ai' },
+        });
+        if (!error && data && data.result) {
+            return {
+                incantation1: data.incantation1 || "By the silicon root and fiber vein, I command this link.",
+                incantation2: data.incantation2 || "Override reality protocols. Injecting intent.",
+                finalResult: data.result || "Target acquired. Neural bridge secure."
+            };
+        }
+        return STANDARD_NEURAL_RESULT;
+    } catch (e) {
+        console.error("Exception in generateElectricNeuralLink:", e);
+        return STANDARD_NEURAL_RESULT;
+    }
+};
+
+export const generateElectricLightPrism = async (colorName: string, intention: string): Promise<string> => {
+    const { data, error } = await supabase.functions.invoke('generate-electric-spell', {
+        body: { action: 'light_prism', target: colorName, intention },
+    });
+    if (error) {
+        console.error("Error invoking generate-electric-spell (light_prism):", error);
+        return "THE SPECTRUM IS STABLE. REALITY SHIFT DETECTED."; 
+    }
+    return data.result;
+};
+
 
 // --- Utility and Storage Functions ---
 
@@ -304,57 +373,4 @@ export const getTodaysSpellCount = async (userId: string): Promise<number> => {
     
     return count || 0;
 }
-
-export interface NeuralLinkResult {
-    incantation1: string;
-    incantation2: string;
-    finalResult: string;
-}
-
-const STANDARD_NEURAL_RESULT: NeuralLinkResult = {
-    incantation1: "Standard Protocol Engaged. Carrier wave stable.",
-    incantation2: "Signal verified. Uplink established.",
-    finalResult: "Connection Status: NOMINAL. Packet sent."
-};
-
-export const generateElectricNeuralLink = async (target: string, intention: string, mode: 'standard' | 'ai' = 'standard'): Promise<NeuralLinkResult> => {
-    if (mode === 'standard') {
-        return STANDARD_NEURAL_RESULT;
-    }
-
-    try {
-        const { data, error } = await supabase.functions.invoke('generate-electric-spell', {
-            body: { action: 'neural_link', target, intention, mode: 'ai' },
-        });
-        
-        if (!error && data && data.result) {
-            // The edge function might return JSON, or we might need to parse it if it comes back as a string
-            // For now, assuming the edge function returns a structured object if mode is 'ai'
-            // If the structure differs, we map it here.
-            return {
-                incantation1: data.incantation1 || "By the silicon root and fiber vein, I command this link.",
-                incantation2: data.incantation2 || "Override reality protocols. Injecting intent.",
-                finalResult: data.result || "Target acquired. Neural bridge secure."
-            };
-        }
-        
-        console.warn("AI Generation failed. Falling back to Standard.");
-        return STANDARD_NEURAL_RESULT;
-
-    } catch (e) {
-        console.error("Exception in generateElectricNeuralLink:", e);
-        return STANDARD_NEURAL_RESULT;
-    }
-};
-
-export const generateElectricLightPrism = async (colorName: string, intention: string): Promise<string> => {
-    const { data, error } = await supabase.functions.invoke('generate-electric-spell', {
-        body: { action: 'light_prism', target: colorName, intention },
-    });
-    if (error) {
-        console.error("Error invoking generate-electric-spell (light_prism):", error);
-        return "THE SPECTRUM IS STABLE. REALITY SHIFT DETECTED."; 
-    }
-    return data.result;
-};
 // --- END OF FILE src/lib/services/geminiService.ts ---
