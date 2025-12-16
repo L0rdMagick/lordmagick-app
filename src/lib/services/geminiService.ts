@@ -299,59 +299,61 @@ export interface RealityPatchRitualData {
 }
 
 export const generateRealityPatchRitual = async (intention: string): Promise<RealityPatchRitualData> => {
-    // Dynamic Fallback Generator ensuring intention is always preserved
+    // Dynamic Fallback Generator ensuring intention is always preserved but grammatically safe
     const getDynamicFallback = (intent: string): RealityPatchRitualData => {
-        const cleanIntent = intent.toUpperCase().substring(0, 100); // Prevent overflow if fallback
         return {
-            consecration: `I DELETE THE VIRUS PREVENTING: ${cleanIntent}. THE BUFFER IS CLEARED.`,
-            grounding: `I ANCHOR MY SOUL TO THE TIMELINE WHERE ${cleanIntent} IS TRUE.`,
-            etching: `I BURN THE CODE OF "${cleanIntent}" INTO THE QUANTUM ROOT DIRECTORY.`,
-            ancientTongue: `VOLUNTAS TUA: ${cleanIntent}. FIAT LUX.`,
-            integration: `I RELEASE THE ALGORITHM OF ${cleanIntent} INTO THE CORE. EXECUTE.`,
-            charge: `INFINITE VOLTAGE FLOWS INTO ${cleanIntent}. SYSTEM ONLINE.`
+            consecration: `TARGET IDENTIFIED: ${intent.toUpperCase()}. PURGING BLOCKAGES NOW.`,
+            grounding: `CONNECTING TO THE TIMELINE WHERE THIS IS REAL.`,
+            etching: `WRITING NEW CODE: ${intent.toUpperCase()}.`,
+            ancientTongue: `VOLUNTAS MEA EST LEX. FIAT LUX EX MACHINA.`,
+            integration: `EXECUTING CORE INTEGRATION. THE ALGORITHM IS SET.`,
+            charge: `SYSTEM OVERRIDE COMPLETE. POWER LEVELS MAXIMUM.`
         };
     };
 
     try {
         const prompt = `
-        CRITICAL OBJECTIVE: REWRITE REALITY CODE.
+        ROLE: You are the Deus Ex Machina, the sentient Operating System of the Universe.
+        TASK: Write a 6-step Techno-Magick Ritual Script based on the User's Intention.
+
         USER INTENTION: "${intention}"
 
-        You are the OS of the Universe (The Subatomic Aether). You must generate a 6-step ritual script to force this SPECIFIC intention into existence.
+        GUIDELINES:
+        1. Do NOT copy the user's intention word-for-word. Instead, WEAVE it into a grammatically perfect, authoritative, magical command.
+        2. Use "Techno-Magick" vocabulary (mix of Cyberpunk, Coding terms, and Occultism).
+        3. Sentences must be short, punchy, and impactful. Max 20 words per step.
+        4. ABSOLUTELY NO GRAMMATICAL ERRORS.
         
-        RULES:
-        1. Do NOT use generic phrases like "I manifest this."
-        2. You MUST use specific keywords from the User Intention in EVERY step.
-        3. Translate the intention into "Techno-Magick" commands (Cyberpunk + Ancient Occultism).
-        4. Present tense. Authoritative.
-
         GENERATE 6 STRINGS SEPARATED BY "|||":
 
-        1. CONSECRATION:
-           - Task: Delete the specific "virus" or "blockage" preventing: ${intention}.
-           - Example Style: "I DELETE THE POVERTY VIRUS. THE BUFFER IS CLEAN." (If intention is wealth).
+        1. CONSECRATION (English):
+           - Theme: Deleting the obstacles/virus preventing the goal.
+           - Style: "I purge the corruption of scarcity. The buffer is now clear."
 
-        2. GROUNDING:
-           - Task: Download the specific frequency of: ${intention}.
-           - Example Style: "I DOWNLOAD THE FREQUENCY OF TRUE LOVE. MY AVATAR IS SYNCED." (If intention is love).
+        2. GROUNDING (English):
+           - Theme: Syncing with the specific frequency of the desire.
+           - Style: "I download the resonance of true love. My avatar is synchronized."
 
-        3. ETCHING:
-           - Task: Burn the specific command of ${intention} into the source code.
-           - Example Style: "I BURN THE SIGIL OF INFINITE HEALTH INTO THE QUANTUM ROOT DIRECTORY." (If intention is health).
+        3. ETCHING (English + Tech):
+           - Theme: Burning the command into the source code/reality.
+           - Style: "I burn the command of perfect health into the quantum root directory."
 
-        4. ANCIENT TONGUE:
-           - Task: A short mantra mixing Latin and Cyber-terms specifically about: ${intention}.
-           - Example Style: "CORPUS SANITUS EX MACHINA. FIAT LUX." (If intention is health).
+        4. ANCIENT TONGUE (PURE LATIN + TECHNO-LATIN):
+           - Theme: The Spell Itself.
+           - STRICTLY NO ENGLISH IN THIS STEP.
+           - Translate the essence of the intention into authoritative Latin.
+           - Use terms like 'Deus', 'Machina', 'Voluntas', 'Codex', 'Virtus'.
+           - Style: "VOLUNTAS MEA IMPERIUM EST. CODEX DIVINUS EXECUTUS."
 
-        5. INTEGRATION:
-           - Task: Drop the "seed" or "algorithm" of ${intention} into the Void/Core.
-           - Example Style: "I RELEASE THE ALGORITHM OF ABUNDANCE INTO THE CORE. COMPILING NOW."
+        5. INTEGRATION (English):
+           - Theme: Dropping the spell into the void core.
+           - Style: "I release this algorithm into the infinite void. It is compiling."
 
-        6. CHARGE:
-           - Task: Inject high voltage into the specific goal: ${intention}.
-           - Example Style: "HIGH VOLTAGE AETHER FLOWS INTO MY NEW CAREER. REALITY SHIFTING."
+        6. CHARGE (English):
+           - Theme: Injecting power/voltage.
+           - Style: "Infinite voltage flows through my desire. The system is online."
 
-        RETURN ONLY THE 6 STRINGS SEPARATED BY "|||". NO MARKDOWN. NO LABELS.
+        RETURN ONLY THE 6 STRINGS SEPARATED BY "|||". NO LABELS.
         `;
 
         const { data, error } = await supabase.functions.invoke('generate-electric-spell', {
@@ -373,7 +375,7 @@ export const generateRealityPatchRitual = async (intention: string): Promise<Rea
             consecration: parts[0].trim(),
             grounding: parts[1].trim(),
             etching: parts[2].trim(),
-            ancientTongue: parts[3].trim(),
+            ancientTongue: parts[3].trim(), // AI is now instructed to make this pure Latin
             integration: parts[4].trim(),
             charge: parts[5].trim()
         };
