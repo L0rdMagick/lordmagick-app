@@ -301,20 +301,44 @@ export interface RealityPatchRitualData {
 export const generateRealityPatchRitual = async (intention: string): Promise<RealityPatchRitualData> => {
     try {
         const prompt = `
-        User Intention: "${intention}".
+        CRITICAL OBJECTIVE: REWRITE REALITY CODE.
+        USER INTENTION: "${intention}"
+
+        You are the OS of the Universe (The Subatomic Aether). You must generate a 6-step ritual script to force this SPECIFIC intention into existence.
         
-        Task: You are a Quantum Sorcerer System. Generate 6 distinct, highly potent techno-magickal incantations to shift the user into a timeline where this intention is ALREADY TRUE. The language must be authoritative, subatomic, and mystical.
-        
-        Format: Return ONLY the text strings separated by "|||".
-        
-        1. Consecration: A short command to destroy obstacle code and clear the immediate reality buffer.
-        2. Grounding: A command to anchor the user's nervous system to the new dimensional frequency.
-        3. Etching: A powerful declaration that overrides the core source code of the universe. Use "I" statements.
-        4. Ancient Tongue: A mix of Latin and "Machine Code" (Cyber-Latin) that represents the spiral of creation. Short, chantable.
-        5. Integration: A command to "Drop" the spell into the void/core. E.g. "I RELEASE THE CODE."
-        6. Charge: A final command to inject high-voltage aetheric energy into the intention.
-        
-        Style: Cyberpunk, Occult, Reality Hacking. Present tense.
+        RULES:
+        1. Do NOT use generic phrases like "I manifest this."
+        2. You MUST use specific keywords from the User Intention in EVERY step.
+        3. Translate the intention into "Techno-Magick" commands (Cyberpunk + Ancient Occultism).
+        4. Present tense. Authoritative.
+
+        GENERATE 6 STRINGS SEPARATED BY "|||":
+
+        1. CONSECRATION:
+           - Task: Delete the specific "virus" or "blockage" preventing: ${intention}.
+           - Example Style: "I DELETE THE POVERTY VIRUS. THE BUFFER IS CLEAN." (If intention is wealth).
+
+        2. GROUNDING:
+           - Task: Download the specific frequency of: ${intention}.
+           - Example Style: "I DOWNLOAD THE FREQUENCY OF TRUE LOVE. MY AVATAR IS SYNCED." (If intention is love).
+
+        3. ETCHING:
+           - Task: Burn the specific command of ${intention} into the source code.
+           - Example Style: "I BURN THE SIGIL OF INFINITE HEALTH INTO THE QUANTUM ROOT DIRECTORY." (If intention is health).
+
+        4. ANCIENT TONGUE:
+           - Task: A short mantra mixing Latin and Cyber-terms specifically about: ${intention}.
+           - Example Style: "CORPUS SANITUS EX MACHINA. FIAT LUX." (If intention is health).
+
+        5. INTEGRATION:
+           - Task: Drop the "seed" or "algorithm" of ${intention} into the Void/Core.
+           - Example Style: "I RELEASE THE ALGORITHM OF ABUNDANCE INTO THE CORE. COMPILING NOW."
+
+        6. CHARGE:
+           - Task: Inject high voltage into the specific goal: ${intention}.
+           - Example Style: "HIGH VOLTAGE AETHER FLOWS INTO MY NEW CAREER. REALITY SHIFTING."
+
+        RETURN ONLY THE 6 STRINGS SEPARATED BY "|||". NO MARKDOWN. NO LABELS.
         `;
 
         const { data, error } = await supabase.functions.invoke('generate-electric-spell', {
