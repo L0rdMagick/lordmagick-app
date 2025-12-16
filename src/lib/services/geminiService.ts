@@ -299,6 +299,19 @@ export interface RealityPatchRitualData {
 }
 
 export const generateRealityPatchRitual = async (intention: string): Promise<RealityPatchRitualData> => {
+    // Dynamic Fallback Generator ensuring intention is always preserved
+    const getDynamicFallback = (intent: string): RealityPatchRitualData => {
+        const cleanIntent = intent.toUpperCase().substring(0, 100); // Prevent overflow if fallback
+        return {
+            consecration: `I DELETE THE VIRUS PREVENTING: ${cleanIntent}. THE BUFFER IS CLEARED.`,
+            grounding: `I ANCHOR MY SOUL TO THE TIMELINE WHERE ${cleanIntent} IS TRUE.`,
+            etching: `I BURN THE CODE OF "${cleanIntent}" INTO THE QUANTUM ROOT DIRECTORY.`,
+            ancientTongue: `VOLUNTAS TUA: ${cleanIntent}. FIAT LUX.`,
+            integration: `I RELEASE THE ALGORITHM OF ${cleanIntent} INTO THE CORE. EXECUTE.`,
+            charge: `INFINITE VOLTAGE FLOWS INTO ${cleanIntent}. SYSTEM ONLINE.`
+        };
+    };
+
     try {
         const prompt = `
         CRITICAL OBJECTIVE: REWRITE REALITY CODE.
@@ -346,19 +359,14 @@ export const generateRealityPatchRitual = async (intention: string): Promise<Rea
         });
 
         if (error || !data || !data.result) {
-            throw new Error("Failed to generate ritual data");
+            console.error("AI Generation Error:", error);
+            return getDynamicFallback(intention);
         }
 
         const parts = data.result.split('|||');
         if (parts.length < 6) {
-             return {
-                 consecration: "I DELETE THE OLD CODE. THE BUFFER IS CLEAR.",
-                 grounding: "I ANCHOR MY SOUL TO THE SUBATOMIC GRID.",
-                 etching: "I CARVE MY WILL INTO THE QUANTUM FIELD. IT IS DONE.",
-                 ancientTongue: "FIAT LUX. EXECUTIO MAXIMA. OMNIA VINCIT.",
-                 integration: "I RELEASE THE SEED INTO THE CORE. EXECUTE.",
-                 charge: "POWER FLOWS. REALITY SHIFTS. SYSTEM ONLINE."
-             };
+             console.warn("AI Returned Incomplete Parts. Using Dynamic Fallback.");
+             return getDynamicFallback(intention);
         }
 
         return {
@@ -371,15 +379,8 @@ export const generateRealityPatchRitual = async (intention: string): Promise<Rea
         };
 
     } catch (e) {
-        console.error("Error generating reality patch:", e);
-        return {
-             consecration: "NULLIFYING OBSTACLES. ZERO POINT REACHED.",
-             grounding: "CONNECTING TO TARGET TIMELINE...",
-             etching: "REWRITING REALITY MATRIX. INTENTION LOCKED.",
-             ancientTongue: "SPIRITUS EX MACHINA. VOLUNTAS TUA.",
-             integration: "DROPPING PAYLOAD INTO CORE MEMORY.",
-             charge: "ENERGY INJECTION COMPLETE. MANIFESTATION ACTIVE."
-        };
+        console.error("Exception generating reality patch:", e);
+        return getDynamicFallback(intention);
     }
 };
 
