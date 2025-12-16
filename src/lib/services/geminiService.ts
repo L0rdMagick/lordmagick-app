@@ -9,6 +9,44 @@ const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
+// --- Credit / Paywall Functions ---
+
+export const deductUserCredits = async (userId: string, cost: number): Promise<boolean> => {
+    try {
+        // 1. Get current balance
+        const { data: profile, error: fetchError } = await supabase
+            .from('profiles')
+            .select('credits')
+            .eq('id', userId)
+            .single();
+
+        if (fetchError || !profile) {
+            console.error("Error fetching profile:", fetchError);
+            return false;
+        }
+
+        if (profile.credits < cost) {
+            return false; // Insufficient funds
+        }
+
+        // 2. Deduct credits
+        const { error: updateError } = await supabase
+            .from('profiles')
+            .update({ credits: profile.credits - cost })
+            .eq('id', userId);
+
+        if (updateError) {
+            console.error("Error deducting credits:", updateError);
+            return false;
+        }
+
+        return true;
+    } catch (e) {
+        console.error("Exception in deductUserCredits:", e);
+        return false;
+    }
+};
+
 // --- Human Design Report Functions ---
 
 export const calculateHumanDesignChart = async (formData: FormData): Promise<HumanDesignChart> => {
@@ -256,6 +294,7 @@ export interface RealityPatchRitualData {
     grounding: string;
     etching: string;
     ancientTongue: string;
+    integration: string;
     charge: string;
 }
 
@@ -264,7 +303,7 @@ export const generateRealityPatchRitual = async (intention: string): Promise<Rea
         const prompt = `
         User Intention: "${intention}".
         
-        Task: You are a Quantum Sorcerer System. Generate 5 distinct, highly potent techno-magickal incantations to shift the user into a timeline where this intention is ALREADY TRUE. The language must be authoritative, subatomic, and mystical.
+        Task: You are a Quantum Sorcerer System. Generate 6 distinct, highly potent techno-magickal incantations to shift the user into a timeline where this intention is ALREADY TRUE. The language must be authoritative, subatomic, and mystical.
         
         Format: Return ONLY the text strings separated by "|||".
         
@@ -272,7 +311,8 @@ export const generateRealityPatchRitual = async (intention: string): Promise<Rea
         2. Grounding: A command to anchor the user's nervous system to the new dimensional frequency.
         3. Etching: A powerful declaration that overrides the core source code of the universe. Use "I" statements.
         4. Ancient Tongue: A mix of Latin and "Machine Code" (Cyber-Latin) that represents the spiral of creation. Short, chantable.
-        5. Charge: A final command to inject high-voltage aetheric energy into the intention.
+        5. Integration: A command to "Drop" the spell into the void/core. E.g. "I RELEASE THE CODE."
+        6. Charge: A final command to inject high-voltage aetheric energy into the intention.
         
         Style: Cyberpunk, Occult, Reality Hacking. Present tense.
         `;
@@ -286,12 +326,13 @@ export const generateRealityPatchRitual = async (intention: string): Promise<Rea
         }
 
         const parts = data.result.split('|||');
-        if (parts.length < 5) {
+        if (parts.length < 6) {
              return {
                  consecration: "I DELETE THE OLD CODE. THE BUFFER IS CLEAR.",
                  grounding: "I ANCHOR MY SOUL TO THE SUBATOMIC GRID.",
                  etching: "I CARVE MY WILL INTO THE QUANTUM FIELD. IT IS DONE.",
                  ancientTongue: "FIAT LUX. EXECUTIO MAXIMA. OMNIA VINCIT.",
+                 integration: "I RELEASE THE SEED INTO THE CORE. EXECUTE.",
                  charge: "POWER FLOWS. REALITY SHIFTS. SYSTEM ONLINE."
              };
         }
@@ -301,7 +342,8 @@ export const generateRealityPatchRitual = async (intention: string): Promise<Rea
             grounding: parts[1].trim(),
             etching: parts[2].trim(),
             ancientTongue: parts[3].trim(),
-            charge: parts[4].trim()
+            integration: parts[4].trim(),
+            charge: parts[5].trim()
         };
 
     } catch (e) {
@@ -311,6 +353,7 @@ export const generateRealityPatchRitual = async (intention: string): Promise<Rea
              grounding: "CONNECTING TO TARGET TIMELINE...",
              etching: "REWRITING REALITY MATRIX. INTENTION LOCKED.",
              ancientTongue: "SPIRITUS EX MACHINA. VOLUNTAS TUA.",
+             integration: "DROPPING PAYLOAD INTO CORE MEMORY.",
              charge: "ENERGY INJECTION COMPLETE. MANIFESTATION ACTIVE."
         };
     }

@@ -4,9 +4,9 @@
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { 
-  Heart, DollarSign, Sun, Shield, Star, Fingerprint, Check, Eye, X, Sparkles, Lock, Save, Zap, HelpCircle
+  Heart, DollarSign, Sun, Shield, Star, Fingerprint, Check, Eye, X, Sparkles, Lock, Save, Zap, ArrowDown, Database
 } from 'lucide-react';
-import { generateRealityPatchRitual, saveSpell, RealityPatchRitualData } from '@/lib/services/geminiService';
+import { generateRealityPatchRitual, saveSpell, deductUserCredits, RealityPatchRitualData } from '@/lib/services/geminiService';
 import type { Session } from '@/lib/types';
 
 // --- CONSTANTS & DATA ---
@@ -19,14 +19,6 @@ const ARCHETYPES = {
   POWER: { color: 'text-amber-500', border: 'border-amber-500', bg: 'bg-amber-500', icon: Sun, theme: 'SOL' },
   PROTECT: { color: 'text-blue-500', border: 'border-blue-500', bg: 'bg-blue-500', icon: Shield, theme: 'MARS' },
   UNK: { color: 'text-cyan-400', border: 'border-cyan-400', bg: 'bg-cyan-400', icon: Star, theme: 'AETHER' }
-};
-
-const LATIN_MANTRA_DB = {
-    LOVE: ["AMOR VINCIT OMNIA", "COR AD COR LOQUITUR", "UBI AMOR IBI OCULUS"],
-    MONEY: ["AUREA MEDIOCRITAS", "FORTUNA AUDACES IUVAT", "CRESCAT SCIENTIA"],
-    POWER: ["IMPERIUM SINE FINE", "SCIENTIA POTENTIA EST", "VINCIT QUI SE VINCIT"],
-    PROTECT: ["CUSTOS MORUM", "LUX IN TENEBRIS", "TIMOR MORTIS CONTURBAT"],
-    UNK: ["FIAT LUX", "EX NIHILO NIHIL", "MENS AGITAT MOLEM"]
 };
 
 const detectArchetype = (text: string) => {
@@ -685,6 +677,19 @@ const useAudioEngine = () => {
           g.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
           osc.connect(g); g.connect(masterGainRef.current);
           osc.start(); osc.stop(t + 0.15);
+      } else if (type === 'drop') {
+          // Descending tone for dropping
+          const osc = ctx.createOscillator();
+          const g = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(600, t);
+          osc.frequency.exponentialRampToValueAtTime(50, t + 1.5);
+          g.gain.setValueAtTime(0.5, t);
+          g.gain.linearRampToValueAtTime(0, t + 1.5);
+          osc.connect(g);
+          g.connect(masterGainRef.current);
+          osc.start(t);
+          osc.stop(t + 1.5);
       }
   }, [initAudio]);
 
@@ -695,18 +700,32 @@ const useAudioEngine = () => {
 // --- SUB-COMPONENTS ---
 
 // 0. INTRO / PAYWALL / INTENTION
-const IntroBreach = ({ setIntention, setArchetype, setPhase, setAiData, audio }: any) => {
+const IntroBreach = ({ setIntention, setArchetype, setPhase, setAiData, audio, session }: any) => {
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
 
     const handleSubmit = async () => {
         if (!input || input.length < 3) return;
         setLoading(true);
-        audio.initAudio();
-        audio.playOneShot('boom');
+        setError('');
         
         try {
-            // AI Call Here
+            audio.initAudio();
+            
+            // 1. Process Payment
+            if (session?.user?.id) {
+                const success = await deductUserCredits(session.user.id, COST_TO_BREACH);
+                if (!success) {
+                    setError('INSUFFICIENT AETHER. RECHARGE REQUIRED.');
+                    setLoading(false);
+                    return;
+                }
+            }
+            
+            audio.playOneShot('boom');
+
+            // 2. AI Generation
             const arch = detectArchetype(input);
             setArchetype(arch);
             setIntention(input);
@@ -717,6 +736,7 @@ const IntroBreach = ({ setIntention, setArchetype, setPhase, setAiData, audio }:
             setPhase('CONSECRATE');
         } catch (e) {
             console.error(e);
+            setError('SIGNAL LOST. TRY AGAIN.');
             setLoading(false);
         }
     };
@@ -745,6 +765,8 @@ const IntroBreach = ({ setIntention, setArchetype, setPhase, setAiData, audio }:
                     />
                 </div>
 
+                {error && <p className="text-red-500 font-mono text-xs mt-4 animate-pulse">{error}</p>}
+
                 {loading ? (
                     <div className="mt-8 flex flex-col items-center space-y-2">
                         <div className="w-6 h-6 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
@@ -756,7 +778,7 @@ const IntroBreach = ({ setIntention, setArchetype, setPhase, setAiData, audio }:
                         disabled={!input}
                         className="mt-8 w-full py-4 border border-red-900 text-red-500 hover:bg-red-900/20 hover:text-red-400 hover:border-red-500 transition-all font-mono text-xs tracking-[0.2em] uppercase"
                     >
-                        Initialize Ritual
+                        Initialize Ritual (-{COST_TO_BREACH} Aether)
                     </button>
                 )}
             </div>
@@ -970,7 +992,7 @@ const Grounding = ({ setPhase, audio, aiData, archetype }: any) => {
   );
 };
 
-// 4. AGREEMENT (RESTORED)
+// 4. AGREEMENT
 const Agreement = ({ setPhase, audio }: any) => {
     return (
         <div className="flex flex-col items-center justify-center h-full px-8 text-center space-y-8 animate-in fade-in">
@@ -1168,7 +1190,8 @@ const VocalChant = ({ setPhase, archetype, audio, aiData, intention }: any) => {
         if (charge >= 100) {
             audio.stopLoop();
             audio.playOneShot('boom');
-            setTimeout(() => setPhase('CHARGE'), 1000);
+            // CHANGE: Go to Integration instead of Charge
+            setTimeout(() => setPhase('INTEGRATION'), 1000);
         }
         return () => clearInterval(interval);
     }, [chanting, charge, setPhase, audio]);
@@ -1213,6 +1236,110 @@ const VocalChant = ({ setPhase, archetype, audio, aiData, intention }: any) => {
                      <Sparkles className={`${archetype.color} w-10 h-10 ${chanting ? 'animate-spin' : ''}`} />
                  </button>
             </div>
+        </div>
+    );
+};
+
+// 6.5 VOID INTEGRATION (NEW STEP)
+const VoidIntegration = ({ setPhase, archetype, audio, aiData, intention, spawnExplosion }: any) => {
+    const [dragY, setDragY] = useState(0);
+    const [isDragging, setIsDragging] = useState(false);
+    const [integrated, setIntegrated] = useState(false);
+    
+    // Sigil Path for Visual
+    const sigilPath = useMemo(() => generateSigilPath(intention), [intention]);
+
+    const handleStart = (e: any) => {
+        setIsDragging(true);
+    };
+
+    const handleMove = (e: any) => {
+        if (!isDragging || integrated) return;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        const winH = (globalThis as any).window.innerHeight;
+        // Normalize roughly to center
+        const startY = winH / 3;
+        const offset = Math.max(0, clientY - startY);
+        setDragY(offset);
+
+        // Threshold to drop
+        if (offset > 250) {
+            completeDrop();
+        }
+    };
+
+    const handleEnd = () => {
+        if (!integrated) {
+            setIsDragging(false);
+            setDragY(0); // Snap back
+        }
+    };
+
+    const completeDrop = () => {
+        setIntegrated(true);
+        setIsDragging(false);
+        audio.playOneShot('drop');
+        audio.playOneShot('boom');
+        
+        // Explosion Effect
+        const win = (globalThis as any).window;
+        if(win) {
+            spawnExplosion(win.innerWidth/2, win.innerHeight - 100, '#ffffff', 50);
+            spawnExplosion(win.innerWidth/2, win.innerHeight - 100, archetype.theme === 'VENUS' ? '#f43f5e' : '#22d3ee', 30);
+        }
+
+        setTimeout(() => {
+            setPhase('CHARGE');
+        }, 3000);
+    };
+
+    return (
+        <div 
+            className="flex flex-col items-center h-full relative z-10 w-full overflow-hidden"
+            onTouchMove={handleMove} onMouseMove={handleMove}
+            onTouchEnd={handleEnd} onMouseUp={handleEnd}
+        >
+            <div className="mt-16 text-center px-6">
+                <h2 className="text-slate-500 font-mono text-[10px] tracking-[0.3em] uppercase mb-4">Phase 5: Core Integration</h2>
+                <p className={`${archetype.color} font-serif text-xl animate-pulse`}>
+                    "{aiData.integration}"
+                </p>
+            </div>
+
+            {/* The Void Pit */}
+            <div className="absolute bottom-0 w-full h-1/3 bg-linear-to-t from-white/10 to-transparent flex items-end justify-center pb-12">
+                <div className="w-full h-1 bg-white/50 blur-xl animate-pulse" />
+                <div className="absolute bottom-10 animate-bounce text-slate-500 font-mono text-[10px]">
+                    THE CORE CODE
+                </div>
+            </div>
+
+            {/* Draggable Sigil */}
+            <div 
+                className={`absolute w-40 h-40 bg-black border-2 ${archetype.border} flex items-center justify-center cursor-grab active:cursor-grabbing backdrop-blur-md transition-transform duration-75`}
+                style={{ 
+                    top: '30%',
+                    transform: `translateY(${dragY}px) scale(${1 - (dragY/500)}) rotate(${dragY/5}deg)`,
+                    opacity: integrated ? 0 : 1
+                }}
+                onMouseDown={handleStart} onTouchStart={handleStart}
+            >
+                 <svg viewBox="0 0 200 200" className="w-32 h-32 opacity-80">
+                    <path d={sigilPath} stroke="white" strokeWidth="2" fill="none" />
+                </svg>
+                <div className="absolute -bottom-8 text-[10px] font-mono text-slate-400">
+                    DRAG TO DROP
+                </div>
+                <ArrowDown className="absolute -bottom-16 animate-bounce text-white opacity-50" />
+            </div>
+
+            {integrated && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="text-4xl font-black italic text-white tracking-widest animate-ping">
+                        INTEGRATED
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
@@ -1273,6 +1400,8 @@ const ChargeAndCast = ({ setPhase, setGlitchActive, archetype, audio, spawnExplo
                 transform: shaking ? `translate(${Math.random()*10 - 5}px, ${Math.random()*10 - 5}px)` : 'none' 
             }}
        >
+           <h2 className="text-slate-500 font-mono text-[10px] tracking-[0.3em] uppercase">Phase 6: Power Injection</h2>
+
            <p className={`${archetype.color} font-serif text-xl animate-pulse px-4`}>
                 "{aiData.charge}"
            </p>
@@ -1319,10 +1448,18 @@ const FinalCast = ({ intention, archetype, audio, onExit, session, aiData }: any
         if(!session?.user) return;
         setSaving(true);
         try {
-             await saveSpell(session.user.id, {
+            // Deduct cost for saving? Or is it included? 
+            // Based on prompt: "save at the end but that will also cost aether credits"
+            const success = await deductUserCredits(session.user.id, COST_TO_SAVE);
+            if (!success) {
+                alert("Insufficient Aether to save.");
+                return;
+            }
+
+            await saveSpell(session.user.id, {
                  name: `Reality Breach: ${new Date().toLocaleDateString()}`,
                  intention: intention,
-                 incantation: `${aiData.consecration}\n${aiData.etching}\n${aiData.ancientTongue}`,
+                 incantation: `${aiData.consecration}\n${aiData.etching}\n${aiData.ancientTongue}\n${aiData.integration}`,
                  element: archetype.theme
              });
              setSaved(true);
@@ -1351,7 +1488,7 @@ const FinalCast = ({ intention, archetype, audio, onExit, session, aiData }: any
                     disabled={saved || saving}
                     className={`w-full py-4 border border-slate-700 bg-slate-900/50 text-white font-mono text-[10px] tracking-widest hover:border-white transition-all flex items-center justify-center gap-2 ${saved ? 'opacity-50 cursor-default' : ''}`}
                  >
-                    <Save size={14} /> {saved ? "LOG SAVED" : `SAVE TO GRIMOIRE (${COST_TO_SAVE} AETHER)`}
+                    <Save size={14} /> {saved ? "LOG SAVED" : `SAVE TO GRIMOIRE (-${COST_TO_SAVE} AETHER)`}
                  </button>
                  
                  <button 
@@ -1378,6 +1515,7 @@ export default function RealityPatchSpell({ onExit, session }: { onExit: () => v
       grounding: "",
       etching: "",
       ancientTongue: "",
+      integration: "",
       charge: ""
   });
   
@@ -1392,6 +1530,7 @@ export default function RealityPatchSpell({ onExit, session }: { onExit: () => v
           case 'AGREEMENT': return 25;
           case 'ETCHING': return 40;
           case 'CHANT': return 80;
+          case 'INTEGRATION': return 100;
           case 'CHARGE': return 150;
           case 'CAST': return 500;
           default: return 0;
@@ -1453,12 +1592,13 @@ export default function RealityPatchSpell({ onExit, session }: { onExit: () => v
         )}
         
         <main className="w-full h-full relative z-10">
-            {phase === 'INTRO' && <IntroBreach setIntention={setIntention} setArchetype={setArchetype} setPhase={setPhase} setAiData={setAiData} audio={audio} />}
+            {phase === 'INTRO' && <IntroBreach setIntention={setIntention} setArchetype={setArchetype} setPhase={setPhase} setAiData={setAiData} audio={audio} session={session} />}
             {phase === 'CONSECRATE' && <Consecration setPhase={setPhase} archetype={archetype} audio={audio} spawnExplosion={spawnExplosion} aiData={aiData} />}
             {phase === 'GROUNDING' && <Grounding setPhase={setPhase} audio={audio} aiData={aiData} archetype={archetype} />}
             {phase === 'AGREEMENT' && <Agreement setPhase={setPhase} audio={audio} />}
             {phase === 'ETCHING' && <Etching setPhase={setPhase} archetype={archetype} audio={audio} aiData={aiData} intention={intention} spawnExplosion={spawnExplosion} />}
             {phase === 'CHANT' && <VocalChant setPhase={setPhase} archetype={archetype} audio={audio} aiData={aiData} intention={intention} />}
+            {phase === 'INTEGRATION' && <VoidIntegration setPhase={setPhase} archetype={archetype} audio={audio} aiData={aiData} intention={intention} spawnExplosion={spawnExplosion} />}
             {phase === 'CHARGE' && <ChargeAndCast setPhase={setPhase} setGlitchActive={setGlitchActive} archetype={archetype} audio={audio} spawnExplosion={spawnExplosion} aiData={aiData} />}
             {phase === 'CAST' && <FinalCast intention={intention} archetype={archetype} audio={audio} onExit={onExit} session={session} aiData={aiData} />}
         </main>
