@@ -4,11 +4,14 @@
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { 
-  Heart, DollarSign, Sun, Shield, Star, Fingerprint, Check, Eye, X, Sparkles
+  Heart, DollarSign, Sun, Shield, Star, Fingerprint, Check, Eye, X, Sparkles, Lock, Save, Zap, HelpCircle
 } from 'lucide-react';
-import { generateElectricEnsorcellment } from '@/lib/services/geminiService';
+import { generateRealityPatchRitual, saveSpell, RealityPatchRitualData } from '@/lib/services/geminiService';
+import type { Session } from '@/lib/types';
 
 // --- CONSTANTS & DATA ---
+const COST_TO_BREACH = 10;
+const COST_TO_SAVE = 5;
 
 const ARCHETYPES = {
   LOVE: { color: 'text-rose-500', border: 'border-rose-500', bg: 'bg-rose-500', icon: Heart, theme: 'VENUS' },
@@ -163,7 +166,6 @@ const useParticleSystem = () => {
 };
 
 // --- ADVANCED AUDIO ENGINE ---
-
 const useAudioEngine = () => {
   const ctxRef = useRef<any>(null);
   const masterGainRef = useRef<any>(null);
@@ -689,13 +691,81 @@ const useAudioEngine = () => {
   return { initAudio, startLoop, updateLoop, stopLoop, playOneShot };
 };
 
-// --- CONSTANTS ---
-// (Duplicates Removed)
 
 // --- SUB-COMPONENTS ---
 
+// 0. INTRO / PAYWALL / INTENTION
+const IntroBreach = ({ setIntention, setArchetype, setPhase, setAiData, audio }: any) => {
+    const [input, setInput] = useState('');
+    const [loading, setLoading] = useState(false);
+
+    const handleSubmit = async () => {
+        if (!input || input.length < 3) return;
+        setLoading(true);
+        audio.initAudio();
+        audio.playOneShot('boom');
+        
+        try {
+            // AI Call Here
+            const arch = detectArchetype(input);
+            setArchetype(arch);
+            setIntention(input);
+
+            const ritualData = await generateRealityPatchRitual(input);
+            setAiData(ritualData);
+            
+            setPhase('CONSECRATE');
+        } catch (e) {
+            console.error(e);
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="flex flex-col items-center justify-center h-full px-8 space-y-8 relative z-20 animate-in fade-in text-center">
+            <div className="border border-red-500/50 bg-black/80 p-8 max-w-lg shadow-[0_0_50px_rgba(220,38,38,0.2)]">
+                <h1 className="text-3xl font-serif text-red-500 tracking-[0.2em] mb-2">REALITY BREACH</h1>
+                <p className="text-red-900/80 font-mono text-[10px] mb-8">ADMIN ACCESS REQUIRED // COST: {COST_TO_BREACH} AETHER</p>
+                
+                <p className="text-slate-400 font-mono text-xs leading-relaxed mb-6">
+                    You are attempting to overwrite the base code of your current timeline. 
+                    This protocol utilizes subatomic linguistic programming to force a dimensional shift.
+                </p>
+
+                <div className="space-y-4">
+                    <label className="text-xs font-mono text-slate-500 uppercase tracking-widest">
+                        Define Target Reality (Intention)
+                    </label>
+                    <textarea 
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        disabled={loading}
+                        placeholder="e.g. I am fully healed and wealthy..."
+                        className="w-full h-24 bg-slate-900/50 border border-slate-700 p-4 text-white text-center font-serif italic focus:border-red-500 focus:outline-none transition-colors resize-none"
+                    />
+                </div>
+
+                {loading ? (
+                    <div className="mt-8 flex flex-col items-center space-y-2">
+                        <div className="w-6 h-6 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
+                        <span className="text-red-500 font-mono text-[10px] animate-pulse">GENERATING BREACH PROTOCOLS...</span>
+                    </div>
+                ) : (
+                    <button 
+                        onClick={handleSubmit}
+                        disabled={!input}
+                        className="mt-8 w-full py-4 border border-red-900 text-red-500 hover:bg-red-900/20 hover:text-red-400 hover:border-red-500 transition-all font-mono text-xs tracking-[0.2em] uppercase"
+                    >
+                        Initialize Ritual
+                    </button>
+                )}
+            </div>
+        </div>
+    );
+};
+
 // 1. CONSECRATION & VOID ENTRY
-const Consecration = ({ setPhase, archetype, audio, spawnExplosion }: any) => {
+const Consecration = ({ setPhase, archetype, audio, spawnExplosion, aiData }: any) => {
   const [progress, setProgress] = useState(0);
   const [voidProgress, setVoidProgress] = useState(0);
   const [stage, setStage] = useState<'consecrate' | 'growing'>('consecrate');
@@ -762,6 +832,14 @@ const Consecration = ({ setPhase, archetype, audio, spawnExplosion }: any) => {
 
   return (
     <div className="flex flex-col items-center justify-center h-full space-y-8 animate-in fade-in duration-1000 relative z-10 select-none">
+      
+      {/* AI Text Display */}
+      <div className="max-w-md bg-black/40 p-6 border-l-2 border-slate-800 backdrop-blur-sm text-center mb-4">
+        <p className={`${archetype.color} font-serif text-lg italic leading-relaxed`}>
+            "{aiData.consecration}"
+        </p>
+      </div>
+
       <div className="relative w-80 h-80 flex items-center justify-center">
         {stage === 'consecrate' ? (
             <>
@@ -812,7 +890,7 @@ const Consecration = ({ setPhase, archetype, audio, spawnExplosion }: any) => {
 };
 
 // 2. GROUNDING
-const Grounding = ({ setPhase, audio }: any) => {
+const Grounding = ({ setPhase, audio, aiData, archetype }: any) => {
   const [cycle, setCycle] = useState(0);
   const [breathState, setBreathState] = useState('INHALE');
   const TOTAL_CYCLES = 3;
@@ -829,7 +907,7 @@ const Grounding = ({ setPhase, audio }: any) => {
         if (isMounted) {
             audio.stopLoop(); 
             audio.playOneShot('type');
-            setTimeout(() => setPhase('INTENTION'), 1000);
+            setTimeout(() => setPhase('AGREEMENT'), 1000);
         }
         return;
       }
@@ -870,7 +948,12 @@ const Grounding = ({ setPhase, audio }: any) => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center h-full space-y-12 relative z-10">
+    <div className="flex flex-col items-center justify-center h-full space-y-12 relative z-10 text-center">
+       
+       <p className={`${archetype.color} font-serif text-lg max-w-md animate-pulse px-6`}>
+         "{aiData.grounding}"
+       </p>
+
       <div className="relative">
         <div className="w-32 h-32 bg-cyan-900/20 border border-cyan-500/30 rounded-full blur-xl absolute inset-0 transition-all duration-4000" 
              style={guideStyle} />
@@ -887,103 +970,17 @@ const Grounding = ({ setPhase, audio }: any) => {
   );
 };
 
-// 3. INSCRIPTION
-const Inscription = ({ setIntention, setArchetype, setPhase, archetype, audio, setAiData }: any) => {
-  const [text, setText] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-      if(isLoading) {
-          audio.startLoop('consulting');
-      } else {
-          audio.stopLoop();
-      }
-      return () => audio.stopLoop();
-  }, [isLoading, audio]);
-
-  const handleType = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      setText((e.target as any).value.toUpperCase());
-      audio.playOneShot('type'); 
-  };
-
-  const handleSubmit = async () => {
-      if (text.length < 3) return;
-      setIsLoading(true);
-      audio.playOneShot('water');
-      
-      const arch = detectArchetype(text);
-      setArchetype(arch);
-      setIntention(text);
-
-      try {
-          const result = await generateElectricEnsorcellment(text); 
-          const [poetry, latin] = result.split('|');
-          
-          const latinPhrase = LATIN_MANTRA_DB[arch.theme as keyof typeof LATIN_MANTRA_DB] 
-                              ? LATIN_MANTRA_DB[arch.theme as keyof typeof LATIN_MANTRA_DB][Math.floor(Math.random() * 3)] 
-                              : "FIAT VOLUNTAS TUA";
-
-          setAiData({
-              poetry: poetry?.trim() || "The gears of fate grind in your favor.",
-              latin: latinPhrase
-          });
-
-          setPhase('AGREEMENT');
-      } catch (e) {
-          console.error(e);
-          setAiData({
-              poetry: "The ether shifts to accommodate the will.",
-              latin: "Fiat Voluntas Tua"
-          });
-          setPhase('AGREEMENT');
-      } finally {
-          setIsLoading(false);
-      }
-  };
-
-  return (
-    <div className="flex flex-col items-center justify-center h-full px-8 space-y-8 relative z-10 animate-in slide-in-from-bottom duration-1000">
-         <Eye className="w-12 h-12 text-slate-700 animate-pulse mb-4" />
-         <h2 className="text-slate-400 font-mono text-xs tracking-[0.5em]">DECLARE INTENTION</h2>
-         
-         <textarea 
-           value={text}
-           onChange={handleType}
-           placeholder="I DESIRE..."
-           disabled={isLoading}
-           className="w-full h-32 bg-transparent border-2 border-double border-slate-700 rounded-lg p-4 text-center text-2xl font-serif italic text-white focus:outline-none focus:border-white transition-colors placeholder-slate-800 resize-none whitespace-pre-wrap"
-         />
-         
-         {isLoading ? (
-             <div className="flex flex-col items-center space-y-4">
-                 <div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin"/>
-                 <p className="text-cyan-500 animate-pulse font-mono text-xs">CONSULTING THE AETHER...</p>
-             </div>
-         ) : (
-             text.length > 3 && (
-               <button 
-                 onClick={handleSubmit}
-                 className="mt-12 px-12 py-4 border-2 border-double border-slate-700 text-slate-300 font-serif tracking-[0.2em] uppercase bg-black hover:bg-slate-900 hover:text-white hover:border-white transition-all shadow-[0_0_20px_rgba(255,255,255,0.1)]"
-               >
-                 Crystallize
-               </button>
-             )
-         )}
-    </div>
-  );
-};
-
-// 4. AGREEMENT
+// 4. AGREEMENT (RESTORED)
 const Agreement = ({ setPhase, audio }: any) => {
     return (
         <div className="flex flex-col items-center justify-center h-full px-8 text-center space-y-8 animate-in fade-in">
             <h2 className="text-white font-serif text-2xl">The Covenant</h2>
-            <p className="text-slate-400 leading-relaxed max-w-md">
+            <p className="text-slate-400 leading-relaxed max-w-md font-mono text-xs">
                 You are about to etch your will into the Seed of Creation. 
                 <br/><br/>
-                As the sigil burns, obscure poetry will appear. 
+                As the sigil burns, custom incantations will appear. 
                 <br/>
-                <span className="text-white font-bold">You must read these words aloud or project them loudly in your mind.</span>
+                <span className="text-white font-bold">You must read these words aloud or project them loudly in your mind to break the locks of reality.</span>
             </p>
             <button 
                 onClick={() => { audio.playOneShot('water'); setPhase('ETCHING'); }}
@@ -1031,9 +1028,7 @@ const Etching = ({ setPhase, archetype, audio, aiData, intention, spawnExplosion
               });
               audio.updateLoop(progress, 'etching');
               
-              // Spawn Visual Sparks (RESTORED LOGIC)
               if (Math.random() > 0.5) {
-                  // 1. Canvas Sparks via Prop
                   const win = (globalThis as any).window;
                   if(win) {
                       const cx = win.innerWidth / 2;
@@ -1042,8 +1037,6 @@ const Etching = ({ setPhase, archetype, audio, aiData, intention, spawnExplosion
                       const oy = (Math.random() - 0.5) * 200;
                       spawnExplosion(cx + ox, cy + oy, currentColor, 3);
                   }
-
-                  // 2. CSS Sparks via State (RESTORED)
                   const newSpark = {
                       id: Date.now() + Math.random(),
                       x: 50 + (Math.random() * 60 - 30),
@@ -1051,7 +1044,6 @@ const Etching = ({ setPhase, archetype, audio, aiData, intention, spawnExplosion
                   };
                   setSparks(prev => [...prev.slice(-10), newSpark]);
 
-                  // Audio Spark
                   if (Math.random() > 0.8) audio.playOneShot('spark');
               }
 
@@ -1064,11 +1056,11 @@ const Etching = ({ setPhase, archetype, audio, aiData, intention, spawnExplosion
   const scatteredLetters = useMemo(() => getScatteredChars(intention), [intention]);
 
   return (
-    <div className="flex flex-col items-center justify-center h-full space-y-8 relative z-10 overflow-hidden">
-      <div className="absolute top-10 w-full px-6 text-center pointer-events-none">
-          <p className={`font-serif text-xl leading-relaxed transition-all duration-300 whitespace-pre-wrap ${isHolding ? 'opacity-100 blur-0' : 'opacity-30 blur-sm'}`} 
+    <div className="flex flex-col items-center justify-center h-full space-y-8 relative z-10 overflow-hidden text-center">
+      <div className="absolute top-10 w-full px-6 pointer-events-none">
+          <p className={`font-serif text-lg leading-relaxed transition-all duration-300 whitespace-pre-wrap ${isHolding ? 'opacity-100 blur-0' : 'opacity-30 blur-sm'}`} 
              style={{ color: currentColor, textShadow: `0 0 15px ${currentColor}` }}>
-              {aiData.poetry}
+              "{aiData.etching}"
           </p>
       </div>
 
@@ -1083,7 +1075,6 @@ const Etching = ({ setPhase, archetype, audio, aiData, intention, spawnExplosion
           />
         </svg>
         
-        {/* RESTORED: CSS Sparks Rendering */}
         {sparks.map(s => (
             <div key={s.id} 
                  className="absolute w-1 h-1 bg-white rounded-full animate-ping"
@@ -1127,17 +1118,33 @@ const Etching = ({ setPhase, archetype, audio, aiData, intention, spawnExplosion
             onClick={() => { audio.stopLoop(); audio.playOneShot('water'); setPhase('CHANT'); }}
             className="w-full max-w-xs py-8 border-2 border-double border-white text-white bg-white/10 text-xs font-mono tracking-widest animate-pulse"
           >
-            [ PROCEED TO CHANT ]
+            [ PROCEED TO SPIRAL ]
           </button>
       )}
     </div>
   );
 };
 
-// 6. CHANT
-const VocalChant = ({ setPhase, archetype, audio, aiData }: any) => {
+// 6. CHANT (SPIRAL VISUAL + AI TEXT)
+const VocalChant = ({ setPhase, archetype, audio, aiData, intention }: any) => {
     const [charge, setCharge] = useState(0);
     const [chanting, setChanting] = useState(false);
+
+    // Generate Spiral Text from Intention
+    const spiralChars = useMemo(() => {
+        const clean = intention.toUpperCase().replace(/\s/g, '') + intention.toUpperCase().replace(/\s/g, ''); 
+        const chars = clean.split('');
+        return chars.map((char: string, i: number) => {
+           // Archimedean spiral: r = a + b * theta
+           const theta = i * 0.3; 
+           const r = 10 + (3 * theta); 
+           // Center at 150,150
+           const x = 150 + r * Math.cos(theta);
+           const y = 150 + r * Math.sin(theta);
+           const rot = theta * (180/Math.PI) + 90;
+           return { char, x, y, rot };
+        });
+    }, [intention]);
 
     useEffect(() => {
         if (chanting) {
@@ -1167,24 +1174,34 @@ const VocalChant = ({ setPhase, archetype, audio, aiData }: any) => {
     }, [chanting, charge, setPhase, audio]);
 
     return (
-        <div className="flex flex-col items-center justify-center h-full space-y-16 relative z-10">
-            <div className="h-32 flex flex-col items-center justify-center text-center">
-                <h1 className={`text-3xl md:text-4xl font-serif italic text-white tracking-widest transition-all duration-300 ${chanting ? 'scale-110 blur-[1px]' : ''}`}>
-                    "{aiData.latin}"
+        <div className="flex flex-col items-center justify-center h-full space-y-16 relative z-10 text-center">
+            <div className="h-32 flex flex-col items-center justify-center px-4">
+                <h1 className={`text-2xl md:text-3xl font-serif italic text-white tracking-widest transition-all duration-300 ${chanting ? 'scale-110 blur-[1px]' : ''}`}>
+                    "{aiData.ancientTongue}"
                 </h1>
-                <p className="text-slate-500 mt-4 font-mono text-xs">SPEAK THE ANCIENT TONGUE</p>
+                <p className="text-slate-500 mt-4 font-mono text-xs">SPEAK THE SPIRAL INTO EXISTENCE</p>
             </div>
 
-            <div className="relative w-64 h-64 flex items-center justify-center">
-                 <div className={`absolute inset-0 rounded-full border-4 border-double ${archetype.border} opacity-50`} 
-                      style={{ transform: `scale(${1 + (charge/200)})` }} />
-                 
-                 {chanting && (
-                    <div className={`absolute inset-0 rounded-full border-t-4 ${archetype.border} animate-spin`} />
-                 )}
+            <div className="relative w-[300px] h-[300px] flex items-center justify-center">
+                 {/* Spiral of Intention */}
+                 <div className={`absolute inset-0 transition-transform duration-[10s] ease-linear ${chanting ? 'animate-[spin_4s_linear_infinite]' : ''}`}>
+                     {spiralChars.map((c: any, i: number) => (
+                         i < 180 && ( 
+                             <span key={i} className="absolute text-[9px] font-mono text-slate-400"
+                                   style={{
+                                     left: c.x, top: c.y,
+                                     transform: `translate(-50%, -50%) rotate(${c.rot}deg)`,
+                                     color: chanting ? 'white' : '#94a3b8',
+                                     textShadow: chanting ? '0 0 5px white' : 'none'
+                                   }}>
+                                 {c.char}
+                             </span>
+                         )
+                     ))}
+                 </div>
                  
                  <button
-                    className={`w-40 h-40 rounded-full border-2 ${archetype.border} flex items-center justify-center relative overflow-hidden bg-black z-20`}
+                    className={`w-32 h-32 rounded-full border-2 ${archetype.border} flex items-center justify-center relative overflow-hidden bg-black z-20 backdrop-blur-md`}
                     onMouseDown={() => setChanting(true)}
                     onMouseUp={() => setChanting(false)}
                     onMouseLeave={() => setChanting(false)}
@@ -1193,7 +1210,7 @@ const VocalChant = ({ setPhase, archetype, audio, aiData }: any) => {
                  >
                      <div className={`absolute bottom-0 left-0 w-full bg-white/20 transition-all duration-75`} 
                           style={{ height: `${charge}%` }} />
-                     <Sparkles className={`${archetype.color} w-12 h-12 ${chanting ? 'animate-spin' : ''}`} />
+                     <Sparkles className={`${archetype.color} w-10 h-10 ${chanting ? 'animate-spin' : ''}`} />
                  </button>
             </div>
         </div>
@@ -1201,12 +1218,9 @@ const VocalChant = ({ setPhase, archetype, audio, aiData }: any) => {
 };
 
 // 7. CHARGE & CAST
-const ChargeAndCast = ({ setPhase, setGlitchActive, archetype, audio, spawnExplosion }: any) => {
+const ChargeAndCast = ({ setPhase, setGlitchActive, archetype, audio, spawnExplosion, aiData }: any) => {
    const [charge, setCharge] = useState(0);
    const [shaking, setShaking] = useState(false);
-
-   // REMOVED: The shadowing `useParticleSystem` call.
-   // Now `spawnExplosion` correctly refers to the prop passed from parent.
 
    useEffect(() => {
        if (shaking && charge < 100) {
@@ -1221,7 +1235,6 @@ const ChargeAndCast = ({ setPhase, setGlitchActive, archetype, audio, spawnExplo
      let interval: NodeJS.Timeout;
      if (shaking && charge < 100) {
        
-       // Sparks on Charge - Uses passed prop now
        if (Math.random() > 0.7) {
            const win = (globalThis as any).window;
            if(win) spawnExplosion(win.innerWidth/2, win.innerHeight/2, '#ffffff', 5);
@@ -1255,11 +1268,15 @@ const ChargeAndCast = ({ setPhase, setGlitchActive, archetype, audio, spawnExplo
    const IconComponent = archetype.icon;
 
    return (
-       <div className={`flex flex-col items-center justify-center h-full space-y-12 relative z-10`}
+       <div className={`flex flex-col items-center justify-center h-full space-y-12 relative z-10 text-center`}
             style={{ 
                 transform: shaking ? `translate(${Math.random()*10 - 5}px, ${Math.random()*10 - 5}px)` : 'none' 
             }}
        >
+           <p className={`${archetype.color} font-serif text-xl animate-pulse px-4`}>
+                "{aiData.charge}"
+           </p>
+
            <div className="relative w-80 h-80">
                <div className={`absolute inset-0 rounded-full bg-linear-to-tr from-black via-transparent to-${archetype.theme === 'VENUS' ? 'rose' : 'cyan'}-900 animate-spin-slow blur-xl opacity-80`} />
                
@@ -1293,43 +1310,86 @@ const ChargeAndCast = ({ setPhase, setGlitchActive, archetype, audio, spawnExplo
    );
 };
 
-// 8. FINAL CAST
-const FinalCast = ({ intention, archetype, audio, onExit }: any) => (
-    <div className="flex flex-col items-center justify-center h-full animate-in zoom-in duration-3000 relative z-10">
-        <div className="relative mb-12">
-            <div className={`absolute inset-0 ${archetype.bg} blur-[100px] opacity-40 animate-pulse`} />
-            <Check className={`w-48 h-48 ${archetype.color} drop-shadow-[0_0_50px_currentColor]`} />
+// 8. FINAL CAST & SAVE (PREMIUM)
+const FinalCast = ({ intention, archetype, audio, onExit, session, aiData }: any) => {
+    const [saved, setSaved] = useState(false);
+    const [saving, setSaving] = useState(false);
+
+    const handleSave = async () => {
+        if(!session?.user) return;
+        setSaving(true);
+        try {
+             await saveSpell(session.user.id, {
+                 name: `Reality Breach: ${new Date().toLocaleDateString()}`,
+                 intention: intention,
+                 incantation: `${aiData.consecration}\n${aiData.etching}\n${aiData.ancientTongue}`,
+                 element: archetype.theme
+             });
+             setSaved(true);
+        } catch(e) {
+            console.error(e);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    return (
+        <div className="flex flex-col items-center justify-center h-full animate-in zoom-in duration-3000 relative z-10 text-center px-4">
+            <div className="relative mb-12">
+                <div className={`absolute inset-0 ${archetype.bg} blur-[100px] opacity-40 animate-pulse`} />
+                <Check className={`w-48 h-48 ${archetype.color} drop-shadow-[0_0_50px_currentColor]`} />
+            </div>
+            <h1 className="text-4xl font-serif italic text-white tracking-widest mb-6 drop-shadow-lg">SO MOTE IT BE</h1>
+            <div className="w-full max-w-md px-4">
+                <p className={`${archetype.color} font-mono text-xs tracking-[0.2em] uppercase text-center whitespace-pre-wrap`}>Target: {intention}</p>
+            </div>
+            <p className="text-slate-600 font-mono text-[10px] mt-12 animate-pulse">The universe has been recompiled.</p>
+            
+            <div className="flex flex-col gap-4 w-full max-w-xs mt-12">
+                 <button 
+                    onClick={handleSave}
+                    disabled={saved || saving}
+                    className={`w-full py-4 border border-slate-700 bg-slate-900/50 text-white font-mono text-[10px] tracking-widest hover:border-white transition-all flex items-center justify-center gap-2 ${saved ? 'opacity-50 cursor-default' : ''}`}
+                 >
+                    <Save size={14} /> {saved ? "LOG SAVED" : `SAVE TO GRIMOIRE (${COST_TO_SAVE} AETHER)`}
+                 </button>
+                 
+                 <button 
+                    onClick={() => { audio.stopLoop(); audio.playOneShot('water'); onExit(); }}
+                    className="w-full py-4 text-slate-600 hover:text-white font-mono text-[10px] transition-colors"
+                 >
+                    [ CLOSE SESSION ]
+                 </button>
+            </div>
         </div>
-        <h1 className="text-4xl font-serif italic text-white tracking-widest mb-6 drop-shadow-lg">SO MOTE IT BE</h1>
-        <div className="w-full max-w-md px-4">
-            <p className={`${archetype.color} font-mono text-xs tracking-[0.2em] uppercase text-center whitespace-pre-wrap`}>Target: {intention}</p>
-        </div>
-        <p className="text-slate-600 font-mono text-[10px] mt-12 animate-pulse">The universe has been recompiled.</p>
-        <button 
-          onClick={() => { audio.stopLoop(); audio.playOneShot('water'); onExit(); }}
-          className="mt-12 text-slate-600 hover:text-white font-mono text-xs border-b border-transparent hover:border-white transition-all cursor-pointer z-50">
-          [ CLOSE SESSION ]
-        </button>
-    </div>
-);
+    );
+};
 
 // --- MAIN COMPONENT ---
 
-export default function RealityPatchSpell({ onExit }: { onExit: () => void }) {
-  const [phase, setPhase] = useState('CONSECRATE'); 
+export default function RealityPatchSpell({ onExit, session }: { onExit: () => void, session?: Session }) {
+  const [phase, setPhase] = useState('INTRO'); 
   const [intention, setIntention] = useState('');
   const [archetype, setArchetype] = useState(ARCHETYPES.UNK);
   const [glitchActive, setGlitchActive] = useState(false);
-  const [aiData, setAiData] = useState({ poetry: '', latin: '' });
+  // Store AI generated text for all phases
+  const [aiData, setAiData] = useState<RealityPatchRitualData>({
+      consecration: "",
+      grounding: "",
+      etching: "",
+      ancientTongue: "",
+      charge: ""
+  });
   
   const audio = useAudioEngine();
   const { spawnExplosion } = useParticleSystem(); 
 
   const getWarpIntensity = () => {
       switch(phase) {
+          case 'INTRO': return 0;
           case 'CONSECRATE': return 10;
           case 'GROUNDING': return 20;
-          case 'INTENTION': return 30;
+          case 'AGREEMENT': return 25;
           case 'ETCHING': return 40;
           case 'CHANT': return 80;
           case 'CHARGE': return 150;
@@ -1378,29 +1438,32 @@ export default function RealityPatchSpell({ onExit }: { onExit: () => void }) {
       <WarpBackground intensity={getWarpIntensity()} />
       <GlitchOverlay active={glitchActive} />
       
-      <div className="relative z-10 w-full h-full max-w-md mx-auto">
-        <div className="absolute top-0 left-0 w-full p-6 flex justify-between items-start opacity-50 z-20 pointer-events-none">
-            <div className="flex flex-col font-mono text-[10px] text-slate-500">
-                <span>{new Date().toLocaleTimeString()}</span>
-                <span className={archetype.color}>TYPE: {archetype.theme}</span>
+      <div className="relative z-10 w-full h-full max-w-md mx-auto flex flex-col">
+        {phase !== 'INTRO' && (
+            <div className="absolute top-0 left-0 w-full p-6 flex justify-between items-start opacity-50 z-20 pointer-events-none">
+                <div className="flex flex-col font-mono text-[10px] text-slate-500">
+                    <span>{new Date().toLocaleTimeString()}</span>
+                    <span className={archetype.color}>TYPE: {archetype.theme}</span>
+                </div>
+                <div className="flex flex-col font-mono text-[10px] text-right text-slate-500">
+                    <span>PHASE: {phase}</span>
+                    <span>STABILITY: {Math.floor(Math.random() * 30) + 70}%</span>
+                </div>
             </div>
-            <div className="flex flex-col font-mono text-[10px] text-right text-slate-500">
-                <span>PHASE: {phase}</span>
-                <span>STABILITY: {Math.floor(Math.random() * 30) + 70}%</span>
-            </div>
-        </div>
+        )}
         
         <main className="w-full h-full relative z-10">
-            {phase === 'CONSECRATE' && <Consecration setPhase={setPhase} archetype={archetype} audio={audio} spawnExplosion={spawnExplosion} />}
-            {phase === 'GROUNDING' && <Grounding setPhase={setPhase} audio={audio} />}
-            {phase === 'INTENTION' && <Inscription setIntention={setIntention} setArchetype={setArchetype} setPhase={setPhase} archetype={archetype} audio={audio} setAiData={setAiData} />}
+            {phase === 'INTRO' && <IntroBreach setIntention={setIntention} setArchetype={setArchetype} setPhase={setPhase} setAiData={setAiData} audio={audio} />}
+            {phase === 'CONSECRATE' && <Consecration setPhase={setPhase} archetype={archetype} audio={audio} spawnExplosion={spawnExplosion} aiData={aiData} />}
+            {phase === 'GROUNDING' && <Grounding setPhase={setPhase} audio={audio} aiData={aiData} archetype={archetype} />}
             {phase === 'AGREEMENT' && <Agreement setPhase={setPhase} audio={audio} />}
             {phase === 'ETCHING' && <Etching setPhase={setPhase} archetype={archetype} audio={audio} aiData={aiData} intention={intention} spawnExplosion={spawnExplosion} />}
-            {phase === 'CHANT' && <VocalChant setPhase={setPhase} archetype={archetype} audio={audio} aiData={aiData} />}
-            {phase === 'CHARGE' && <ChargeAndCast setPhase={setPhase} setGlitchActive={setGlitchActive} archetype={archetype} audio={audio} spawnExplosion={spawnExplosion} />}
-            {phase === 'CAST' && <FinalCast intention={intention} archetype={archetype} audio={audio} onExit={onExit} />}
+            {phase === 'CHANT' && <VocalChant setPhase={setPhase} archetype={archetype} audio={audio} aiData={aiData} intention={intention} />}
+            {phase === 'CHARGE' && <ChargeAndCast setPhase={setPhase} setGlitchActive={setGlitchActive} archetype={archetype} audio={audio} spawnExplosion={spawnExplosion} aiData={aiData} />}
+            {phase === 'CAST' && <FinalCast intention={intention} archetype={archetype} audio={audio} onExit={onExit} session={session} aiData={aiData} />}
         </main>
       </div>
     </div>
   );
 }
+// --- END OF FILE src/app/components/ElectricMagick/RealityPatchSpell.tsx ---

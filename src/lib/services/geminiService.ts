@@ -231,8 +231,6 @@ export const generateElectricOracle = async (intention: string): Promise<string>
 // NEW: Reality Overwrite / Light Prism Logic
 export const generateRealityOverwrite = async (sectorName: string, corruptionToClear: string): Promise<string> => {
     try {
-        // We reuse the 'ensorcell' action as a generic spell generator, but frame the prompt
-        // to force the specific style we need for the Reality Overwrite.
         const prompt = `System Command: OVERWRITE SECTOR [${sectorName}]. 
         Detected Corruption: "${corruptionToClear}". 
         Task: Generate a short, authoritative, techno-magickal command string (incantation) to purge this corruption and rewrite the code for good fortune. 
@@ -249,6 +247,72 @@ export const generateRealityOverwrite = async (sectorName: string, corruptionToC
     } catch (e) {
         console.error("Exception in generateRealityOverwrite:", e);
         return "ERROR: OFFLINE MODE. EXECUTING LOCAL OVERWRITE. SUCCESS CONFIRMED.";
+    }
+};
+
+// NEW: Reality Patch Ritual Generator (Complex)
+export interface RealityPatchRitualData {
+    consecration: string;
+    grounding: string;
+    etching: string;
+    ancientTongue: string;
+    charge: string;
+}
+
+export const generateRealityPatchRitual = async (intention: string): Promise<RealityPatchRitualData> => {
+    try {
+        const prompt = `
+        User Intention: "${intention}".
+        
+        Task: You are a Quantum Sorcerer System. Generate 5 distinct, highly potent techno-magickal incantations to shift the user into a timeline where this intention is ALREADY TRUE. The language must be authoritative, subatomic, and mystical.
+        
+        Format: Return ONLY the text strings separated by "|||".
+        
+        1. Consecration: A short command to destroy obstacle code and clear the immediate reality buffer.
+        2. Grounding: A command to anchor the user's nervous system to the new dimensional frequency.
+        3. Etching: A powerful declaration that overrides the core source code of the universe. Use "I" statements.
+        4. Ancient Tongue: A mix of Latin and "Machine Code" (Cyber-Latin) that represents the spiral of creation. Short, chantable.
+        5. Charge: A final command to inject high-voltage aetheric energy into the intention.
+        
+        Style: Cyberpunk, Occult, Reality Hacking. Present tense.
+        `;
+
+        const { data, error } = await supabase.functions.invoke('generate-electric-spell', {
+            body: { action: 'ensorcell', intention: prompt },
+        });
+
+        if (error || !data || !data.result) {
+            throw new Error("Failed to generate ritual data");
+        }
+
+        const parts = data.result.split('|||');
+        if (parts.length < 5) {
+             return {
+                 consecration: "I DELETE THE OLD CODE. THE BUFFER IS CLEAR.",
+                 grounding: "I ANCHOR MY SOUL TO THE SUBATOMIC GRID.",
+                 etching: "I CARVE MY WILL INTO THE QUANTUM FIELD. IT IS DONE.",
+                 ancientTongue: "FIAT LUX. EXECUTIO MAXIMA. OMNIA VINCIT.",
+                 charge: "POWER FLOWS. REALITY SHIFTS. SYSTEM ONLINE."
+             };
+        }
+
+        return {
+            consecration: parts[0].trim(),
+            grounding: parts[1].trim(),
+            etching: parts[2].trim(),
+            ancientTongue: parts[3].trim(),
+            charge: parts[4].trim()
+        };
+
+    } catch (e) {
+        console.error("Error generating reality patch:", e);
+        return {
+             consecration: "NULLIFYING OBSTACLES. ZERO POINT REACHED.",
+             grounding: "CONNECTING TO TARGET TIMELINE...",
+             etching: "REWRITING REALITY MATRIX. INTENTION LOCKED.",
+             ancientTongue: "SPIRITUS EX MACHINA. VOLUNTAS TUA.",
+             charge: "ENERGY INJECTION COMPLETE. MANIFESTATION ACTIVE."
+        };
     }
 };
 
