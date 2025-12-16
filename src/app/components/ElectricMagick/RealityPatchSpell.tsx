@@ -4,7 +4,7 @@
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { 
-  Heart, DollarSign, Sun, Shield, Star, Fingerprint, Check, Eye, X, Sparkles, Lock, Save, Zap, ArrowDown, Database
+  Heart, DollarSign, Sun, Shield, Star, Fingerprint, Check, Eye, X, Sparkles, Lock, Save, Zap, ArrowDown, Database, Infinity
 } from 'lucide-react';
 import { generateRealityPatchRitual, saveSpell, deductUserCredits, RealityPatchRitualData } from '@/lib/services/geminiService';
 import type { Session } from '@/lib/types';
@@ -1137,110 +1137,17 @@ const Etching = ({ setPhase, archetype, audio, aiData, intention, spawnExplosion
           </button>
       ) : (
           <button 
-            onClick={() => { audio.stopLoop(); audio.playOneShot('water'); setPhase('CHANT'); }}
+            onClick={() => { audio.stopLoop(); audio.playOneShot('water'); setPhase('INTEGRATION'); }}
             className="w-full max-w-xs py-8 border-2 border-double border-white text-white bg-white/10 text-xs font-mono tracking-widest animate-pulse"
           >
-            [ PROCEED TO SPIRAL ]
+            [ PROCEED TO DROP ]
           </button>
       )}
     </div>
   );
 };
 
-// 6. CHANT (SPIRAL VISUAL + AI TEXT)
-const VocalChant = ({ setPhase, archetype, audio, aiData, intention }: any) => {
-    const [charge, setCharge] = useState(0);
-    const [chanting, setChanting] = useState(false);
-
-    // Generate Spiral Text from Intention
-    const spiralChars = useMemo(() => {
-        const clean = intention.toUpperCase().replace(/\s/g, '') + intention.toUpperCase().replace(/\s/g, ''); 
-        const chars = clean.split('');
-        return chars.map((char: string, i: number) => {
-           // Archimedean spiral: r = a + b * theta
-           const theta = i * 0.3; 
-           const r = 10 + (3 * theta); 
-           // Center at 150,150
-           const x = 150 + r * Math.cos(theta);
-           const y = 150 + r * Math.sin(theta);
-           const rot = theta * (180/Math.PI) + 90;
-           return { char, x, y, rot };
-        });
-    }, [intention]);
-
-    useEffect(() => {
-        if (chanting) {
-            audio.startLoop('chant');
-        } else {
-            audio.stopLoop();
-        }
-        return () => audio.stopLoop();
-    }, [chanting, audio]);
-
-    useEffect(() => {
-        let interval: NodeJS.Timeout;
-        if (chanting && charge < 100) {
-            interval = setInterval(() => {
-                setCharge(c => c + 0.5); 
-            }, 30);
-        } else if (!chanting && charge > 0) {
-            setCharge(0); 
-        }
-
-        if (charge >= 100) {
-            audio.stopLoop();
-            audio.playOneShot('boom');
-            // CHANGE: Go to Integration instead of Charge
-            setTimeout(() => setPhase('INTEGRATION'), 1000);
-        }
-        return () => clearInterval(interval);
-    }, [chanting, charge, setPhase, audio]);
-
-    return (
-        <div className="flex flex-col items-center justify-center h-full space-y-16 relative z-10 text-center">
-            <div className="h-32 flex flex-col items-center justify-center px-4">
-                <h1 className={`text-2xl md:text-3xl font-serif italic text-white tracking-widest transition-all duration-300 ${chanting ? 'scale-110 blur-[1px]' : ''}`}>
-                    "{aiData.ancientTongue}"
-                </h1>
-                <p className="text-slate-500 mt-4 font-mono text-xs">SPEAK THE SPIRAL INTO EXISTENCE</p>
-            </div>
-
-            <div className="relative w-[300px] h-[300px] flex items-center justify-center">
-                 {/* Spiral of Intention */}
-                 <div className={`absolute inset-0 transition-transform duration-[10s] ease-linear ${chanting ? 'animate-[spin_4s_linear_infinite]' : ''}`}>
-                     {spiralChars.map((c: any, i: number) => (
-                         i < 180 && ( 
-                             <span key={i} className="absolute text-[9px] font-mono text-slate-400"
-                                   style={{
-                                     left: c.x, top: c.y,
-                                     transform: `translate(-50%, -50%) rotate(${c.rot}deg)`,
-                                     color: chanting ? 'white' : '#94a3b8',
-                                     textShadow: chanting ? '0 0 5px white' : 'none'
-                                   }}>
-                                 {c.char}
-                             </span>
-                         )
-                     ))}
-                 </div>
-                 
-                 <button
-                    className={`w-32 h-32 rounded-full border-2 ${archetype.border} flex items-center justify-center relative overflow-hidden bg-black z-20 backdrop-blur-md`}
-                    onMouseDown={() => setChanting(true)}
-                    onMouseUp={() => setChanting(false)}
-                    onMouseLeave={() => setChanting(false)}
-                    onTouchStart={(e) => { e.preventDefault(); setChanting(true); }}
-                    onTouchEnd={() => setChanting(false)}
-                 >
-                     <div className={`absolute bottom-0 left-0 w-full bg-white/20 transition-all duration-75`} 
-                          style={{ height: `${charge}%` }} />
-                     <Sparkles className={`${archetype.color} w-10 h-10 ${chanting ? 'animate-spin' : ''}`} />
-                 </button>
-            </div>
-        </div>
-    );
-};
-
-// 6.5 VOID INTEGRATION (NEW STEP)
+// 6. VOID INTEGRATION (SIGIL DROP)
 const VoidIntegration = ({ setPhase, archetype, audio, aiData, intention, spawnExplosion }: any) => {
     const [dragY, setDragY] = useState(0);
     const [isDragging, setIsDragging] = useState(false);
@@ -1289,7 +1196,7 @@ const VoidIntegration = ({ setPhase, archetype, audio, aiData, intention, spawnE
         }
 
         setTimeout(() => {
-            setPhase('CHARGE');
+            setPhase('SPIRAL'); // Transition to Spiral
         }, 3000);
     };
 
@@ -1344,7 +1251,100 @@ const VoidIntegration = ({ setPhase, archetype, audio, aiData, intention, spawnE
     );
 };
 
-// 7. CHARGE & CAST
+// 7. SPIRAL ACTIVATION (WAS VOCAL CHANT)
+const SpiralActivation = ({ setPhase, archetype, audio, aiData, intention }: any) => {
+    const [charge, setCharge] = useState(0);
+    const [chanting, setChanting] = useState(false);
+
+    // Generate Spiral Text from Intention
+    const spiralChars = useMemo(() => {
+        const clean = intention.toUpperCase().replace(/\s/g, '') + intention.toUpperCase().replace(/\s/g, ''); 
+        const chars = clean.split('');
+        return chars.map((char: string, i: number) => {
+           // Archimedean spiral: r = a + b * theta
+           const theta = i * 0.3; 
+           const r = 10 + (3 * theta); 
+           // Center at 150,150
+           const x = 150 + r * Math.cos(theta);
+           const y = 150 + r * Math.sin(theta);
+           const rot = theta * (180/Math.PI) + 90;
+           return { char, x, y, rot };
+        });
+    }, [intention]);
+
+    useEffect(() => {
+        if (chanting) {
+            audio.startLoop('chant');
+        } else {
+            audio.stopLoop();
+        }
+        return () => audio.stopLoop();
+    }, [chanting, audio]);
+
+    useEffect(() => {
+        let interval: NodeJS.Timeout;
+        if (chanting && charge < 100) {
+            interval = setInterval(() => {
+                setCharge(c => c + 0.5); 
+            }, 30);
+        } else if (!chanting && charge > 0) {
+            setCharge(0); 
+        }
+
+        if (charge >= 100) {
+            audio.stopLoop();
+            audio.playOneShot('boom');
+            setTimeout(() => setPhase('CHARGE'), 1000);
+        }
+        return () => clearInterval(interval);
+    }, [chanting, charge, setPhase, audio]);
+
+    return (
+        <div className="flex flex-col items-center justify-center h-full space-y-16 relative z-10 text-center animate-in fade-in zoom-in duration-500">
+            <div className="h-32 flex flex-col items-center justify-center px-4">
+                <h2 className="text-slate-500 font-mono text-[10px] tracking-[0.3em] uppercase mb-4">Phase 6: Spiral Activation</h2>
+                <h1 className={`text-2xl md:text-3xl font-serif italic text-white tracking-widest transition-all duration-300 ${chanting ? 'scale-110 blur-[1px]' : ''}`}>
+                    "{aiData.ancientTongue}"
+                </h1>
+                <p className="text-slate-500 mt-4 font-mono text-xs">SPEAK THE INTENTION INTO THE CORE</p>
+            </div>
+
+            <div className="relative w-[300px] h-[300px] flex items-center justify-center">
+                 {/* Spiral of Intention */}
+                 <div className={`absolute inset-0 transition-transform duration-[10s] ease-linear ${chanting ? 'animate-[spin_4s_linear_infinite]' : ''}`}>
+                     {spiralChars.map((c: any, i: number) => (
+                         i < 180 && ( 
+                             <span key={i} className="absolute text-[9px] font-mono text-slate-400"
+                                   style={{
+                                     left: c.x, top: c.y,
+                                     transform: `translate(-50%, -50%) rotate(${c.rot}deg)`,
+                                     color: chanting ? 'white' : '#94a3b8',
+                                     textShadow: chanting ? '0 0 5px white' : 'none'
+                                   }}>
+                                 {c.char}
+                             </span>
+                         )
+                     ))}
+                 </div>
+                 
+                 <button
+                    className={`w-32 h-32 rounded-full border-2 ${archetype.border} flex items-center justify-center relative overflow-hidden bg-black z-20 backdrop-blur-md`}
+                    onMouseDown={() => setChanting(true)}
+                    onMouseUp={() => setChanting(false)}
+                    onMouseLeave={() => setChanting(false)}
+                    onTouchStart={(e) => { e.preventDefault(); setChanting(true); }}
+                    onTouchEnd={() => setChanting(false)}
+                 >
+                     <div className={`absolute bottom-0 left-0 w-full bg-white/20 transition-all duration-75`} 
+                          style={{ height: `${charge}%` }} />
+                     <Infinity className={`${archetype.color} w-10 h-10 ${chanting ? 'animate-spin' : ''}`} />
+                 </button>
+            </div>
+        </div>
+    );
+};
+
+// 8. CHARGE & CAST
 const ChargeAndCast = ({ setPhase, setGlitchActive, archetype, audio, spawnExplosion, aiData }: any) => {
    const [charge, setCharge] = useState(0);
    const [shaking, setShaking] = useState(false);
@@ -1400,7 +1400,7 @@ const ChargeAndCast = ({ setPhase, setGlitchActive, archetype, audio, spawnExplo
                 transform: shaking ? `translate(${Math.random()*10 - 5}px, ${Math.random()*10 - 5}px)` : 'none' 
             }}
        >
-           <h2 className="text-slate-500 font-mono text-[10px] tracking-[0.3em] uppercase">Phase 6: Power Injection</h2>
+           <h2 className="text-slate-500 font-mono text-[10px] tracking-[0.3em] uppercase">Phase 7: Power Injection</h2>
 
            <p className={`${archetype.color} font-serif text-xl animate-pulse px-4`}>
                 "{aiData.charge}"
@@ -1439,7 +1439,7 @@ const ChargeAndCast = ({ setPhase, setGlitchActive, archetype, audio, spawnExplo
    );
 };
 
-// 8. FINAL CAST & SAVE (PREMIUM)
+// 9. FINAL CAST & SAVE (PREMIUM)
 const FinalCast = ({ intention, archetype, audio, onExit, session, aiData }: any) => {
     const [saved, setSaved] = useState(false);
     const [saving, setSaving] = useState(false);
@@ -1448,8 +1448,6 @@ const FinalCast = ({ intention, archetype, audio, onExit, session, aiData }: any
         if(!session?.user) return;
         setSaving(true);
         try {
-            // Deduct cost for saving? Or is it included? 
-            // Based on prompt: "save at the end but that will also cost aether credits"
             const success = await deductUserCredits(session.user.id, COST_TO_SAVE);
             if (!success) {
                 alert("Insufficient Aether to save.");
@@ -1529,8 +1527,8 @@ export default function RealityPatchSpell({ onExit, session }: { onExit: () => v
           case 'GROUNDING': return 20;
           case 'AGREEMENT': return 25;
           case 'ETCHING': return 40;
-          case 'CHANT': return 80;
-          case 'INTEGRATION': return 100;
+          case 'INTEGRATION': return 60;
+          case 'SPIRAL': return 100;
           case 'CHARGE': return 150;
           case 'CAST': return 500;
           default: return 0;
@@ -1597,8 +1595,8 @@ export default function RealityPatchSpell({ onExit, session }: { onExit: () => v
             {phase === 'GROUNDING' && <Grounding setPhase={setPhase} audio={audio} aiData={aiData} archetype={archetype} />}
             {phase === 'AGREEMENT' && <Agreement setPhase={setPhase} audio={audio} />}
             {phase === 'ETCHING' && <Etching setPhase={setPhase} archetype={archetype} audio={audio} aiData={aiData} intention={intention} spawnExplosion={spawnExplosion} />}
-            {phase === 'CHANT' && <VocalChant setPhase={setPhase} archetype={archetype} audio={audio} aiData={aiData} intention={intention} />}
             {phase === 'INTEGRATION' && <VoidIntegration setPhase={setPhase} archetype={archetype} audio={audio} aiData={aiData} intention={intention} spawnExplosion={spawnExplosion} />}
+            {phase === 'SPIRAL' && <SpiralActivation setPhase={setPhase} archetype={archetype} audio={audio} aiData={aiData} intention={intention} />}
             {phase === 'CHARGE' && <ChargeAndCast setPhase={setPhase} setGlitchActive={setGlitchActive} archetype={archetype} audio={audio} spawnExplosion={spawnExplosion} aiData={aiData} />}
             {phase === 'CAST' && <FinalCast intention={intention} archetype={archetype} audio={audio} onExit={onExit} session={session} aiData={aiData} />}
         </main>
