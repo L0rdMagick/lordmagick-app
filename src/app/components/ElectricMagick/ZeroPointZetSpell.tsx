@@ -12,7 +12,9 @@ import {
   Lock,
   Zap,
   Save,
-  Cpu
+  Cpu,
+  AlertTriangle,
+  Info
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAudioEngine, useParticleSystem } from './hooks';
@@ -45,85 +47,116 @@ const IntroStage = ({ onComplete, playTone, session }: { onComplete: () => void,
         setError('');
         
         try {
-            // Only attempt to charge if a user session exists
-            if (session?.user) {
-                playTone(200, 'square', 0.1);
+            playTone(200, 'square', 0.1);
+
+            // 1. Check for Session (Paid Mode)
+            if (session?.user?.id) {
                 const success = await deductUserCredits(session.user.id, COST_TO_ENTER);
                 
                 if (!success) {
                     playTone(100, 'sawtooth', 0.5);
-                    setError('INSUFFICIENT AETHER. RECHARGE REQUIRED.');
+                    setError('INSUFFICIENT AETHER. PLEASE RECHARGE.');
                     setLoading(false);
-                    return; // Stop if payment fails
+                    return; 
                 }
+            } else {
+                // 2. No Session (Test/Dev Mode)
+                console.log("Dev Mode: Bypassing Credit Check");
             }
             
-            // Proceed (Payment success or Test Mode bypass)
+            // 3. Success - Proceed
             playTone(600, 'sawtooth', 0.2);
             onComplete();
 
         } catch (e) {
-            console.error(e);
-            setError('CONNECTION FAILED.');
+            console.error("Initialization Error:", e);
+            setError('CONNECTION TO AETHER FAILED.');
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div className="flex flex-col items-center justify-center h-full w-full px-6 text-center select-none overflow-y-auto">
+        <div className="flex flex-col items-center justify-center h-full w-full px-6 text-center select-none overflow-y-auto animate-in fade-in duration-700">
             <div className="max-w-md w-full space-y-8 py-10">
-                <div className="space-y-2">
-                    <Cpu className="w-12 h-12 text-cyan-500 mx-auto animate-pulse" />
+                
+                {/* Header */}
+                <div className="space-y-4">
+                    <div className="relative w-16 h-16 mx-auto">
+                        <div className="absolute inset-0 bg-cyan-500 blur-xl opacity-20 animate-pulse" />
+                        <Cpu className="w-16 h-16 text-cyan-400 relative z-10" />
+                    </div>
                     <h1 className="text-3xl font-black text-white tracking-tighter uppercase">
                         <GlitchText text="ZERO POINT ZET" active={true} />
                     </h1>
-                    <p className="text-cyan-500 font-mono text-xs tracking-[0.3em]">REALITY INJECTION PROTOCOL</p>
+                    <div className="flex justify-center items-center gap-2">
+                        <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                        <p className="text-red-500 font-mono text-[10px] tracking-[0.3em]">REALITY INJECTION PROTOCOL</p>
+                    </div>
                 </div>
 
-                <div className="bg-black/60 border border-gray-800 p-6 rounded text-left space-y-4 backdrop-blur-md">
+                {/* Manual / Instructions */}
+                <div className="bg-black/80 border border-gray-800 p-6 rounded text-left space-y-6 backdrop-blur-md shadow-2xl relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-transparent via-cyan-900 to-transparent" />
+                    
                     <p className="text-gray-300 font-mono text-xs leading-relaxed">
-                        You are accessing the <span className="text-cyan-400">Zero Point Field</span>—the static between realities. This tool allows you to inject a specific intention directly into the kernel of your local reality matrix.
+                        You are accessing the <span className="text-cyan-400">Zero Point Field</span>—the static gap between moments. This tool allows you to inject a specific intention directly into the kernel of your local reality matrix.
                     </p>
                     
-                    <div className="space-y-2 pt-4">
-                        <h3 className="text-white font-bold font-mono text-xs uppercase border-b border-gray-700 pb-1">Operational Guide:</h3>
-                        <ul className="text-gray-400 font-mono text-[10px] space-y-2">
-                            <li className="flex items-start gap-2">
-                                <span className="text-cyan-500">01.</span> Bio-Auth: Sync your energy via touch.
+                    <div className="space-y-3 pt-2">
+                        <h3 className="text-white font-bold font-mono text-xs uppercase border-b border-gray-700 pb-2 flex items-center gap-2">
+                            <Info size={12} className="text-cyan-500" />
+                            Operational Guide
+                        </h3>
+                        <ul className="text-gray-400 font-mono text-[10px] space-y-3">
+                            <li className="flex items-start gap-3">
+                                <span className="text-cyan-500 font-bold">01.</span> 
+                                <span><strong className="text-gray-300">Bio-Auth:</strong> Sync your physical energy signature via touch to bridge the digital gap.</span>
                             </li>
-                            <li className="flex items-start gap-2">
-                                <span className="text-cyan-500">02.</span> Injection: Define your parameter (Intention).
+                            <li className="flex items-start gap-3">
+                                <span className="text-cyan-500 font-bold">02.</span> 
+                                <span><strong className="text-gray-300">Injection:</strong> Define your parameter (Intention) clearly. Ambiguity causes signal decay.</span>
                             </li>
-                            <li className="flex items-start gap-2">
-                                <span className="text-cyan-500">03.</span> Stabilization: Manually lock the signal frequency.
+                            <li className="flex items-start gap-3">
+                                <span className="text-cyan-500 font-bold">03.</span> 
+                                <span><strong className="text-gray-300">Stabilization:</strong> Manually lock the frequency. The system will resist.</span>
                             </li>
-                            <li className="flex items-start gap-2">
-                                <span className="text-cyan-500">04.</span> Entropy: Break the resistance of the old timeline.
+                            <li className="flex items-start gap-3">
+                                <span className="text-cyan-500 font-bold">04.</span> 
+                                <span><strong className="text-gray-300">Entropy:</strong> Break the resistance of the old timeline using force.</span>
                             </li>
                         </ul>
                     </div>
                 </div>
 
+                {/* Actions */}
                 <div className="space-y-4">
-                    {error && <p className="text-red-500 font-mono text-xs animate-pulse">{error}</p>}
+                    {error && (
+                        <div className="flex items-center justify-center gap-2 text-red-500 font-mono text-xs animate-pulse bg-red-900/10 p-2 border border-red-900/50 rounded">
+                            <AlertTriangle size={14} />
+                            {error}
+                        </div>
+                    )}
                     
                     <button 
                         onClick={handleUnlock}
                         disabled={loading}
-                        className="w-full py-4 bg-cyan-900/20 border border-cyan-500 text-cyan-400 font-mono text-xs tracking-[0.2em] hover:bg-cyan-500 hover:text-black transition-all flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full py-5 bg-cyan-950/30 border border-cyan-500 text-cyan-400 font-mono text-xs tracking-[0.2em] hover:bg-cyan-500 hover:text-black transition-all flex items-center justify-center gap-3 group disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(6,182,212,0.1)] hover:shadow-[0_0_30px_rgba(6,182,212,0.4)]"
                     >
                         {loading ? (
-                            <span className="animate-pulse">VERIFYING...</span>
+                            <span className="animate-pulse">ESTABLISHING UPLINK...</span>
                         ) : (
                             <>
-                                <Lock size={14} className="group-hover:hidden" />
+                                <Lock size={14} className="group-hover:hidden text-cyan-600" />
                                 <Zap size={14} className="hidden group-hover:block" />
-                                <span>INITIALIZE {session?.user ? `(-${COST_TO_ENTER} AETHER)` : '(TEST MODE)'}</span>
+                                <span className="font-bold">INITIALIZE {session?.user ? `(-${COST_TO_ENTER} AETHER)` : '(TEST MODE)'}</span>
                             </>
                         )}
                     </button>
-                    <p className="text-gray-600 text-[10px] font-mono">NO REFUNDS ON FAILED INJECTIONS.</p>
+                    
+                    <p className="text-gray-600 text-[9px] font-mono tracking-widest uppercase">
+                        WARNING: Reality edits are permanent.
+                    </p>
                 </div>
             </div>
         </div>
@@ -509,7 +542,7 @@ const RebootStage = ({ intention, onExit, session }: { intention: string, onExit
   }, [intention]);
 
   const handleSave = async () => {
-      if (!session?.user) return;
+      if (!session?.user?.id) return;
       setSaving(true);
       try {
           const success = await deductUserCredits(session.user.id, COST_TO_SAVE);
@@ -552,11 +585,11 @@ const RebootStage = ({ intention, onExit, session }: { intention: string, onExit
             <div className="flex flex-col gap-4">
                 <button 
                     onClick={handleSave}
-                    disabled={saved || saving}
-                    className={`w-full py-4 border border-green-700 bg-green-900/20 text-green-400 hover:text-white font-mono text-xs tracking-widest hover:border-green-400 transition-all flex items-center justify-center gap-2 ${saved ? 'opacity-50 cursor-default' : ''}`}
+                    disabled={saved || saving || !session?.user}
+                    className={`w-full py-4 border border-green-700 bg-green-900/20 text-green-400 hover:text-white font-mono text-xs tracking-widest hover:border-green-400 transition-all flex items-center justify-center gap-2 ${saved || !session?.user ? 'opacity-50 cursor-default' : ''}`}
                 >
                     <Save size={14} /> 
-                    {saved ? "LOG SAVED" : `SAVE TO GRIMOIRE (-${COST_TO_SAVE} AETHER)`}
+                    {saved ? "LOG SAVED" : !session?.user ? "LOG IN TO SAVE" : `SAVE TO GRIMOIRE (-${COST_TO_SAVE} AETHER)`}
                 </button>
 
                 <button 
