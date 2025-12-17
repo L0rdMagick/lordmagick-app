@@ -160,7 +160,7 @@ export default function StorePage() {
                                 {pkg.credits} <span className="text-sm text-gray-500 font-normal">AETHER</span>
                             </div>
                             
-                            <p className="text-xs text-gray-400 mb-8 min-h-[32px]">{pkg.desc}</p>
+                            <p className="text-xs text-gray-400 mb-8 min-h-8">{pkg.desc}</p>
                             
                             <button 
                                 disabled={loadingId !== null}
