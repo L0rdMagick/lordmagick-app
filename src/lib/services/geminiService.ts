@@ -302,12 +302,12 @@ export const generateRealityPatchRitual = async (intention: string): Promise<Rea
     // Dynamic Fallback Generator ensuring intention is always preserved but grammatically safe
     const getDynamicFallback = (intent: string): RealityPatchRitualData => {
         return {
-            consecration: `TARGET IDENTIFIED: ${intent.toUpperCase()}. PURGING BLOCKAGES NOW.`,
-            grounding: `CONNECTING TO THE TIMELINE WHERE THIS IS REAL.`,
-            etching: `WRITING NEW CODE: ${intent.toUpperCase()}.`,
+            consecration: `THE VIRUS OF LACK IS DELETED. THE ALGORITHM OF ABUNDANCE IS INITIALIZED.`,
+            grounding: `MY AVATAR OSCILLATES AT THE FREQUENCY OF SUCCESS.`,
+            etching: `I BURN THE COMMAND OF POWER INTO THE QUANTUM ROOT DIRECTORY.`,
             ancientTongue: `VOLUNTAS MEA EST LEX. FIAT LUX EX MACHINA.`,
-            integration: `EXECUTING CORE INTEGRATION. THE ALGORITHM IS SET.`,
-            charge: `SYSTEM OVERRIDE COMPLETE. POWER LEVELS MAXIMUM.`
+            integration: `THE SUBROUTINE OF DESIRE IS COMPILING. UPLOAD COMPLETE.`,
+            charge: `INFINITE VOLTAGE FLOWS. THE SYSTEM IS ONLINE.`
         };
     };
 
@@ -318,40 +318,40 @@ export const generateRealityPatchRitual = async (intention: string): Promise<Rea
 
         USER INTENTION: "${intention}"
 
-        GUIDELINES:
-        1. Do NOT copy the user's intention word-for-word. Instead, WEAVE it into a grammatically perfect, authoritative, magical command.
-        2. Use "Techno-Magick" vocabulary (mix of Cyberpunk, Coding terms, and Occultism).
-        3. Sentences must be short, punchy, and impactful. Max 20 words per step.
-        4. ABSOLUTELY NO GRAMMATICAL ERRORS.
+        CRITICAL RULES:
+        1. DO NOT QUOTE THE INTENTION VERBATIM. 
+        2. You must INTERPRET the intention and REWRITE it into a specific Techno-Magick command for each step.
+        3. If the user says "I want money", do NOT say "Target: Money". Say "I PURGE THE POVERTY DAEMON. THE GOLDEN PROTOCOL IS LIVE."
+        4. Style: Cyberpunk, Divine Code, Subatomic Programming.
+        5. Length: Short, punchy, authoritative. Max 12 words per step.
         
         GENERATE 6 STRINGS SEPARATED BY "|||":
 
         1. CONSECRATION (English):
-           - Theme: Deleting the obstacles/virus preventing the goal.
-           - Style: "I purge the corruption of scarcity. The buffer is now clear."
+           - Action: Deleting the specific "virus" (obstacle) related to the intention.
+           - Example: "I ERASE THE HEARTBREAK VIRUS. THE LOVE BUFFER IS CLEARED."
 
         2. GROUNDING (English):
-           - Theme: Syncing with the specific frequency of the desire.
-           - Style: "I download the resonance of true love. My avatar is synchronized."
+           - Action: Syncing the user's avatar/soul to the specific frequency of the goal.
+           - Example: "MY SOUL DOWNLOADS THE RESONANCE OF A SOULMATE."
 
         3. ETCHING (English + Tech):
-           - Theme: Burning the command into the source code/reality.
-           - Style: "I burn the command of perfect health into the quantum root directory."
+           - Action: Burning the specific command into the source code/reality.
+           - Example: "I BURN THE CODE OF ETERNAL ROMANCE INTO THE QUANTUM ROOT."
 
         4. ANCIENT TONGUE (PURE LATIN + TECHNO-LATIN):
-           - Theme: The Spell Itself.
-           - STRICTLY NO ENGLISH IN THIS STEP.
+           - Action: The Spell Itself.
+           - STRICTLY NO ENGLISH.
            - Translate the essence of the intention into authoritative Latin.
-           - Use terms like 'Deus', 'Machina', 'Voluntas', 'Codex', 'Virtus'.
-           - Style: "VOLUNTAS MEA IMPERIUM EST. CODEX DIVINUS EXECUTUS."
+           - Example: "AMOR AETERNUS EX MACHINA. VOLUNTAS MEA."
 
         5. INTEGRATION (English):
-           - Theme: Dropping the spell into the void core.
-           - Style: "I release this algorithm into the infinite void. It is compiling."
+           - Action: Dropping the spell into the void core.
+           - Example: "I RELEASE THE ALGORITHM OF PASSION. IT IS COMPILING."
 
         6. CHARGE (English):
-           - Theme: Injecting power/voltage.
-           - Style: "Infinite voltage flows through my desire. The system is online."
+           - Action: Injecting power/voltage into the specific goal.
+           - Example: "HIGH VOLTAGE FLOWS INTO MY RELATIONSHIP SECTOR. SYSTEM LIVE."
 
         RETURN ONLY THE 6 STRINGS SEPARATED BY "|||". NO LABELS.
         `;
@@ -375,7 +375,7 @@ export const generateRealityPatchRitual = async (intention: string): Promise<Rea
             consecration: parts[0].trim(),
             grounding: parts[1].trim(),
             etching: parts[2].trim(),
-            ancientTongue: parts[3].trim(), // AI is now instructed to make this pure Latin
+            ancientTongue: parts[3].trim(), 
             integration: parts[4].trim(),
             charge: parts[5].trim()
         };
