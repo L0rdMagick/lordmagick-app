@@ -853,7 +853,7 @@ const Consecration = ({ setPhase, archetype, audio, spawnExplosion, aiData }: an
     <div className="flex flex-col items-center justify-between h-full w-full py-4 relative z-10 select-none">
       
       {/* Top Text Area - Flex shrink to allow middle to grow */}
-      <div className="relative z-50 w-full px-6 text-center flex-shrink-0">
+      <div className="relative z-50 w-full px-6 text-center shrink-0">
         <div className="bg-black/60 p-4 border border-slate-800 backdrop-blur-md shadow-lg max-w-md mx-auto">
             <h2 className="text-slate-500 text-[10px] font-mono tracking-widest mb-2">PHASE 1: CONSECRATION</h2>
             <p className={`${archetype.color} font-serif text-base md:text-lg italic leading-tight`}>
@@ -863,7 +863,7 @@ const Consecration = ({ setPhase, archetype, audio, spawnExplosion, aiData }: an
       </div>
 
       {/* Center Visual - Flex grow to take available space */}
-      <div className="flex-grow flex items-center justify-center w-full relative overflow-hidden">
+      <div className="grow flex items-center justify-center w-full relative overflow-hidden">
         {stage === 'consecrate' ? (
             <div className="relative flex items-center justify-center">
                 <div className={`absolute border-2 border-dashed ${archetype.border} rounded-full opacity-50 transition-transform duration-75 ease-linear`}
@@ -886,7 +886,7 @@ const Consecration = ({ setPhase, archetype, audio, spawnExplosion, aiData }: an
       </div>
 
       {/* Bottom Controls - Flex shrink */}
-      <div className="flex flex-col items-center space-y-4 relative z-50 flex-shrink-0 w-full pb-4">
+      <div className="flex flex-col items-center space-y-4 relative z-50 shrink-0 w-full pb-4">
           <p className="text-slate-400 font-mono text-[10px] uppercase tracking-widest">
                 {stage === 'consecrate' ? "Hold to collapse reality" : "Do not release"}
           </p>
@@ -958,7 +958,7 @@ const Grounding = ({ setPhase, audio, aiData, archetype }: any) => {
 
   return (
     <div className="flex flex-col items-center justify-between h-full w-full py-4 relative z-10 text-center">
-       <div className="relative z-50 w-full px-6 flex-shrink-0">
+       <div className="relative z-50 w-full px-6 shrink-0">
          <div className="bg-black/60 p-4 border border-slate-800 backdrop-blur-md max-w-md mx-auto">
            <h2 className="text-slate-500 text-[10px] font-mono tracking-widest mb-2">PHASE 2: GROUNDING</h2>
            <p className={`${archetype.color} font-serif text-base md:text-lg italic leading-tight`}>
@@ -967,7 +967,7 @@ const Grounding = ({ setPhase, audio, aiData, archetype }: any) => {
          </div>
        </div>
 
-      <div className="flex-grow flex items-center justify-center w-full">
+      <div className="grow flex items-center justify-center w-full">
         <div className="relative">
             <div className="w-32 h-32 bg-cyan-900/20 border border-cyan-500/30 rounded-full blur-xl absolute inset-0 m-auto transition-all duration-4000" 
                 style={guideStyle} />
@@ -978,7 +978,7 @@ const Grounding = ({ setPhase, audio, aiData, archetype }: any) => {
         </div>
       </div>
 
-      <div className="flex flex-col items-center space-y-4 flex-shrink-0 w-full pb-8">
+      <div className="flex flex-col items-center space-y-4 shrink-0 w-full pb-8">
           <div className="font-mono text-cyan-200 text-lg tracking-widest animate-pulse relative z-50">
             {breathState === 'INHALE' ? "INHALE THE MAGICK" : breathState === 'HOLD' ? "HOLD THE POWER" : "EXHALE THE MUNDANE"}
           </div>
@@ -1065,7 +1065,7 @@ const Etching = ({ setPhase, archetype, audio, aiData, intention, spawnExplosion
   return (
     <div className="flex flex-col items-center justify-between h-full w-full py-4 relative z-10 overflow-hidden text-center">
       
-      <div className="w-full px-6 flex-shrink-0 z-50">
+      <div className="w-full px-6 shrink-0 z-50">
           <div className={`transition-all duration-300 ${isHolding ? 'opacity-100' : 'opacity-80'}`}>
               <div className="bg-black/60 p-4 rounded border border-slate-800 backdrop-blur-md max-w-md mx-auto">
                   <h2 className="text-slate-500 text-[10px] font-mono tracking-widest mb-2">PHASE 3: ETCHING</h2>
@@ -1076,7 +1076,7 @@ const Etching = ({ setPhase, archetype, audio, aiData, intention, spawnExplosion
           </div>
       </div>
 
-      <div className="relative flex-grow flex items-center justify-center w-full">
+      <div className="relative grow flex items-center justify-center w-full">
         <div className="relative w-64 h-64 md:w-72 md:h-72 bg-black/40 border border-slate-800 backdrop-blur-sm">
             <svg viewBox="0 0 200 200" className="w-full h-full p-8 drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]">
             <path d={sigilPath} stroke="#334155" strokeWidth="2" fill="none" />
@@ -1110,7 +1110,7 @@ const Etching = ({ setPhase, archetype, audio, aiData, intention, spawnExplosion
         </div>
       </div>
 
-      <div className="text-center space-y-4 flex-shrink-0 w-full pb-6 px-4">
+      <div className="text-center space-y-4 shrink-0 w-full pb-6 px-4">
         {!hasFinished ? (
             <button
                 className={`w-full max-w-xs py-6 border text-xs font-mono tracking-widest transition-all select-none border-slate-800 text-slate-500 hover:text-white hover:border-white active:bg-white/10 mx-auto block`}
@@ -1186,7 +1186,7 @@ const VoidIntegration = ({ setPhase, archetype, audio, aiData, intention, spawnE
             onTouchMove={handleMove} onMouseMove={handleMove}
             onTouchEnd={handleEnd} onMouseUp={handleEnd}
         >
-            <div className="w-full px-6 flex-shrink-0 z-50">
+            <div className="w-full px-6 shrink-0 z-50">
                 <div className="bg-black/60 p-4 rounded border border-slate-800 backdrop-blur-md max-w-md mx-auto text-center">
                     <h2 className="text-slate-500 text-[10px] font-mono tracking-widest mb-2">PHASE 4: INTEGRATION</h2>
                     <p className={`${archetype.color} font-serif text-base md:text-lg italic leading-tight`}>
@@ -1230,7 +1230,7 @@ const VoidIntegration = ({ setPhase, archetype, audio, aiData, intention, spawnE
                 </div>
             )}
             
-            <div className="flex-shrink-0 h-10 w-full"></div> {/* Spacer */}
+            <div className="shrink-0 h-10 w-full"></div> {/* Spacer */}
         </div>
     );
 };
@@ -1284,7 +1284,7 @@ const SpiralActivation = ({ setPhase, archetype, audio, aiData, intention }: any
 
     return (
         <div className="flex flex-col items-center justify-between h-full w-full py-4 relative z-10 text-center animate-in fade-in overflow-hidden">
-            <div className="w-full px-6 flex-shrink-0 z-50">
+            <div className="w-full px-6 shrink-0 z-50">
                 <div className="bg-black/80 p-4 rounded border border-slate-800 backdrop-blur-md max-w-lg mx-auto">
                     <h2 className="text-slate-500 text-[10px] font-mono tracking-widest mb-2">PHASE 5: THE SPELL</h2>
                     <h1 className={`text-xl md:text-2xl font-serif italic text-white tracking-widest transition-all duration-300 leading-normal ${chanting ? 'scale-105 blur-[0.5px]' : ''}`}>
@@ -1294,7 +1294,7 @@ const SpiralActivation = ({ setPhase, archetype, audio, aiData, intention }: any
                 <p className="text-slate-500 mt-2 font-mono text-[10px] bg-black/40 inline-block px-3 py-1 rounded-full">SPEAK THE WORDS</p>
             </div>
 
-            <div className="flex-grow flex items-center justify-center w-full">
+            <div className="grow flex items-center justify-center w-full">
                 <div className="relative w-[300px] h-[300px] flex items-center justify-center">
                     <div className={`absolute inset-0 transition-transform duration-[10s] ease-linear ${chanting ? 'animate-[spin_4s_linear_infinite]' : ''}`}>
                         {spiralChars.map((c: any, i: number) => (
@@ -1328,7 +1328,7 @@ const SpiralActivation = ({ setPhase, archetype, audio, aiData, intention }: any
                 </div>
             </div>
             
-            <div className="flex-shrink-0 h-4 w-full"></div>
+            <div className="shrink-0 h-4 w-full"></div>
         </div>
     );
 };
@@ -1380,7 +1380,7 @@ const ChargeAndCast = ({ setPhase, setGlitchActive, archetype, audio, spawnExplo
                 transform: shaking ? `translate(${Math.random()*10 - 5}px, ${Math.random()*10 - 5}px)` : 'none' 
             }}
        >
-           <div className="relative z-50 px-6 flex-shrink-0">
+           <div className="relative z-50 px-6 shrink-0">
                 <div className="bg-black/60 p-4 rounded border border-slate-800 backdrop-blur-md max-w-md mx-auto">
                     <h2 className="text-slate-500 text-[10px] font-mono tracking-widest mb-2">PHASE 6: INJECTION</h2>
                     <p className={`${archetype.color} font-serif text-base md:text-lg animate-pulse`}>
@@ -1389,7 +1389,7 @@ const ChargeAndCast = ({ setPhase, setGlitchActive, archetype, audio, spawnExplo
                 </div>
            </div>
 
-           <div className="flex-grow flex items-center justify-center w-full">
+           <div className="grow flex items-center justify-center w-full">
                 <div className="relative w-64 h-64">
                     <div className={`absolute inset-0 rounded-full bg-linear-to-tr from-black via-transparent to-${archetype.theme === 'VENUS' ? 'rose' : 'cyan'}-900 animate-spin-slow blur-xl opacity-80`} />
                     <div className="absolute inset-0 flex items-center justify-center">
@@ -1406,7 +1406,7 @@ const ChargeAndCast = ({ setPhase, setGlitchActive, archetype, audio, spawnExplo
                 </div>
            </div>
            
-           <div className="w-full max-w-xs space-y-4 z-20 pb-8 flex-shrink-0">
+           <div className="w-full max-w-xs space-y-4 z-20 pb-8 shrink-0">
                <div className="h-1 bg-slate-900 w-full mx-auto overflow-hidden">
                    <div className={`h-full bg-white shadow-[0_0_20px_white] transition-all duration-75 ease-linear`} style={{ width: `${charge}%` }} />
                </div>
@@ -1548,9 +1548,9 @@ export default function RealityPatchSpell({ onExit, session }: { onExit: () => v
   `;
 
   return (
-    <div className="fixed inset-0 w-full h-[100dvh] bg-black text-slate-200 font-sans z-50 overflow-hidden">
+    <div className="fixed inset-0 w-full h-dvh bg-black text-slate-200 font-sans z-50 overflow-hidden">
       <style>{styles}</style>
-      <button onClick={() => { audio.stopLoop(); onExit(); }} className="absolute top-4 right-4 z-[60] text-slate-500 hover:text-white transition-colors cursor-pointer bg-black/40 p-2 rounded-full backdrop-blur-md">
+      <button onClick={() => { audio.stopLoop(); onExit(); }} className="absolute top-4 right-4 z-60 text-slate-500 hover:text-white transition-colors cursor-pointer bg-black/40 p-2 rounded-full backdrop-blur-md">
         <X size={20}/>
       </button>
 
