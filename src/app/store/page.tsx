@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Coins, Sparkles, Gem, Check, AlertTriangle, Loader2 } from 'lucide-react';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
@@ -46,7 +46,7 @@ const STORE_ITEMS = [
     }
 ];
 
-export default function StorePage() {
+function StoreContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const haptics = useHaptics();
@@ -211,5 +211,13 @@ export default function StorePage() {
                 </div>
             )}
         </main>
+    );
+}
+
+export default function StorePage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-black flex items-center justify-center text-amber-500 font-serif animate-pulse">Summoning Store...</div>}>
+            <StoreContent />
+        </Suspense>
     );
 }
