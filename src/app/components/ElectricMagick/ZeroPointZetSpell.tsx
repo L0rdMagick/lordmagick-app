@@ -41,22 +41,29 @@ const IntroStage = ({ onComplete, playTone, session }: { onComplete: () => void,
     const [error, setError] = useState('');
 
     const handleUnlock = async () => {
-        if (!session?.user) return;
         setLoading(true);
         setError('');
         
         try {
-            playTone(200, 'square', 0.1);
-            const success = await deductUserCredits(session.user.id, COST_TO_ENTER);
-            
-            if (success) {
-                playTone(600, 'sawtooth', 0.2);
-                onComplete();
-            } else {
-                playTone(100, 'sawtooth', 0.5);
-                setError('INSUFFICIENT AETHER. RECHARGE REQUIRED.');
+            // Only attempt to charge if a user session exists
+            if (session?.user) {
+                playTone(200, 'square', 0.1);
+                const success = await deductUserCredits(session.user.id, COST_TO_ENTER);
+                
+                if (!success) {
+                    playTone(100, 'sawtooth', 0.5);
+                    setError('INSUFFICIENT AETHER. RECHARGE REQUIRED.');
+                    setLoading(false);
+                    return; // Stop if payment fails
+                }
             }
+            
+            // Proceed (Payment success or Test Mode bypass)
+            playTone(600, 'sawtooth', 0.2);
+            onComplete();
+
         } catch (e) {
+            console.error(e);
             setError('CONNECTION FAILED.');
         } finally {
             setLoading(false);
@@ -107,12 +114,12 @@ const IntroStage = ({ onComplete, playTone, session }: { onComplete: () => void,
                         className="w-full py-4 bg-cyan-900/20 border border-cyan-500 text-cyan-400 font-mono text-xs tracking-[0.2em] hover:bg-cyan-500 hover:text-black transition-all flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {loading ? (
-                            <span className="animate-pulse">VERIFYING CREDITS...</span>
+                            <span className="animate-pulse">VERIFYING...</span>
                         ) : (
                             <>
                                 <Lock size={14} className="group-hover:hidden" />
                                 <Zap size={14} className="hidden group-hover:block" />
-                                <span>INITIALIZE (-{COST_TO_ENTER} AETHER)</span>
+                                <span>INITIALIZE {session?.user ? `(-${COST_TO_ENTER} AETHER)` : '(TEST MODE)'}</span>
                             </>
                         )}
                     </button>
