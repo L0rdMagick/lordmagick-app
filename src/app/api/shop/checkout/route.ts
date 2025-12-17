@@ -38,6 +38,8 @@ export async function POST(request: Request) {
     // 3. Create Checkout Session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
+      // ENABLE COUPONS HERE
+      allow_promotion_codes: true, 
       line_items: [
         {
           price_data: {
@@ -45,8 +47,6 @@ export async function POST(request: Request) {
             product_data: {
               name: pack.name,
               description: pack.description,
-              // Optional: Add an image URL here if you have one hosted
-              // images: ['https://your-domain.com/images/aether-coin.png'], 
             },
             unit_amount: pack.price,
           },
