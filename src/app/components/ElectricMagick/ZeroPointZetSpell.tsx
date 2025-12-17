@@ -9,9 +9,19 @@ import {
   Terminal, 
   Activity,
   X,
+  Lock,
+  Zap,
+  Save,
+  Cpu
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAudioEngine, useParticleSystem } from './hooks';
+import { deductUserCredits, saveSpell } from '@/lib/services/geminiService';
+import type { Session } from '@/lib/types';
+
+// --- CONSTANTS ---
+const COST_TO_ENTER = 10;
+const COST_TO_SAVE = 5;
 
 // --- GLITCH TEXT COMPONENT ---
 const GlitchText = ({ text, active = false }: { text: string, active?: boolean }) => {
@@ -23,6 +33,101 @@ const GlitchText = ({ text, active = false }: { text: string, active?: boolean }
       <span className="absolute top-0 left-0 -z-10 -translate-x-0.5 text-cyan-500 opacity-70 animate-pulse delay-75">{text}</span>
     </div>
   );
+};
+
+// --- STAGE 0: INTRO & PAYWALL ---
+const IntroStage = ({ onComplete, playTone, session }: { onComplete: () => void, playTone: any, session: Session | undefined }) => {
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+
+    const handleUnlock = async () => {
+        setLoading(true);
+        setError('');
+        
+        try {
+            // Only attempt to charge if a user session exists
+            if (session?.user) {
+                playTone(200, 'square', 0.1);
+                const success = await deductUserCredits(session.user.id, COST_TO_ENTER);
+                
+                if (!success) {
+                    playTone(100, 'sawtooth', 0.5);
+                    setError('INSUFFICIENT AETHER. RECHARGE REQUIRED.');
+                    setLoading(false);
+                    return; // Stop if payment fails
+                }
+            }
+            
+            // Proceed (Payment success or Test Mode bypass)
+            playTone(600, 'sawtooth', 0.2);
+            onComplete();
+
+        } catch (e) {
+            console.error(e);
+            setError('CONNECTION FAILED.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="flex flex-col items-center justify-center h-full w-full px-6 text-center select-none overflow-y-auto">
+            <div className="max-w-md w-full space-y-8 py-10">
+                <div className="space-y-2">
+                    <Cpu className="w-12 h-12 text-cyan-500 mx-auto animate-pulse" />
+                    <h1 className="text-3xl font-black text-white tracking-tighter uppercase">
+                        <GlitchText text="ZERO POINT ZET" active={true} />
+                    </h1>
+                    <p className="text-cyan-500 font-mono text-xs tracking-[0.3em]">REALITY INJECTION PROTOCOL</p>
+                </div>
+
+                <div className="bg-black/60 border border-gray-800 p-6 rounded text-left space-y-4 backdrop-blur-md">
+                    <p className="text-gray-300 font-mono text-xs leading-relaxed">
+                        You are accessing the <span className="text-cyan-400">Zero Point Field</span>—the static between realities. This tool allows you to inject a specific intention directly into the kernel of your local reality matrix.
+                    </p>
+                    
+                    <div className="space-y-2 pt-4">
+                        <h3 className="text-white font-bold font-mono text-xs uppercase border-b border-gray-700 pb-1">Operational Guide:</h3>
+                        <ul className="text-gray-400 font-mono text-[10px] space-y-2">
+                            <li className="flex items-start gap-2">
+                                <span className="text-cyan-500">01.</span> Bio-Auth: Sync your energy via touch.
+                            </li>
+                            <li className="flex items-start gap-2">
+                                <span className="text-cyan-500">02.</span> Injection: Define your parameter (Intention).
+                            </li>
+                            <li className="flex items-start gap-2">
+                                <span className="text-cyan-500">03.</span> Stabilization: Manually lock the signal frequency.
+                            </li>
+                            <li className="flex items-start gap-2">
+                                <span className="text-cyan-500">04.</span> Entropy: Break the resistance of the old timeline.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div className="space-y-4">
+                    {error && <p className="text-red-500 font-mono text-xs animate-pulse">{error}</p>}
+                    
+                    <button 
+                        onClick={handleUnlock}
+                        disabled={loading}
+                        className="w-full py-4 bg-cyan-900/20 border border-cyan-500 text-cyan-400 font-mono text-xs tracking-[0.2em] hover:bg-cyan-500 hover:text-black transition-all flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {loading ? (
+                            <span className="animate-pulse">VERIFYING...</span>
+                        ) : (
+                            <>
+                                <Lock size={14} className="group-hover:hidden" />
+                                <Zap size={14} className="hidden group-hover:block" />
+                                <span>INITIALIZE {session?.user ? `(-${COST_TO_ENTER} AETHER)` : '(TEST MODE)'}</span>
+                            </>
+                        )}
+                    </button>
+                    <p className="text-gray-600 text-[10px] font-mono">NO REFUNDS ON FAILED INJECTIONS.</p>
+                </div>
+            </div>
+        </div>
+    );
 };
 
 // --- STAGE 1: BIO-AUTHORIZATION (The Handshake) ---
@@ -51,7 +156,7 @@ const BioAuthStage = ({ onComplete, playTone }: { onComplete: () => void, playTo
   }, [isScanning, scanProgress, onComplete, playTone]);
 
   return (
-    <div className="flex flex-col items-center justify-center h-full w-full px-6 select-none">
+    <div className="flex flex-col items-center justify-center h-full w-full px-6 select-none animate-in fade-in zoom-in duration-500">
       <div className="mb-12 text-center space-y-2">
         <ShieldAlert className="w-16 h-16 text-red-500 mx-auto animate-pulse" />
         <h2 className="text-red-500 font-mono text-xs tracking-[0.2em]">SECURITY PROTOCOL: ACTIVE</h2>
@@ -128,7 +233,7 @@ const InjectionStage = ({ onComplete, playTone, setIntention }: { onComplete: ()
   };
 
   return (
-    <div className="flex flex-col items-center justify-center h-full w-full px-4 relative overflow-hidden">
+    <div className="flex flex-col items-center justify-center h-full w-full px-4 relative overflow-hidden animate-in fade-in slide-in-from-bottom-10 duration-500">
       <div className="absolute inset-0 pointer-events-none opacity-10 flex justify-between text-[10px] font-mono text-green-500">
         {Array.from({length: 6}).map((_, i) => (
           <div key={i} className="flex flex-col">
@@ -226,7 +331,7 @@ const StabilizationStage = ({ onComplete, playTone, modulateFilter }: { onComple
 
     return (
         <div 
-            className="flex flex-col items-center justify-center h-full w-full bg-black select-none touch-none p-4"
+            className="flex flex-col items-center justify-center h-full w-full bg-black select-none touch-none p-4 animate-in fade-in"
             onTouchMove={handleSlide}
             onMouseMove={(e) => e.buttons === 1 && handleSlide(e)}
             onMouseDown={handleSlide}
@@ -324,7 +429,7 @@ const EntropyStage = ({ onComplete, playTone, spawnExplosion, intention }: { onC
   };
 
   return (
-    <div className="flex flex-col items-center justify-center h-full w-full select-none touch-none overflow-hidden relative">
+    <div className="flex flex-col items-center justify-center h-full w-full select-none touch-none overflow-hidden relative animate-in fade-in">
       {/* Chaos Background */}
       <div className={`absolute inset-0 bg-purple-900/10 transition-all duration-100 ${glitchActive ? 'bg-white/10 invert' : ''}`} />
       
@@ -374,9 +479,11 @@ const EntropyStage = ({ onComplete, playTone, spawnExplosion, intention }: { onC
   );
 };
 
-// --- STAGE 5: REBOOT (Success) ---
-const RebootStage = ({ intention, onExit }: { intention: string, onExit: () => void }) => {
+// --- STAGE 5: REBOOT (Success & Save) ---
+const RebootStage = ({ intention, onExit, session }: { intention: string, onExit: () => void, session: Session | undefined }) => {
   const [bootLog, setBootLog] = useState<string[]>([]);
+  const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const logs = [
@@ -401,6 +508,29 @@ const RebootStage = ({ intention, onExit }: { intention: string, onExit: () => v
     return () => clearInterval(interval);
   }, [intention]);
 
+  const handleSave = async () => {
+      if (!session?.user) return;
+      setSaving(true);
+      try {
+          const success = await deductUserCredits(session.user.id, COST_TO_SAVE);
+          if (success) {
+              await saveSpell(session.user.id, {
+                  name: `Zero Point Zet: ${new Date().toLocaleDateString()}`,
+                  intention: intention,
+                  incantation: `ZERO POINT INJECTION\nTARGET: ${intention}\nSTATUS: OVERWRITTEN`,
+                  element: 'AETHER'
+              });
+              setSaved(true);
+          } else {
+              alert('Insufficient Aether to save.');
+          }
+      } catch (e) {
+          console.error(e);
+      } finally {
+          setSaving(false);
+      }
+  };
+
   return (
     <div className="flex flex-col items-center justify-center h-full w-full bg-black text-green-500 font-mono text-sm p-8">
       <div className="w-full max-w-lg space-y-2">
@@ -416,14 +546,26 @@ const RebootStage = ({ intention, onExit }: { intention: string, onExit: () => v
             animate={{ opacity: 1 } as any} 
             className="mt-12 text-center"
           >
-            <div className="text-4xl mb-4 text-white font-bold">OK</div>
+            <div className="text-4xl mb-4 text-white font-bold animate-pulse">OK</div>
             <p className="text-gray-500 text-xs mb-8">PATCH APPLIED SUCCESSFULLY</p>
-            <button 
-              onClick={onExit}
-              className="px-8 py-3 border border-green-800 text-green-500 hover:bg-green-900/20 transition-colors uppercase text-xs tracking-widest"
-            >
-              Return to System
-            </button>
+            
+            <div className="flex flex-col gap-4">
+                <button 
+                    onClick={handleSave}
+                    disabled={saved || saving}
+                    className={`w-full py-4 border border-green-700 bg-green-900/20 text-green-400 hover:text-white font-mono text-xs tracking-widest hover:border-green-400 transition-all flex items-center justify-center gap-2 ${saved ? 'opacity-50 cursor-default' : ''}`}
+                >
+                    <Save size={14} /> 
+                    {saved ? "LOG SAVED" : `SAVE TO GRIMOIRE (-${COST_TO_SAVE} AETHER)`}
+                </button>
+
+                <button 
+                onClick={onExit}
+                className="w-full py-3 border border-gray-800 text-gray-500 hover:text-white hover:bg-white/5 transition-colors uppercase text-xs tracking-widest"
+                >
+                Return to System
+                </button>
+            </div>
           </motion.div>
         )}
       </div>
@@ -432,8 +574,9 @@ const RebootStage = ({ intention, onExit }: { intention: string, onExit: () => v
 };
 
 // --- MAIN ORCHESTRATOR ---
-const ZeroPointZetSpell = ({ onExit }: { onExit: () => void }) => {
-  const [stage, setStage] = useState(0); // 0: Auth, 1: Inject, 2: Stabilize, 3: Entropy, 4: Reboot
+const ZeroPointZetSpell = ({ onExit, session }: { onExit: () => void, session?: Session }) => {
+  // 0: Intro, 1: Auth, 2: Inject, 3: Stabilize, 4: Entropy, 5: Reboot
+  const [stage, setStage] = useState(0); 
   const [intention, setIntention] = useState("");
   const { initAudio, playTone, playDrone, modulateFilter } = useAudioEngine();
   const { canvasRef, spawnExplosion } = useParticleSystem();
@@ -446,11 +589,12 @@ const ZeroPointZetSpell = ({ onExit }: { onExit: () => void }) => {
 
   const renderStage = () => {
     switch (stage) {
-      case 0: return <BioAuthStage onComplete={() => setStage(1)} playTone={playTone} />;
-      case 1: return <InjectionStage onComplete={() => setStage(2)} playTone={playTone} setIntention={setIntention} />;
-      case 2: return <StabilizationStage onComplete={() => setStage(3)} playTone={playTone} modulateFilter={modulateFilter} />;
-      case 3: return <EntropyStage onComplete={() => setStage(4)} playTone={playTone} spawnExplosion={spawnExplosion} intention={intention} />;
-      case 4: return <RebootStage intention={intention} onExit={onExit} />;
+      case 0: return <IntroStage onComplete={() => setStage(1)} playTone={playTone} session={session} />;
+      case 1: return <BioAuthStage onComplete={() => setStage(2)} playTone={playTone} />;
+      case 2: return <InjectionStage onComplete={() => setStage(3)} playTone={playTone} setIntention={setIntention} />;
+      case 3: return <StabilizationStage onComplete={() => setStage(4)} playTone={playTone} modulateFilter={modulateFilter} />;
+      case 4: return <EntropyStage onComplete={() => setStage(5)} playTone={playTone} spawnExplosion={spawnExplosion} intention={intention} />;
+      case 5: return <RebootStage intention={intention} onExit={onExit} session={session} />;
       default: return null;
     }
   };
@@ -481,3 +625,4 @@ const ZeroPointZetSpell = ({ onExit }: { onExit: () => void }) => {
 };
 
 export default ZeroPointZetSpell;
+// --- END OF FILE src/app/components/ElectricMagick/ZeroPointZetSpell.tsx ---
