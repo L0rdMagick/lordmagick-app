@@ -132,3 +132,21 @@ export const getMyServitors = async (userId: string) => {
     if (error) throw error;
     return data;
 };
+// ... existing imports and functions
+
+/**
+ * Fetch a single spell by ID for Replay Mode.
+ */
+export const getSpellById = async (spellId: string): Promise<Spell | null> => {
+    const { data, error } = await supabase
+        .from('spells')
+        .select('*')
+        .eq('id', spellId)
+        .single();
+    
+    if (error) {
+        console.error("Error fetching spell for replay:", error);
+        return null;
+    }
+    return data as Spell;
+};

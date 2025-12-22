@@ -3,20 +3,25 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { Session } from '@/lib/types';
-import { generateHoodooVoodooWork, saveSpell } from '@/lib/services/geminiService';
-// ECONOMY IMPORTS
-import { useAetherEconomy } from '@/hooks/useAetherEconomy';
-import { buySpellSlots } from '@/lib/services/economyService'; // NEW
 import Link from 'next/link';
-import { Coins, AlertTriangle, BookOpen, Lock } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
+import type { Session } from '@/lib/types';
 
+// Services
+import { generateHoodooVoodooWork, saveSpell, deductUserCredits } from '@/lib/services/geminiService';
+import { getServiceCost, buySpellSlots } from '@/lib/services/economyService';
+import { getSpellById } from '@/lib/services/spellService';
+
+// Hooks
+import { useAetherEconomy } from '@/hooks/useAetherEconomy';
+
+// Components & Assets
 import MagickalBackLink from './MagickalBackLink';
 import RoomsButton from './RoomsButton';
 import LoadingSpinner from './LoadingSpinner';
 import { Sprite } from './Sprite';
 import { findSprite } from '@/lib/spriteLibrary';
-import { Book, Skull, Sparkles, Save, Check } from 'lucide-react';
+import { Book, Skull, Sparkles, Save, Check, Coins, AlertTriangle, BookOpen } from 'lucide-react';
 
 // --- Configuration ---
 const ASSET_PATH = "/images/Spells/HooDoo Voo Doo";
@@ -276,32 +281,44 @@ const HoodooStep2_Petition: React.FC<{ cost: number; petition: string; setPetiti
              <div className="flex flex-col gap-3 w-full max-w-xs">
                 <button onClick={() => onNext('standard')} disabled={!petition} className="flex items-center gap-3 p-3 bg-amber-900/60 border border-amber-600 rounded-lg hover:bg-amber-800 disabled:opacity-50 text-amber-100">
                     <Book className="w-5 h-5" />
-                    <div className="text-left"><div className="font-serif">Traditional Work</div><div className="text-xs text-amber-300/70">Fixed Psalm & Materia. Free.</div></div>
+                    <div className="text-left">
+                        <div className="font-serif">Traditional Work</div>
+                        <div className="text-xs text-amber-300/70">Fixed Psalm & Materia. Free.</div>
+                    </div>
                 </button>
                 <button onClick={() => onNext('ai')} disabled={!petition} className="flex items-center gap-3 p-3 bg-purple-900/60 border border-purple-500 rounded-lg hover:bg-purple-800 disabled:opacity-50 relative overflow-hidden group text-purple-100">
                     <Skull className="w-5 h-5" />
-                    <div className="text-left relative z-10"><div className="font-serif flex items-center gap-2">Rootworker Consult <Sparkles size={12}/></div><div className="text-xs text-purple-300">Custom scripture & ingredients. {cost} Credits.</div></div>
+                    <div className="text-left relative z-10">
+                        <div className="font-serif flex items-center gap-2">Rootworker Consult <Sparkles size={12}/></div>
+                        <div className="text-xs text-purple-300">Custom scripture & ingredients. {cost} Credits.</div>
+                    </div>
                 </button>
             </div>
         </div>
     </StepContainer>
 );
 
-const HoodooStep3_FindVerse: React.FC<{ onOpenReader: (psalm: string) => void; selections: string[]; selectedPsalm: string; isPsalmLit: boolean; onNext: () => void; }> = ({ onOpenReader, selections, selectedPsalm, isPsalmLit, onNext }) => (
-    <StepContainer stageTitle="Find Your Verse" instruction="The spirits have guided you to these scriptures. Choose one to read and fix for your Work." button={<RitualButton onClick={onNext} disabled={!isPsalmLit}>Gather Your Materia</RitualButton>}>
-        <div className="w-full max-w-4xl flex flex-col md:flex-row items-center justify-start md:justify-around gap-4 h-full max-h-[50vh] md:max-h-none overflow-y-auto md:overflow-visible p-4">
-            {selections.map(psalm => (
-                <div key={psalm} onClick={() => onOpenReader(psalm)} className={`relative w-64 aspect-4/3 cursor-pointer group transition-all duration-300 shrink-0 ${selectedPsalm === psalm ? 'scale-105' : 'scale-100'}`}>
-                    <Image src={`${ASSET_PATH}/ui-psalm-book.png`} alt="Book of Psalms" layout="fill" objectFit="contain" />
-                    <div className={`absolute inset-0 flex items-center justify-center p-8 rounded-lg transition-colors ${selectedPsalm === psalm ? 'bg-amber-300/20' : ''}`}>
-                        <p className={`text-center font-serif text-xl group-hover:text-black ${selectedPsalm === psalm ? 'text-black font-bold' : 'text-gray-800'}`}>{psalm}</p>
+const HoodooStep3_FindVerse: React.FC<{ onOpenReader: (psalm: string) => void; selections: string[]; selectedPsalm: string; isPsalmLit: boolean; onNext: () => void; }> = ({ onOpenReader, selections, selectedPsalm, isPsalmLit, onNext }) => {
+    return (
+        <StepContainer 
+            stageTitle="Find Your Verse" 
+            instruction="The spirits have guided you to these scriptures. Choose one to read and fix for your Work." 
+            button={<RitualButton onClick={onNext} disabled={!isPsalmLit}>Gather Your Materia</RitualButton>}
+        >
+            <div className="w-full max-w-4xl flex flex-col md:flex-row items-center justify-start md:justify-around gap-4 h-full max-h-[50vh] md:max-h-none overflow-y-auto md:overflow-visible p-4">
+                {selections.map(psalm => (
+                    <div key={psalm} onClick={() => onOpenReader(psalm)} className={`relative w-64 aspect-4/3 cursor-pointer group transition-all duration-300 shrink-0 ${selectedPsalm === psalm ? 'scale-105' : 'scale-100'}`}>
+                        <Image src={`${ASSET_PATH}/ui-psalm-book.png`} alt="Book of Psalms" layout="fill" objectFit="contain" />
+                        <div className={`absolute inset-0 flex items-center justify-center p-8 rounded-lg transition-colors ${selectedPsalm === psalm ? 'bg-amber-300/20' : ''}`}>
+                            <p className={`text-center font-serif text-xl group-hover:text-black ${selectedPsalm === psalm ? 'text-black font-bold' : 'text-gray-800'}`}>{psalm}</p>
+                        </div>
+                        {isPsalmLit && selectedPsalm === psalm && <div className="absolute top-2 right-2 w-8 h-8 bg-red-800 rounded-full flex items-center justify-center text-yellow-300 text-xs font-bold ring-2 ring-yellow-300">✓</div>}
                     </div>
-                    {isPsalmLit && selectedPsalm === psalm && <div className="absolute top-2 right-2 w-8 h-8 bg-red-800 rounded-full flex items-center justify-center text-yellow-300 text-xs font-bold ring-2 ring-yellow-300">✓</div>}
-                </div>
-            ))}
-        </div>
-    </StepContainer>
-);
+                ))}
+            </div>
+        </StepContainer>
+    );
+};
 
 const HoodooStep4_GatherMateria: React.FC<{ selections: MateriaSelection[]; onNext: () => void; }> = ({ selections, onNext }) => (
      <StepContainer stageTitle="Gather Your Materia" instruction="The spirits have chosen these ingredients for your petition." button={<RitualButton onClick={onNext}>Fix the Jar</RitualButton>}>
@@ -333,7 +350,9 @@ const HoodooStep5_FixJar: React.FC<{ onNext: () => void, selections: MateriaSele
         <StepContainer stageTitle="Fix the Jar" instruction={instructionText} button={isCharged ? <RitualButton onClick={onNext} className="animate-pulse">{index < selections.length - 1 ? "Next Ingredient" : "Seal the Jar"}</RitualButton> : <div/>}>
             <div className="relative w-full h-full max-w-md aspect-square mx-auto">
                 <Image src={`${ASSET_PATH}/hoodoo-jar-empty.png`} alt="Empty Spell Jar" layout="fill" objectFit="contain" priority />
+                
                 <FilledContainer items={selections} count={isCharged ? index + 1 : index} variant="hoodoo_empty" />
+
                 {!isCharged && spriteData && (
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-2/3 z-20">
                         <ChargingComponent onCharge={() => setIsCharged(true)} isCharged={isCharged}>
@@ -399,11 +418,17 @@ const VoodooStep2_StateNeed: React.FC<{ cost: number; petition: string; setPetit
             <div className="flex flex-col gap-3 w-full max-w-xs">
                 <button onClick={() => onNext('standard')} disabled={!petition} className="flex items-center gap-3 p-3 bg-amber-900/60 border border-amber-600 rounded-lg hover:bg-amber-800 disabled:opacity-50 text-amber-100">
                     <Book className="w-5 h-5" />
-                    <div className="text-left"><div className="font-serif">Serve Papa Legba</div><div className="text-xs text-amber-300/70">Traditional offerings. Free.</div></div>
+                    <div className="text-left">
+                        <div className="font-serif">Serve Papa Legba</div>
+                        <div className="text-xs text-amber-300/70">Traditional offerings. Free.</div>
+                    </div>
                 </button>
                 <button onClick={() => onNext('ai')} disabled={!petition} className="flex items-center gap-3 p-3 bg-purple-900/60 border border-purple-500 rounded-lg hover:bg-purple-800 disabled:opacity-50 relative overflow-hidden group text-purple-100">
                     <Skull className="w-5 h-5" />
-                    <div className="text-left relative z-10"><div className="font-serif flex items-center gap-2">Divine the Lwa <Sparkles size={12}/></div><div className="text-xs text-purple-300">Consult the spirits. {cost} Credits.</div></div>
+                    <div className="text-left relative z-10">
+                        <div className="font-serif flex items-center gap-2">Divine the Lwa <Sparkles size={12}/></div>
+                        <div className="text-xs text-purple-300">Consult the spirits. {cost} Credits.</div>
+                    </div>
                 </button>
             </div>
         </div>
@@ -589,7 +614,6 @@ const PsalmReader: React.FC<{isOpen: boolean; onClose: () => void; psalmName: st
     );
 };
 
-// --- SLOT PURCHASE MODAL ---
 const SlotPurchaseModal = ({ isOpen, onClose, onPurchase, isProcessing }: { isOpen: boolean, onClose: () => void, onPurchase: () => void, isProcessing: boolean }) => {
     if (!isOpen) return null;
     return (
@@ -600,13 +624,8 @@ const SlotPurchaseModal = ({ isOpen, onClose, onPurchase, isProcessing }: { isOp
                 <p className="text-gray-400 text-sm mb-6">
                     Your book of shadows has reached its capacity. Expand your grimoire by 5 slots to continue saving your workings.
                 </p>
-                
                 <div className="flex flex-col gap-3">
-                    <button 
-                        onClick={onPurchase} 
-                        disabled={isProcessing}
-                        className="w-full flex items-center justify-center gap-2 py-3 bg-amber-700 hover:bg-amber-600 text-white font-bold rounded uppercase tracking-wider text-xs transition-colors disabled:opacity-50"
-                    >
+                    <button onClick={onPurchase} disabled={isProcessing} className="w-full flex items-center justify-center gap-2 py-3 bg-amber-700 hover:bg-amber-600 text-white font-bold rounded uppercase tracking-wider text-xs transition-colors disabled:opacity-50">
                         {isProcessing ? "Expanding..." : "Expand Storage (-10 Aether)"}
                     </button>
                     <button onClick={onClose} className="text-gray-500 hover:text-white text-xs underline">Cancel</button>
@@ -616,12 +635,14 @@ const SlotPurchaseModal = ({ isOpen, onClose, onPurchase, isProcessing }: { isOp
     );
 };
 
-
 // ==========================================
 // MAIN COMPONENT
 // ==========================================
 
 const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }> = ({ session }) => {
+    const searchParams = useSearchParams();
+    const loadId = searchParams.get('loadId');
+
     const [step, setStep] = useState(0);
     const [path, setPath] = useState<RitualPath>(null);
     const [mode, setMode] = useState<RitualMode>('standard');
@@ -658,10 +679,47 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
     
     const [psalmReaderOpen, setPsalmReaderOpen] = useState(false);
 
-    // FETCH COST ON MOUNT
+    // --- EFFECT: REPLAY MODE ---
     useEffect(() => {
-        // This is handled by the hook but we can force refresh if needed
-    }, []);
+        if (loadId) {
+            const loadSpell = async () => {
+                setLoading(true);
+                setLoadingMessage("Retrieving ritual from Grimoire...");
+                try {
+                    const spell = await getSpellById(loadId);
+                    if (spell) {
+                        const data = typeof spell.ritual_data === 'string' ? JSON.parse(spell.ritual_data) : spell.ritual_data;
+                        
+                        // Hydrate State
+                        setPetition(spell.intention);
+                        setFinalAffirmation(spell.incantation); // Or data.affirmation
+                        setPath(data.path); // 'hoodoo' or 'voodoo'
+                        
+                        if (data.path === 'hoodoo') {
+                            setHoodooPsalmSelections([data.psalm]); // Force the saved psalm
+                            setSelectedPsalm(data.psalm);
+                            setIsPsalmLit(true); // Auto-light since it's a replay
+                            setHoodooMateriaSelections(data.materia);
+                        } else {
+                            setSelectedLwa(data.lwa);
+                            setVoodooOfferingSelections(data.materia); // Saved in 'materia' field in previous save logic
+                        }
+
+                        // Jump to "Action"
+                        // Step 1 (Ancestors/Gate) is always good to do again for immersion
+                        setStep(1); 
+                        setIsSaved(true); // Disable saving again since it's already saved
+                    }
+                } catch (e) {
+                    console.error("Failed to load spell", e);
+                    setAppError("Could not retrieve spell data.");
+                } finally {
+                    setLoading(false);
+                }
+            };
+            loadSpell();
+        }
+    }, [loadId]);
 
     const handleOpenPsalmReader = (psalm: string) => {
         setSelectedPsalm(psalm);
@@ -692,6 +750,13 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
     // --- HOODOO LOGIC HANDLERS ---
     
     const handleHoodooPetitionComplete = async (selectedMode: RitualMode) => {
+        // If Replay Mode (loadId exists), skip payment/gen logic
+        if (loadId) {
+             setMode('ai'); // Assume high quality visual
+             advanceStep();
+             return;
+        }
+
         setMode(selectedMode);
         setAppError(null);
         clearPaymentError();
@@ -715,25 +780,20 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
             await handleHoodooPsalmSearch();
         }
     };
-
+    
     const handleHoodooPsalmSearch = async () => {
         if (!petition) { setAppError("You must write a petition first."); setLoading(false); return; }
-        
-        setLoading(true); 
-        setLoadingMessage("Consulting the scriptures...");
-        
+        setLoading(true); setLoadingMessage("Consulting the scriptures...");
         try {
             const result = await generateHoodooVoodooWork('hoodoo', 3, { petition });
             setHoodooPsalmSelections(result.selections);
             advanceStep();
-        } catch (err: any) { 
-            setAppError(err.message || "Failed to retrieve psalms."); 
-        } finally { 
-            setLoading(false); 
-        }
+        } catch (err: any) { setAppError(err.message || "Failed to retrieve psalms."); } finally { setLoading(false); }
     };
 
     const handleHoodooMateriaLogic = async () => {
+        if (loadId) { advanceStep(); return; }
+
         if (mode === 'standard') {
             advanceStep(); 
         } else {
@@ -748,6 +808,8 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
     };
     
     const handleHoodooFinalStep = async () => {
+        if (loadId) { advanceStep(); return; }
+
         if (mode === 'standard') {
             setFinalAffirmation("My petition is fixed and sealed. The work is done.");
             advanceStep();
@@ -764,6 +826,12 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
     // --- VOODOO LOGIC HANDLERS ---
     
     const handleVoodooPetitionComplete = async (selectedMode: RitualMode) => {
+        if (loadId) {
+             setMode('ai');
+             advanceStep();
+             return;
+        }
+
         setMode(selectedMode);
         setAppError(null);
         clearPaymentError();
@@ -773,22 +841,19 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
             setVoodooOfferingSelections(STANDARD_VOODOO_OFFERINGS);
             advanceStep();
         } else {
-            // AI Mode
             if (!session?.user?.id) {
                 setAppError("You must be logged in to consult the Lwa.");
                 return;
             }
-
-            // 1. Charge User
             const paid = await spendAether(session.user.id);
             if (!paid) return;
-
-            // 2. Advance
             advanceStep();
         }
     };
 
     const handleVoodooLwaLogic = async () => {
+        if (loadId) { advanceStep(); return; }
+
         if (mode === 'standard') {
              advanceStep();
         } else {
@@ -803,6 +868,8 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
     };
 
     const handleVoodooFinalStep = async () => {
+         if (loadId) { advanceStep(); return; }
+
          if (mode === 'standard') {
             setFinalAffirmation(`Papa Legba has accepted the gift. The gate is open.`);
             advanceStep();
@@ -826,14 +893,12 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
         }
     };
 
-    // --- SAVING LOGIC (With Slot Check) ---
     const handleSaveToGrimoire = async () => {
         if (isSaved || !session?.user?.id) return;
         setIsSaving(true);
         setAppError(null);
         
         try {
-            // Prepare Ritual Data for Deep Save
             const ritualData = {
                 path,
                 petition,
@@ -871,18 +936,14 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
         setSlotLoading(true);
         const success = await buySpellSlots(session.user.id);
         setSlotLoading(false);
-        
         if (success) {
             setShowSlotModal(false);
-            // Retry save automatically
             handleSaveToGrimoire();
         } else {
             setAppError("Insufficient Aether to expand Grimoire.");
             setShowSlotModal(false);
         }
     };
-
-    // --- RENDERERS ---
 
     const renderError = () => {
         const msg = paymentError || appError;

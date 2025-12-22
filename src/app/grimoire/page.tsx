@@ -7,13 +7,16 @@ import type { Spell } from '@/lib/types';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
 import RoomsButton from '@/app/components/RoomsButton';
 import LoadingSpinner from '@/app/components/LoadingSpinner';
-import { Book, Calendar, Scroll, Search, Filter, X } from 'lucide-react';
+import { Book, Calendar, Scroll, Search, X, RotateCcw, ArrowRight } from 'lucide-react'; // Added Icons
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function GrimoirePage() {
     const [spells, setSpells] = useState<Spell[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedSpell, setSelectedSpell] = useState<Spell | null>(null);
     const [filter, setFilter] = useState('');
+    const router = useRouter();
 
     const supabase = createBrowserClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -41,11 +44,36 @@ export default function GrimoirePage() {
         s.intention.toLowerCase().includes(filter.toLowerCase())
     );
 
+    // HELPER: Determine App URL based on Spell Data
+    const getReplayUrl = (spell: Spell) => {
+        // 1. Check Tradition
+        if (spell.tradition === 'HOODOO' || spell.tradition === 'VOODOO') {
+            return `/spell-room/hoodoo-rootwork-spells-app?loadId=${spell.id}`;
+        }
+        if (spell.tradition === 'WICCA') {
+            return `/spell-room/wicca-magick-spells-app?loadId=${spell.id}`;
+        }
+        if (spell.tradition === 'CHAOS') {
+            return `/spell-room/chaos-magick-spells-app?loadId=${spell.id}`;
+        }
+        if (spell.tradition === 'LOVE') {
+            return `/spell-room/love-spells-app/soul-connect-love-spell?loadId=${spell.id}`;
+        }
+        
+        // 2. Fallback for Electric Magick (checking name since tradition might be generic)
+        if (spell.name.includes('Reality Breach')) {
+            return `/spell-room/electric-magick-spells-app?spell=reality-patch&loadId=${spell.id}`;
+        }
+        if (spell.name.includes('Neural Link')) {
+            return `/spell-room/electric-magick-spells-app?spell=neural-link&loadId=${spell.id}`;
+        }
+        
+        return null; // Unknown type
+    };
+
     const SpellDetailModal = ({ spell, onClose }: { spell: Spell, onClose: () => void }) => {
-        // Parse ritual data safely
-        const ritualData = typeof spell.ritual_data === 'string' 
-            ? JSON.parse(spell.ritual_data) 
-            : spell.ritual_data;
+        const ritualData = typeof spell.ritual_data === 'string' ? JSON.parse(spell.ritual_data) : spell.ritual_data;
+        const replayUrl = getReplayUrl(spell);
 
         return (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
@@ -65,14 +93,11 @@ export default function GrimoirePage() {
 
                     {/* Content */}
                     <div className="p-8 space-y-8 font-serif text-gray-300">
-                        
-                        {/* Intention */}
                         <div className="text-center p-6 bg-white/5 rounded-lg border border-white/5">
                             <h3 className="text-xs font-mono text-amber-500 uppercase tracking-widest mb-3">Intention</h3>
                             <p className="text-lg italic text-white leading-relaxed">"{spell.intention}"</p>
                         </div>
 
-                        {/* Incantation */}
                         {spell.incantation && (
                             <div>
                                 <h3 className="text-xs font-mono text-gray-500 uppercase tracking-widest mb-3 border-b border-gray-800 pb-1">Incantation</h3>
@@ -82,24 +107,29 @@ export default function GrimoirePage() {
                             </div>
                         )}
 
-                        {/* Deep Data (Hoodoo/Voodoo/Wicca Specifics) */}
+                         {/* Ritual Data Display */}
                         {ritualData && (
                             <div className="space-y-6">
+                                {/* Hoodoo/Voodoo Specifics */}
                                 {ritualData.psalm && (
                                     <div>
                                         <h3 className="text-xs font-mono text-gray-500 uppercase tracking-widest mb-2">Scripture</h3>
-                                        <p className="text-sm">{ritualData.psalm}</p>
+                                        <p className="text-sm italic">"{ritualData.psalm}"</p>
                                     </div>
                                 )}
-                                
+                                {ritualData.lwa && (
+                                    <div>
+                                        <h3 className="text-xs font-mono text-gray-500 uppercase tracking-widest mb-2">Spirit Served</h3>
+                                        <p className="text-sm font-bold text-purple-300">{ritualData.lwa}</p>
+                                    </div>
+                                )}
                                 {ritualData.materia && Array.isArray(ritualData.materia) && (
                                     <div>
-                                        <h3 className="text-xs font-mono text-gray-500 uppercase tracking-widest mb-2">Materia & Curios</h3>
+                                        <h3 className="text-xs font-mono text-gray-500 uppercase tracking-widest mb-2">Ingredients Used</h3>
                                         <div className="grid grid-cols-2 gap-2">
                                             {ritualData.materia.map((m: any, i: number) => (
                                                 <div key={i} className="bg-black p-2 rounded border border-gray-800 text-sm">
                                                     <span className="text-amber-200">{m.name}</span>
-                                                    <div className="text-xs text-gray-600 mt-1 italic">"{m.incantation}"</div>
                                                 </div>
                                             ))}
                                         </div>
@@ -108,7 +138,6 @@ export default function GrimoirePage() {
                             </div>
                         )}
                         
-                        {/* Sigil */}
                         {spell.sigil_url && (
                             <div className="flex justify-center pt-4 border-t border-white/5">
                                 <div className="text-center">
@@ -121,6 +150,22 @@ export default function GrimoirePage() {
                             </div>
                         )}
 
+                        {/* REPLAY BUTTON */}
+                        {replayUrl && (
+                            <div className="pt-8 border-t border-white/10 flex justify-center">
+                                <Link 
+                                    href={replayUrl}
+                                    className="flex items-center gap-3 px-8 py-4 bg-amber-900/40 border border-amber-500/50 text-amber-100 rounded hover:bg-amber-800/60 hover:border-amber-400 transition-all group"
+                                >
+                                    <RotateCcw className="group-hover:-rotate-180 transition-transform duration-500" size={20} />
+                                    <div className="text-left">
+                                        <div className="font-serif font-bold tracking-wide uppercase text-sm">Perform Ritual Again</div>
+                                        <div className="text-[10px] text-amber-400/70 font-mono">Use saved components • No Aether Cost</div>
+                                    </div>
+                                    <ArrowRight size={16} className="opacity-50 group-hover:translate-x-1 transition-transform" />
+                                </Link>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -147,7 +192,6 @@ export default function GrimoirePage() {
                     <LoadingSpinner title="Opening the Archives..." />
                 ) : (
                     <>
-                        {/* Search Bar */}
                         <div className="mb-8 flex justify-center">
                             <div className="relative w-full max-w-md">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
@@ -189,7 +233,7 @@ export default function GrimoirePage() {
                                         
                                         <div className="mt-auto pt-4 border-t border-gray-900 flex justify-between items-center text-xs">
                                             <span className="text-purple-400 font-medium">{spell.element || 'Spirit'}</span>
-                                            <span className="text-gray-600 uppercase tracking-wider group-hover:text-amber-500/80 transition-colors">Read Entry &rarr;</span>
+                                            <span className="text-gray-600 uppercase tracking-wider group-hover:text-amber-500/80 transition-colors">Open Entry &rarr;</span>
                                         </div>
                                     </div>
                                 ))}
