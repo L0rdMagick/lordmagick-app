@@ -1,4 +1,3 @@
-/// <reference lib="dom" />
 "use client";
 
 import Image from 'next/image';
@@ -6,6 +5,10 @@ import { useRouter } from 'next/navigation';
 import { useState, useRef, MouseEvent, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Sparkle from '../components/Sparkle';
+// ADD IMPORTS
+import { createBrowserClient } from '@supabase/ssr';
+import { Coins, Sparkles, Plus } from 'lucide-react';
+import Link from 'next/link';
 
 interface SparkleState { key: number; x: number; y: number; }
 
@@ -15,7 +18,6 @@ const portals = [
     href: "/spell-room", 
     imageSrc: "/images/portal-spell.png",
     signImageSrc: "/images/spell-room-sign.png",
-    // UPDATED GLOW: Using explicit drop-shadow classes to match the school page style
     glowClass: "group-hover:drop-shadow-[0_0_25px_rgba(168,85,247,0.6)]",
     soundSrc: "/audio/sfx-spell-room-portal.mp3",
     isExternal: false,
@@ -39,8 +41,8 @@ const portals = [
     isExternal: false,
   },
   {
-    title: "Magickal Tools", // RENAMED
-    href: "/magickal-tools", // UPDATED LINK
+    title: "Magickal Tools", 
+    href: "/magickal-tools", 
     imageSrc: "/images/portal-tools.png",
     signImageSrc: "/images/tools-sign.png",
     glowClass: "group-hover:drop-shadow-[0_0_25px_rgba(74,222,128,0.6)]",
@@ -56,8 +58,31 @@ export default function HallPage() {
   const [sparkle, setSparkle] = useState<SparkleState | null>(null);
   const [navigatingTo, setNavigatingTo] = useState<{ href: string; isExternal: boolean } | null>(null);
   
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // -- NEW STATE FOR CREDITS --
+  const [credits, setCredits] = useState<number | null>(null);
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+
   const portalSoundsRef = useRef<{[key: string]: any}>({});
+
+  // -- NEW EFFECT: FETCH CREDITS --
+  useEffect(() => {
+    const fetchCredits = async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+            const { data } = await supabase
+                .from('profiles')
+                .select('credits')
+                .eq('id', user.id)
+                .single();
+            
+            if (data) setCredits(data.credits);
+        }
+    };
+    fetchCredits();
+  }, [supabase]);
 
   useEffect(() => {
     const win = (globalThis as any).window;
@@ -112,6 +137,22 @@ export default function HallPage() {
             <div className="absolute inset-0 bg-black/40" />
         </div>
         
+        {/* -- NEW: CREDIT DISPLAY (TOP RIGHT) -- */}
+        {credits !== null && (
+            <div className="absolute top-6 right-6 z-50 animate-in fade-in slide-in-from-top-4 duration-1000">
+                <div className="flex items-center gap-3 bg-black/60 backdrop-blur-md border border-amber-500/30 rounded-full px-4 py-2 shadow-[0_0_15px_rgba(251,191,36,0.2)] group hover:border-amber-400 transition-colors">
+                    <div className="flex flex-col items-end">
+                         <span className="text-[10px] text-amber-200/70 font-mono uppercase tracking-widest leading-none">Aether</span>
+                         <span className="text-lg font-serif text-white font-bold leading-none">{credits}</span>
+                    </div>
+                    <div className="h-8 w-px bg-amber-500/30"></div>
+                    <Link href="/store" className="p-1.5 bg-amber-500/20 rounded-full hover:bg-amber-500/40 text-amber-300 transition-colors" title="Get More Aether">
+                        <Plus size={16} />
+                    </Link>
+                </div>
+            </div>
+        )}
+
         <div className="relative z-20 flex flex-col items-center w-full max-w-7xl">
             <header className="text-center text-white">
                 <div 

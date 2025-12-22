@@ -8,6 +8,7 @@ import { createBrowserClient } from '@supabase/ssr';
 import { Uncial_Antiqua } from 'next/font/google';
 import type { User } from '@supabase/supabase-js';
 import { useNavMenu } from '../context/NavMenuContext';
+import { Coins, Plus } from 'lucide-react'; // Import icons
 
 const uncialAntiqua = Uncial_Antiqua({ subsets: ['latin'], weight: ['400'] });
 
@@ -16,12 +17,14 @@ const navLinks = [
   { name: "The Spell Room", href: "/spell-room" },
   { name: "Oracle Room", href: "/oracle-room" },
   { name: "The School", href: "/the-magick-psychic-school" },
-  { name: "Magickal Tools", href: "/magickal-tools" }, // UPDATED LINK & NAME
+  { name: "Magickal Tools", href: "/magickal-tools" },
+  { name: "Aether Store", href: "/store" }, // Added Store Link
 ];
 
 export default function RoomsMenu() {
   const { isOpen, closeMenu } = useNavMenu();
   const [user, setUser] = useState<User | null>(null);
+  const [credits, setCredits] = useState<number | null>(null); // Add state for credits
   
   const router = useRouter();
   const supabase = createBrowserClient(
@@ -32,16 +35,27 @@ export default function RoomsMenu() {
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+      if (session?.user) fetchCredits(session.user.id);
     });
 
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
+      if (user) fetchCredits(user.id);
     }
     getUser();
 
     return () => subscription.unsubscribe();
   }, [supabase.auth]);
+
+  const fetchCredits = async (userId: string) => {
+      const { data } = await supabase
+          .from('profiles')
+          .select('credits')
+          .eq('id', userId)
+          .single();
+      if (data) setCredits(data.credits);
+  };
   
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -83,6 +97,20 @@ export default function RoomsMenu() {
           />
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="flex w-3/5 flex-col items-center space-y-6">
+              
+              {/* Credit Display in Menu */}
+              {user && credits !== null && (
+                  <div className="flex items-center gap-3 bg-black/40 border border-amber-500/30 px-4 py-2 rounded-lg mb-4 w-full justify-between">
+                      <div className="flex items-center gap-2">
+                        <Coins size={16} className="text-amber-400" />
+                        <span className="text-amber-100 font-mono font-bold">{credits}</span>
+                      </div>
+                      <Link href="/store" onClick={closeMenu} className="text-[10px] text-amber-500 uppercase font-bold hover:text-white flex items-center gap-1">
+                          Add <Plus size={10} />
+                      </Link>
+                  </div>
+              )}
+
               {navLinks.map((link) => (
                 <Link
                   key={link.href}
