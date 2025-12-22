@@ -4,20 +4,23 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Session } from '@/lib/types';
-import { generateHoodooVoodooWork, saveSpell, deductUserCredits } from '@/lib/services/geminiService'; 
+import { generateHoodooVoodooWork, saveSpell, deductUserCredits } from '@/lib/services/geminiService';
+// NEW IMPORT
+import { getServiceCost } from '@/lib/services/economyService';
 import MagickalBackLink from './MagickalBackLink';
 import RoomsButton from './RoomsButton';
 import LoadingSpinner from './LoadingSpinner';
 import { Sprite } from './Sprite';
 import { findSprite } from '@/lib/spriteLibrary';
-import { Book, Skull, Sparkles, Save, Check } from 'lucide-react';
+import { Book, Skull, Sparkles, Save, Check, Coins } from 'lucide-react';
+import Link from 'next/link';
 
 // --- Configuration ---
 const ASSET_PATH = "/images/Spells/HooDoo Voo Doo";
-const CHARGE_DURATION = 3000; // 3 seconds
+const CHARGE_DURATION = 3000;
 const FADE_DURATION = 0.8;
-const SENDING_DURATION = 13000; // 13 seconds
-const AI_COST = 3; // Cost for AI features
+const SENDING_DURATION = 13000;
+const SERVICE_SLUG = 'ai_hoodoo_voodoo'; // The key used in the database
 
 // --- Geometry Configuration for Ingredients ---
 const CONTAINER_GEOMETRY = {
@@ -87,6 +90,8 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
     const [loading, setLoading] = useState(false);
     const [loadingMessage, setLoadingMessage] = useState('');
     const [error, setError] = useState<string | null>(null);
+    const [cost, setCost] = useState(3); 
+    const [showStoreLink, setShowStoreLink] = useState(false); 
     
     // State for ritual data
     const [petition, setPetition] = useState('');
@@ -103,6 +108,15 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
     
     const [psalmReaderOpen, setPsalmReaderOpen] = useState(false);
 
+    // FETCH COST ON MOUNT
+    useEffect(() => {
+        const fetchCost = async () => {
+            const price = await getServiceCost(SERVICE_SLUG);
+            setCost(price);
+        };
+        fetchCost();
+    }, []);
+
     const handleOpenPsalmReader = (psalm: string) => {
         setSelectedPsalm(psalm);
         setIsPsalmLit(false);
@@ -114,6 +128,8 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
         setSelectedPsalm(''); setIsPsalmLit(false); setHoodooMateriaSelections([]); setSelectedLwa('');
         setVoodooOfferingSelections([]); setFinalAffirmation(''); setChargingIndex(0);
         setIsSaved(false);
+        setShowStoreLink(false);
+        setError(null);
     };
 
     const selectPath = (chosenPath: RitualPath) => {
@@ -131,6 +147,9 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
     
     const handleHoodooPetitionComplete = async (selectedMode: RitualMode) => {
         setMode(selectedMode);
+        setShowStoreLink(false);
+        setError(null);
+
         if (selectedMode === 'standard') {
             setHoodooPsalmSelections(['Psalm 23', 'Psalm 91']);
             setHoodooMateriaSelections(STANDARD_HOODOO_MATERIA);
@@ -143,20 +162,20 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
             }
 
             setLoading(true);
-            setLoadingMessage("Offering Aether to the spirits...");
+            setLoadingMessage(`Offering ${cost} Aether to the spirits...`);
             
             try {
-                // 1. DEDUCT CREDITS
-                const hasCredits = await deductUserCredits(session.user.id, AI_COST);
+                // 1. DEDUCT CREDITS using dynamic cost
+                const hasCredits = await deductUserCredits(session.user.id, cost);
                 
                 if (!hasCredits) {
                     setLoading(false);
-                    setError("Insufficient Aether. Please visit the Store to replenish.");
+                    setError("Insufficient Aether.");
+                    setShowStoreLink(true); // Show purchase button
                     return;
                 }
 
                 // 2. PROCEED TO GENERATION
-                // We await this to ensure the loading state persists until data is ready
                 await handleHoodooPsalmSearch();
                 
             } catch (err) {
@@ -170,7 +189,6 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
     const handleHoodooPsalmSearch = async () => {
         if (!petition) { setError("You must write a petition first."); setLoading(false); return; }
         
-        // Ensure loading is ON (might be redundant but safe)
         setLoading(true); 
         setLoadingMessage("Consulting the scriptures...");
         
@@ -217,6 +235,9 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
     
     const handleVoodooPetitionComplete = async (selectedMode: RitualMode) => {
         setMode(selectedMode);
+        setShowStoreLink(false);
+        setError(null);
+
         if (selectedMode === 'standard') {
             setSelectedLwa('Papa Legba');
             setVoodooOfferingSelections(STANDARD_VOODOO_OFFERINGS);
@@ -229,20 +250,19 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
             }
 
             setLoading(true);
-            setLoadingMessage("Offering Aether to the spirits...");
+            setLoadingMessage(`Offering ${cost} Aether to the spirits...`);
             
             try {
-                // 1. DEDUCT CREDITS
-                const hasCredits = await deductUserCredits(session.user.id, AI_COST);
+                // 1. DEDUCT CREDITS using dynamic cost
+                const hasCredits = await deductUserCredits(session.user.id, cost);
                 
                 if (!hasCredits) {
                     setLoading(false);
-                    setError("Insufficient Aether. Please visit the Store to replenish.");
+                    setError("Insufficient Aether.");
+                    setShowStoreLink(true); // Show purchase button
                     return;
                 }
 
-                // 2. ADVANCE
-                // For Voodoo, we simply unlock the path. The AI gen happens later at Step 4.
                 setLoading(false);
                 advanceStep();
 
@@ -311,16 +331,41 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
         }
     };
 
+    // --- ERROR COMPONENT with STORE LINK ---
+    const renderError = () => (
+        <div className="flex items-center justify-center h-full">
+            <div className="text-center text-red-400 p-6 bg-red-900/50 rounded-lg max-w-sm border border-red-500/50 shadow-xl">
+                <p className="font-bold text-lg mb-2">OFFERING REJECTED</p>
+                <p className="mb-6 text-sm text-red-200">{error}</p>
+                
+                {showStoreLink ? (
+                    <div className="flex flex-col gap-3">
+                        <Link href="/store" className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-amber-600 hover:bg-amber-500 text-black font-bold rounded transition-colors uppercase tracking-wider text-xs">
+                            <Coins size={16} /> Purchase Aether
+                        </Link>
+                        <button onClick={() => setError(null)} className="text-xs text-red-300 hover:text-white underline">
+                            Cancel
+                        </button>
+                    </div>
+                ) : (
+                    <button onClick={() => setError(null)} className="px-6 py-2 border border-red-500 rounded hover:bg-red-900/50 transition-colors uppercase tracking-widest text-xs">
+                        Try Again
+                    </button>
+                )}
+            </div>
+        </div>
+    );
+
     const renderContent = () => {
         if (loading) return <div className="flex items-center justify-center h-full"><LoadingSpinner title={loadingMessage || "Consulting the Spirits..."} /></div>;
-        if (error) return <div className="flex items-center justify-center h-full text-center text-red-400 p-4 bg-red-900/50 rounded-lg max-w-sm"><div className="space-y-4"><p className="font-bold">RITUAL INTERRUPTED</p><p>{error}</p><button onClick={() => setError(null)} className="px-4 py-2 border border-red-500 rounded hover:bg-red-900/50 transition-colors">Return</button></div></div>;
+        if (error) return renderError();
 
         if (step === 0) return <Step0_Crossroads onSelectPath={selectPath} />;
 
         if (path === 'hoodoo') {
             switch (step) {
                 case 1: return <HoodooStep1_Ancestors onNext={advanceStep} />;
-                case 2: return <HoodooStep2_Petition petition={petition} setPetition={setPetition} onNext={handleHoodooPetitionComplete} />;
+                case 2: return <HoodooStep2_Petition cost={cost} petition={petition} setPetition={setPetition} onNext={handleHoodooPetitionComplete} />;
                 case 3: return <HoodooStep3_FindVerse onOpenReader={handleOpenPsalmReader} selections={hoodooPsalmSelections} selectedPsalm={selectedPsalm} isPsalmLit={isPsalmLit} onNext={handleHoodooMateriaLogic} />;
                 case 4: return <HoodooStep4_GatherMateria selections={hoodooMateriaSelections} onNext={advanceStep} />;
                 case 5: return <HoodooStep5_FixJar key={`charge-hoodoo-${chargingIndex}`} onNext={handleChargeNext} selections={hoodooMateriaSelections} index={chargingIndex} />;
@@ -334,7 +379,7 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
         if (path === 'voodoo') {
             switch (step) {
                 case 1: return <VoodooStep1_OpenGate onNext={advanceStep} />;
-                case 2: return <VoodooStep2_StateNeed petition={petition} setPetition={setPetition} onNext={handleVoodooPetitionComplete} />;
+                case 2: return <VoodooStep2_StateNeed cost={cost} petition={petition} setPetition={setPetition} onNext={handleVoodooPetitionComplete} />;
                 case 3: return <VoodooStep3_ServeLwa selectedLwa={selectedLwa} onSelect={setSelectedLwa} onNext={handleVoodooLwaLogic} mode={mode} />;
                 case 4: return <VoodooStep4_PrepareOffering selections={voodooOfferingSelections} onNext={advanceStep} />;
                 case 5: return <VoodooStep5_MakeOffering key={`charge-voodoo-${chargingIndex}`} onNext={handleChargeNext} selections={voodooOfferingSelections} index={chargingIndex} />;
@@ -603,7 +648,8 @@ const HoodooStep1_Ancestors: React.FC<StepComponentProps> = ({ onNext }) => {
     );
 };
 
-const HoodooStep2_Petition: React.FC<{ petition: string; setPetition: (val: string) => void; onNext: (mode: RitualMode) => void; }> = ({ petition, setPetition, onNext }) => (
+// UPDATED: Added 'cost' prop to display price
+const HoodooStep2_Petition: React.FC<{ cost: number; petition: string; setPetition: (val: string) => void; onNext: (mode: RitualMode) => void; }> = ({ cost, petition, setPetition, onNext }) => (
     <StepContainer stageTitle="Write Your Petition" instruction="State your intention for this Work. Be clear and direct.">
         <div className="relative w-full h-full max-w-md mx-auto flex flex-col items-center justify-center gap-4">
             <div className="relative w-full aspect-square @container">
@@ -624,7 +670,7 @@ const HoodooStep2_Petition: React.FC<{ petition: string; setPetition: (val: stri
                     <Skull className="w-5 h-5" />
                     <div className="text-left relative z-10">
                         <div className="font-serif flex items-center gap-2">Rootworker Consult <Sparkles size={12}/></div>
-                        <div className="text-xs text-purple-300">Custom scripture & ingredients. 3 Credits.</div>
+                        <div className="text-xs text-purple-300">Custom scripture & ingredients. {cost} Credits.</div>
                     </div>
                 </button>
             </div>
@@ -756,7 +802,8 @@ const VoodooStep1_OpenGate: React.FC<StepComponentProps> = ({ onNext }) => {
     );
 };
 
-const VoodooStep2_StateNeed: React.FC<{ petition: string; setPetition: (val: string) => void; onNext: (mode: RitualMode) => void; }> = ({ petition, setPetition, onNext }) => (
+// UPDATED: Added 'cost' prop to display price
+const VoodooStep2_StateNeed: React.FC<{ cost: number; petition: string; setPetition: (val: string) => void; onNext: (mode: RitualMode) => void; }> = ({ cost, petition, setPetition, onNext }) => (
     <StepContainer stageTitle="State Your Need" instruction="Clearly present your petition to the spirits.">
         <div className="relative w-full h-full max-w-md mx-auto flex flex-col items-center justify-center gap-4">
              <div className="relative w-full aspect-square @container">
@@ -777,7 +824,7 @@ const VoodooStep2_StateNeed: React.FC<{ petition: string; setPetition: (val: str
                     <Skull className="w-5 h-5" />
                     <div className="text-left relative z-10">
                         <div className="font-serif flex items-center gap-2">Divine the Lwa <Sparkles size={12}/></div>
-                        <div className="text-xs text-purple-300">Consult the spirits. 3 Credits.</div>
+                        <div className="text-xs text-purple-300">Consult the spirits. {cost} Credits.</div>
                     </div>
                 </button>
             </div>
