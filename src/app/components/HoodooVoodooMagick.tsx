@@ -4,7 +4,6 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Session } from '@/lib/types';
-// THE FIX: Added deductUserCredits to imports
 import { generateHoodooVoodooWork, saveSpell, deductUserCredits } from '@/lib/services/geminiService'; 
 import MagickalBackLink from './MagickalBackLink';
 import RoomsButton from './RoomsButton';
@@ -130,7 +129,6 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
 
     // --- HOODOO LOGIC HANDLERS ---
     
-    // THE FIX: Added credit deduction logic here
     const handleHoodooPetitionComplete = async (selectedMode: RitualMode) => {
         setMode(selectedMode);
         if (selectedMode === 'standard') {
@@ -139,29 +137,52 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
             advanceStep(); 
         } else {
             // AI Mode: Deduct credits before proceeding
-            if (session?.user?.id) {
-                setLoading(true);
-                setLoadingMessage("Offering Aether to the spirits...");
+            if (!session?.user?.id) {
+                setError("You must be logged in to access the Rootworker.");
+                return;
+            }
+
+            setLoading(true);
+            setLoadingMessage("Offering Aether to the spirits...");
+            
+            try {
+                // 1. DEDUCT CREDITS
                 const hasCredits = await deductUserCredits(session.user.id, AI_COST);
                 
                 if (!hasCredits) {
                     setLoading(false);
-                    setError("Insufficient Aether. Please acquire more credits in the Store.");
+                    setError("Insufficient Aether. Please visit the Store to replenish.");
                     return;
                 }
+
+                // 2. PROCEED TO GENERATION
+                // We await this to ensure the loading state persists until data is ready
+                await handleHoodooPsalmSearch();
+                
+            } catch (err) {
+                console.error("Hoodoo Transaction Error:", err);
+                setLoading(false);
+                setError("The spirits rejected the offering (Network Error). Please try again.");
             }
-            handleHoodooPsalmSearch();
         }
     };
 
     const handleHoodooPsalmSearch = async () => {
-        if (!petition) { setError("You must write a petition first."); return; }
-        setLoading(true); setLoadingMessage("Consulting the scriptures...");
+        if (!petition) { setError("You must write a petition first."); setLoading(false); return; }
+        
+        // Ensure loading is ON (might be redundant but safe)
+        setLoading(true); 
+        setLoadingMessage("Consulting the scriptures...");
+        
         try {
             const result = await generateHoodooVoodooWork('hoodoo', 3, { petition });
             setHoodooPsalmSelections(result.selections);
             advanceStep();
-        } catch (err: any) { setError(err.message); } finally { setLoading(false); }
+        } catch (err: any) { 
+            setError(err.message || "Failed to retrieve psalms."); 
+        } finally { 
+            setLoading(false); 
+        }
     };
 
     const handleHoodooMateriaLogic = async () => {
@@ -194,7 +215,6 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
 
     // --- VOODOO LOGIC HANDLERS ---
     
-    // THE FIX: Added credit deduction logic here
     const handleVoodooPetitionComplete = async (selectedMode: RitualMode) => {
         setMode(selectedMode);
         if (selectedMode === 'standard') {
@@ -202,19 +222,35 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
             setVoodooOfferingSelections(STANDARD_VOODOO_OFFERINGS);
             advanceStep();
         } else {
-            // AI Mode: Deduct credits before proceeding
-            if (session?.user?.id) {
-                setLoading(true);
-                setLoadingMessage("Offering Aether to the spirits...");
+            // AI Mode: Deduct credits
+            if (!session?.user?.id) {
+                setError("You must be logged in to consult the Lwa.");
+                return;
+            }
+
+            setLoading(true);
+            setLoadingMessage("Offering Aether to the spirits...");
+            
+            try {
+                // 1. DEDUCT CREDITS
                 const hasCredits = await deductUserCredits(session.user.id, AI_COST);
                 
                 if (!hasCredits) {
                     setLoading(false);
-                    setError("Insufficient Aether. Please acquire more credits in the Store.");
+                    setError("Insufficient Aether. Please visit the Store to replenish.");
                     return;
                 }
+
+                // 2. ADVANCE
+                // For Voodoo, we simply unlock the path. The AI gen happens later at Step 4.
+                setLoading(false);
+                advanceStep();
+
+            } catch (err) {
+                 console.error("Voodoo Transaction Error:", err);
+                 setLoading(false);
+                 setError("The offering was rejected (Network Error). Please try again.");
             }
-            advanceStep();
         }
     };
 
@@ -277,7 +313,7 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
 
     const renderContent = () => {
         if (loading) return <div className="flex items-center justify-center h-full"><LoadingSpinner title={loadingMessage || "Consulting the Spirits..."} /></div>;
-        if (error) return <div className="flex items-center justify-center h-full text-center text-red-400 p-4 bg-red-900/50 rounded-lg"><p>{error}</p><button onClick={() => setError(null)} className="mt-2 underline font-bold">Try Again</button></div>;
+        if (error) return <div className="flex items-center justify-center h-full text-center text-red-400 p-4 bg-red-900/50 rounded-lg max-w-sm"><div className="space-y-4"><p className="font-bold">RITUAL INTERRUPTED</p><p>{error}</p><button onClick={() => setError(null)} className="px-4 py-2 border border-red-500 rounded hover:bg-red-900/50 transition-colors">Return</button></div></div>;
 
         if (step === 0) return <Step0_Crossroads onSelectPath={selectPath} />;
 
