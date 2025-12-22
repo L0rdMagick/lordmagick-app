@@ -6,9 +6,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Activity, X, Brain, Network, Lock, Zap, Sparkles, HardDrive, Check, Save, Terminal
 } from 'lucide-react';
-import { generateElectricNeuralLink, saveSpell, NeuralLinkResult } from '@/lib/services/geminiService';
+import { generateElectricNeuralLink, saveSpell } from '@/lib/services/geminiService';
+// FIX: Import Type from the correct file
+import type { NeuralLinkResult, Session } from '@/lib/types';
 import { useAudioEngine, useParticleSystem } from './hooks';
-import type { Session } from '@/lib/types';
 
 // ==========================================
 // SUB-COMPONENTS

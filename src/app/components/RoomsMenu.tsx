@@ -14,11 +14,12 @@ const uncialAntiqua = Uncial_Antiqua({ subsets: ['latin'], weight: ['400'] });
 
 const navLinks = [
   { name: "Grand Hall", href: "/hall" },
+  { name: "The Grimoire", href: "/grimoire" }, // NEW
   { name: "The Spell Room", href: "/spell-room" },
   { name: "Oracle Room", href: "/oracle-room" },
   { name: "The School", href: "/the-magick-psychic-school" },
   { name: "Magickal Tools", href: "/magickal-tools" },
-  { name: "Aether Store", href: "/store" }, // Added Store Link
+  { name: "Aether Store", href: "/store" },
 ];
 
 export default function RoomsMenu() {
