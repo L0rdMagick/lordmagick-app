@@ -1,12 +1,11 @@
-// --- START OF FILE src/app/components/HoodooVoodooMagick.tsx ---
-/// <reference lib="dom" />
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Session } from '@/lib/types';
-import { generateHoodooVoodooWork, saveSpell } from '@/lib/services/geminiService'; 
+// THE FIX: Added deductUserCredits to imports
+import { generateHoodooVoodooWork, saveSpell, deductUserCredits } from '@/lib/services/geminiService'; 
 import MagickalBackLink from './MagickalBackLink';
 import RoomsButton from './RoomsButton';
 import LoadingSpinner from './LoadingSpinner';
@@ -19,6 +18,7 @@ const ASSET_PATH = "/images/Spells/HooDoo Voo Doo";
 const CHARGE_DURATION = 3000; // 3 seconds
 const FADE_DURATION = 0.8;
 const SENDING_DURATION = 13000; // 13 seconds
+const AI_COST = 3; // Cost for AI features
 
 // --- Geometry Configuration for Ingredients ---
 const CONTAINER_GEOMETRY = {
@@ -129,13 +129,27 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
     };
 
     // --- HOODOO LOGIC HANDLERS ---
-    const handleHoodooPetitionComplete = (selectedMode: RitualMode) => {
+    
+    // THE FIX: Added credit deduction logic here
+    const handleHoodooPetitionComplete = async (selectedMode: RitualMode) => {
         setMode(selectedMode);
         if (selectedMode === 'standard') {
             setHoodooPsalmSelections(['Psalm 23', 'Psalm 91']);
             setHoodooMateriaSelections(STANDARD_HOODOO_MATERIA);
             advanceStep(); 
         } else {
+            // AI Mode: Deduct credits before proceeding
+            if (session?.user?.id) {
+                setLoading(true);
+                setLoadingMessage("Offering Aether to the spirits...");
+                const hasCredits = await deductUserCredits(session.user.id, AI_COST);
+                
+                if (!hasCredits) {
+                    setLoading(false);
+                    setError("Insufficient Aether. Please acquire more credits in the Store.");
+                    return;
+                }
+            }
             handleHoodooPsalmSearch();
         }
     };
@@ -179,13 +193,27 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
     };
 
     // --- VOODOO LOGIC HANDLERS ---
-    const handleVoodooPetitionComplete = (selectedMode: RitualMode) => {
+    
+    // THE FIX: Added credit deduction logic here
+    const handleVoodooPetitionComplete = async (selectedMode: RitualMode) => {
         setMode(selectedMode);
         if (selectedMode === 'standard') {
             setSelectedLwa('Papa Legba');
             setVoodooOfferingSelections(STANDARD_VOODOO_OFFERINGS);
             advanceStep();
         } else {
+            // AI Mode: Deduct credits before proceeding
+            if (session?.user?.id) {
+                setLoading(true);
+                setLoadingMessage("Offering Aether to the spirits...");
+                const hasCredits = await deductUserCredits(session.user.id, AI_COST);
+                
+                if (!hasCredits) {
+                    setLoading(false);
+                    setError("Insufficient Aether. Please acquire more credits in the Store.");
+                    return;
+                }
+            }
             advanceStep();
         }
     };
@@ -977,4 +1005,3 @@ const PsalmReader: React.FC<{isOpen: boolean; onClose: () => void; psalmName: st
 };
 
 export default HoodooVoodooMagick;
-// --- END OF FILE src/app/components/HoodooVoodooMagick.tsx ---
