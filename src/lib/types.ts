@@ -1,5 +1,3 @@
-// --- START OF FILE src/lib/types.ts ---
-
 import type { Session } from '@supabase/supabase-js';
 
 export interface FormData {
@@ -37,6 +35,8 @@ export interface UserProfile {
 }
 
 // --- Chaos Magick Types ---
+export type SpellTradition = 'WICCA' | 'HOODOO' | 'VOODOO' | 'ELECTRIC' | 'CHAOS' | 'LOVE';
+
 export interface SpellFormData {
   outcome: string;
   target: string;
@@ -51,7 +51,7 @@ export interface GeneratedSpell {
     title: string;
     intention: string;
     incantation: string;
-    sigilBase64: string; // Reverted to required to fix SpellGenerator build
+    sigilBase64: string; 
     sigil_url?: string;
     instructions?: string[];
     sigil_description?: string;
@@ -66,28 +66,58 @@ export interface Spell {
     incantation: string;
     sigil_url?: string;
     element?: string;
+    ritual_data?: any; 
+    status?: string;
+    tradition?: SpellTradition;
 }
 
-// --- Wiccan Spell Types (UPDATED) ---
+// --- Wiccan Spell Types ---
 export interface WiccanSpellFormData {
   intention: string;
   focalPoint: string;
   moonPhase: string;
-  situation?: string; // Added to support "Deep Weaving" (AI) context
+  situation?: string; 
 }
 
 export interface WiccanIngredient {
   name: string;
-  activation_phrase?: string; // Kept for backward compatibility
-  incantation?: string;       // Added: Required for the new AI ritual flow
+  activation_phrase?: string; 
+  incantation?: string;      
 }
 
 export interface GeneratedWiccanSpell {
   title: string;
-  incantation?: string; // Optional general incantation
+  incantation?: string; 
   symbolic_ingredients: WiccanIngredient[];
   central_chant: string;
   affirmation: string;
+}
+
+// --- Love Spell Types (MOVED HERE) ---
+export interface GeneratedLoveSpell {
+    incantation: string[];
+    ingredients: Array<{
+        name: string;
+        icon: string;
+        desc: string;
+        color: string;
+    }>;
+}
+
+// --- Electric Magick Types (MOVED HERE) ---
+export interface NeuralLinkResult {
+    incantation1: string;
+    incantation2: string;
+    finalResult: string;
+}
+
+export interface RealityPatchRitualData {
+    consecration: string;
+    grounding: string;
+    etching: string;
+    ancientTongue: string;
+    integration: string;
+    charge: string;
 }
 
 // --- HOODOO & VOODOO TYPES ---
@@ -123,4 +153,3 @@ export type AppView =
   | { type: 'spell_room' };
 
 export type { Session };
-// --- END OF FILE ---

@@ -5,10 +5,11 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Session } from '@/lib/types';
 import { generateHoodooVoodooWork, saveSpell } from '@/lib/services/geminiService';
-// ECONOMY HOOK
+// ECONOMY IMPORTS
 import { useAetherEconomy } from '@/hooks/useAetherEconomy';
+import { buySpellSlots } from '@/lib/services/economyService'; // NEW
 import Link from 'next/link';
-import { Coins, AlertTriangle } from 'lucide-react';
+import { Coins, AlertTriangle, BookOpen, Lock } from 'lucide-react';
 
 import MagickalBackLink from './MagickalBackLink';
 import RoomsButton from './RoomsButton';
@@ -82,7 +83,7 @@ type GeometryVariant = keyof typeof CONTAINER_GEOMETRY;
 
 
 // ==========================================
-// SUB-COMPONENTS (Defined FIRST to fix errors)
+// SUB-COMPONENTS
 // ==========================================
 
 const RitualButton: React.FC<RitualButtonProps> = ({ onClick, children, className, disabled }) => (
@@ -248,7 +249,9 @@ const HoodooStep1_Ancestors: React.FC<StepComponentProps> = ({ onNext }) => {
                 {!isLit ? (
                      <motion.div key="unlit" className="absolute inset-0" exit={{ opacity: 0 }}>
                         <Image src={`${ASSET_PATH}/hoodoo-ancestor-candle-unlit.png`} alt="Unlit Candle" layout="fill" objectFit="contain" />
-                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-3/4 h-2 bg-black/30 rounded-full overflow-hidden"><motion.div className="h-full bg-amber-400" initial={{width: '0%'} as any} animate={{width: `${holdProgress}%`} as any} transition={{duration: 0.05}}/></div>
+                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-3/4 h-2 bg-black/30 rounded-full overflow-hidden">
+                            <motion.div className="h-full bg-amber-400" initial={{width: '0%'} as any} animate={{width: `${holdProgress}%`} as any} transition={{duration: 0.05}}/>
+                        </div>
                      </motion.div>
                 ) : (
                     <motion.div key="lit" className="absolute inset-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
@@ -348,13 +351,7 @@ const HoodooStep5_FixJar: React.FC<{ onNext: () => void, selections: MateriaSele
 const HoodooStep6_SealJar: React.FC<{ onNext: () => void, selections: MateriaSelection[] }> = ({ onNext, selections }) => {
     const [isSealed, setIsSealed] = useState(false);
     const [isSent, setIsSent] = useState(false);
-    
-    const handleSeal = () => {
-        setIsSealed(true);
-        playSound('/audio/sfx-chaos-explosion.mp3', 0.5).play();
-        setIsSent(true);
-        setTimeout(onNext, 2500);
-    };
+    const handleSeal = () => { setIsSealed(true); playSound('/audio/sfx-chaos-explosion.mp3', 0.5).play(); setIsSent(true); setTimeout(onNext, 2500); };
 
     return(
         <StepContainer stageTitle="Seal the Work" instruction="I seal this work in the name of the Father, Son, and Holy Ghost. Awake and do my bidding.">
@@ -592,6 +589,33 @@ const PsalmReader: React.FC<{isOpen: boolean; onClose: () => void; psalmName: st
     );
 };
 
+// --- SLOT PURCHASE MODAL ---
+const SlotPurchaseModal = ({ isOpen, onClose, onPurchase, isProcessing }: { isOpen: boolean, onClose: () => void, onPurchase: () => void, isProcessing: boolean }) => {
+    if (!isOpen) return null;
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-6 animate-in fade-in">
+            <div className="bg-[#1a1a2e] border border-amber-500/50 rounded-xl p-8 max-w-sm w-full text-center shadow-[0_0_50px_rgba(251,191,36,0.2)]">
+                <BookOpen size={48} className="text-amber-400 mx-auto mb-4" />
+                <h3 className="text-xl font-serif text-amber-100 mb-2">Grimoire Full</h3>
+                <p className="text-gray-400 text-sm mb-6">
+                    Your book of shadows has reached its capacity. Expand your grimoire by 5 slots to continue saving your workings.
+                </p>
+                
+                <div className="flex flex-col gap-3">
+                    <button 
+                        onClick={onPurchase} 
+                        disabled={isProcessing}
+                        className="w-full flex items-center justify-center gap-2 py-3 bg-amber-700 hover:bg-amber-600 text-white font-bold rounded uppercase tracking-wider text-xs transition-colors disabled:opacity-50"
+                    >
+                        {isProcessing ? "Expanding..." : "Expand Storage (-10 Aether)"}
+                    </button>
+                    <button onClick={onClose} className="text-gray-500 hover:text-white text-xs underline">Cancel</button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 
 // ==========================================
 // MAIN COMPONENT
@@ -606,6 +630,8 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
     const [loading, setLoading] = useState(false);
     const [loadingMessage, setLoadingMessage] = useState('');
     const [appError, setAppError] = useState<string | null>(null);
+    const [showSlotModal, setShowSlotModal] = useState(false);
+    const [slotLoading, setSlotLoading] = useState(false);
 
     // Economy Hook
     const { 
@@ -800,22 +826,59 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
         }
     };
 
+    // --- SAVING LOGIC (With Slot Check) ---
     const handleSaveToGrimoire = async () => {
-        if (isSaved) return;
+        if (isSaved || !session?.user?.id) return;
         setIsSaving(true);
+        setAppError(null);
+        
         try {
-            await saveSpell(session?.user?.id || 'anon', {
+            // Prepare Ritual Data for Deep Save
+            const ritualData = {
+                path,
+                petition,
+                psalm: selectedPsalm,
+                lwa: selectedLwa,
+                materia: path === 'hoodoo' ? hoodooMateriaSelections : voodooOfferingSelections,
+                affirmation: finalAffirmation,
+                timestamp: new Date().toISOString()
+            };
+
+            await saveSpell(session.user.id, {
                 name: `${path === 'hoodoo' ? 'Hoodoo' : 'Voodoo'} Work: ${petition.substring(0, 30)}...`,
                 intention: petition,
                 incantation: finalAffirmation,
-                element: path === 'hoodoo' ? 'Earth' : 'Spirit'
+                element: path === 'hoodoo' ? 'Earth' : 'Spirit',
+                ritual_data: ritualData
             });
+            
             setIsSaved(true);
             playSound('/audio/sfx-chaos-activate.mp3', 0.5).play();
-        } catch (e) {
+        } catch (e: any) {
             console.error(e);
+            if (e.message === 'GRIMOIRE_FULL') {
+                setShowSlotModal(true);
+            } else {
+                setAppError("Failed to save to Grimoire.");
+            }
         } finally {
             setIsSaving(false);
+        }
+    };
+
+    const handleBuySlots = async () => {
+        if (!session?.user?.id) return;
+        setSlotLoading(true);
+        const success = await buySpellSlots(session.user.id);
+        setSlotLoading(false);
+        
+        if (success) {
+            setShowSlotModal(false);
+            // Retry save automatically
+            handleSaveToGrimoire();
+        } else {
+            setAppError("Insufficient Aether to expand Grimoire.");
+            setShowSlotModal(false);
         }
     };
 
@@ -899,6 +962,14 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
                 psalmText={PSALM_DATABASE[selectedPsalm] || "Scripture not found in local database."} 
                 onBless={() => { setIsPsalmLit(true); setPsalmReaderOpen(false); }}
             />
+            
+            <SlotPurchaseModal 
+                isOpen={showSlotModal} 
+                onClose={() => setShowSlotModal(false)}
+                onPurchase={handleBuySlots}
+                isProcessing={slotLoading}
+            />
+
             <main 
                 onContextMenu={(e) => e.preventDefault()}
                 className="relative h-screen w-screen bg-black bg-cover bg-center flex flex-col transition-all duration-1000 select-none" 

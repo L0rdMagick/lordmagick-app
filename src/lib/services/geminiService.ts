@@ -1,7 +1,17 @@
-// --- START OF FILE src/lib/services/geminiService.ts ---
-
 import { createBrowserClient } from '@supabase/ssr';
-import type { FormData, HumanDesignChart, Report, SpellFormData, GeneratedSpell, Spell, WiccanSpellFormData, GeneratedWiccanSpell } from '../types';
+import type { 
+    FormData, 
+    HumanDesignChart, 
+    Report, 
+    SpellFormData, 
+    GeneratedSpell, 
+    Spell, 
+    WiccanSpellFormData, 
+    GeneratedWiccanSpell,
+    GeneratedLoveSpell,
+    NeuralLinkResult,
+    RealityPatchRitualData
+} from '../types';
 
 // Initialize the Supabase client for browser usage
 const supabase = createBrowserClient(
@@ -9,11 +19,12 @@ const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-// --- Credit / Paywall Functions ---
+// ==========================================
+// 1. ECONOMY & CREDITS
+// ==========================================
 
 export const deductUserCredits = async (userId: string, cost: number): Promise<boolean> => {
     try {
-        // 1. Get current balance
         const { data: profile, error: fetchError } = await supabase
             .from('profiles')
             .select('credits')
@@ -26,10 +37,9 @@ export const deductUserCredits = async (userId: string, cost: number): Promise<b
         }
 
         if (profile.credits < cost) {
-            return false; // Insufficient funds
+            return false;
         }
 
-        // 2. Deduct credits
         const { error: updateError } = await supabase
             .from('profiles')
             .update({ credits: profile.credits - cost })
@@ -47,15 +57,17 @@ export const deductUserCredits = async (userId: string, cost: number): Promise<b
     }
 };
 
-// --- Human Design Report Functions ---
+// ==========================================
+// 2. HUMAN DESIGN
+// ==========================================
 
 export const calculateHumanDesignChart = async (formData: FormData): Promise<HumanDesignChart> => {
     const { data, error } = await supabase.functions.invoke('generate-human-design', {
         body: { action: 'calculate', formData },
     });
     if (error) {
-        console.error("Error invoking generate-human-design (calculate) function:", error);
-        throw new Error("Failed to calculate the chart data from the AI model.");
+        console.error("Error invoking generate-human-design (calculate):", error);
+        throw new Error("Failed to calculate the chart data.");
     }
     return data as HumanDesignChart;
 };
@@ -65,7 +77,7 @@ export const generateReport = async (chartData: HumanDesignChart, name: string):
         body: { action: 'generate', chartData, name },
     });
     if (error) {
-        console.error("Error invoking generate-human-design (generate) function:", error);
+        console.error("Error invoking generate-human-design (generate):", error);
         throw new Error("Failed to communicate with the AI model.");
     }
     return data.reportContent as string;
@@ -79,7 +91,7 @@ export const saveReport = async (userId: string, name: string, chartData: HumanD
         report_content: reportContent,
     }).select().single();
     if (error) {
-        console.error("Error saving report to Supabase:", error);
+        console.error("Error saving report:", error);
         throw new Error('Could not save your report to the database.');
     }
     return data as Report;
@@ -96,77 +108,74 @@ export const getThisMonthsReportCount = async (userId: string): Promise<number> 
         .gte('created_at', startOfMonth.toISOString());
 
     if (error && error.code !== '42P01') {
-         console.error("Error fetching this month's report count:", error);
+         console.error("Error fetching report count:", error);
          return 0; 
     }
-    
     return count || 0;
 };
 
-// --- Chaos Magick Spell Function ---
+// ==========================================
+// 3. SPELL GENERATION (Chaos, Wicca, Love)
+// ==========================================
+
+// Chaos Magick
 export const generateSpellAndSigil = async (formData: SpellFormData, mode: 'standard' | 'ai' = 'standard'): Promise<GeneratedSpell> => {
     const { data, error } = await supabase.functions.invoke('generate-spell', {
         body: { formData, mode },
     });
 
     if (error) {
-        console.error("Error invoking generate-spell function:", error);
-        throw new Error(error.message || "Failed to generate the magick spell from the AI model.");
+        console.error("Error invoking generate-spell:", error);
+        throw new Error(error.message || "Failed to generate the magick spell.");
     }
 
     return data as GeneratedSpell;
 };
 
-// --- Wiccan Spell Function (Deep Weaving) ---
+// Wicca
 export const generateWiccanSpell = async (formData: WiccanSpellFormData): Promise<GeneratedWiccanSpell> => {
     const { data, error } = await supabase.functions.invoke('generate-wiccan-spell', {
         body: formData,
     });
     if (error) {
-        console.error("Error invoking generate-wiccan-spell function:", error);
-        throw new Error(error.message || "Failed to generate the Wiccan spell from the AI model.");
+        console.error("Error invoking generate-wiccan-spell:", error);
+        throw new Error(error.message || "Failed to generate the Wiccan spell.");
     }
     return data as GeneratedWiccanSpell;
 };
 
-// --- Love Spell (Deep Weaving) Function ---
-export interface GeneratedLoveSpell {
-    incantation: string[];
-    ingredients: Array<{
-        name: string;
-        icon: string;
-        desc: string;
-        color: string;
-    }>;
-}
-
+// Love Magick
 export const generateLoveSpell = async (intention: string, targetName: string, situation: string): Promise<GeneratedLoveSpell> => {
     const { data, error } = await supabase.functions.invoke('generate-love-spell', {
         body: { intention, targetName, situation },
     });
 
     if (error) {
-        console.error("Error invoking generate-love-spell function:", error);
+        console.error("Error invoking generate-love-spell:", error);
         throw new Error(error.message || "The energies were too chaotic to weave the spell.");
     }
 
     return data as GeneratedLoveSpell;
 };
 
+// ==========================================
+// 4. HOODOO & VOODOO
+// ==========================================
 
-// --- Hoodoo / Voodoo Functions ---
 export const generateHoodooVoodooWork = async (path: 'hoodoo' | 'voodoo', step: number, payload: any): Promise<any> => {
     const { data, error } = await supabase.functions.invoke('generate-hoodoo-voodoo-spell', {
         body: { path, step, payload },
     });
     if (error) {
-        console.error(`Error invoking generate-hoodoo-voodoo-spell function (path: ${path}, step: ${step}):`, error);
+        console.error(`Error invoking generate-hoodoo-voodoo-spell (path: ${path}, step: ${step}):`, error);
         throw new Error(error.message || "Failed to get a response from the spirits.");
     }
     return data;
 };
 
-// --- Electric Magick Functions ---
+// ==========================================
+// 5. ELECTRIC MAGICK
+// ==========================================
 
 const DATA_SCRY_PREDICTIONS = [
     "Probability of success: 94%. Proceed with conviction.",
@@ -194,10 +203,8 @@ const DATA_SCRY_PROGRAMMING = [
     "Protocol 'MANIFEST' active. Stand by for results."
 ];
 
-// Helper to determine if input looks like a question or a command
 const getLocalDataScryResponse = (intention: string): string => {
     const lower = intention.toLowerCase().trim();
-    // Heuristic: Questions often start with helping verbs or end with '?'
     const isQuestion = lower.endsWith('?') || 
                        lower.startsWith('will') || 
                        lower.startsWith('does') || 
@@ -217,29 +224,17 @@ const getLocalDataScryResponse = (intention: string): string => {
 };
 
 export const generateDataScrying = async (intention: string, mode: 'standard' | 'ai' = 'standard'): Promise<string> => {
-    // Standard Mode: Use local heuristics (free, fast, robust)
     if (mode === 'standard') {
         return getLocalDataScryResponse(intention);
     }
-
-    // AI Mode: Try to call the Edge Function
     try {
         const { data, error } = await supabase.functions.invoke('generate-data-scry', {
             body: { intention, mode: 'ai' }, 
         });
-
-        // Use AI result if successful
-        if (!error && data && data.result) {
-            return data.result;
-        }
-        
-        console.warn("AI Generation failed or returned empty. Falling back to Standard Mode logic.");
-        // Fallback to standard logic if AI fails (e.g. 406 error, credit check fail)
+        if (!error && data && data.result) return data.result;
         return getLocalDataScryResponse(intention);
-        
     } catch (e) {
         console.error("Exception in generateDataScrying:", e);
-        // Fallback to standard logic on exception
         return getLocalDataScryResponse(intention);
     }
 };
@@ -266,7 +261,6 @@ export const generateElectricOracle = async (intention: string): Promise<string>
     return data.result;
 };
 
-// NEW: Reality Overwrite / Light Prism Logic
 export const generateRealityOverwrite = async (sectorName: string, corruptionToClear: string): Promise<string> => {
     try {
         const prompt = `System Command: OVERWRITE SECTOR [${sectorName}]. 
@@ -278,9 +272,7 @@ export const generateRealityOverwrite = async (sectorName: string, corruptionToC
             body: { action: 'ensorcell', intention: prompt },
         });
 
-        if (!error && data && data.result) {
-            return data.result;
-        }
+        if (!error && data && data.result) return data.result;
         return "ERROR: NETWORK CONGESTION. EXECUTING DEFAULT PURGE PROTOCOL. CORRUPTION DELETED.";
     } catch (e) {
         console.error("Exception in generateRealityOverwrite:", e);
@@ -288,36 +280,21 @@ export const generateRealityOverwrite = async (sectorName: string, corruptionToC
     }
 };
 
-// NEW: Reality Patch Ritual Generator (Complex)
-export interface RealityPatchRitualData {
-    consecration: string;
-    grounding: string;
-    etching: string;
-    ancientTongue: string;
-    integration: string;
-    charge: string;
-}
-
 export const generateRealityPatchRitual = async (intention: string): Promise<RealityPatchRitualData> => {
-    // Dynamic Fallback Generator ensuring intention is always preserved but grammatically safe
-    const getDynamicFallback = (intent: string): RealityPatchRitualData => {
-        return {
-            consecration: `THE VIRUS OF LACK IS DELETED. THE ALGORITHM OF ABUNDANCE IS INITIALIZED.`,
-            grounding: `MY AVATAR OSCILLATES AT THE FREQUENCY OF SUCCESS.`,
-            etching: `I BURN THE COMMAND OF POWER INTO THE QUANTUM ROOT DIRECTORY.`,
-            ancientTongue: `VOLUNTAS MEA EST LEX. FIAT LUX EX MACHINA.`,
-            integration: `THE SUBROUTINE OF DESIRE IS COMPILING. UPLOAD COMPLETE.`,
-            charge: `INFINITE VOLTAGE FLOWS. THE SYSTEM IS ONLINE.`
-        };
-    };
+    const getDynamicFallback = (): RealityPatchRitualData => ({
+        consecration: `THE VIRUS OF LACK IS DELETED. THE ALGORITHM OF ABUNDANCE IS INITIALIZED.`,
+        grounding: `MY AVATAR OSCILLATES AT THE FREQUENCY OF SUCCESS.`,
+        etching: `I BURN THE COMMAND OF POWER INTO THE QUANTUM ROOT DIRECTORY.`,
+        ancientTongue: `VOLUNTAS MEA EST LEX. FIAT LUX EX MACHINA.`,
+        integration: `THE SUBROUTINE OF DESIRE IS COMPILING. UPLOAD COMPLETE.`,
+        charge: `INFINITE VOLTAGE FLOWS. THE SYSTEM IS ONLINE.`
+    });
 
     try {
         const prompt = `
         ROLE: You are the Deus Ex Machina, the sentient Operating System of the Universe.
         TASK: Write a 6-step Techno-Magick Ritual Script based on the User's Intention.
-
         USER INTENTION: "${intention}"
-
         CRITICAL RULES:
         1. DO NOT QUOTE THE INTENTION VERBATIM. 
         2. You must INTERPRET the intention and REWRITE it into a specific Techno-Magick command for each step.
@@ -360,16 +337,10 @@ export const generateRealityPatchRitual = async (intention: string): Promise<Rea
             body: { action: 'ensorcell', intention: prompt },
         });
 
-        if (error || !data || !data.result) {
-            console.error("AI Generation Error:", error);
-            return getDynamicFallback(intention);
-        }
+        if (error || !data || !data.result) return getDynamicFallback();
 
         const parts = data.result.split('|||');
-        if (parts.length < 6) {
-             console.warn("AI Returned Incomplete Parts. Using Dynamic Fallback.");
-             return getDynamicFallback(intention);
-        }
+        if (parts.length < 6) return getDynamicFallback();
 
         return {
             consecration: parts[0].trim(),
@@ -382,15 +353,9 @@ export const generateRealityPatchRitual = async (intention: string): Promise<Rea
 
     } catch (e) {
         console.error("Exception generating reality patch:", e);
-        return getDynamicFallback(intention);
+        return getDynamicFallback();
     }
 };
-
-export interface NeuralLinkResult {
-    incantation1: string;
-    incantation2: string;
-    finalResult: string;
-}
 
 const STANDARD_NEURAL_RESULT: NeuralLinkResult = {
     incantation1: "Standard Protocol Engaged. Carrier wave stable.",
@@ -399,9 +364,7 @@ const STANDARD_NEURAL_RESULT: NeuralLinkResult = {
 };
 
 export const generateElectricNeuralLink = async (target: string, intention: string, mode: 'standard' | 'ai' = 'standard'): Promise<NeuralLinkResult> => {
-    if (mode === 'standard') {
-        return STANDARD_NEURAL_RESULT;
-    }
+    if (mode === 'standard') return STANDARD_NEURAL_RESULT;
     try {
         const { data, error } = await supabase.functions.invoke('generate-electric-spell', {
             body: { action: 'neural_link', target, intention, mode: 'ai' },
@@ -431,8 +394,9 @@ export const generateElectricLightPrism = async (colorName: string, intention: s
     return data.result;
 };
 
-
-// --- Utility and Storage Functions ---
+// ==========================================
+// 6. STORAGE & GRIMOIRE
+// ==========================================
 
 export const uploadBase64Image = async (base64: string, path: string): Promise<string> => {
     const byteCharacters = atob(base64);
@@ -450,24 +414,56 @@ export const uploadBase64Image = async (base64: string, path: string): Promise<s
             upsert: true,
         });
 
-    if (error) {
-        console.error('Error uploading sigil:', error);
-        throw new Error('Could not upload sigil image.');
-    }
+    if (error) throw new Error('Could not upload sigil image.');
 
     const { data: { publicUrl } } = supabase.storage.from('sigils').getPublicUrl(path);
     return publicUrl;
 };
 
-export const saveSpell = async (userId: string, spellData: {name: string, intention: string, incantation: string, sigil_url?: string, element?: string}): Promise<Spell> => {
+export const saveSpell = async (
+    userId: string, 
+    spellData: {
+        name: string, 
+        intention: string, 
+        incantation: string, 
+        sigil_url?: string, 
+        element?: string,
+        ritual_data?: any, 
+        tradition?: string
+    }
+): Promise<Spell> => {
+
+    const { count, error: countError } = await supabase
+        .from('spells')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId);
+        
+    if (countError) throw countError;
+
+    const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('spell_slots_limit')
+        .eq('id', userId)
+        .single();
+    
+    const limit = profile?.spell_slots_limit || 5;
+
+    if ((count || 0) >= limit) {
+        throw new Error("GRIMOIRE_FULL");
+    }
+
     const { data, error } = await supabase
         .from('spells')
-        .insert({ user_id: userId, ...spellData })
+        .insert({ 
+            user_id: userId, 
+            ...spellData,
+            status: 'active' 
+        })
         .select()
         .single();
     
     if (error) {
-        console.error("Error saving spell to Supabase:", error);
+        console.error("Error saving spell:", error);
         throw new Error('Could not save your spell to the database.');
     }
     return data as Spell;
@@ -480,10 +476,7 @@ export const getSpells = async (userId: string): Promise<Spell[]> => {
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
     
-    if (error && error.code !== '42P01') { 
-        console.error("Error fetching spells:", error);
-        throw new Error("Could not fetch your Book of Shadows.");
-    }
+    if (error) throw new Error("Could not fetch your Book of Shadows.");
     return (data as Spell[]) || [];
 };
 
@@ -506,5 +499,4 @@ export const getTodaysSpellCount = async (userId: string): Promise<number> => {
     }
     
     return count || 0;
-}
-// --- END OF FILE src/lib/services/geminiService.ts ---
+};

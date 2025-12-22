@@ -1,4 +1,5 @@
 import { createBrowserClient } from '@supabase/ssr';
+import type { Spell } from '../types';
 
 const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -11,22 +12,50 @@ interface SpellPayload {
     name: string;
     intention: string;
     incantation: string;
-    tradition: SpellTradition;
-    visual_assets?: any; // JSONB data (sigils, ingredients, colors)
+    tradition?: SpellTradition; // Made optional to support legacy calls or default
+    element?: string; // Support for Electric/Wicca elements
+    sigil_url?: string;
+    visual_assets?: any; 
     is_premium?: boolean;
+    ritual_data?: any; // NEW: For deep saving (ingredients, steps, etc)
 }
 
 interface ServitorPayload {
     name: string;
     master_name: string;
     purpose: string;
-    config: any; // JSONB appearance config
+    config: any; 
 }
 
 /**
- * Saves a spell to the universal grimoire.
+ * Saves a spell to the universal grimoire with slot checking.
  */
-export const saveSpellToGrimoire = async (userId: string, payload: SpellPayload) => {
+export const saveSpell = async (userId: string, payload: SpellPayload): Promise<Spell> => {
+    // 1. Check Slot Limits
+    const { count, error: countError } = await supabase
+        .from('spells')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId);
+
+    if (countError) throw countError;
+
+    const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('spell_slots_limit')
+        .eq('id', userId)
+        .single();
+
+    if (profileError && profileError.code !== 'PGRST116') {
+        console.error("Error fetching profile limits:", profileError);
+    }
+
+    const limit = profile?.spell_slots_limit || 5;
+
+    if ((count || 0) >= limit) {
+        throw new Error("GRIMOIRE_FULL");
+    }
+
+    // 2. Save Spell
     const { data, error } = await supabase
         .from('spells')
         .insert({
@@ -35,8 +64,13 @@ export const saveSpellToGrimoire = async (userId: string, payload: SpellPayload)
             intention: payload.intention,
             incantation: payload.incantation,
             tradition: payload.tradition,
+            element: payload.element,
+            sigil_url: payload.sigil_url,
             visual_assets: payload.visual_assets || {},
-            is_premium: payload.is_premium || false
+            is_premium: payload.is_premium || false,
+            // New Columns (Ensure these exist in DB)
+            ritual_data: payload.ritual_data || {}, 
+            status: 'active'
         })
         .select()
         .single();
@@ -45,7 +79,7 @@ export const saveSpellToGrimoire = async (userId: string, payload: SpellPayload)
         console.error("Error saving spell:", error);
         throw new Error("Failed to scribe spell into grimoire.");
     }
-    return data;
+    return data as Spell;
 };
 
 /**
@@ -74,7 +108,7 @@ export const saveServitorToGrimoire = async (userId: string, payload: ServitorPa
 /**
  * Fetch all spells for a user.
  */
-export const getMySpells = async (userId: string) => {
+export const getSpells = async (userId: string): Promise<Spell[]> => {
     const { data, error } = await supabase
         .from('spells')
         .select('*')
@@ -82,7 +116,7 @@ export const getMySpells = async (userId: string) => {
         .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return data;
+    return data as Spell[];
 };
 
 /**
