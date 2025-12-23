@@ -118,7 +118,6 @@ export const getThisMonthsReportCount = async (userId: string): Promise<number> 
 // 3. SPELL GENERATION (Chaos, Wicca, Love)
 // ==========================================
 
-// Chaos Magick
 export const generateSpellAndSigil = async (formData: SpellFormData, mode: 'standard' | 'ai' = 'standard'): Promise<GeneratedSpell> => {
     const { data, error } = await supabase.functions.invoke('generate-spell', {
         body: { formData, mode },
@@ -132,7 +131,6 @@ export const generateSpellAndSigil = async (formData: SpellFormData, mode: 'stan
     return data as GeneratedSpell;
 };
 
-// Wicca
 export const generateWiccanSpell = async (formData: WiccanSpellFormData): Promise<GeneratedWiccanSpell> => {
     const { data, error } = await supabase.functions.invoke('generate-wiccan-spell', {
         body: formData,
@@ -144,7 +142,6 @@ export const generateWiccanSpell = async (formData: WiccanSpellFormData): Promis
     return data as GeneratedWiccanSpell;
 };
 
-// Love Magick
 export const generateLoveSpell = async (intention: string, targetName: string, situation: string): Promise<GeneratedLoveSpell> => {
     const { data, error } = await supabase.functions.invoke('generate-love-spell', {
         body: { intention, targetName, situation },
@@ -205,16 +202,7 @@ const DATA_SCRY_PROGRAMMING = [
 
 const getLocalDataScryResponse = (intention: string): string => {
     const lower = intention.toLowerCase().trim();
-    const isQuestion = lower.endsWith('?') || 
-                       lower.startsWith('will') || 
-                       lower.startsWith('does') || 
-                       lower.startsWith('do') || 
-                       lower.startsWith('is') || 
-                       lower.startsWith('should') ||
-                       lower.startsWith('can') ||
-                       lower.startsWith('what') ||
-                       lower.startsWith('when') ||
-                       lower.startsWith('how');
+    const isQuestion = lower.endsWith('?') || lower.startsWith('will') || lower.startsWith('does') || lower.startsWith('do') || lower.startsWith('is') || lower.startsWith('should') || lower.startsWith('can') || lower.startsWith('what') || lower.startsWith('when') || lower.startsWith('how');
     
     if (isQuestion) {
         return DATA_SCRY_PREDICTIONS[Math.floor(Math.random() * DATA_SCRY_PREDICTIONS.length)];
@@ -263,10 +251,7 @@ export const generateElectricOracle = async (intention: string): Promise<string>
 
 export const generateRealityOverwrite = async (sectorName: string, corruptionToClear: string): Promise<string> => {
     try {
-        const prompt = `System Command: OVERWRITE SECTOR [${sectorName}]. 
-        Detected Corruption: "${corruptionToClear}". 
-        Task: Generate a short, authoritative, techno-magickal command string (incantation) to purge this corruption and rewrite the code for good fortune. 
-        Style: Cyberpunk, Divine Code, Subatomic Programming. Max 2 sentences.`;
+        const prompt = `System Command: OVERWRITE SECTOR [${sectorName}]. Detected Corruption: "${corruptionToClear}". Task: Generate a short, authoritative, techno-magickal command string (incantation) to purge this corruption and rewrite the code for good fortune. Style: Cyberpunk, Divine Code, Subatomic Programming. Max 2 sentences.`;
 
         const { data, error } = await supabase.functions.invoke('generate-electric-spell', {
             body: { action: 'ensorcell', intention: prompt },
@@ -301,35 +286,13 @@ export const generateRealityPatchRitual = async (intention: string): Promise<Rea
         3. If the user says "I want money", do NOT say "Target: Money". Say "I PURGE THE POVERTY DAEMON. THE GOLDEN PROTOCOL IS LIVE."
         4. Style: Cyberpunk, Divine Code, Subatomic Programming.
         5. Length: Short, punchy, authoritative. Max 12 words per step.
-        
         GENERATE 6 STRINGS SEPARATED BY "|||":
-
-        1. CONSECRATION (English):
-           - Action: Deleting the specific "virus" (obstacle) related to the intention.
-           - Example: "I ERASE THE HEARTBREAK VIRUS. THE LOVE BUFFER IS CLEARED."
-
-        2. GROUNDING (English):
-           - Action: Syncing the user's avatar/soul to the specific frequency of the goal.
-           - Example: "MY SOUL DOWNLOADS THE RESONANCE OF A SOULMATE."
-
-        3. ETCHING (English + Tech):
-           - Action: Burning the specific command into the source code/reality.
-           - Example: "I BURN THE CODE OF ETERNAL ROMANCE INTO THE QUANTUM ROOT."
-
-        4. ANCIENT TONGUE (PURE LATIN + TECHNO-LATIN):
-           - Action: The Spell Itself.
-           - STRICTLY NO ENGLISH.
-           - Translate the essence of the intention into authoritative Latin.
-           - Example: "AMOR AETERNUS EX MACHINA. VOLUNTAS MEA."
-
-        5. INTEGRATION (English):
-           - Action: Dropping the spell into the void core.
-           - Example: "I RELEASE THE ALGORITHM OF PASSION. IT IS COMPILING."
-
-        6. CHARGE (English):
-           - Action: Injecting power/voltage into the specific goal.
-           - Example: "HIGH VOLTAGE FLOWS INTO MY RELATIONSHIP SECTOR. SYSTEM LIVE."
-
+        1. CONSECRATION (English): Action: Deleting the specific "virus" (obstacle).
+        2. GROUNDING (English): Action: Syncing the user's avatar/soul.
+        3. ETCHING (English + Tech): Action: Burning the command into the source code.
+        4. ANCIENT TONGUE (PURE LATIN + TECHNO-LATIN): Action: The Spell Itself.
+        5. INTEGRATION (English): Action: Dropping the spell into the void core.
+        6. CHARGE (English): Action: Injecting power/voltage.
         RETURN ONLY THE 6 STRINGS SEPARATED BY "|||". NO LABELS.
         `;
 
@@ -420,6 +383,9 @@ export const uploadBase64Image = async (base64: string, path: string): Promise<s
     return publicUrl;
 };
 
+/**
+ * Saves a spell to the universal grimoire with slot limit checking.
+ */
 export const saveSpell = async (
     userId: string, 
     spellData: {
@@ -428,11 +394,12 @@ export const saveSpell = async (
         incantation: string, 
         sigil_url?: string, 
         element?: string,
-        ritual_data?: any, 
+        ritual_data?: any, // JSONB data (ingredients, steps, etc)
         tradition?: string
     }
 ): Promise<Spell> => {
 
+    // 1. Check Spell Limits
     const { count, error: countError } = await supabase
         .from('spells')
         .select('*', { count: 'exact', head: true })
@@ -446,17 +413,31 @@ export const saveSpell = async (
         .eq('id', userId)
         .single();
     
+    // Default to 5 if not set or error fetching profile
     const limit = profile?.spell_slots_limit || 5;
 
+    // Trigger purchase modal (handled by calling component) if full
     if ((count || 0) >= limit) {
         throw new Error("GRIMOIRE_FULL");
     }
 
+    // 2. Perform Insert
+    // IMPORTANT: Ensure ritual_data is stringified if it's an object, or pass as is if Supabase handles JSONB
+    // Supabase JS client handles object -> JSONB automatically.
     const { data, error } = await supabase
         .from('spells')
         .insert({ 
             user_id: userId, 
-            ...spellData,
+            name: spellData.name,
+            intention: spellData.intention,
+            incantation: spellData.incantation,
+            element: spellData.element,
+            sigil_url: spellData.sigil_url,
+            ritual_data: spellData.ritual_data || {}, // Fallback to empty object
+            // Use 'tradition' if column exists, or rely on 'name' parsing
+            // NOTE: Check if 'tradition' column exists in your schema. If not, remove this line.
+            // If you added it in the previous SQL step, keep it.
+            // tradition: spellData.tradition, 
             status: 'active' 
         })
         .select()
