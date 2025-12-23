@@ -1,3 +1,4 @@
+// --- START OF FILE src/app/components/HoodooVoodooMagick.tsx ---
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
@@ -68,7 +69,6 @@ const playSound = (src: string, volume: number = 0.5, loop: boolean = false): { 
     
     const AudioCtor = win.Audio;
     const audio = new AudioCtor(src);
-    
     audio.volume = volume;
     audio.loop = loop;
     
@@ -271,14 +271,20 @@ const HoodooStep1_Ancestors: React.FC<StepComponentProps> = ({ onNext }) => {
     );
 };
 
-// UPDATED: Replay Aware Petition Steps
 const HoodooStep2_Petition: React.FC<{ cost: number; petition: string; setPetition: (val: string) => void; onNext: (mode: RitualMode) => void; isReplay: boolean }> = ({ cost, petition, setPetition, onNext, isReplay }) => (
     <StepContainer stageTitle="Write Your Petition" instruction="State your intention for this Work. Be clear and direct.">
         <div className="relative w-full h-full max-w-md mx-auto flex flex-col items-center justify-center gap-4">
             <div className="relative w-full aspect-square @container">
                 <Image src={`${ASSET_PATH}/hoodoo-petition-paper.png`} alt="Petition Paper" layout="fill" objectFit="contain" />
                 <div className="absolute p-4" style={{ left: '15%', top: '25%', width: '70%', height: '50%' }}>
-                    <textarea value={petition} onChange={(e) => setPetition((e.target as any).value)} placeholder="e.g., To draw money to me for my rent." className="w-full h-full bg-transparent text-center text-[#4a2e1c] font-serif focus:outline-none resize-none" style={{ fontSize: 'clamp(0.6rem, 4cqw, 1.5rem)' }} />
+                    <textarea 
+                        value={petition} 
+                        onChange={(e) => setPetition((e.target as any).value)} 
+                        readOnly={isReplay}
+                        placeholder="e.g., To draw money to me for my rent." 
+                        className="w-full h-full bg-transparent text-center text-[#4a2e1c] font-serif focus:outline-none resize-none" 
+                        style={{ fontSize: 'clamp(0.6rem, 4cqw, 1.5rem)' }} 
+                    />
                 </div>
             </div>
             
@@ -292,7 +298,10 @@ const HoodooStep2_Petition: React.FC<{ cost: number; petition: string; setPetiti
                     <>
                         <button onClick={() => onNext('standard')} disabled={!petition} className="flex items-center gap-3 p-3 bg-amber-900/60 border border-amber-600 rounded-lg hover:bg-amber-800 disabled:opacity-50 text-amber-100">
                             <Book className="w-5 h-5" />
-                            <div className="text-left"><div className="font-serif">Traditional Work</div><div className="text-xs text-amber-300/70">Fixed Psalm & Materia. Free.</div></div>
+                            <div className="text-left">
+                                <div className="font-serif">Traditional Work</div>
+                                <div className="text-xs text-amber-300/70">Fixed Psalm & Materia. Free.</div>
+                            </div>
                         </button>
                         <button onClick={() => onNext('ai')} disabled={!petition} className="flex items-center gap-3 p-3 bg-purple-900/60 border border-purple-500 rounded-lg hover:bg-purple-800 disabled:opacity-50 relative overflow-hidden group text-purple-100">
                             <Skull className="w-5 h-5" />
@@ -351,7 +360,7 @@ const HoodooStep5_FixJar: React.FC<{ onNext: () => void, selections: MateriaSele
     const [isCharged, setIsCharged] = useState(false);
     const currentMateria = selections[index];
     const spriteData = findSprite(currentMateria.name);
-    // Use the saved incantation specifically if available
+    
     const instructionText = isCharged 
         ? `The ${currentMateria.name} is added to the jar.\n"${currentMateria.incantation}"`
         : `Charge the ${currentMateria.name}, speaking its incantation:\n"${currentMateria.incantation}"`;
@@ -360,7 +369,9 @@ const HoodooStep5_FixJar: React.FC<{ onNext: () => void, selections: MateriaSele
         <StepContainer stageTitle="Fix the Jar" instruction={instructionText} button={isCharged ? <RitualButton onClick={onNext} className="animate-pulse">{index < selections.length - 1 ? "Next Ingredient" : "Seal the Jar"}</RitualButton> : <div/>}>
             <div className="relative w-full h-full max-w-md aspect-square mx-auto">
                 <Image src={`${ASSET_PATH}/hoodoo-jar-empty.png`} alt="Empty Spell Jar" layout="fill" objectFit="contain" priority />
+                
                 <FilledContainer items={selections} count={isCharged ? index + 1 : index} variant="hoodoo_empty" />
+
                 {!isCharged && spriteData && (
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-2/3 z-20">
                         <ChargingComponent onCharge={() => setIsCharged(true)} isCharged={isCharged}>
@@ -379,6 +390,7 @@ const HoodooStep6_SealJar: React.FC<{ onNext: () => void, selections: MateriaSel
     const [isSealed, setIsSealed] = useState(false);
     const [isSent, setIsSent] = useState(false);
     const handleSeal = () => { setIsSealed(true); playSound('/audio/sfx-chaos-explosion.mp3', 0.5).play(); setIsSent(true); setTimeout(onNext, 2500); };
+
     return(
         <StepContainer stageTitle="Seal the Work" instruction="I seal this work in the name of the Father, Son, and Holy Ghost. Awake and do my bidding.">
             <div className="relative w-full h-full max-w-md aspect-square mx-auto flex items-center justify-center">
@@ -419,24 +431,36 @@ const VoodooStep2_StateNeed: React.FC<{ cost: number; petition: string; setPetit
              <div className="relative w-full aspect-square @container">
                 <Image src={`${ASSET_PATH}/voodoo-petition-scroll.png`} alt="Petition Scroll" layout="fill" objectFit="contain" />
                 <div className="absolute p-4" style={{ left: '22%', top: '30%', width: '56%', height: '40%' }}>
-                    <textarea value={petition} onChange={(e) => setPetition((e.target as any).value)} placeholder="e.g., I ask for protection on my journey." className="w-full h-full bg-transparent text-center text-[#4a2e1c] font-serif focus:outline-none resize-none" style={{ fontSize: 'clamp(0.6rem, 4cqw, 1.5rem)' }} />
+                    <textarea 
+                        value={petition} 
+                        onChange={(e) => setPetition((e.target as any).value)} 
+                        readOnly={isReplay}
+                        placeholder="e.g., I ask for protection on my journey." 
+                        className="w-full h-full bg-transparent text-center text-[#4a2e1c] font-serif focus:outline-none resize-none" 
+                        style={{ fontSize: 'clamp(0.6rem, 4cqw, 1.5rem)' }} 
+                    />
                 </div>
             </div>
             <div className="flex flex-col gap-3 w-full max-w-xs">
                 {isReplay ? (
-                    <button onClick={() => onNext('replay')} className="flex items-center justify-center gap-3 p-4 bg-purple-900 border border-purple-500 rounded-lg hover:bg-purple-800 text-white shadow-lg animate-pulse">
-                        <RotateCcw className="w-5 h-5" />
-                        <div className="font-serif tracking-widest text-sm uppercase">Begin Ritual (Saved)</div>
+                    <button onClick={() => onNext('replay')} className="w-full py-3 bg-amber-600 hover:bg-amber-500 text-black font-serif font-bold rounded animate-pulse">
+                        Begin Replay (Free)
                     </button>
                 ) : (
                     <>
                         <button onClick={() => onNext('standard')} disabled={!petition} className="flex items-center gap-3 p-3 bg-amber-900/60 border border-amber-600 rounded-lg hover:bg-amber-800 disabled:opacity-50 text-amber-100">
                             <Book className="w-5 h-5" />
-                            <div className="text-left"><div className="font-serif">Serve Papa Legba</div><div className="text-xs text-amber-300/70">Traditional offerings. Free.</div></div>
+                            <div className="text-left">
+                                <div className="font-serif">Serve Papa Legba</div>
+                                <div className="text-xs text-amber-300/70">Traditional offerings. Free.</div>
+                            </div>
                         </button>
                         <button onClick={() => onNext('ai')} disabled={!petition} className="flex items-center gap-3 p-3 bg-purple-900/60 border border-purple-500 rounded-lg hover:bg-purple-800 disabled:opacity-50 relative overflow-hidden group text-purple-100">
                             <Skull className="w-5 h-5" />
-                            <div className="text-left relative z-10"><div className="font-serif flex items-center gap-2">Divine the Lwa <Sparkles size={12}/></div><div className="text-xs text-purple-300">Consult the spirits. {cost} Credits.</div></div>
+                            <div className="text-left relative z-10">
+                                <div className="font-serif flex items-center gap-2">Divine the Lwa <Sparkles size={12}/></div>
+                                <div className="text-xs text-purple-300">Consult the spirits. {cost} Credits.</div>
+                            </div>
                         </button>
                     </>
                 )}
@@ -596,8 +620,10 @@ const Step8_Manifestation: React.FC<{ affirmation: string, path: RitualPath, onF
 const PsalmReader: React.FC<{isOpen: boolean; onClose: () => void; psalmName: string; psalmText: string; onBless: () => void;}> = ({isOpen, onClose, psalmName, psalmText, onBless}) => {
     const [stage, setStage] = useState<'read' | 'fix'>('read');
     const [isBlessed, setIsBlessed] = useState(false);
+    
     useEffect(() => { if (isOpen) { setStage('read'); setIsBlessed(false); } }, [isOpen, psalmName]);
     if (!isOpen) return null;
+
     return (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
             <motion.div initial={{opacity: 0, scale: 0.8}} animate={{opacity: 1, scale: 1}} className="relative w-full max-w-2xl bg-[#fdf9e8] bg-[url('/images/books/parchment-bg.png')] text-black p-8 rounded-lg shadow-2xl">
@@ -631,16 +657,19 @@ const SlotPurchaseModal = ({ isOpen, onClose, onPurchase, isProcessing }: { isOp
             <div className="bg-[#1a1a2e] border border-amber-500/50 rounded-xl p-8 max-w-sm w-full text-center shadow-[0_0_50px_rgba(251,191,36,0.2)]">
                 <BookOpen size={48} className="text-amber-400 mx-auto mb-4" />
                 <h3 className="text-xl font-serif text-amber-100 mb-2">Grimoire Full</h3>
-                <p className="text-gray-400 text-sm mb-6">Your book of shadows has reached its capacity. Expand your grimoire by 5 slots to continue saving your workings.</p>
+                <p className="text-gray-400 text-sm mb-6">
+                    Your book of shadows has reached its capacity. Expand your grimoire by 5 slots to continue saving your workings.
+                </p>
                 <div className="flex flex-col gap-3">
-                    <button onClick={onPurchase} disabled={isProcessing} className="w-full flex items-center justify-center gap-2 py-3 bg-amber-700 hover:bg-amber-600 text-white font-bold rounded uppercase tracking-wider text-xs transition-colors disabled:opacity-50">{isProcessing ? "Expanding..." : "Expand Storage (-10 Aether)"}</button>
+                    <button onClick={onPurchase} disabled={isProcessing} className="w-full flex items-center justify-center gap-2 py-3 bg-amber-700 hover:bg-amber-600 text-white font-bold rounded uppercase tracking-wider text-xs transition-colors disabled:opacity-50">
+                        {isProcessing ? "Expanding..." : "Expand Storage (-10 Aether)"}
+                    </button>
                     <button onClick={onClose} className="text-gray-500 hover:text-white text-xs underline">Cancel</button>
                 </div>
             </div>
         </div>
     );
 };
-
 
 // ==========================================
 // MAIN COMPONENT
@@ -742,6 +771,13 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
         setAppError(null);
         clearPaymentError();
         setIsReplayMode(false);
+
+        // NEW: Clear URL params to exit Replay Mode cleanly
+        if (typeof window !== 'undefined') {
+            const url = new URL(window.location.href);
+            url.searchParams.delete('loadId');
+            window.history.replaceState({}, '', url.toString());
+        }
     };
 
     const selectPath = (chosenPath: RitualPath) => {
@@ -1068,3 +1104,4 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
 };
 
 export default HoodooVoodooMagick;
+// --- END OF FILE src/app/components/HoodooVoodooMagick.tsx ---
