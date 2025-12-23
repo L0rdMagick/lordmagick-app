@@ -1,3 +1,4 @@
+// --- START OF FILE src/app/components/HoodooVoodooMagick.tsx ---
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
@@ -269,30 +270,45 @@ const HoodooStep1_Ancestors: React.FC<StepComponentProps> = ({ onNext }) => {
     );
 };
 
-const HoodooStep2_Petition: React.FC<{ cost: number; petition: string; setPetition: (val: string) => void; onNext: (mode: RitualMode) => void; }> = ({ cost, petition, setPetition, onNext }) => (
+const HoodooStep2_Petition: React.FC<{ cost: number; petition: string; setPetition: (val: string) => void; onNext: (mode: RitualMode) => void; isReplay: boolean; }> = ({ cost, petition, setPetition, onNext, isReplay }) => (
     <StepContainer stageTitle="Write Your Petition" instruction="State your intention for this Work. Be clear and direct.">
         <div className="relative w-full h-full max-w-md mx-auto flex flex-col items-center justify-center gap-4">
             <div className="relative w-full aspect-square @container">
                 <Image src={`${ASSET_PATH}/hoodoo-petition-paper.png`} alt="Petition Paper" layout="fill" objectFit="contain" />
                 <div className="absolute p-4" style={{ left: '15%', top: '25%', width: '70%', height: '50%' }}>
-                    <textarea value={petition} onChange={(e) => setPetition((e.target as any).value)} placeholder="e.g., To draw money to me for my rent." className="w-full h-full bg-transparent text-center text-[#4a2e1c] font-serif focus:outline-none resize-none" style={{ fontSize: 'clamp(0.6rem, 4cqw, 1.5rem)' }} />
+                    <textarea 
+                        value={petition} 
+                        onChange={(e) => setPetition((e.target as any).value)} 
+                        readOnly={isReplay}
+                        placeholder="e.g., To draw money to me for my rent." 
+                        className="w-full h-full bg-transparent text-center text-[#4a2e1c] font-serif focus:outline-none resize-none" 
+                        style={{ fontSize: 'clamp(0.6rem, 4cqw, 1.5rem)' }} 
+                    />
                 </div>
             </div>
              <div className="flex flex-col gap-3 w-full max-w-xs">
-                <button onClick={() => onNext('standard')} disabled={!petition} className="flex items-center gap-3 p-3 bg-amber-900/60 border border-amber-600 rounded-lg hover:bg-amber-800 disabled:opacity-50 text-amber-100">
-                    <Book className="w-5 h-5" />
-                    <div className="text-left">
-                        <div className="font-serif">Traditional Work</div>
-                        <div className="text-xs text-amber-300/70">Fixed Psalm & Materia. Free.</div>
-                    </div>
-                </button>
-                <button onClick={() => onNext('ai')} disabled={!petition} className="flex items-center gap-3 p-3 bg-purple-900/60 border border-purple-500 rounded-lg hover:bg-purple-800 disabled:opacity-50 relative overflow-hidden group text-purple-100">
-                    <Skull className="w-5 h-5" />
-                    <div className="text-left relative z-10">
-                        <div className="font-serif flex items-center gap-2">Rootworker Consult <Sparkles size={12}/></div>
-                        <div className="text-xs text-purple-300">Custom scripture & ingredients. {cost} Credits.</div>
-                    </div>
-                </button>
+                {isReplay ? (
+                    <button onClick={() => onNext('ai')} className="w-full py-3 bg-amber-600 hover:bg-amber-500 text-black font-serif font-bold rounded animate-pulse">
+                        Begin Replay (Free)
+                    </button>
+                ) : (
+                    <>
+                        <button onClick={() => onNext('standard')} disabled={!petition} className="flex items-center gap-3 p-3 bg-amber-900/60 border border-amber-600 rounded-lg hover:bg-amber-800 disabled:opacity-50 text-amber-100">
+                            <Book className="w-5 h-5" />
+                            <div className="text-left">
+                                <div className="font-serif">Traditional Work</div>
+                                <div className="text-xs text-amber-300/70">Fixed Psalm & Materia. Free.</div>
+                            </div>
+                        </button>
+                        <button onClick={() => onNext('ai')} disabled={!petition} className="flex items-center gap-3 p-3 bg-purple-900/60 border border-purple-500 rounded-lg hover:bg-purple-800 disabled:opacity-50 relative overflow-hidden group text-purple-100">
+                            <Skull className="w-5 h-5" />
+                            <div className="text-left relative z-10">
+                                <div className="font-serif flex items-center gap-2">Rootworker Consult <Sparkles size={12}/></div>
+                                <div className="text-xs text-purple-300">Custom scripture & ingredients. {cost} Credits.</div>
+                            </div>
+                        </button>
+                    </>
+                )}
             </div>
         </div>
     </StepContainer>
@@ -406,30 +422,45 @@ const VoodooStep1_OpenGate: React.FC<StepComponentProps> = ({ onNext }) => {
     );
 };
 
-const VoodooStep2_StateNeed: React.FC<{ cost: number; petition: string; setPetition: (val: string) => void; onNext: (mode: RitualMode) => void; }> = ({ cost, petition, setPetition, onNext }) => (
+const VoodooStep2_StateNeed: React.FC<{ cost: number; petition: string; setPetition: (val: string) => void; onNext: (mode: RitualMode) => void; isReplay: boolean; }> = ({ cost, petition, setPetition, onNext, isReplay }) => (
     <StepContainer stageTitle="State Your Need" instruction="Clearly present your petition to the spirits.">
         <div className="relative w-full h-full max-w-md mx-auto flex flex-col items-center justify-center gap-4">
              <div className="relative w-full aspect-square @container">
                 <Image src={`${ASSET_PATH}/voodoo-petition-scroll.png`} alt="Petition Scroll" layout="fill" objectFit="contain" />
                 <div className="absolute p-4" style={{ left: '22%', top: '30%', width: '56%', height: '40%' }}>
-                    <textarea value={petition} onChange={(e) => setPetition((e.target as any).value)} placeholder="e.g., I ask for protection on my journey." className="w-full h-full bg-transparent text-center text-[#4a2e1c] font-serif focus:outline-none resize-none" style={{ fontSize: 'clamp(0.6rem, 4cqw, 1.5rem)' }} />
+                    <textarea 
+                        value={petition} 
+                        onChange={(e) => setPetition((e.target as any).value)} 
+                        readOnly={isReplay}
+                        placeholder="e.g., I ask for protection on my journey." 
+                        className="w-full h-full bg-transparent text-center text-[#4a2e1c] font-serif focus:outline-none resize-none" 
+                        style={{ fontSize: 'clamp(0.6rem, 4cqw, 1.5rem)' }} 
+                    />
                 </div>
             </div>
             <div className="flex flex-col gap-3 w-full max-w-xs">
-                <button onClick={() => onNext('standard')} disabled={!petition} className="flex items-center gap-3 p-3 bg-amber-900/60 border border-amber-600 rounded-lg hover:bg-amber-800 disabled:opacity-50 text-amber-100">
-                    <Book className="w-5 h-5" />
-                    <div className="text-left">
-                        <div className="font-serif">Serve Papa Legba</div>
-                        <div className="text-xs text-amber-300/70">Traditional offerings. Free.</div>
-                    </div>
-                </button>
-                <button onClick={() => onNext('ai')} disabled={!petition} className="flex items-center gap-3 p-3 bg-purple-900/60 border border-purple-500 rounded-lg hover:bg-purple-800 disabled:opacity-50 relative overflow-hidden group text-purple-100">
-                    <Skull className="w-5 h-5" />
-                    <div className="text-left relative z-10">
-                        <div className="font-serif flex items-center gap-2">Divine the Lwa <Sparkles size={12}/></div>
-                        <div className="text-xs text-purple-300">Consult the spirits. {cost} Credits.</div>
-                    </div>
-                </button>
+                {isReplay ? (
+                    <button onClick={() => onNext('ai')} className="w-full py-3 bg-amber-600 hover:bg-amber-500 text-black font-serif font-bold rounded animate-pulse">
+                        Begin Replay (Free)
+                    </button>
+                ) : (
+                    <>
+                        <button onClick={() => onNext('standard')} disabled={!petition} className="flex items-center gap-3 p-3 bg-amber-900/60 border border-amber-600 rounded-lg hover:bg-amber-800 disabled:opacity-50 text-amber-100">
+                            <Book className="w-5 h-5" />
+                            <div className="text-left">
+                                <div className="font-serif">Serve Papa Legba</div>
+                                <div className="text-xs text-amber-300/70">Traditional offerings. Free.</div>
+                            </div>
+                        </button>
+                        <button onClick={() => onNext('ai')} disabled={!petition} className="flex items-center gap-3 p-3 bg-purple-900/60 border border-purple-500 rounded-lg hover:bg-purple-800 disabled:opacity-50 relative overflow-hidden group text-purple-100">
+                            <Skull className="w-5 h-5" />
+                            <div className="text-left relative z-10">
+                                <div className="font-serif flex items-center gap-2">Divine the Lwa <Sparkles size={12}/></div>
+                                <div className="text-xs text-purple-300">Consult the spirits. {cost} Credits.</div>
+                            </div>
+                        </button>
+                    </>
+                )}
             </div>
         </div>
     </StepContainer>
@@ -693,22 +724,26 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
                         // Hydrate State
                         setPetition(spell.intention);
                         setFinalAffirmation(spell.incantation); // Or data.affirmation
-                        setPath(data.path); // 'hoodoo' or 'voodoo'
                         
-                        if (data.path === 'hoodoo') {
+                        // Detect path from saved data or default (though saved data should have it)
+                        const savedPath = data.path; 
+                        setPath(savedPath); 
+                        
+                        if (savedPath === 'hoodoo') {
                             setHoodooPsalmSelections([data.psalm]); // Force the saved psalm
                             setSelectedPsalm(data.psalm);
                             setIsPsalmLit(true); // Auto-light since it's a replay
                             setHoodooMateriaSelections(data.materia);
-                        } else {
+                        } else if (savedPath === 'voodoo') {
                             setSelectedLwa(data.lwa);
-                            setVoodooOfferingSelections(data.materia); // Saved in 'materia' field in previous save logic
+                            setVoodooOfferingSelections(data.materia); 
                         }
 
                         // Jump to "Action"
                         // Step 1 (Ancestors/Gate) is always good to do again for immersion
                         setStep(1); 
                         setIsSaved(true); // Disable saving again since it's already saved
+                        setMode('ai'); // Replay generally implies the "full" experience
                     }
                 } catch (e) {
                     console.error("Failed to load spell", e);
@@ -752,7 +787,7 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
     const handleHoodooPetitionComplete = async (selectedMode: RitualMode) => {
         // If Replay Mode (loadId exists), skip payment/gen logic
         if (loadId) {
-             setMode('ai'); // Assume high quality visual
+             setMode('ai'); 
              advanceStep();
              return;
         }
@@ -782,6 +817,9 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
     };
     
     const handleHoodooPsalmSearch = async () => {
+        // Replay Guard
+        if (loadId) { advanceStep(); return; }
+
         if (!petition) { setAppError("You must write a petition first."); setLoading(false); return; }
         setLoading(true); setLoadingMessage("Consulting the scriptures...");
         try {
@@ -914,7 +952,8 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
                 intention: petition,
                 incantation: finalAffirmation,
                 element: path === 'hoodoo' ? 'Earth' : 'Spirit',
-                ritual_data: ritualData
+                ritual_data: ritualData,
+                tradition: path === 'hoodoo' ? 'HOODOO' : 'VOODOO' // Added correct tradition mapping
             });
             
             setIsSaved(true);
@@ -984,7 +1023,7 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
         if (path === 'hoodoo') {
             switch (step) {
                 case 1: return <HoodooStep1_Ancestors onNext={advanceStep} />;
-                case 2: return <HoodooStep2_Petition cost={cost} petition={petition} setPetition={setPetition} onNext={handleHoodooPetitionComplete} />;
+                case 2: return <HoodooStep2_Petition cost={cost} petition={petition} setPetition={setPetition} onNext={handleHoodooPetitionComplete} isReplay={!!loadId} />;
                 case 3: return <HoodooStep3_FindVerse onOpenReader={handleOpenPsalmReader} selections={hoodooPsalmSelections} selectedPsalm={selectedPsalm} isPsalmLit={isPsalmLit} onNext={handleHoodooMateriaLogic} />;
                 case 4: return <HoodooStep4_GatherMateria selections={hoodooMateriaSelections} onNext={advanceStep} />;
                 case 5: return <HoodooStep5_FixJar key={`charge-hoodoo-${chargingIndex}`} onNext={handleChargeNext} selections={hoodooMateriaSelections} index={chargingIndex} />;
@@ -998,7 +1037,7 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
         if (path === 'voodoo') {
             switch (step) {
                 case 1: return <VoodooStep1_OpenGate onNext={advanceStep} />;
-                case 2: return <VoodooStep2_StateNeed cost={cost} petition={petition} setPetition={setPetition} onNext={handleVoodooPetitionComplete} />;
+                case 2: return <VoodooStep2_StateNeed cost={cost} petition={petition} setPetition={setPetition} onNext={handleVoodooPetitionComplete} isReplay={!!loadId} />;
                 case 3: return <VoodooStep3_ServeLwa selectedLwa={selectedLwa} onSelect={setSelectedLwa} onNext={handleVoodooLwaLogic} mode={mode} />;
                 case 4: return <VoodooStep4_PrepareOffering selections={voodooOfferingSelections} onNext={advanceStep} />;
                 case 5: return <VoodooStep5_MakeOffering key={`charge-voodoo-${chargingIndex}`} onNext={handleChargeNext} selections={voodooOfferingSelections} index={chargingIndex} />;
@@ -1066,3 +1105,4 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
 };
 
 export default HoodooVoodooMagick;
+// --- END OF FILE src/app/components/HoodooVoodooMagick.tsx ---
