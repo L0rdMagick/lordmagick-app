@@ -3,11 +3,15 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useSearchParams } from 'next/navigation'; // NEW
 import type { Session, SpellFormData, GeneratedSpell, Spell } from '@/lib/types';
 import { generateSpellAndSigil, saveSpell, getSpells, uploadBase64Image } from '@/lib/services/geminiService';
+import { getSpellById } from '@/lib/services/spellService'; // NEW
+import { useAetherEconomy } from '@/hooks/useAetherEconomy'; // NEW
 import LoadingSpinner from './LoadingSpinner';
 import { WandIcon, GrimoireFlourish, GrimoireDecoration, StoneTabletButton } from './icons';
-import { Sparkles, Zap, Save, Check, Book } from 'lucide-react';
+import { Sparkles, Zap, Save, Check, Book, Coins } from 'lucide-react';
+import Link from 'next/link';
 
 interface SpellGeneratorProps {
   session: Session;

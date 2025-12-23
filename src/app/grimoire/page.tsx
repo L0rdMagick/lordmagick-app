@@ -7,16 +7,14 @@ import type { Spell } from '@/lib/types';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
 import RoomsButton from '@/app/components/RoomsButton';
 import LoadingSpinner from '@/app/components/LoadingSpinner';
-import { Book, Calendar, Scroll, Search, X, RotateCcw, ArrowRight } from 'lucide-react'; // Added Icons
+import { Book, Calendar, Scroll, Search, X, RotateCcw, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 
 export default function GrimoirePage() {
     const [spells, setSpells] = useState<Spell[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedSpell, setSelectedSpell] = useState<Spell | null>(null);
     const [filter, setFilter] = useState('');
-    const router = useRouter();
 
     const supabase = createBrowserClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -44,9 +42,9 @@ export default function GrimoirePage() {
         s.intention.toLowerCase().includes(filter.toLowerCase())
     );
 
-    // HELPER: Determine App URL based on Spell Data
+    // HELPER: Determine App URL based on Spell Data for Replay
     const getReplayUrl = (spell: Spell) => {
-        // 1. Check Tradition
+        // 1. Check Tradition Explicitly
         if (spell.tradition === 'HOODOO' || spell.tradition === 'VOODOO') {
             return `/spell-room/hoodoo-rootwork-spells-app?loadId=${spell.id}`;
         }
@@ -60,12 +58,18 @@ export default function GrimoirePage() {
             return `/spell-room/love-spells-app/soul-connect-love-spell?loadId=${spell.id}`;
         }
         
-        // 2. Fallback for Electric Magick (checking name since tradition might be generic)
-        if (spell.name.includes('Reality Breach')) {
+        // 2. Fallback/Inference for Electric Magick (Checking name/element)
+        if (spell.name.includes('Reality Breach') || spell.name.includes('Reality Patch')) {
             return `/spell-room/electric-magick-spells-app?spell=reality-patch&loadId=${spell.id}`;
         }
         if (spell.name.includes('Neural Link')) {
             return `/spell-room/electric-magick-spells-app?spell=neural-link&loadId=${spell.id}`;
+        }
+        if (spell.name.includes('Data Scry')) {
+            return `/spell-room/electric-magick-spells-app?spell=data-scry&loadId=${spell.id}`;
+        }
+        if (spell.name.includes('Zero Point')) {
+             return `/spell-room/electric-magick-spells-app?spell=zero-point-zet&loadId=${spell.id}`;
         }
         
         return null; // Unknown type
@@ -107,34 +111,12 @@ export default function GrimoirePage() {
                             </div>
                         )}
 
-                         {/* Ritual Data Display */}
+                        {/* Visual Data for Replay */}
                         {ritualData && (
                             <div className="space-y-6">
-                                {/* Hoodoo/Voodoo Specifics */}
-                                {ritualData.psalm && (
-                                    <div>
-                                        <h3 className="text-xs font-mono text-gray-500 uppercase tracking-widest mb-2">Scripture</h3>
-                                        <p className="text-sm italic">"{ritualData.psalm}"</p>
-                                    </div>
-                                )}
-                                {ritualData.lwa && (
-                                    <div>
-                                        <h3 className="text-xs font-mono text-gray-500 uppercase tracking-widest mb-2">Spirit Served</h3>
-                                        <p className="text-sm font-bold text-purple-300">{ritualData.lwa}</p>
-                                    </div>
-                                )}
-                                {ritualData.materia && Array.isArray(ritualData.materia) && (
-                                    <div>
-                                        <h3 className="text-xs font-mono text-gray-500 uppercase tracking-widest mb-2">Ingredients Used</h3>
-                                        <div className="grid grid-cols-2 gap-2">
-                                            {ritualData.materia.map((m: any, i: number) => (
-                                                <div key={i} className="bg-black p-2 rounded border border-gray-800 text-sm">
-                                                    <span className="text-amber-200">{m.name}</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
+                                {ritualData.psalm && <div className="text-xs font-mono text-gray-400">Scripture: {ritualData.psalm}</div>}
+                                {ritualData.lwa && <div className="text-xs font-mono text-gray-400">Lwa: {ritualData.lwa}</div>}
+                                {ritualData.target && <div className="text-xs font-mono text-gray-400">Target: {ritualData.target}</div>}
                             </div>
                         )}
                         
