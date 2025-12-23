@@ -53,6 +53,7 @@ const playSound = (src: string, volume: number = 0.5, loop: boolean = false): { 
     
     const AudioCtor = win.Audio;
     const audio = new AudioCtor(src);
+    
     audio.volume = volume;
     audio.loop = loop;
     
@@ -100,145 +101,6 @@ const StepContainer: React.FC<StepContainerProps> = ({ stageTitle, stageSubtitle
     </div>
 );
 
-const IngredientCharger: React.FC<IngredientChargerProps> = ({ children, onChargeComplete, isComplete, onHoldStart, onHoldEnd, isHolding }) => {
-    const chargeSoundRef = useRef<any>(null);
-
-    useEffect(() => {
-        let timer: NodeJS.Timeout;
-        if(isHolding && !isComplete) {
-            chargeSoundRef.current = playSound('/audio/sfx-chaos-hold.mp3', 0.3, true);
-            timer = setTimeout(() => {
-                onChargeComplete();
-            }, CHARGE_DURATION_INGREDIENT)
-        }
-        return () => {
-            clearTimeout(timer);
-            if(chargeSoundRef.current) chargeSoundRef.current.stop();
-        }
-    }, [isHolding, isComplete, onChargeComplete]);
-    
-    const interactionStyle: React.CSSProperties = { WebkitTouchCallout: 'none' };
-    const circleVariants = { hidden: { strokeDashoffset: 1 }, visible: { strokeDashoffset: 0 } };
-
-    return (
-        <div 
-            onMouseDown={onHoldStart} 
-            onMouseUp={onHoldEnd} 
-            onMouseLeave={onHoldEnd} 
-            onTouchStart={onHoldStart} 
-            onTouchEnd={onHoldEnd} 
-            onContextMenu={(e) => e.preventDefault()}
-            style={interactionStyle}
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[40%] grid place-items-center cursor-pointer select-none"
-        >
-            <div className={`relative transition-transform duration-300 ${isHolding || isComplete ? 'scale-110' : 'scale-100'}`}>
-                {children}
-                <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg) scale(1.2)' }}>
-                    <motion.circle
-                        cx="50" cy="50" r="48"
-                        stroke="rgba(255, 255, 255, 1)"
-                        strokeWidth="4"
-                        fill="transparent"
-                        strokeLinecap="round"
-                        pathLength="1"
-                        strokeDasharray="1"
-                        variants={circleVariants}
-                        initial="hidden"
-                        animate={isComplete || (isHolding && !isComplete) ? "visible" : "hidden"}
-                        transition={{ duration: isComplete ? 0 : CHARGE_DURATION_INGREDIENT / 1000, ease: 'linear' }}
-                    />
-                </svg>
-                {isComplete && <div className="absolute inset-0 rounded-full bg-purple-900/30 animate-pulse" />}
-            </div>
-        </div>
-    );
-};
-
-const ChargingElement: React.FC<ChargingElementProps> = ({ name, isCharged, onChargeComplete, style, spriteData, soundSrc, onHoldStart, onHoldEnd }) => {
-    const [isHolding, setIsHolding] = useState(false);
-    const chargeSoundRef = useRef<any>(null);
-
-    useEffect(() => {
-        let timer: NodeJS.Timeout;
-        if (isHolding && !isCharged) {
-            chargeSoundRef.current = playSound(soundSrc, 0.4, true);
-            timer = setTimeout(() => {
-                onChargeComplete(name);
-            }, CHARGE_DURATION_ELEMENT);
-        }
-        return () => {
-            clearTimeout(timer);
-            if(chargeSoundRef.current) chargeSoundRef.current.stop();
-        };
-    }, [isHolding, isCharged, name, onChargeComplete, soundSrc]);
-
-    const { sheet, itemInfo } = spriteData;
-    const containerSize = 96; 
-    const scale = containerSize / sheet.spriteSize.width;
-
-    const spriteStyle: React.CSSProperties = {
-        backgroundImage: `url(${sheet.path})`,
-        backgroundSize: `${sheet.sheetSize.width * scale}px ${sheet.sheetSize.height * scale}px`,
-        backgroundPosition: `${itemInfo.x * scale}px ${itemInfo.y * scale}px`,
-        WebkitTouchCallout: 'none',
-    };
-
-    const circleVariants = {
-        hidden: { strokeDashoffset: 1 },
-        visible: { strokeDashoffset: 0 }
-    };
-
-    const handlePress = () => {
-        if (!isCharged) {
-            setIsHolding(true);
-            onHoldStart();
-        }
-    };
-
-    const handleRelease = () => {
-        if (isHolding) {
-            setIsHolding(false);
-            onHoldEnd();
-        }
-    };
-
-    return (
-        <div className="absolute grid place-items-center" style={style}>
-            <div
-                onMouseDown={handlePress}
-                onMouseUp={handleRelease}
-                onMouseLeave={handleRelease}
-                onTouchStart={(e) => { e.preventDefault(); handlePress(); }}
-                onTouchEnd={handleRelease}
-                onContextMenu={(e) => e.preventDefault()}
-                style={spriteStyle}
-                className={`relative w-24 h-24 cursor-pointer transition-all duration-500 group overflow-hidden rounded-full select-none ${isCharged ? 'pointer-events-none' : ''}`}
-            >
-                <div className={`absolute inset-0 w-full h-full transition-all duration-500 ${isCharged ? 'brightness-125 saturate-150' : 'brightness-75 group-hover:brightness-100'}`} />
-                <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)' }}>
-                    <circle cx="50" cy="50" r="48" stroke="rgba(255,255,255,0.15)" strokeWidth="3" fill="transparent" />
-                    <motion.circle
-                        cx="50" cy="50" r="48"
-                        stroke="rgba(255, 255, 255, 1)"
-                        strokeWidth="4"
-                        fill="transparent"
-                        strokeLinecap="round"
-                        pathLength="1"
-                        strokeDasharray="1"
-                        variants={circleVariants}
-                        initial="hidden"
-                        animate={isCharged || isHolding ? "visible" : "hidden"}
-                        transition={{ duration: isCharged ? 0 : CHARGE_DURATION_ELEMENT / 1000, ease: 'linear' }}
-                    />
-                </svg>
-                {isCharged && <div className="absolute inset-0 rounded-full bg-purple-900/30 animate-pulse" />}
-            </div>
-        </div>
-    );
-};
-
-// --- Ritual Step Components ---
-
 const Step0_Intro: React.FC<StepProps> = ({ onNext }) => (
     <StepContainer instruction="Cross the threshold and begin your journey into the craft." button={<RitualButton onClick={onNext}>Begin</RitualButton>}>
         <div className="relative w-full h-full max-w-md aspect-square @container mx-auto">
@@ -270,20 +132,20 @@ const Step1_Intention: React.FC<Step1Props> = ({ intention, setIntention, situat
                     className="absolute p-4 flex flex-col gap-2"
                     style={{ left: '19.5%', top: '25.9%', width: '59.8%', height: '55.0%' }}
                 >
-                    <input value={intention} onChange={(e) => setIntention(e.target.value)} placeholder="Intention (e.g. Find Peace)" className="w-full bg-transparent border-b border-[#4a2e1c]/50 text-center text-[#4a2e1c] font-serif focus:outline-none placeholder:text-[#4a2e1c]/50" />
-                    <textarea value={situation} onChange={(e) => setSituation(e.target.value)} placeholder="Details (Optional for Standard, Required for AI)" className="w-full grow bg-transparent text-center text-[#4a2e1c] font-serif focus:outline-none resize-none text-sm placeholder:text-[#4a2e1c]/50" />
+                    <input value={intention} onChange={(e) => setIntention(e.target.value)} placeholder="Intention (e.g. Find Peace)" className="w-full bg-transparent border-b border-[#4a2e1c]/50 text-center text-[#4a2e1c] font-serif focus:outline-none placeholder:text-[#4a2e1c]/50 pointer-events-auto" />
+                    <textarea value={situation} onChange={(e) => setSituation(e.target.value)} placeholder="Details (Optional for Standard, Required for AI)" className="w-full grow bg-transparent text-center text-[#4a2e1c] font-serif focus:outline-none resize-none text-sm placeholder:text-[#4a2e1c]/50 pointer-events-auto" />
                 </div>
             </div>
             
-            <div className="flex flex-col gap-3 w-full max-w-xs">
+            <div className="flex flex-col gap-3 w-full max-w-xs pointer-events-auto z-30">
                 {isReplay ? (
-                     <button onClick={() => onBegin('standard')} className="flex items-center justify-center gap-3 p-4 bg-purple-900 border border-purple-500 rounded-lg hover:bg-purple-800 text-white shadow-lg animate-pulse">
+                     <button onClick={() => onBegin('standard')} className="flex items-center justify-center gap-3 p-4 bg-purple-900 border border-purple-500 rounded-lg hover:bg-purple-800 text-white shadow-lg animate-pulse cursor-pointer">
                         <RotateCcw className="w-5 h-5" />
                         <div className="font-serif tracking-widest text-sm uppercase">Begin Ritual (Saved)</div>
                     </button>
                 ) : (
                     <>
-                        <button onClick={() => onBegin('standard')} disabled={!intention} className="flex items-center gap-3 p-3 bg-slate-800/80 border border-slate-600 rounded-lg hover:bg-slate-700 disabled:opacity-50">
+                        <button onClick={() => onBegin('standard')} disabled={!intention} className="flex items-center gap-3 p-3 bg-slate-800/80 border border-slate-600 rounded-lg hover:bg-slate-700 disabled:opacity-50 cursor-pointer">
                             <Book className="w-5 h-5 text-slate-300" />
                             <div className="text-left">
                                 <div className="text-amber-100 font-serif">Standard Ritual</div>
@@ -291,7 +153,7 @@ const Step1_Intention: React.FC<Step1Props> = ({ intention, setIntention, situat
                             </div>
                         </button>
                         
-                        <button onClick={() => onBegin('ai')} disabled={!intention} className="flex items-center gap-3 p-3 bg-purple-900/60 border border-purple-500 rounded-lg hover:bg-purple-800 disabled:opacity-50 relative overflow-hidden group">
+                        <button onClick={() => onBegin('ai')} disabled={!intention} className="flex items-center gap-3 p-3 bg-purple-900/60 border border-purple-500 rounded-lg hover:bg-purple-800 disabled:opacity-50 relative overflow-hidden group cursor-pointer">
                             <div className="absolute inset-0 bg-purple-500/10 animate-pulse group-hover:bg-purple-500/20"></div>
                             <Wand2 className="w-5 h-5 text-purple-300" />
                             <div className="text-left relative z-10">
@@ -639,7 +501,147 @@ const Step9_Manifestation: React.FC<Step9Props> = ({ spell, onSave, isSaving, is
     </StepContainer>
 );
 
-// --- Slot Purchase Modal ---
+const IngredientCharger: React.FC<IngredientChargerProps> = ({ children, onChargeComplete, isComplete, onHoldStart, onHoldEnd, isHolding }) => {
+    const chargeSoundRef = useRef<any>(null);
+
+    useEffect(() => {
+        let timer: NodeJS.Timeout;
+        if(isHolding && !isComplete) {
+            chargeSoundRef.current = playSound('/audio/sfx-chaos-hold.mp3', 0.3, true);
+            timer = setTimeout(() => {
+                onChargeComplete();
+            }, CHARGE_DURATION_INGREDIENT)
+        }
+        return () => {
+            clearTimeout(timer);
+            if(chargeSoundRef.current) chargeSoundRef.current.stop();
+        }
+    }, [isHolding, isComplete, onChargeComplete]);
+    
+    const interactionStyle: React.CSSProperties = { WebkitTouchCallout: 'none' };
+    const circleVariants = { hidden: { strokeDashoffset: 1 }, visible: { strokeDashoffset: 0 } };
+
+    return (
+        <div 
+            onMouseDown={onHoldStart} 
+            onMouseUp={onHoldEnd} 
+            onMouseLeave={onHoldEnd} 
+            onTouchStart={onHoldStart} 
+            onTouchEnd={onHoldEnd} 
+            onContextMenu={(e) => e.preventDefault()}
+            style={interactionStyle}
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[40%] grid place-items-center cursor-pointer select-none"
+        >
+            <div className={`relative transition-transform duration-300 ${isHolding || isComplete ? 'scale-110' : 'scale-100'}`}>
+                {children}
+                <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg) scale(1.2)' }}>
+                    <motion.circle
+                        cx="50" cy="50" r="48"
+                        stroke="rgba(255, 255, 255, 1)"
+                        strokeWidth="4"
+                        fill="transparent"
+                        strokeLinecap="round"
+                        pathLength="1"
+                        strokeDasharray="1"
+                        variants={circleVariants}
+                        initial="hidden"
+                        animate={isComplete || (isHolding && !isComplete) ? "visible" : "hidden"}
+                        transition={{ duration: isComplete ? 0 : CHARGE_DURATION_INGREDIENT / 1000, ease: 'linear' }}
+                    />
+                </svg>
+                {isComplete && <div className="absolute inset-0 rounded-full bg-purple-900/30 animate-pulse" />}
+            </div>
+        </div>
+    );
+};
+
+const ChargingElement: React.FC<ChargingElementProps> = ({ name, isCharged, onChargeComplete, style, spriteData, soundSrc, onHoldStart, onHoldEnd }) => {
+    const [isHolding, setIsHolding] = useState(false);
+    const chargeSoundRef = useRef<any>(null);
+
+    useEffect(() => {
+        let timer: NodeJS.Timeout;
+        if (isHolding && !isCharged) {
+            chargeSoundRef.current = playSound(soundSrc, 0.4, true);
+            timer = setTimeout(() => {
+                onChargeComplete(name);
+            }, CHARGE_DURATION_ELEMENT);
+        }
+        return () => {
+            clearTimeout(timer);
+            if(chargeSoundRef.current) chargeSoundRef.current.stop();
+        };
+    }, [isHolding, isCharged, name, onChargeComplete, soundSrc]);
+
+    const { sheet, itemInfo } = spriteData;
+    const containerSize = 96; 
+    const scale = containerSize / sheet.spriteSize.width;
+
+    const spriteStyle: React.CSSProperties = {
+        backgroundImage: `url(${sheet.path})`,
+        backgroundSize: `${sheet.sheetSize.width * scale}px ${sheet.sheetSize.height * scale}px`,
+        backgroundPosition: `${itemInfo.x * scale}px ${itemInfo.y * scale}px`,
+        WebkitTouchCallout: 'none',
+    };
+
+    const circleVariants = {
+        hidden: { strokeDashoffset: 1 },
+        visible: { strokeDashoffset: 0 }
+    };
+
+    const handlePress = () => {
+        if (!isCharged) {
+            setIsHolding(true);
+            onHoldStart();
+        }
+    };
+
+    const handleRelease = () => {
+        if (isHolding) {
+            setIsHolding(false);
+            onHoldEnd();
+        }
+    };
+
+    return (
+        <div className="absolute grid place-items-center" style={style}>
+            <div
+                onMouseDown={handlePress}
+                onMouseUp={handleRelease}
+                onMouseLeave={handleRelease}
+                onTouchStart={(e) => { e.preventDefault(); handlePress(); }}
+                onTouchEnd={handleRelease}
+                onContextMenu={(e) => e.preventDefault()}
+                style={spriteStyle}
+                className={`relative w-24 h-24 cursor-pointer transition-all duration-500 group overflow-hidden rounded-full select-none ${isCharged ? 'pointer-events-none' : ''}`}
+            >
+                {/* Overlay for brightness/saturation effects */}
+                <div className={`absolute inset-0 w-full h-full transition-all duration-500 ${isCharged ? 'brightness-125 saturate-150' : 'brightness-75 group-hover:brightness-100'}`} />
+                
+                {/* SVG on top for tracing animation */}
+                <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)' }}>
+                    <circle cx="50" cy="50" r="48" stroke="rgba(255,255,255,0.15)" strokeWidth="3" fill="transparent" />
+                    <motion.circle
+                        cx="50" cy="50" r="48"
+                        stroke="rgba(255, 255, 255, 1)"
+                        strokeWidth="4"
+                        fill="transparent"
+                        strokeLinecap="round"
+                        pathLength="1"
+                        strokeDasharray="1"
+                        variants={circleVariants}
+                        initial="hidden"
+                        animate={isCharged || isHolding ? "visible" : "hidden"}
+                        transition={{ duration: isCharged ? 0 : CHARGE_DURATION_ELEMENT / 1000, ease: 'linear' }}
+                    />
+                </svg>
+
+                {isCharged && <div className="absolute inset-0 rounded-full bg-purple-900/30 animate-pulse" />}
+            </div>
+        </div>
+    );
+};
+
 const SlotPurchaseModal = ({ isOpen, onClose, onPurchase, isProcessing }: { isOpen: boolean, onClose: () => void, onPurchase: () => void, isProcessing: boolean }) => {
     if (!isOpen) return null;
     return (
@@ -801,7 +803,7 @@ const WiccaMagick: React.FC<WiccaMagickProps> = ({ session }) => {
     };
 
     const handleSaveToGrimoire = async () => {
-        if (!generatedSpell || isSaved || !session?.user?.id) return;
+        if (!generatedSpell || isSaved) return;
         setIsSaving(true);
         setAppError(null);
         try {
@@ -812,7 +814,7 @@ const WiccaMagick: React.FC<WiccaMagickProps> = ({ session }) => {
                 affirmation: generatedSpell.affirmation
             };
 
-            await saveSpell(session.user.id, {
+            await saveSpell(session?.user?.id || 'anon', {
                  name: `Wiccan Spell: ${intention.substring(0, 30)}...`,
                  intention: intention,
                  incantation: generatedSpell.central_chant,
