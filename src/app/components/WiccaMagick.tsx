@@ -124,38 +124,40 @@ const Step1_Intention: React.FC<Step1Props> = ({ intention, setIntention, situat
         stageTitle="State Your True Will" 
         instruction="Inscribe your deepest desire. For High Rituals, describe your situation to guide the spirits."
     >
-        <div className="relative w-full h-full max-w-md mx-auto flex flex-col items-center justify-center gap-4">
-            <div className="relative w-full aspect-square @container z-0">
+        <div className="relative w-full h-full max-w-md mx-auto flex flex-col items-center justify-start pt-4 gap-6">
+            
+            {/* Scroll Container - Height Restricted to prevent overlap */}
+            <div className="relative w-full shrink-0 aspect-4/3 @container z-0 max-h-[50vh]">
                 <Image src={`${ASSET_PATH}/wicca_scroll_intention.png`} alt="Inscribe your intention" layout="fill" objectFit="contain" />
                 <div 
                     className="absolute p-4 flex flex-col gap-2 z-10"
-                    style={{ left: '19.5%', top: '25.9%', width: '59.8%', height: '55.0%' }}
+                    style={{ left: '22%', top: '15%', width: '56%', height: '70%' }}
                 >
                     <input 
                         value={intention} 
                         onChange={(e) => setIntention(e.target.value)} 
                         placeholder="Intention (e.g. Find Peace)" 
-                        className="w-full bg-transparent border-b border-[#4a2e1c]/50 text-center text-[#4a2e1c] font-serif focus:outline-none placeholder:text-[#4a2e1c]/50 pointer-events-auto" 
+                        className="w-full bg-transparent border-b border-[#4a2e1c]/50 text-center text-[#4a2e1c] font-serif focus:outline-none placeholder:text-[#4a2e1c]/50 pointer-events-auto text-lg" 
                     />
                     <textarea 
                         value={situation} 
                         onChange={(e) => setSituation(e.target.value)} 
                         placeholder="Details (Optional for Standard, Required for AI)" 
-                        className="w-full grow bg-transparent text-center text-[#4a2e1c] font-serif focus:outline-none resize-none text-sm placeholder:text-[#4a2e1c]/50 pointer-events-auto" 
+                        className="w-full grow bg-transparent text-center text-[#4a2e1c] font-serif focus:outline-none resize-none text-sm placeholder:text-[#4a2e1c]/50 pointer-events-auto mt-2" 
                     />
                 </div>
             </div>
             
-            {/* BUTTON CONTAINER: z-30 ensures clicks register above the image */}
-            <div className="flex flex-col gap-3 w-full max-w-xs pointer-events-auto z-30 relative">
+            {/* BUTTON CONTAINER - Forced Z-Index & Interactive */}
+            <div className="w-full max-w-xs z-50 flex flex-col gap-3 relative">
                 {isReplay ? (
-                     <button onClick={() => onBegin('standard')} className="flex items-center justify-center gap-3 p-4 bg-purple-900 border border-purple-500 rounded-lg hover:bg-purple-800 text-white shadow-lg animate-pulse cursor-pointer">
+                     <button onClick={() => onBegin('standard')} className="w-full flex items-center justify-center gap-3 p-4 bg-purple-900 border border-purple-500 rounded-lg hover:bg-purple-800 text-white shadow-lg animate-pulse cursor-pointer transition-transform active:scale-95">
                         <RotateCcw className="w-5 h-5" />
                         <div className="font-serif tracking-widest text-sm uppercase">Begin Ritual (Saved)</div>
                     </button>
                 ) : (
                     <>
-                        <button onClick={() => onBegin('standard')} disabled={!intention} className="flex items-center gap-3 p-3 bg-slate-800/80 border border-slate-600 rounded-lg hover:bg-slate-700 disabled:opacity-50 cursor-pointer">
+                        <button onClick={() => onBegin('standard')} disabled={!intention} className="w-full flex items-center gap-3 p-3 bg-slate-800/90 border border-slate-600 rounded-lg hover:bg-slate-700 disabled:opacity-50 cursor-pointer transition-transform active:scale-95 shadow-md">
                             <Book className="w-5 h-5 text-slate-300" />
                             <div className="text-left">
                                 <div className="text-amber-100 font-serif">Standard Ritual</div>
@@ -163,7 +165,7 @@ const Step1_Intention: React.FC<Step1Props> = ({ intention, setIntention, situat
                             </div>
                         </button>
                         
-                        <button onClick={() => onBegin('ai')} disabled={!intention} className="flex items-center gap-3 p-3 bg-purple-900/60 border border-purple-500 rounded-lg hover:bg-purple-800 disabled:opacity-50 relative overflow-hidden group cursor-pointer">
+                        <button onClick={() => onBegin('ai')} disabled={!intention} className="w-full flex items-center gap-3 p-3 bg-purple-900/80 border border-purple-500 rounded-lg hover:bg-purple-800 disabled:opacity-50 relative overflow-hidden group cursor-pointer transition-transform active:scale-95 shadow-md">
                             <div className="absolute inset-0 bg-purple-500/10 animate-pulse group-hover:bg-purple-500/20"></div>
                             <Wand2 className="w-5 h-5 text-purple-300" />
                             <div className="text-left relative z-10">
@@ -813,7 +815,7 @@ const WiccaMagick: React.FC<WiccaMagickProps> = ({ session }) => {
     };
 
     const handleSaveToGrimoire = async () => {
-        if (!generatedSpell || isSaved || !session?.user?.id) return;
+        if (!generatedSpell || isSaved) return;
         setIsSaving(true);
         setAppError(null);
         try {
@@ -824,7 +826,7 @@ const WiccaMagick: React.FC<WiccaMagickProps> = ({ session }) => {
                 affirmation: generatedSpell.affirmation
             };
 
-            await saveSpell(session.user.id, {
+            await saveSpell(session?.user?.id || 'anon', {
                  name: `Wiccan Spell: ${intention.substring(0, 30)}...`,
                  intention: intention,
                  incantation: generatedSpell.central_chant,
