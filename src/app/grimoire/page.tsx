@@ -42,9 +42,9 @@ export default function GrimoirePage() {
         s.intention.toLowerCase().includes(filter.toLowerCase())
     );
 
-    // HELPER: Determine App URL based on Spell Data for Replay
+    // HELPER: Determine App URL based on Spell Data
     const getReplayUrl = (spell: Spell) => {
-        // 1. Check Tradition Explicitly
+        // 1. Explicit Tradition Check
         if (spell.tradition === 'HOODOO' || spell.tradition === 'VOODOO') {
             return `/spell-room/hoodoo-rootwork-spells-app?loadId=${spell.id}`;
         }
@@ -58,17 +58,27 @@ export default function GrimoirePage() {
             return `/spell-room/love-spells-app/soul-connect-love-spell?loadId=${spell.id}`;
         }
         
-        // 2. Fallback/Inference for Electric Magick (Checking name/element)
-        if (spell.name.includes('Reality Breach') || spell.name.includes('Reality Patch')) {
+        // 2. Fallback Logic (Legacy Spells / Electric Magick)
+        const nameLower = spell.name.toLowerCase();
+        
+        if (nameLower.includes('hoodoo') || nameLower.includes('voodoo')) {
+            return `/spell-room/hoodoo-rootwork-spells-app?loadId=${spell.id}`;
+        }
+        if (nameLower.includes('wicca') || nameLower.includes('elemental')) {
+            return `/spell-room/wicca-magick-spells-app?loadId=${spell.id}`;
+        }
+        
+        // Electric Magick Apps
+        if (nameLower.includes('reality breach') || nameLower.includes('reality patch')) {
             return `/spell-room/electric-magick-spells-app?spell=reality-patch&loadId=${spell.id}`;
         }
-        if (spell.name.includes('Neural Link')) {
+        if (nameLower.includes('neural link')) {
             return `/spell-room/electric-magick-spells-app?spell=neural-link&loadId=${spell.id}`;
         }
-        if (spell.name.includes('Data Scry')) {
+        if (nameLower.includes('data scry')) {
             return `/spell-room/electric-magick-spells-app?spell=data-scry&loadId=${spell.id}`;
         }
-        if (spell.name.includes('Zero Point')) {
+        if (nameLower.includes('zero point')) {
              return `/spell-room/electric-magick-spells-app?spell=zero-point-zet&loadId=${spell.id}`;
         }
         
@@ -115,8 +125,7 @@ export default function GrimoirePage() {
                         {ritualData && (
                             <div className="space-y-6">
                                 {ritualData.psalm && <div className="text-xs font-mono text-gray-400">Scripture: {ritualData.psalm}</div>}
-                                {ritualData.lwa && <div className="text-xs font-mono text-gray-400">Lwa: {ritualData.lwa}</div>}
-                                {ritualData.target && <div className="text-xs font-mono text-gray-400">Target: {ritualData.target}</div>}
+                                {ritualData.lwa && <div className="text-xs font-mono text-gray-400">Spirit: {ritualData.lwa}</div>}
                             </div>
                         )}
                         
