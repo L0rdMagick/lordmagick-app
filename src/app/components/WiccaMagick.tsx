@@ -53,7 +53,6 @@ const playSound = (src: string, volume: number = 0.5, loop: boolean = false): { 
     
     const AudioCtor = win.Audio;
     const audio = new AudioCtor(src);
-    
     audio.volume = volume;
     audio.loop = loop;
     
@@ -126,18 +125,29 @@ const Step1_Intention: React.FC<Step1Props> = ({ intention, setIntention, situat
         instruction="Inscribe your deepest desire. For High Rituals, describe your situation to guide the spirits."
     >
         <div className="relative w-full h-full max-w-md mx-auto flex flex-col items-center justify-center gap-4">
-            <div className="relative w-full aspect-square @container">
+            <div className="relative w-full aspect-square @container z-0">
                 <Image src={`${ASSET_PATH}/wicca_scroll_intention.png`} alt="Inscribe your intention" layout="fill" objectFit="contain" />
                 <div 
-                    className="absolute p-4 flex flex-col gap-2"
+                    className="absolute p-4 flex flex-col gap-2 z-10"
                     style={{ left: '19.5%', top: '25.9%', width: '59.8%', height: '55.0%' }}
                 >
-                    <input value={intention} onChange={(e) => setIntention(e.target.value)} placeholder="Intention (e.g. Find Peace)" className="w-full bg-transparent border-b border-[#4a2e1c]/50 text-center text-[#4a2e1c] font-serif focus:outline-none placeholder:text-[#4a2e1c]/50 pointer-events-auto" />
-                    <textarea value={situation} onChange={(e) => setSituation(e.target.value)} placeholder="Details (Optional for Standard, Required for AI)" className="w-full grow bg-transparent text-center text-[#4a2e1c] font-serif focus:outline-none resize-none text-sm placeholder:text-[#4a2e1c]/50 pointer-events-auto" />
+                    <input 
+                        value={intention} 
+                        onChange={(e) => setIntention(e.target.value)} 
+                        placeholder="Intention (e.g. Find Peace)" 
+                        className="w-full bg-transparent border-b border-[#4a2e1c]/50 text-center text-[#4a2e1c] font-serif focus:outline-none placeholder:text-[#4a2e1c]/50 pointer-events-auto" 
+                    />
+                    <textarea 
+                        value={situation} 
+                        onChange={(e) => setSituation(e.target.value)} 
+                        placeholder="Details (Optional for Standard, Required for AI)" 
+                        className="w-full grow bg-transparent text-center text-[#4a2e1c] font-serif focus:outline-none resize-none text-sm placeholder:text-[#4a2e1c]/50 pointer-events-auto" 
+                    />
                 </div>
             </div>
             
-            <div className="flex flex-col gap-3 w-full max-w-xs pointer-events-auto z-30">
+            {/* BUTTON CONTAINER: z-30 ensures clicks register above the image */}
+            <div className="flex flex-col gap-3 w-full max-w-xs pointer-events-auto z-30 relative">
                 {isReplay ? (
                      <button onClick={() => onBegin('standard')} className="flex items-center justify-center gap-3 p-4 bg-purple-900 border border-purple-500 rounded-lg hover:bg-purple-800 text-white shadow-lg animate-pulse cursor-pointer">
                         <RotateCcw className="w-5 h-5" />
@@ -803,7 +813,7 @@ const WiccaMagick: React.FC<WiccaMagickProps> = ({ session }) => {
     };
 
     const handleSaveToGrimoire = async () => {
-        if (!generatedSpell || isSaved) return;
+        if (!generatedSpell || isSaved || !session?.user?.id) return;
         setIsSaving(true);
         setAppError(null);
         try {
@@ -814,7 +824,7 @@ const WiccaMagick: React.FC<WiccaMagickProps> = ({ session }) => {
                 affirmation: generatedSpell.affirmation
             };
 
-            await saveSpell(session?.user?.id || 'anon', {
+            await saveSpell(session.user.id, {
                  name: `Wiccan Spell: ${intention.substring(0, 30)}...`,
                  intention: intention,
                  incantation: generatedSpell.central_chant,
