@@ -284,9 +284,9 @@ const getIncantation = (type: string, isForSelf: boolean, data: any) => {
     if (data.customChant) {
         // Construct basic button labels if not provided
         let btn = "I Speak The Words";
-        if (type === 'charge') btn = `I Charge This ${data.item}`;
+        if (type === 'charge') btn = `I Charge This ${data.item || 'Item'}`;
         if (type === 'honey') btn = "I Pour The Sweetness";
-        if (type === 'mix') btn = "I Stir The Bond"; // Added mix fallback
+        if (type === 'mix') btn = "I Stir The Bond"; 
         if (type === 'candle') btn = "I Light The Flame";
         if (type === 'release') btn = "I Release The Spell";
         
@@ -568,7 +568,6 @@ function SoulConnectContent() {
   const [activeIngredients, setActiveIngredients] = useState<any[]>([]);
   const [addedIngredients, setAddedIngredients] = useState<any[]>([]);
   const [generatedChant, setGeneratedChant] = useState<string[]>([]);
-  // Correctly defined state with 'mix'
   const [stepChants, setStepChants] = useState<{ honey?: string, mix?: string, candle?: string, release?: string }>({});
 
   const [showSuccess, setShowSuccess] = useState<{msg: string, btn?: string} | null>(null);
@@ -580,6 +579,10 @@ function SoulConnectContent() {
   const [isSaved, setIsSaved] = useState(false);
   const [appError, setAppError] = useState<string | null>(null);
   
+  // Aether Balance
+  const [aetherBalance, setAetherBalance] = useState<number | null>(null);
+  const supabase = createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+
   // Economy
   const { 
     cost: genCost, 
@@ -604,6 +607,18 @@ function SoulConnectContent() {
   
   const searchParams = useSearchParams();
   const loadId = searchParams.get('loadId');
+
+  // Fetch Balance
+  useEffect(() => {
+      const fetchBalance = async () => {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+              const { data } = await supabase.from('profiles').select('credits').eq('id', user.id).single();
+              if (data) setAetherBalance(data.credits);
+          }
+      };
+      fetchBalance();
+  }, []);
 
   // --- REPLAY HYDRATION ---
   useEffect(() => {
@@ -680,7 +695,9 @@ function SoulConnectContent() {
       if (mode === 'ai' && data) {
           const aiIngredients = data.ingredients.map((ing: any) => ({
              ...ing,
-             color: ing.color || 'text-amber-300'
+             color: ing.color || 'text-amber-300',
+             // Ensure custom chant is mapped if present
+             chant: ing.chant
           }));
           setActiveIngredients(aiIngredients);
           setGeneratedChant(data.incantation);
@@ -693,6 +710,11 @@ function SoulConnectContent() {
           setGeneratedChant(generateIncantation(names, isForSelf));
           // Reset step chants to empty so defaults are used
           setStepChants({});
+      }
+
+      // Update Balance in UI after spend
+      if (mode === 'ai') {
+         setAetherBalance(prev => (prev !== null ? prev - genCost : null));
       }
 
       handleStageComplete(mode === 'ai' ? "The spirits have spoken. The path is set." : "The Sigil is active. The path is open.");
@@ -724,11 +746,6 @@ function SoulConnectContent() {
 
   const saveToGrimoire = async () => {
      if (isSaved) return;
-
-     const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-     );
      
      const { data: { user } } = await supabase.auth.getUser();
      if (!user) {
@@ -747,6 +764,9 @@ function SoulConnectContent() {
              setIsSaving(false);
              return;
          }
+
+         // Update local balance display
+         setAetherBalance(prev => (prev !== null ? prev - saveCost : null));
 
          // 2. Save
          const finalIncantation = generatedChant.join('\n');
@@ -854,12 +874,26 @@ function SoulConnectContent() {
         <Link href="/spell-room/love-spells-app" onClick={() => audio.playClick('medium')} className="text-amber-500/50 hover:text-amber-200 text-xs font-bold uppercase tracking-wider flex items-center gap-1">
           &larr; Exit
         </Link>
-        <div className="text-amber-200/60 text-[10px] tracking-[0.2em] uppercase font-magical flex items-center gap-2">
-            <Sparkles size={10} /> Step {step > 9 ? step - 5 : step} / 9
+        <div className="flex items-center gap-4">
+             {aetherBalance !== null && (
+                 <div className="hidden md:flex items-center gap-2 text-xs text-amber-500 font-mono border border-amber-500/30 px-3 py-1 rounded bg-black/40">
+                     <Coins size={12} /> {aetherBalance}
+                 </div>
+             )}
+             <div className="text-amber-200/60 text-[10px] tracking-[0.2em] uppercase font-magical flex items-center gap-2">
+                <Sparkles size={10} /> Step {step > 9 ? step - 5 : step} / 9
+             </div>
         </div>
-        <button onClick={toggleMute} className="text-amber-500/50 hover:text-amber-200">
-          {muted ? <VolumeX size={20} /> : <Volume2 size={20} />}
-        </button>
+        <div className="flex gap-2">
+             <button onClick={toggleMute} className="text-amber-500/50 hover:text-amber-200">
+                {muted ? <VolumeX size={20} /> : <Volume2 size={20} />}
+             </button>
+             {aetherBalance !== null && (
+                 <Link href="/store" className="md:hidden flex items-center text-amber-500 hover:text-white">
+                     <Coins size={20} />
+                 </Link>
+             )}
+        </div>
       </div>
 
       {/* Main Content Area */}
@@ -1271,8 +1305,10 @@ const StageTwoJar = ({ mode, names, filledIngredients, droppingItem, onComplete,
       if (mode === 'drop' && droppingItem) {
           data.item = droppingItem.name.toLowerCase();
           data.icon = droppingItem.icon;
+          // IMPORTANT: Check droppingItem.chant as well
+          if (droppingItem.chant) data.customChant = droppingItem.chant;
       }
-      // NEW: Pass custom chant if available
+      // Pass custom chant if available (mainly for honey)
       if (customChant) data.customChant = customChant;
 
       return <PreStepIncantation type={type} isForSelf={isForSelf} data={data} onNext={() => setShowIntro(false)} />;
