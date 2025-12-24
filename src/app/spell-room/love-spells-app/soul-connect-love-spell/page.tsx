@@ -3,7 +3,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Sparkles, Droplets, RotateCw, Hand, Check, Moon, Volume2, VolumeX, Users, User, Flame, LogOut, Repeat, Star, ArrowDown, Scroll, Heart, Brain, Wand2, Book, Save, Skull, AlertTriangle, BookOpen, RotateCcw, Coins } from 'lucide-react';
+import { Sparkles, Droplets, RotateCw, Hand, Check, Moon, Volume2, VolumeX, Users, User, Flame, LogOut, Repeat, Star, ArrowDown, Scroll, Wand2, Book, Save, Skull, AlertTriangle, BookOpen, RotateCcw, Coins } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
@@ -16,7 +16,7 @@ import MagickalBackLink from '@/app/components/MagickalBackLink';
 
 // --- CONFIGURATION ---
 const SERVICE_SLUG_GEN = 'ai_love_spell';
-const SERVICE_SLUG_SAVE = 'save_spell_love'; // Expecting ~10 credits per user request
+const SERVICE_SLUG_SAVE = 'save_spell_love';
 
 // --- AUDIO ENGINE ---
 class MagicAudio {
@@ -461,37 +461,16 @@ const MagickPopup = ({ message, buttonText = "Continue", onContinue }: { message
   </div>
 );
 
-const SlotPurchaseModal = ({ isOpen, onClose, onPurchase, isProcessing }: { isOpen: boolean, onClose: () => void, onPurchase: () => void, isProcessing: boolean }) => {
-    if (!isOpen) return null;
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-6 animate-in fade-in">
-            <div className="bg-[#1a1a2e] border border-amber-500/50 rounded-xl p-8 max-w-sm w-full text-center shadow-[0_0_50px_rgba(251,191,36,0.2)]">
-                <BookOpen size={48} className="text-amber-400 mx-auto mb-4" />
-                <h3 className="text-xl font-serif text-amber-100 mb-2">Grimoire Full</h3>
-                <p className="text-gray-400 text-sm mb-6">
-                    Your book of shadows has reached its capacity. Expand your grimoire by 5 slots to continue saving your workings.
-                </p>
-                <div className="flex flex-col gap-3">
-                    <button onClick={onPurchase} disabled={isProcessing} className="w-full flex items-center justify-center gap-2 py-3 bg-amber-700 hover:bg-amber-600 text-white font-bold rounded uppercase tracking-wider text-xs transition-colors disabled:opacity-50">
-                        {isProcessing ? "Expanding..." : "Expand Storage (-10 Aether)"}
-                    </button>
-                    <button onClick={onClose} className="text-gray-500 hover:text-white text-xs underline">Cancel</button>
-                </div>
-            </div>
-        </div>
-    );
-};
-
 // --- COMPONENT: FINAL MODAL ---
-const FinalPopup = ({ onExit, onSave, isSaving, isSaved, error, saveCost }: { onExit: () => void, onSave: () => void, isSaving: boolean, isSaved: boolean, error?: string | null, saveCost: number }) => {
+const FinalPopup = ({ onExit, onSave, isSaving, isSaved, saveCost }: { onExit: () => void, onSave: () => void, isSaving: boolean, isSaved: boolean, saveCost: number }) => {
   const router = typeof window !== 'undefined' ? (window as any).location : { reload: () => {} };
-  const [hasSaved, setHasSaved] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   const handleSave = () => {
-    if (hasSaved || isSaved) return;
+    if (saved) return;
     audio.playClick('magick');
     onSave();
-    setHasSaved(true);
+    setSaved(true);
   };
   
   return (
@@ -505,11 +484,9 @@ const FinalPopup = ({ onExit, onSave, isSaving, isSaved, error, saveCost }: { on
             <h2 className="text-2xl font-magical text-amber-100 mb-2">It is Done</h2>
             <p className="text-amber-400/60 font-scroll italic mb-8">The energy has been released.</p>
             
-            {error && <p className="text-red-400 text-xs mb-4">{error}</p>}
-
             <div className="flex flex-col gap-4">
                 <button
-                    disabled={isSaved || isSaving}
+                    disabled={saved || isSaving || isSaved}
                     onClick={handleSave}
                     className="w-full flex items-center justify-center gap-2 bg-indigo-900/40 border border-indigo-500/50 text-indigo-100 py-3 uppercase tracking-widest font-magical text-xs hover:bg-indigo-800/50 transition-colors disabled:opacity-50"
                 >
@@ -541,6 +518,28 @@ const FinalPopup = ({ onExit, onSave, isSaving, isSaved, error, saveCost }: { on
   );
 };
 
+// --- COMPONENT: SLOT PURCHASE MODAL ---
+const SlotPurchaseModal = ({ isOpen, onClose, onPurchase, isProcessing }: { isOpen: boolean, onClose: () => void, onPurchase: () => void, isProcessing: boolean }) => {
+    if (!isOpen) return null;
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-6 animate-in fade-in">
+            <div className="bg-[#1a1a2e] border border-amber-500/50 rounded-xl p-8 max-w-sm w-full text-center shadow-[0_0_50px_rgba(251,191,36,0.2)]">
+                <BookOpen size={48} className="text-amber-400 mx-auto mb-4" />
+                <h3 className="text-xl font-serif text-amber-100 mb-2">Grimoire Full</h3>
+                <p className="text-gray-400 text-sm mb-6">
+                    Your book of shadows has reached its capacity. Expand your grimoire by 5 slots to continue saving your workings.
+                </p>
+                <div className="flex flex-col gap-3">
+                    <button onClick={onPurchase} disabled={isProcessing} className="w-full flex items-center justify-center gap-2 py-3 bg-amber-700 hover:bg-amber-600 text-white font-bold rounded uppercase tracking-wider text-xs transition-colors disabled:opacity-50">
+                        {isProcessing ? "Expanding..." : "Expand Storage (-10 Aether)"}
+                    </button>
+                    <button onClick={onClose} className="text-gray-500 hover:text-white text-xs underline">Cancel</button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 // --- COMPONENT: MAIN PAGE ---
 
 export default function SoulConnectSpellPage() {
@@ -562,8 +561,8 @@ export default function SoulConnectSpellPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [appError, setAppError] = useState<string | null>(null);
-  
-  // Economy
+
+  // Economy Hooks
   const { 
     cost: genCost, 
     spendAether: spendGenCredits, 
@@ -601,11 +600,16 @@ export default function SoulConnectSpellPage() {
                       setIntention(spell.intention);
                       setIsForSelf(data.isForSelf ?? true);
                       
-                      // Handle Ingredients hydration - converting back to expected visual format
-                      // We stored 'aiIngredients' directly in saveToGrimoire, so we can use them directly or map if needed.
-                      // Assuming stored ingredients have necessary props
+                      // Handle Ingredients hydration
                       setActiveIngredients(data.ingredients || []);
-                      setGeneratedChant(data.incantation ? data.incantation.split('\n') : []);
+                      
+                      // Handle Chant hydration
+                      // If saved as a string (legacy/simple), split it. If array, use directly.
+                      const chant = Array.isArray(data.incantation) 
+                        ? data.incantation 
+                        : (typeof data.incantation === 'string' ? data.incantation.split('\n') : []);
+                        
+                      setGeneratedChant(chant.length > 0 ? chant : (spell.incantation ? spell.incantation.split('\n') : []));
                       
                       setIsReplayMode(true);
                       setIsSaved(true); 
@@ -621,7 +625,7 @@ export default function SoulConnectSpellPage() {
           loadSpell();
       }
   }, [loadId]);
-
+  
   const startRitual = () => {
     audio.init();
     audio.playClick('magick'); // Start is a major event
@@ -712,18 +716,20 @@ export default function SoulConnectSpellPage() {
      clearSaveError();
 
      try {
-         // 1. Deduct Credits
+         // 1. Deduct Credits using Save Cost
          const paid = await spendSaveCredits(user.id);
          if (!paid) {
              setIsSaving(false);
-             return;
+             return; // Economy hook shows UI
          }
 
          // 2. Save
          const finalIncantation = generatedChant.join('\n');
+         
+         // Store full data for hydration
          const ritualData = {
              ingredients: activeIngredients,
-             incantation: finalIncantation, // Store as string for simple view
+             incantation: generatedChant, // Store array for hydration, or split string
              names,
              isForSelf,
              timestamp: new Date().toISOString()
@@ -838,8 +844,8 @@ export default function SoulConnectSpellPage() {
               names={names} setNames={setNames} 
               intention={intention} setIntention={setIntention} 
               isForSelf={isForSelf} setIsForSelf={setIsForSelf}
-              onComplete={handlePetitionDone}
-              // Pass Economy Props
+              onComplete={handlePetitionDone} 
+              // Economy
               genCost={genCost}
               spendGenCredits={spendGenCredits}
               isGenProcessing={isGenProcessing}
@@ -861,16 +867,16 @@ export default function SoulConnectSpellPage() {
 
           {/* LOOPS FOR INGREDIENTS */}
           {/* Ing 1 */}
-          {step === 3 && <StageThreeConsecrate ingredient={activeIngredients[0]} index={0} total={activeIngredients.length} isForSelf={isForSelf} names={names} onComplete={() => handleStageComplete(`The ${activeIngredients[0].name.toLowerCase()} is charged.`)} />}
-          {step === 4 && <StageTwoJar mode="drop" droppingItem={activeIngredients[0]} isForSelf={isForSelf} filledIngredients={addedIngredients} names={names} onComplete={() => handleIngredientDrop(activeIngredients[0])} />}
+          {step === 3 && activeIngredients[0] && <StageThreeConsecrate ingredient={activeIngredients[0]} index={0} total={activeIngredients.length} isForSelf={isForSelf} names={names} onComplete={() => handleStageComplete(`The ${activeIngredients[0].name.toLowerCase()} is charged.`)} />}
+          {step === 4 && activeIngredients[0] && <StageTwoJar mode="drop" droppingItem={activeIngredients[0]} isForSelf={isForSelf} filledIngredients={addedIngredients} names={names} onComplete={() => handleIngredientDrop(activeIngredients[0])} />}
 
           {/* Ing 2 */}
-          {step === 5 && <StageThreeConsecrate ingredient={activeIngredients[1]} index={1} total={activeIngredients.length} isForSelf={isForSelf} names={names} onComplete={() => handleStageComplete(`The ${activeIngredients[1].name.toLowerCase()} is charged.`)} />}
-          {step === 6 && <StageTwoJar mode="drop" droppingItem={activeIngredients[1]} isForSelf={isForSelf} filledIngredients={addedIngredients} names={names} onComplete={() => handleIngredientDrop(activeIngredients[1])} />}
+          {step === 5 && activeIngredients[1] && <StageThreeConsecrate ingredient={activeIngredients[1]} index={1} total={activeIngredients.length} isForSelf={isForSelf} names={names} onComplete={() => handleStageComplete(`The ${activeIngredients[1].name.toLowerCase()} is charged.`)} />}
+          {step === 6 && activeIngredients[1] && <StageTwoJar mode="drop" droppingItem={activeIngredients[1]} isForSelf={isForSelf} filledIngredients={addedIngredients} names={names} onComplete={() => handleIngredientDrop(activeIngredients[1])} />}
 
           {/* Ing 3 */}
-          {step === 7 && <StageThreeConsecrate ingredient={activeIngredients[2]} index={2} total={activeIngredients.length} isForSelf={isForSelf} names={names} onComplete={() => handleStageComplete("The binding is charged.")} />}
-          {step === 8 && <StageTwoJar mode="drop" droppingItem={activeIngredients[2]} isForSelf={isForSelf} filledIngredients={addedIngredients} names={names} onComplete={() => handleIngredientDrop(activeIngredients[2])} />}
+          {step === 7 && activeIngredients[2] && <StageThreeConsecrate ingredient={activeIngredients[2]} index={2} total={activeIngredients.length} isForSelf={isForSelf} names={names} onComplete={() => handleStageComplete("The binding is charged.")} />}
+          {step === 8 && activeIngredients[2] && <StageTwoJar mode="drop" droppingItem={activeIngredients[2]} isForSelf={isForSelf} filledIngredients={addedIngredients} names={names} onComplete={() => handleIngredientDrop(activeIngredients[2])} />}
 
            {/* Support for extra AI ingredients if needed, can iterate later. For now fixed to 3 slots for visual simplicity */}
 
@@ -975,7 +981,6 @@ const StageOneIntention = ({ names, setNames, intention, setIntention, isForSelf
           } catch (e) {
               console.error(e);
               setIsLoading(false);
-              // Failures handled by parent typically, but here we might alert or fallback
               alert("The spirits are silent. Please try again or use Standard mode.");
               setMode('choice');
           }
@@ -1070,7 +1075,7 @@ const StageOneIntention = ({ names, setNames, intention, setIntention, isForSelf
           );
       }
 
-      // If Replay Mode, show simplified Choice
+      // Replay Mode Choice
       if (isReplay) {
           return (
              <div className="w-full animate-in zoom-in duration-300 flex flex-col items-center justify-center space-y-4">
@@ -1137,12 +1142,14 @@ const StageOneIntention = ({ names, setNames, intention, setIntention, isForSelf
         <div className="absolute inset-0 border-2 border-amber-900/30 rounded-full animate-[spin_10s_linear_infinite]"></div>
         <div className="absolute inset-2 border border-amber-900/20 rounded-full animate-[spin_15s_linear_infinite_reverse]"></div>
 
+        {/* Venus Sigil Background */}
         <svg viewBox="0 0 100 100" className="w-40 h-40 absolute stroke-amber-800/50 fill-none stroke-2 pointer-events-none">
            <circle cx="50" cy="35" r="25" />
            <line x1="50" y1="60" x2="50" y2="95" />
            <line x1="35" y1="80" x2="65" y2="80" />
         </svg>
 
+        {/* Venus Sigil Foreground */}
         <svg viewBox="0 0 100 100" className="w-40 h-40 absolute stroke-amber-200 fill-none stroke-[3px] drop-shadow-[0_0_10px_rgba(251,191,36,0.8)] pointer-events-none" style={{ clipPath: `inset(${100 - traceProgress}% 0 0 0)` }}>
            <circle cx="50" cy="35" r="25" />
            <line x1="50" y1="60" x2="50" y2="95" />
