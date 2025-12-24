@@ -541,8 +541,7 @@ const SlotPurchaseModal = ({ isOpen, onClose, onPurchase, isProcessing }: { isOp
     );
 };
 
-
-// --- COMPONENT: MAIN PAGE Content Logic ---
+// --- COMPONENT: MAIN PAGE CONTENT ---
 
 function SoulConnectSpellContent() {
   const [started, setStarted] = useState(false);
@@ -717,15 +716,17 @@ function SoulConnectSpellContent() {
      clearSaveError();
 
      try {
-         // 1. Deduct Credits
+         // 1. Deduct Credits using Save Cost
          const paid = await spendSaveCredits(user.id);
          if (!paid) {
              setIsSaving(false);
-             return;
+             return; // Economy hook shows UI
          }
 
          // 2. Save
          const finalIncantation = generatedChant.join('\n');
+         
+         // Store full data for hydration
          const ritualData = {
              ingredients: activeIngredients,
              incantation: generatedChant, // Store array for hydration, or split string
@@ -1075,7 +1076,7 @@ const StageOneIntention = ({ names, setNames, intention, setIntention, isForSelf
           );
       }
 
-      // Replay Mode Choice
+      // If Replay Mode, show simplified Choice
       if (isReplay) {
           return (
              <div className="w-full animate-in zoom-in duration-300 flex flex-col items-center justify-center space-y-4">
