@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSearchParams } from 'next/navigation';
 import type { Session, GeneratedWiccanSpell } from '@/lib/types';
+import Link from 'next/link'; // Ensured Import
 
 // Services
 import { generateWiccanSpell, saveSpell } from '@/lib/services/geminiService';
@@ -23,7 +24,6 @@ import { PentagramIcon } from './icons';
 import { Sprite } from './Sprite';
 import { findSprite } from '@/lib/spriteLibrary';
 import { Book, Wand2, Sparkles, Save, Check, RotateCcw, AlertTriangle, BookOpen, Coins } from 'lucide-react';
-import Link from 'next/link';
 
 // --- Configuration ---
 const ASSET_PATH = "/images/Spells/Wicca Tradition General";
@@ -95,6 +95,7 @@ interface Step1Props extends StepProps {
     setSituation: (val: string) => void;
     onBegin: (mode: 'standard' | 'ai') => void;
     isReplay: boolean;
+    cost: number; // Added cost prop
 }
 
 interface Step2Props extends StepProps {
@@ -121,6 +122,7 @@ interface Step9Props {
     onSave: () => void;
     isSaving: boolean;
     isSaved: boolean;
+    onReturn: () => void;
 }
 
 type SpriteData = NonNullable<ReturnType<typeof findSprite>>;
@@ -199,8 +201,7 @@ const WiccaMagick: React.FC<WiccaMagickProps> = ({ session, onBack }) => {
                         setIsReplayMode(true);
                         setIsSaved(true);
                         
-                        // Jump to Step 2 (Elements) or Step 4 (Components) depending on preference.
-                        // Step 2 (Elements) is good for establishing the circle again.
+                        // Jump to Step 2 (Elements)
                         setRitualStep(2); 
                     }
                 } catch (e) {
@@ -395,7 +396,7 @@ const WiccaMagick: React.FC<WiccaMagickProps> = ({ session, onBack }) => {
 
         switch (ritualStep) {
             case 0: return <Step0_Intro onNext={() => setRitualStep(1)} />;
-            case 1: return <Step1_Intention intention={intention} setIntention={setIntention} situation={situation} setSituation={setSituation} onBegin={handleBeginRitual} onNext={() => {}} isReplay={isReplayMode} />;
+            case 1: return <Step1_Intention intention={intention} setIntention={setIntention} situation={situation} setSituation={setSituation} onBegin={handleBeginRitual} onNext={() => {}} isReplay={isReplayMode} cost={cost} />;
             case 2: return <Step2_Elements chargedElements={chargedElements} onChargeComplete={handleElementChargeComplete} onNext={() => setRitualStep(3)} />;
             case 3: return <Step3_Deities selectedDeities={selectedDeities} onToggle={handleDeityToggle} onNext={() => setRitualStep(4)} />;
             case 4: return generatedSpell && <Step4_Components spell={generatedSpell} onNext={() => setRitualStep(5)} />;
@@ -491,7 +492,7 @@ const Step0_Intro: React.FC<StepProps> = ({ onNext }) => (
     </StepContainer>
 );
 
-const Step1_Intention: React.FC<Step1Props> = ({ intention, setIntention, situation, setSituation, onBegin, isReplay }) => (
+const Step1_Intention: React.FC<Step1Props> = ({ intention, setIntention, situation, setSituation, onBegin, isReplay, cost }) => (
     <StepContainer 
         stageTitle="State Your True Will" 
         instruction="Inscribe your deepest desire. For High Rituals, describe your situation to guide the spirits."
@@ -522,13 +523,13 @@ const Step1_Intention: React.FC<Step1Props> = ({ intention, setIntention, situat
             
             <div className="flex flex-col gap-3 w-full max-w-xs">
                 {isReplay ? (
-                     <button onClick={() => onBegin('standard')} className="flex items-center justify-center gap-3 p-4 bg-purple-900 border border-purple-500 rounded-lg hover:bg-purple-800 text-white shadow-lg animate-pulse">
+                     <button type="button" onClick={() => onBegin('standard')} className="flex items-center justify-center gap-3 p-4 bg-purple-900 border border-purple-500 rounded-lg hover:bg-purple-800 text-white shadow-lg animate-pulse">
                         <RotateCcw className="w-5 h-5" />
                         <div className="font-serif tracking-widest text-sm uppercase">Begin Replay (Free)</div>
                     </button>
                 ) : (
                     <>
-                        <button onClick={() => onBegin('standard')} disabled={!intention} className="flex items-center gap-3 p-3 bg-slate-800/80 border border-slate-600 rounded-lg hover:bg-slate-700 disabled:opacity-50 text-slate-200">
+                        <button type="button" onClick={() => onBegin('standard')} disabled={!intention} className="flex items-center gap-3 p-3 bg-slate-800/80 border border-slate-600 rounded-lg hover:bg-slate-700 disabled:opacity-50 text-slate-200">
                             <Book className="w-5 h-5 text-slate-300" />
                             <div className="text-left">
                                 <div className="text-amber-100 font-serif">Standard Ritual</div>
@@ -536,12 +537,12 @@ const Step1_Intention: React.FC<Step1Props> = ({ intention, setIntention, situat
                             </div>
                         </button>
                         
-                        <button onClick={() => onBegin('ai')} disabled={!intention} className="flex items-center gap-3 p-3 bg-purple-900/60 border border-purple-500 rounded-lg hover:bg-purple-800 disabled:opacity-50 relative overflow-hidden group text-purple-100">
+                        <button type="button" onClick={() => onBegin('ai')} disabled={!intention} className="flex items-center gap-3 p-3 bg-purple-900/60 border border-purple-500 rounded-lg hover:bg-purple-800 disabled:opacity-50 relative overflow-hidden group text-purple-100">
                              <div className="absolute inset-0 bg-purple-500/10 animate-pulse group-hover:bg-purple-500/20"></div>
                             <Wand2 className="w-5 h-5 text-purple-300" />
                             <div className="text-left relative z-10">
                                 <div className="text-purple-100 font-serif flex items-center gap-2">High Ritual <Sparkles size={12}/></div>
-                                <div className="text-xs text-purple-300">AI-woven spellcraft. {3} Credits.</div>
+                                <div className="text-xs text-purple-300">AI-woven spellcraft. {cost} Credits.</div>
                             </div>
                         </button>
                     </>
