@@ -91,6 +91,14 @@ export interface GeneratedWiccanSpell {
   symbolic_ingredients: WiccanIngredient[];
   central_chant: string;
   affirmation: string;
+  // NEW: Add this optional field
+  elemental_chants?: {
+    Spirit: string;
+    Air: string;
+    Fire: string;
+    Water: string;
+    Earth: string;
+  };
 }
 
 // --- Love Spell Types (MOVED HERE) ---

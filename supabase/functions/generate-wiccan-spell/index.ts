@@ -31,7 +31,7 @@ Deno.serve(async (req: Request) => {
     }
 
     try {
-        const { intention, focalPoint, moonPhase } = await req.json();
+        const { intention, focalPoint, moonPhase, situation } = await req.json();
         const serviceAccountKey = Deno.env.get('GCP_SERVICE_ACCOUNT_KEY');
         if (!serviceAccountKey) { throw new Error("GCP_SERVICE_ACCOUNT_KEY secret is not set in Supabase."); }
 
@@ -43,23 +43,25 @@ Deno.serve(async (req: Request) => {
         const accessToken = (await client.getAccessToken()).token;
         if (!accessToken) { throw new Error("Failed to retrieve access token."); }
 
-        // THE FIX: Reverted to the original, working model name for this specific function.
         const apiUrl = `https://${GCP_REGION}-aiplatform.googleapis.com/v1/projects/${GCP_PROJECT_ID}/locations/${GCP_REGION}/publishers/google/models/gemini-2.5-flash:generateContent`;
         
         const prompt = `
-          You are designing a self-contained, DIGITAL Wiccan ritual for an app.
-          The user's intention is: "${intention}".
-          The user has chosen to focus their energy through the divine aspect of: "${focalPoint}".
-          The current moon phase is: "${moonPhase}".
+          You are designing a self-contained, DIGITAL Wiccan ritual.
+          User Intention: "${intention}".
+          Situation Context: "${situation || 'General'}"
+          Focal Point: "${focalPoint}".
+          Moon Phase: "${moonPhase}".
 
           Generate a valid JSON object with the following keys:
-          - "title": A fitting, poetic name for the ritual that reflects the intention and focal point.
-          - "incantation": A short, 2-4 line rhyming incantation for the user to speak at the start.
-          - "symbolic_ingredients": An array of EXACTLY FIVE objects. For each object, choose a "name" from this list: [${AVAILABLE_INGREDIENTS.map(i => `"${i}"`).join(", ")}]. Select the five ingredients that are MOST symbolically aligned with the user's intention and chosen focal point (${focalPoint}). Prioritize variety and avoid repetition unless an ingredient is exceptionally fitting.
-          - "central_chant": A short, 2-line rhyming chant to appear after all ingredients are placed.
-          - "affirmation": A single, powerful sentence for the user to see at the very end to seal the spell.
+          - "title": A poetic name for the ritual.
+          - "elemental_chants": An object containing 5 short (2-line) rhyming incantations to call the quarters, specifically tailored to the intention. Keys must be exactly: "Spirit", "Air", "Fire", "Earth", "Water".
+          - "symbolic_ingredients": An array of EXACTLY FIVE objects. For each object:
+             - "name": Choose from [${AVAILABLE_INGREDIENTS.map(i => `"${i}"`).join(", ")}].
+             - "incantation": A specific 1-sentence command telling this item what to do for the spell.
+          - "central_chant": A short, 4-line rhyming chant to speak at the climax.
+          - "affirmation": A single, powerful sentence to seal the spell.
           
-          Do not include any other keys or markdown formatting. The output must be only the raw JSON object.
+          Do not include markdown formatting. Return only the raw JSON.
         `;
 
         const response = await fetch(apiUrl, {
@@ -86,19 +88,7 @@ Deno.serve(async (req: Request) => {
         }
         
         const cleanedJsonString = responseBody.replace(/```json\n|```/g, '').trim();
-
-        let parsedJson;
-        try {
-            parsedJson = JSON.parse(cleanedJsonString);
-        } catch (parseError) {
-            console.error("Failed to parse JSON response from AI:", cleanedJsonString);
-            if (parseError instanceof Error) {
-                console.error("Parse Error:", parseError.message);
-            } else {
-                console.error("An unknown parsing error occurred:", parseError);
-            }
-            throw new Error("The AI returned a malformed spell. Please try again.");
-        }
+        const parsedJson = JSON.parse(cleanedJsonString);
 
         return new Response(JSON.stringify(parsedJson), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 

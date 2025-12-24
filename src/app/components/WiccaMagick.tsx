@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSearchParams } from 'next/navigation';
 import type { Session, GeneratedWiccanSpell } from '@/lib/types';
-import Link from 'next/link'; // Ensured Import
+import Link from 'next/link';
 
 // Services
 import { generateWiccanSpell, saveSpell } from '@/lib/services/geminiService';
@@ -44,10 +44,18 @@ const STANDARD_WICCAN_SPELL: GeneratedWiccanSpell = {
         { name: "Athame", incantation: "Air of Intellect, direct my will." },
         { name: "Candle", incantation: "Fire of Passion, ignite my soul." },
         { name: "Pentacle", incantation: "Spirit of All, bind this work." }
-    ]
+    ],
+    elemental_chants: {
+        Spirit: "I call the Spirit, the cosmic sea\nNow bind this magic and make it be.",
+        Air: "I command the subtle Air\nto carry this spell everywhere.",
+        Fire: "I call vibrant Fire\nTo charge this spell with pure desire.",
+        Earth: "I command the ancient Earth\nto give my magic solid worth.",
+        Water: "I call the fertile Water\nto make my magic flow and grow."
+    }
 };
 
 // --- Sound Utility ---
+// FIX: Return an object with stop() method that handles internal audio context
 const playSound = (src: string, volume: number = 0.5, loop: boolean = false): { play: () => void; stop: () => void; } => {
     const win = (globalThis as any).window;
     if (typeof win === 'undefined') return { play: () => {}, stop: () => {} };
@@ -58,7 +66,10 @@ const playSound = (src: string, volume: number = 0.5, loop: boolean = false): { 
     audio.loop = loop;
     
     const play = () => audio.play().catch((e: any) => console.error(`Failed to play sound: ${src}`, e));
-    const stop = () => { audio.pause(); audio.currentTime = 0; };
+    const stop = () => { 
+        audio.pause(); 
+        audio.currentTime = 0; 
+    };
     return { play, stop };
 };
 
@@ -74,6 +85,7 @@ interface RitualButtonProps {
     children: React.ReactNode;
     className?: string;
     disabled?: boolean;
+    type?: "button" | "submit" | "reset";
 }
 
 interface StepContainerProps {
@@ -95,12 +107,13 @@ interface Step1Props extends StepProps {
     setSituation: (val: string) => void;
     onBegin: (mode: 'standard' | 'ai') => void;
     isReplay: boolean;
-    cost: number; // Added cost prop
+    cost: number;
 }
 
 interface Step2Props extends StepProps {
     chargedElements: string[];
     onChargeComplete: (name: string) => void;
+    spell: GeneratedWiccanSpell | null; // Pass spell to access custom chants
 }
 
 interface Step3Props extends StepProps {
@@ -157,7 +170,6 @@ const WiccaMagick: React.FC<WiccaMagickProps> = ({ session, onBack }) => {
     const [loadingMessage, setLoadingMessage] = useState('');
     const [error, setError] = useState<string | null>(null);
     
-    // Economy
     const { 
         cost, 
         spendAether, 
@@ -192,7 +204,6 @@ const WiccaMagick: React.FC<WiccaMagickProps> = ({ session, onBack }) => {
                     if (spell) {
                         const data = typeof spell.ritual_data === 'string' ? JSON.parse(spell.ritual_data) : spell.ritual_data;
                         
-                        // Hydrate
                         setIntention(spell.intention);
                         setSituation(data.situation || '');
                         setSelectedDeities(data.selectedDeities || []);
@@ -200,8 +211,6 @@ const WiccaMagick: React.FC<WiccaMagickProps> = ({ session, onBack }) => {
                         
                         setIsReplayMode(true);
                         setIsSaved(true);
-                        
-                        // Jump to Step 2 (Elements)
                         setRitualStep(2); 
                     }
                 } catch (e) {
@@ -215,9 +224,7 @@ const WiccaMagick: React.FC<WiccaMagickProps> = ({ session, onBack }) => {
         }
     }, [loadId]);
 
-
     const handleBeginRitual = async (mode: 'standard' | 'ai') => {
-        // Replay Bypass
         if (isReplayMode) {
              setRitualStep(2);
              return;
@@ -231,17 +238,14 @@ const WiccaMagick: React.FC<WiccaMagickProps> = ({ session, onBack }) => {
             setGeneratedSpell(STANDARD_WICCAN_SPELL);
             setRitualStep(2); 
         } else {
-            // AI Mode
             if (!session?.user?.id) {
                 setError("You must be logged in to perform High Rituals.");
                 return;
             }
 
-            // 1. Charge User
             const paid = await spendAether(session.user.id);
-            if (!paid) return; // Hook handles UI
+            if (!paid) return;
 
-            // 2. Generate
             setLoading(true);
             setLoadingMessage("Communing with the Divine...");
             try {
@@ -252,6 +256,12 @@ const WiccaMagick: React.FC<WiccaMagickProps> = ({ session, onBack }) => {
                     moonPhase: 'Current',
                     situation: situation 
                 });
+                
+                // Ensure fallback if AI doesn't return elemental chants
+                if (!spell.elemental_chants) {
+                    spell.elemental_chants = STANDARD_WICCAN_SPELL.elemental_chants;
+                }
+                
                 setGeneratedSpell(spell);
                 setRitualStep(2);
             } catch (err: any) {
@@ -264,8 +274,10 @@ const WiccaMagick: React.FC<WiccaMagickProps> = ({ session, onBack }) => {
 
     const handleElementChargeComplete = (elementName: string) => {
         if (!chargedElements.includes(elementName)) {
-            playSound('/audio/sfx-chaos-activate.mp3', 0.4).play();
+            // Fix: No .play() needed here, handled inside ChargingElement via ref
             setChargedElements(prev => [...prev, elementName]);
+            // Optional: Play a specific success sound for this step if needed
+            playSound('/audio/sfx-chaos-activate.mp3', 0.4).play();
         }
     };
     
@@ -293,7 +305,6 @@ const WiccaMagick: React.FC<WiccaMagickProps> = ({ session, onBack }) => {
         setError(null);
         
         try {
-             // Save full state for replay
              const ritualData = {
                  intention,
                  situation,
@@ -307,7 +318,7 @@ const WiccaMagick: React.FC<WiccaMagickProps> = ({ session, onBack }) => {
                  intention: intention,
                  incantation: generatedSpell.central_chant,
                  element: "Spirit",
-                 tradition: 'WICCA', // Critical for routing
+                 tradition: 'WICCA',
                  ritual_data: ritualData
              });
 
@@ -352,7 +363,6 @@ const WiccaMagick: React.FC<WiccaMagickProps> = ({ session, onBack }) => {
         setError(null);
         clearPaymentError();
 
-        // Clear URL
         if (typeof window !== 'undefined') {
             const url = new URL(window.location.href);
             url.searchParams.delete('loadId');
@@ -397,7 +407,7 @@ const WiccaMagick: React.FC<WiccaMagickProps> = ({ session, onBack }) => {
         switch (ritualStep) {
             case 0: return <Step0_Intro onNext={() => setRitualStep(1)} />;
             case 1: return <Step1_Intention intention={intention} setIntention={setIntention} situation={situation} setSituation={setSituation} onBegin={handleBeginRitual} onNext={() => {}} isReplay={isReplayMode} cost={cost} />;
-            case 2: return <Step2_Elements chargedElements={chargedElements} onChargeComplete={handleElementChargeComplete} onNext={() => setRitualStep(3)} />;
+            case 2: return <Step2_Elements chargedElements={chargedElements} onChargeComplete={handleElementChargeComplete} onNext={() => setRitualStep(3)} spell={generatedSpell} />;
             case 3: return <Step3_Deities selectedDeities={selectedDeities} onToggle={handleDeityToggle} onNext={() => setRitualStep(4)} />;
             case 4: return generatedSpell && <Step4_Components spell={generatedSpell} onNext={() => setRitualStep(5)} />;
             case 5: return generatedSpell && <Step5_ChargeComponent key={`charge-${chargingIndex}`} spell={generatedSpell} chargingIndex={chargingIndex} onNext={handleAdvanceAfterCharge} />;
@@ -449,8 +459,8 @@ const WiccaMagick: React.FC<WiccaMagickProps> = ({ session, onBack }) => {
 
 // --- Step Building Blocks ---
 
-const RitualButton: React.FC<RitualButtonProps> = ({ onClick, children, className, disabled }) => (
-    <button onClick={onClick} disabled={disabled} className={`px-8 py-3 bg-black/40 text-white font-serif rounded-lg border-2 border-purple-400/50 backdrop-blur-sm hover:bg-purple-900/50 hover:border-purple-300 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${className}`}>
+const RitualButton: React.FC<RitualButtonProps> = ({ onClick, children, className, disabled, type="button" }) => (
+    <button type={type} onClick={onClick} disabled={disabled} className={`px-8 py-3 bg-black/40 text-white font-serif rounded-lg border-2 border-purple-400/50 backdrop-blur-sm hover:bg-purple-900/50 hover:border-purple-300 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${className}`}>
         {children}
     </button>
 );
@@ -552,14 +562,26 @@ const Step1_Intention: React.FC<Step1Props> = ({ intention, setIntention, situat
     </StepContainer>
 );
 
-const Step2_Elements: React.FC<Step2Props> = ({ chargedElements, onChargeComplete, onNext }) => {
+const Step2_Elements: React.FC<Step2Props> = ({ chargedElements, onChargeComplete, onNext, spell }) => {
+    // Determine which chants to use: Custom or Standard
+    const chants = spell?.elemental_chants || STANDARD_WICCAN_SPELL.elemental_chants;
+    
+    // Safety check if chants is undefined for some reason (though it shouldn't happen with fallback)
+    const getChant = (el: string) => {
+        if (chants && el in chants) {
+            // @ts-ignore
+            return chants[el];
+        }
+        return "Calling the element...";
+    };
+
     const elementsData = useMemo(() => [
-        { name: 'Spirit', spriteName: 'Wand', sound: '/audio/spirit.mp3', incantation: "I call the Spirit, the cosmic sea\nNow bind this magic and make it be." },
-        { name: 'Air', spriteName: 'Athame', sound: '/audio/air.mp3', incantation: "I command the subtle Air\nto carry this spell everywhere." },
-        { name: 'Fire', spriteName: 'Bowl of Fire', sound: '/audio/fire.mp3', incantation: "I call vibrant Fire\nTo charge this spell with pure desire." },
-        { name: 'Earth', spriteName: 'Sacred Stone', sound: '/audio/earth.mp3', incantation: "I command the ancient Earth\nto give my magic solid worth." },
-        { name: 'Water', spriteName: 'Amethyst', sound: '/audio/water.mp3', incantation: "I call the fertile Water\nto make my magic flow and grow." },
-    ], []);
+        { name: 'Spirit', spriteName: 'Wand', sound: '/audio/spirit.mp3', incantation: getChant("Spirit") },
+        { name: 'Air', spriteName: 'Athame', sound: '/audio/air.mp3', incantation: getChant("Air") },
+        { name: 'Fire', spriteName: 'Bowl of Fire', sound: '/audio/fire.mp3', incantation: getChant("Fire") },
+        { name: 'Earth', spriteName: 'Sacred Stone', sound: '/audio/earth.mp3', incantation: getChant("Earth") },
+        { name: 'Water', spriteName: 'Amethyst', sound: '/audio/water.mp3', incantation: getChant("Water") },
+    ], [chants]);
 
     const [activeIncantation, setActiveIncantation] = useState<string | null>(null);
 
@@ -738,7 +760,7 @@ const Step7_Cast: React.FC<SpellStepProps> = ({ spell, onNext }) => {
             clearTimeout(timer);
             clearInterval(counter);
             setCount(0);
-            if(castSoundRef.current) castSoundRef.current.pause();
+            if(castSoundRef.current) castSoundRef.current.stop(); // FIX: Changed pause to stop
         };
     }, [isCasting, onNext]);
 
@@ -908,7 +930,7 @@ const IngredientCharger: React.FC<IngredientChargerProps> = ({ children, onCharg
         }
         return () => {
             clearTimeout(timer);
-            if(chargeSoundRef.current) chargeSoundRef.current.pause();
+            if(chargeSoundRef.current) chargeSoundRef.current.stop(); // FIX: Changed pause to stop
         }
     }, [isHolding, isComplete, onChargeComplete]);
     
@@ -963,7 +985,7 @@ const ChargingElement: React.FC<ChargingElementProps> = ({ name, isCharged, onCh
         }
         return () => {
             clearTimeout(timer);
-            if(chargeSoundRef.current) chargeSoundRef.current.pause();
+            if(chargeSoundRef.current) chargeSoundRef.current.stop(); // FIX: Changed pause to stop
         };
     }, [isHolding, isCharged, name, onChargeComplete, soundSrc]);
 
