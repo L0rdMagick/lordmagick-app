@@ -281,8 +281,8 @@ const GlobalStyles = () => (
 // --- RHYMING INCANTATION GENERATOR ---
 const getIncantation = (type: string, isForSelf: boolean, data: any) => {
     // 1. Check for AI Custom Override first
+    // Note: AI might return 'chant', 'incantation', or 'customChant'
     if (data.customChant) {
-        // Construct basic button labels if not provided
         let btn = "I Speak The Words";
         if (type === 'charge') btn = `I Charge This ${data.item || 'Item'}`;
         if (type === 'honey') btn = "I Pour The Sweetness";
@@ -696,13 +696,15 @@ function SoulConnectContent() {
           const aiIngredients = data.ingredients.map((ing: any) => ({
              ...ing,
              color: ing.color || 'text-amber-300',
-             // Ensure custom chant is mapped if present
-             chant: ing.chant
+             // ROBUST MAPPING: Check multiple possible AI return keys
+             chant: ing.chant || ing.incantation || ing.description || "I charge this component with my will."
           }));
           setActiveIngredients(aiIngredients);
           setGeneratedChant(data.incantation);
-          // Set extra chants
-          if (data.step_chants) setStepChants(data.step_chants);
+          
+          // ROBUST MAPPING: Check multiple keys for step chants
+          const steps = data.step_chants || data.stepChants || {};
+          setStepChants(steps);
 
       } else {
           // Standard Mode Logic
