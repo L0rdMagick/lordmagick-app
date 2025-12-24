@@ -280,6 +280,20 @@ const GlobalStyles = () => (
 
 // --- RHYMING INCANTATION GENERATOR ---
 const getIncantation = (type: string, isForSelf: boolean, data: any) => {
+    // 1. Check for AI Custom Override first
+    if (data.customChant) {
+        // Construct basic button labels if not provided
+        let btn = "I Speak The Words";
+        if (type === 'charge') btn = `I Charge This ${data.item}`;
+        if (type === 'honey') btn = "I Pour The Sweetness";
+        if (type === 'mix') btn = "I Stir The Bond"; // Added mix fallback
+        if (type === 'candle') btn = "I Light The Flame";
+        if (type === 'release') btn = "I Release The Spell";
+        
+        return { text: data.customChant, btn };
+    }
+
+    // 2. Fallback to Standard
     const target = data.target || "my love";
     const item = data.item || "this charm";
     
@@ -554,6 +568,9 @@ function SoulConnectContent() {
   const [activeIngredients, setActiveIngredients] = useState<any[]>([]);
   const [addedIngredients, setAddedIngredients] = useState<any[]>([]);
   const [generatedChant, setGeneratedChant] = useState<string[]>([]);
+  // Correctly defined state with 'mix'
+  const [stepChants, setStepChants] = useState<{ honey?: string, mix?: string, candle?: string, release?: string }>({});
+
   const [showSuccess, setShowSuccess] = useState<{msg: string, btn?: string} | null>(null);
 
   // New State for Deep Weaving & Replay
@@ -611,6 +628,9 @@ function SoulConnectContent() {
                         
                       setGeneratedChant(chant.length > 0 ? chant : (spell.incantation ? spell.incantation.split('\n') : []));
                       
+                      // Hydrate extra chants
+                      if (data.stepChants) setStepChants(data.stepChants);
+
                       setIsReplayMode(true);
                       setIsSaved(true); 
                       setIsAI(true); // Treat replay as AI mode for visual purposes (custom content)
@@ -664,10 +684,15 @@ function SoulConnectContent() {
           }));
           setActiveIngredients(aiIngredients);
           setGeneratedChant(data.incantation);
+          // Set extra chants
+          if (data.step_chants) setStepChants(data.step_chants);
+
       } else {
           // Standard Mode Logic
           setActiveIngredients(determineIngredients(intention));
           setGeneratedChant(generateIncantation(names, isForSelf));
+          // Reset step chants to empty so defaults are used
+          setStepChants({});
       }
 
       handleStageComplete(mode === 'ai' ? "The spirits have spoken. The path is set." : "The Sigil is active. The path is open.");
@@ -726,12 +751,13 @@ function SoulConnectContent() {
          // 2. Save
          const finalIncantation = generatedChant.join('\n');
          
-         // Store full data for hydration
+         // Store full data for hydration including chants
          const ritualData = {
              ingredients: activeIngredients,
-             incantation: generatedChant, // Store array for hydration, or split string
+             incantation: generatedChant, 
              names,
              isForSelf,
+             stepChants, // Store extra chants
              timestamp: new Date().toISOString()
          };
 
@@ -887,6 +913,7 @@ function SoulConnectContent() {
                 isForSelf={isForSelf}
                 filledIngredients={addedIngredients} 
                 names={names} 
+                customChant={stepChants.honey} // Pass custom honey chant
                 onComplete={() => handleStageComplete("The Vessel is sweetened and sealed.")} 
              />
           )}
@@ -895,13 +922,13 @@ function SoulConnectContent() {
           {step === 10 && <StageFourIncantation chant={generatedChant} onComplete={() => handleStageComplete("The words have been spoken.")} />}
           
           {/* STEP 11: MIXING */}
-          {step === 11 && <StageFiveMixing ingredients={activeIngredients} names={names} isForSelf={isForSelf} onComplete={() => handleStageComplete("The spell is bound.")} />}
+          {step === 11 && <StageFiveMixing ingredients={activeIngredients} names={names} isForSelf={isForSelf} customChant={stepChants.mix} onComplete={() => handleStageComplete("The spell is bound.")} />}
           
           {/* STEP 12: CANDLE */}
-          {step === 12 && <StageSixCandle isForSelf={isForSelf} names={names} onComplete={() => handleStageComplete("The spell is sealed in fire.")} />}
+          {step === 12 && <StageSixCandle isForSelf={isForSelf} names={names} customChant={stepChants.candle} onComplete={() => handleStageComplete("The spell is sealed in fire.")} />}
           
           {/* STEP 13: RELEASE */}
-          {step === 13 && <StageSevenRelease isForSelf={isForSelf} names={names} onComplete={() => setStep(14)} />}
+          {step === 13 && <StageSevenRelease isForSelf={isForSelf} names={names} customChant={stepChants.release} onComplete={() => setStep(14)} />}
 
           {/* FINAL */}
           {step === 14 && <FinalPopup onExit={() => {}} onSave={saveToGrimoire} isSaving={isSaving} isSaved={isSaved} saveCost={saveCost} />}
@@ -933,19 +960,18 @@ const StageOneIntention = ({ names, setNames, intention, setIntention, isForSelf
   const [isLoading, setIsLoading] = useState(false);
   const supabase = createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
 
-  // FIX: Access globalThis.audio from outer scope or initialize audio locally if needed for specific sound
-  const playTone = () => { /* Placeholder if needed or pass audio down */ };
-
   const handleTrace = () => {
-    // Basic trace progress logic
+    if (Math.random() > 0.5) audio.playTraceTone(); 
     setTraceProgress(prev => Math.min(prev + 1, 100));
   };
 
   const handleFormSubmit = () => {
+      audio.playClick('medium'); 
       setMode('choice');
   };
 
   const chooseWorkflow = async (workflow: 'standard' | 'ai' | 'replay') => {
+      audio.playClick(workflow === 'ai' ? 'magick' : 'medium');
       
       if (workflow === 'replay') {
           // Replay Mode: Skip generation
@@ -999,13 +1025,13 @@ const StageOneIntention = ({ names, setNames, intention, setIntention, isForSelf
         <div className="flex justify-center mb-2 shrink-0">
             <div className="flex bg-slate-900/80 rounded-full border border-amber-800/50 p-1">
                 <button 
-                    onClick={() => { if(!isReplay) { setIsForSelf(true); }}}
+                    onClick={() => { if(!isReplay) { audio.playClick('soft'); setIsForSelf(true); }}}
                     className={`flex items-center gap-2 px-4 py-2 rounded-full text-[10px] uppercase tracking-wider transition-all ${isForSelf ? 'bg-amber-700 text-white shadow-lg' : 'text-slate-400 hover:text-amber-200'}`}
                 >
                     <User size={12} /> For Me
                 </button>
                 <button 
-                    onClick={() => { if(!isReplay) { setIsForSelf(false); }}}
+                    onClick={() => { if(!isReplay) { audio.playClick('soft'); setIsForSelf(false); }}}
                     className={`flex items-center gap-2 px-4 py-2 rounded-full text-[10px] uppercase tracking-wider transition-all ${!isForSelf ? 'bg-amber-700 text-white shadow-lg' : 'text-slate-400 hover:text-amber-200'}`}
                 >
                     <Users size={12} /> For Couple
@@ -1170,7 +1196,7 @@ const StageOneIntention = ({ names, setNames, intention, setIntention, isForSelf
       </div>
 
       {traceProgress >= 100 && (
-         <button onClick={() => { onComplete('standard'); }} className="mt-8 bg-amber-700/80 text-white font-magical px-8 py-2 uppercase tracking-widest animate-pulse rounded border border-amber-500 shadow-lg text-sm active:scale-95">
+         <button onClick={() => { audio.playClick('magick'); onComplete('standard'); }} className="mt-8 bg-amber-700/80 text-white font-magical px-8 py-2 uppercase tracking-widest animate-pulse rounded border border-amber-500 shadow-lg text-sm active:scale-95">
            Confirm Sigil
          </button>
       )}
@@ -1180,7 +1206,7 @@ const StageOneIntention = ({ names, setNames, intention, setIntention, isForSelf
 
 // ... (KEEP OTHER COMPONENTS AS IS: StageTwoJar, StageThreeConsecrate, StageFourIncantation, StageFiveMixing, StageSixCandle, StageSevenRelease, IngredientCharger, PreStepIncantation, MagickPopup)
 
-const StageTwoJar = ({ mode, names, filledIngredients, droppingItem, onComplete, isForSelf }: any) => {
+const StageTwoJar = ({ mode, names, filledIngredients, droppingItem, onComplete, isForSelf, customChant }: any) => {
   const [actionProgress, setActionProgress] = useState(0); 
   const [isPouring, setIsPouring] = useState(false);
   const [animState, setAnimState] = useState<'idle' | 'dropping' | 'done'>('idle');
@@ -1246,6 +1272,9 @@ const StageTwoJar = ({ mode, names, filledIngredients, droppingItem, onComplete,
           data.item = droppingItem.name.toLowerCase();
           data.icon = droppingItem.icon;
       }
+      // NEW: Pass custom chant if available
+      if (customChant) data.customChant = customChant;
+
       return <PreStepIncantation type={type} isForSelf={isForSelf} data={data} onNext={() => setShowIntro(false)} />;
   }
 
@@ -1412,7 +1441,9 @@ const StageThreeConsecrate = ({ ingredient, index, total, onComplete, isForSelf,
   }, [charge, success, onComplete]);
 
   if (showIntro) {
-      return <PreStepIncantation type="charge" isForSelf={isForSelf} data={{ item: ingredient.name.toLowerCase(), target: names.target, icon: ingredient.icon }} onNext={() => setShowIntro(false)} />;
+      // NEW: Pass custom chant if exists
+      const data = { item: ingredient.name.toLowerCase(), target: names.target, icon: ingredient.icon, customChant: ingredient.chant };
+      return <PreStepIncantation type="charge" isForSelf={isForSelf} data={data} onNext={() => setShowIntro(false)} />;
   }
 
   return (
@@ -1478,7 +1509,7 @@ const StageFourIncantation = ({ chant, onComplete }: any) => {
   );
 };
 
-const StageFiveMixing = ({ ingredients, names, onComplete, isForSelf }: any) => {
+const StageFiveMixing = ({ ingredients, names, onComplete, isForSelf, customChant }: any) => {
   const [progress, setProgress] = useState(0);
   const [isStirring, setIsStirring] = useState(false);
   const [showIntro, setShowIntro] = useState(true);
@@ -1521,7 +1552,10 @@ const StageFiveMixing = ({ ingredients, names, onComplete, isForSelf }: any) => 
   }, [isStirring, progress, mixedDone]);
 
   if (showIntro) {
-      return <PreStepIncantation type="mix" isForSelf={isForSelf} data={{}} onNext={() => setShowIntro(false)} />;
+      // NEW: Pass custom chant
+      const data: any = {};
+      if (customChant) data.customChant = customChant;
+      return <PreStepIncantation type="mix" isForSelf={isForSelf} data={data} onNext={() => setShowIntro(false)} />;
   }
 
   return (
@@ -1571,7 +1605,7 @@ const StageFiveMixing = ({ ingredients, names, onComplete, isForSelf }: any) => 
   );
 };
 
-const StageSixCandle = ({ onComplete, isForSelf, names }: any) => {
+const StageSixCandle = ({ onComplete, isForSelf, names, customChant }: any) => {
   const [lit, setLit] = useState(false);
   const [timeLeft, setTimeLeft] = useState(142); 
   const maxTime = 142;
@@ -1597,7 +1631,10 @@ const StageSixCandle = ({ onComplete, isForSelf, names }: any) => {
   const waxHeight = 20 + ((initialHeight - 20) * (timeLeft / maxTime));
 
   if (showIntro) {
-      return <PreStepIncantation type="candle" isForSelf={isForSelf} data={{ target: names.target }} onNext={() => setShowIntro(false)} />;
+      // NEW: Pass custom chant
+      const data: any = { target: names.target };
+      if (customChant) data.customChant = customChant;
+      return <PreStepIncantation type="candle" isForSelf={isForSelf} data={data} onNext={() => setShowIntro(false)} />;
   }
 
   return (
@@ -1646,7 +1683,7 @@ const StageSixCandle = ({ onComplete, isForSelf, names }: any) => {
   );
 };
 
-const StageSevenRelease = ({ onComplete, isForSelf, names }: any) => {
+const StageSevenRelease = ({ onComplete, isForSelf, names, customChant }: any) => {
   const [power, setPower] = useState(0);
   const [isCharging, setIsCharging] = useState(false);
   const [showIntro, setShowIntro] = useState(true);
@@ -1678,7 +1715,10 @@ const StageSevenRelease = ({ onComplete, isForSelf, names }: any) => {
   }, [power, onComplete]);
 
   if (showIntro) {
-      return <PreStepIncantation type="release" isForSelf={isForSelf} data={{}} onNext={() => setShowIntro(false)} />;
+      // NEW: Pass custom chant
+      const data: any = {};
+      if (customChant) data.customChant = customChant;
+      return <PreStepIncantation type="release" isForSelf={isForSelf} data={data} onNext={() => setShowIntro(false)} />;
   }
 
   return (
