@@ -2,7 +2,7 @@
 /// <reference lib="dom" />
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { Sparkles, Droplets, RotateCw, Hand, Check, Moon, Volume2, VolumeX, Users, User, Flame, LogOut, Repeat, Star, ArrowDown, Scroll, Wand2, Book, Save, Skull, AlertTriangle, BookOpen, RotateCcw, Coins } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -13,6 +13,7 @@ import { buySpellSlots } from '@/lib/services/economyService';
 import { useAetherEconomy } from '@/hooks/useAetherEconomy';
 import type { Session } from '@/lib/types';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
+import LoadingSpinner from '@/app/components/LoadingSpinner';
 
 // --- CONFIGURATION ---
 const SERVICE_SLUG_GEN = 'ai_love_spell';
@@ -464,13 +465,13 @@ const MagickPopup = ({ message, buttonText = "Continue", onContinue }: { message
 // --- COMPONENT: FINAL MODAL ---
 const FinalPopup = ({ onExit, onSave, isSaving, isSaved, saveCost }: { onExit: () => void, onSave: () => void, isSaving: boolean, isSaved: boolean, saveCost: number }) => {
   const router = typeof window !== 'undefined' ? (window as any).location : { reload: () => {} };
-  const [saved, setSaved] = useState(false);
+  const [hasSaved, setHasSaved] = useState(false);
 
   const handleSave = () => {
-    if (saved) return;
+    if (hasSaved || isSaved) return;
     audio.playClick('magick');
     onSave();
-    setSaved(true);
+    setHasSaved(true);
   };
   
   return (
@@ -486,7 +487,7 @@ const FinalPopup = ({ onExit, onSave, isSaving, isSaved, saveCost }: { onExit: (
             
             <div className="flex flex-col gap-4">
                 <button
-                    disabled={saved || isSaving || isSaved}
+                    disabled={isSaved || isSaving}
                     onClick={handleSave}
                     className="w-full flex items-center justify-center gap-2 bg-indigo-900/40 border border-indigo-500/50 text-indigo-100 py-3 uppercase tracking-widest font-magical text-xs hover:bg-indigo-800/50 transition-colors disabled:opacity-50"
                 >
@@ -540,9 +541,10 @@ const SlotPurchaseModal = ({ isOpen, onClose, onPurchase, isProcessing }: { isOp
     );
 };
 
-// --- COMPONENT: MAIN PAGE ---
 
-export default function SoulConnectSpellPage() {
+// --- COMPONENT: MAIN PAGE Content Logic ---
+
+function SoulConnectSpellContent() {
   const [started, setStarted] = useState(false);
   const [muted, setMuted] = useState(false);
   const [step, setStep] = useState(1);
@@ -561,8 +563,8 @@ export default function SoulConnectSpellPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [appError, setAppError] = useState<string | null>(null);
-
-  // Economy Hooks
+  
+  // Economy
   const { 
     cost: genCost, 
     spendAether: spendGenCredits, 
@@ -604,7 +606,6 @@ export default function SoulConnectSpellPage() {
                       setActiveIngredients(data.ingredients || []);
                       
                       // Handle Chant hydration
-                      // If saved as a string (legacy/simple), split it. If array, use directly.
                       const chant = Array.isArray(data.incantation) 
                         ? data.incantation 
                         : (typeof data.incantation === 'string' ? data.incantation.split('\n') : []);
@@ -625,7 +626,7 @@ export default function SoulConnectSpellPage() {
           loadSpell();
       }
   }, [loadId]);
-  
+
   const startRitual = () => {
     audio.init();
     audio.playClick('magick'); // Start is a major event
@@ -716,17 +717,15 @@ export default function SoulConnectSpellPage() {
      clearSaveError();
 
      try {
-         // 1. Deduct Credits using Save Cost
+         // 1. Deduct Credits
          const paid = await spendSaveCredits(user.id);
          if (!paid) {
              setIsSaving(false);
-             return; // Economy hook shows UI
+             return;
          }
 
          // 2. Save
          const finalIncantation = generatedChant.join('\n');
-         
-         // Store full data for hydration
          const ritualData = {
              ingredients: activeIngredients,
              incantation: generatedChant, // Store array for hydration, or split string
@@ -845,7 +844,7 @@ export default function SoulConnectSpellPage() {
               intention={intention} setIntention={setIntention} 
               isForSelf={isForSelf} setIsForSelf={setIsForSelf}
               onComplete={handlePetitionDone} 
-              // Economy
+              // Pass Economy Props
               genCost={genCost}
               spendGenCredits={spendGenCredits}
               isGenProcessing={isGenProcessing}
@@ -981,6 +980,7 @@ const StageOneIntention = ({ names, setNames, intention, setIntention, isForSelf
           } catch (e) {
               console.error(e);
               setIsLoading(false);
+              // Failures handled by parent typically, but here we might alert or fallback
               alert("The spirits are silent. Please try again or use Standard mode.");
               setMode('choice');
           }
