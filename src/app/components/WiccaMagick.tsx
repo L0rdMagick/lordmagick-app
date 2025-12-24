@@ -55,7 +55,6 @@ const STANDARD_WICCAN_SPELL: GeneratedWiccanSpell = {
 };
 
 // --- Sound Utility ---
-// FIX: Return an object with stop() method that handles internal audio context
 const playSound = (src: string, volume: number = 0.5, loop: boolean = false): { play: () => void; stop: () => void; } => {
     const win = (globalThis as any).window;
     if (typeof win === 'undefined') return { play: () => {}, stop: () => {} };
@@ -105,7 +104,7 @@ interface Step1Props extends StepProps {
     setIntention: (val: string) => void;
     situation: string;
     setSituation: (val: string) => void;
-    onBegin: (mode: 'standard' | 'ai') => void;
+    onBegin: (mode: 'standard' | 'ai' | 'replay') => void;
     isReplay: boolean;
     cost: number;
 }
@@ -113,7 +112,7 @@ interface Step1Props extends StepProps {
 interface Step2Props extends StepProps {
     chargedElements: string[];
     onChargeComplete: (name: string) => void;
-    spell: GeneratedWiccanSpell | null; // Pass spell to access custom chants
+    spell: GeneratedWiccanSpell | null; 
 }
 
 interface Step3Props extends StepProps {
@@ -211,7 +210,9 @@ const WiccaMagick: React.FC<WiccaMagickProps> = ({ session, onBack }) => {
                         
                         setIsReplayMode(true);
                         setIsSaved(true);
-                        setRitualStep(2); 
+                        
+                        // FIX: Start at Step 1 (Intention) so user sees the scroll first
+                        setRitualStep(1); 
                     }
                 } catch (e) {
                     console.error("Failed to load spell", e);
@@ -224,9 +225,11 @@ const WiccaMagick: React.FC<WiccaMagickProps> = ({ session, onBack }) => {
         }
     }, [loadId]);
 
-    const handleBeginRitual = async (mode: 'standard' | 'ai') => {
-        if (isReplayMode) {
-             setRitualStep(2);
+
+    const handleBeginRitual = async (mode: 'standard' | 'ai' | 'replay') => {
+        // Replay Bypass
+        if (mode === 'replay' || isReplayMode) {
+             setRitualStep(2); // Move from Intention (1) to Elements (2)
              return;
         }
 
@@ -238,11 +241,13 @@ const WiccaMagick: React.FC<WiccaMagickProps> = ({ session, onBack }) => {
             setGeneratedSpell(STANDARD_WICCAN_SPELL);
             setRitualStep(2); 
         } else {
+            // AI Mode
             if (!session?.user?.id) {
                 setError("You must be logged in to perform High Rituals.");
                 return;
             }
 
+            // 1. Charge User
             const paid = await spendAether(session.user.id);
             if (!paid) return;
 
@@ -257,7 +262,6 @@ const WiccaMagick: React.FC<WiccaMagickProps> = ({ session, onBack }) => {
                     situation: situation 
                 });
                 
-                // Ensure fallback if AI doesn't return elemental chants
                 if (!spell.elemental_chants) {
                     spell.elemental_chants = STANDARD_WICCAN_SPELL.elemental_chants;
                 }
@@ -274,9 +278,7 @@ const WiccaMagick: React.FC<WiccaMagickProps> = ({ session, onBack }) => {
 
     const handleElementChargeComplete = (elementName: string) => {
         if (!chargedElements.includes(elementName)) {
-            // Fix: No .play() needed here, handled inside ChargingElement via ref
             setChargedElements(prev => [...prev, elementName]);
-            // Optional: Play a specific success sound for this step if needed
             playSound('/audio/sfx-chaos-activate.mp3', 0.4).play();
         }
     };
@@ -519,23 +521,23 @@ const Step1_Intention: React.FC<Step1Props> = ({ intention, setIntention, situat
                         onChange={(e) => setIntention(e.target.value)} 
                         readOnly={isReplay}
                         placeholder="Intention (e.g. Find Peace)" 
-                        className="w-full bg-transparent border-b border-[#4a2e1c]/50 text-center text-[#4a2e1c] font-serif focus:outline-none placeholder:text-[#4a2e1c]/50" 
+                        className={`w-full bg-transparent border-b border-[#4a2e1c]/50 text-center text-[#4a2e1c] font-serif focus:outline-none placeholder:text-[#4a2e1c]/50 ${isReplay ? 'cursor-not-allowed opacity-80' : ''}`}
                     />
                     <textarea 
                         value={situation} 
                         onChange={(e) => setSituation(e.target.value)} 
                         readOnly={isReplay}
                         placeholder="Details (Optional for Standard, Required for AI)" 
-                        className="w-full grow bg-transparent text-center text-[#4a2e1c] font-serif focus:outline-none resize-none text-sm placeholder:text-[#4a2e1c]/50" 
+                        className={`w-full grow bg-transparent text-center text-[#4a2e1c] font-serif focus:outline-none resize-none text-sm placeholder:text-[#4a2e1c]/50 ${isReplay ? 'cursor-not-allowed opacity-80' : ''}`}
                     />
                 </div>
             </div>
             
             <div className="flex flex-col gap-3 w-full max-w-xs">
                 {isReplay ? (
-                     <button type="button" onClick={() => onBegin('standard')} className="flex items-center justify-center gap-3 p-4 bg-purple-900 border border-purple-500 rounded-lg hover:bg-purple-800 text-white shadow-lg animate-pulse">
+                     <button type="button" onClick={() => onBegin('replay')} className="flex items-center justify-center gap-3 p-4 bg-purple-900 border border-purple-500 rounded-lg hover:bg-purple-800 text-white shadow-lg animate-pulse">
                         <RotateCcw className="w-5 h-5" />
-                        <div className="font-serif tracking-widest text-sm uppercase">Begin Replay (Free)</div>
+                        <div className="font-serif tracking-widest text-sm uppercase">Begin Ritual (Saved)</div>
                     </button>
                 ) : (
                     <>
@@ -566,7 +568,7 @@ const Step2_Elements: React.FC<Step2Props> = ({ chargedElements, onChargeComplet
     // Determine which chants to use: Custom or Standard
     const chants = spell?.elemental_chants || STANDARD_WICCAN_SPELL.elemental_chants;
     
-    // Safety check if chants is undefined for some reason (though it shouldn't happen with fallback)
+    // Safety check
     const getChant = (el: string) => {
         if (chants && el in chants) {
             // @ts-ignore
@@ -760,7 +762,7 @@ const Step7_Cast: React.FC<SpellStepProps> = ({ spell, onNext }) => {
             clearTimeout(timer);
             clearInterval(counter);
             setCount(0);
-            if(castSoundRef.current) castSoundRef.current.stop(); // FIX: Changed pause to stop
+            if(castSoundRef.current) castSoundRef.current.stop();
         };
     }, [isCasting, onNext]);
 
@@ -930,7 +932,7 @@ const IngredientCharger: React.FC<IngredientChargerProps> = ({ children, onCharg
         }
         return () => {
             clearTimeout(timer);
-            if(chargeSoundRef.current) chargeSoundRef.current.stop(); // FIX: Changed pause to stop
+            if(chargeSoundRef.current) chargeSoundRef.current.stop(); 
         }
     }, [isHolding, isComplete, onChargeComplete]);
     
@@ -985,12 +987,12 @@ const ChargingElement: React.FC<ChargingElementProps> = ({ name, isCharged, onCh
         }
         return () => {
             clearTimeout(timer);
-            if(chargeSoundRef.current) chargeSoundRef.current.stop(); // FIX: Changed pause to stop
+            if(chargeSoundRef.current) chargeSoundRef.current.stop(); 
         };
     }, [isHolding, isCharged, name, onChargeComplete, soundSrc]);
 
     const { sheet, itemInfo } = spriteData;
-    const containerSize = 96; // Corresponds to w-24/h-24
+    const containerSize = 96; 
     const scale = containerSize / sheet.spriteSize.width;
 
     const spriteStyle: React.CSSProperties = {
