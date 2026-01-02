@@ -626,35 +626,33 @@ function SoulConnectContent() {
           const loadSpell = async () => {
               try {
                   const spell = await getSpellById(loadId);
-                  if (spell) {
-                      const data = typeof spell.ritual_data === 'string' ? JSON.parse(spell.ritual_data) : spell.ritual_data;
+                  if (spell && spell.ritual_data) {
+                      const data = typeof spell.ritual_data === 'string' 
+                          ? JSON.parse(spell.ritual_data) 
+                          : spell.ritual_data;
                       
-                      setNames(data.names || { user: 'Unknown', target: 'Unknown' });
-                      setIntention(spell.intention);
-                      setIsForSelf(data.isForSelf ?? true);
-                      
-                      // Handle Ingredients hydration
-                      setActiveIngredients(data.ingredients || []);
-                      
-                      // Handle Chant hydration
-                      const chant = Array.isArray(data.incantation) 
-                        ? data.incantation 
-                        : (typeof data.incantation === 'string' ? data.incantation.split('\n') : []);
-                        
-                      setGeneratedChant(chant.length > 0 ? chant : (spell.incantation ? spell.incantation.split('\n') : []));
-                      
-                      // Hydrate extra chants
-                      if (data.stepChants) setStepChants(data.stepChants);
+                      if(data) {
+                          setNames(data.names || { user: '', target: '' });
+                          setIntention(data.intention || spell.intention || '');
+                          setIsForSelf(data.isForSelf ?? true);
+                          setActiveIngredients(data.ingredients || []);
+                          setGeneratedChant(data.incantation || []);
+                          setStepChants(data.stepChants || {});
 
-                      setIsReplayMode(true);
-                      setIsSaved(true); 
-                      setIsAI(true); // Treat replay as AI mode for visual purposes (custom content)
-                      setStarted(true); // Skip intro screen
-                      setStep(1); // Start at intention review
+                          setIsReplayMode(true);
+                          setIsSaved(true); 
+                          setIsAI(true); // Flag to use custom data, not to re-run AI
+                          setStarted(true); 
+                          setStep(1);
+                      } else {
+                          setAppError("Saved spell data is corrupted and cannot be replayed.");
+                      }
+                  } else if (spell) {
+                       setAppError("This spell was saved with an older version and cannot be replayed.");
                   }
               } catch (e) {
                   console.error("Failed to load spell:", e);
-                  setAppError("Could not load spell.");
+                  setAppError("Could not load the saved spell from your Grimoire.");
               }
           };
           loadSpell();
@@ -684,7 +682,7 @@ function SoulConnectContent() {
   };
 
   const handlePetitionDone = (mode: 'standard' | 'ai' | 'replay', data?: any) => {
-      // Replay Bypass already handled state hydration
+      // Replay Bypass: State is already hydrated, just proceed.
       if (mode === 'replay') {
           handleStageComplete("The Scroll is unsealed. The path re-opens.");
           return;
@@ -765,26 +763,27 @@ function SoulConnectContent() {
      clearSaveError();
 
      try {
-         // 1. Deduct Credits using Save Cost
-         const paid = await spendSaveCredits(user.id);
-         if (!paid) {
-             setIsSaving(false);
-             return;
+         // 1. Deduct Credits using Save Cost if applicable
+         if (!isReplayMode) { // Do not charge for re-saving
+            const paid = await spendSaveCredits(user.id);
+            if (!paid) {
+                setIsSaving(false);
+                return;
+            }
+            setAetherBalance(prev => (prev !== null ? prev - saveCost : null));
          }
-
-         // Update local balance display
-         setAetherBalance(prev => (prev !== null ? prev - saveCost : null));
 
          // 2. Save
          const finalIncantation = generatedChant.join('\n');
          
-         // Store full data for hydration including chants
+         // Store full data for hydration including chants and intention
          const ritualData = {
+             intention: intention,
              ingredients: activeIngredients,
              incantation: generatedChant, 
              names,
              isForSelf,
-             stepChants, // Store extra chants
+             stepChants,
              timestamp: new Date().toISOString()
          };
 
@@ -1803,4 +1802,3 @@ export default function SoulConnectPage() {
     </Suspense>
   );
 }
-// --- END OF FILE src/app/spell-room/love-spells-app/soul-connect-love-spell/page.tsx ---
