@@ -1,3 +1,4 @@
+// --- START OF FILE src/app/grimoire/page.tsx ---
 "use client";
 
 import React, { useEffect, useState } from 'react';
@@ -61,6 +62,11 @@ export default function GrimoirePage() {
         // 2. Fallback Logic (Legacy Spells / Electric Magick)
         const nameLower = spell.name.toLowerCase();
         
+        // Check for Love Spells that might not have the tradition tag yet
+        if (nameLower.includes('love spell') || nameLower.includes('soul connect') || nameLower.includes('two souls')) {
+             return `/spell-room/love-spells-app/soul-connect-love-spell?loadId=${spell.id}`;
+        }
+
         if (nameLower.includes('hoodoo') || nameLower.includes('voodoo')) {
             return `/spell-room/hoodoo-rootwork-spells-app?loadId=${spell.id}`;
         }
