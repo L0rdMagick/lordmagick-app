@@ -289,6 +289,7 @@ const getIncantation = (type: string, isForSelf: boolean, data: any) => {
         if (type === 'mix') btn = "I Stir The Bond"; 
         if (type === 'candle') btn = "I Light The Flame";
         if (type === 'release') btn = "I Release The Spell";
+        if (type === 'drop') btn = "I Cast It In";
         
         return { text: data.customChant, btn };
     }
@@ -633,27 +634,30 @@ function SoulConnectContent() {
                       setIntention(spell.intention);
                       setIsForSelf(data.isForSelf ?? true);
                       
-                      setActiveIngredients(data.ingredients || []);
+                      // Handle Ingredients hydration - ensure custom chant/desc is preserved
+                      const loadedIngredients = (data.ingredients || []).map((ing: any) => ({
+                          ...ing,
+                          // Fallback logic to ensure some text exists if data is sparse
+                          chant: ing.chant || ing.incantation || ing.description || `I charge this ${ing.name} to fulfill my will.`
+                      }));
+                      setActiveIngredients(loadedIngredients);
                       
-                      // Robustly hydrate chants, preferring ritual_data
-                      if (data.incantation) {
-                          const chant = Array.isArray(data.incantation) 
-                            ? data.incantation 
-                            : (typeof data.incantation === 'string' ? data.incantation.split('\n') : []);
-                          setGeneratedChant(chant);
-                      } else if (spell.incantation) {
-                          setGeneratedChant(spell.incantation.split('\n'));
-                      } else {
-                          setGeneratedChant([]);
-                      }
+                      // Handle Chant hydration
+                      const chant = Array.isArray(data.incantation) 
+                        ? data.incantation 
+                        : (typeof data.incantation === 'string' ? data.incantation.split('\n') : []);
+                        
+                      setGeneratedChant(chant.length > 0 ? chant : (spell.incantation ? spell.incantation.split('\n') : []));
                       
-                      if (data.stepChants) setStepChants(data.stepChants);
+                      // Hydrate extra chants - Handle different casing (snake_case from DB/AI vs camelCase in app)
+                      const savedSteps = data.stepChants || data.step_chants || {};
+                      setStepChants(savedSteps);
 
                       setIsReplayMode(true);
                       setIsSaved(true); 
-                      setIsAI(true);
-                      setStarted(true);
-                      setStep(1);
+                      setIsAI(true); // Treat replay as AI mode for visual purposes (custom content)
+                      setStarted(true); // Skip intro screen
+                      setStep(1); // Start at intention review
                   }
               } catch (e) {
                   console.error("Failed to load spell:", e);
@@ -781,14 +785,13 @@ function SoulConnectContent() {
          // 2. Save
          const finalIncantation = generatedChant.join('\n');
          
-         // Store full data for hydration including chants, modeled after WiccaMagick.tsx
+         // Store full data for hydration including chants
          const ritualData = {
-             intention: intention,
-             names,
-             isForSelf,
              ingredients: activeIngredients,
              incantation: generatedChant, 
-             stepChants,
+             names,
+             isForSelf,
+             stepChants, // Store extra chants for replay
              timestamp: new Date().toISOString()
          };
 
@@ -797,7 +800,7 @@ function SoulConnectContent() {
              intention: intention,
              incantation: finalIncantation,
              element: "love",
-             tradition: 'LOVE',
+             tradition: 'LOVE', // Explicitly set to LOVE for Grimoire to identify replay URL
              ritual_data: ritualData
          });
 
