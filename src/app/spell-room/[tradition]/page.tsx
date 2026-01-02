@@ -1,5 +1,3 @@
-// --- START OF FILE src/app/spell-room/[tradition]/page.tsx ---
-
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -10,8 +8,9 @@ import type { Session } from '@/lib/types';
 import SpellGenerator from '@/app/components/SpellGenerator';
 import WiccaMagick from '@/app/components/WiccaMagick';
 import HoodooVoodooMagick from '@/app/components/HoodooVoodooMagick';
-// THE FIX: Update path to new ElectricMagickMenu
 import ElectricMagickMenu from '@/app/components/ElectricMagick/ElectricMagickMenu';
+import DigitalServitor from '@/app/components/DigitalServitor';
+import ServitorWildUnknown from '@/app/components/ServitorWildUnknown'; // NEW IMPORT
 import AuthPage from '@/app/components/AuthPage';
 import LoadingSpinner from '@/app/components/LoadingSpinner';
 import RoomsButton from '@/app/components/RoomsButton';
@@ -25,6 +24,8 @@ const traditionDetails: { [key: string]: { name: string; component: React.FC<any
   'ceremonial-magick-spells-app': { name: 'Ceremonial Magick', component: ComingSoon },
   'folk-magick-spells-app': { name: 'Folk Magick', component: ComingSoon },
   'electric-magick-spells-app': { name: 'Electric Magick', component: ElectricMagickMenu },
+  'grimoire-of-digital-servitors': { name: 'Digital Servitors', component: DigitalServitor },
+  'servitors-of-the-wild-unknown': { name: 'Servitors of the Wild Unknown', component: ServitorWildUnknown }, // NEW MAPPING
 };
 
 export default function SpellTraditionPage() {
@@ -82,7 +83,9 @@ export default function SpellTraditionPage() {
   const isFullScreenTradition = 
     traditionSlug === 'wicca-magick-spells-app' || 
     traditionSlug === 'hoodoo-rootwork-spells-app' ||
-    traditionSlug === 'electric-magick-spells-app';
+    traditionSlug === 'electric-magick-spells-app' ||
+    traditionSlug === 'grimoire-of-digital-servitors' ||
+    traditionSlug === 'servitors-of-the-wild-unknown'; // ADDED HERE
 
   if (isFullScreenTradition) {
     let backgroundImageUrl = "/images/spell-room/spell-room-background.png";
@@ -90,11 +93,20 @@ export default function SpellTraditionPage() {
         backgroundImageUrl = "/images/Spells/HooDoo Voo Doo/background-shack-interior.png";
     }
     
+    // For Servitors, we might not want a background image wrapper if the component handles it
     const FullScreenWrapper: React.FC<{children: React.ReactNode}> = ({ children }) => (
         <div className="relative min-h-screen w-full bg-black bg-cover bg-center flex items-center justify-center" style={{ backgroundImage: `url('${backgroundImageUrl}')` }}>
             {children}
         </div>
     );
+
+    // Servitors manage their own full screen containers
+    if (traditionSlug === 'grimoire-of-digital-servitors' || traditionSlug === 'servitors-of-the-wild-unknown') {
+         if (loading) return <LoadingSpinner />;
+         if (!session) return <div className="flex items-center justify-center h-screen bg-black"><AuthPage /></div>;
+         const Component = traditionDetails[traditionSlug]?.component;
+         return <Component session={session} />;
+    }
 
     if (loading) return <FullScreenWrapper><LoadingSpinner /></FullScreenWrapper>;
     if (!session) return <FullScreenWrapper><div className="bg-black/50 backdrop-blur-sm p-8 rounded-lg border border-white/10 w-full max-w-lg"><AuthPage /></div></FullScreenWrapper>;

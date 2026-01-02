@@ -1,0 +1,891 @@
+"use client";
+
+import React, { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { X, Maximize2, Minimize2, Save, Trash2, BookOpen, Info, AlertTriangle, Lock } from 'lucide-react';
+import { createBrowserClient } from '@supabase/ssr';
+import { checkAndSpendCredits, getWalletStatus, COST_BIND_SERVITOR } from '@/lib/economy';
+import { saveServitorToGrimoire, getMyServitors } from '@/lib/services/spellService';
+
+// --- ASSET CONFIGURATION ---
+const ASSET_PATH = '/images/Servitor_images/';
+
+// Indices match the provided JSON config
+const BASES = [
+    'Porcelain Doll', 'Smoke Wisp', 'Shadow Entity', 'Ethereal Wisp',
+    'Oak Golem', 'Stone Statue', 'Iron Clockwork', 'Vine Spirit',
+    'Galaxy Nebula', 'Molten Lava', 'Ice Crystal', 'Mercury Fluid',
+    'Gothic Gargoyle', 'Tattered Scarecrow', 'Golden Automaton', 'Ink-Blot Shadow'
+];
+
+const LIMBS = [
+    'Ghostly Energy', 'Obsidian Shard', 'Twisted Root', 'Brass Gear',
+    'Skeletal Bone', 'Dragon Scale', 'Silk Wrapped', 'Crystal Shard',
+    'Aetheric Glow', 'Flaming Ember', 'Shadow Tendril', 'Carved Stone',
+    'Primal Talon', 'Tattooed Flesh', 'Blue Lightning', 'Mercury Drip'
+];
+
+const TOOLS = [
+    'Wood Wand', 'Obsidian Athame', 'Glass Orb', 'Iron Key',
+    'Burning Censer', 'Ancient Scroll', 'Crystal Staff', 'Silver Bell',
+    'Tarot Deck', 'Hourglass', 'Astral Compass', 'Brass Telescope',
+    'Ritual Bowl', 'Bone Wand', 'Soul Lantern', 'Potion Flask'
+];
+
+const VESSELS = [
+    'Iron Cauldron', 'Golden Chalice', 'Stone Font', 'Alchemical Bowl',
+    'Burning Brazier', 'Scrying Bowl', 'Incense Burner', 'Wicker Basket',
+    'Hollowed Pumpkin', 'Sea-Shell Basin', 'Petrified Stump', 'Iron-Bound Chest',
+    'Stone Altar', 'Miniature Furnace', 'Glass Prism', 'Open Sarcophagus'
+];
+
+const HATS = [
+    'None', 'Wizard Hat', 'Crown', 'Horns', 
+    'Hood', 'Diadem', 'Halo', 'Veil',
+    'Mask', 'Helmet', 'Flowers', 'Crystals',
+    'Feathers', 'Goggles', 'Bandana', 'Aura'
+]; // Simplified list, assuming sprite sheet order matches
+
+interface SavedServitor {
+    id: string;
+    name: string;
+    master_name: string;
+    purpose: string;
+    config: any;
+}
+
+// Helper for 4x4 Sprite Grid
+const getSpriteStyle = (index: number, filename: string) => {
+    // 0-15 Index
+    const safeIndex = Math.max(0, Math.min(15, index));
+    const col = safeIndex % 4;
+    const row = Math.floor(safeIndex / 4);
+    
+    // 33.333% shifts background by exactly 1 frame width/height in a 4-frame strip
+    const xPos = col * 33.333;
+    const yPos = row * 33.333;
+
+    return {
+        backgroundImage: `url('${ASSET_PATH}${filename}')`,
+        backgroundSize: '400% 400%',
+        backgroundPosition: `${xPos}% ${yPos}%`,
+        backgroundRepeat: 'no-repeat'
+    };
+};
+
+export default function ServitorWildUnknown() {
+    const router = useRouter();
+    
+    // Supabase
+    const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+
+    // --- Loading State ---
+    const [assetsLoaded, setAssetsLoaded] = useState(false);
+    const [loadProgress, setLoadProgress] = useState(0);
+
+    // Logic State
+    const [isRunning, setIsRunning] = useState(false);
+    const runningRef = useRef(false); 
+    const loopIdRef = useRef(0);
+    const [isFullscreen, setIsFullscreen] = useState(false);
+    const audioCtxRef = useRef<any>(null);
+    const oscRef = useRef<any>(null);
+
+    // Form State
+    const [sName, setSName] = useState("");
+    const [sPurpose, setSPurpose] = useState("");
+    const [uName, setUName] = useState("");
+    
+    // User & Cabinet State
+    const [user, setUser] = useState<any>(null);
+    const [savedServitors, setSavedServitors] = useState<SavedServitor[]>([]);
+    const [loadingCabinet, setLoadingCabinet] = useState(false);
+    const [wallet, setWallet] = useState<{ credits: number, tier: string, isUnlimited: boolean } | null>(null);
+
+    // Persistence & Economy State
+    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+    const [showExitWarning, setShowExitWarning] = useState(false);
+    const [showCreditModal, setShowCreditModal] = useState(false);
+
+    // Appearance & Audio State
+    const [config, setConfig] = useState({
+        baseIndex: 0,
+        limbIndex: 0,
+        toolIndex: 0,
+        hatIndex: 0,
+        wingIndex: 0,
+        vesselIndex: 0,
+        clothingIndex: 0,
+        
+        hasWings: false,
+        movementType: "walk", 
+        
+        // Feeding Config
+        foodName: "Gratitude",
+        feedFreq: 5
+    });
+
+    // Awakening & Feeding State
+    const [awakenProgress, setAwakenProgress] = useState(0);
+    const [isAwakening, setIsAwakening] = useState(false);
+    const [awakenComplete, setAwakenComplete] = useState(false); 
+    const [isFeeding, setIsFeeding] = useState(false);
+    
+    // Hunger System
+    const [depositCount, setDepositCount] = useState(0);
+    const depositRef = useRef(0); 
+    const [hungerState, setHungerState] = useState<'sated' | 'hungry' | 'fed'>('sated');
+    const [feedProgress, setFeedProgress] = useState(0);
+    const [fallingFood, setFallingFood] = useState<{id: number, left: number, top: number}[]>([]);
+    const holdIntervalRef = useRef<any>(null);
+
+    // --- Asset Loading ---
+    useEffect(() => {
+        const imageUrls = [
+            'Servitor_Bases_Master_Sheet.jpg',
+            'Servitor_Arms_Master_Sheet (2).jpg',
+            'Servitor_Legs_Master_Sheet (2).jpg',
+            'Servitor_Back_Elements_Master_Sheet.jpg',
+            'Servitor_Clothing_Overlays_Sheet.jpg',
+            'Servitor_Headgear_Master_Sheet.jpg',
+            'Servitor_Magickal_Tools_Sheet.jpg',
+            'Ritual_Vessels_Master_Sheet.jpg',
+            'Chest_Sigils_And_Treasures_Sheet (1).jpg',
+            'Parchment_And_Oak_Responsive_Panels.png',
+            'Astral_Plane_Parallax_Layers.jpg'
+        ];
+
+        let loadedCount = 0;
+        imageUrls.forEach((url) => {
+            const img = new Image();
+            img.src = ASSET_PATH + url;
+            img.onload = () => {
+                loadedCount++;
+                setLoadProgress(Math.floor((loadedCount / imageUrls.length) * 100));
+                if (loadedCount === imageUrls.length) {
+                    setTimeout(() => setAssetsLoaded(true), 500); // Small delay for smooth UX
+                }
+            };
+            img.onerror = () => {
+                // If an image fails, still count it to prevent stuck loading screen
+                console.warn(`Failed to load asset: ${url}`);
+                loadedCount++;
+                setLoadProgress(Math.floor((loadedCount / imageUrls.length) * 100));
+                if (loadedCount === imageUrls.length) setAssetsLoaded(true);
+            }
+        });
+    }, []);
+
+    // --- Effects ---
+
+    useEffect(() => {
+        const init = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            setUser(user);
+            if (user) {
+                refreshCabinet(user.id);
+                const w = await getWalletStatus(user.id);
+                setWallet(w);
+            }
+        };
+        init();
+    }, [supabase]);
+
+    useEffect(() => {
+        if (sName || sPurpose) {
+            setHasUnsavedChanges(true);
+        }
+    }, [sName, sPurpose, config]);
+
+    const refreshCabinet = async (userId: string) => {
+        setLoadingCabinet(true);
+        try {
+            const data = await getMyServitors(userId);
+            setSavedServitors(data as SavedServitor[]);
+            const w = await getWalletStatus(userId);
+            setWallet(w);
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoadingCabinet(false);
+        }
+    };
+
+    // --- Actions ---
+
+    const handleBindToGrimoire = async () => {
+        const win = (globalThis as any).window;
+        if (!user) {
+            if (win) win.alert("You must be logged in to bind servitors.");
+            return;
+        }
+        if (!sName) {
+            if (win) win.alert("You must name the spirit before binding it.");
+            return;
+        }
+
+        const canAfford = await checkAndSpendCredits(user.id, COST_BIND_SERVITOR);
+        if (!canAfford) {
+            setShowCreditModal(true);
+            return;
+        }
+
+        try {
+            await saveServitorToGrimoire(user.id, {
+                name: sName,
+                master_name: uName,
+                purpose: sPurpose,
+                config: config
+            });
+            
+            setHasUnsavedChanges(false);
+            refreshCabinet(user.id);
+            if(win) win.alert(`Servitor "${sName}" successfully bound to Grimoire.`);
+            
+        } catch (error) {
+            console.error("Binding failed:", error);
+            if(win) win.alert("The binding ritual failed. Please try again.");
+        }
+    };
+
+    const handleLoad = (servitor: SavedServitor) => {
+        setSName(servitor.name);
+        setUName(servitor.master_name || "");
+        setSPurpose(servitor.purpose || "");
+        setConfig(servitor.config);
+        setTimeout(() => setHasUnsavedChanges(false), 100);
+    };
+
+    const handleDelete = async (id: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        const win = (globalThis as any).window;
+        if (win && !win.confirm("Release this servitor back to the void?")) return;
+        const { error } = await supabase.from('servitors').delete().eq('id', id);
+        if (!error && user) refreshCabinet(user.id);
+    };
+
+    const handleSafeExit = () => {
+        if (hasUnsavedChanges) setShowExitWarning(true);
+        else router.push('/spell-room'); 
+    };
+
+    const confirmExit = () => {
+        runningRef.current = false;
+        router.push('/spell-room');
+    };
+
+    const toggleFullscreen = () => {
+        const doc = (globalThis as any).document;
+        if (!doc) return;
+        if (!doc.fullscreenElement) {
+            doc.documentElement.requestFullscreen().catch(console.error);
+            setIsFullscreen(true);
+        } else {
+            if (doc.exitFullscreen) doc.exitFullscreen();
+            setIsFullscreen(false);
+        }
+    };
+
+    // --- Audio Logic (Simplified from DigitalServitor) ---
+    const initAudio = () => {
+        const win = (globalThis as any).window;
+        if (!audioCtxRef.current) {
+            const AudioContext = win.AudioContext || win.webkitAudioContext;
+            if (AudioContext) audioCtxRef.current = new AudioContext();
+        }
+        if (audioCtxRef.current?.state === 'suspended') audioCtxRef.current.resume();
+    };
+
+    const playSound = (type: 'search' | 'find' | 'deposit' | 'glitter') => {
+        if(!audioCtxRef.current) return;
+        const ctx = audioCtxRef.current;
+        const now = ctx.currentTime;
+        const playOsc = (t: any, fS: number, fE: number, d: number, v: number) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.type = t; osc.frequency.setValueAtTime(fS, now);
+            if(fS!==fE) osc.frequency.linearRampToValueAtTime(fE, now+d);
+            gain.gain.setValueAtTime(v, now); gain.gain.exponentialRampToValueAtTime(0.001, now+d);
+            osc.start(now); osc.stop(now+d);
+        };
+
+        if(type === 'glitter') {
+            for(let i=0; i<8; i++) setTimeout(() => playOsc('sine', 800+(i*100), 1200, 0.2, 0.05), i*50);
+            return;
+        }
+        if(type === 'search') playOsc('sine', 150, 140, 0.8, 0.1);
+        if(type === 'find') playOsc('triangle', 400, 800, 0.5, 0.1);
+        if(type === 'deposit') playOsc('sine', 800, 150, 0.8, 0.1);
+    };
+
+    // --- Animation Logic (The Game Loop) ---
+    const wait = (ms: number) => new Promise(r => setTimeout(r, ms));
+
+    const moveTo = (targetPercent: number, id: number) => {
+        return new Promise<void>(resolve => {
+            const doc = (globalThis as any).document;
+            const win = (globalThis as any).window;
+            if (!doc || !win) { resolve(); return; }
+
+            const el = doc.getElementById('servitor-container');
+            if(!el) { resolve(); return; }
+            
+            const current = parseFloat(el.style.left) || 20;
+            const dist = Math.abs(targetPercent - current);
+            const time = dist * 40; 
+
+            el.style.transition = `left ${time}ms linear`;
+            
+            win.requestAnimationFrame(() => {
+                el.style.left = targetPercent + "%";
+            });
+
+            setTimeout(() => {
+                if(runningRef.current && loopIdRef.current === id) resolve();
+            }, time);
+        });
+    }
+
+    const setAnimationState = (state: string) => {
+        const doc = (globalThis as any).document;
+        const rig = doc.getElementById('game-rig');
+        if(rig) rig.className = `servitor-rig ${state}`;
+    }
+
+    const mainLoop = async (id: number) => {
+        const doc = (globalThis as any).document;
+        const getEls = () => ({
+            vessel: doc.getElementById('game-vessel'),
+            shine: doc.getElementById('vessel-shine')
+        });
+
+        await wait(100);
+        let els = getEls();
+
+        while(runningRef.current && loopIdRef.current === id) {
+            // Walk Left
+            setAnimationState('anim-walk-left');
+            await moveTo(15, id);
+            
+            if(!runningRef.current || loopIdRef.current !== id) break;
+
+            // Search Dig
+            setAnimationState('anim-dig');
+            playSound('search');
+            await wait(2000);
+            
+            // Find
+            playSound('find');
+            setAnimationState('anim-found');
+            await wait(1000);
+
+            // Walk Right
+            setAnimationState('anim-walk-right');
+            await moveTo(80, id);
+            
+            if(!runningRef.current || loopIdRef.current !== id) break;
+
+            // Deposit
+            setAnimationState('anim-idle');
+            playSound('deposit');
+            if(els.shine) {
+                els.shine.style.opacity = '1';
+                setTimeout(() => { if(els.shine) els.shine.style.opacity = '0'; }, 1000);
+            }
+            
+            depositRef.current += 1;
+            setDepositCount(depositRef.current);
+            
+            if (depositRef.current >= config.feedFreq) {
+                setHungerState('hungry');
+                break;
+            }
+            await wait(1000);
+        }
+    };
+
+    // --- Hold Button Handlers ---
+    const startHold = (type: 'awaken' | 'feed') => {
+        initAudio();
+        const startTime = Date.now();
+        const duration = type === 'awaken' ? 5000 : 8000;
+        const setProgress = type === 'awaken' ? setAwakenProgress : setFeedProgress;
+        
+        if (type === 'awaken') setIsAwakening(true);
+        if (type === 'feed') setIsFeeding(true);
+
+        holdIntervalRef.current = setInterval(() => {
+            const elapsed = Date.now() - startTime;
+            let p = (elapsed / duration) * 100;
+            if(p >= 100) {
+                p = 100;
+                clearInterval(holdIntervalRef.current);
+                holdIntervalRef.current = null;
+                playSound('glitter');
+                if(type === 'awaken') completeAwakening();
+                if(type === 'feed') completeFeeding();
+            }
+            setProgress(p);
+            
+            if(type === 'feed' && Math.random() > 0.8) {
+                 setFallingFood(prev => [...prev, {
+                     id: Math.random(), left: 20 + Math.random() * 60, top: 0
+                 }]);
+            }
+        }, 30);
+    };
+
+    const stopHold = (type: 'awaken' | 'feed') => {
+        if(holdIntervalRef.current) {
+            clearInterval(holdIntervalRef.current);
+            holdIntervalRef.current = null;
+        }
+        if(type === 'awaken') {
+            setIsAwakening(false);
+            setAwakenProgress(0);
+        }
+        if(type === 'feed') {
+            setIsFeeding(false);
+            setFeedProgress(0);
+            setFallingFood([]); 
+        }
+    };
+
+    const completeAwakening = async () => {
+        setAwakenComplete(true);
+        await wait(1500);
+        setIsRunning(true);
+        runningRef.current = true;
+        depositRef.current = 0;
+        setDepositCount(0);
+        setHungerState('sated');
+        loopIdRef.current++;
+        mainLoop(loopIdRef.current);
+        setAwakenComplete(false);
+        setIsAwakening(false);
+        setAwakenProgress(0);
+        setHasUnsavedChanges(true);
+    };
+
+    const completeFeeding = () => {
+        setHungerState('fed');
+        setFeedProgress(100);
+    };
+
+    const handleResume = () => {
+        setHungerState('sated');
+        depositRef.current = 0;
+        setDepositCount(0);
+        setFeedProgress(0);
+        setIsFeeding(false);
+        setFallingFood([]);
+        runningRef.current = true;
+        loopIdRef.current++;
+        mainLoop(loopIdRef.current);
+    };
+
+    useEffect(() => {
+        return () => { 
+            runningRef.current = false; 
+            if(holdIntervalRef.current) clearInterval(holdIntervalRef.current);
+        };
+    }, []);
+
+    // --- Rig Component (Local) ---
+    const ServitorRig = ({ idPrefix, isPreview = false }: { idPrefix: string, isPreview?: boolean }) => {
+        const wrapperClass = isFeeding ? 'anim-feed' : 'anim-idle';
+        
+        return (
+            <div 
+                id={idPrefix} 
+                className={`servitor-rig relative w-[128px] h-[128px] ${wrapperClass}`}
+                style={{ transform: isPreview ? 'scale(1.5)' : 'scale(1)' }}
+            >
+                {/* 1. Back Elements (Wings/Aura) */}
+                {config.hasWings && (
+                     <div className="absolute inset-0 z-0" style={getSpriteStyle(config.wingIndex, 'Servitor_Back_Elements_Master_Sheet.jpg')} />
+                )}
+                
+                {/* 2. Legs (Jointed at top center) */}
+                <div 
+                    className="limb leg-left absolute z-10 w-full h-full origin-top-center"
+                    style={{ ...getSpriteStyle(config.limbIndex, 'Servitor_Legs_Master_Sheet (2).jpg'), transform: 'scaleX(-1)' }} 
+                />
+                <div 
+                    className="limb leg-right absolute z-10 w-full h-full origin-top-center"
+                    style={getSpriteStyle(config.limbIndex, 'Servitor_Legs_Master_Sheet (2).jpg')} 
+                />
+
+                {/* 3. Base / Torso */}
+                <div 
+                    className="base absolute inset-0 z-20"
+                    style={getSpriteStyle(config.baseIndex, 'Servitor_Bases_Master_Sheet.jpg')} 
+                />
+
+                {/* 4. Clothes */}
+                <div 
+                    className="clothes absolute inset-0 z-30"
+                    style={getSpriteStyle(config.clothingIndex, 'Servitor_Clothing_Overlays_Sheet.jpg')} 
+                />
+
+                {/* 5. Arms */}
+                <div 
+                    className="limb arm-left absolute z-40 w-full h-full origin-top-center"
+                    style={{ ...getSpriteStyle(config.limbIndex, 'Servitor_Arms_Master_Sheet (2).jpg'), transform: 'scaleX(-1)' }} 
+                />
+                <div 
+                    className="limb arm-right absolute z-40 w-full h-full origin-top-center"
+                    style={getSpriteStyle(config.limbIndex, 'Servitor_Arms_Master_Sheet (2).jpg')} 
+                />
+
+                {/* 6. Hat */}
+                <div 
+                    className="hat absolute inset-0 z-50"
+                    style={getSpriteStyle(config.hatIndex, 'Servitor_Headgear_Master_Sheet.jpg')} 
+                />
+
+                {/* 7. Tool (Attached to Right Arm logically, but rendered on top for visibility) */}
+                <div 
+                    className="tool absolute inset-0 z-60"
+                    style={getSpriteStyle(config.toolIndex, 'Servitor_Magickal_Tools_Sheet.jpg')} 
+                />
+            </div>
+        );
+    };
+
+
+    // --- RENDERING ---
+
+    if (!assetsLoaded) {
+        return (
+            <div className="fixed inset-0 bg-[#08080c] z-[999] flex flex-col items-center justify-center">
+                <div 
+                    style={{
+                        ...getSpriteStyle(0, 'Chest_Sigils_And_Treasures_Sheet (1).jpg'),
+                        width: '128px', height: '128px',
+                        animation: 'spin 4s infinite linear',
+                        filter: 'drop-shadow(0 0 15px #FFD700)'
+                    }} 
+                />
+                <h2 className="magick-font text-[#FFD700] mt-8 tracking-[0.2em] animate-pulse">
+                    SUMMONING ASSETS... {loadProgress}%
+                </h2>
+                <div className="w-64 h-1 bg-gray-900 mt-4 rounded-full overflow-hidden border border-[#FFD700]/20">
+                    <div className="h-full bg-[#FFD700] transition-all duration-300" style={{ width: `${loadProgress}%` }} />
+                </div>
+                <style jsx>{`
+                    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+                `}</style>
+            </div>
+        );
+    }
+
+    const isFeedingActive = hungerState === 'hungry' || isFeeding || hungerState === 'fed';
+
+    return (
+        <div className="fixed inset-0 w-full h-full bg-[#0f0f1a] text-[#dcdcdc] overflow-hidden select-none font-sans flex flex-col">
+            <style jsx global>{`
+                @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap');
+                .magick-font { font-family: 'Cinzel', serif; }
+                
+                /* ANIMATIONS */
+                @keyframes limb-walk {
+                    0% { transform: rotate(-15deg); } 50% { transform: rotate(15deg); } 100% { transform: rotate(-15deg); }
+                }
+                @keyframes limb-walk-rev {
+                    0% { transform: rotate(15deg); } 50% { transform: rotate(-15deg); } 100% { transform: rotate(15deg); }
+                }
+                @keyframes rig-bounce {
+                    0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); }
+                }
+                
+                /* Walk Left Logic */
+                .anim-walk-left .leg-left { animation: limb-walk 1s infinite ease-in-out; }
+                .anim-walk-left .leg-right { animation: limb-walk-rev 1s infinite ease-in-out; }
+                .anim-walk-left .arm-left { animation: limb-walk-rev 1s infinite ease-in-out; }
+                .anim-walk-left .arm-right { animation: limb-walk 1s infinite ease-in-out; }
+                .anim-walk-left { animation: rig-bounce 0.5s infinite ease-in-out; }
+
+                /* Walk Right Logic */
+                .anim-walk-right .leg-left { animation: limb-walk 1s infinite ease-in-out; }
+                .anim-walk-right .leg-right { animation: limb-walk-rev 1s infinite ease-in-out; }
+                .anim-walk-right .arm-left { animation: limb-walk-rev 1s infinite ease-in-out; }
+                .anim-walk-right .arm-right { animation: limb-walk 1s infinite ease-in-out; }
+                .anim-walk-right { animation: rig-bounce 0.5s infinite ease-in-out; transform: scaleX(-1); }
+
+                /* Feeding Logic */
+                .anim-feed .arm-left { transform: rotate(140deg) !important; transition: transform 0.5s; }
+                .anim-feed .arm-right { transform: rotate(-140deg) !important; transition: transform 0.5s; }
+                
+                /* Scrollbar for Panel */
+                .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+                .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
+                .custom-scrollbar::-webkit-scrollbar-thumb { background: #5d4037; border-radius: 2px; }
+            `}</style>
+
+            {/* Exit Button */}
+            <button onClick={handleSafeExit} className="absolute top-6 right-6 z-50 text-gray-500 hover:text-white transition-colors">
+                <X size={24} />
+            </button>
+
+            {/* PARALLAX WORLD */}
+            <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none z-0">
+                {/* Layer 1: Sky/Background (Slowest) */}
+                <div className="absolute inset-0 bg-cover bg-center" 
+                     style={{ backgroundImage: `url('${ASSET_PATH}Astral_Plane_Parallax_Layers.jpg')`, transform: 'scale(1.1)' }}>
+                </div>
+                {/* Note: If the parallax image is a single file, we use it as the main BG. 
+                    If separate files were provided, we would layer them here with different animation speeds.
+                    For now, we simulate depth by adding a CSS mist overlay. */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40 z-10" />
+            </div>
+
+            {/* GAME STAGE */}
+            <div className="relative w-full h-full z-10">
+                
+                {/* Servitor Container (Moves Left/Right) */}
+                <div id="servitor-container" className="absolute bottom-[20vh] left-[20%] w-[128px] h-[128px] z-20 transition-all duration-100">
+                    <ServitorRig idPrefix="game-rig" />
+                </div>
+
+                {/* Vessel (Chest) */}
+                <div className="absolute bottom-[20vh] right-[10%] w-[128px] h-[128px] z-20 flex flex-col items-center">
+                    <div id="game-vessel" className="w-full h-full" style={getSpriteStyle(config.vesselIndex, 'Ritual_Vessels_Master_Sheet.jpg')} />
+                    <div id="vessel-shine" className="absolute top-0 text-4xl opacity-0 transition-opacity duration-500">✨</div>
+                    <div className="mt-2 font-serif text-[#FFD700] text-xs text-center drop-shadow-md">
+                        {uName || "Master"}'s Altar
+                    </div>
+                </div>
+
+                {/* Status HUD (When Running) */}
+                {isRunning && !isFeedingActive && (
+                    <div className="absolute bottom-6 w-full flex justify-center pointer-events-none">
+                        <div className="bg-black/60 border border-[#FFD700]/50 px-6 py-2 rounded-full backdrop-blur-sm text-center">
+                            <p className="text-[#FFD700] text-xs tracking-widest uppercase mb-1">{sPurpose || 'Result'} Count</p>
+                            <p className="text-2xl text-white font-bold">{depositCount}</p>
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* CONFIGURATION PANEL (Parchment UI) */}
+            <div 
+                className={`absolute top-0 left-0 h-full w-full md:w-[500px] z-50 transition-transform duration-500 ease-in-out ${isRunning ? '-translate-x-full' : 'translate-x-0'}`}
+                style={{
+                    borderImage: `url('${ASSET_PATH}Parchment_And_Oak_Responsive_Panels.png') 18% 15% fill stretch`,
+                    borderWidth: '50px', 
+                    padding: '20px' // Padding inside the parchment area
+                }}
+            >
+                <div className="w-full h-full overflow-y-auto custom-scrollbar pr-2 flex flex-col gap-6 text-[#2a1a1a]">
+                    
+                    {/* Header */}
+                    <div className="text-center border-b border-[#5d4037]/30 pb-4">
+                        <h2 className="text-[#3e2723] uppercase tracking-widest text-2xl magick-font font-bold">Grimoire of the Wild</h2>
+                        <p className="text-[#5d4037] text-sm font-serif italic">Forge your servant from the elements</p>
+                    </div>
+
+                    {/* Preview Area */}
+                    <div className="flex justify-center py-6 bg-black/10 rounded-lg shadow-inner border border-[#5d4037]/20">
+                         <ServitorRig idPrefix="preview-rig" isPreview={true} />
+                    </div>
+
+                    {/* Inputs */}
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-xs font-bold text-[#3e2723] uppercase mb-1">Spirit Name</label>
+                            <input type="text" value={sName} onChange={e => setSName(e.target.value)} className="w-full bg-[#fdf5e6] border border-[#8d6e63] p-2 rounded text-[#2a1a1a] placeholder-[#8d6e63]/50 focus:outline-none focus:border-[#3e2723]" placeholder="Name your entity..." />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-[#3e2723] uppercase mb-1">Purpose</label>
+                            <input type="text" value={sPurpose} onChange={e => setSPurpose(e.target.value)} className="w-full bg-[#fdf5e6] border border-[#8d6e63] p-2 rounded text-[#2a1a1a] placeholder-[#8d6e63]/50 focus:outline-none focus:border-[#3e2723]" placeholder="What does it seek?" />
+                        </div>
+                    </div>
+
+                    {/* Visual Configuration Grids */}
+                    <div className="space-y-6">
+                        {/* Bases */}
+                        <div>
+                            <label className="block text-xs font-bold text-[#3e2723] uppercase mb-2">Manifestation Base</label>
+                            <div className="grid grid-cols-4 gap-2">
+                                {BASES.map((_, i) => (
+                                    <button 
+                                        key={i} 
+                                        onClick={() => setConfig({...config, baseIndex: i})}
+                                        className={`w-full aspect-square border-2 rounded overflow-hidden ${config.baseIndex === i ? 'border-[#3e2723] shadow-md' : 'border-transparent hover:border-[#8d6e63]'}`}
+                                    >
+                                        <div className="w-full h-full transform scale-150" style={getSpriteStyle(i, 'Servitor_Bases_Master_Sheet.jpg')} />
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Limbs */}
+                        <div>
+                            <label className="block text-xs font-bold text-[#3e2723] uppercase mb-2">Limb Material</label>
+                            <div className="grid grid-cols-4 gap-2">
+                                {LIMBS.map((_, i) => (
+                                    <button 
+                                        key={i} 
+                                        onClick={() => setConfig({...config, limbIndex: i})}
+                                        className={`w-full aspect-square border-2 rounded overflow-hidden ${config.limbIndex === i ? 'border-[#3e2723] shadow-md' : 'border-transparent hover:border-[#8d6e63]'}`}
+                                    >
+                                        <div className="w-full h-full transform scale-125" style={getSpriteStyle(i, 'Servitor_Arms_Master_Sheet (2).jpg')} />
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Clothes */}
+                        <div>
+                            <label className="block text-xs font-bold text-[#3e2723] uppercase mb-2">Vestments</label>
+                            <div className="grid grid-cols-4 gap-2">
+                                {Array.from({length: 16}).map((_, i) => (
+                                    <button 
+                                        key={i} 
+                                        onClick={() => setConfig({...config, clothingIndex: i})}
+                                        className={`w-full aspect-square border-2 rounded overflow-hidden bg-gray-300/20 ${config.clothingIndex === i ? 'border-[#3e2723] shadow-md' : 'border-transparent hover:border-[#8d6e63]'}`}
+                                    >
+                                        <div className="w-full h-full transform scale-150" style={getSpriteStyle(i, 'Servitor_Clothing_Overlays_Sheet.jpg')} />
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                        
+                        {/* Tools */}
+                        <div>
+                            <label className="block text-xs font-bold text-[#3e2723] uppercase mb-2">Tool of Power</label>
+                            <div className="grid grid-cols-4 gap-2">
+                                {TOOLS.map((_, i) => (
+                                    <button 
+                                        key={i} 
+                                        onClick={() => setConfig({...config, toolIndex: i})}
+                                        className={`w-full aspect-square border-2 rounded overflow-hidden ${config.toolIndex === i ? 'border-[#3e2723] shadow-md' : 'border-transparent hover:border-[#8d6e63]'}`}
+                                    >
+                                        <div className="w-full h-full transform scale-75" style={getSpriteStyle(i, 'Servitor_Magickal_Tools_Sheet.jpg')} />
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Vessels */}
+                        <div>
+                            <label className="block text-xs font-bold text-[#3e2723] uppercase mb-2">Ritual Vessel</label>
+                            <div className="grid grid-cols-4 gap-2">
+                                {VESSELS.map((_, i) => (
+                                    <button 
+                                        key={i} 
+                                        onClick={() => setConfig({...config, vesselIndex: i})}
+                                        className={`w-full aspect-square border-2 rounded overflow-hidden ${config.vesselIndex === i ? 'border-[#3e2723] shadow-md' : 'border-transparent hover:border-[#8d6e63]'}`}
+                                    >
+                                        <div className="w-full h-full transform scale-125" style={getSpriteStyle(i, 'Ritual_Vessels_Master_Sheet.jpg')} />
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Controls */}
+                    <div className="sticky bottom-0 bg-[#eaddcf] py-4 border-t border-[#5d4037]/20 flex flex-col gap-2">
+                        <button 
+                            onMouseDown={() => startHold('awaken')}
+                            onMouseUp={() => stopHold('awaken')}
+                            onMouseLeave={() => stopHold('awaken')}
+                            onTouchStart={() => startHold('awaken')}
+                            onTouchEnd={() => stopHold('awaken')}
+                            className="w-full py-4 bg-[#3e2723] text-[#FFD700] uppercase tracking-widest font-bold border-2 border-[#5d4037] hover:bg-[#2a1a1a] transition-colors relative overflow-hidden group"
+                        >
+                            <div className="absolute top-0 left-0 h-full bg-[#FFD700]/30 transition-all duration-75 ease-linear" style={{width: `${awakenProgress}%`}}></div>
+                            <span className="relative z-10">{isAwakening ? "Awakening..." : "Hold to Awaken"}</span>
+                        </button>
+                        
+                        <div className="flex gap-2">
+                            <button onClick={handleBindToGrimoire} className="flex-1 py-2 bg-[#5d4037] text-white text-xs uppercase tracking-wide hover:bg-[#4e342e]">
+                                Bind ({COST_BIND_SERVITOR} Credits)
+                            </button>
+                            <div className="bg-[#fdf5e6] px-3 py-2 border border-[#8d6e63] flex items-center">
+                                <span className="text-xs text-[#3e2723] font-bold">{wallet?.isUnlimited ? '∞' : wallet?.credits || 0} Credits</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Saved Cabinet */}
+                    {savedServitors.length > 0 && (
+                        <div className="mt-4 border-t border-[#5d4037]/20 pt-4">
+                            <h3 className="text-xs font-bold text-[#3e2723] uppercase mb-2">Bound Servitors</h3>
+                            <div className="space-y-2">
+                                {savedServitors.map(s => (
+                                    <div key={s.id} onClick={() => handleLoad(s)} className="flex justify-between items-center bg-[#fdf5e6] p-2 border border-[#8d6e63] cursor-pointer hover:bg-white">
+                                        <span className="text-sm font-bold text-[#3e2723]">{s.name}</span>
+                                        <Trash2 size={14} className="text-[#8d6e63] hover:text-red-600" onClick={(e) => handleDelete(s.id, e)} />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* FEEDING OVERLAY */}
+            {isFeedingActive && (
+                <div className="absolute inset-0 z-[200] bg-black/60 flex flex-col items-center justify-center pointer-events-auto">
+                    {hungerState === 'fed' ? (
+                        <div className="bg-[#2a1a1a] p-8 border-2 border-[#FFD700] text-center max-w-sm mx-4 shadow-[0_0_30px_#FFD700]">
+                            <h2 className="text-2xl text-[#FFD700] magick-font mb-2">Offering Accepted</h2>
+                            <p className="text-gray-300 mb-6 font-serif">The spirit is revitalized.</p>
+                            <button onClick={handleResume} className="bg-[#FFD700] text-black px-6 py-2 rounded font-bold hover:bg-white uppercase tracking-wider">Resume</button>
+                        </div>
+                    ) : (
+                        <div className="flex flex-col items-center animate-in fade-in duration-500">
+                             <div className="text-[#FFD700] magick-font text-xl mb-8 text-center drop-shadow-md bg-black/50 px-4 py-2 rounded-full">
+                                {sName} hungers...
+                            </div>
+                            <button
+                                onMouseDown={() => startHold('feed')}
+                                onMouseUp={() => stopHold('feed')}
+                                onMouseLeave={() => stopHold('feed')}
+                                onTouchStart={() => startHold('feed')}
+                                onTouchEnd={() => stopHold('feed')}
+                                className="w-32 h-32 rounded-full border-4 border-[#FFD700] bg-gradient-to-b from-[#3e2723] to-black shadow-[0_0_30px_rgba(255,215,0,0.4)] flex items-center justify-center active:scale-95 transition-transform overflow-hidden relative"
+                            >
+                                <div className="absolute bottom-0 left-0 w-full bg-[#FFD700]/40 transition-all duration-75 ease-linear" style={{height: `${feedProgress}%`}}></div>
+                                <span className="text-4xl z-10">✨</span>
+                            </button>
+                        </div>
+                    )}
+                </div>
+            )}
+            
+            {/* Falling Food Particles */}
+            {fallingFood.map(f => (
+                <div key={f.id} className="absolute text-2xl z-[201] animate-bounce" style={{left: f.left + '%', top: '10%'}}>✨</div>
+            ))}
+
+            {/* EDIT BUTTON (When Running) */}
+            {isRunning && !isFeedingActive && (
+                <button 
+                    onClick={() => { setIsRunning(false); runningRef.current = false; }}
+                    className="absolute bottom-6 left-6 z-50 bg-black/50 border border-[#FFD700] text-[#FFD700] px-4 py-2 uppercase tracking-widest hover:bg-[#FFD700]/20 transition-colors"
+                >
+                    Modify Ritual
+                </button>
+            )}
+
+            {/* Credit Modal */}
+            {showCreditModal && (
+                 <div className="fixed inset-0 z-[500] flex items-center justify-center bg-black/80 backdrop-blur-md p-6">
+                    <div className="bg-[#1a1528] border border-amber-600/50 p-8 rounded-lg max-w-sm w-full text-center">
+                        <Lock className="w-12 h-12 text-amber-500 mx-auto mb-4" />
+                        <h3 className="text-xl font-magical text-amber-100 mb-2">Insufficient Aether</h3>
+                        <p className="text-gray-400 text-sm mb-6">You need {COST_BIND_SERVITOR} credits.</p>
+                        <button onClick={() => setShowCreditModal(false)} className="w-full bg-amber-900/40 border border-amber-600 text-amber-50 py-3 uppercase">Return</button>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}

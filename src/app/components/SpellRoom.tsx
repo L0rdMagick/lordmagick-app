@@ -3,7 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 // Expanded type to allow arbitrary strings or specific known types
-type Tradition = "Chaos Magick" | "Wicca Magick" | "Ceremonial Magick" | "Folk Magick" | "Hoodoo (Rootwork)" | "Electric Magick" | "Love" | "Grimoire of Magickal Servitors";
+type Tradition = "Chaos Magick" | "Wicca Magick" | "Ceremonial Magick" | "Folk Magick" | "Hoodoo (Rootwork)" | "Electric Magick" | "Love" | "Grimoire of Magickal Servitors" | "Servitors of the Wild Unknown";
 
 interface TraditionInfo {
   name: Tradition;
@@ -31,6 +31,15 @@ const traditions: TraditionInfo[] = [
     customHref: "/spell-room/grimoire-of-digital-servitors"
   },
   {
+      name: "Servitors of the Wild Unknown",
+      // Using the Servitor base sheet as the button image since a specific button wasn't provided, 
+      // or you can upload a new button image and reference it here.
+      // For now, I'll assume a placeholder or reuse an existing one if specific art isn't ready.
+      image: "/images/Servitor_images/Servitor_Bases_Master_Sheet.jpg", 
+      isAvailable: true,
+      customHref: "/spell-room/servitors-of-the-wild-unknown"
+  },
+  {
     name: "Love",
     image: "/images/spell-room/love-spells-app-page.png", 
     isAvailable: true,
@@ -48,12 +57,12 @@ const traditions: TraditionInfo[] = [
   {
     name: "Ceremonial Magick",
     image: "/images/spell-room/ceremonial-magick-button.png",
-    isAvailable: false, // Set to false per request
+    isAvailable: false, 
   },
   {
     name: "Folk Magick",
     image: "/images/spell-room/folk-magick-button.png",
-    isAvailable: false, // Set to false per request
+    isAvailable: false, 
   },
 ];
 
@@ -71,7 +80,6 @@ interface TraditionButtonProps {
 const TraditionButton: React.FC<TraditionButtonProps> = ({ tradition }) => {
     const [showMessage, setShowMessage] = useState(false);
 
-    // Auto-hide the message after 3 seconds
     useEffect(() => {
         if (showMessage) {
             const timer = setTimeout(() => setShowMessage(false), 3000);
@@ -98,7 +106,7 @@ const TraditionButton: React.FC<TraditionButtonProps> = ({ tradition }) => {
                 {/* Image Container */}
                 <div
                     className={`
-                        transition-transform duration-300 ease-in-out 
+                        transition-transform duration-300 ease-in-out overflow-hidden rounded-lg
                         ${tradition.isAvailable ? 'group-hover:scale-105 active:scale-95' : 'grayscale opacity-70 group-hover:scale-100'}
                     `}
                     style={{ filter: tradition.isAvailable ? 'drop-shadow(5px 8px 15px rgba(0,0,0,0.7))' : 'none' }}
@@ -108,19 +116,21 @@ const TraditionButton: React.FC<TraditionButtonProps> = ({ tradition }) => {
                         alt={tradition.name}
                         width={500}
                         height={700}
-                        className={`w-full h-auto ${tradition.isAvailable ? 'group-hover:brightness-110' : ''}`}
+                        className={`w-full h-auto object-cover aspect-[3/4] ${tradition.isAvailable ? 'group-hover:brightness-110' : ''}`}
                     />
+                     {/* Label Overlay for Clarity */}
+                     <div className="absolute bottom-0 left-0 w-full bg-black/60 p-2 text-center">
+                        <span className="text-white font-serif text-sm tracking-widest uppercase">{tradition.name}</span>
+                     </div>
                 </div>
 
-                {/* "Coming Soon" Badge for unavailable items (Optional, kept for clarity) */}
                 {!tradition.isAvailable && !showMessage && (
-                    <div className="absolute bottom-[10%] left-1/2 -translate-x-1/2 opacity-80">
-                         <span className="text-gray-400 text-xs uppercase tracking-widest font-serif border-b border-gray-600 pb-1">Locked</span>
+                    <div className="absolute bottom-[20%] left-1/2 -translate-x-1/2 opacity-80 z-10">
+                         <span className="text-gray-400 text-xs uppercase tracking-widest font-serif border-b border-gray-600 pb-1 bg-black/50 px-2">Locked</span>
                     </div>
                 )}
             </Link>
 
-            {/* Magickal Pop-up Message */}
             {showMessage && (
                 <div className="absolute inset-0 z-20 flex items-center justify-center animate-fade-in">
                     <div className="bg-black/90 border border-purple-500/50 p-4 rounded-lg shadow-[0_0_20px_rgba(168,85,247,0.4)] backdrop-blur-sm text-center transform scale-110 transition-all">
@@ -134,16 +144,10 @@ const TraditionButton: React.FC<TraditionButtonProps> = ({ tradition }) => {
     );
 };
 
-
 const SpellRoom: React.FC = () => {
   return (
     <div className="w-full h-full animate-fade-in p-4 md:p-8">
-       {/* 
-         Updated Grid Layout:
-         - Mobile: 2 columns (grid-cols-2)
-         - Large: 5 columns (lg:grid-cols-5)
-       */}
-       <div className="w-full max-w-360 mx-auto grid grid-cols-2 lg:grid-cols-5 gap-4 md:gap-8 items-start justify-center">
+       <div className="w-full max-w-360 mx-auto grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-8 items-start justify-center">
         {traditions.map((tradition) => (
           <TraditionButton 
             key={tradition.name}
