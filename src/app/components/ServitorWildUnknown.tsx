@@ -30,16 +30,16 @@ const ASSETS = {
 // Default Offsets - "v" = visible, "f" = flip, "s" = scale
 const DEFAULT_OFFSETS = {
     global:  { x: 0, y: 0, s: 1.0, f: false, v: true }, // Whole Servitor
-    wing:    { x: 0, y: -5, s: 1.2, f: false, v: true },
-    leg:     { x: 0, y: 0, s: 0.75, f: false, v: true },
-    tool:    { x: 5, y: 10, s: 0.6, f: false, v: true },
-    arm:     { x: 0, y: 5, s: 0.75, f: false, v: true },
+    wing:    { x: 0, y: 3, s: 1.0, f: false, v: true },
+    leg:     { x: 0, y: 55, s: 0.8, f: false, v: true },
+    tool:    { x: 27, y: 11, s: 0.4, f: false, v: true },
+    arm:     { x: 0, y: 10, s: 0.6, f: false, v: true },
     base:    { x: 0, y: 0, s: 1.0, f: false, v: true },
-    head:    { x: 0, y: -5, s: 0.85, f: false, v: true },
-    clothes: { x: 0, y: 0, s: 1.05, f: false, v: true },
-    sigil:   { x: 0, y: -10, s: 0.4, f: false, v: true },
-    vessel:  { x: 0, y: 0, s: 1.0, f: false, v: true },
-    mound:   { x: 0, y: 0, s: 1.0, f: false, v: true },
+    head:    { x: 0, y: -51, s: 0.7, f: false, v: true },
+    clothes: { x: 0, y: 10, s: 0.6, f: false, v: true },
+    sigil:   { x: 0, y: 4, s: 0.2, f: false, v: true },
+    vessel:  { x: 0, y: 0, s: 1.8, f: false, v: true },
+    mound:   { x: 0, y: 0, s: 2.8, f: false, v: true },
 };
 
 // Categories for Main Menu
