@@ -30,13 +30,13 @@ const ASSETS = {
 // Change these numbers to scale body parts (1.0 = 100%, 0.8 = 80%)
 const SPRITE_SCALING_CONFIG = {
     base: 1.0,      // Main Torso 
-    arm: 0.75,      // Arms (Reduced to fit torso better)
-    leg: 0.75,      // Legs (Reduced to fit)
-    head: 0.85,     // Hats/Helmets
-    clothes: 1.05,  // Clothing (Slightly larger to overlay torso)
-    tool: 0.6,      // Handheld tools
-    wings: 1.2,     // Back elements
-    vessel: 1.0     // The Chest/Cauldron
+    arm: 0.25,      // Arms (Reduced to fit torso better)
+    leg: 0.25,      // Legs (Reduced to fit)
+    head: 0.25,     // Hats/Helmets
+    clothes: 0.5,  // Clothing (Slightly larger to overlay torso)
+    tool: 0.25,      // Handheld tools
+    wings: 1.0,     // Back elements
+    vessel: 2.0     // The Chest/Cauldron
 };
 
 // Generic list for the 16-frame grids
