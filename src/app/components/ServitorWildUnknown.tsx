@@ -21,25 +21,27 @@ const ASSETS = {
     VESSELS: 'Ritual_Vessels_Master_Sheet.png',
     TREASURES: 'Chest_Sigils_And_Treasures_Sheet.png',
     FOOD: 'Servitor_Sustenance_Food_Sheet.png',
+    MOUND: 'mound_into_the_void.png', // New Asset
     UI_PANEL: 'Parchment_And_Oak_Responsive_Panels.png',
     BG_MAIN: 'Astral_Plane_Parallax_Layers.jpg',
     UI_BUTTONS: 'Runic_Glass_Button_Set.png'
 };
 
-// --- 2. SPRITE TUNING SECTION (ADJUST PROPORTIONS HERE) ---
-// Change these numbers to scale body parts (1.0 = 100%, 0.8 = 80%)
-const SPRITE_SCALING_CONFIG = {
-    base: 1.0,      // Main Torso 
-    arm: 0.25,      // Arms (Reduced to fit torso better)
-    leg: 0.25,      // Legs (Reduced to fit)
-    head: 0.25,     // Hats/Helmets
-    clothes: 0.5,  // Clothing (Slightly larger to overlay torso)
-    tool: 0.25,      // Handheld tools
-    wings: 1.0,     // Back elements
-    vessel: 2.0     // The Chest/Cauldron
+// --- 2. SPRITE TUNING SECTION (ADJUST PROPORTIONS & PLACEMENT) ---
+// Scale: 1.0 = 100%. 
+// X: Positive moves Right, Negative moves Left (percentages).
+// Y: Positive moves Down, Negative moves Up (percentages).
+const SPRITE_OFFSET_CONFIG = {
+    base:    { scale: 1.0,  x: 0,   y: 0 },   // Main Torso
+    arm:     { scale: 0.75, x: 0,   y: 5 },   // Arms (Moved down slightly)
+    leg:     { scale: 0.75, x: 0,   y: 0 },   // Legs
+    head:    { scale: 0.85, x: 0,   y: -5 },  // Hats (Moved up slightly)
+    clothes: { scale: 1.05, x: 0,   y: 0 },   // Clothes
+    tool:    { scale: 0.6,  x: 5,   y: 10 },  // Tools (Moved right/down to fit hand)
+    wings:   { scale: 1.2,  x: 0,   y: -5 },  // Back elements
+    vessel:  { scale: 1.0,  x: 0,   y: 0 }    // The Chest/Cauldron
 };
 
-// Generic list for the 16-frame grids
 const GENERIC_LIST = Array.from({length: 16}).map((_, i) => `Option ${i + 1}`);
 
 interface SavedServitor {
@@ -50,12 +52,11 @@ interface SavedServitor {
     config: any;
 }
 
-// Helper: Calculates the background position for a 4x4 Sprite Sheet
+// Helper: Get Sprite CSS
 const getSpriteStyle = (index: number, filename: string) => {
     const safeIndex = Math.max(0, Math.min(15, index));
     const col = safeIndex % 4;
     const row = Math.floor(safeIndex / 4);
-    // 33.333% shifts background by exactly 1 frame width in a 4x4 grid
     const xPos = col * 33.333;
     const yPos = row * 33.333;
 
@@ -69,61 +70,41 @@ const getSpriteStyle = (index: number, filename: string) => {
 
 export default function ServitorWildUnknown() {
     const router = useRouter();
-    
-    // Supabase Client
     const supabase = createBrowserClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
 
-    // --- State Management ---
+    // --- State ---
     const [assetsLoaded, setAssetsLoaded] = useState(false);
     const [loadProgress, setLoadProgress] = useState(0);
 
-    // Game Loop State
     const [isRunning, setIsRunning] = useState(false);
     const runningRef = useRef(false); 
     const loopIdRef = useRef(0);
     const audioCtxRef = useRef<any>(null);
-    const servitorPosRef = useRef(20); // Tracks X position for feeding
+    const servitorPosRef = useRef(20); 
 
-    // User Input State
     const [sName, setSName] = useState("");
     const [sPurpose, setSPurpose] = useState("");
     const [uName, setUName] = useState("");
     
-    // Data State
     const [user, setUser] = useState<any>(null);
     const [savedServitors, setSavedServitors] = useState<SavedServitor[]>([]);
     const [wallet, setWallet] = useState<{ credits: number, tier: string, isUnlimited: boolean } | null>(null);
 
-    // Modals & Flags
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const [showExitWarning, setShowExitWarning] = useState(false);
     const [showCreditModal, setShowCreditModal] = useState(false);
 
-    // --- CONFIGURATION STATE ---
+    // Config State
     const [config, setConfig] = useState({
-        baseIndex: 0,
-        limbIndex: 0, // Arms
-        legIndex: 0,  // Legs
-        toolIndex: 0,
-        hatIndex: 0,
-        wingIndex: 0,
-        vesselIndex: 0,
-        clothingIndex: 0,
-        sigilIndex: 0, 
-        foodIndex: 0, 
-        
-        hasWings: false,
-        movementType: "walk", 
-        
-        // Sounds
-        soundSearch: "rumble", 
-        soundFind: "chime",    
-        soundDeposit: "coin",
-
-        feedFreq: 5 // Tasks before hunger
+        baseIndex: 0, limbIndex: 0, legIndex: 0, toolIndex: 0,
+        hatIndex: 0, wingIndex: 0, vesselIndex: 0, clothingIndex: 0,
+        sigilIndex: 0, foodIndex: 0,
+        hasWings: false, movementType: "walk", 
+        soundSearch: "rumble", soundFind: "chime", soundDeposit: "coin",
+        feedFreq: 5
     });
 
     // Interaction State
@@ -131,7 +112,7 @@ export default function ServitorWildUnknown() {
     const [isAwakening, setIsAwakening] = useState(false);
     const [isFeeding, setIsFeeding] = useState(false);
     
-    // Gameplay Stats
+    // Gameplay Stats & Visuals
     const [depositCount, setDepositCount] = useState(0);
     const depositRef = useRef(0); 
     const [hungerState, setHungerState] = useState<'sated' | 'hungry' | 'fed'>('sated');
@@ -139,9 +120,8 @@ export default function ServitorWildUnknown() {
     const [fallingFood, setFallingFood] = useState<{id: number, left: number, top: number, spriteIndex: number}[]>([]);
     const holdIntervalRef = useRef<any>(null);
 
-    // --- INITIALIZATION ---
+    // --- Init ---
     useEffect(() => {
-        // Preload Assets
         const imageUrls = Object.values(ASSETS);
         let loadedCount = 0;
         imageUrls.forEach((url) => {
@@ -152,29 +132,18 @@ export default function ServitorWildUnknown() {
                 setLoadProgress(Math.floor((loadedCount / imageUrls.length) * 100));
                 if (loadedCount === imageUrls.length) setTimeout(() => setAssetsLoaded(true), 500);
             };
-            img.onerror = () => {
-                console.warn("Missing asset:", url);
-                loadedCount++;
-                if (loadedCount === imageUrls.length) setAssetsLoaded(true);
-            }
+            img.onerror = () => { loadedCount++; if (loadedCount === imageUrls.length) setAssetsLoaded(true); }
         });
 
-        // Load User Data
         const initUser = async () => {
             const { data: { user } } = await supabase.auth.getUser();
             setUser(user);
-            if (user) {
-                refreshCabinet(user.id);
-                const w = await getWalletStatus(user.id);
-                setWallet(w);
-            }
+            if (user) { refreshCabinet(user.id); }
         };
         initUser();
     }, [supabase]);
 
-    useEffect(() => {
-        if (sName || sPurpose) setHasUnsavedChanges(true);
-    }, [sName, sPurpose, config]);
+    useEffect(() => { if (sName || sPurpose) setHasUnsavedChanges(true); }, [sName, sPurpose, config]);
 
     const refreshCabinet = async (userId: string) => {
         const data = await getMyServitors(userId);
@@ -183,27 +152,20 @@ export default function ServitorWildUnknown() {
         setWallet(w);
     };
 
-    // --- PERSISTENCE ACTIONS ---
+    // --- Actions ---
     const handleBindToGrimoire = async () => {
         if (!user) return alert("Login required.");
         if (!sName) return alert("Name required.");
-
         const canAfford = await checkAndSpendCredits(user.id, COST_BIND_SERVITOR);
         if (!canAfford) { setShowCreditModal(true); return; }
-
-        await saveServitorToGrimoire(user.id, {
-            name: sName, master_name: uName, purpose: sPurpose, config: config
-        });
+        await saveServitorToGrimoire(user.id, { name: sName, master_name: uName, purpose: sPurpose, config: config });
         setHasUnsavedChanges(false);
         refreshCabinet(user.id);
         alert(`Servitor "${sName}" Bound.`);
     };
 
     const handleLoad = (s: SavedServitor) => {
-        setSName(s.name);
-        setUName(s.master_name);
-        setSPurpose(s.purpose);
-        setConfig(s.config);
+        setSName(s.name); setUName(s.master_name); setSPurpose(s.purpose); setConfig(s.config);
         setTimeout(() => setHasUnsavedChanges(false), 100);
     };
 
@@ -214,7 +176,6 @@ export default function ServitorWildUnknown() {
         if(user) refreshCabinet(user.id);
     };
 
-    // --- AUDIO ENGINE ---
     const initAudio = () => {
         const win = (globalThis as any).window;
         if (!audioCtxRef.current) {
@@ -232,26 +193,21 @@ export default function ServitorWildUnknown() {
         const g = ctx.createGain();
         osc.connect(g); g.connect(ctx.destination);
         
-        // Simple synth sounds for interactions
         if(type === 'glitter') {
-            osc.frequency.setValueAtTime(800, now);
-            osc.frequency.linearRampToValueAtTime(1200, now + 0.2);
-            g.gain.setValueAtTime(0.1, now);
-            g.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+            osc.frequency.setValueAtTime(800, now); osc.frequency.linearRampToValueAtTime(1200, now + 0.2);
+            g.gain.setValueAtTime(0.1, now); g.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
             osc.start(now); osc.stop(now + 0.2);
-        } else if (type === 'deposit') {
-            osc.frequency.setValueAtTime(200, now);
-            osc.frequency.linearRampToValueAtTime(600, now + 0.3);
-            g.gain.setValueAtTime(0.1, now);
-            osc.start(now); osc.stop(now + 0.3);
+        } else if (type === 'search') {
+            osc.frequency.setValueAtTime(100, now); osc.frequency.linearRampToValueAtTime(150, now + 1.0);
+            g.gain.setValueAtTime(0.2, now); g.gain.linearRampToValueAtTime(0, now + 1.0);
+            osc.start(now); osc.stop(now + 1.0);
         } else {
-            osc.frequency.setValueAtTime(300, now);
-            g.gain.setValueAtTime(0.05, now);
+            osc.frequency.setValueAtTime(300, now); g.gain.setValueAtTime(0.05, now);
             osc.start(now); osc.stop(now+0.1);
         }
     };
 
-    // --- ANIMATION LOOP ---
+    // --- Animation Logic ---
     const wait = (ms: number) => new Promise(r => setTimeout(r, ms));
 
     const moveTo = (targetPercent: number, id: number) => {
@@ -263,17 +219,16 @@ export default function ServitorWildUnknown() {
             const dist = Math.abs(targetPercent - current);
             const time = dist * 40; 
 
-            el.style.transition = `left ${time}ms linear`;
+            el.style.transition = `left ${time}ms linear, opacity 0.5s ease, transform 0.5s ease`;
+            el.style.opacity = '1';
+            el.style.transform = 'scale(1)';
             
-            // Trigger animation frame
             requestAnimationFrame(() => {
                 el.style.left = targetPercent + "%";
-                servitorPosRef.current = targetPercent; // Update ref for food targeting
+                servitorPosRef.current = targetPercent; 
             });
 
-            setTimeout(() => {
-                if(runningRef.current && loopIdRef.current === id) resolve();
-            }, time);
+            setTimeout(() => { if(runningRef.current && loopIdRef.current === id) resolve(); }, time);
         });
     }
 
@@ -282,57 +237,76 @@ export default function ServitorWildUnknown() {
         if(rig) rig.className = `servitor-rig ${cls}`;
     };
 
+    // --- MAIN GAME LOOP ---
     const mainLoop = async (id: number) => {
         await wait(100);
+        const mound = document.getElementById('game-mound');
+        const vessel = document.getElementById('game-vessel');
+        const servitor = document.getElementById('servitor-container');
         const shine = document.getElementById('vessel-shine');
 
         while(runningRef.current && loopIdRef.current === id) {
-            // 1. Move Left (to search)
+            
+            // 1. Walk to Mound (Left)
+            if(servitor) { servitor.style.opacity = '1'; servitor.style.transform = 'scale(1)'; }
             setAnim(config.movementType === 'fly' ? 'anim-fly-left' : 'anim-walk-left');
-            await moveTo(15, id);
+            await moveTo(15, id); 
             if(!runningRef.current) break;
 
-            // 2. Search Digging
-            setAnim('anim-dig');
+            // 2. Jump INTO Mound (Disappear)
+            if(servitor) {
+                // Shrink and Fade out
+                servitor.style.transition = 'opacity 0.5s, transform 0.5s';
+                servitor.style.opacity = '0';
+                servitor.style.transform = 'scale(0.1) translateY(50px)';
+            }
+            await wait(500);
+
+            // 3. Searching (Mound Glows)
+            if(mound) mound.classList.add('pulse-glow-void');
             playSound('search');
-            await wait(2000);
+            await wait(2000); // Searching time
+            if(mound) mound.classList.remove('pulse-glow-void');
 
-            // 3. Find Item
+            // 4. Reappear from Mound
+            if(servitor) {
+                servitor.style.opacity = '1';
+                servitor.style.transform = 'scale(1) translateY(0)';
+            }
+            await wait(500);
+            
+            // 5. Walk to Vessel (Right)
             playSound('find');
-            setAnim('anim-found');
-            await wait(1000);
-
-            // 4. Move Right (to vessel)
             setAnim(config.movementType === 'fly' ? 'anim-fly-right' : 'anim-walk-right');
-            await moveTo(80, id);
+            await moveTo(80, id); 
             if(!runningRef.current) break;
 
-            // 5. Deposit
+            // 6. Deposit (Vessel Glows)
             setAnim('anim-idle');
             playSound('deposit');
-            if(shine) {
-                shine.style.opacity = '1';
-                setTimeout(() => { if(shine) shine.style.opacity = '0'; }, 1000);
-            }
+            if(vessel) vessel.classList.add('pulse-glow-gold');
+            if(shine) { shine.style.opacity = '1'; setTimeout(() => { if(shine) shine.style.opacity = '0'; }, 1000); }
+            
+            await wait(1000);
+            if(vessel) vessel.classList.remove('pulse-glow-gold');
 
+            // 7. Update Stats
             depositRef.current += 1;
             setDepositCount(depositRef.current);
 
-            // Check Hunger
             if(depositRef.current >= config.feedFreq) {
                 setHungerState('hungry');
                 break;
             }
-            await wait(1000);
+            await wait(500);
         }
     };
 
-    // --- HOLD INTERACTIONS ---
+    // --- Hold Interactions ---
     const startHold = (type: 'awaken' | 'feed') => {
         initAudio();
         const start = Date.now();
         const dur = type === 'awaken' ? 5000 : 3000; 
-        
         if (type === 'awaken') setIsAwakening(true);
         if (type === 'feed') setIsFeeding(true);
 
@@ -345,134 +319,70 @@ export default function ServitorWildUnknown() {
                 clearInterval(holdIntervalRef.current);
                 playSound('glitter');
                 if (type === 'awaken') {
-                    setIsAwakening(false);
-                    setIsRunning(true);
-                    runningRef.current = true;
-                    loopIdRef.current++;
-                    mainLoop(loopIdRef.current);
+                    setIsAwakening(false); setIsRunning(true); runningRef.current = true;
+                    loopIdRef.current++; mainLoop(loopIdRef.current);
                 } else {
-                    setIsFeeding(false);
-                    setHungerState('fed');
+                    setIsFeeding(false); setHungerState('fed');
                 }
             }
-
-            // Spawn Food towards servitor
+            
+            // Food Spawn
             if (type === 'feed' && Math.random() > 0.7) {
-                // Target: Servitor X position +/- 5%
                 const targetX = servitorPosRef.current + (Math.random() * 10 - 5);
-                setFallingFood(prev => [...prev, {
-                    id: Math.random(),
-                    left: Math.max(0, Math.min(90, targetX)), // Clamp
-                    top: 0,
-                    spriteIndex: config.foodIndex
-                }]);
+                setFallingFood(prev => [...prev, { id: Math.random(), left: Math.max(0, Math.min(90, targetX)), top: 0, spriteIndex: config.foodIndex }]);
             }
         }, 30);
     };
 
     const stopHold = () => {
         if(holdIntervalRef.current) clearInterval(holdIntervalRef.current);
-        setIsAwakening(false);
-        setAwakenProgress(0);
-        setIsFeeding(false);
-        setFeedProgress(0);
-        setFallingFood([]);
+        setIsAwakening(false); setAwakenProgress(0); setIsFeeding(false); setFeedProgress(0); setFallingFood([]);
     };
 
     const handleResume = () => {
-        setHungerState('sated');
-        depositRef.current = 0;
-        setDepositCount(0);
-        runningRef.current = true;
-        loopIdRef.current++;
-        mainLoop(loopIdRef.current);
+        setHungerState('sated'); depositRef.current = 0; setDepositCount(0);
+        runningRef.current = true; loopIdRef.current++; mainLoop(loopIdRef.current);
     };
 
-    // --- VISUAL RIG COMPONENT ---
+    // --- RIG COMPONENT (With Offset Config) ---
     const ServitorRig = ({ idPrefix, isPreview = false }: { idPrefix: string, isPreview?: boolean }) => {
         const wrapperClass = isFeeding ? 'anim-feed' : 'anim-idle';
-        const sc = SPRITE_SCALING_CONFIG;
+        
+        // Helper to apply the offset config
+        const getStyle = (partIndex: number, asset: string, partConfig: {scale: number, x: number, y: number}, flip: boolean = false) => {
+            const transform = `
+                translate(${partConfig.x}%, ${partConfig.y}%) 
+                scale(${partConfig.scale}) 
+                ${flip ? 'scaleX(-1)' : ''}
+            `;
+            return {
+                ...getSpriteStyle(partIndex, asset),
+                transform,
+                transformOrigin: 'top center'
+            };
+        };
+
+        const sc = SPRITE_OFFSET_CONFIG;
 
         return (
-            <div 
-                id={idPrefix} 
-                className={`servitor-rig relative w-[128px] h-[128px] ${wrapperClass}`}
-                style={{ transform: isPreview ? 'scale(1.5)' : 'scale(1)' }}
-            >
-                {/* 1. Wings (Back) */}
-                {config.hasWings && (
-                     <div className="absolute inset-0 z-0" 
-                          style={{
-                              ...getSpriteStyle(config.wingIndex, ASSETS.BACK),
-                              transform: `scale(${sc.wings})`
-                          }} 
-                     />
-                )}
+            <div id={idPrefix} className={`servitor-rig relative w-[128px] h-[128px] ${wrapperClass}`} style={{ transform: isPreview ? 'scale(1.5)' : 'scale(1)' }}>
+                {config.hasWings && <div className="absolute inset-0 z-0" style={getStyle(config.wingIndex, ASSETS.BACK, sc.wings)} />}
                 
-                {/* 2. Legs */}
-                <div className="limb leg-left absolute z-10 w-full h-full origin-top-center"
-                    style={{ 
-                        ...getSpriteStyle(config.legIndex, ASSETS.LEGS), 
-                        transform: `scale(${sc.leg}) scaleX(-1)` // Mirror left
-                    }} 
-                />
-                <div className="limb leg-right absolute z-10 w-full h-full origin-top-center"
-                    style={{ 
-                        ...getSpriteStyle(config.legIndex, ASSETS.LEGS), 
-                        transform: `scale(${sc.leg})`
-                    }} 
-                />
+                <div className="limb leg-left absolute z-10 w-full h-full" style={getStyle(config.legIndex, ASSETS.LEGS, sc.leg, true)} />
+                <div className="limb leg-right absolute z-10 w-full h-full" style={getStyle(config.legIndex, ASSETS.LEGS, sc.leg)} />
 
-                {/* 3. Base (Torso) */}
-                <div className="base absolute inset-0 z-20"
-                    style={{
-                        ...getSpriteStyle(config.baseIndex, ASSETS.BASES),
-                        transform: `scale(${sc.base})`
-                    }} 
-                />
+                <div className="base absolute inset-0 z-20" style={getStyle(config.baseIndex, ASSETS.BASES, sc.base)} />
+                <div className="clothes absolute inset-0 z-30" style={getStyle(config.clothingIndex, ASSETS.CLOTHES, sc.clothes)} />
 
-                {/* 4. Clothes */}
-                <div className="clothes absolute inset-0 z-30"
-                    style={{
-                        ...getSpriteStyle(config.clothingIndex, ASSETS.CLOTHES),
-                        transform: `scale(${sc.clothes})`
-                    }} 
-                />
+                <div className="limb arm-left absolute z-40 w-full h-full" style={getStyle(config.limbIndex, ASSETS.ARMS, sc.arm, true)} />
+                <div className="limb arm-right absolute z-40 w-full h-full" style={getStyle(config.limbIndex, ASSETS.ARMS, sc.arm)} />
 
-                {/* 5. Arms */}
-                <div className="limb arm-left absolute z-40 w-full h-full origin-top-center"
-                    style={{ 
-                        ...getSpriteStyle(config.limbIndex, ASSETS.ARMS), 
-                        transform: `scale(${sc.arm}) scaleX(-1)` 
-                    }} 
-                />
-                <div className="limb arm-right absolute z-40 w-full h-full origin-top-center"
-                    style={{ 
-                        ...getSpriteStyle(config.limbIndex, ASSETS.ARMS),
-                        transform: `scale(${sc.arm})`
-                    }} 
-                />
-
-                {/* 6. Hat */}
-                <div className="hat absolute inset-0 z-50"
-                    style={{
-                        ...getSpriteStyle(config.hatIndex, ASSETS.HEAD),
-                        transform: `scale(${sc.head})`
-                    }} 
-                />
-
-                {/* 7. Tool */}
-                <div className="tool absolute inset-0 z-60"
-                    style={{
-                        ...getSpriteStyle(config.toolIndex, ASSETS.TOOLS),
-                        transform: `scale(${sc.tool})`
-                    }} 
-                />
+                <div className="hat absolute inset-0 z-50" style={getStyle(config.hatIndex, ASSETS.HEAD, sc.head)} />
+                <div className="tool absolute inset-0 z-60" style={getStyle(config.toolIndex, ASSETS.TOOLS, sc.tool)} />
             </div>
         );
     };
 
-    // --- RENDER START ---
     if (!assetsLoaded) {
         return (
             <div className="fixed inset-0 bg-black flex flex-col items-center justify-center z-[999]">
@@ -490,36 +400,37 @@ export default function ServitorWildUnknown() {
                 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap');
                 .magick-font { font-family: 'Cinzel', serif; }
 
-                /* RUNIC BUTTON STYLE */
+                /* BUTTONS */
                 .runic-btn {
                     background: url('${ASSET_PATH}${ASSETS.UI_BUTTONS}') center/cover no-repeat;
-                    color: #FFD700;
-                    text-shadow: 0 1px 2px black;
+                    color: #FFD700; text-shadow: 0 1px 2px black;
                     border: 1px solid rgba(255, 215, 0, 0.3);
                     box-shadow: 0 4px 6px rgba(0,0,0,0.5);
-                    transition: all 0.2s;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
+                    transition: all 0.2s; display: flex; align-items: center; justify-content: center;
                 }
                 .runic-btn:active { transform: scale(0.95); filter: brightness(0.8); }
 
                 /* ANIMATIONS */
-                @keyframes limb-walk { 0% { transform: rotate(-15deg) scale(${SPRITE_SCALING_CONFIG.arm}); } 50% { transform: rotate(15deg) scale(${SPRITE_SCALING_CONFIG.arm}); } 100% { transform: rotate(-15deg) scale(${SPRITE_SCALING_CONFIG.arm}); } }
-                @keyframes limb-walk-rev { 0% { transform: rotate(15deg) scale(${SPRITE_SCALING_CONFIG.arm}); } 50% { transform: rotate(-15deg) scale(${SPRITE_SCALING_CONFIG.arm}); } 100% { transform: rotate(15deg) scale(${SPRITE_SCALING_CONFIG.arm}); } }
-                @keyframes rig-bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+                @keyframes rig-bounce { 0%, 100% { top: 0; } 50% { top: -5px; } }
                 @keyframes fall { from { top: -10%; } to { top: 80%; opacity: 0; } }
                 
-                /* Movement Logic */
-                .anim-walk-left .leg-left { animation: limb-walk 1s infinite ease-in-out; }
-                .anim-walk-left .leg-right { animation: limb-walk-rev 1s infinite ease-in-out; }
-                .anim-walk-left { animation: rig-bounce 0.5s infinite; }
+                /* Pulse Glows */
+                .pulse-glow-void { animation: pulse-void 1s infinite alternate; }
+                @keyframes pulse-void { from { filter: drop-shadow(0 0 5px #4b0082) brightness(1); } to { filter: drop-shadow(0 0 20px #8a2be2) brightness(1.5); } }
                 
-                .anim-walk-right .leg-left { animation: limb-walk 1s infinite ease-in-out; }
-                .anim-walk-right .leg-right { animation: limb-walk-rev 1s infinite ease-in-out; }
+                .pulse-glow-gold { animation: pulse-gold 0.5s infinite alternate; }
+                @keyframes pulse-gold { from { filter: drop-shadow(0 0 5px #FFD700); } to { filter: drop-shadow(0 0 25px #FFFF00); } }
+
+                /* Walk Logic */
+                .anim-walk-left .leg-left { transform: rotate(-15deg) scaleX(-1) !important; transition: 0.5s; }
+                .anim-walk-left .leg-right { transform: rotate(15deg) !important; transition: 0.5s; }
+                .anim-walk-left { animation: rig-bounce 0.5s infinite; }
+
+                .anim-walk-right .leg-left { transform: rotate(15deg) scaleX(-1) !important; transition: 0.5s; }
+                .anim-walk-right .leg-right { transform: rotate(-15deg) !important; transition: 0.5s; }
                 .anim-walk-right { animation: rig-bounce 0.5s infinite; transform: scaleX(-1); }
 
-                /* Scrollbar */
+                /* SCROLLBAR */
                 .custom-scrollbar::-webkit-scrollbar { width: 4px; }
                 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
                 .custom-scrollbar::-webkit-scrollbar-thumb { background: #5d4037; border-radius: 4px; }
@@ -527,83 +438,60 @@ export default function ServitorWildUnknown() {
 
             <button onClick={() => hasUnsavedChanges ? setShowExitWarning(true) : router.push('/spell-room')} className="absolute top-4 right-4 z-[60] text-gray-400 hover:text-white"><X /></button>
 
-            {/* STAGE & BACKGROUND */}
+            {/* STAGE */}
             <div className="absolute inset-0 z-0">
                 <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url('${ASSET_PATH}${ASSETS.BG_MAIN}')` }}></div>
-                <div className="absolute inset-0 bg-black/30"></div>
+                <div className="absolute inset-0 bg-black/40"></div>
             </div>
 
-            {/* GAME AREA */}
+            {/* GAME WORLD (Z-Index Hierarchy: Background 0 -> Mound/Vessel 10 -> Servitor 20) */}
             <div className="relative w-full h-full z-10 pointer-events-none">
                 
-                {/* SERVITOR */}
-                <div id="servitor-container" className="absolute bottom-[20vh] left-[20%] w-[128px] h-[128px] z-20 transition-all duration-100 pointer-events-auto">
+                {/* MOUND (Left Destination) */}
+                <div id="game-mound" className="absolute bottom-[15vh] left-[10%] w-[160px] h-[100px] z-10 bg-contain bg-no-repeat bg-bottom transition-all duration-500"
+                     style={{ backgroundImage: `url('${ASSET_PATH}${ASSETS.MOUND}')` }} />
+
+                {/* SERVITOR (Moves between Mound and Vessel) */}
+                <div id="servitor-container" className="absolute bottom-[18vh] left-[20%] w-[128px] h-[128px] z-20 transition-all duration-100 pointer-events-auto origin-bottom">
                     <ServitorRig idPrefix="game-rig" />
                 </div>
 
-                {/* VESSEL */}
-                <div className="absolute bottom-[20vh] right-[10%] w-[128px] h-[128px] z-20 flex flex-col items-center">
-                    <div id="game-vessel" className="w-full h-full relative" 
-                         style={{
-                             ...getSpriteStyle(config.vesselIndex, ASSETS.VESSELS),
-                             transform: `scale(${SPRITE_SCALING_CONFIG.vessel})`
-                         }}>
-                         {/* Chest Sigil Overlay */}
-                         <div className="absolute top-[20%] left-[25%] w-[50%] h-[50%] opacity-80 mix-blend-overlay"
-                              style={getSpriteStyle(config.sigilIndex, ASSETS.TREASURES)} />
+                {/* VESSEL (Right Destination) */}
+                <div className="absolute bottom-[20vh] right-[10%] w-[128px] h-[128px] z-10 flex flex-col items-center">
+                    <div id="game-vessel" className="w-full h-full relative transition-all duration-500" 
+                         style={{ ...getSpriteStyle(config.vesselIndex, ASSETS.VESSELS), transform: `scale(${SPRITE_OFFSET_CONFIG.vessel.scale})` }}>
+                         <div className="absolute top-[20%] left-[25%] w-[50%] h-[50%] opacity-80 mix-blend-overlay" style={getSpriteStyle(config.sigilIndex, ASSETS.TREASURES)} />
                     </div>
                     <div id="vessel-shine" className="absolute top-0 text-4xl opacity-0 transition-opacity duration-500">✨</div>
                 </div>
 
                 {/* FALLING FOOD */}
                 {fallingFood.map(f => (
-                    <div key={f.id} className="absolute w-16 h-16 z-30 animate-bounce transition-all duration-1000 ease-in"
-                         style={{ 
-                             left: f.left + '%', 
-                             top: f.top + '%',
-                             animation: 'fall 1s linear forwards',
-                             ...getSpriteStyle(f.spriteIndex, ASSETS.FOOD)
-                         }} 
+                    <div key={f.id} className="absolute w-16 h-16 z-30 animate-bounce"
+                         style={{ left: f.left + '%', top: f.top + '%', animation: 'fall 1s linear forwards', ...getSpriteStyle(f.spriteIndex, ASSETS.FOOD) }} 
                     />
                 ))}
             </div>
 
-            {/* BOTTOM CONTROLS (Mobile Safe) */}
+            {/* BOTTOM HUD (Mobile Flex Fix) */}
             {isRunning && !isFeedingActive && (
-                <div className="absolute bottom-6 left-0 w-full z-40 px-4 flex justify-between items-end pointer-events-auto">
-                    <button 
-                        onClick={() => { setIsRunning(false); runningRef.current = false; }}
-                        className="runic-btn px-6 py-3 rounded uppercase font-bold text-xs tracking-widest"
-                    >
+                <div className="absolute bottom-6 left-0 w-full z-40 px-4 flex flex-wrap justify-between items-end gap-4 pointer-events-auto">
+                    <button onClick={() => { setIsRunning(false); runningRef.current = false; }} className="runic-btn px-6 py-3 rounded uppercase font-bold text-xs tracking-widest whitespace-nowrap">
                         Modify Ritual
                     </button>
-
-                    <div className="runic-btn px-6 py-2 rounded-full text-center">
-                        <div>
-                            <p className="text-[10px] uppercase opacity-70">Wealth Count</p>
-                            <p className="text-xl font-bold">{depositCount}</p>
-                        </div>
+                    <div className="runic-btn px-6 py-2 rounded-full text-center min-w-[120px]">
+                        <div><p className="text-[10px] uppercase opacity-70">Wealth Count</p><p className="text-xl font-bold">{depositCount}</p></div>
                     </div>
                 </div>
             )}
 
-            {/* CONFIG PANEL (9-Slice) */}
+            {/* CONFIG PANEL */}
             <div className={`absolute top-0 left-0 h-full w-full md:w-[500px] z-50 transition-transform duration-500 ease-in-out ${isRunning ? '-translate-x-full' : 'translate-x-0'} pointer-events-auto`}
-                 style={{
-                     borderImage: `url('${ASSET_PATH}${ASSETS.UI_PANEL}') 18% 15% fill stretch`,
-                     borderWidth: '40px',
-                     padding: '20px'
-                 }}>
+                 style={{ borderImage: `url('${ASSET_PATH}${ASSETS.UI_PANEL}') 18% 15% fill stretch`, borderWidth: '40px', padding: '20px' }}>
                 
                 <div className="w-full h-full overflow-y-auto custom-scrollbar flex flex-col gap-6 pr-2">
-                    
-                    <div className="text-center border-b border-[#5d4037]/30 pb-2">
-                        <h2 className="text-[#3e2723] text-2xl magick-font font-bold">Servitor Forge</h2>
-                    </div>
-
-                    <div className="flex justify-center py-4 bg-black/10 rounded border border-[#5d4037]/20">
-                         <ServitorRig idPrefix="preview-rig" isPreview={true} />
-                    </div>
+                    <div className="text-center border-b border-[#5d4037]/30 pb-2"><h2 className="text-[#3e2723] text-2xl magick-font font-bold">Servitor Forge</h2></div>
+                    <div className="flex justify-center py-4 bg-black/10 rounded border border-[#5d4037]/20"><ServitorRig idPrefix="preview-rig" isPreview={true} /></div>
 
                     {/* Inputs */}
                     <div className="space-y-3">
@@ -611,7 +499,7 @@ export default function ServitorWildUnknown() {
                         <input type="text" value={sPurpose} onChange={e => setSPurpose(e.target.value)} className="w-full bg-[#fdf5e6] border border-[#8d6e63] p-2 rounded text-[#2a1a1a] placeholder-opacity-50" placeholder="Purpose (e.g. Wealth)" />
                     </div>
 
-                    {/* GRIDS - Reduced Scale (90%) */}
+                    {/* Selection Grids (Scaled down 75% to prevent overflow) */}
                     <div className="space-y-6">
                         {[
                             { label: 'Torso', key: 'baseIndex', asset: ASSETS.BASES },
@@ -623,6 +511,7 @@ export default function ServitorWildUnknown() {
                             { label: 'Back / Wings', key: 'wingIndex', asset: ASSETS.BACK },
                             { label: 'Vessel', key: 'vesselIndex', asset: ASSETS.VESSELS },
                             { label: 'Chest Sigil', key: 'sigilIndex', asset: ASSETS.TREASURES },
+                            { label: 'Sustenance', key: 'foodIndex', asset: ASSETS.FOOD }
                         ].map((grp, idx) => (
                             <div key={idx}>
                                 <label className="block text-xs font-bold text-[#3e2723] uppercase mb-1">{grp.label}</label>
@@ -630,74 +519,47 @@ export default function ServitorWildUnknown() {
                                     {GENERIC_LIST.map((_, i) => (
                                         <button key={i} onClick={() => setConfig({...config, [grp.key]: i})}
                                             className={`w-full aspect-square border-2 rounded overflow-hidden bg-[#eaddcf]/50 ${config[grp.key as keyof typeof config] === i ? 'border-[#3e2723] shadow-inner' : 'border-transparent'}`}>
-                                            <div className="w-full h-full transform scale-90" style={getSpriteStyle(i, grp.asset)} />
+                                            {/* Reduced to 75% scale to prevent overflow */}
+                                            <div className="w-full h-full transform scale-75" style={getSpriteStyle(i, grp.asset)} />
                                         </button>
                                     ))}
                                 </div>
                             </div>
                         ))}
 
-                        {/* Food Selection */}
-                        <div>
-                             <label className="block text-xs font-bold text-[#3e2723] uppercase mb-1">Sustenance Type</label>
-                             <div className="grid grid-cols-4 gap-2">
-                                {GENERIC_LIST.map((_, i) => (
-                                    <button key={i} onClick={() => setConfig({...config, foodIndex: i})}
-                                        className={`w-full aspect-square border-2 rounded overflow-hidden bg-[#eaddcf]/50 ${config.foodIndex === i ? 'border-[#3e2723]' : 'border-transparent'}`}>
-                                        <div className="w-full h-full transform scale-90" style={getSpriteStyle(i, ASSETS.FOOD)} />
-                                    </button>
-                                ))}
-                             </div>
-                        </div>
-
-                        {/* Frequency Slider */}
-                        <div className="bg-[#5d4037]/10 p-3 rounded">
-                            <label className="flex justify-between text-xs font-bold text-[#3e2723] uppercase mb-2">
-                                <span>Feeding Frequency</span>
-                                <span>{config.feedFreq} Tasks</span>
+                        {/* Frequency & Wings */}
+                        <div className="bg-[#5d4037]/10 p-3 rounded space-y-3">
+                            <label className="flex justify-between text-xs font-bold text-[#3e2723] uppercase">
+                                <span>Feeding Frequency: {config.feedFreq} Tasks</span>
                             </label>
-                            <input 
-                                type="range" min="1" max="50" 
-                                value={config.feedFreq} 
-                                onChange={e => setConfig({...config, feedFreq: parseInt(e.target.value)})}
-                                className="w-full accent-[#3e2723]" 
-                            />
-                        </div>
-
-                        {/* Movement & Wings Toggle */}
-                        <div className="flex gap-4 items-center bg-[#5d4037]/10 p-3 rounded">
-                             <label className="flex items-center gap-2 text-xs font-bold text-[#3e2723] uppercase cursor-pointer">
-                                 <input type="checkbox" checked={config.hasWings} onChange={e => setConfig({...config, hasWings: e.target.checked})} className="accent-[#3e2723]" />
-                                 Enable Wings
-                             </label>
-                             <select value={config.movementType} onChange={e => setConfig({...config, movementType: e.target.value})} className="bg-[#fdf5e6] text-xs p-1 rounded border border-[#8d6e63]">
-                                 <option value="walk">Walk</option>
-                                 <option value="fly">Fly</option>
-                             </select>
+                            <input type="range" min="1" max="50" value={config.feedFreq} onChange={e => setConfig({...config, feedFreq: parseInt(e.target.value)})} className="w-full accent-[#3e2723]" />
+                            
+                            <div className="flex gap-4 items-center pt-2 border-t border-[#5d4037]/20">
+                                <label className="flex items-center gap-2 text-xs font-bold text-[#3e2723] uppercase cursor-pointer">
+                                    <input type="checkbox" checked={config.hasWings} onChange={e => setConfig({...config, hasWings: e.target.checked})} className="accent-[#3e2723]" />
+                                    Wings
+                                </label>
+                                <select value={config.movementType} onChange={e => setConfig({...config, movementType: e.target.value})} className="bg-[#fdf5e6] text-xs p-1 rounded border border-[#8d6e63]">
+                                    <option value="walk">Walk</option> <option value="fly">Fly</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
 
-                    {/* Bottom Actions */}
+                    {/* Footer Actions */}
                     <div className="mt-8 flex flex-col gap-2">
-                        <button 
-                            onMouseDown={() => startHold('awaken')}
-                            onMouseUp={stopHold} onMouseLeave={stopHold} onTouchStart={() => startHold('awaken')} onTouchEnd={stopHold}
-                            className="runic-btn w-full py-4 text-sm font-bold uppercase tracking-widest relative overflow-hidden"
-                        >
+                        <button onMouseDown={() => startHold('awaken')} onMouseUp={stopHold} onMouseLeave={stopHold} onTouchStart={() => startHold('awaken')} onTouchEnd={stopHold}
+                            className="runic-btn w-full py-4 text-sm font-bold uppercase tracking-widest relative overflow-hidden">
                             <div className="absolute top-0 left-0 h-full bg-white/20 transition-all duration-75 ease-linear" style={{width: `${awakenProgress}%`}}></div>
                             <span className="relative z-10">{isAwakening ? "Awakening..." : "Hold to Awaken"}</span>
                         </button>
-                        
                         <div className="flex gap-2">
-                            <button onClick={handleBindToGrimoire} className="flex-1 py-3 bg-[#5d4037] text-white text-xs uppercase font-bold rounded shadow hover:bg-[#3e2723]">
-                                Bind ({COST_BIND_SERVITOR} Credits)
-                            </button>
+                            <button onClick={handleBindToGrimoire} className="flex-1 py-3 bg-[#5d4037] text-white text-xs uppercase font-bold rounded shadow hover:bg-[#3e2723]">Bind ({COST_BIND_SERVITOR})</button>
                             {savedServitors.length > 0 && (
                                 <div className="flex-1 flex flex-col gap-1 max-h-24 overflow-y-auto">
                                     {savedServitors.map(s => (
                                         <div key={s.id} onClick={() => handleLoad(s)} className="flex justify-between bg-white/50 p-1 text-[10px] cursor-pointer border border-[#8d6e63]">
-                                            <span className="truncate">{s.name}</span>
-                                            <Trash2 size={12} onClick={(e) => handleDelete(s.id, e)} className="text-red-500"/>
+                                            <span className="truncate">{s.name}</span><Trash2 size={12} onClick={(e) => handleDelete(s.id, e)} className="text-red-500"/>
                                         </div>
                                     ))}
                                 </div>
@@ -707,7 +569,7 @@ export default function ServitorWildUnknown() {
                 </div>
             </div>
 
-            {/* FEEDING MODAL */}
+            {/* Modals */}
             {isFeedingActive && (
                 <div className="absolute inset-0 z-[200] bg-black/80 flex flex-col items-center justify-center">
                     {hungerState === 'fed' ? (
@@ -718,11 +580,8 @@ export default function ServitorWildUnknown() {
                     ) : (
                         <div className="flex flex-col items-center">
                             <p className="text-[#FFD700] mb-8 animate-pulse text-xl font-serif">{sName} requires sustenance...</p>
-                            <button
-                                onMouseDown={() => startHold('feed')}
-                                onMouseUp={stopHold} onMouseLeave={stopHold} onTouchStart={() => startHold('feed')} onTouchEnd={stopHold}
-                                className="w-40 h-40 rounded-full border-4 border-[#FFD700] flex items-center justify-center relative overflow-hidden bg-black shadow-[0_0_50px_#FFD700]"
-                            >
+                            <button onMouseDown={() => startHold('feed')} onMouseUp={stopHold} onMouseLeave={stopHold} onTouchStart={() => startHold('feed')} onTouchEnd={stopHold}
+                                className="w-40 h-40 rounded-full border-4 border-[#FFD700] flex items-center justify-center relative overflow-hidden bg-black shadow-[0_0_50px_#FFD700]">
                                 <div className="absolute bottom-0 left-0 w-full bg-[#FFD700]/30 transition-all duration-75" style={{height: `${feedProgress}%`}}></div>
                                 <div className="w-20 h-20" style={getSpriteStyle(config.foodIndex, ASSETS.FOOD)} />
                             </button>
@@ -730,13 +589,10 @@ export default function ServitorWildUnknown() {
                     )}
                 </div>
             )}
-
-            {/* CREDITS MODAL */}
             {showCreditModal && (
                  <div className="fixed inset-0 z-[500] flex items-center justify-center bg-black/80 p-6">
                     <div className="bg-[#1a1528] border border-amber-600 p-8 rounded text-center max-w-sm">
-                        <Lock className="mx-auto mb-4 text-amber-500" />
-                        <p className="text-gray-300 mb-6">Insufficient Aether. Need {COST_BIND_SERVITOR}.</p>
+                        <Lock className="mx-auto mb-4 text-amber-500" /><p className="text-gray-300 mb-6">Insufficient Aether.</p>
                         <button onClick={() => setShowCreditModal(false)} className="w-full bg-amber-900/50 border border-amber-600 py-2 uppercase text-amber-100">Close</button>
                     </div>
                 </div>
