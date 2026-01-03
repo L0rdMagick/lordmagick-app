@@ -508,6 +508,7 @@ export default function ServitorWildUnknown() {
                 @keyframes limb-walk { 0% { transform: rotate(-15deg) scale(${SPRITE_SCALING_CONFIG.arm}); } 50% { transform: rotate(15deg) scale(${SPRITE_SCALING_CONFIG.arm}); } 100% { transform: rotate(-15deg) scale(${SPRITE_SCALING_CONFIG.arm}); } }
                 @keyframes limb-walk-rev { 0% { transform: rotate(15deg) scale(${SPRITE_SCALING_CONFIG.arm}); } 50% { transform: rotate(-15deg) scale(${SPRITE_SCALING_CONFIG.arm}); } 100% { transform: rotate(15deg) scale(${SPRITE_SCALING_CONFIG.arm}); } }
                 @keyframes rig-bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+                @keyframes fall { from { top: -10%; } to { top: 80%; opacity: 0; } }
                 
                 /* Movement Logic */
                 .anim-walk-left .leg-left { animation: limb-walk 1s infinite ease-in-out; }
@@ -565,7 +566,6 @@ export default function ServitorWildUnknown() {
                          }} 
                     />
                 ))}
-                <style jsx>{`@keyframes fall { from { top: -10%; } to { top: 80%; opacity: 0; } }`}</style>
             </div>
 
             {/* BOTTOM CONTROLS (Mobile Safe) */}
@@ -611,7 +611,7 @@ export default function ServitorWildUnknown() {
                         <input type="text" value={sPurpose} onChange={e => setSPurpose(e.target.value)} className="w-full bg-[#fdf5e6] border border-[#8d6e63] p-2 rounded text-[#2a1a1a] placeholder-opacity-50" placeholder="Purpose (e.g. Wealth)" />
                     </div>
 
-                    {/* GRIDS - Reduced Scale (90% to prevent overflow) */}
+                    {/* GRIDS - Reduced Scale (90%) */}
                     <div className="space-y-6">
                         {[
                             { label: 'Torso', key: 'baseIndex', asset: ASSETS.BASES },
