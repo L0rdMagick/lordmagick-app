@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { X, Trash2, Lock, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Plus, Minus, RefreshCw, Move, Eye, EyeOff } from 'lucide-react';
+import { X, Trash2, Lock, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Plus, Minus, RefreshCw, Move, Eye, EyeOff, Settings } from 'lucide-react';
 import { createBrowserClient } from '@supabase/ssr';
 import { checkAndSpendCredits, getWalletStatus, COST_BIND_SERVITOR } from '@/lib/economy';
 import { saveServitorToGrimoire, getMyServitors } from '@/lib/services/spellService';
@@ -45,7 +45,7 @@ const DEFAULT_OFFSETS = {
 interface CategoryItem {
     id: string;
     label: string;
-    asset: string | null; // Use null for settings/special items
+    asset: string | null;
     indexKey: string | null;
     offsetKey: string | null;
     canFlip?: boolean;
@@ -55,8 +55,8 @@ interface CategoryItem {
 const CATEGORIES: CategoryItem[] = [
     { id: 'head', label: 'HATS', asset: ASSETS.HEAD, indexKey: 'hatIndex', offsetKey: 'head' },
     { id: 'base', label: 'TORSOS', asset: ASSETS.BASES, indexKey: 'baseIndex', offsetKey: 'base' },
-    { id: 'leg', label: 'LEGS', asset: ASSETS.LEGS, indexKey: 'legIndex', offsetKey: 'leg', canFlip: true },
-    { id: 'arm', label: 'ARMS', asset: ASSETS.ARMS, indexKey: 'limbIndex', offsetKey: 'arm', canFlip: true },
+    { id: 'leg', label: 'LEGS', asset: ASSETS.LEGS, indexKey: 'legIndex', offsetKey: 'leg', canFlip: false }, // Legs auto-flip
+    { id: 'arm', label: 'ARMS', asset: ASSETS.ARMS, indexKey: 'limbIndex', offsetKey: 'arm', canFlip: false }, // Arms auto-flip
     { id: 'tool', label: 'TOOLS', asset: ASSETS.TOOLS, indexKey: 'toolIndex', offsetKey: 'tool' },
     { id: 'clothes', label: 'ROBES', asset: ASSETS.CLOTHES, indexKey: 'clothingIndex', offsetKey: 'clothes' },
     { id: 'wing', label: 'WINGS', asset: ASSETS.BACK, indexKey: 'wingIndex', offsetKey: 'wing' },
@@ -64,8 +64,7 @@ const CATEGORIES: CategoryItem[] = [
     { id: 'mound', label: 'MOUNDS', asset: ASSETS.MOUND, indexKey: null, offsetKey: 'mound', single: true },
     { id: 'vessel', label: 'VESSELS', asset: ASSETS.VESSELS, indexKey: 'vesselIndex', offsetKey: 'vessel' },
     { id: 'food', label: 'FOOD', asset: ASSETS.FOOD, indexKey: 'foodIndex', offsetKey: null },
-    // Special Items
-    { id: 'treasure', label: 'TREASURE', asset: ASSETS.TREASURES, indexKey: 'treasureIndex', offsetKey: null } 
+    { id: 'settings', label: 'SETTINGS', asset: null, indexKey: null, offsetKey: null } // Special Category
 ];
 
 const GENERIC_LIST = Array.from({length: 16}).map((_, i) => `Option ${i + 1}`);
@@ -101,15 +100,15 @@ export default function ServitorWildUnknown() {
     const [isRunning, setIsRunning] = useState(false);
     
     // UI State
-    const [activeCategory, setActiveCategory] = useState<string | null>(null); // Null = Main Grid, String = Popup
+    const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
     // Refs
     const runningRef = useRef(false); 
     const loopIdRef = useRef(0);
     const audioCtxRef = useRef<any>(null);
     const servitorPosRef = useRef(20);
-    const holdIntervalRef = useRef<any>(null); // For button holding
-    const buttonIntervalRef = useRef<any>(null); // For D-Pad holding
+    const holdIntervalRef = useRef<any>(null); 
+    const buttonIntervalRef = useRef<any>(null); 
 
     // Data
     const [sName, setSName] = useState("");
@@ -138,6 +137,7 @@ export default function ServitorWildUnknown() {
     const [isFeeding, setIsFeeding] = useState(false);
     const [feedProgress, setFeedProgress] = useState(0);
     const [fallingFood, setFallingFood] = useState<{id: number, left: number, top: number, spriteIndex: number}[]>([]);
+    const [previewDirection, setPreviewDirection] = useState<'left'|'right'>('right'); // For UI preview
 
     // Modals
     const [showCreditModal, setShowCreditModal] = useState(false);
@@ -181,13 +181,11 @@ export default function ServitorWildUnknown() {
         }));
     };
 
-    // Continuous Button Press Handler
     const handleOffsetStart = (part: string, field: 'x'|'y'|'s', change: number) => {
-        // Initial Click
         const current = (config.offsets as any)[part][field];
+        // 1:1 Correspondence as requested (1% per click for position, 0.1 for scale)
         updateOffset(part, field, current + change);
 
-        // Continuous
         buttonIntervalRef.current = setInterval(() => {
             setConfig(prev => {
                 const cur = (prev.offsets as any)[part][field];
@@ -345,9 +343,12 @@ export default function ServitorWildUnknown() {
             }
             // Food Logic
             if(type === 'feed' && Math.random() > 0.7) {
+                // Target: Servitor's position relative to the SCREEN width in fixed view, or game container percentage?
+                // Using game container percentage logic:
+                const targetX = servitorPosRef.current + (Math.random() * 10 - 5);
                 setFallingFood(prev => [...prev, {
                     id: Math.random(), 
-                    left: Math.max(0, Math.min(90, servitorPosRef.current + (Math.random()*10-5))), 
+                    left: Math.max(0, Math.min(90, targetX)), 
                     top: 0, 
                     spriteIndex: config.foodIndex 
                 }]);
@@ -365,24 +366,19 @@ export default function ServitorWildUnknown() {
         runningRef.current = true; loopIdRef.current++; mainLoop(loopIdRef.current);
     };
 
-    // --- RIG COMPONENTS ---
+    // --- RIG COMPONENT (With Fixed Layering) ---
 
-    // D-Pad Control
     const DPad = ({ part, allowFlip = false }: { part: string, allowFlip?: boolean }) => {
         const cfg = (config.offsets as any)[part];
         if(!cfg) return null;
-
         const btnClass = "p-1 bg-[#3e2723] hover:bg-[#5d4037] active:bg-[#8d6e63] rounded flex justify-center items-center shadow border border-black/30";
 
         return (
-            <div className="flex items-center gap-2 bg-[#2a1a1a]/80 p-2 rounded border border-[#5d4037]/50 mt-2 backdrop-blur-sm shadow-lg">
-                {/* Visibility Toggle */}
+            <div className="flex items-center gap-2 bg-[#2a1a1a]/80 p-2 rounded border border-[#5d4037]/50 mt-2 backdrop-blur-sm shadow-lg w-full justify-center">
                 <button onClick={() => updateOffset(part, 'v', !cfg.v)} 
                     className={`p-2 rounded border shadow ${cfg.v ? 'bg-green-900/50 border-green-700 text-green-300' : 'bg-red-900/50 border-red-700 text-red-300'}`}>
                     {cfg.v ? <Eye size={16}/> : <EyeOff size={16}/>}
                 </button>
-
-                {/* Directional Pad */}
                 <div className="grid grid-cols-3 gap-1 w-20">
                     <div />
                     <button onMouseDown={() => handleOffsetStart(part, 'y', -1)} onMouseUp={handleOffsetStop} onMouseLeave={handleOffsetStop} className={btnClass}><ArrowUp size={12}/></button>
@@ -394,8 +390,6 @@ export default function ServitorWildUnknown() {
                     <button onMouseDown={() => handleOffsetStart(part, 'y', 1)} onMouseUp={handleOffsetStop} onMouseLeave={handleOffsetStop} className={btnClass}><ArrowDown size={12}/></button>
                     <div />
                 </div>
-
-                {/* Size & Flip */}
                 <div className="flex flex-col gap-1">
                     <div className="flex gap-1">
                         <button onMouseDown={() => handleOffsetStart(part, 's', -0.1)} onMouseUp={handleOffsetStop} onMouseLeave={handleOffsetStop} className={btnClass}><Minus size={12}/></button>
@@ -407,40 +401,44 @@ export default function ServitorWildUnknown() {
                         </button>
                     )}
                 </div>
-                <div className="text-[9px] text-gray-400 font-mono flex flex-col leading-tight ml-1 w-12">
-                    <span>X: {cfg.x.toFixed(0)}</span>
-                    <span>Y: {cfg.y.toFixed(0)}</span>
-                    <span>S: {cfg.s.toFixed(1)}</span>
-                </div>
             </div>
         );
     };
 
-    // Rig Logic (Joint-Based)
-    const ServitorRig = ({ idPrefix, isPreview = false }: { idPrefix: string, isPreview?: boolean }) => {
+    const ServitorRig = ({ idPrefix, isPreview = false, overrideDirection }: { idPrefix: string, isPreview?: boolean, overrideDirection?: 'left'|'right' }) => {
         const wrapperClass = isFeeding ? 'anim-feed' : 'anim-idle';
         
-        // Render A Part
+        // Determine facing direction:
+        // In preview: User can toggle 'previewDirection' (default Right)
+        // In game: 'runningRef' logic, usually captured by class 'anim-walk-left' etc.
+        // For accurate z-indexing, we check classList or props.
+        // If preview, use state. If game, check class?
+        // Simpler: The rig container gets flipped for left? No, we said limbs need specific handling.
+        // Let's assume Right Facing is Default.
+        const facingLeft = overrideDirection === 'left' || (idPrefix === 'game-rig' && document.getElementById('game-rig')?.classList.contains('anim-walk-left'));
+
+        // Dynamic Z-Index Calculation
+        const getZIndex = (partType: 'arm' | 'leg', isLeftLimb: boolean) => {
+            // Standard Right Facing: Right Limb (Front) > Torso > Left Limb (Back)
+            // Left Facing: Left Limb (Front) > Torso > Right Limb (Back)
+            const isFront = facingLeft ? isLeftLimb : !isLeftLimb;
+            // Base Z-Index: Back Limbs = 10, Torso = 40, Front Limbs = 60
+            return partType === 'leg' ? (isFront ? 15 : 5) : (isFront ? 65 : 35);
+        };
+
         const renderPart = (idx: number, asset: string, partKey: string, z: number, isLeft: boolean = false, isLimb: boolean = false) => {
             const cfg = (config.offsets as any)[partKey];
-            if (!cfg.v) return null; // Visibility check
+            if (!cfg.v) return null;
 
-            // Limb Logic:
-            // If it's a limb (Arm/Leg), it should obey the global direction unless overridden by animation
-            // Left limbs naturally need scaleX(-1) if the sheet assumes right-facing.
-            // Right limbs need scaleX(1).
-            // When walking Left, the whole container doesn't flip, so we must flip limbs manually?
-            // Actually, best practice for this Rig is:
-            // Walk Left: Left Limb normal, Right Limb normal. But if the sprites are one-sided, we mirror one.
-            // Simplified: We use the `flip` prop from offset ONLY for static items. Limbs obey `isLeft` + `direction`.
-            
             let finalFlip = cfg.f;
             if (isLimb) {
-                // Directional logic for limbs
-                // If isLeft limb, we usually mirror the sprite if the sprite is right-sided
+                // If it's a left limb asset, and we are facing right, mirror it horizontally?
+                // Standard assets usually face Right.
+                // Right Leg = Normal. Left Leg = Mirrored (scaleX(-1)).
                 if (isLeft) finalFlip = !finalFlip;
             }
 
+            // Important: Limbs utilize scaleX(-1) to flip, NOT rotate.
             const spriteTransform = `translate(${cfg.x}%, ${cfg.y}%) scale(${cfg.s}) ${finalFlip ? 'scaleX(-1)' : ''}`;
             const jointClass = isLimb ? (isLeft ? `${partKey}-left-joint` : `${partKey}-right-joint`) : '';
 
@@ -452,7 +450,6 @@ export default function ServitorWildUnknown() {
             );
         };
 
-        // Static Part (No Joint animation)
         const renderStatic = (idx: number, asset: string, partKey: string, z: number) => {
             const cfg = (config.offsets as any)[partKey];
             if (!cfg.v) return null;
@@ -463,25 +460,28 @@ export default function ServitorWildUnknown() {
             );
         };
 
-        // Z-INDEX ORDER: Wings(0) -> Legs(10) -> Tool(20) -> Arms(30) -> Base(40) -> Head(50) -> Clothes(60) -> Sigil(70)
         return (
             <div id={idPrefix} className={`servitor-rig relative w-32 h-32 ${wrapperClass}`} style={{ transform: isPreview ? 'scale(1.5)' : 'scale(1)' }}>
                 {renderStatic(config.wingIndex, ASSETS.BACK, 'wing', 0)}
                 
-                {renderPart(config.legIndex, ASSETS.LEGS, 'leg', 10, true, true)}
-                {renderPart(config.legIndex, ASSETS.LEGS, 'leg', 10, false, true)}
+                {/* Legs */}
+                {renderPart(config.legIndex, ASSETS.LEGS, 'leg', getZIndex('leg', true), true, true)}
+                {renderPart(config.legIndex, ASSETS.LEGS, 'leg', getZIndex('leg', false), false, true)}
 
-                {renderPart(config.toolIndex, ASSETS.TOOLS, 'tool', 20, false, false)} 
-
-                {renderPart(config.limbIndex, ASSETS.ARMS, 'arm', 30, true, true)}
-                {renderPart(config.limbIndex, ASSETS.ARMS, 'arm', 30, false, true)}
-
+                {/* Body Core */}
                 {renderStatic(config.baseIndex, ASSETS.BASES, 'base', 40)}
-                {renderStatic(config.hatIndex, ASSETS.HEAD, 'head', 50)}
-                {renderStatic(config.clothingIndex, ASSETS.CLOTHES, 'clothes', 60)}
+                {renderStatic(config.sigilIndex, ASSETS.TREASURES, 'sigil', 80)} {/* Sigil on Chest */}
+                {renderStatic(config.clothingIndex, ASSETS.CLOTHES, 'clothes', 45)}
                 
-                {/* Chest Sigil */}
-                {renderStatic(config.sigilIndex, ASSETS.TREASURES, 'sigil', 70)}
+                {/* Arms & Tools */}
+                {/* Tool needs to follow the hand. Usually attached to Front Hand? Or Right Hand? */}
+                {/* For now, static Tool at Z 50 (Between Body and Front Arm) */}
+                {renderPart(config.toolIndex, ASSETS.TOOLS, 'tool', 50, false, false)} 
+
+                {renderPart(config.limbIndex, ASSETS.ARMS, 'arm', getZIndex('arm', true), true, true)}
+                {renderPart(config.limbIndex, ASSETS.ARMS, 'arm', getZIndex('arm', false), false, true)}
+
+                {renderStatic(config.hatIndex, ASSETS.HEAD, 'head', 55)}
             </div>
         );
     };
@@ -503,11 +503,11 @@ export default function ServitorWildUnknown() {
                 .runic-btn { background: url('${ASSET_PATH}${ASSETS.UI_BUTTONS}') center/cover; color: #FFD700; text-shadow: 0 1px 2px black; border: 1px solid #FFD70050; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
                 .runic-btn:active { transform: scale(0.95); filter: brightness(0.8); }
                 
-                /* ANIMATIONS */
                 @keyframes bounce { 0% { top: 0; } 50% { top: -5px; } }
                 @keyframes rotate-l { 0% { transform: rotate(-10deg); } 50% { transform: rotate(20deg); } 100% { transform: rotate(-10deg); } }
                 @keyframes rotate-r { 0% { transform: rotate(20deg); } 50% { transform: rotate(-10deg); } 100% { transform: rotate(20deg); } }
-                
+                @keyframes fall { from { top: -10%; opacity: 1; } to { top: 100%; opacity: 0; } }
+
                 .anim-walk-left .servitor-rig { animation: bounce 0.5s infinite; }
                 .anim-walk-left .leg-left-joint { animation: rotate-l 1s infinite; }
                 .anim-walk-left .leg-right-joint { animation: rotate-r 1s infinite; }
@@ -525,7 +525,7 @@ export default function ServitorWildUnknown() {
 
             <button onClick={() => hasUnsavedChanges ? setShowExitWarning(true) : router.push('/spell-room')} className="absolute top-4 right-4 z-60 text-gray-400 hover:text-white"><X /></button>
 
-            {/* STAGE */}
+            {/* STAGE (Background) */}
             <div className="absolute inset-0 z-0 bg-cover bg-center" style={{ backgroundImage: `url('${ASSET_PATH}${ASSETS.BG_MAIN}')` }}>
                 <div className="absolute inset-0 bg-black/40" />
             </div>
@@ -535,7 +535,7 @@ export default function ServitorWildUnknown() {
                 <div id="game-mound" className="absolute bottom-[15vh] left-[10%] w-40 h-[100px] z-20 bg-contain bg-no-repeat bg-bottom transition-all duration-500"
                      style={{ backgroundImage: `url('${ASSET_PATH}${ASSETS.MOUND}')`, transform: `scale(${config.offsets.mound.s}) translate(${config.offsets.mound.x}%, ${config.offsets.mound.y}%)`, filter: !config.offsets.mound.v ? 'opacity(0)' : 'none' }} />
 
-                <div id="servitor-container" className="absolute bottom-[18vh] left-[20%] w-32 h-32 z-100 transition-all duration-100 pointer-events-auto origin-bottom">
+                <div id="servitor-container" className="absolute bottom-[18vh] left-[20%] w-32 h-32 z-[100] transition-all duration-100 pointer-events-auto origin-bottom">
                     <ServitorRig idPrefix="game-rig" />
                 </div>
 
@@ -548,8 +548,8 @@ export default function ServitorWildUnknown() {
                 </div>
 
                 {fallingFood.map(f => (
-                    <div key={f.id} className="absolute w-16 h-16 z-200 animate-bounce"
-                         style={{ left: f.left + '%', top: f.top + '%', animation: 'fall 1s linear forwards', ...getSpriteStyle(f.spriteIndex, ASSETS.FOOD) }} />
+                    <div key={f.id} className="absolute w-16 h-16 z-[200]"
+                         style={{ left: f.left + '%', top: f.top + '%', animation: 'fall 1.5s linear forwards', ...getSpriteStyle(f.spriteIndex, ASSETS.FOOD) }} />
                 ))}
             </div>
 
@@ -566,90 +566,86 @@ export default function ServitorWildUnknown() {
                  style={{ borderImage: `url('${ASSET_PATH}${ASSETS.UI_PANEL}') 18% 15% fill stretch`, borderWidth: '40px', padding: '20px' }}>
                 
                 {/* 1. FIXED PREVIEW AREA (Top 45%) */}
-                <div className="h-[45%] w-full relative bg-[#1a1a2e] border-b border-[#5d4037] shrink-0 overflow-hidden">
-                    <div className="absolute inset-0 opacity-40 bg-[url('/images/Servitor_images/Astral_Plane_Parallax_Layers.jpg')] bg-cover bg-center" />
-                    <div className="absolute inset-0 flex items-center justify-center">
-                        <ServitorRig idPrefix="preview-rig" isPreview={true} />
-                    </div>
-                    {/* Inputs Overlay */}
+                <div className="h-[45%] w-full relative border-b border-[#5d4037] shrink-0 overflow-hidden flex flex-col items-center justify-center">
                     <div className="absolute top-2 left-2 right-2 flex gap-2 z-50">
                         <input type="text" value={sName} onChange={e => setSName(e.target.value)} className="flex-1 bg-black/50 border border-[#5d4037] p-1 text-xs text-white rounded" placeholder="Spirit Name" />
                         <input type="text" value={sPurpose} onChange={e => setSPurpose(e.target.value)} className="flex-1 bg-black/50 border border-[#5d4037] p-1 text-xs text-white rounded" placeholder="Purpose" />
                     </div>
+                    {/* Render Servitor against parchment (transparent bg) */}
+                    <div className="relative z-10 mt-8">
+                        <ServitorRig idPrefix="preview-rig" isPreview={true} overrideDirection={previewDirection} />
+                    </div>
                 </div>
 
-                {/* 2. MENU GRID (Categories) */}
-                <div className="flex-1 overflow-y-auto custom-scrollbar p-2">
-                    <div className="grid grid-cols-4 gap-4">
-                        {CATEGORIES.map(cat => {
-                            // Determine current image for button
-                            const currentIdx = cat.indexKey ? (config as any)[cat.indexKey] : 0;
-                            const isSingle = cat.single || false;
+                {/* 2. CATEGORY BUTTONS (Scrollable Grid) */}
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-2 bg-[#eaddcf]/90 relative">
+                    {!activeCategory ? (
+                        <div className="grid grid-cols-3 gap-2">
+                            {CATEGORIES.map(cat => {
+                                const currentIdx = cat.indexKey ? (config as any)[cat.indexKey] : 0;
+                                const isSingle = cat.single || false;
+                                return (
+                                    <button key={cat.id} onClick={() => setActiveCategory(cat.id)}
+                                        className="flex flex-col items-center gap-1 group bg-[#eaddcf] p-2 border border-[#8d6e63] rounded shadow-sm hover:border-[#3e2723]">
+                                        <div className="w-12 h-12 flex items-center justify-center relative overflow-hidden">
+                                            {cat.asset ? (
+                                                <div className="w-full h-full transform scale-90" style={getSpriteStyle(currentIdx, cat.asset, isSingle)} />
+                                            ) : (
+                                                <Settings size={24} className="text-[#3e2723]"/>
+                                            )}
+                                        </div>
+                                        <span className="text-[9px] text-[#3e2723] font-bold uppercase tracking-wider">{cat.label}</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    ) : (
+                        // 3. POPUP CONTROLS (Inside Scroll Area)
+                        <div className="absolute inset-0 bg-[#eaddcf] p-2 z-20 flex flex-col">
+                            <div className="flex justify-between items-center mb-2 border-b border-[#3e2723] pb-1">
+                                <h3 className="text-[#3e2723] font-bold uppercase">{CATEGORIES.find(c => c.id === activeCategory)?.label}</h3>
+                                <button onClick={() => setActiveCategory(null)}><X size={20} className="text-[#3e2723]"/></button>
+                            </div>
                             
-                            return (
-                                <button key={cat.id} onClick={() => setActiveCategory(cat.id)}
-                                    className="flex flex-col items-center gap-1 group">
-                                    <span className="text-[10px] text-[#3e2723] font-bold tracking-wider group-hover:text-black">{cat.label}</span>
-                                    <div className="w-16 h-16 bg-[#eaddcf] border-2 border-[#8d6e63] rounded shadow-inner flex items-center justify-center relative overflow-hidden group-hover:border-[#3e2723]">
-                                        {cat.asset ? (
-                                            <div className="w-full h-full transform scale-75" style={getSpriteStyle(currentIdx, cat.asset, isSingle)} />
-                                        ) : (
-                                            <div className="text-[#8d6e63]"><Move size={24}/></div>
+                            <div className="flex-1 overflow-y-auto custom-scrollbar">
+                                {activeCategory === 'settings' ? (
+                                    <div className="space-y-4 p-2">
+                                        <div className="bg-black/10 p-3 rounded">
+                                            <label className="text-xs font-bold text-[#3e2723]">Feeding Frequency: {config.feedFreq}</label>
+                                            <input type="range" min="1" max="50" value={config.feedFreq} onChange={e => setConfig({...config, feedFreq: parseInt(e.target.value)})} className="w-full accent-[#3e2723]" />
+                                        </div>
+                                        <div className="flex gap-4 items-center">
+                                            <label className="text-xs font-bold text-[#3e2723]">Mode:</label>
+                                            <select value={config.movementType} onChange={e => setConfig({...config, movementType: e.target.value})} className="bg-white/50 text-xs p-1 rounded border border-[#8d6e63]">
+                                                <option value="walk">Walk</option><option value="fly">Fly</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <>
+                                        {/* Selection Grid */}
+                                        {CATEGORIES.find(c => c.id === activeCategory)?.indexKey && (
+                                            <div className="grid grid-cols-4 gap-2 mb-4">
+                                                {GENERIC_LIST.map((_, i) => (
+                                                    <button key={i} 
+                                                        onClick={() => setConfig({...config, [(CATEGORIES.find(c => c.id === activeCategory)?.indexKey as string)]: i})}
+                                                        className={`w-full aspect-square border-2 rounded overflow-hidden bg-white/50 ${(config as any)[CATEGORIES.find(c => c.id === activeCategory)?.indexKey as string] === i ? 'border-[#3e2723] ring-1 ring-[#3e2723]' : 'border-transparent'}`}>
+                                                        <div className="w-full h-full transform scale-75" 
+                                                             style={getSpriteStyle(i, (CATEGORIES.find(c => c.id === activeCategory)?.asset as string), CATEGORIES.find(c => c.id === activeCategory)?.single)} />
+                                                    </button>
+                                                ))}
+                                            </div>
                                         )}
-                                    </div>
-                                </button>
-                            );
-                        })}
-                    </div>
+                                        {/* Controls */}
+                                        {CATEGORIES.find(c => c.id === activeCategory)?.offsetKey && (
+                                            <DPad part={CATEGORIES.find(c => c.id === activeCategory)?.offsetKey as string} allowFlip={CATEGORIES.find(c => c.id === activeCategory)?.canFlip} />
+                                        )}
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    )}
                 </div>
-
-                {/* 3. POPUP CONTROLS (Overlay) */}
-                {activeCategory && (
-                    <div className="absolute inset-0 z-50 bg-[#eaddcf] p-4 flex flex-col" style={{ margin: '40px' }}> {/* Margin matches border width */}
-                        <div className="flex justify-between items-center mb-4 border-b border-[#5d4037]/20 pb-2">
-                            <h3 className="text-[#3e2723] font-bold uppercase text-lg">{CATEGORIES.find(c => c.id === activeCategory)?.label}</h3>
-                            <button onClick={() => setActiveCategory(null)}><X size={24} className="text-[#3e2723]"/></button>
-                        </div>
-
-                        <div className="flex-1 overflow-y-auto custom-scrollbar">
-                            {/* Generic Grid Selection */}
-                            {CATEGORIES.find(c => c.id === activeCategory)?.indexKey && (
-                                <div className="grid grid-cols-4 gap-2 mb-6">
-                                    {GENERIC_LIST.map((_, i) => (
-                                        <button key={i} 
-                                            onClick={() => setConfig({...config, [(CATEGORIES.find(c => c.id === activeCategory)?.indexKey as string)]: i})}
-                                            className={`w-full aspect-square border-2 rounded overflow-hidden bg-white/50 ${(config as any)[CATEGORIES.find(c => c.id === activeCategory)?.indexKey as string] === i ? 'border-[#3e2723] shadow-inner ring-1 ring-[#3e2723]' : 'border-transparent'}`}>
-                                            <div className="w-full h-full transform scale-75" 
-                                                 style={getSpriteStyle(i, (CATEGORIES.find(c => c.id === activeCategory)?.asset as string), CATEGORIES.find(c => c.id === activeCategory)?.single)} />
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-
-                            {/* Adjustment Controls (D-Pad) */}
-                            {CATEGORIES.find(c => c.id === activeCategory)?.offsetKey && (
-                                <DPad part={CATEGORIES.find(c => c.id === activeCategory)?.offsetKey as string} allowFlip={CATEGORIES.find(c => c.id === activeCategory)?.canFlip} />
-                            )}
-
-                            {/* Special Settings for Food/Treasure */}
-                            {activeCategory === 'food' && (
-                                <div className="mt-4 bg-[#5d4037]/10 p-3 rounded">
-                                    <label className="text-xs font-bold text-[#3e2723]">Feeding Frequency: {config.feedFreq}</label>
-                                    <input type="range" min="1" max="50" value={config.feedFreq} onChange={e => setConfig({...config, feedFreq: parseInt(e.target.value)})} className="w-full accent-[#3e2723]" />
-                                    
-                                    <div className="mt-4 flex gap-2">
-                                        <label className="text-xs font-bold text-[#3e2723]">Movement:</label>
-                                        <select value={config.movementType} onChange={e => setConfig({...config, movementType: e.target.value})} className="bg-white/50 text-xs p-1 rounded border border-[#8d6e63]">
-                                            <option value="walk">Walk</option><option value="fly">Fly</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                        
-                        <button onClick={() => setActiveCategory(null)} className="mt-4 w-full py-2 bg-[#3e2723] text-[#eaddcf] font-bold uppercase rounded">Close</button>
-                    </div>
-                )}
 
                 {/* 4. FIXED ACTION BUTTONS */}
                 <div className="p-4 border-t border-[#5d4037]/30 flex gap-2 shrink-0 bg-[#eaddcf]">
