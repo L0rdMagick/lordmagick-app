@@ -21,25 +21,25 @@ const ASSETS = {
     VESSELS: 'Ritual_Vessels_Master_Sheet.png',
     TREASURES: 'Chest_Sigils_And_Treasures_Sheet.png',
     FOOD: 'Servitor_Sustenance_Food_Sheet.png',
-    MOUND: 'mound_into_the_void.png', // New Asset
+    MOUND: 'mound_into_the_void.png', // The Tunnel/Mound
     UI_PANEL: 'Parchment_And_Oak_Responsive_Panels.png',
     BG_MAIN: 'Astral_Plane_Parallax_Layers.jpg',
     UI_BUTTONS: 'Runic_Glass_Button_Set.png'
 };
 
-// --- 2. SPRITE TUNING SECTION (ADJUST PROPORTIONS & PLACEMENT) ---
+// --- 2. SPRITE TUNING SECTION (ADJUST PROPORTIONS & PLACEMENT HERE) ---
 // Scale: 1.0 = 100%. 
 // X: Positive moves Right, Negative moves Left (percentages).
 // Y: Positive moves Down, Negative moves Up (percentages).
 const SPRITE_OFFSET_CONFIG = {
     base:    { scale: 1.0,  x: 0,   y: 0 },   // Main Torso
-    arm:     { scale: 0.75, x: 0,   y: 5 },   // Arms (Moved down slightly)
+    arm:     { scale: 0.75, x: 0,   y: 5 },   // Arms (Lowered slightly)
     leg:     { scale: 0.75, x: 0,   y: 0 },   // Legs
-    head:    { scale: 0.85, x: 0,   y: -5 },  // Hats (Moved up slightly)
-    clothes: { scale: 1.05, x: 0,   y: 0 },   // Clothes
-    tool:    { scale: 0.6,  x: 5,   y: 10 },  // Tools (Moved right/down to fit hand)
-    wings:   { scale: 1.2,  x: 0,   y: -5 },  // Back elements
-    vessel:  { scale: 1.0,  x: 0,   y: 0 }    // The Chest/Cauldron
+    head:    { scale: 0.85, x: 0,   y: -5 },  // Hats (Raised slightly)
+    clothes: { scale: 1.05, x: 0,   y: 0 },   // Clothes (Slightly larger to fit over)
+    tool:    { scale: 0.6,  x: 5,   y: 10 },  // Tools (Adjusted to fit hand)
+    wings:   { scale: 1.2,  x: 0,   y: -5 },  // Wings
+    vessel:  { scale: 1.0,  x: 0,   y: 0 }    // The Altar/Chest
 };
 
 const GENERIC_LIST = Array.from({length: 16}).map((_, i) => `Option ${i + 1}`);
