@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { X, Lock, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Plus, Minus, RefreshCw, Move, Eye, EyeOff, Settings, User } from 'lucide-react';
+import { X, Trash2, Lock, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Plus, Minus, RefreshCw, Move, Eye, EyeOff, Settings, User } from 'lucide-react';
 import { createBrowserClient } from '@supabase/ssr';
 import { checkAndSpendCredits, getWalletStatus, COST_BIND_SERVITOR } from '@/lib/economy';
 import { saveServitorToGrimoire, getMyServitors } from '@/lib/services/spellService';
@@ -27,17 +27,18 @@ const ASSETS = {
     UI_BUTTONS: 'Runic_Glass_Button_Set.png'
 };
 
-// Default Offsets - "v" = visible, "f" = flip, "s" = scale
+// --- 2. DEFAULT OFFSETS ---
+// "v" = visible, "f" = flip (horizontal mirror), "s" = scale
 const DEFAULT_OFFSETS = {
-    global:  { x: 0, y: 0, s: 1.0, f: false, v: true }, // Whole Servitor
+    global:  { x: 0, y: 0, s: 1.0, f: false, v: true }, // Whole Servitor Group
     wing:    { x: 0, y: 3, s: 1.0, f: false, v: true },
-    leg:     { x: 0, y: 55, s: 0.8, f: false, v: true },
+    leg:     { x: -6, y: 55, s: 0.7, f: false, v: true },
     tool:    { x: 27, y: 11, s: 0.4, f: false, v: true },
-    arm:     { x: 0, y: 10, s: 0.6, f: false, v: true },
+    arm:     { x: 0, y: 10, s: 0.5, f: false, v: true },
     base:    { x: 0, y: 0, s: 1.0, f: false, v: true },
     head:    { x: 0, y: -51, s: 0.7, f: false, v: true },
     clothes: { x: 0, y: 10, s: 0.6, f: false, v: true },
-    sigil:   { x: 0, y: 4, s: 0.2, f: false, v: true },
+    sigil:   { x: 3, y: 2, s: 0.2, f: false, v: true },
     vessel:  { x: 0, y: 0, s: 1.8, f: false, v: true },
     mound:   { x: 0, y: 0, s: 2.8, f: false, v: true },
 };
@@ -54,10 +55,10 @@ interface CategoryItem {
 }
 
 const CATEGORIES: CategoryItem[] = [
-    { id: 'global', label: 'WHOLE', asset: null, indexKey: null, offsetKey: 'global', canFlip: false },
+    { id: 'global', label: 'WHOLE', asset: null, indexKey: null, offsetKey: 'global', canFlip: true },
     { id: 'head', label: 'HATS', asset: ASSETS.HEAD, indexKey: 'hatIndex', offsetKey: 'head', canFlip: true },
     { id: 'base', label: 'TORSOS', asset: ASSETS.BASES, indexKey: 'baseIndex', offsetKey: 'base', canFlip: true },
-    { id: 'leg', label: 'LEGS', asset: ASSETS.LEGS, indexKey: 'legIndex', offsetKey: 'leg', canFlip: false }, // Limbs auto-flip
+    { id: 'leg', label: 'LEGS', asset: ASSETS.LEGS, indexKey: 'legIndex', offsetKey: 'leg', canFlip: false }, // Limbs locked
     { id: 'arm', label: 'ARMS', asset: ASSETS.ARMS, indexKey: 'limbIndex', offsetKey: 'arm', canFlip: false },
     { id: 'tool', label: 'TOOLS', asset: ASSETS.TOOLS, indexKey: 'toolIndex', offsetKey: 'tool', canFlip: true },
     { id: 'clothes', label: 'ROBES', asset: ASSETS.CLOTHES, indexKey: 'clothingIndex', offsetKey: 'clothes', canFlip: true },
@@ -116,6 +117,7 @@ export default function ServitorWildUnknown() {
     const [user, setUser] = useState<any>(null);
     const [savedServitors, setSavedServitors] = useState<any[]>([]);
     
+    // Config
     const [config, setConfig] = useState({
         baseIndex: 0, limbIndex: 0, legIndex: 0, toolIndex: 0,
         hatIndex: 0, wingIndex: 0, vesselIndex: 0, clothingIndex: 0,
@@ -126,6 +128,7 @@ export default function ServitorWildUnknown() {
         offsets: JSON.parse(JSON.stringify(DEFAULT_OFFSETS))
     });
 
+    // Game State
     const [depositCount, setDepositCount] = useState(0);
     const depositRef = useRef(0);
     const [hungerState, setHungerState] = useState<'sated' | 'hungry' | 'fed'>('sated');
@@ -135,6 +138,7 @@ export default function ServitorWildUnknown() {
     const [feedProgress, setFeedProgress] = useState(0);
     const [fallingFood, setFallingFood] = useState<{id: number, left: number, top: number, spriteIndex: number}[]>([]);
 
+    // Modals
     const [showCreditModal, setShowCreditModal] = useState(false);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const [showExitWarning, setShowExitWarning] = useState(false);
@@ -178,7 +182,9 @@ export default function ServitorWildUnknown() {
 
     const handleOffsetStart = (part: string, field: 'x'|'y'|'s', change: number) => {
         const current = (config.offsets as any)[part][field];
-        updateOffset(part, field, current + change);
+        // 1:1 Correspondence: 1 unit per click for pos, 0.1 for scale
+        const step = field === 's' ? 0.1 : 1.0; 
+        updateOffset(part, field, current + (change * step));
 
         buttonIntervalRef.current = setInterval(() => {
             setConfig(prev => {
@@ -187,7 +193,7 @@ export default function ServitorWildUnknown() {
                     ...prev,
                     offsets: {
                         ...prev.offsets,
-                        [part]: { ...(prev.offsets as any)[part], [field]: cur + change }
+                        [part]: { ...(prev.offsets as any)[part], [field]: cur + (change * step) }
                     }
                 };
             });
@@ -257,7 +263,7 @@ export default function ServitorWildUnknown() {
         const rig = document.getElementById('game-rig');
 
         while(runningRef.current && loopIdRef.current === id) {
-            // 1. Walk to Mound
+            // 1. Walk to Mound (Left)
             if(servitor) { servitor.style.opacity = '1'; servitor.style.transform = 'scale(1)'; }
             if(rig) {
                 rig.classList.remove('anim-idle', 'anim-walk-right', 'anim-fly-right');
@@ -280,7 +286,7 @@ export default function ServitorWildUnknown() {
             await wait(2000);
             if(mound) mound.classList.remove('pulse-glow-void');
 
-            // 4. Return
+            // 4. Return (Right)
             if(servitor) {
                 servitor.style.opacity = '1';
                 servitor.style.transform = 'scale(1)';
@@ -337,7 +343,6 @@ export default function ServitorWildUnknown() {
             }
             // Food Logic
             if(type === 'feed' && Math.random() > 0.6) {
-                // Target the Servitor visually
                 const targetX = servitorPosRef.current;
                 setFallingFood(prev => [...prev, {
                     id: Math.random(), 
@@ -385,8 +390,8 @@ export default function ServitorWildUnknown() {
                 </div>
                 <div className="flex flex-col gap-1">
                     <div className="flex gap-1">
-                        <button onMouseDown={() => handleOffsetStart(part, 's', -0.1)} onMouseUp={handleOffsetStop} onMouseLeave={handleOffsetStop} className={btnClass}><Minus size={12}/></button>
-                        <button onMouseDown={() => handleOffsetStart(part, 's', 0.1)} onMouseUp={handleOffsetStop} onMouseLeave={handleOffsetStop} className={btnClass}><Plus size={12}/></button>
+                        <button onMouseDown={() => handleOffsetStart(part, 's', -1)} onMouseUp={handleOffsetStop} onMouseLeave={handleOffsetStop} className={btnClass}><Minus size={12}/></button>
+                        <button onMouseDown={() => handleOffsetStart(part, 's', 1)} onMouseUp={handleOffsetStop} onMouseLeave={handleOffsetStop} className={btnClass}><Plus size={12}/></button>
                     </div>
                     {allowFlip && (
                         <button onClick={() => updateOffset(part, 'f', !cfg.f)} className={`p-1 rounded flex gap-1 items-center justify-center text-[10px] border ${cfg.f ? 'bg-amber-700 border-amber-500 text-white' : 'bg-[#3e2723] border-[#5d4037] text-gray-400'}`}>
@@ -405,45 +410,44 @@ export default function ServitorWildUnknown() {
 
     const ServitorRig = ({ idPrefix, isPreview = false, overrideDirection }: { idPrefix: string, isPreview?: boolean, overrideDirection?: 'left'|'right' }) => {
         const wrapperClass = isFeeding ? 'anim-feed' : 'anim-idle';
-        
-        // Direction Detection
-        // If preview, use override. If game, check class.
-        // Default to Right-Facing.
         const rigEl = typeof document !== 'undefined' ? document.getElementById('game-rig') : null;
-        const isWalkingLeft = idPrefix === 'game-rig' && rigEl?.classList.contains('anim-walk-left');
         
-        // LAYERING LOGIC (Z-INDEX)
-        // Default (Facing Right): BackLimbs (Left) < Torso < FrontLimbs (Right)
-        // Walking Left: BackLimbs (Right) < Torso < FrontLimbs (Left)
-        // 0-10: Wings
-        // 20-30: Back Limbs
-        // 40-50: Body/Clothes
-        // 60-70: Front Limbs
-        // 80-90: Tools/Hats
-        
-        const getZ = (part: 'arm' | 'leg', isLeftLimb: boolean) => {
-            // If Walking Left: Left Limb is Front (High Z), Right Limb is Back (Low Z)
-            // If Walking Right: Right Limb is Front (High Z), Left Limb is Back (Low Z)
-            if (isWalkingLeft) {
-                return isLeftLimb ? 70 : 20;
+        // Direction Check: Default Right. If walking left class is present, we are Facing Left.
+        const isFacingLeft = overrideDirection === 'left' || (idPrefix === 'game-rig' && rigEl?.classList.contains('anim-walk-left'));
+
+        // Dynamic Z-Index based on direction
+        const getZ = (part: 'arm' | 'leg', instance: 'original' | 'flipped') => {
+            if (!isFacingLeft) {
+                // FACING RIGHT (Default)
+                // Back Layers: Wing(0) -> Arm(Original/Right)(10) -> Leg(Original/Left)(20) -> Torso(30)...
+                // Front Layers: ...Arm(Flipped/Right)(60) -> Leg(Flipped/Right)(70) -> Tool(80) -> Hat(90)
+                if (part === 'arm') return instance === 'original' ? 10 : 60;
+                if (part === 'leg') return instance === 'original' ? 20 : 70;
             } else {
-                return isLeftLimb ? 20 : 70;
+                // FACING LEFT (Walking to Mound)
+                // Back Layers: Wing(0) -> Leg(Flipped)(10) -> Arm(Original)(20) -> Torso(30)...
+                // Front Layers: ...Leg(Original)(50) -> Sigil(60) -> Tool(70) -> Arm(Flipped)(80) -> Hat(90)
+                if (part === 'leg') return instance === 'flipped' ? 10 : 50;
+                if (part === 'arm') return instance === 'original' ? 20 : 80;
             }
+            return 0;
         };
 
-        const renderPart = (idx: number, asset: string, partKey: string, z: number, isLeft: boolean = false, isLimb: boolean = false) => {
+        const renderPart = (idx: number, asset: string, partKey: string, z: number, instanceType: 'original' | 'flipped') => {
             const cfg = (config.offsets as any)[partKey];
             if (!cfg.v) return null;
 
-            // Auto-Flip Logic for Limbs
-            // 1. Base assumption: Sprite faces Right.
-            // 2. Left Limb needs horizontal flip to look correct paired with Right Limb.
-            // 3. User cannot manually flip limbs (per request).
+            // Flip Logic:
+            // Original = No Flip (scaleX(1)). Flipped = Mirror (scaleX(-1)).
+            // User 'f' config applies to BOTH? No, user flip disabled for limbs.
             let finalFlip = cfg.f;
-            if (isLimb && isLeft) finalFlip = !finalFlip; 
+            if (instanceType === 'flipped') finalFlip = !finalFlip; 
 
             const spriteTransform = `translate(${cfg.x}%, ${cfg.y}%) scale(${cfg.s}) ${finalFlip ? 'scaleX(-1)' : ''}`;
-            const jointClass = isLimb ? (isLeft ? `${partKey}-left-joint` : `${partKey}-right-joint`) : '';
+            
+            // Joint Class for Animation
+            // Original usually implies Right/Back. Flipped implies Left/Front.
+            const jointClass = instanceType === 'original' ? `${partKey}-right-joint` : `${partKey}-left-joint`;
 
             return (
                 <div className={`joint absolute w-full h-full top-0 left-0 origin-top-center ${jointClass}`} style={{ zIndex: z }}>
@@ -463,32 +467,31 @@ export default function ServitorWildUnknown() {
             );
         };
 
-        // GLOBAL TRANSFORM
+        // GLOBAL TRANSFORM (Preview Mode Offset)
         const g = config.offsets.global;
-        const globalStyle = {
-            transform: `translate(${g.x}%, ${g.y}%) scale(${g.s}) ${g.f ? 'scaleX(-1)' : ''} ${isPreview ? 'scale(1.5)' : ''}`
-        };
-
+        // In UI Preview: Apply User Global Offset + Code Default Offset (y:-30, s:0.8)
+        // In Game: Apply User Global Offset only.
+        const previewOffset = isPreview ? `translateY(-30%) scale(0.8)` : '';
+        const userGlobal = `translate(${g.x}%, ${g.y}%) scale(${g.s}) ${g.f ? 'scaleX(-1)' : ''}`;
+        
         return (
-            <div id={idPrefix} className={`servitor-rig relative w-32 h-32 ${wrapperClass}`} style={globalStyle}>
+            <div id={idPrefix} className={`servitor-rig relative w-32 h-32 ${wrapperClass}`} style={{ transform: `${previewOffset} ${userGlobal}` }}>
                 {renderStatic(config.wingIndex, ASSETS.BACK, 'wing', 0)}
                 
-                {/* Legs */}
-                {renderPart(config.legIndex, ASSETS.LEGS, 'leg', getZ('leg', true), true, true)}
-                {renderPart(config.legIndex, ASSETS.LEGS, 'leg', getZ('leg', false), false, true)}
+                {/* LIMBS */}
+                {renderPart(config.limbIndex, ASSETS.ARMS, 'arm', getZ('arm', 'original'), 'original')}
+                {renderPart(config.limbIndex, ASSETS.ARMS, 'arm', getZ('arm', 'flipped'), 'flipped')}
+                {renderPart(config.legIndex, ASSETS.LEGS, 'leg', getZ('leg', 'original'), 'original')}
+                {renderPart(config.legIndex, ASSETS.LEGS, 'leg', getZ('leg', 'flipped'), 'flipped')}
 
-                {/* Body Stack */}
-                {renderStatic(config.baseIndex, ASSETS.BASES, 'base', 40)}
-                {renderStatic(config.clothingIndex, ASSETS.CLOTHES, 'clothes', 45)}
-                {renderStatic(config.sigilIndex, ASSETS.TREASURES, 'sigil', 50)} {/* Sigil on Chest */}
+                {/* BODY */}
+                {renderStatic(config.baseIndex, ASSETS.BASES, 'base', 30)}
+                {renderStatic(config.clothingIndex, ASSETS.CLOTHES, 'clothes', 40)}
+                {renderStatic(config.sigilIndex, ASSETS.TREASURES, 'sigil', isFacingLeft ? 60 : 50)} {/* Sigil z-index varies slightly */}
                 
-                {/* Arms */}
-                {renderPart(config.limbIndex, ASSETS.ARMS, 'arm', getZ('arm', true), true, true)}
-                {renderPart(config.limbIndex, ASSETS.ARMS, 'arm', getZ('arm', false), false, true)}
-
-                {/* Tool attached to Front Arm usually? For now static on top */}
-                {renderPart(config.toolIndex, ASSETS.TOOLS, 'tool', 80, false, false)} 
-
+                {/* TOOL & HAT */}
+                {/* Tool Z: Facing Right = 80 (Front). Facing Left = 70. */}
+                {renderPart(config.toolIndex, ASSETS.TOOLS, 'tool', isFacingLeft ? 70 : 80, 'original')} 
                 {renderStatic(config.hatIndex, ASSETS.HEAD, 'head', 90)}
             </div>
         );
@@ -556,7 +559,7 @@ export default function ServitorWildUnknown() {
                 </div>
 
                 {fallingFood.map(f => (
-                    <div key={f.id} className="absolute w-16 h-16 z-[200]"
+                    <div key={f.id} className="absolute w-16 h-16 z-[200] animate-bounce"
                          style={{ left: f.left + '%', top: f.top + '%', animation: 'fall 1.5s linear forwards', ...getSpriteStyle(f.spriteIndex, ASSETS.FOOD) }} />
                 ))}
             </div>
@@ -579,7 +582,7 @@ export default function ServitorWildUnknown() {
                         <input type="text" value={sName} onChange={e => setSName(e.target.value)} className="flex-1 bg-black/50 border border-[#5d4037] p-1 text-xs text-white rounded" placeholder="Spirit Name" />
                         <input type="text" value={sPurpose} onChange={e => setSPurpose(e.target.value)} className="flex-1 bg-black/50 border border-[#5d4037] p-1 text-xs text-white rounded" placeholder="Purpose" />
                     </div>
-                    {/* Render Servitor in Center */}
+                    {/* Render Servitor in Center with Default UI Scale */}
                     <div className="relative z-10 mt-8">
                         <ServitorRig idPrefix="preview-rig" isPreview={true} />
                     </div>
