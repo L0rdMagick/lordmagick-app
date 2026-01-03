@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { X, Maximize2, Minimize2, Trash2, Lock, Save, BookOpen } from 'lucide-react';
+import { X, Trash2, Lock } from 'lucide-react';
 import { createBrowserClient } from '@supabase/ssr';
 import { checkAndSpendCredits, getWalletStatus, COST_BIND_SERVITOR } from '@/lib/economy';
 import { saveServitorToGrimoire, getMyServitors } from '@/lib/services/spellService';
@@ -10,29 +10,48 @@ import { saveServitorToGrimoire, getMyServitors } from '@/lib/services/spellServ
 // --- ASSET CONFIGURATION ---
 const ASSET_PATH = '/images/Servitor_images/';
 
-// Indices match the provided JSON config
-const BASES = [
+// Updated File Names Mapped to Constants
+const ASSETS = {
+    BASES: 'Servitor_Bases_Master_Sheet.png',
+    ARMS: 'Servitor_Arms_Master_Sheet.png',
+    LEGS: 'Servitor_Legs_Master_Sheet.png',
+    BACK: 'Servitor_Back_Elements_Master_Sheet.png',
+    CLOTHES: 'Servitor_Clothing_Overlays_Sheet.png',
+    HEAD: 'Servitor_Headgear_Master_Sheet.png',
+    TOOLS: 'Servitor_Magickal_Tools_Sheet.png',
+    VESSELS: 'Ritual_Vessels_Master_Sheet.png',
+    TREASURES: 'Chest_Sigils_And_Treasures_Sheet.png',
+    FOOD: 'Servitor_Sustenance_Food_Sheet.png',
+    UI_PANEL: 'Parchment_And_Oak_Responsive_Panels.png',
+    BG_MAIN: 'Untitled design (4).png', // Assuming this is the main background composite
+    BG_LAYER_1: '14.png',
+    BG_LAYER_2: '15.png',
+    UI_BUTTONS: 'Runic_Glass_Button_Set.png'
+};
+
+// Indices match the previous logic (0-15)
+const BASES_LIST = [
     'Porcelain Doll', 'Smoke Wisp', 'Shadow Entity', 'Ethereal Wisp',
     'Oak Golem', 'Stone Statue', 'Iron Clockwork', 'Vine Spirit',
     'Galaxy Nebula', 'Molten Lava', 'Ice Crystal', 'Mercury Fluid',
     'Gothic Gargoyle', 'Tattered Scarecrow', 'Golden Automaton', 'Ink-Blot Shadow'
 ];
 
-const LIMBS = [
+const LIMBS_LIST = [
     'Ghostly Energy', 'Obsidian Shard', 'Twisted Root', 'Brass Gear',
     'Skeletal Bone', 'Dragon Scale', 'Silk Wrapped', 'Crystal Shard',
     'Aetheric Glow', 'Flaming Ember', 'Shadow Tendril', 'Carved Stone',
     'Primal Talon', 'Tattooed Flesh', 'Blue Lightning', 'Mercury Drip'
 ];
 
-const TOOLS = [
+const TOOLS_LIST = [
     'Wood Wand', 'Obsidian Athame', 'Glass Orb', 'Iron Key',
     'Burning Censer', 'Ancient Scroll', 'Crystal Staff', 'Silver Bell',
     'Tarot Deck', 'Hourglass', 'Astral Compass', 'Brass Telescope',
     'Ritual Bowl', 'Bone Wand', 'Soul Lantern', 'Potion Flask'
 ];
 
-const VESSELS = [
+const VESSELS_LIST = [
     'Iron Cauldron', 'Golden Chalice', 'Stone Font', 'Alchemical Bowl',
     'Burning Brazier', 'Scrying Bowl', 'Incense Burner', 'Wicker Basket',
     'Hollowed Pumpkin', 'Sea-Shell Basin', 'Petrified Stump', 'Iron-Bound Chest',
@@ -116,7 +135,7 @@ export default function ServitorWildUnknown() {
         hasWings: false,
         movementType: "walk", 
         
-        // Sound Config (Restored)
+        // Sound Config
         soundSearch: "rumble", 
         soundFind: "chime",    
         soundDeposit: "coin",
@@ -137,24 +156,13 @@ export default function ServitorWildUnknown() {
     const depositRef = useRef(0); 
     const [hungerState, setHungerState] = useState<'sated' | 'hungry' | 'fed'>('sated');
     const [feedProgress, setFeedProgress] = useState(0);
-    const [fallingFood, setFallingFood] = useState<{id: number, left: number, top: number}[]>([]);
+    // Modified to include random food sprite index
+    const [fallingFood, setFallingFood] = useState<{id: number, left: number, top: number, spriteIndex: number}[]>([]);
     const holdIntervalRef = useRef<any>(null);
 
     // --- Asset Loading ---
     useEffect(() => {
-        const imageUrls = [
-            'Servitor_Bases_Master_Sheet.jpg',
-            'Servitor_Arms_Master_Sheet (2).jpg',
-            'Servitor_Legs_Master_Sheet (2).jpg',
-            'Servitor_Back_Elements_Master_Sheet.jpg',
-            'Servitor_Clothing_Overlays_Sheet.jpg',
-            'Servitor_Headgear_Master_Sheet.jpg',
-            'Servitor_Magickal_Tools_Sheet.jpg',
-            'Ritual_Vessels_Master_Sheet.jpg',
-            'Chest_Sigils_And_Treasures_Sheet (1).jpg',
-            'Parchment_And_Oak_Responsive_Panels.png',
-            'Astral_Plane_Parallax_Layers.jpg'
-        ];
+        const imageUrls = Object.values(ASSETS);
 
         let loadedCount = 0;
         imageUrls.forEach((url) => {
@@ -164,7 +172,7 @@ export default function ServitorWildUnknown() {
                 loadedCount++;
                 setLoadProgress(Math.floor((loadedCount / imageUrls.length) * 100));
                 if (loadedCount === imageUrls.length) {
-                    setTimeout(() => setAssetsLoaded(true), 500); // Small delay for smooth UX
+                    setTimeout(() => setAssetsLoaded(true), 500);
                 }
             };
             img.onerror = () => {
@@ -269,7 +277,7 @@ export default function ServitorWildUnknown() {
         else router.push('/spell-room'); 
     };
 
-    // --- Audio Logic (Fully Restored from Original) ---
+    // --- Audio Logic ---
     const initAudio = () => {
         const win = (globalThis as any).window;
         if (!audioCtxRef.current) {
@@ -448,7 +456,10 @@ export default function ServitorWildUnknown() {
             
             if(type === 'feed' && Math.random() > 0.8) {
                  setFallingFood(prev => [...prev, {
-                     id: Math.random(), left: 20 + Math.random() * 60, top: 0
+                     id: Math.random(), 
+                     left: 20 + Math.random() * 60, 
+                     top: 0,
+                     spriteIndex: Math.floor(Math.random() * 16) // Random food sprite
                  }]);
             }
         }, 30);
@@ -517,56 +528,56 @@ export default function ServitorWildUnknown() {
         return (
             <div 
                 id={idPrefix} 
-                className={`servitor-rig relative w-32 h-[128px] ${wrapperClass}`}
+                className={`servitor-rig relative w-[128px] h-[128px] ${wrapperClass}`}
                 style={{ transform: isPreview ? 'scale(1.5)' : 'scale(1)' }}
             >
                 {/* 1. Back Elements (Wings/Aura) */}
                 {config.hasWings && (
-                     <div className="absolute inset-0 z-0" style={getSpriteStyle(config.wingIndex, 'Servitor_Back_Elements_Master_Sheet.jpg')} />
+                     <div className="absolute inset-0 z-0" style={getSpriteStyle(config.wingIndex, ASSETS.BACK)} />
                 )}
                 
                 {/* 2. Legs (Jointed at top center) */}
                 <div 
                     className="limb leg-left absolute z-10 w-full h-full origin-top-center"
-                    style={{ ...getSpriteStyle(config.limbIndex, 'Servitor_Legs_Master_Sheet (2).jpg'), transform: 'scaleX(-1)' }} 
+                    style={{ ...getSpriteStyle(config.limbIndex, ASSETS.LEGS), transform: 'scaleX(-1)' }} 
                 />
                 <div 
                     className="limb leg-right absolute z-10 w-full h-full origin-top-center"
-                    style={getSpriteStyle(config.limbIndex, 'Servitor_Legs_Master_Sheet (2).jpg')} 
+                    style={getSpriteStyle(config.limbIndex, ASSETS.LEGS)} 
                 />
 
                 {/* 3. Base / Torso */}
                 <div 
                     className="base absolute inset-0 z-20"
-                    style={getSpriteStyle(config.baseIndex, 'Servitor_Bases_Master_Sheet.jpg')} 
+                    style={getSpriteStyle(config.baseIndex, ASSETS.BASES)} 
                 />
 
                 {/* 4. Clothes */}
                 <div 
                     className="clothes absolute inset-0 z-30"
-                    style={getSpriteStyle(config.clothingIndex, 'Servitor_Clothing_Overlays_Sheet.jpg')} 
+                    style={getSpriteStyle(config.clothingIndex, ASSETS.CLOTHES)} 
                 />
 
                 {/* 5. Arms */}
                 <div 
                     className="limb arm-left absolute z-40 w-full h-full origin-top-center"
-                    style={{ ...getSpriteStyle(config.limbIndex, 'Servitor_Arms_Master_Sheet (2).jpg'), transform: 'scaleX(-1)' }} 
+                    style={{ ...getSpriteStyle(config.limbIndex, ASSETS.ARMS), transform: 'scaleX(-1)' }} 
                 />
                 <div 
                     className="limb arm-right absolute z-40 w-full h-full origin-top-center"
-                    style={getSpriteStyle(config.limbIndex, 'Servitor_Arms_Master_Sheet (2).jpg')} 
+                    style={getSpriteStyle(config.limbIndex, ASSETS.ARMS)} 
                 />
 
                 {/* 6. Hat */}
                 <div 
                     className="hat absolute inset-0 z-50"
-                    style={getSpriteStyle(config.hatIndex, 'Servitor_Headgear_Master_Sheet.jpg')} 
+                    style={getSpriteStyle(config.hatIndex, ASSETS.HEAD)} 
                 />
 
                 {/* 7. Tool (Attached to Right Arm logically, but rendered on top for visibility) */}
                 <div 
                     className="tool absolute inset-0 z-60"
-                    style={getSpriteStyle(config.toolIndex, 'Servitor_Magickal_Tools_Sheet.jpg')} 
+                    style={getSpriteStyle(config.toolIndex, ASSETS.TOOLS)} 
                 />
             </div>
         );
@@ -580,7 +591,7 @@ export default function ServitorWildUnknown() {
             <div className="fixed inset-0 bg-[#08080c] z-[999] flex flex-col items-center justify-center">
                 <div 
                     style={{
-                        ...getSpriteStyle(0, 'Chest_Sigils_And_Treasures_Sheet (1).jpg'),
+                        ...getSpriteStyle(0, ASSETS.TREASURES),
                         width: '128px', height: '128px',
                         animation: 'spin 4s infinite linear',
                         filter: 'drop-shadow(0 0 15px #FFD700)'
@@ -659,9 +670,17 @@ export default function ServitorWildUnknown() {
 
             {/* PARALLAX WORLD */}
             <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none z-0">
-                {/* Layer 1: Sky/Background (Slowest) */}
+                {/* Layer 1: Background (Stars/Sky) */}
+                 <div className="absolute inset-0 bg-cover bg-center" 
+                     style={{ backgroundImage: `url('${ASSET_PATH}${ASSETS.BG_LAYER_1}')` }}>
+                </div>
+                {/* Layer 2: Midground */}
                 <div className="absolute inset-0 bg-cover bg-center" 
-                     style={{ backgroundImage: `url('${ASSET_PATH}Astral_Plane_Parallax_Layers.jpg')`, transform: 'scale(1.1)' }}>
+                     style={{ backgroundImage: `url('${ASSET_PATH}${ASSETS.BG_LAYER_2}')` }}>
+                </div>
+                {/* Layer 3: Main/Foreground (Composite) */}
+                <div className="absolute inset-0 bg-cover bg-center" 
+                     style={{ backgroundImage: `url('${ASSET_PATH}${ASSETS.BG_MAIN}')`, transform: 'scale(1.1)' }}>
                 </div>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40 z-10" />
             </div>
@@ -676,7 +695,7 @@ export default function ServitorWildUnknown() {
 
                 {/* Vessel (Chest) */}
                 <div className="absolute bottom-[20vh] right-[10%] w-[128px] h-[128px] z-20 flex flex-col items-center">
-                    <div id="game-vessel" className="w-full h-full" style={getSpriteStyle(config.vesselIndex, 'Ritual_Vessels_Master_Sheet.jpg')} />
+                    <div id="game-vessel" className="w-full h-full" style={getSpriteStyle(config.vesselIndex, ASSETS.VESSELS)} />
                     <div id="vessel-shine" className="absolute top-0 text-4xl opacity-0 transition-opacity duration-500">✨</div>
                     <div className="mt-2 font-serif text-[#FFD700] text-xs text-center drop-shadow-md">
                         {uName || "Master"}'s Altar
@@ -698,7 +717,7 @@ export default function ServitorWildUnknown() {
             <div 
                 className={`absolute top-0 left-0 h-full w-full md:w-[500px] z-50 transition-transform duration-500 ease-in-out ${isRunning ? '-translate-x-full' : 'translate-x-0'}`}
                 style={{
-                    borderImage: `url('${ASSET_PATH}Parchment_And_Oak_Responsive_Panels.png') 18% 15% fill stretch`,
+                    borderImage: `url('${ASSET_PATH}${ASSETS.UI_PANEL}') 18% 15% fill stretch`,
                     borderWidth: '50px', 
                     padding: '20px' 
                 }}
@@ -728,7 +747,7 @@ export default function ServitorWildUnknown() {
                         </div>
                     </div>
 
-                    {/* MOVEMENT & AUDIO (Restored Section) */}
+                    {/* MOVEMENT & AUDIO */}
                     <div className="bg-[#5d4037]/10 p-3 rounded border border-[#5d4037]/20 space-y-3">
                         <label className="block text-xs font-bold text-[#3e2723] uppercase mb-1 border-b border-[#5d4037]/20 pb-1">Ritual Harmonics</label>
                         <div className="grid grid-cols-2 gap-2">
@@ -775,13 +794,13 @@ export default function ServitorWildUnknown() {
                         <div>
                             <label className="block text-xs font-bold text-[#3e2723] uppercase mb-2">Manifestation Base</label>
                             <div className="grid grid-cols-4 gap-2">
-                                {BASES.map((_, i) => (
+                                {BASES_LIST.map((_, i) => (
                                     <button 
                                         key={i} 
                                         onClick={() => setConfig({...config, baseIndex: i})}
                                         className={`w-full aspect-square border-2 rounded overflow-hidden ${config.baseIndex === i ? 'border-[#3e2723] shadow-md' : 'border-transparent hover:border-[#8d6e63]'}`}
                                     >
-                                        <div className="w-full h-full transform scale-150" style={getSpriteStyle(i, 'Servitor_Bases_Master_Sheet.jpg')} />
+                                        <div className="w-full h-full transform scale-150" style={getSpriteStyle(i, ASSETS.BASES)} />
                                     </button>
                                 ))}
                             </div>
@@ -806,7 +825,7 @@ export default function ServitorWildUnknown() {
                                         onClick={() => setConfig({...config, wingIndex: i})}
                                         className={`w-full aspect-square border-2 rounded overflow-hidden bg-gray-300/20 ${config.wingIndex === i ? 'border-[#3e2723] shadow-md' : 'border-transparent hover:border-[#8d6e63]'}`}
                                     >
-                                        <div className="w-full h-full transform scale-125" style={getSpriteStyle(i, 'Servitor_Back_Elements_Master_Sheet.jpg')} />
+                                        <div className="w-full h-full transform scale-125" style={getSpriteStyle(i, ASSETS.BACK)} />
                                     </button>
                                 ))}
                             </div>
@@ -816,13 +835,13 @@ export default function ServitorWildUnknown() {
                         <div>
                             <label className="block text-xs font-bold text-[#3e2723] uppercase mb-2">Limb Material</label>
                             <div className="grid grid-cols-4 gap-2">
-                                {LIMBS.map((_, i) => (
+                                {LIMBS_LIST.map((_, i) => (
                                     <button 
                                         key={i} 
                                         onClick={() => setConfig({...config, limbIndex: i})}
                                         className={`w-full aspect-square border-2 rounded overflow-hidden ${config.limbIndex === i ? 'border-[#3e2723] shadow-md' : 'border-transparent hover:border-[#8d6e63]'}`}
                                     >
-                                        <div className="w-full h-full transform scale-125" style={getSpriteStyle(i, 'Servitor_Arms_Master_Sheet (2).jpg')} />
+                                        <div className="w-full h-full transform scale-125" style={getSpriteStyle(i, ASSETS.ARMS)} />
                                     </button>
                                 ))}
                             </div>
@@ -838,23 +857,39 @@ export default function ServitorWildUnknown() {
                                         onClick={() => setConfig({...config, clothingIndex: i})}
                                         className={`w-full aspect-square border-2 rounded overflow-hidden bg-gray-300/20 ${config.clothingIndex === i ? 'border-[#3e2723] shadow-md' : 'border-transparent hover:border-[#8d6e63]'}`}
                                     >
-                                        <div className="w-full h-full transform scale-150" style={getSpriteStyle(i, 'Servitor_Clothing_Overlays_Sheet.jpg')} />
+                                        <div className="w-full h-full transform scale-150" style={getSpriteStyle(i, ASSETS.CLOTHES)} />
                                     </button>
                                 ))}
                             </div>
                         </div>
                         
+                         {/* Headgear */}
+                         <div>
+                            <label className="block text-xs font-bold text-[#3e2723] uppercase mb-2">Headgear</label>
+                            <div className="grid grid-cols-4 gap-2">
+                                {Array.from({length: 16}).map((_, i) => (
+                                    <button 
+                                        key={i} 
+                                        onClick={() => setConfig({...config, hatIndex: i})}
+                                        className={`w-full aspect-square border-2 rounded overflow-hidden ${config.hatIndex === i ? 'border-[#3e2723] shadow-md' : 'border-transparent hover:border-[#8d6e63]'}`}
+                                    >
+                                        <div className="w-full h-full transform scale-150" style={getSpriteStyle(i, ASSETS.HEAD)} />
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
                         {/* Tools */}
                         <div>
                             <label className="block text-xs font-bold text-[#3e2723] uppercase mb-2">Tool of Power</label>
                             <div className="grid grid-cols-4 gap-2">
-                                {TOOLS.map((_, i) => (
+                                {TOOLS_LIST.map((_, i) => (
                                     <button 
                                         key={i} 
                                         onClick={() => setConfig({...config, toolIndex: i})}
                                         className={`w-full aspect-square border-2 rounded overflow-hidden ${config.toolIndex === i ? 'border-[#3e2723] shadow-md' : 'border-transparent hover:border-[#8d6e63]'}`}
                                     >
-                                        <div className="w-full h-full transform scale-75" style={getSpriteStyle(i, 'Servitor_Magickal_Tools_Sheet.jpg')} />
+                                        <div className="w-full h-full transform scale-75" style={getSpriteStyle(i, ASSETS.TOOLS)} />
                                     </button>
                                 ))}
                             </div>
@@ -864,13 +899,13 @@ export default function ServitorWildUnknown() {
                         <div>
                             <label className="block text-xs font-bold text-[#3e2723] uppercase mb-2">Ritual Vessel</label>
                             <div className="grid grid-cols-4 gap-2">
-                                {VESSELS.map((_, i) => (
+                                {VESSELS_LIST.map((_, i) => (
                                     <button 
                                         key={i} 
                                         onClick={() => setConfig({...config, vesselIndex: i})}
                                         className={`w-full aspect-square border-2 rounded overflow-hidden ${config.vesselIndex === i ? 'border-[#3e2723] shadow-md' : 'border-transparent hover:border-[#8d6e63]'}`}
                                     >
-                                        <div className="w-full h-full transform scale-125" style={getSpriteStyle(i, 'Ritual_Vessels_Master_Sheet.jpg')} />
+                                        <div className="w-full h-full transform scale-125" style={getSpriteStyle(i, ASSETS.VESSELS)} />
                                     </button>
                                 ))}
                             </div>
@@ -948,9 +983,17 @@ export default function ServitorWildUnknown() {
                 </div>
             )}
             
-            {/* Falling Food Particles */}
+            {/* Falling Food Particles using Sprite Sheet */}
             {fallingFood.map(f => (
-                <div key={f.id} className="absolute text-2xl z-[201] animate-bounce" style={{left: f.left + '%', top: '10%'}}>✨</div>
+                <div 
+                    key={f.id} 
+                    className="absolute z-[201] animate-bounce w-16 h-16" 
+                    style={{
+                        left: f.left + '%', 
+                        top: '10%',
+                        ...getSpriteStyle(f.spriteIndex, ASSETS.FOOD)
+                    }} 
+                />
             ))}
 
             {/* EDIT BUTTON (When Running) */}
