@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { X, Maximize2, Minimize2, Save, Trash2, BookOpen, Info, AlertTriangle, Lock } from 'lucide-react';
+import { X, Maximize2, Minimize2, Trash2, Lock, Save, BookOpen } from 'lucide-react';
 import { createBrowserClient } from '@supabase/ssr';
 import { checkAndSpendCredits, getWalletStatus, COST_BIND_SERVITOR } from '@/lib/economy';
 import { saveServitorToGrimoire, getMyServitors } from '@/lib/services/spellService';
@@ -38,13 +38,6 @@ const VESSELS = [
     'Hollowed Pumpkin', 'Sea-Shell Basin', 'Petrified Stump', 'Iron-Bound Chest',
     'Stone Altar', 'Miniature Furnace', 'Glass Prism', 'Open Sarcophagus'
 ];
-
-const HATS = [
-    'None', 'Wizard Hat', 'Crown', 'Horns', 
-    'Hood', 'Diadem', 'Halo', 'Veil',
-    'Mask', 'Helmet', 'Flowers', 'Crystals',
-    'Feathers', 'Goggles', 'Bandana', 'Aura'
-]; // Simplified list, assuming sprite sheet order matches
 
 interface SavedServitor {
     id: string;
@@ -123,6 +116,11 @@ export default function ServitorWildUnknown() {
         hasWings: false,
         movementType: "walk", 
         
+        // Sound Config (Restored)
+        soundSearch: "rumble", 
+        soundFind: "chime",    
+        soundDeposit: "coin",
+
         // Feeding Config
         foodName: "Gratitude",
         feedFreq: 5
@@ -170,7 +168,6 @@ export default function ServitorWildUnknown() {
                 }
             };
             img.onerror = () => {
-                // If an image fails, still count it to prevent stuck loading screen
                 console.warn(`Failed to load asset: ${url}`);
                 loadedCount++;
                 setLoadProgress(Math.floor((loadedCount / imageUrls.length) * 100));
@@ -272,24 +269,7 @@ export default function ServitorWildUnknown() {
         else router.push('/spell-room'); 
     };
 
-    const confirmExit = () => {
-        runningRef.current = false;
-        router.push('/spell-room');
-    };
-
-    const toggleFullscreen = () => {
-        const doc = (globalThis as any).document;
-        if (!doc) return;
-        if (!doc.fullscreenElement) {
-            doc.documentElement.requestFullscreen().catch(console.error);
-            setIsFullscreen(true);
-        } else {
-            if (doc.exitFullscreen) doc.exitFullscreen();
-            setIsFullscreen(false);
-        }
-    };
-
-    // --- Audio Logic (Simplified from DigitalServitor) ---
+    // --- Audio Logic (Fully Restored from Original) ---
     const initAudio = () => {
         const win = (globalThis as any).window;
         if (!audioCtxRef.current) {
@@ -299,30 +279,65 @@ export default function ServitorWildUnknown() {
         if (audioCtxRef.current?.state === 'suspended') audioCtxRef.current.resume();
     };
 
-    const playSound = (type: 'search' | 'find' | 'deposit' | 'glitter') => {
+    const playSound = (category: 'search' | 'find' | 'deposit' | 'glitter') => {
         if(!audioCtxRef.current) return;
         const ctx = audioCtxRef.current;
         const now = ctx.currentTime;
-        const playOsc = (t: any, fS: number, fE: number, d: number, v: number) => {
+        
+        const playOsc = (type: string, freqStart: number, freqEnd: number, dur: number, vol: number) => {
             const osc = ctx.createOscillator();
             const gain = ctx.createGain();
-            osc.connect(gain); gain.connect(ctx.destination);
-            osc.type = t; osc.frequency.setValueAtTime(fS, now);
-            if(fS!==fE) osc.frequency.linearRampToValueAtTime(fE, now+d);
-            gain.gain.setValueAtTime(v, now); gain.gain.exponentialRampToValueAtTime(0.001, now+d);
-            osc.start(now); osc.stop(now+d);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.type = type as any;
+            osc.frequency.setValueAtTime(freqStart, now);
+            if(freqEnd !== freqStart) osc.frequency.linearRampToValueAtTime(freqEnd, now + dur);
+            gain.gain.setValueAtTime(vol, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+            osc.start(now);
+            osc.stop(now + dur);
         };
 
-        if(type === 'glitter') {
+        if(category === 'glitter') {
             for(let i=0; i<8; i++) setTimeout(() => playOsc('sine', 800+(i*100), 1200, 0.2, 0.05), i*50);
             return;
         }
-        if(type === 'search') playOsc('sine', 150, 140, 0.8, 0.1);
-        if(type === 'find') playOsc('triangle', 400, 800, 0.5, 0.1);
-        if(type === 'deposit') playOsc('sine', 800, 150, 0.8, 0.1);
+
+        const type = category === 'search' ? config.soundSearch : 
+                     category === 'find' ? config.soundFind : 
+                     config.soundDeposit;
+
+        switch(type) {
+            // -- SEARCHING SOUNDS --
+            case 'rumble': playOsc('sine', 150, 140, 0.8, 0.2); break;
+            case 'hum': playOsc('sine', 400, 450, 1.5, 0.15); playOsc('sine', 600, 550, 1.5, 0.05); break;
+            case 'static': playOsc('triangle', 300, 500, 0.6, 0.1); setTimeout(() => playOsc('sine', 500, 300, 0.6, 0.1), 400); break;
+            case 'pulse': playOsc('sine', 280, 280, 0.3, 0.3); setTimeout(() => playOsc('sine', 280, 280, 0.3, 0.3), 300); break;
+
+            // -- FINDING SOUNDS --
+            case 'chime': playOsc('sine', 800, 1200, 1, 0.1); setTimeout(() => playOsc('sine', 1200, 2000, 0.5, 0.05), 100); break;
+            case 'wow': playOsc('triangle', 400, 800, 0.8, 0.1); break;
+            case 'laser': playOsc('sine', 1200, 400, 0.4, 0.1); break;
+            case 'chord': playOsc('sine', 440, 440, 1.5, 0.05); playOsc('sine', 554, 554, 1.5, 0.05); break;
+
+            // -- DEPOSIT SOUNDS --
+            case 'coin': playOsc('sine', 1800, 1800, 0.1, 0.1); setTimeout(() => playOsc('sine', 2000, 2000, 0.4, 0.05), 50); break;
+            case 'angelic': 
+                const oscA = ctx.createOscillator();
+                const gA = ctx.createGain();
+                oscA.connect(gA); gA.connect(ctx.destination);
+                oscA.type = 'triangle';
+                oscA.frequency.value = 350;
+                gA.gain.setValueAtTime(0, now); gA.gain.linearRampToValueAtTime(0.1, now + 0.5); gA.gain.linearRampToValueAtTime(0, now + 2);
+                oscA.start(now); oscA.stop(now + 2);
+                break;
+            case 'vortex': playOsc('sine', 600, 150, 1.5, 0.4); break;
+            case 'teleport': playOsc('sine', 200, 800, 1, 0.1); setTimeout(() => playOsc('sine', 800, 200, 0.5, 0.05), 800); break;
+            default: break;
+        }
     };
 
-    // --- Animation Logic (The Game Loop) ---
+    // --- Animation Logic ---
     const wait = (ms: number) => new Promise(r => setTimeout(r, ms));
 
     const moveTo = (targetPercent: number, id: number) => {
@@ -367,13 +382,13 @@ export default function ServitorWildUnknown() {
         let els = getEls();
 
         while(runningRef.current && loopIdRef.current === id) {
-            // Walk Left
-            setAnimationState('anim-walk-left');
+            // Move Left
+            setAnimationState(config.movementType === 'fly' ? 'anim-fly-left' : 'anim-walk-left');
             await moveTo(15, id);
             
             if(!runningRef.current || loopIdRef.current !== id) break;
 
-            // Search Dig
+            // Search/Dig
             setAnimationState('anim-dig');
             playSound('search');
             await wait(2000);
@@ -383,8 +398,8 @@ export default function ServitorWildUnknown() {
             setAnimationState('anim-found');
             await wait(1000);
 
-            // Walk Right
-            setAnimationState('anim-walk-right');
+            // Move Right
+            setAnimationState(config.movementType === 'fly' ? 'anim-fly-right' : 'anim-walk-right');
             await moveTo(80, id);
             
             if(!runningRef.current || loopIdRef.current !== id) break;
@@ -502,7 +517,7 @@ export default function ServitorWildUnknown() {
         return (
             <div 
                 id={idPrefix} 
-                className={`servitor-rig relative w-[128px] h-[128px] ${wrapperClass}`}
+                className={`servitor-rig relative w-32 h-[128px] ${wrapperClass}`}
                 style={{ transform: isPreview ? 'scale(1.5)' : 'scale(1)' }}
             >
                 {/* 1. Back Elements (Wings/Aura) */}
@@ -602,6 +617,9 @@ export default function ServitorWildUnknown() {
                 @keyframes rig-bounce {
                     0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); }
                 }
+                @keyframes rig-float {
+                    0%, 100% { transform: translateY(-10px); } 50% { transform: translateY(-20px); }
+                }
                 
                 /* Walk Left Logic */
                 .anim-walk-left .leg-left { animation: limb-walk 1s infinite ease-in-out; }
@@ -616,6 +634,13 @@ export default function ServitorWildUnknown() {
                 .anim-walk-right .arm-left { animation: limb-walk-rev 1s infinite ease-in-out; }
                 .anim-walk-right .arm-right { animation: limb-walk 1s infinite ease-in-out; }
                 .anim-walk-right { animation: rig-bounce 0.5s infinite ease-in-out; transform: scaleX(-1); }
+                
+                /* Fly Logic (Legs dangle, rig floats) */
+                .anim-fly-left { animation: rig-float 2s infinite ease-in-out; }
+                .anim-fly-left .leg-left, .anim-fly-left .leg-right { transform: rotate(15deg) !important; transition: transform 0.5s; }
+
+                .anim-fly-right { animation: rig-float 2s infinite ease-in-out; transform: scaleX(-1); }
+                .anim-fly-right .leg-left, .anim-fly-right .leg-right { transform: rotate(15deg) !important; transition: transform 0.5s; }
 
                 /* Feeding Logic */
                 .anim-feed .arm-left { transform: rotate(140deg) !important; transition: transform 0.5s; }
@@ -638,9 +663,6 @@ export default function ServitorWildUnknown() {
                 <div className="absolute inset-0 bg-cover bg-center" 
                      style={{ backgroundImage: `url('${ASSET_PATH}Astral_Plane_Parallax_Layers.jpg')`, transform: 'scale(1.1)' }}>
                 </div>
-                {/* Note: If the parallax image is a single file, we use it as the main BG. 
-                    If separate files were provided, we would layer them here with different animation speeds.
-                    For now, we simulate depth by adding a CSS mist overlay. */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40 z-10" />
             </div>
 
@@ -678,7 +700,7 @@ export default function ServitorWildUnknown() {
                 style={{
                     borderImage: `url('${ASSET_PATH}Parchment_And_Oak_Responsive_Panels.png') 18% 15% fill stretch`,
                     borderWidth: '50px', 
-                    padding: '20px' // Padding inside the parchment area
+                    padding: '20px' 
                 }}
             >
                 <div className="w-full h-full overflow-y-auto custom-scrollbar pr-2 flex flex-col gap-6 text-[#2a1a1a]">
@@ -706,6 +728,47 @@ export default function ServitorWildUnknown() {
                         </div>
                     </div>
 
+                    {/* MOVEMENT & AUDIO (Restored Section) */}
+                    <div className="bg-[#5d4037]/10 p-3 rounded border border-[#5d4037]/20 space-y-3">
+                        <label className="block text-xs font-bold text-[#3e2723] uppercase mb-1 border-b border-[#5d4037]/20 pb-1">Ritual Harmonics</label>
+                        <div className="grid grid-cols-2 gap-2">
+                             <div>
+                                <label className="text-[10px] text-[#5d4037] uppercase block mb-1">Locomotion</label>
+                                <select value={config.movementType} onChange={e => setConfig({...config, movementType: e.target.value})} className="w-full text-xs p-1 bg-[#fdf5e6] border border-[#8d6e63] rounded text-[#2a1a1a]">
+                                    <option value="walk">Walking</option>
+                                    <option value="fly">Floating</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="text-[10px] text-[#5d4037] uppercase block mb-1">Search Tone</label>
+                                <select value={config.soundSearch} onChange={e => setConfig({...config, soundSearch: e.target.value})} className="w-full text-xs p-1 bg-[#fdf5e6] border border-[#8d6e63] rounded text-[#2a1a1a]">
+                                    <option value="rumble">Steady Pulse</option>
+                                    <option value="hum">Ethereal Hum</option>
+                                    <option value="static">Ethereal Wah</option>
+                                    <option value="pulse">Deep Pulse</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="text-[10px] text-[#5d4037] uppercase block mb-1">Find Tone</label>
+                                <select value={config.soundFind} onChange={e => setConfig({...config, soundFind: e.target.value})} className="w-full text-xs p-1 bg-[#fdf5e6] border border-[#8d6e63] rounded text-[#2a1a1a]">
+                                    <option value="chime">Chime</option>
+                                    <option value="wow">Wah-Wah</option>
+                                    <option value="laser">Zap</option>
+                                    <option value="chord">Harmony</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="text-[10px] text-[#5d4037] uppercase block mb-1">Deposit Tone</label>
+                                <select value={config.soundDeposit} onChange={e => setConfig({...config, soundDeposit: e.target.value})} className="w-full text-xs p-1 bg-[#fdf5e6] border border-[#8d6e63] rounded text-[#2a1a1a]">
+                                    <option value="coin">Coin Drop</option>
+                                    <option value="angelic">Angelic</option>
+                                    <option value="vortex">Vortex</option>
+                                    <option value="teleport">Teleport</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
                     {/* Visual Configuration Grids */}
                     <div className="space-y-6">
                         {/* Bases */}
@@ -723,6 +786,31 @@ export default function ServitorWildUnknown() {
                                 ))}
                             </div>
                         </div>
+
+                        {/* Wings Checkbox */}
+                        <div className="flex items-center gap-2">
+                            <input 
+                                type="checkbox" 
+                                checked={config.hasWings} 
+                                onChange={e => setConfig({...config, hasWings: e.target.checked})} 
+                                className="accent-[#3e2723] w-4 h-4"
+                            />
+                            <label className="text-xs font-bold text-[#3e2723] uppercase">Manifest Wings / Aura</label>
+                        </div>
+                        
+                        {config.hasWings && (
+                            <div className="grid grid-cols-4 gap-2">
+                                {Array.from({length: 16}).map((_, i) => (
+                                    <button 
+                                        key={i} 
+                                        onClick={() => setConfig({...config, wingIndex: i})}
+                                        className={`w-full aspect-square border-2 rounded overflow-hidden bg-gray-300/20 ${config.wingIndex === i ? 'border-[#3e2723] shadow-md' : 'border-transparent hover:border-[#8d6e63]'}`}
+                                    >
+                                        <div className="w-full h-full transform scale-125" style={getSpriteStyle(i, 'Servitor_Back_Elements_Master_Sheet.jpg')} />
+                                    </button>
+                                ))}
+                            </div>
+                        )}
 
                         {/* Limbs */}
                         <div>
