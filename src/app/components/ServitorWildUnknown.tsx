@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { X, Trash2, Lock, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Plus, Minus, RefreshCw, Move, CheckCircle } from 'lucide-react';
+import { X, Trash2, Lock, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Plus, Minus, RefreshCw, Move, Eye, EyeOff } from 'lucide-react';
 import { createBrowserClient } from '@supabase/ssr';
 import { checkAndSpendCredits, getWalletStatus, COST_BIND_SERVITOR } from '@/lib/economy';
 import { saveServitorToGrimoire, getMyServitors } from '@/lib/services/spellService';
@@ -27,40 +27,59 @@ const ASSETS = {
     UI_BUTTONS: 'Runic_Glass_Button_Set.png'
 };
 
-// Default Offsets - "f" stands for Flip (Horizontal Mirror)
+// Default Offsets - "v" = visible
 const DEFAULT_OFFSETS = {
-    base:    { x: 0, y: 0, s: 1.0, f: false },
-    leg:     { x: 0, y: 0, s: 0.75, f: false },
-    arm:     { x: 0, y: 5, s: 0.75, f: false },
-    head:    { x: 0, y: -5, s: 0.85, f: false },
-    clothes: { x: 0, y: 0, s: 1.05, f: false },
-    tool:    { x: 5, y: 10, s: 0.6, f: false },
-    wing:    { x: 0, y: -5, s: 1.2, f: false },
-    vessel:  { x: 0, y: 0, s: 1.0, f: false },
-    mound:   { x: 0, y: 0, s: 1.0, f: false },
-    sigil:   { x: 0, y: 0, s: 0.5, f: false } 
+    wing:    { x: 0, y: -5, s: 1.2, f: false, v: true },
+    leg:     { x: 0, y: 0, s: 0.75, f: false, v: true },
+    tool:    { x: 5, y: 10, s: 0.6, f: false, v: true },
+    arm:     { x: 0, y: 5, s: 0.75, f: false, v: true },
+    base:    { x: 0, y: 0, s: 1.0, f: false, v: true },
+    head:    { x: 0, y: -5, s: 0.85, f: false, v: true },
+    clothes: { x: 0, y: 0, s: 1.05, f: false, v: true },
+    sigil:   { x: 0, y: -10, s: 0.4, f: false, v: true },
+    vessel:  { x: 0, y: 0, s: 1.0, f: false, v: true },
+    mound:   { x: 0, y: 0, s: 1.0, f: false, v: true },
 };
 
-// Categories for the UI Menu
-const CATEGORIES = [
-    { id: 'base', label: 'Torso', asset: ASSETS.BASES, indexKey: 'baseIndex', offsetKey: 'base' },
-    { id: 'head', label: 'Head', asset: ASSETS.HEAD, indexKey: 'hatIndex', offsetKey: 'head' },
-    { id: 'arm', label: 'Arms', asset: ASSETS.ARMS, indexKey: 'limbIndex', offsetKey: 'arm', canFlip: true },
-    { id: 'leg', label: 'Legs', asset: ASSETS.LEGS, indexKey: 'legIndex', offsetKey: 'leg', canFlip: true },
-    { id: 'clothes', label: 'Robes', asset: ASSETS.CLOTHES, indexKey: 'clothingIndex', offsetKey: 'clothes' },
-    { id: 'tool', label: 'Tool', asset: ASSETS.TOOLS, indexKey: 'toolIndex', offsetKey: 'tool' },
-    { id: 'wing', label: 'Wings', asset: ASSETS.BACK, indexKey: 'wingIndex', offsetKey: 'wing' },
-    { id: 'sigil', label: 'Sigil', asset: ASSETS.TREASURES, indexKey: 'sigilIndex', offsetKey: 'sigil' },
-    { id: 'vessel', label: 'Vessel', asset: ASSETS.VESSELS, indexKey: 'vesselIndex', offsetKey: 'vessel' },
-    { id: 'mound', label: 'Mound', asset: ASSETS.MOUND, indexKey: null, offsetKey: 'mound' }, // Single image
-    { id: 'food', label: 'Food', asset: ASSETS.FOOD, indexKey: 'foodIndex', offsetKey: null },
-    { id: 'settings', label: 'Settings', asset: null, indexKey: null, offsetKey: null }
+// Categories for Main Menu
+interface CategoryItem {
+    id: string;
+    label: string;
+    asset: string | null; // Use null for settings/special items
+    indexKey: string | null;
+    offsetKey: string | null;
+    canFlip?: boolean;
+    single?: boolean;
+}
+
+const CATEGORIES: CategoryItem[] = [
+    { id: 'head', label: 'HATS', asset: ASSETS.HEAD, indexKey: 'hatIndex', offsetKey: 'head' },
+    { id: 'base', label: 'TORSOS', asset: ASSETS.BASES, indexKey: 'baseIndex', offsetKey: 'base' },
+    { id: 'leg', label: 'LEGS', asset: ASSETS.LEGS, indexKey: 'legIndex', offsetKey: 'leg', canFlip: true },
+    { id: 'arm', label: 'ARMS', asset: ASSETS.ARMS, indexKey: 'limbIndex', offsetKey: 'arm', canFlip: true },
+    { id: 'tool', label: 'TOOLS', asset: ASSETS.TOOLS, indexKey: 'toolIndex', offsetKey: 'tool' },
+    { id: 'clothes', label: 'ROBES', asset: ASSETS.CLOTHES, indexKey: 'clothingIndex', offsetKey: 'clothes' },
+    { id: 'wing', label: 'WINGS', asset: ASSETS.BACK, indexKey: 'wingIndex', offsetKey: 'wing' },
+    { id: 'sigil', label: 'SIGILS', asset: ASSETS.TREASURES, indexKey: 'sigilIndex', offsetKey: 'sigil' },
+    { id: 'mound', label: 'MOUNDS', asset: ASSETS.MOUND, indexKey: null, offsetKey: 'mound', single: true },
+    { id: 'vessel', label: 'VESSELS', asset: ASSETS.VESSELS, indexKey: 'vesselIndex', offsetKey: 'vessel' },
+    { id: 'food', label: 'FOOD', asset: ASSETS.FOOD, indexKey: 'foodIndex', offsetKey: null },
+    // Special Items
+    { id: 'treasure', label: 'TREASURE', asset: ASSETS.TREASURES, indexKey: 'treasureIndex', offsetKey: null } 
 ];
 
 const GENERIC_LIST = Array.from({length: 16}).map((_, i) => `Option ${i + 1}`);
 
 // Helper: Get Sprite CSS
-const getSpriteStyle = (index: number, filename: string) => {
+const getSpriteStyle = (index: number, filename: string, isSingleImage = false) => {
+    if (isSingleImage) {
+        return {
+            backgroundImage: `url('${ASSET_PATH}${filename}')`,
+            backgroundSize: 'contain',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat'
+        };
+    }
     const safeIndex = Math.max(0, Math.min(15, index));
     const col = safeIndex % 4;
     const row = Math.floor(safeIndex / 4);
@@ -82,13 +101,15 @@ export default function ServitorWildUnknown() {
     const [isRunning, setIsRunning] = useState(false);
     
     // UI State
-    const [activeCategory, setActiveCategory] = useState<string | null>(null);
+    const [activeCategory, setActiveCategory] = useState<string | null>(null); // Null = Main Grid, String = Popup
 
     // Refs
     const runningRef = useRef(false); 
     const loopIdRef = useRef(0);
     const audioCtxRef = useRef<any>(null);
     const servitorPosRef = useRef(20);
+    const holdIntervalRef = useRef<any>(null); // For button holding
+    const buttonIntervalRef = useRef<any>(null); // For D-Pad holding
 
     // Data
     const [sName, setSName] = useState("");
@@ -101,12 +122,10 @@ export default function ServitorWildUnknown() {
     const [config, setConfig] = useState({
         baseIndex: 0, limbIndex: 0, legIndex: 0, toolIndex: 0,
         hatIndex: 0, wingIndex: 0, vesselIndex: 0, clothingIndex: 0,
-        sigilIndex: 0, foodIndex: 0,
+        sigilIndex: 0, foodIndex: 0, treasureIndex: 0,
         
-        hasWings: false, movementType: "walk", 
+        movementType: "walk", 
         feedFreq: 5,
-        
-        // Deep copy defaults
         offsets: JSON.parse(JSON.stringify(DEFAULT_OFFSETS))
     });
 
@@ -119,7 +138,6 @@ export default function ServitorWildUnknown() {
     const [isFeeding, setIsFeeding] = useState(false);
     const [feedProgress, setFeedProgress] = useState(0);
     const [fallingFood, setFallingFood] = useState<{id: number, left: number, top: number, spriteIndex: number}[]>([]);
-    const holdIntervalRef = useRef<any>(null);
 
     // Modals
     const [showCreditModal, setShowCreditModal] = useState(false);
@@ -153,7 +171,7 @@ export default function ServitorWildUnknown() {
     }, []);
 
     // --- ACTIONS ---
-    const updateOffset = (part: string, field: 'x'|'y'|'s'|'f', value: number | boolean) => {
+    const updateOffset = (part: string, field: 'x'|'y'|'s'|'f'|'v', value: number | boolean) => {
         setConfig(prev => ({
             ...prev,
             offsets: {
@@ -161,6 +179,31 @@ export default function ServitorWildUnknown() {
                 [part]: { ...(prev.offsets as any)[part], [field]: value }
             }
         }));
+    };
+
+    // Continuous Button Press Handler
+    const handleOffsetStart = (part: string, field: 'x'|'y'|'s', change: number) => {
+        // Initial Click
+        const current = (config.offsets as any)[part][field];
+        updateOffset(part, field, current + change);
+
+        // Continuous
+        buttonIntervalRef.current = setInterval(() => {
+            setConfig(prev => {
+                const cur = (prev.offsets as any)[part][field];
+                return {
+                    ...prev,
+                    offsets: {
+                        ...prev.offsets,
+                        [part]: { ...(prev.offsets as any)[part], [field]: cur + change }
+                    }
+                };
+            });
+        }, 100);
+    };
+
+    const handleOffsetStop = () => {
+        if (buttonIntervalRef.current) clearInterval(buttonIntervalRef.current);
     };
 
     const handleBind = async () => {
@@ -329,31 +372,42 @@ export default function ServitorWildUnknown() {
         const cfg = (config.offsets as any)[part];
         if(!cfg) return null;
 
+        const btnClass = "p-1 bg-[#3e2723] hover:bg-[#5d4037] active:bg-[#8d6e63] rounded flex justify-center items-center shadow border border-black/30";
+
         return (
-            <div className="flex items-center gap-2 bg-black/40 p-2 rounded border border-[#5d4037]/50 mt-2">
-                <div className="grid grid-cols-3 gap-1 w-[80px]">
+            <div className="flex items-center gap-2 bg-[#2a1a1a]/80 p-2 rounded border border-[#5d4037]/50 mt-2 backdrop-blur-sm shadow-lg">
+                {/* Visibility Toggle */}
+                <button onClick={() => updateOffset(part, 'v', !cfg.v)} 
+                    className={`p-2 rounded border shadow ${cfg.v ? 'bg-green-900/50 border-green-700 text-green-300' : 'bg-red-900/50 border-red-700 text-red-300'}`}>
+                    {cfg.v ? <Eye size={16}/> : <EyeOff size={16}/>}
+                </button>
+
+                {/* Directional Pad */}
+                <div className="grid grid-cols-3 gap-1 w-20">
                     <div />
-                    <button onClick={() => updateOffset(part, 'y', cfg.y - 1)} className="p-1 bg-[#3e2723] hover:bg-[#5d4037] rounded flex justify-center"><ArrowUp size={12}/></button>
+                    <button onMouseDown={() => handleOffsetStart(part, 'y', -1)} onMouseUp={handleOffsetStop} onMouseLeave={handleOffsetStop} className={btnClass}><ArrowUp size={12}/></button>
                     <div />
-                    <button onClick={() => updateOffset(part, 'x', cfg.x - 1)} className="p-1 bg-[#3e2723] hover:bg-[#5d4037] rounded flex justify-center"><ArrowLeft size={12}/></button>
+                    <button onMouseDown={() => handleOffsetStart(part, 'x', -1)} onMouseUp={handleOffsetStop} onMouseLeave={handleOffsetStop} className={btnClass}><ArrowLeft size={12}/></button>
                     <div className="flex justify-center items-center text-[8px] text-gray-400"><Move size={12}/></div>
-                    <button onClick={() => updateOffset(part, 'x', cfg.x + 1)} className="p-1 bg-[#3e2723] hover:bg-[#5d4037] rounded flex justify-center"><ArrowRight size={12}/></button>
+                    <button onMouseDown={() => handleOffsetStart(part, 'x', 1)} onMouseUp={handleOffsetStop} onMouseLeave={handleOffsetStop} className={btnClass}><ArrowRight size={12}/></button>
                     <div />
-                    <button onClick={() => updateOffset(part, 'y', cfg.y + 1)} className="p-1 bg-[#3e2723] hover:bg-[#5d4037] rounded flex justify-center"><ArrowDown size={12}/></button>
+                    <button onMouseDown={() => handleOffsetStart(part, 'y', 1)} onMouseUp={handleOffsetStop} onMouseLeave={handleOffsetStop} className={btnClass}><ArrowDown size={12}/></button>
                     <div />
                 </div>
+
+                {/* Size & Flip */}
                 <div className="flex flex-col gap-1">
                     <div className="flex gap-1">
-                        <button onClick={() => updateOffset(part, 's', Math.max(0.1, cfg.s - 0.1))} className="p-1 bg-[#3e2723] rounded"><Minus size={12}/></button>
-                        <button onClick={() => updateOffset(part, 's', cfg.s + 0.1)} className="p-1 bg-[#3e2723] rounded"><Plus size={12}/></button>
+                        <button onMouseDown={() => handleOffsetStart(part, 's', -0.1)} onMouseUp={handleOffsetStop} onMouseLeave={handleOffsetStop} className={btnClass}><Minus size={12}/></button>
+                        <button onMouseDown={() => handleOffsetStart(part, 's', 0.1)} onMouseUp={handleOffsetStop} onMouseLeave={handleOffsetStop} className={btnClass}><Plus size={12}/></button>
                     </div>
                     {allowFlip && (
-                        <button onClick={() => updateOffset(part, 'f', !cfg.f)} className={`p-1 rounded flex gap-1 items-center justify-center text-[10px] ${cfg.f ? 'bg-amber-600 text-black' : 'bg-[#3e2723] text-gray-400'}`}>
+                        <button onClick={() => updateOffset(part, 'f', !cfg.f)} className={`p-1 rounded flex gap-1 items-center justify-center text-[10px] border ${cfg.f ? 'bg-amber-700 border-amber-500 text-white' : 'bg-[#3e2723] border-[#5d4037] text-gray-400'}`}>
                             <RefreshCw size={10} /> Flip
                         </button>
                     )}
                 </div>
-                <div className="text-[9px] text-gray-400 font-mono flex flex-col leading-tight">
+                <div className="text-[9px] text-gray-400 font-mono flex flex-col leading-tight ml-1 w-12">
                     <span>X: {cfg.x.toFixed(0)}</span>
                     <span>Y: {cfg.y.toFixed(0)}</span>
                     <span>S: {cfg.s.toFixed(1)}</span>
@@ -367,59 +421,73 @@ export default function ServitorWildUnknown() {
         const wrapperClass = isFeeding ? 'anim-feed' : 'anim-idle';
         
         // Render A Part
-        const renderPart = (idx: number, asset: string, partKey: string, isLeft: boolean = false) => {
+        const renderPart = (idx: number, asset: string, partKey: string, z: number, isLeft: boolean = false, isLimb: boolean = false) => {
             const cfg = (config.offsets as any)[partKey];
-            // 1. Joint Style (Handles Animation Rotation only)
-            const jointClass = isLeft ? `${partKey}-left-joint` : `${partKey}-right-joint`;
+            if (!cfg.v) return null; // Visibility check
+
+            // Limb Logic:
+            // If it's a limb (Arm/Leg), it should obey the global direction unless overridden by animation
+            // Left limbs naturally need scaleX(-1) if the sheet assumes right-facing.
+            // Right limbs need scaleX(1).
+            // When walking Left, the whole container doesn't flip, so we must flip limbs manually?
+            // Actually, best practice for this Rig is:
+            // Walk Left: Left Limb normal, Right Limb normal. But if the sprites are one-sided, we mirror one.
+            // Simplified: We use the `flip` prop from offset ONLY for static items. Limbs obey `isLeft` + `direction`.
             
-            // 2. Sprite Style (Handles Static Configuration: Scale, Translate, Flip)
-            // Note: If isLeft, we mirror naturally. If cfg.f is true, we flip the user's choice.
-            const flip = isLeft ? !cfg.f : cfg.f; 
-            const spriteTransform = `translate(${cfg.x}%, ${cfg.y}%) scale(${cfg.s}) ${flip ? 'scaleX(-1)' : ''}`;
+            let finalFlip = cfg.f;
+            if (isLimb) {
+                // Directional logic for limbs
+                // If isLeft limb, we usually mirror the sprite if the sprite is right-sided
+                if (isLeft) finalFlip = !finalFlip;
+            }
+
+            const spriteTransform = `translate(${cfg.x}%, ${cfg.y}%) scale(${cfg.s}) ${finalFlip ? 'scaleX(-1)' : ''}`;
+            const jointClass = isLimb ? (isLeft ? `${partKey}-left-joint` : `${partKey}-right-joint`) : '';
 
             return (
-                <div className={`joint absolute w-full h-full top-0 left-0 origin-top-center ${jointClass}`}>
-                    <div className="sprite absolute w-full h-full top-0 left-0"
+                <div className={`joint absolute w-full h-full top-0 left-0 origin-top-center ${jointClass}`} style={{ zIndex: z }}>
+                    <div className="sprite absolute w-full h-full top-0 left-0 pointer-events-none"
                          style={{ ...getSpriteStyle(idx, asset), transform: spriteTransform }} />
                 </div>
             );
         };
 
-        // Static Part (No Joint animation, just offset)
-        const renderStatic = (idx: number, asset: string, partKey: string) => {
+        // Static Part (No Joint animation)
+        const renderStatic = (idx: number, asset: string, partKey: string, z: number) => {
             const cfg = (config.offsets as any)[partKey];
-            const transform = `translate(${cfg.x}%, ${cfg.y}%) scale(${cfg.s})`;
+            if (!cfg.v) return null;
+            const transform = `translate(${cfg.x}%, ${cfg.y}%) scale(${cfg.s}) ${cfg.f ? 'scaleX(-1)' : ''}`;
             return (
-                <div className="absolute w-full h-full top-0 left-0"
-                     style={{ ...getSpriteStyle(idx, asset), transform }} />
+                <div className="absolute w-full h-full top-0 left-0 pointer-events-none"
+                     style={{ ...getSpriteStyle(idx, asset), transform, zIndex: z }} />
             );
         };
 
+        // Z-INDEX ORDER: Wings(0) -> Legs(10) -> Tool(20) -> Arms(30) -> Base(40) -> Head(50) -> Clothes(60) -> Sigil(70)
         return (
-            <div id={idPrefix} className={`servitor-rig relative w-[128px] h-[128px] ${wrapperClass}`} style={{ transform: isPreview ? 'scale(1.5)' : 'scale(1)' }}>
-                {config.hasWings && renderStatic(config.wingIndex, ASSETS.BACK, 'wing')}
+            <div id={idPrefix} className={`servitor-rig relative w-32 h-32 ${wrapperClass}`} style={{ transform: isPreview ? 'scale(1.5)' : 'scale(1)' }}>
+                {renderStatic(config.wingIndex, ASSETS.BACK, 'wing', 0)}
                 
-                {renderPart(config.legIndex, ASSETS.LEGS, 'leg', true)}
-                {renderPart(config.legIndex, ASSETS.LEGS, 'leg', false)}
+                {renderPart(config.legIndex, ASSETS.LEGS, 'leg', 10, true, true)}
+                {renderPart(config.legIndex, ASSETS.LEGS, 'leg', 10, false, true)}
 
-                {renderStatic(config.baseIndex, ASSETS.BASES, 'base')}
+                {renderPart(config.toolIndex, ASSETS.TOOLS, 'tool', 20, false, false)} 
+
+                {renderPart(config.limbIndex, ASSETS.ARMS, 'arm', 30, true, true)}
+                {renderPart(config.limbIndex, ASSETS.ARMS, 'arm', 30, false, true)}
+
+                {renderStatic(config.baseIndex, ASSETS.BASES, 'base', 40)}
+                {renderStatic(config.hatIndex, ASSETS.HEAD, 'head', 50)}
+                {renderStatic(config.clothingIndex, ASSETS.CLOTHES, 'clothes', 60)}
                 
-                {/* Sigil on Chest */}
-                {renderStatic(config.sigilIndex, ASSETS.TREASURES, 'sigil')}
-
-                {renderStatic(config.clothingIndex, ASSETS.CLOTHES, 'clothes')}
-
-                {renderPart(config.limbIndex, ASSETS.ARMS, 'arm', true)}
-                {renderPart(config.limbIndex, ASSETS.ARMS, 'arm', false)}
-
-                {renderStatic(config.hatIndex, ASSETS.HEAD, 'head')}
-                {renderPart(config.toolIndex, ASSETS.TOOLS, 'tool', false)} 
+                {/* Chest Sigil */}
+                {renderStatic(config.sigilIndex, ASSETS.TREASURES, 'sigil', 70)}
             </div>
         );
     };
 
     if (!assetsLoaded) return (
-        <div className="fixed inset-0 bg-black flex flex-col items-center justify-center z-[999]">
+        <div className="fixed inset-0 bg-black flex flex-col items-center justify-center z-999">
             <div className="w-32 h-32 animate-spin" style={getSpriteStyle(0, ASSETS.TREASURES)}></div>
             <p className="text-[#FFD700] mt-4 font-serif">Summoning Assets... {loadProgress}%</p>
         </div>
@@ -435,24 +503,18 @@ export default function ServitorWildUnknown() {
                 .runic-btn { background: url('${ASSET_PATH}${ASSETS.UI_BUTTONS}') center/cover; color: #FFD700; text-shadow: 0 1px 2px black; border: 1px solid #FFD70050; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
                 .runic-btn:active { transform: scale(0.95); filter: brightness(0.8); }
                 
-                /* ANIMATIONS APPLIED TO JOINTS ONLY */
+                /* ANIMATIONS */
                 @keyframes bounce { 0% { top: 0; } 50% { top: -5px; } }
-                @keyframes rotate-l { 0% { transform: rotate(-15deg); } 50% { transform: rotate(15deg); } 100% { transform: rotate(-15deg); } }
-                @keyframes rotate-r { 0% { transform: rotate(15deg); } 50% { transform: rotate(-15deg); } 100% { transform: rotate(15deg); } }
+                @keyframes rotate-l { 0% { transform: rotate(-10deg); } 50% { transform: rotate(20deg); } 100% { transform: rotate(-10deg); } }
+                @keyframes rotate-r { 0% { transform: rotate(20deg); } 50% { transform: rotate(-10deg); } 100% { transform: rotate(20deg); } }
                 
                 .anim-walk-left .servitor-rig { animation: bounce 0.5s infinite; }
                 .anim-walk-left .leg-left-joint { animation: rotate-l 1s infinite; }
                 .anim-walk-left .leg-right-joint { animation: rotate-r 1s infinite; }
-                .anim-walk-left .arm-left-joint { animation: rotate-r 1s infinite; }
-                .anim-walk-left .arm-right-joint { animation: rotate-l 1s infinite; }
-
+                
                 .anim-walk-right .servitor-rig { animation: bounce 0.5s infinite; }
-                /* Flip rotation logic for walking right handled by container transform scaleX(-1) in animation state logic would be easier, 
-                   but here we just reuse the rotation because the container flips direction? No, we handle direction via classes. */
                 .anim-walk-right .leg-left-joint { animation: rotate-r 1s infinite; }
                 .anim-walk-right .leg-right-joint { animation: rotate-l 1s infinite; }
-                .anim-walk-right .arm-left-joint { animation: rotate-l 1s infinite; }
-                .anim-walk-right .arm-right-joint { animation: rotate-r 1s infinite; }
 
                 .pulse-glow-void { animation: pulse-void 1s infinite alternate; }
                 @keyframes pulse-void { from { filter: drop-shadow(0 0 5px #4b0082); } to { filter: drop-shadow(0 0 20px #8a2be2); } }
@@ -461,30 +523,32 @@ export default function ServitorWildUnknown() {
                 .custom-scrollbar::-webkit-scrollbar { width: 4px; } .custom-scrollbar::-webkit-scrollbar-thumb { background: #5d4037; border-radius: 4px; }
             `}</style>
 
-            <button onClick={() => hasUnsavedChanges ? setShowExitWarning(true) : router.push('/spell-room')} className="absolute top-4 right-4 z-[60] text-gray-400 hover:text-white"><X /></button>
+            <button onClick={() => hasUnsavedChanges ? setShowExitWarning(true) : router.push('/spell-room')} className="absolute top-4 right-4 z-60 text-gray-400 hover:text-white"><X /></button>
 
             {/* STAGE */}
             <div className="absolute inset-0 z-0 bg-cover bg-center" style={{ backgroundImage: `url('${ASSET_PATH}${ASSETS.BG_MAIN}')` }}>
                 <div className="absolute inset-0 bg-black/40" />
             </div>
 
-            {/* GAME WORLD (Mound, Servitor, Vessel) */}
+            {/* GAME WORLD */}
             <div className="relative w-full h-full z-10 pointer-events-none">
-                <div id="game-mound" className="absolute bottom-[15vh] left-[10%] w-[160px] h-[100px] z-20 bg-contain bg-no-repeat bg-bottom transition-all duration-500"
-                     style={{ backgroundImage: `url('${ASSET_PATH}${ASSETS.MOUND}')`, transform: `scale(${config.offsets.mound.s}) translate(${config.offsets.mound.x}%, ${config.offsets.mound.y}%)` }} />
+                <div id="game-mound" className="absolute bottom-[15vh] left-[10%] w-40 h-[100px] z-20 bg-contain bg-no-repeat bg-bottom transition-all duration-500"
+                     style={{ backgroundImage: `url('${ASSET_PATH}${ASSETS.MOUND}')`, transform: `scale(${config.offsets.mound.s}) translate(${config.offsets.mound.x}%, ${config.offsets.mound.y}%)`, filter: !config.offsets.mound.v ? 'opacity(0)' : 'none' }} />
 
-                <div id="servitor-container" className="absolute bottom-[18vh] left-[20%] w-[128px] h-[128px] z-[100] transition-all duration-100 pointer-events-auto origin-bottom">
+                <div id="servitor-container" className="absolute bottom-[18vh] left-[20%] w-32 h-32 z-100 transition-all duration-100 pointer-events-auto origin-bottom">
                     <ServitorRig idPrefix="game-rig" />
                 </div>
 
-                <div className="absolute bottom-[20vh] right-[10%] w-[128px] h-[128px] z-20 flex flex-col items-center">
-                    <div id="game-vessel" className="w-full h-full relative transition-all duration-500" 
-                         style={{ ...getSpriteStyle(config.vesselIndex, ASSETS.VESSELS), transform: `scale(${config.offsets.vessel.s}) translate(${config.offsets.vessel.x}%, ${config.offsets.vessel.y}%)` }} />
+                <div className="absolute bottom-[20vh] right-[10%] w-32 h-32 z-20 flex flex-col items-center">
+                    {config.offsets.vessel.v && (
+                        <div id="game-vessel" className="w-full h-full relative transition-all duration-500" 
+                             style={{ ...getSpriteStyle(config.vesselIndex, ASSETS.VESSELS), transform: `scale(${config.offsets.vessel.s}) translate(${config.offsets.vessel.x}%, ${config.offsets.vessel.y}%)` }} />
+                    )}
                     <div id="vessel-shine" className="absolute top-0 text-4xl opacity-0 transition-opacity duration-500">✨</div>
                 </div>
 
                 {fallingFood.map(f => (
-                    <div key={f.id} className="absolute w-16 h-16 z-[101] animate-bounce"
+                    <div key={f.id} className="absolute w-16 h-16 z-200 animate-bounce"
                          style={{ left: f.left + '%', top: f.top + '%', animation: 'fall 1s linear forwards', ...getSpriteStyle(f.spriteIndex, ASSETS.FOOD) }} />
                 ))}
             </div>
@@ -497,98 +561,104 @@ export default function ServitorWildUnknown() {
                 </div>
             )}
 
-            {/* MAIN UI PANEL */}
+            {/* CONFIG PANEL */}
             <div className={`absolute top-0 left-0 h-full w-full md:w-[500px] z-50 transition-transform duration-500 ease-in-out ${isRunning ? '-translate-x-full' : 'translate-x-0'} pointer-events-auto flex flex-col bg-[#0f0f1a]`}
-                 style={{ borderRight: '2px solid #5d4037' }}>
+                 style={{ borderImage: `url('${ASSET_PATH}${ASSETS.UI_PANEL}') 18% 15% fill stretch`, borderWidth: '40px', padding: '20px' }}>
                 
                 {/* 1. FIXED PREVIEW AREA (Top 45%) */}
-                <div className="h-[45%] w-full relative bg-[#1a1a2e] border-b border-[#5d4037]">
+                <div className="h-[45%] w-full relative bg-[#1a1a2e] border-b border-[#5d4037] shrink-0 overflow-hidden">
                     <div className="absolute inset-0 opacity-40 bg-[url('/images/Servitor_images/Astral_Plane_Parallax_Layers.jpg')] bg-cover bg-center" />
                     <div className="absolute inset-0 flex items-center justify-center">
                         <ServitorRig idPrefix="preview-rig" isPreview={true} />
                     </div>
                     {/* Inputs Overlay */}
-                    <div className="absolute top-2 left-2 right-2 flex gap-2">
+                    <div className="absolute top-2 left-2 right-2 flex gap-2 z-50">
                         <input type="text" value={sName} onChange={e => setSName(e.target.value)} className="flex-1 bg-black/50 border border-[#5d4037] p-1 text-xs text-white rounded" placeholder="Spirit Name" />
                         <input type="text" value={sPurpose} onChange={e => setSPurpose(e.target.value)} className="flex-1 bg-black/50 border border-[#5d4037] p-1 text-xs text-white rounded" placeholder="Purpose" />
                     </div>
                 </div>
 
-                {/* 2. CATEGORY BUTTONS (Scrollable Row) */}
-                <div className="bg-[#2a1a1a] p-2 flex gap-2 overflow-x-auto border-b border-[#5d4037] custom-scrollbar shrink-0">
-                    {CATEGORIES.map(cat => (
-                        <button 
-                            key={cat.id}
-                            onClick={() => setActiveCategory(activeCategory === cat.id ? null : cat.id)}
-                            className={`px-3 py-2 rounded text-xs font-bold uppercase whitespace-nowrap border transition-colors ${activeCategory === cat.id ? 'bg-[#FFD700] text-black border-[#FFD700]' : 'bg-black/50 text-[#8d6e63] border-[#5d4037]'}`}
-                        >
-                            {cat.label}
-                        </button>
-                    ))}
+                {/* 2. MENU GRID (Categories) */}
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-2">
+                    <div className="grid grid-cols-4 gap-4">
+                        {CATEGORIES.map(cat => {
+                            // Determine current image for button
+                            const currentIdx = cat.indexKey ? (config as any)[cat.indexKey] : 0;
+                            const isSingle = cat.single || false;
+                            
+                            return (
+                                <button key={cat.id} onClick={() => setActiveCategory(cat.id)}
+                                    className="flex flex-col items-center gap-1 group">
+                                    <span className="text-[10px] text-[#3e2723] font-bold tracking-wider group-hover:text-black">{cat.label}</span>
+                                    <div className="w-16 h-16 bg-[#eaddcf] border-2 border-[#8d6e63] rounded shadow-inner flex items-center justify-center relative overflow-hidden group-hover:border-[#3e2723]">
+                                        {cat.asset ? (
+                                            <div className="w-full h-full transform scale-75" style={getSpriteStyle(currentIdx, cat.asset, isSingle)} />
+                                        ) : (
+                                            <div className="text-[#8d6e63]"><Move size={24}/></div>
+                                        )}
+                                    </div>
+                                </button>
+                            );
+                        })}
+                    </div>
                 </div>
 
-                {/* 3. ACTIVE CONTROLS (Pop-up Area) */}
-                <div className="flex-1 overflow-y-auto bg-[#eaddcf] p-4 relative">
-                    <div className="absolute inset-0 pointer-events-none border-[30px] border-transparent" style={{ borderImage: `url('${ASSET_PATH}${ASSETS.UI_PANEL}') 30 stretch` }} />
-                    
-                    {activeCategory ? (
-                        <div className="relative z-10">
-                            <div className="flex justify-between items-center mb-2">
-                                <h3 className="text-[#3e2723] font-bold uppercase">{CATEGORIES.find(c => c.id === activeCategory)?.label}</h3>
-                                <button onClick={() => setActiveCategory(null)}><X size={16} className="text-[#3e2723]"/></button>
-                            </div>
+                {/* 3. POPUP CONTROLS (Overlay) */}
+                {activeCategory && (
+                    <div className="absolute inset-0 z-50 bg-[#eaddcf] p-4 flex flex-col" style={{ margin: '40px' }}> {/* Margin matches border width */}
+                        <div className="flex justify-between items-center mb-4 border-b border-[#5d4037]/20 pb-2">
+                            <h3 className="text-[#3e2723] font-bold uppercase text-lg">{CATEGORIES.find(c => c.id === activeCategory)?.label}</h3>
+                            <button onClick={() => setActiveCategory(null)}><X size={24} className="text-[#3e2723]"/></button>
+                        </div>
 
-                            {activeCategory === 'settings' ? (
-                                <div className="space-y-4">
-                                    <div className="bg-[#5d4037]/10 p-3 rounded">
-                                        <label className="text-xs font-bold text-[#3e2723]">Feeding Frequency: {config.feedFreq}</label>
-                                        <input type="range" min="1" max="50" value={config.feedFreq} onChange={e => setConfig({...config, feedFreq: parseInt(e.target.value)})} className="w-full accent-[#3e2723]" />
-                                    </div>
-                                    <div className="flex gap-4 items-center">
-                                        <label className="flex items-center gap-2 text-xs font-bold text-[#3e2723] cursor-pointer">
-                                            <input type="checkbox" checked={config.hasWings} onChange={e => setConfig({...config, hasWings: e.target.checked})} className="accent-[#3e2723]" /> Wings
-                                        </label>
-                                        <select value={config.movementType} onChange={e => setConfig({...config, movementType: e.target.value})} className="bg-[#fdf5e6] text-xs p-1 rounded border border-[#8d6e63] text-black">
+                        <div className="flex-1 overflow-y-auto custom-scrollbar">
+                            {/* Generic Grid Selection */}
+                            {CATEGORIES.find(c => c.id === activeCategory)?.indexKey && (
+                                <div className="grid grid-cols-4 gap-2 mb-6">
+                                    {GENERIC_LIST.map((_, i) => (
+                                        <button key={i} 
+                                            onClick={() => setConfig({...config, [(CATEGORIES.find(c => c.id === activeCategory)?.indexKey as string)]: i})}
+                                            className={`w-full aspect-square border-2 rounded overflow-hidden bg-white/50 ${(config as any)[CATEGORIES.find(c => c.id === activeCategory)?.indexKey as string] === i ? 'border-[#3e2723] shadow-inner ring-1 ring-[#3e2723]' : 'border-transparent'}`}>
+                                            <div className="w-full h-full transform scale-75" 
+                                                 style={getSpriteStyle(i, (CATEGORIES.find(c => c.id === activeCategory)?.asset as string), CATEGORIES.find(c => c.id === activeCategory)?.single)} />
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Adjustment Controls (D-Pad) */}
+                            {CATEGORIES.find(c => c.id === activeCategory)?.offsetKey && (
+                                <DPad part={CATEGORIES.find(c => c.id === activeCategory)?.offsetKey as string} allowFlip={CATEGORIES.find(c => c.id === activeCategory)?.canFlip} />
+                            )}
+
+                            {/* Special Settings for Food/Treasure */}
+                            {activeCategory === 'food' && (
+                                <div className="mt-4 bg-[#5d4037]/10 p-3 rounded">
+                                    <label className="text-xs font-bold text-[#3e2723]">Feeding Frequency: {config.feedFreq}</label>
+                                    <input type="range" min="1" max="50" value={config.feedFreq} onChange={e => setConfig({...config, feedFreq: parseInt(e.target.value)})} className="w-full accent-[#3e2723]" />
+                                    
+                                    <div className="mt-4 flex gap-2">
+                                        <label className="text-xs font-bold text-[#3e2723]">Movement:</label>
+                                        <select value={config.movementType} onChange={e => setConfig({...config, movementType: e.target.value})} className="bg-white/50 text-xs p-1 rounded border border-[#8d6e63]">
                                             <option value="walk">Walk</option><option value="fly">Fly</option>
                                         </select>
                                     </div>
                                 </div>
-                            ) : (
-                                <div>
-                                    {/* SELECTION GRID */}
-                                    {CATEGORIES.find(c => c.id === activeCategory)?.asset && (
-                                        <div className="grid grid-cols-4 gap-2 mb-4">
-                                            {GENERIC_LIST.map((_, i) => (
-                                                <button key={i} 
-                                                    onClick={() => setConfig({...config, [(CATEGORIES.find(c => c.id === activeCategory)?.indexKey as string)]: i})}
-                                                    className={`w-full aspect-square border-2 rounded overflow-hidden bg-[#eaddcf]/50 ${(config as any)[CATEGORIES.find(c => c.id === activeCategory)?.indexKey as string] === i ? 'border-[#3e2723]' : 'border-transparent'}`}>
-                                                    <div className="w-full h-full transform scale-75" style={getSpriteStyle(i, (CATEGORIES.find(c => c.id === activeCategory)?.asset as string))} />
-                                                </button>
-                                            ))}
-                                        </div>
-                                    )}
-                                    {/* D-PAD */}
-                                    {CATEGORIES.find(c => c.id === activeCategory)?.offsetKey && (
-                                        <DPad part={CATEGORIES.find(c => c.id === activeCategory)?.offsetKey as string} allowFlip={CATEGORIES.find(c => c.id === activeCategory)?.canFlip} />
-                                    )}
-                                </div>
                             )}
                         </div>
-                    ) : (
-                        <div className="flex flex-col items-center justify-center h-full text-[#5d4037] opacity-60">
-                            <p className="text-sm font-serif italic">Select a category to customize...</p>
-                        </div>
-                    )}
-                </div>
+                        
+                        <button onClick={() => setActiveCategory(null)} className="mt-4 w-full py-2 bg-[#3e2723] text-[#eaddcf] font-bold uppercase rounded">Close</button>
+                    </div>
+                )}
 
                 {/* 4. FIXED ACTION BUTTONS */}
-                <div className="p-4 bg-[#2a1a1a] border-t border-[#5d4037] flex gap-2 shrink-0">
+                <div className="p-4 border-t border-[#5d4037]/30 flex gap-2 shrink-0 bg-[#eaddcf]">
                     <button onMouseDown={() => startHold('awaken')} onMouseUp={stopHold} onMouseLeave={stopHold} onTouchStart={() => startHold('awaken')} onTouchEnd={stopHold}
-                        className="runic-btn flex-1 py-3 text-xs font-bold uppercase tracking-widest relative overflow-hidden">
+                        className="runic-btn flex-1 py-3 text-xs font-bold uppercase tracking-widest relative overflow-hidden text-center">
                         <div className="absolute top-0 left-0 h-full bg-white/20 transition-all duration-75 ease-linear" style={{width: `${awakenProgress}%`}}></div>
-                        <span className="relative z-10">{isAwakening ? "Awakening..." : "Hold to Awaken"}</span>
+                        <span className="relative z-10 text-center w-full block">{isAwakening ? "Awakening..." : "Hold to Awaken"}</span>
                     </button>
-                    <button onClick={handleBind} className="flex-1 py-3 bg-[#5d4037] text-white text-xs uppercase font-bold rounded shadow hover:bg-[#3e2723]">
+                    <button onClick={handleBind} className="flex-1 py-3 bg-[#5d4037] text-white text-xs uppercase font-bold rounded shadow hover:bg-[#3e2723] text-center">
                         Bind/Save ({COST_BIND_SERVITOR})
                     </button>
                 </div>
