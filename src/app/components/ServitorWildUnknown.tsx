@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { X, Trash2, Lock } from 'lucide-react';
+import { X, Trash2, Lock, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Plus, Minus, RefreshCw, Move } from 'lucide-react';
 import { createBrowserClient } from '@supabase/ssr';
 import { checkAndSpendCredits, getWalletStatus, COST_BIND_SERVITOR } from '@/lib/economy';
 import { saveServitorToGrimoire, getMyServitors } from '@/lib/services/spellService';
@@ -21,106 +21,93 @@ const ASSETS = {
     VESSELS: 'Ritual_Vessels_Master_Sheet.png',
     TREASURES: 'Chest_Sigils_And_Treasures_Sheet.png',
     FOOD: 'Servitor_Sustenance_Food_Sheet.png',
-    MOUND: 'mound_into_the_void.png', // The Tunnel/Mound
+    MOUND: 'mound_into_the_void.png',
     UI_PANEL: 'Parchment_And_Oak_Responsive_Panels.png',
     BG_MAIN: 'Astral_Plane_Parallax_Layers.jpg',
     UI_BUTTONS: 'Runic_Glass_Button_Set.png'
 };
 
-// --- 2. SPRITE TUNING SECTION (ADJUST PROPORTIONS & PLACEMENT HERE) ---
-// Scale: 1.0 = 100%. 
-// X: Positive moves Right, Negative moves Left (percentages).
-// Y: Positive moves Down, Negative moves Up (percentages).
-const SPRITE_OFFSET_CONFIG = {
-    base:    { scale: 1.0,  x: 0,   y: 0 },   // Main Torso
-    arm:     { scale: 0.75, x: 0,   y: 5 },   // Arms (Lowered slightly)
-    leg:     { scale: 0.75, x: 0,   y: 0 },   // Legs
-    head:    { scale: 0.85, x: 0,   y: -5 },  // Hats (Raised slightly)
-    clothes: { scale: 1.05, x: 0,   y: 0 },   // Clothes (Slightly larger to fit over)
-    tool:    { scale: 0.6,  x: 5,   y: 10 },  // Tools (Adjusted to fit hand)
-    wings:   { scale: 1.2,  x: 0,   y: -5 },  // Wings
-    vessel:  { scale: 1.0,  x: 0,   y: 0 }    // The Altar/Chest
+// Default Offsets (The starting point for adjustments)
+const DEFAULT_OFFSETS = {
+    base:    { x: 0, y: 0, s: 1.0, f: false },
+    leg:     { x: 0, y: 0, s: 0.75, f: false },
+    arm:     { x: 0, y: 5, s: 0.75, f: false },
+    head:    { x: 0, y: -5, s: 0.85, f: false },
+    clothes: { x: 0, y: 0, s: 1.05, f: false },
+    tool:    { x: 5, y: 10, s: 0.6, f: false },
+    wing:    { x: 0, y: -5, s: 1.2, f: false },
+    vessel:  { x: 0, y: 0, s: 1.0, f: false },
+    mound:   { x: 0, y: 0, s: 1.0, f: false } // New Mound Controls
 };
 
 const GENERIC_LIST = Array.from({length: 16}).map((_, i) => `Option ${i + 1}`);
-
-interface SavedServitor {
-    id: string;
-    name: string;
-    master_name: string;
-    purpose: string;
-    config: any;
-}
 
 // Helper: Get Sprite CSS
 const getSpriteStyle = (index: number, filename: string) => {
     const safeIndex = Math.max(0, Math.min(15, index));
     const col = safeIndex % 4;
     const row = Math.floor(safeIndex / 4);
-    const xPos = col * 33.333;
-    const yPos = row * 33.333;
-
     return {
         backgroundImage: `url('${ASSET_PATH}${filename}')`,
         backgroundSize: '400% 400%',
-        backgroundPosition: `${xPos}% ${yPos}%`,
+        backgroundPosition: `${col * 33.333}% ${row * 33.333}%`,
         backgroundRepeat: 'no-repeat'
     };
 };
 
 export default function ServitorWildUnknown() {
     const router = useRouter();
-    const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
+    const supabase = createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
 
-    // --- State ---
+    // --- STATE ---
     const [assetsLoaded, setAssetsLoaded] = useState(false);
     const [loadProgress, setLoadProgress] = useState(0);
-
     const [isRunning, setIsRunning] = useState(false);
+    
+    // Refs for Loop
     const runningRef = useRef(false); 
     const loopIdRef = useRef(0);
     const audioCtxRef = useRef<any>(null);
-    const servitorPosRef = useRef(20); 
+    const servitorPosRef = useRef(20);
 
+    // Data
     const [sName, setSName] = useState("");
     const [sPurpose, setSPurpose] = useState("");
     const [uName, setUName] = useState("");
-    
     const [user, setUser] = useState<any>(null);
-    const [savedServitors, setSavedServitors] = useState<SavedServitor[]>([]);
-    const [wallet, setWallet] = useState<{ credits: number, tier: string, isUnlimited: boolean } | null>(null);
+    const [savedServitors, setSavedServitors] = useState<any[]>([]);
+    const [wallet, setWallet] = useState<{ credits: number } | null>(null);
 
-    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-    const [showExitWarning, setShowExitWarning] = useState(false);
-    const [showCreditModal, setShowCreditModal] = useState(false);
-
-    // Config State
+    // Config
     const [config, setConfig] = useState({
         baseIndex: 0, limbIndex: 0, legIndex: 0, toolIndex: 0,
         hatIndex: 0, wingIndex: 0, vesselIndex: 0, clothingIndex: 0,
         sigilIndex: 0, foodIndex: 0,
+        
         hasWings: false, movementType: "walk", 
-        soundSearch: "rumble", soundFind: "chime", soundDeposit: "coin",
-        feedFreq: 5
+        feedFreq: 5,
+        
+        // Deep copy defaults so we can modify them
+        offsets: JSON.parse(JSON.stringify(DEFAULT_OFFSETS))
     });
 
-    // Interaction State
+    // Game State
+    const [depositCount, setDepositCount] = useState(0);
+    const depositRef = useRef(0);
+    const [hungerState, setHungerState] = useState<'sated' | 'hungry' | 'fed'>('sated');
     const [awakenProgress, setAwakenProgress] = useState(0);
     const [isAwakening, setIsAwakening] = useState(false);
     const [isFeeding, setIsFeeding] = useState(false);
-    
-    // Gameplay Stats & Visuals
-    const [depositCount, setDepositCount] = useState(0);
-    const depositRef = useRef(0); 
-    const [hungerState, setHungerState] = useState<'sated' | 'hungry' | 'fed'>('sated');
     const [feedProgress, setFeedProgress] = useState(0);
     const [fallingFood, setFallingFood] = useState<{id: number, left: number, top: number, spriteIndex: number}[]>([]);
     const holdIntervalRef = useRef<any>(null);
 
-    // --- Init ---
+    // Modals
+    const [showCreditModal, setShowCreditModal] = useState(false);
+    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+    const [showExitWarning, setShowExitWarning] = useState(false);
+
+    // --- INIT ---
     useEffect(() => {
         const imageUrls = Object.values(ASSETS);
         let loadedCount = 0;
@@ -138,76 +125,72 @@ export default function ServitorWildUnknown() {
         const initUser = async () => {
             const { data: { user } } = await supabase.auth.getUser();
             setUser(user);
-            if (user) { refreshCabinet(user.id); }
+            if (user) { 
+                const data = await getMyServitors(user.id);
+                setSavedServitors(data as any[]);
+                const w = await getWalletStatus(user.id);
+                setWallet(w);
+            }
         };
         initUser();
-    }, [supabase]);
+    }, []);
 
-    useEffect(() => { if (sName || sPurpose) setHasUnsavedChanges(true); }, [sName, sPurpose, config]);
-
-    const refreshCabinet = async (userId: string) => {
-        const data = await getMyServitors(userId);
-        setSavedServitors(data as SavedServitor[]);
-        const w = await getWalletStatus(userId);
-        setWallet(w);
+    // --- ACTIONS ---
+    const updateOffset = (part: keyof typeof DEFAULT_OFFSETS, field: 'x'|'y'|'s'|'f', value: number | boolean) => {
+        setConfig(prev => ({
+            ...prev,
+            offsets: {
+                ...prev.offsets,
+                [part]: { ...prev.offsets[part], [field]: value }
+            }
+        }));
     };
 
-    // --- Actions ---
-    const handleBindToGrimoire = async () => {
-        if (!user) return alert("Login required.");
-        if (!sName) return alert("Name required.");
-        const canAfford = await checkAndSpendCredits(user.id, COST_BIND_SERVITOR);
-        if (!canAfford) { setShowCreditModal(true); return; }
-        await saveServitorToGrimoire(user.id, { name: sName, master_name: uName, purpose: sPurpose, config: config });
+    const handleBind = async () => {
+        if (!user || !sName) return alert("Name & Login required.");
+        const afford = await checkAndSpendCredits(user.id, COST_BIND_SERVITOR);
+        if (!afford) { setShowCreditModal(true); return; }
+        await saveServitorToGrimoire(user.id, { name: sName, master_name: uName, purpose: sPurpose, config });
         setHasUnsavedChanges(false);
-        refreshCabinet(user.id);
-        alert(`Servitor "${sName}" Bound.`);
-    };
-
-    const handleLoad = (s: SavedServitor) => {
-        setSName(s.name); setUName(s.master_name); setSPurpose(s.purpose); setConfig(s.config);
-        setTimeout(() => setHasUnsavedChanges(false), 100);
-    };
-
-    const handleDelete = async (id: string, e: React.MouseEvent) => {
-        e.stopPropagation();
-        if(!confirm("Release entity?")) return;
-        await supabase.from('servitors').delete().eq('id', id);
-        if(user) refreshCabinet(user.id);
-    };
-
-    const initAudio = () => {
-        const win = (globalThis as any).window;
-        if (!audioCtxRef.current) {
-            const AC = win.AudioContext || win.webkitAudioContext;
-            if (AC) audioCtxRef.current = new AC();
-        }
-        if (audioCtxRef.current?.state === 'suspended') audioCtxRef.current.resume();
+        alert("Bound!");
     };
 
     const playSound = (type: string) => {
-        if(!audioCtxRef.current) return;
+        if(!audioCtxRef.current) {
+            const AC = (window as any).AudioContext || (window as any).webkitAudioContext;
+            if(AC) audioCtxRef.current = new AC();
+        }
+        if (audioCtxRef.current?.state === 'suspended') audioCtxRef.current.resume();
+        
         const ctx = audioCtxRef.current;
-        const now = ctx.currentTime;
+        if(!ctx) return;
+        
         const osc = ctx.createOscillator();
         const g = ctx.createGain();
         osc.connect(g); g.connect(ctx.destination);
-        
-        if(type === 'glitter') {
-            osc.frequency.setValueAtTime(800, now); osc.frequency.linearRampToValueAtTime(1200, now + 0.2);
-            g.gain.setValueAtTime(0.1, now); g.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
-            osc.start(now); osc.stop(now + 0.2);
-        } else if (type === 'search') {
-            osc.frequency.setValueAtTime(100, now); osc.frequency.linearRampToValueAtTime(150, now + 1.0);
-            g.gain.setValueAtTime(0.2, now); g.gain.linearRampToValueAtTime(0, now + 1.0);
-            osc.start(now); osc.stop(now + 1.0);
+        const now = ctx.currentTime;
+
+        if (type === 'search') {
+            osc.frequency.setValueAtTime(100, now);
+            osc.frequency.linearRampToValueAtTime(50, now + 1);
+            g.gain.setValueAtTime(0.2, now);
+            g.gain.linearRampToValueAtTime(0, now + 1);
+            osc.start(now); osc.stop(now + 1);
+        } else if (type === 'deposit') {
+            osc.frequency.setValueAtTime(400, now);
+            osc.frequency.linearRampToValueAtTime(800, now + 0.5);
+            g.gain.setValueAtTime(0.1, now);
+            osc.start(now); osc.stop(now + 0.5);
         } else {
-            osc.frequency.setValueAtTime(300, now); g.gain.setValueAtTime(0.05, now);
-            osc.start(now); osc.stop(now+0.1);
+            // Glitter / Generic
+            osc.frequency.setValueAtTime(800, now);
+            g.gain.setValueAtTime(0.05, now);
+            g.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+            osc.start(now); osc.stop(now + 0.1);
         }
     };
 
-    // --- Animation Logic ---
+    // --- GAME LOOP ---
     const wait = (ms: number) => new Promise(r => setTimeout(r, ms));
 
     const moveTo = (targetPercent: number, id: number) => {
@@ -217,81 +200,70 @@ export default function ServitorWildUnknown() {
             
             const current = parseFloat(el.style.left) || 20;
             const dist = Math.abs(targetPercent - current);
-            const time = dist * 40; 
+            const time = dist * 40; // Speed
 
-            el.style.transition = `left ${time}ms linear, opacity 0.5s ease, transform 0.5s ease`;
+            el.style.transition = `left ${time}ms linear, opacity 0.5s, transform 0.5s`;
             el.style.opacity = '1';
             el.style.transform = 'scale(1)';
             
             requestAnimationFrame(() => {
                 el.style.left = targetPercent + "%";
-                servitorPosRef.current = targetPercent; 
+                servitorPosRef.current = targetPercent;
             });
 
             setTimeout(() => { if(runningRef.current && loopIdRef.current === id) resolve(); }, time);
         });
-    }
-
-    const setAnim = (cls: string) => {
-        const rig = document.getElementById('game-rig');
-        if(rig) rig.className = `servitor-rig ${cls}`;
     };
 
-    // --- MAIN GAME LOOP ---
     const mainLoop = async (id: number) => {
-        await wait(100);
         const mound = document.getElementById('game-mound');
         const vessel = document.getElementById('game-vessel');
         const servitor = document.getElementById('servitor-container');
         const shine = document.getElementById('vessel-shine');
 
         while(runningRef.current && loopIdRef.current === id) {
-            
-            // 1. Walk to Mound (Left)
+            // 1. Walk to Mound
             if(servitor) { servitor.style.opacity = '1'; servitor.style.transform = 'scale(1)'; }
-            setAnim(config.movementType === 'fly' ? 'anim-fly-left' : 'anim-walk-left');
-            await moveTo(15, id); 
+            document.getElementById('game-rig')?.classList.remove('anim-idle');
+            document.getElementById('game-rig')?.classList.add(config.movementType === 'fly' ? 'anim-fly-left' : 'anim-walk-left');
+            
+            await moveTo(15, id);
             if(!runningRef.current) break;
 
-            // 2. Jump INTO Mound (Disappear)
+            // 2. Enter Void
             if(servitor) {
-                // Shrink and Fade out
-                servitor.style.transition = 'opacity 0.5s, transform 0.5s';
                 servitor.style.opacity = '0';
                 servitor.style.transform = 'scale(0.1) translateY(50px)';
             }
             await wait(500);
 
-            // 3. Searching (Mound Glows)
+            // 3. Search Pulse
             if(mound) mound.classList.add('pulse-glow-void');
             playSound('search');
-            await wait(2000); // Searching time
+            await wait(2000);
             if(mound) mound.classList.remove('pulse-glow-void');
 
-            // 4. Reappear from Mound
+            // 4. Return
             if(servitor) {
                 servitor.style.opacity = '1';
-                servitor.style.transform = 'scale(1) translateY(0)';
+                servitor.style.transform = 'scale(1)';
             }
-            await wait(500);
+            document.getElementById('game-rig')?.classList.remove('anim-walk-left', 'anim-fly-left');
+            document.getElementById('game-rig')?.classList.add(config.movementType === 'fly' ? 'anim-fly-right' : 'anim-walk-right');
             
-            // 5. Walk to Vessel (Right)
-            playSound('find');
-            setAnim(config.movementType === 'fly' ? 'anim-fly-right' : 'anim-walk-right');
-            await moveTo(80, id); 
+            await moveTo(80, id);
             if(!runningRef.current) break;
 
-            // 6. Deposit (Vessel Glows)
-            setAnim('anim-idle');
+            // 5. Deposit
+            document.getElementById('game-rig')?.classList.remove('anim-walk-right', 'anim-fly-right');
+            document.getElementById('game-rig')?.classList.add('anim-idle');
             playSound('deposit');
             if(vessel) vessel.classList.add('pulse-glow-gold');
-            if(shine) { shine.style.opacity = '1'; setTimeout(() => { if(shine) shine.style.opacity = '0'; }, 1000); }
-            
+            if(shine) { shine.style.opacity = '1'; setTimeout(() => shine.style.opacity = '0', 1000); }
             await wait(1000);
             if(vessel) vessel.classList.remove('pulse-glow-gold');
 
-            // 7. Update Stats
-            depositRef.current += 1;
+            depositRef.current++;
             setDepositCount(depositRef.current);
 
             if(depositRef.current >= config.feedFreq) {
@@ -302,34 +274,34 @@ export default function ServitorWildUnknown() {
         }
     };
 
-    // --- Hold Interactions ---
+    // --- HOLD HANDLERS ---
     const startHold = (type: 'awaken' | 'feed') => {
-        initAudio();
         const start = Date.now();
-        const dur = type === 'awaken' ? 5000 : 3000; 
-        if (type === 'awaken') setIsAwakening(true);
-        if (type === 'feed') setIsFeeding(true);
+        const dur = type === 'awaken' ? 5000 : 3000;
+        if(type === 'awaken') setIsAwakening(true); else setIsFeeding(true);
 
         holdIntervalRef.current = setInterval(() => {
             const p = Math.min(100, ((Date.now() - start) / dur) * 100);
-            if (type === 'awaken') setAwakenProgress(p);
-            else setFeedProgress(p);
+            if(type === 'awaken') setAwakenProgress(p); else setFeedProgress(p);
 
-            if (p >= 100) {
+            if(p >= 100) {
                 clearInterval(holdIntervalRef.current);
                 playSound('glitter');
-                if (type === 'awaken') {
+                if(type === 'awaken') {
                     setIsAwakening(false); setIsRunning(true); runningRef.current = true;
                     loopIdRef.current++; mainLoop(loopIdRef.current);
                 } else {
                     setIsFeeding(false); setHungerState('fed');
                 }
             }
-            
-            // Food Spawn
-            if (type === 'feed' && Math.random() > 0.7) {
-                const targetX = servitorPosRef.current + (Math.random() * 10 - 5);
-                setFallingFood(prev => [...prev, { id: Math.random(), left: Math.max(0, Math.min(90, targetX)), top: 0, spriteIndex: config.foodIndex }]);
+            // Food Logic
+            if(type === 'feed' && Math.random() > 0.7) {
+                setFallingFood(prev => [...prev, {
+                    id: Math.random(), 
+                    left: Math.max(0, Math.min(90, servitorPosRef.current + (Math.random()*10-5))), 
+                    top: 0, 
+                    spriteIndex: config.foodIndex 
+                }]);
             }
         }, 30);
     };
@@ -344,53 +316,80 @@ export default function ServitorWildUnknown() {
         runningRef.current = true; loopIdRef.current++; mainLoop(loopIdRef.current);
     };
 
-    // --- RIG COMPONENT (With Offset Config) ---
-    const ServitorRig = ({ idPrefix, isPreview = false }: { idPrefix: string, isPreview?: boolean }) => {
-        const wrapperClass = isFeeding ? 'anim-feed' : 'anim-idle';
-        
-        // Helper to apply the offset config
-        const getStyle = (partIndex: number, asset: string, partConfig: {scale: number, x: number, y: number}, flip: boolean = false) => {
-            const transform = `
-                translate(${partConfig.x}%, ${partConfig.y}%) 
-                scale(${partConfig.scale}) 
-                ${flip ? 'scaleX(-1)' : ''}
-            `;
-            return {
-                ...getSpriteStyle(partIndex, asset),
-                transform,
-                transformOrigin: 'top center'
-            };
-        };
+    // --- COMPONENTS ---
 
-        const sc = SPRITE_OFFSET_CONFIG;
-
+    // D-Pad Control Component
+    const DPad = ({ part, allowFlip = false }: { part: keyof typeof DEFAULT_OFFSETS, allowFlip?: boolean }) => {
+        const cfg = config.offsets[part];
         return (
-            <div id={idPrefix} className={`servitor-rig relative w-[128px] h-[128px] ${wrapperClass}`} style={{ transform: isPreview ? 'scale(1.5)' : 'scale(1)' }}>
-                {config.hasWings && <div className="absolute inset-0 z-0" style={getStyle(config.wingIndex, ASSETS.BACK, sc.wings)} />}
-                
-                <div className="limb leg-left absolute z-10 w-full h-full" style={getStyle(config.legIndex, ASSETS.LEGS, sc.leg, true)} />
-                <div className="limb leg-right absolute z-10 w-full h-full" style={getStyle(config.legIndex, ASSETS.LEGS, sc.leg)} />
+            <div className="flex items-center gap-2 bg-black/40 p-2 rounded border border-[#5d4037]/50 mt-2">
+                {/* Directional Pad */}
+                <div className="grid grid-cols-3 gap-1 w-[80px]">
+                    <div />
+                    <button onClick={() => updateOffset(part, 'y', cfg.y - 5)} className="p-1 bg-[#3e2723] hover:bg-[#5d4037] rounded flex justify-center"><ArrowUp size={12}/></button>
+                    <div />
+                    <button onClick={() => updateOffset(part, 'x', cfg.x - 5)} className="p-1 bg-[#3e2723] hover:bg-[#5d4037] rounded flex justify-center"><ArrowLeft size={12}/></button>
+                    <div className="flex justify-center items-center text-[8px] text-gray-400"><Move size={12}/></div>
+                    <button onClick={() => updateOffset(part, 'x', cfg.x + 5)} className="p-1 bg-[#3e2723] hover:bg-[#5d4037] rounded flex justify-center"><ArrowRight size={12}/></button>
+                    <div />
+                    <button onClick={() => updateOffset(part, 'y', cfg.y + 5)} className="p-1 bg-[#3e2723] hover:bg-[#5d4037] rounded flex justify-center"><ArrowDown size={12}/></button>
+                    <div />
+                </div>
 
-                <div className="base absolute inset-0 z-20" style={getStyle(config.baseIndex, ASSETS.BASES, sc.base)} />
-                <div className="clothes absolute inset-0 z-30" style={getStyle(config.clothingIndex, ASSETS.CLOTHES, sc.clothes)} />
-
-                <div className="limb arm-left absolute z-40 w-full h-full" style={getStyle(config.limbIndex, ASSETS.ARMS, sc.arm, true)} />
-                <div className="limb arm-right absolute z-40 w-full h-full" style={getStyle(config.limbIndex, ASSETS.ARMS, sc.arm)} />
-
-                <div className="hat absolute inset-0 z-50" style={getStyle(config.hatIndex, ASSETS.HEAD, sc.head)} />
-                <div className="tool absolute inset-0 z-60" style={getStyle(config.toolIndex, ASSETS.TOOLS, sc.tool)} />
+                {/* Size & Flip */}
+                <div className="flex flex-col gap-1">
+                    <div className="flex gap-1">
+                        <button onClick={() => updateOffset(part, 's', Math.max(0.1, cfg.s - 0.05))} className="p-1 bg-[#3e2723] rounded"><Minus size={12}/></button>
+                        <button onClick={() => updateOffset(part, 's', cfg.s + 0.05)} className="p-1 bg-[#3e2723] rounded"><Plus size={12}/></button>
+                    </div>
+                    {allowFlip && (
+                        <button onClick={() => updateOffset(part, 'f', !cfg.f)} className={`p-1 rounded flex gap-1 items-center justify-center text-[10px] ${cfg.f ? 'bg-amber-600 text-black' : 'bg-[#3e2723] text-gray-400'}`}>
+                            <RefreshCw size={10} /> Flip
+                        </button>
+                    )}
+                </div>
+                <div className="text-[9px] text-gray-400 font-mono flex flex-col leading-tight">
+                    <span>X: {cfg.x}</span>
+                    <span>Y: {cfg.y}</span>
+                    <span>S: {cfg.s.toFixed(2)}</span>
+                </div>
             </div>
         );
     };
 
-    if (!assetsLoaded) {
+    // Servitor Rig (with Dynamic Config)
+    const ServitorRig = ({ idPrefix, isPreview = false }: { idPrefix: string, isPreview?: boolean }) => {
+        const getStyle = (idx: number, asset: string, part: keyof typeof DEFAULT_OFFSETS, mirror: boolean = false) => {
+            const c = config.offsets[part];
+            const flip = mirror ? !c.f : c.f; // Logic to handle natural mirroring vs user flip
+            return {
+                ...getSpriteStyle(idx, asset),
+                transform: `translate(${c.x}%, ${c.y}%) scale(${c.s}) ${flip ? 'scaleX(-1)' : ''}`,
+                transformOrigin: 'top center'
+            };
+        };
+
         return (
-            <div className="fixed inset-0 bg-black flex flex-col items-center justify-center z-[999]">
-                 <div className="w-32 h-32 animate-spin" style={getSpriteStyle(0, ASSETS.TREASURES)}></div>
-                 <p className="text-[#FFD700] mt-4 font-serif">Summoning Assets... {loadProgress}%</p>
+            <div id={idPrefix} className={`servitor-rig relative w-[128px] h-[128px] ${isFeeding ? 'anim-feed' : 'anim-idle'}`} style={{ transform: isPreview ? 'scale(2)' : 'scale(1)' }}>
+                {config.hasWings && <div className="absolute inset-0 z-0" style={getStyle(config.wingIndex, ASSETS.BACK, 'wing')} />}
+                <div className="limb leg-left absolute z-10 w-full h-full" style={getStyle(config.legIndex, ASSETS.LEGS, 'leg', true)} />
+                <div className="limb leg-right absolute z-10 w-full h-full" style={getStyle(config.legIndex, ASSETS.LEGS, 'leg')} />
+                <div className="base absolute inset-0 z-20" style={getStyle(config.baseIndex, ASSETS.BASES, 'base')} />
+                <div className="clothes absolute inset-0 z-30" style={getStyle(config.clothingIndex, ASSETS.CLOTHES, 'clothes')} />
+                <div className="limb arm-left absolute z-40 w-full h-full" style={getStyle(config.limbIndex, ASSETS.ARMS, 'arm', true)} />
+                <div className="limb arm-right absolute z-40 w-full h-full" style={getStyle(config.limbIndex, ASSETS.ARMS, 'arm')} />
+                <div className="hat absolute inset-0 z-50" style={getStyle(config.hatIndex, ASSETS.HEAD, 'head')} />
+                <div className="tool absolute inset-0 z-60" style={getStyle(config.toolIndex, ASSETS.TOOLS, 'tool')} />
             </div>
         );
-    }
+    };
+
+    if (!assetsLoaded) return (
+        <div className="fixed inset-0 bg-black flex flex-col items-center justify-center z-[999]">
+            <div className="w-32 h-32 animate-spin" style={getSpriteStyle(0, ASSETS.TREASURES)}></div>
+            <p className="text-[#FFD700] mt-4 font-serif">Summoning Assets... {loadProgress}%</p>
+        </div>
+    );
 
     const isFeedingActive = hungerState === 'hungry' || isFeeding || hungerState === 'fed';
 
@@ -399,177 +398,138 @@ export default function ServitorWildUnknown() {
             <style jsx global>{`
                 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap');
                 .magick-font { font-family: 'Cinzel', serif; }
-
-                /* BUTTONS */
-                .runic-btn {
-                    background: url('${ASSET_PATH}${ASSETS.UI_BUTTONS}') center/cover no-repeat;
-                    color: #FFD700; text-shadow: 0 1px 2px black;
-                    border: 1px solid rgba(255, 215, 0, 0.3);
-                    box-shadow: 0 4px 6px rgba(0,0,0,0.5);
-                    transition: all 0.2s; display: flex; align-items: center; justify-content: center;
-                }
+                .runic-btn { background: url('${ASSET_PATH}${ASSETS.UI_BUTTONS}') center/cover; color: #FFD700; text-shadow: 0 1px 2px black; border: 1px solid #FFD70050; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
                 .runic-btn:active { transform: scale(0.95); filter: brightness(0.8); }
-
                 /* ANIMATIONS */
-                @keyframes rig-bounce { 0%, 100% { top: 0; } 50% { top: -5px; } }
+                @keyframes rig-bounce { 0% { top: 0; } 50% { top: -5px; } }
                 @keyframes fall { from { top: -10%; } to { top: 80%; opacity: 0; } }
-                
-                /* Pulse Glows */
                 .pulse-glow-void { animation: pulse-void 1s infinite alternate; }
-                @keyframes pulse-void { from { filter: drop-shadow(0 0 5px #4b0082) brightness(1); } to { filter: drop-shadow(0 0 20px #8a2be2) brightness(1.5); } }
-                
+                @keyframes pulse-void { from { filter: drop-shadow(0 0 5px #4b0082); } to { filter: drop-shadow(0 0 20px #8a2be2); } }
                 .pulse-glow-gold { animation: pulse-gold 0.5s infinite alternate; }
                 @keyframes pulse-gold { from { filter: drop-shadow(0 0 5px #FFD700); } to { filter: drop-shadow(0 0 25px #FFFF00); } }
-
-                /* Walk Logic */
-                .anim-walk-left .leg-left { transform: rotate(-15deg) scaleX(-1) !important; transition: 0.5s; }
-                .anim-walk-left .leg-right { transform: rotate(15deg) !important; transition: 0.5s; }
-                .anim-walk-left { animation: rig-bounce 0.5s infinite; }
-
-                .anim-walk-right .leg-left { transform: rotate(15deg) scaleX(-1) !important; transition: 0.5s; }
-                .anim-walk-right .leg-right { transform: rotate(-15deg) !important; transition: 0.5s; }
-                .anim-walk-right { animation: rig-bounce 0.5s infinite; transform: scaleX(-1); }
-
-                /* SCROLLBAR */
-                .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-                .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-                .custom-scrollbar::-webkit-scrollbar-thumb { background: #5d4037; border-radius: 4px; }
+                .anim-walk-left .leg-left { transform: rotate(-15deg) scaleX(-1) !important; } .anim-walk-left .leg-right { transform: rotate(15deg) !important; } .anim-walk-left { animation: rig-bounce 0.5s infinite; }
+                .anim-walk-right .leg-left { transform: rotate(15deg) scaleX(-1) !important; } .anim-walk-right .leg-right { transform: rotate(-15deg) !important; } .anim-walk-right { animation: rig-bounce 0.5s infinite; transform: scaleX(-1); }
+                .custom-scrollbar::-webkit-scrollbar { width: 4px; } .custom-scrollbar::-webkit-scrollbar-thumb { background: #5d4037; border-radius: 4px; }
             `}</style>
 
             <button onClick={() => hasUnsavedChanges ? setShowExitWarning(true) : router.push('/spell-room')} className="absolute top-4 right-4 z-[60] text-gray-400 hover:text-white"><X /></button>
 
             {/* STAGE */}
-            <div className="absolute inset-0 z-0">
-                <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url('${ASSET_PATH}${ASSETS.BG_MAIN}')` }}></div>
-                <div className="absolute inset-0 bg-black/40"></div>
+            <div className="absolute inset-0 z-0 bg-cover bg-center" style={{ backgroundImage: `url('${ASSET_PATH}${ASSETS.BG_MAIN}')` }}>
+                <div className="absolute inset-0 bg-black/40" />
             </div>
 
-            {/* GAME WORLD (Z-Index Hierarchy: Background 0 -> Mound/Vessel 10 -> Servitor 20) */}
+            {/* GAME WORLD */}
             <div className="relative w-full h-full z-10 pointer-events-none">
-                
-                {/* MOUND (Left Destination) */}
-                <div id="game-mound" className="absolute bottom-[15vh] left-[10%] w-[160px] h-[100px] z-10 bg-contain bg-no-repeat bg-bottom transition-all duration-500"
-                     style={{ backgroundImage: `url('${ASSET_PATH}${ASSETS.MOUND}')` }} />
+                {/* Mound */}
+                <div id="game-mound" className="absolute bottom-[15vh] left-[10%] w-[160px] h-[100px] z-20 bg-contain bg-no-repeat bg-bottom transition-all duration-500"
+                     style={{ backgroundImage: `url('${ASSET_PATH}${ASSETS.MOUND}')`, transform: `scale(${config.offsets.mound.s}) translate(${config.offsets.mound.x}%, ${config.offsets.mound.y}%)` }} />
 
-                {/* SERVITOR (Moves between Mound and Vessel) */}
-                <div id="servitor-container" className="absolute bottom-[18vh] left-[20%] w-[128px] h-[128px] z-20 transition-all duration-100 pointer-events-auto origin-bottom">
+                {/* Servitor */}
+                <div id="servitor-container" className="absolute bottom-[18vh] left-[20%] w-[128px] h-[128px] z-[100] transition-all duration-100 pointer-events-auto origin-bottom">
                     <ServitorRig idPrefix="game-rig" />
                 </div>
 
-                {/* VESSEL (Right Destination) */}
-                <div className="absolute bottom-[20vh] right-[10%] w-[128px] h-[128px] z-10 flex flex-col items-center">
+                {/* Vessel */}
+                <div className="absolute bottom-[20vh] right-[10%] w-[128px] h-[128px] z-20 flex flex-col items-center">
                     <div id="game-vessel" className="w-full h-full relative transition-all duration-500" 
-                         style={{ ...getSpriteStyle(config.vesselIndex, ASSETS.VESSELS), transform: `scale(${SPRITE_OFFSET_CONFIG.vessel.scale})` }}>
+                         style={{ ...getSpriteStyle(config.vesselIndex, ASSETS.VESSELS), transform: `scale(${config.offsets.vessel.s}) translate(${config.offsets.vessel.x}%, ${config.offsets.vessel.y}%)` }}>
                          <div className="absolute top-[20%] left-[25%] w-[50%] h-[50%] opacity-80 mix-blend-overlay" style={getSpriteStyle(config.sigilIndex, ASSETS.TREASURES)} />
                     </div>
                     <div id="vessel-shine" className="absolute top-0 text-4xl opacity-0 transition-opacity duration-500">✨</div>
                 </div>
 
-                {/* FALLING FOOD */}
+                {/* Food */}
                 {fallingFood.map(f => (
-                    <div key={f.id} className="absolute w-16 h-16 z-30 animate-bounce"
-                         style={{ left: f.left + '%', top: f.top + '%', animation: 'fall 1s linear forwards', ...getSpriteStyle(f.spriteIndex, ASSETS.FOOD) }} 
-                    />
+                    <div key={f.id} className="absolute w-16 h-16 z-[101] animate-bounce"
+                         style={{ left: f.left + '%', top: f.top + '%', animation: 'fall 1s linear forwards', ...getSpriteStyle(f.spriteIndex, ASSETS.FOOD) }} />
                 ))}
             </div>
 
-            {/* BOTTOM HUD (Mobile Flex Fix) */}
+            {/* HUD */}
             {isRunning && !isFeedingActive && (
                 <div className="absolute bottom-6 left-0 w-full z-40 px-4 flex flex-wrap justify-between items-end gap-4 pointer-events-auto">
-                    <button onClick={() => { setIsRunning(false); runningRef.current = false; }} className="runic-btn px-6 py-3 rounded uppercase font-bold text-xs tracking-widest whitespace-nowrap">
-                        Modify Ritual
-                    </button>
-                    <div className="runic-btn px-6 py-2 rounded-full text-center min-w-[120px]">
-                        <div><p className="text-[10px] uppercase opacity-70">Wealth Count</p><p className="text-xl font-bold">{depositCount}</p></div>
-                    </div>
+                    <button onClick={() => { setIsRunning(false); runningRef.current = false; }} className="runic-btn px-6 py-3 rounded uppercase font-bold text-xs tracking-widest whitespace-nowrap">Modify Ritual</button>
+                    <div className="runic-btn px-6 py-2 rounded-full text-center min-w-[120px]"><div><p className="text-[10px] uppercase opacity-70">Wealth Count</p><p className="text-xl font-bold">{depositCount}</p></div></div>
                 </div>
             )}
 
             {/* CONFIG PANEL */}
-            <div className={`absolute top-0 left-0 h-full w-full md:w-[500px] z-50 transition-transform duration-500 ease-in-out ${isRunning ? '-translate-x-full' : 'translate-x-0'} pointer-events-auto`}
+            <div className={`absolute top-0 left-0 h-full w-full md:w-[500px] z-50 transition-transform duration-500 ease-in-out ${isRunning ? '-translate-x-full' : 'translate-x-0'} pointer-events-auto flex flex-col`}
                  style={{ borderImage: `url('${ASSET_PATH}${ASSETS.UI_PANEL}') 18% 15% fill stretch`, borderWidth: '40px', padding: '20px' }}>
                 
-                <div className="w-full h-full overflow-y-auto custom-scrollbar flex flex-col gap-6 pr-2">
-                    <div className="text-center border-b border-[#5d4037]/30 pb-2"><h2 className="text-[#3e2723] text-2xl magick-font font-bold">Servitor Forge</h2></div>
-                    <div className="flex justify-center py-4 bg-black/10 rounded border border-[#5d4037]/20"><ServitorRig idPrefix="preview-rig" isPreview={true} /></div>
+                {/* FIXED PREVIEW HEADER */}
+                <div className="shrink-0 border-b border-[#5d4037]/30 pb-4 mb-4">
+                    <div className="text-center pb-2"><h2 className="text-[#3e2723] text-2xl magick-font font-bold">Servitor Forge</h2></div>
+                    <div className="h-[250px] flex items-center justify-center bg-black/10 rounded border border-[#5d4037]/20 relative overflow-hidden">
+                         <div className="absolute inset-0 opacity-20 bg-[url('/images/Servitor_images/Astral_Plane_Parallax_Layers.jpg')] bg-cover bg-center" />
+                         <ServitorRig idPrefix="preview-rig" isPreview={true} />
+                    </div>
+                </div>
 
-                    {/* Inputs */}
+                {/* SCROLLABLE CONTROLS */}
+                <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-6">
                     <div className="space-y-3">
-                        <input type="text" value={sName} onChange={e => setSName(e.target.value)} className="w-full bg-[#fdf5e6] border border-[#8d6e63] p-2 rounded text-[#2a1a1a] placeholder-opacity-50" placeholder="Spirit Name" />
-                        <input type="text" value={sPurpose} onChange={e => setSPurpose(e.target.value)} className="w-full bg-[#fdf5e6] border border-[#8d6e63] p-2 rounded text-[#2a1a1a] placeholder-opacity-50" placeholder="Purpose (e.g. Wealth)" />
+                        <input type="text" value={sName} onChange={e => setSName(e.target.value)} className="w-full bg-[#fdf5e6] border border-[#8d6e63] p-2 rounded text-[#2a1a1a]" placeholder="Spirit Name" />
+                        <input type="text" value={sPurpose} onChange={e => setSPurpose(e.target.value)} className="w-full bg-[#fdf5e6] border border-[#8d6e63] p-2 rounded text-[#2a1a1a]" placeholder="Purpose (e.g. Wealth)" />
                     </div>
 
-                    {/* Selection Grids (Scaled down 75% to prevent overflow) */}
-                    <div className="space-y-6">
-                        {[
-                            { label: 'Torso', key: 'baseIndex', asset: ASSETS.BASES },
-                            { label: 'Legs', key: 'legIndex', asset: ASSETS.LEGS },
-                            { label: 'Arms', key: 'limbIndex', asset: ASSETS.ARMS },
-                            { label: 'Headgear', key: 'hatIndex', asset: ASSETS.HEAD },
-                            { label: 'Attire', key: 'clothingIndex', asset: ASSETS.CLOTHES },
-                            { label: 'Tools', key: 'toolIndex', asset: ASSETS.TOOLS },
-                            { label: 'Back / Wings', key: 'wingIndex', asset: ASSETS.BACK },
-                            { label: 'Vessel', key: 'vesselIndex', asset: ASSETS.VESSELS },
-                            { label: 'Chest Sigil', key: 'sigilIndex', asset: ASSETS.TREASURES },
-                            { label: 'Sustenance', key: 'foodIndex', asset: ASSETS.FOOD }
-                        ].map((grp, idx) => (
-                            <div key={idx}>
-                                <label className="block text-xs font-bold text-[#3e2723] uppercase mb-1">{grp.label}</label>
-                                <div className="grid grid-cols-4 gap-2">
+                    {[
+                        { label: 'Torso', key: 'baseIndex', asset: ASSETS.BASES, part: 'base' },
+                        { label: 'Legs', key: 'legIndex', asset: ASSETS.LEGS, part: 'leg', flip: true },
+                        { label: 'Arms', key: 'limbIndex', asset: ASSETS.ARMS, part: 'arm', flip: true },
+                        { label: 'Headgear', key: 'hatIndex', asset: ASSETS.HEAD, part: 'head' },
+                        { label: 'Attire', key: 'clothingIndex', asset: ASSETS.CLOTHES, part: 'clothes' },
+                        { label: 'Tools', key: 'toolIndex', asset: ASSETS.TOOLS, part: 'tool' },
+                        { label: 'Back / Wings', key: 'wingIndex', asset: ASSETS.BACK, part: 'wing' },
+                        { label: 'Vessel', key: 'vesselIndex', asset: ASSETS.VESSELS, part: 'vessel' },
+                        { label: 'Chest Sigil', key: 'sigilIndex', asset: ASSETS.TREASURES, part: 'vessel' }, // Shares vessel D-Pad logic conceptually, or add separate if needed
+                        { label: 'Mound Style', key: 'mound', asset: ASSETS.MOUND, part: 'mound' } // Using simple loop for UI consistency, mound is single image but we can add DPad
+                    ].map((grp, idx) => (
+                        <div key={idx} className="bg-[#5d4037]/5 p-3 rounded">
+                            <label className="block text-xs font-bold text-[#3e2723] uppercase mb-2">{grp.label}</label>
+                            {/* Grid */}
+                            {grp.key !== 'mound' && (
+                                <div className="grid grid-cols-4 gap-2 mb-2">
                                     {GENERIC_LIST.map((_, i) => (
                                         <button key={i} onClick={() => setConfig({...config, [grp.key]: i})}
                                             className={`w-full aspect-square border-2 rounded overflow-hidden bg-[#eaddcf]/50 ${config[grp.key as keyof typeof config] === i ? 'border-[#3e2723] shadow-inner' : 'border-transparent'}`}>
-                                            {/* Reduced to 75% scale to prevent overflow */}
-                                            <div className="w-full h-full transform scale-75" style={getSpriteStyle(i, grp.asset)} />
+                                            <div className="w-full h-full transform scale-60" style={getSpriteStyle(i, grp.asset)} />
                                         </button>
                                     ))}
                                 </div>
-                            </div>
-                        ))}
+                            )}
+                            {/* D-Pad */}
+                            <DPad part={grp.part as any} allowFlip={grp.flip} />
+                        </div>
+                    ))}
 
-                        {/* Frequency & Wings */}
-                        <div className="bg-[#5d4037]/10 p-3 rounded space-y-3">
-                            <label className="flex justify-between text-xs font-bold text-[#3e2723] uppercase">
-                                <span>Feeding Frequency: {config.feedFreq} Tasks</span>
-                            </label>
-                            <input type="range" min="1" max="50" value={config.feedFreq} onChange={e => setConfig({...config, feedFreq: parseInt(e.target.value)})} className="w-full accent-[#3e2723]" />
-                            
-                            <div className="flex gap-4 items-center pt-2 border-t border-[#5d4037]/20">
-                                <label className="flex items-center gap-2 text-xs font-bold text-[#3e2723] uppercase cursor-pointer">
-                                    <input type="checkbox" checked={config.hasWings} onChange={e => setConfig({...config, hasWings: e.target.checked})} className="accent-[#3e2723]" />
-                                    Wings
-                                </label>
-                                <select value={config.movementType} onChange={e => setConfig({...config, movementType: e.target.value})} className="bg-[#fdf5e6] text-xs p-1 rounded border border-[#8d6e63]">
-                                    <option value="walk">Walk</option> <option value="fly">Fly</option>
-                                </select>
-                            </div>
+                    <div className="bg-[#5d4037]/10 p-3 rounded space-y-3">
+                        <label className="text-xs font-bold text-[#3e2723] uppercase">Feeding Frequency: {config.feedFreq} Tasks</label>
+                        <input type="range" min="1" max="50" value={config.feedFreq} onChange={e => setConfig({...config, feedFreq: parseInt(e.target.value)})} className="w-full accent-[#3e2723]" />
+                        <label className="block text-xs font-bold text-[#3e2723] uppercase mt-2">Sustenance</label>
+                        <div className="grid grid-cols-4 gap-2">
+                            {GENERIC_LIST.map((_, i) => (
+                                <button key={i} onClick={() => setConfig({...config, foodIndex: i})}
+                                    className={`w-full aspect-square border-2 rounded overflow-hidden bg-[#eaddcf]/50 ${config.foodIndex === i ? 'border-[#3e2723]' : 'border-transparent'}`}>
+                                    <div className="w-full h-full transform scale-60" style={getSpriteStyle(i, ASSETS.FOOD)} />
+                                </button>
+                            ))}
                         </div>
                     </div>
 
-                    {/* Footer Actions */}
-                    <div className="mt-8 flex flex-col gap-2">
+                    <div className="flex flex-col gap-2 pt-4">
                         <button onMouseDown={() => startHold('awaken')} onMouseUp={stopHold} onMouseLeave={stopHold} onTouchStart={() => startHold('awaken')} onTouchEnd={stopHold}
                             className="runic-btn w-full py-4 text-sm font-bold uppercase tracking-widest relative overflow-hidden">
                             <div className="absolute top-0 left-0 h-full bg-white/20 transition-all duration-75 ease-linear" style={{width: `${awakenProgress}%`}}></div>
                             <span className="relative z-10">{isAwakening ? "Awakening..." : "Hold to Awaken"}</span>
                         </button>
-                        <div className="flex gap-2">
-                            <button onClick={handleBindToGrimoire} className="flex-1 py-3 bg-[#5d4037] text-white text-xs uppercase font-bold rounded shadow hover:bg-[#3e2723]">Bind ({COST_BIND_SERVITOR})</button>
-                            {savedServitors.length > 0 && (
-                                <div className="flex-1 flex flex-col gap-1 max-h-24 overflow-y-auto">
-                                    {savedServitors.map(s => (
-                                        <div key={s.id} onClick={() => handleLoad(s)} className="flex justify-between bg-white/50 p-1 text-[10px] cursor-pointer border border-[#8d6e63]">
-                                            <span className="truncate">{s.name}</span><Trash2 size={12} onClick={(e) => handleDelete(s.id, e)} className="text-red-500"/>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
+                        <button onClick={handleBind} className="flex-1 py-3 bg-[#5d4037] text-white text-xs uppercase font-bold rounded shadow hover:bg-[#3e2723]">Bind ({COST_BIND_SERVITOR} Credits)</button>
                     </div>
                 </div>
             </div>
 
-            {/* Modals */}
+            {/* FEEDING MODAL */}
             {isFeedingActive && (
                 <div className="absolute inset-0 z-[200] bg-black/80 flex flex-col items-center justify-center">
                     {hungerState === 'fed' ? (
