@@ -46,36 +46,33 @@ const STATIC_LIMB_ADJUSTMENTS = {
 };
 
 // C. DIRECTIONAL OFFSETS (Adjust placements when Facing Right vs Left)
+// Change 'x' values here to shift specific limbs when walking Left or Right
 const DIRECTIONAL_OFFSETS = {
     facingRight: {
         global: { x: 0 }, base: { x: 0 }, head: { x: 0 }, clothes: { x: 0 },
         wing: { x: 0 }, tool: { x: 0 }, sigil: { x: 0 },
+        // Specific Limbs (Facing Right)
         armRight: { x: 0 }, armLeft: { x: 0 },
         legRight: { x: 0 }, legLeft: { x: 0 }
     },
     facingLeft: {
         global: { x: 0 }, base: { x: 0 }, head: { x: 0 }, clothes: { x: 0 },
         wing: { x: 0 }, tool: { x: 0 }, sigil: { x: 0 },
+        // Specific Limbs (Facing Left)
         armRight: { x: -20 }, armLeft: { x: -20 },
         legRight: { x: 0 }, legLeft: { x: 0 }
     }
 };
 
-// D. ANCHOR POINTS (Normalized 0-100%)
-// These define the pivot point for rotation logic
-const LIMB_ANCHORS = {
-    ARM: { x: 22, y: 18 }, // Shoulder socket (Top-Left)
-    LEG: { x: 50, y: 15 }  // Hip socket (Top-Center)
-};
-
-// E. UI PREVIEW SETTINGS
+// D. UI PREVIEW SETTINGS
 const UI_PREVIEW_SETTINGS = {
     scale: 1.0, 
     y: -11      
 };
 
-// F. LAYER ORDERING (Z-Index)
+// E. LAYER ORDERING (Z-Index)
 const LAYER_ORDER_CONFIG = {
+    // Backmost (0) -> Frontmost (100)
     facingRight: {
         wing: 0,
         armLeft: 10,   
@@ -102,7 +99,7 @@ const LAYER_ORDER_CONFIG = {
     }
 };
 
-// G. DEFAULT USER OFFSETS
+// F. DEFAULT USER OFFSETS
 const DEFAULT_OFFSETS = {
     global:  { x: 0, y: 0, s: 1.0, f: false, v: true, spread: 0 }, 
     wing:    { x: 0, y: 3, s: 1.0, f: false, v: true, spread: 0 },
@@ -178,7 +175,7 @@ export default function ServitorWildUnknown() {
     const [isRunning, setIsRunning] = useState(false);
     const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
-    // This state controls the Rig Animation & Direction explicitly
+    // This state controls the Rig Animation & Direction explicitly (Solving the "Flip Back" issue)
     const [rigAnimation, setRigAnimation] = useState('anim-idle');
 
     const runningRef = useRef(false); 
@@ -525,31 +522,9 @@ export default function ServitorWildUnknown() {
                 if (specificLimb?.includes('Right')) spreadMod = cfg.spread;
             }
 
-            // 4. Anchor Point Logic (Pivot Calculation)
-            // By default use 50% 50% (Center)
-            let transformOrigin = "50% 50%";
-            
-            if (partType === 'limb' && specificLimb) {
-                if (specificLimb.includes('arm')) {
-                    // Arm Logic: 
-                    // If visual sprite is flipped, the shoulder moves from left to right.
-                    // X = 0.22 (Left Shoulder) -> flipped -> X = 0.78 (Right Shoulder)
-                    // Y = 0.18
-                    const anchorX = flip ? (100 - LIMB_ANCHORS.ARM.x) : LIMB_ANCHORS.ARM.x;
-                    transformOrigin = `${anchorX}% ${LIMB_ANCHORS.ARM.y}%`;
-                } else if (specificLimb.includes('leg')) {
-                    // Leg Logic:
-                    // Always Centered X = 0.50
-                    // Y = 0.15
-                    transformOrigin = `${LIMB_ANCHORS.LEG.x}% ${LIMB_ANCHORS.LEG.y}%`;
-                }
-            }
-
             const totalX = cfg.x + xMod + spreadMod;
             const totalY = cfg.y + yMod;
 
-            // Note: The ScaleX(-1) for flip is applied to the SPRITE (child), 
-            // while the TransformOrigin is applied to the JOINT (parent) for correct rotation.
             const spriteTransform = `translate(${totalX}%, ${totalY}%) scale(${cfg.s}) ${flip ? 'scaleX(-1)' : ''}`;
             
             // Joint logic
@@ -562,8 +537,7 @@ export default function ServitorWildUnknown() {
             }
 
             return (
-                <div className={`joint absolute w-full h-full top-0 left-0 ${jointClass}`} 
-                     style={{ zIndex: z, transformOrigin: transformOrigin }}>
+                <div className={`joint absolute w-full h-full top-0 left-0 origin-top-center ${jointClass}`} style={{ zIndex: z }}>
                     <div className="sprite absolute w-full h-full top-0 left-0 pointer-events-none"
                          style={{ ...getSpriteStyle(idx, asset), transform: spriteTransform }} />
                 </div>
@@ -636,31 +610,21 @@ export default function ServitorWildUnknown() {
                 .runic-btn:active { transform: scale(0.95); filter: brightness(0.8); }
                 
                 @keyframes bounce { 0% { top: 0; } 50% { top: -5px; } }
-                
-                /* Sine Wave Approximation: ease-in-out on infinite alternate simulates sine rotation */
-                @keyframes rotate-l { 
-                    0% { transform: rotate(-15deg); } 
-                    100% { transform: rotate(15deg); } 
-                }
-                @keyframes rotate-r { 
-                    0% { transform: rotate(15deg); } 
-                    100% { transform: rotate(-15deg); } 
-                }
-                
+                @keyframes rotate-l { 0% { transform: rotate(-10deg); } 50% { transform: rotate(20deg); } 100% { transform: rotate(-10deg); } }
+                @keyframes rotate-r { 0% { transform: rotate(20deg); } 50% { transform: rotate(-10deg); } 100% { transform: rotate(20deg); } }
                 @keyframes fall { from { top: -10%; opacity: 1; } to { top: 100%; opacity: 0; } }
 
                 .anim-walk-left .servitor-rig { animation: bounce 0.5s infinite; }
-                /* Apply ease-in-out to simulate pendulum/sine wave */
-                .anim-walk-left .leg-left-joint { animation: rotate-l 1s infinite alternate ease-in-out; }
-                .anim-walk-left .leg-right-joint { animation: rotate-r 1s infinite alternate ease-in-out; }
-                .anim-walk-left .arm-left-joint { animation: rotate-r 1s infinite alternate ease-in-out; }
-                .anim-walk-left .arm-right-joint { animation: rotate-l 1s infinite alternate ease-in-out; }
+                .anim-walk-left .leg-left-joint { animation: rotate-l 1s infinite; }
+                .anim-walk-left .leg-right-joint { animation: rotate-r 1s infinite; }
+                .anim-walk-left .arm-left-joint { animation: rotate-r 1s infinite; }
+                .anim-walk-left .arm-right-joint { animation: rotate-l 1s infinite; }
                 
                 .anim-walk-right .servitor-rig { animation: bounce 0.5s infinite; }
-                .anim-walk-right .leg-left-joint { animation: rotate-r 1s infinite alternate ease-in-out; }
-                .anim-walk-right .leg-right-joint { animation: rotate-l 1s infinite alternate ease-in-out; }
-                .anim-walk-right .arm-left-joint { animation: rotate-l 1s infinite alternate ease-in-out; }
-                .anim-walk-right .arm-right-joint { animation: rotate-r 1s infinite alternate ease-in-out; }
+                .anim-walk-right .leg-left-joint { animation: rotate-r 1s infinite; }
+                .anim-walk-right .leg-right-joint { animation: rotate-l 1s infinite; }
+                .anim-walk-right .arm-left-joint { animation: rotate-l 1s infinite; }
+                .anim-walk-right .arm-right-joint { animation: rotate-r 1s infinite; }
 
                 .pulse-glow-void { animation: pulse-void 1s infinite alternate; }
                 @keyframes pulse-void { from { filter: drop-shadow(0 0 5px #4b0082); } to { filter: drop-shadow(0 0 20px #8a2be2); } }
