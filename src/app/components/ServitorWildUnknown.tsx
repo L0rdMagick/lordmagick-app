@@ -30,16 +30,6 @@ const ASSETS = {
 // --- 2. CONFIGURATION SECTION (CODE ONLY) ---
 
 // A. MASTER DIRECTIONAL OFFSETS & BASE DEFAULTS
-//
-// HOW TO EDIT:
-// 1. facingRight (BASE): This controls the position for BOTH directions.
-//    If you move an arm here, it moves in both Right and Left views.
-//
-// 2. facingLeft (OFFSET): This is ONLY for fine-tuning the Left view.
-//    Values here are ADDED to the Base. Leave them at 0 to perfectly mirror the Base.
-//    Example: If Base X is 10, and facingLeft X is 0 -> Result is 10.
-//             If Base X is 10, and facingLeft X is -5 -> Result is 5.
-
 const DIRECTIONAL_OFFSETS = {
     facingRight: {
         // --- BASE POSITIONS (Default/Right) ---
@@ -161,7 +151,7 @@ const CATEGORIES: CategoryItem[] = [
     { id: 'mound', label: 'MOUNDS', asset: ASSETS.MOUND, indexKey: null, offsetKey: 'mound', single: true, canFlip: true },
     { id: 'vessel', label: 'VESSELS', asset: ASSETS.VESSELS, indexKey: 'vesselIndex', offsetKey: 'vessel', canFlip: true },
     { id: 'food', label: 'FOOD', asset: ASSETS.FOOD, indexKey: 'foodIndex', offsetKey: null },
-    { id: 'settings', label: 'BEHAVIOR', asset: null, indexKey: null, offsetKey: null } // Renamed to BEHAVIOR
+    { id: 'settings', label: 'BEHAVIOR', asset: null, indexKey: null, offsetKey: null }
 ];
 
 const GENERIC_LIST = Array.from({length: 16}).map((_, i) => `Option ${i + 1}`);
@@ -355,17 +345,18 @@ export default function ServitorWildUnknown() {
         while(runningRef.current && loopIdRef.current === id) {
             
             // 1. Walk to Mound (Left)
-            // UPDATED: Go deeper into the void (7% instead of 15%)
             if(servitor) { servitor.style.opacity = '1'; servitor.style.transform = 'scale(1)'; }
             setRigAnimation(config.movementType === 'fly' ? 'anim-fly-left' : 'anim-walk-left');
             
-            await moveTo(7, id); 
+            // FIXED: Stop earlier at 15% (was 7% or 15% in previous iteration requests, making it stop ~50px earlier)
+            await moveTo(15, id); 
             if(!runningRef.current) break;
 
             // 2. Enter Void
             if(servitor) {
                 servitor.style.opacity = '0';
-                servitor.style.transform = 'scale(0.1) translateY(50px)';
+                // FIXED: Goes deeper into void with translateX(-20px)
+                servitor.style.transform = 'scale(0.1) translateY(50px) translateX(-20px)';
             }
             await wait(500);
 
@@ -382,8 +373,8 @@ export default function ServitorWildUnknown() {
             }
             setRigAnimation(config.movementType === 'fly' ? 'anim-fly-right' : 'anim-walk-right');
             
-            // UPDATED: Walk further past vessel (88% instead of 80%)
-            await moveTo(88, id);
+            // FIXED: Stop before edge of vessel (72% instead of 88%)
+            await moveTo(72, id);
             if(!runningRef.current) break;
 
             // 5. Deposit
@@ -673,11 +664,11 @@ export default function ServitorWildUnknown() {
                     100% { transform: rotate(0deg); }
                 }
 
-                /* Flying Bob */
+                /* Flying Bob - UPDATED to float higher (-60 to -90px) */
                 @keyframes float-bob {
-                    0% { transform: translateY(-40px); }
-                    50% { transform: translateY(-60px); }
-                    100% { transform: translateY(-40px); }
+                    0% { transform: translateY(-60px); }
+                    50% { transform: translateY(-90px); }
+                    100% { transform: translateY(-60px); }
                 }
                 .anim-floating { animation: float-bob 3s ease-in-out infinite; }
 
@@ -751,14 +742,14 @@ export default function ServitorWildUnknown() {
                 </div>
             )}
 
-            {/* CONFIG PANEL - Lowered by 30px via top-[30px] and h-[calc(100%-30px)] */}
-            <div className={`absolute top-[30px] left-0 h-[calc(100%-30px)] w-full md:w-[500px] z-50 transition-transform duration-500 ease-in-out ${isRunning ? '-translate-x-full' : 'translate-x-0'} pointer-events-auto flex flex-col bg-[#0f0f1a]`}
+            {/* CONFIG PANEL - Lowered by 30px MORE (total 60px) via top-[60px] */}
+            <div className={`absolute top-[60px] left-0 h-[calc(100%-60px)] w-full md:w-[500px] z-50 transition-transform duration-500 ease-in-out ${isRunning ? '-translate-x-full' : 'translate-x-0'} pointer-events-auto flex flex-col bg-[#0f0f1a]`}
                  style={{ borderImage: `url('${ASSET_PATH}${ASSETS.UI_PANEL}') 18% 15% fill stretch`, borderWidth: '40px', padding: '20px' }}>
                 
                 {/* 1. FIXED PREVIEW AREA */}
                 <div className="h-[45%] w-full relative border-b border-[#5d4037] shrink-0 flex flex-col items-center justify-center z-50">
-                    {/* Inputs raised higher (mt-2 instead of absolute top), stacked on mobile */}
-                    <div className="absolute top-0 w-full p-2 flex flex-col md:flex-row gap-2 z-50">
+                    {/* Inputs raised higher via -top-6 (~24px up) */}
+                    <div className="absolute -top-6 w-full p-2 flex flex-col md:flex-row gap-2 z-50">
                         <input type="text" value={sName} onChange={e => setSName(e.target.value)} 
                             className="flex-1 bg-[#f0e6d2] shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)] border border-[#5d4037] p-2 text-sm text-black rounded magick-font placeholder-gray-600" 
                             placeholder="Spirit Name" />
@@ -878,8 +869,9 @@ export default function ServitorWildUnknown() {
                             {/* Text disappears while feeding to clear view */}
                             {!isFeeding && <p className="text-[#FFD700] mb-8 animate-pulse text-xl font-serif">{sName} requires sustenance...</p>}
                             
+                            {/* FIXED: Removed opacity-50 and scale-75 to keep button steady and visible */}
                             <button onMouseDown={() => startHold('feed')} onMouseUp={stopHold} onMouseLeave={stopHold} onTouchStart={() => startHold('feed')} onTouchEnd={stopHold}
-                                className={`w-40 h-40 rounded-full border-4 border-[#FFD700] flex items-center justify-center relative overflow-hidden bg-black shadow-[0_0_50px_#FFD700] transition-opacity duration-300 ${isFeeding ? 'opacity-50 scale-75' : 'opacity-100'}`}>
+                                className={`w-40 h-40 rounded-full border-4 border-[#FFD700] flex items-center justify-center relative overflow-hidden bg-black shadow-[0_0_50px_#FFD700] transition-opacity duration-300`}>
                                 <div className="absolute bottom-0 left-0 w-full bg-[#FFD700]/30 transition-all duration-75" style={{height: `${feedProgress}%`}}></div>
                                 <div className="w-20 h-20" style={getSpriteStyle(config.foodIndex, ASSETS.FOOD)} />
                             </button>
