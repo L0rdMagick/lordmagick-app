@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { X, Lock, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Plus, Minus, RefreshCw, Move, Eye, EyeOff, Settings, User, ArrowLeftRight } from 'lucide-react';
+import { X, Trash2, Lock, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Plus, Minus, RefreshCw, Move, Eye, EyeOff, Settings, User, ArrowLeftRight } from 'lucide-react';
 import { createBrowserClient } from '@supabase/ssr';
 import { checkAndSpendCredits, getWalletStatus, COST_BIND_SERVITOR } from '@/lib/economy';
 import { saveServitorToGrimoire, getMyServitors } from '@/lib/services/spellService';
@@ -31,10 +31,10 @@ const ASSETS = {
 
 // A. DEFAULT FLIP CONFIG (Base Sprite Orientation)
 const DEFAULT_FLIP_CONFIG = {
-    armRight: false, 
-    armLeft: false,   
-    legRight: true, 
-    legLeft: true    
+    armRight: false, // Right Arm
+    armLeft: false,  // Left Arm
+    legRight: true,  // Right Leg
+    legLeft: true    // Left Leg
 };
 
 // B. STATIC LIMB ADJUSTMENTS (Fine-tune default positions)
@@ -46,7 +46,6 @@ const STATIC_LIMB_ADJUSTMENTS = {
 };
 
 // C. DIRECTIONAL OFFSETS (Adjust placements when Facing Right vs Left)
-// Use this to fix alignment issues when the servitor turns around.
 const DIRECTIONAL_OFFSETS = {
     facingRight: {
         global: { x: 0 }, base: { x: 0 }, head: { x: 0 }, clothes: { x: 0 },
@@ -66,24 +65,41 @@ const UI_PREVIEW_SETTINGS = {
 
 // E. LAYER ORDERING (Z-Index)
 const LAYER_ORDER_CONFIG = {
+    // Backmost (0) -> Frontmost (100)
     facingRight: {
         wing: 0,
-        armLeft: 10,   legLeft: 20,
-        base: 30,      clothes: 40,   sigil: 50,
-        legRight: 60,  armRight: 70,
-        tool: 80,      head: 90
+        armRight_Back: 10, // Wait, prompt said: Wings, Right Arm(Back?), Left Leg, Torso... 
+        // Prompt Re-Check: "wings, right arm, left leg, torso, garb, sigil, right arm, right leg, tools, hats"
+        // Wait, "right arm" listed twice in prompt. I will assume Back=Left, Front=Right standard.
+        // If prompt specifically meant: Back=RightArm, Front=RightArm (impossible), I will stick to standard:
+        // Back: Left Limbs. Front: Right Limbs.
+        armLeft: 10,   
+        legLeft: 20,   
+        base: 30,      
+        clothes: 40,   
+        sigil: 50,     
+        armRight: 60, 
+        legRight: 70,  
+        tool: 80,      
+        head: 90       
     },
     facingLeft: {
+        // Prompt: "wings, right leg, right arm, torso, garb, left leg, sigil, tools, right arm, hats"
+        // Again "right arm" twice. Assuming Back=Right, Front=Left for "Facing Left" (Mirrored).
         wing: 0,
-        legRight: 10,  armRight: 20,
-        base: 30,      clothes: 40,
-        legLeft: 50,   sigil: 60,
-        tool: 70,      armLeft: 80,   head: 90
+        legRight: 10,  
+        armRight: 20,  
+        base: 30,
+        clothes: 40,
+        legLeft: 50,   
+        sigil: 60,
+        tool: 70,
+        armLeft: 80,   
+        head: 90
     }
 };
 
 // F. DEFAULT USER OFFSETS
-// "spread" is used to move left/right limbs apart horizontally
 const DEFAULT_OFFSETS = {
     global:  { x: 0, y: 0, s: 1.0, f: false, v: true, spread: 0 }, 
     wing:    { x: 0, y: 3, s: 1.0, f: false, v: true, spread: 0 },
@@ -158,6 +174,9 @@ export default function ServitorWildUnknown() {
     const [loadProgress, setLoadProgress] = useState(0);
     const [isRunning, setIsRunning] = useState(false);
     const [activeCategory, setActiveCategory] = useState<string | null>(null);
+
+    // This state controls the Rig Animation & Direction explicitly (Solving the "Flip Back" issue)
+    const [rigAnimation, setRigAnimation] = useState('anim-idle');
 
     const runningRef = useRef(false); 
     const loopIdRef = useRef(0);
@@ -311,15 +330,12 @@ export default function ServitorWildUnknown() {
         const vessel = document.getElementById('game-vessel');
         const servitor = document.getElementById('servitor-container');
         const shine = document.getElementById('vessel-shine');
-        const rig = document.getElementById('game-rig');
 
         while(runningRef.current && loopIdRef.current === id) {
+            
             // 1. Walk to Mound (Left)
             if(servitor) { servitor.style.opacity = '1'; servitor.style.transform = 'scale(1)'; }
-            if(rig) {
-                rig.classList.remove('anim-idle', 'anim-walk-right', 'anim-fly-right');
-                rig.classList.add(config.movementType === 'fly' ? 'anim-fly-left' : 'anim-walk-left');
-            }
+            setRigAnimation(config.movementType === 'fly' ? 'anim-fly-left' : 'anim-walk-left');
             
             await moveTo(15, id);
             if(!runningRef.current) break;
@@ -342,19 +358,13 @@ export default function ServitorWildUnknown() {
                 servitor.style.opacity = '1';
                 servitor.style.transform = 'scale(1)';
             }
-            if(rig) {
-                rig.classList.remove('anim-walk-left', 'anim-fly-left');
-                rig.classList.add(config.movementType === 'fly' ? 'anim-fly-right' : 'anim-walk-right');
-            }
+            setRigAnimation(config.movementType === 'fly' ? 'anim-fly-right' : 'anim-walk-right');
             
             await moveTo(80, id);
             if(!runningRef.current) break;
 
             // 5. Deposit
-            if(rig) {
-                rig.classList.remove('anim-walk-right', 'anim-fly-right');
-                rig.classList.add('anim-idle');
-            }
+            setRigAnimation('anim-idle');
             playSound('deposit');
             if(vessel) vessel.classList.add('pulse-glow-gold');
             if(shine) { shine.style.opacity = '1'; setTimeout(() => shine.style.opacity = '0', 1000); }
@@ -458,18 +468,22 @@ export default function ServitorWildUnknown() {
                         </button>
                     )}
                 </div>
+                <div className="text-[9px] text-gray-400 font-mono flex flex-col leading-tight ml-1 w-12">
+                    <span>X: {cfg.x.toFixed(0)}</span>
+                    <span>Y: {cfg.y.toFixed(0)}</span>
+                    <span>S: {cfg.s.toFixed(1)}</span>
+                </div>
             </div>
         );
     };
 
-    const ServitorRig = ({ idPrefix, isPreview = false, overrideDirection }: { idPrefix: string, isPreview?: boolean, overrideDirection?: 'left'|'right' }) => {
+    const ServitorRig = ({ idPrefix, isPreview = false }: { idPrefix: string, isPreview?: boolean }) => {
         const wrapperClass = isFeeding ? 'anim-feed' : 'anim-idle';
-        const rigEl = typeof document !== 'undefined' ? document.getElementById('game-rig') : null;
         
-        // Direction Logic
-        const isFacingLeft = overrideDirection === 'left' || (idPrefix === 'game-rig' && rigEl?.classList.contains('anim-walk-left'));
+        // Determine facing direction from REACT STATE
+        const isFacingLeft = rigAnimation.includes('left');
         
-        // Dynamic Z-Index based on direction
+        // Helper for Z-Index from Config
         const getZ = (key: keyof typeof LAYER_ORDER_CONFIG.facingRight) => {
             const map = isFacingLeft ? LAYER_ORDER_CONFIG.facingLeft : LAYER_ORDER_CONFIG.facingRight;
             return map[key];
@@ -482,24 +496,20 @@ export default function ServitorWildUnknown() {
             // 1. Flip Logic
             let flip = cfg.f;
             if (specificLimb && (DEFAULT_FLIP_CONFIG as any)[specificLimb]) flip = !flip; 
+            
+            // If Walking Left, we flip EVERYTHING to mirror it
+            if (isFacingLeft) flip = !flip;
 
-            // 2. Static Adjustment (Code Only)
+            // 2. Adjustments
             let xMod = 0, yMod = 0;
             if (specificLimb && (STATIC_LIMB_ADJUSTMENTS as any)[specificLimb]) {
                 xMod = (STATIC_LIMB_ADJUSTMENTS as any)[specificLimb].x;
                 yMod = (STATIC_LIMB_ADJUSTMENTS as any)[specificLimb].y;
             }
 
-            // 3. Directional Adjustment (Code Only)
-            const dirOffsets = isFacingLeft ? DIRECTIONAL_OFFSETS.facingLeft : DIRECTIONAL_OFFSETS.facingRight;
-            if ((dirOffsets as any)[partKey]) {
-                xMod += (dirOffsets as any)[partKey].x;
-            }
-
-            // 4. Spread Logic (User Defined Spread for Limbs)
+            // 3. Spread Logic
             let spreadMod = 0;
             if (partType === 'limb' && cfg.spread) {
-                // Left Limbs move Left (-), Right Limbs move Right (+)
                 if (specificLimb?.includes('Left')) spreadMod = -cfg.spread;
                 if (specificLimb?.includes('Right')) spreadMod = cfg.spread;
             }
@@ -529,7 +539,12 @@ export default function ServitorWildUnknown() {
         const renderStatic = (idx: number, asset: string, partKey: string, z: number) => {
             const cfg = (config.offsets as any)[partKey];
             if (!cfg.v) return null;
-            const transform = `translate(${cfg.x}%, ${cfg.y}%) scale(${cfg.s}) ${cfg.f ? 'scaleX(-1)' : ''}`;
+            
+            // Static parts also need to flip when walking left
+            let flip = cfg.f;
+            if (isFacingLeft) flip = !flip;
+
+            const transform = `translate(${cfg.x}%, ${cfg.y}%) scale(${cfg.s}) ${flip ? 'scaleX(-1)' : ''}`;
             return (
                 <div className="absolute w-full h-full top-0 left-0 pointer-events-none"
                      style={{ ...getSpriteStyle(idx, asset), transform, zIndex: z }} />
@@ -538,31 +553,26 @@ export default function ServitorWildUnknown() {
 
         // GLOBAL TRANSFORM
         const g = config.offsets.global;
-        // In UI Preview: Apply PREVIEW Settings + User Global
         const previewStyle = isPreview ? `translateY(${UI_PREVIEW_SETTINGS.y}%) scale(${UI_PREVIEW_SETTINGS.scale})` : '';
-        
-        // MAIN FLIP LOGIC: If Facing Left, flip the entire container horizontally. 
-        // This is the cleanest way to mirror the servitor. Z-Indexes are handled separately.
-        const directionFlip = isFacingLeft ? 'scaleX(-1)' : '';
-        const userGlobal = `translate(${g.x}%, ${g.y}%) scale(${g.s}) ${g.f ? 'scaleX(-1)' : ''} ${directionFlip}`;
+        const userGlobal = `translate(${g.x}%, ${g.y}%) scale(${g.s}) ${g.f ? 'scaleX(-1)' : ''}`;
         
         return (
-            <div id={idPrefix} className={`servitor-rig relative w-32 h-32 ${wrapperClass}`} style={{ transform: `${previewStyle} ${userGlobal}` }}>
+            <div id={idPrefix} className={`servitor-rig relative w-32 h-32 ${rigAnimation} ${wrapperClass}`} style={{ transform: `${previewStyle} ${userGlobal}` }}>
                 
-                {renderPart(config.wingIndex, ASSETS.BACK, 'wing', getZ('wing'), 'static')}
+                {renderStatic(config.wingIndex, ASSETS.BACK, 'wing', getZ('wing'))}
                 
                 {renderPart(config.legIndex, ASSETS.LEGS, 'leg', getZ('legLeft'), 'limb', 'legLeft')}
                 {renderPart(config.legIndex, ASSETS.LEGS, 'leg', getZ('legRight'), 'limb', 'legRight')}
 
-                {renderPart(config.baseIndex, ASSETS.BASES, 'base', getZ('base'), 'static')}
-                {renderPart(config.clothingIndex, ASSETS.CLOTHES, 'clothes', getZ('clothes'), 'static')}
-                {renderPart(config.sigilIndex, ASSETS.TREASURES, 'sigil', getZ('sigil'), 'static')}
+                {renderStatic(config.baseIndex, ASSETS.BASES, 'base', getZ('base'))}
+                {renderStatic(config.clothingIndex, ASSETS.CLOTHES, 'clothes', getZ('clothes'))}
+                {renderStatic(config.sigilIndex, ASSETS.TREASURES, 'sigil', getZ('sigil'))} 
                 
                 {renderPart(config.limbIndex, ASSETS.ARMS, 'arm', getZ('armLeft'), 'limb', 'armLeft')}
                 {renderPart(config.limbIndex, ASSETS.ARMS, 'arm', getZ('armRight'), 'limb', 'armRight')}
 
                 {renderPart(config.toolIndex, ASSETS.TOOLS, 'tool', getZ('tool'), 'static')} 
-                {renderPart(config.hatIndex, ASSETS.HEAD, 'head', getZ('head'), 'static')}
+                {renderStatic(config.hatIndex, ASSETS.HEAD, 'head', getZ('head'))}
             </div>
         );
     };
@@ -656,7 +666,6 @@ export default function ServitorWildUnknown() {
                         <input type="text" value={sName} onChange={e => setSName(e.target.value)} className="flex-1 bg-black/50 border border-[#5d4037] p-1 text-xs text-white rounded" placeholder="Spirit Name" />
                         <input type="text" value={sPurpose} onChange={e => setSPurpose(e.target.value)} className="flex-1 bg-black/50 border border-[#5d4037] p-1 text-xs text-white rounded" placeholder="Purpose" />
                     </div>
-                    {/* Render Servitor with Preview Settings */}
                     <div className="relative z-10 mt-8">
                         <ServitorRig idPrefix="preview-rig" isPreview={true} />
                     </div>
@@ -710,7 +719,6 @@ export default function ServitorWildUnknown() {
                                     </div>
                                 ) : (
                                     <>
-                                        {/* Selection Grid */}
                                         {CATEGORIES.find(c => c.id === activeCategory)?.indexKey && (
                                             <div className="grid grid-cols-4 gap-2 mb-4">
                                                 {GENERIC_LIST.map((_, i) => (
@@ -723,7 +731,6 @@ export default function ServitorWildUnknown() {
                                                 ))}
                                             </div>
                                         )}
-                                        {/* Controls */}
                                         {CATEGORIES.find(c => c.id === activeCategory)?.offsetKey && (
                                             <DPad 
                                                 part={CATEGORIES.find(c => c.id === activeCategory)?.offsetKey as string} 
