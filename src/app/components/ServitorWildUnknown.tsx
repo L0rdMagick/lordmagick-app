@@ -59,8 +59,8 @@ const DIRECTIONAL_OFFSETS = {
         armRight: { x: 2, y: 15, s: 0.6, f: false },
         armLeft:  { x: 25, y: 19, s: 0.6, f: false }, 
         
-        legRight: { x: -5, y: 58, s: 0.9, f: true },
-        legLeft:  { x: 5, y: 59, s: 0.9, f: true },
+        legRight: { x: -5, y: 65, s: 0.9, f: true },
+        legLeft:  { x: 5, y: 66, s: 0.9, f: true },
 
         // World Objects
         vessel:  { x: 0, y: 0, s: 1.8, f: false },
