@@ -71,18 +71,18 @@ const DIRECTIONAL_OFFSETS = {
         global: { x: 0, y: 0, s: 0 },
         base: { x: 0, y: 0, s: 0 },
         head: { x: 0, y: 0, s: 0 },
-        clothes: { x: 0, y: 0, s: 0 },
+        clothes: { x: 3, y: 0, s: 0 },
         wing: { x: 0, y: 0, s: 0 },
         tool: { x: 0, y: 0, s: 0 },
-        sigil: { x: 0, y: 0, s: 0 },
+        sigil: { x: -8, y: 0, s: 0 },
         
         // Limb Shifts for Left Walk
         // When flipping to left, we shift the arms back to align with the reversed body
-        armRight: { x: -10, y: 0, s: 0 },
-        armLeft:  { x: -10, y: 0, s: 0 },
+        armRight: { x: -23, y: 3, s: 0 },
+        armLeft:  { x: -26, y: -6, s: 0 },
         
-        legRight: { x: 0, y: 0, s: 0 },
-        legLeft:  { x: 0, y: 0, s: 0 },
+        legRight: { x: -5, y: 2, s: 0 },
+        legLeft:  { x: -1, y: 10, s: 0 },
 
         vessel: { x: 0, y: 0, s: 0 },
         mound: { x: 0, y: 0, s: 0 }
