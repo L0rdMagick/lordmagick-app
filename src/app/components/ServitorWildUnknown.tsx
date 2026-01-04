@@ -42,32 +42,32 @@ const ASSETS = {
 
 const DIRECTIONAL_OFFSETS = {
     facingRight: {
-        // --- BASE POSITIONS (Master Control) ---
+        // --- BASE POSITIONS (Default/Right) ---
         global:  { x: 0, y: 0, s: 1.0, f: false }, 
         
         // Static Parts
         wing:    { x: 0, y: 3, s: 1.0, f: false },
         base:    { x: 0, y: 0, s: 1.0, f: false },
         head:    { x: 0, y: -51, s: 0.7, f: false },
-        clothes: { x: 0, y: 10, s: 0.6, f: false },
+        clothes: { x: -1, y: 10, s: 0.55, f: false },
         sigil:   { x: 3, y: 2, s: 0.2, f: false },
         tool:    { x: 27, y: 11, s: 0.4, f: false },
         
-        // Limbs (Master Position)
-        // Arms shifted left/right to align shoulders with torso
-        armRight: { x: -5, y: 7, s: 0.5, f: false },
-        armLeft:  { x: 15, y: 7, s: 0.5, f: false }, 
+        // Specific Limbs (Consolidated & Tuned for Natural Pivot)
+        // Note: Arms are pulled slightly left to align the shoulder pivot with the torso
+        // Legs are pulled slightly up to align hip pivot
+        armRight: { x: -3, y: 10, s: 0.5, f: false },
+        armLeft:  { x: 23, y: 7, s: 0.5, f: false }, 
         
-        legRight: { x: -6, y: 45, s: 0.7, f: true },
-        legLeft:  { x: 14, y: 45, s: 0.7, f: true },
+        legRight: { x: -5, y: 60, s: 0.7, f: true },
+        legLeft:  { x: 15, y: 60, s: 0.7, f: true },
 
         // World Objects
         vessel:  { x: 0, y: 0, s: 1.8, f: false },
         mound:   { x: 0, y: 0, s: 2.8, f: false },
     },
     facingLeft: {
-        // --- OFFSETS (Added to Base when walking Left) ---
-        // 0 = Follows Base exactly.
+        // --- ADJUSTMENTS (Added to Base when Facing Left) ---
         global: { x: 0, y: 0, s: 0 },
         base: { x: 0, y: 0, s: 0 },
         head: { x: 0, y: 0, s: 0 },
@@ -76,8 +76,8 @@ const DIRECTIONAL_OFFSETS = {
         tool: { x: 0, y: 0, s: 0 },
         sigil: { x: 0, y: 0, s: 0 },
         
-        // Limbs
-        // We shift X by -10 to account for the sprite flip perspective
+        // Limb Shifts for Left Walk
+        // When flipping to left, we shift the arms back to align with the reversed body
         armRight: { x: -10, y: 0, s: 0 },
         armLeft:  { x: -10, y: 0, s: 0 },
         
