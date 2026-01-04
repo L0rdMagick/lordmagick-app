@@ -31,7 +31,6 @@ const ASSETS = {
 
 // A. MASTER DIRECTIONAL OFFSETS & BASE DEFAULTS
 // facingRight: These are the BASE values (The Default Look). 
-//              If you want to change the starting position of limbs, change them here.
 // facingLeft:  These are added to the Base values when walking Left.
 const DIRECTIONAL_OFFSETS = {
     facingRight: {
@@ -46,13 +45,14 @@ const DIRECTIONAL_OFFSETS = {
         sigil:   { x: 3, y: 2, s: 0.2, f: false },
         tool:    { x: 27, y: 11, s: 0.4, f: false },
         
-        // Specific Limbs (Consolidated)
-        // Note: 'f' here sets the default flip state (e.g., Legs are usually flipped by default in the sprite sheet)
-        armRight: { x: 0, y: 10, s: 0.5, f: false },
-        armLeft:  { x: 20, y: 10, s: 0.5, f: false }, // Shifted +20 for visual balance
+        // Specific Limbs (Consolidated & Tuned for Natural Pivot)
+        // Note: Arms are pulled slightly left to align the shoulder pivot with the torso
+        // Legs are pulled slightly up to align hip pivot
+        armRight: { x: -5, y: 7, s: 0.5, f: false },
+        armLeft:  { x: 15, y: 7, s: 0.5, f: false }, 
         
-        legRight: { x: -6, y: 55, s: 0.7, f: true },
-        legLeft:  { x: 14, y: 55, s: 0.7, f: true },  // Shifted -6 + 20 = 14 for visual balance
+        legRight: { x: -6, y: 45, s: 0.7, f: true },
+        legLeft:  { x: 14, y: 45, s: 0.7, f: true },
 
         // World Objects
         vessel:  { x: 0, y: 0, s: 1.8, f: false },
@@ -69,8 +69,9 @@ const DIRECTIONAL_OFFSETS = {
         sigil: { x: 0, y: 0, s: 0 },
         
         // Limb Shifts for Left Walk
-        armRight: { x: -20, y: 0, s: 0 },
-        armLeft:  { x: -20, y: 0, s: 0 },
+        // When flipping to left, we shift the arms back to align with the reversed body
+        armRight: { x: -10, y: 0, s: 0 },
+        armLeft:  { x: -10, y: 0, s: 0 },
         
         legRight: { x: 0, y: 0, s: 0 },
         legLeft:  { x: 0, y: 0, s: 0 },
@@ -114,9 +115,7 @@ const LAYER_ORDER_CONFIG = {
     }
 };
 
-// D. DEFAULT USER OFFSETS
-// These are now ZEROED out so the UI starts at 0, 0, 0.
-// The actual starting positions are handled by DIRECTIONAL_OFFSETS (facingRight) above.
+// D. DEFAULT USER OFFSETS (Zeroed out as requested)
 const DEFAULT_OFFSETS = {
     global:  { x: 0, y: 0, s: 0.0, f: false, v: true, spread: 0 }, 
     wing:    { x: 0, y: 0, s: 0.0, f: false, v: true, spread: 0 },
@@ -513,7 +512,6 @@ export default function ServitorWildUnknown() {
 
             // 2. Get Base Config (The consolidated Default)
             const baseMap = DIRECTIONAL_OFFSETS.facingRight;
-            // Use specific limb config if available (e.g. armLeft), else generic partKey (e.g. tool)
             const baseCfg = specificLimb ? (baseMap as any)[specificLimb] : (baseMap as any)[partKey] || { x:0, y:0, s:1, f:false };
 
             // 3. Get Directional Adjustments (Left Walk offsets)
@@ -521,14 +519,9 @@ export default function ServitorWildUnknown() {
             const dirCfg = dirMap ? (specificLimb ? (dirMap as any)[specificLimb] : (dirMap as any)[partKey]) : { x:0, y:0, s:0 };
 
             // 4. Calculate Final Values
-            
-            // Flip Logic: Base Flip XOR User Flip (Standard)
-            // If facing Left, we physically flip the div with scaleX(-1) unless specific overrides exist.
-            // Generally, if facing left, we invert the flip state relative to right.
-            let flip = baseCfg.f !== userCfg.f; // XOR-like behavior for toggle
+            let flip = baseCfg.f !== userCfg.f; 
             if (isFacingLeft) flip = !flip;
 
-            // Spread Logic (User Only)
             let spreadMod = 0;
             if (partType === 'limb' && userCfg.spread) {
                 if (specificLimb?.includes('Left')) spreadMod = -userCfg.spread;
@@ -537,10 +530,29 @@ export default function ServitorWildUnknown() {
 
             const totalX = baseCfg.x + (dirCfg?.x || 0) + userCfg.x + spreadMod;
             const totalY = baseCfg.y + (dirCfg?.y || 0) + userCfg.y;
-            const totalS = baseCfg.s + (dirCfg?.s || 0) + userCfg.s; // Additive Scale for easier UI adjustment
+            const totalS = baseCfg.s + (dirCfg?.s || 0) + userCfg.s; 
 
             const spriteTransform = `translate(${totalX}%, ${totalY}%) scale(${totalS}) ${flip ? 'scaleX(-1)' : ''}`;
             
+            // 5. Dynamic Transform Origin Calculation
+            // This ensures pivots stay on the Shoulder/Hip regardless of flip
+            let originX = '50%';
+            let originY = '20%';
+
+            if (specificLimb?.includes('arm')) {
+                // Arms (Right Default): Shoulder is Top-Left (approx 25%)
+                // If facing Right: 25%. If facing Left (flipped): 75%
+                const baseArmX = 25; 
+                originX = isFacingLeft ? `${100 - baseArmX}%` : `${baseArmX}%`;
+                originY = '20%'; // Shoulder height
+            } else if (specificLimb?.includes('leg')) {
+                // Legs (Left Default): Hip is Top-Right (approx 70%)
+                // If facing Left (default orientation): 70%. If facing Right (flipped): 30%
+                const baseLegX = 70;
+                originX = isFacingLeft ? `${baseLegX}%` : `${100 - baseLegX}%`;
+                originY = '15%'; // Hip height
+            }
+
             // Joint logic
             let jointClass = '';
             if (partType === 'limb' && specificLimb) {
@@ -551,7 +563,8 @@ export default function ServitorWildUnknown() {
             }
 
             return (
-                <div className={`joint absolute w-full h-full top-0 left-0 origin-top-center ${jointClass}`} style={{ zIndex: z }}>
+                <div className={`joint absolute w-full h-full top-0 left-0 ${jointClass}`} 
+                     style={{ zIndex: z, transformOrigin: `${originX} ${originY}` }}>
                     <div className="sprite absolute w-full h-full top-0 left-0 pointer-events-none"
                          style={{ ...getSpriteStyle(idx, asset), transform: spriteTransform }} />
                 </div>
@@ -562,37 +575,26 @@ export default function ServitorWildUnknown() {
             return renderPart(idx, asset, partKey, z, 'static');
         };
 
-        // GLOBAL TRANSFORM
         const gUser = config.offsets.global;
         const gBase = DIRECTIONAL_OFFSETS.facingRight.global;
-        
         const finalGx = gBase.x + gUser.x;
         const finalGy = gBase.y + gUser.y;
         const finalGs = gBase.s + gUser.s;
-        const finalGf = gBase.f !== gUser.f; // XOR Flip
+        const finalGf = gBase.f !== gUser.f; 
 
-        // If walking left, usually we flip the whole container or just parts. 
-        // In this rig, parts flip individually, so global usually just stays or scales.
-        // However, if the user wants to flip the WHOLE thing via Global controls:
         const globalTransform = `translate(${finalGx}%, ${finalGy}%) scale(${finalGs}) ${finalGf ? 'scaleX(-1)' : ''}`;
-        
         const previewStyle = isPreview ? `translateY(${UI_PREVIEW_SETTINGS.y}%) scale(${UI_PREVIEW_SETTINGS.scale})` : '';
 
         return (
             <div id={idPrefix} className={`servitor-rig relative w-32 h-32 ${rigAnimation} ${wrapperClass}`} style={{ transform: `${previewStyle} ${globalTransform}` }}>
-                
                 {renderStatic(config.wingIndex, ASSETS.BACK, 'wing', getZ('wing'))}
-                
                 {renderPart(config.legIndex, ASSETS.LEGS, 'leg', getZ('legLeft'), 'limb', 'legLeft')}
                 {renderPart(config.legIndex, ASSETS.LEGS, 'leg', getZ('legRight'), 'limb', 'legRight')}
-
                 {renderStatic(config.baseIndex, ASSETS.BASES, 'base', getZ('base'))}
                 {renderStatic(config.clothingIndex, ASSETS.CLOTHES, 'clothes', getZ('clothes'))}
                 {renderStatic(config.sigilIndex, ASSETS.TREASURES, 'sigil', getZ('sigil'))} 
-                
                 {renderPart(config.limbIndex, ASSETS.ARMS, 'arm', getZ('armLeft'), 'limb', 'armLeft')}
                 {renderPart(config.limbIndex, ASSETS.ARMS, 'arm', getZ('armRight'), 'limb', 'armRight')}
-
                 {renderStatic(config.toolIndex, ASSETS.TOOLS, 'tool', getZ('tool'))} 
                 {renderStatic(config.hatIndex, ASSETS.HEAD, 'head', getZ('head'))}
             </div>
@@ -608,12 +610,9 @@ export default function ServitorWildUnknown() {
 
     const isFeedingActive = hungerState === 'hungry' || isFeeding || hungerState === 'fed';
 
-    // Game Object Renders (Mound/Vessel) also need Base + User offsets
     const getGameObjectStyle = (key: 'mound' | 'vessel') => {
         const u = (config.offsets as any)[key];
         const b = (DIRECTIONAL_OFFSETS.facingRight as any)[key];
-        // Directions usually don't apply to mound/vessel as they are world objects, not char parts,
-        // but for consistency in data structure, we use the base/user logic.
         return {
             transform: `scale(${b.s + u.s}) translate(${b.x + u.x}%, ${b.y + u.y}%)`,
             filter: !u.v ? 'opacity(0)' : 'none'
@@ -629,21 +628,23 @@ export default function ServitorWildUnknown() {
                 .runic-btn:active { transform: scale(0.95); filter: brightness(0.8); }
                 
                 @keyframes bounce { 0% { top: 0; } 50% { top: -5px; } }
-                @keyframes rotate-l { 0% { transform: rotate(-10deg); } 50% { transform: rotate(20deg); } 100% { transform: rotate(-10deg); } }
-                @keyframes rotate-r { 0% { transform: rotate(20deg); } 50% { transform: rotate(-10deg); } 100% { transform: rotate(20deg); } }
+                /* Updated Animations: Reduced degrees for cleaner, heavier movement */
+                @keyframes rotate-l { 0% { transform: rotate(-8deg); } 50% { transform: rotate(8deg); } 100% { transform: rotate(-8deg); } }
+                @keyframes rotate-r { 0% { transform: rotate(8deg); } 50% { transform: rotate(-8deg); } 100% { transform: rotate(8deg); } }
                 @keyframes fall { from { top: -10%; opacity: 1; } to { top: 100%; opacity: 0; } }
 
-                .anim-walk-left .servitor-rig { animation: bounce 0.5s infinite; }
-                .anim-walk-left .leg-left-joint { animation: rotate-l 1s infinite; }
-                .anim-walk-left .leg-right-joint { animation: rotate-r 1s infinite; }
-                .anim-walk-left .arm-left-joint { animation: rotate-r 1s infinite; }
-                .anim-walk-left .arm-right-joint { animation: rotate-l 1s infinite; }
+                .anim-walk-left .servitor-rig { animation: bounce 0.6s infinite; }
+                /* Adjusted timing slightly for weight */
+                .anim-walk-left .leg-left-joint { animation: rotate-l 1.2s infinite ease-in-out; }
+                .anim-walk-left .leg-right-joint { animation: rotate-r 1.2s infinite ease-in-out; }
+                .anim-walk-left .arm-left-joint { animation: rotate-r 1.2s infinite ease-in-out; }
+                .anim-walk-left .arm-right-joint { animation: rotate-l 1.2s infinite ease-in-out; }
                 
-                .anim-walk-right .servitor-rig { animation: bounce 0.5s infinite; }
-                .anim-walk-right .leg-left-joint { animation: rotate-r 1s infinite; }
-                .anim-walk-right .leg-right-joint { animation: rotate-l 1s infinite; }
-                .anim-walk-right .arm-left-joint { animation: rotate-l 1s infinite; }
-                .anim-walk-right .arm-right-joint { animation: rotate-r 1s infinite; }
+                .anim-walk-right .servitor-rig { animation: bounce 0.6s infinite; }
+                .anim-walk-right .leg-left-joint { animation: rotate-r 1.2s infinite ease-in-out; }
+                .anim-walk-right .leg-right-joint { animation: rotate-l 1.2s infinite ease-in-out; }
+                .anim-walk-right .arm-left-joint { animation: rotate-l 1.2s infinite ease-in-out; }
+                .anim-walk-right .arm-right-joint { animation: rotate-r 1.2s infinite ease-in-out; }
 
                 .pulse-glow-void { animation: pulse-void 1s infinite alternate; }
                 @keyframes pulse-void { from { filter: drop-shadow(0 0 5px #4b0082); } to { filter: drop-shadow(0 0 20px #8a2be2); } }
