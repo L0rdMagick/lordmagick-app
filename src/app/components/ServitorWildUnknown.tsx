@@ -60,7 +60,7 @@ const DIRECTIONAL_OFFSETS = {
         armLeft:  { x: 25, y: 19, s: 0.6, f: false }, 
         
         legRight: { x: -5, y: 65, s: 0.9, f: true },
-        legLeft:  { x: 4, y: 71, s: 0.9, f: true },
+        legLeft:  { x: 5, y: 63, s: 0.9, f: true },
 
         // World Objects
         vessel:  { x: 0, y: 0, s: 1.8, f: false },
