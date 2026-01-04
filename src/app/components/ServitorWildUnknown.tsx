@@ -51,7 +51,7 @@ const DIRECTIONAL_OFFSETS = {
         head:    { x: 0, y: -49, s: 0.6, f: false },
         clothes: { x: -1, y: 10, s: 0.55, f: false },
         sigil:   { x: 3, y: 2, s: 0.2, f: false },
-        tool:    { x: 27, y: 11, s: 0.4, f: false },
+        tool:    { x: 32, y: 15, s: 0.5, f: false },
         
         // Specific Limbs (Consolidated & Tuned for Natural Pivot)
         // Note: Arms are pulled slightly left to align the shoulder pivot with the torso
