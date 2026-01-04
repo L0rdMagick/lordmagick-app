@@ -65,36 +65,29 @@ const UI_PREVIEW_SETTINGS = {
 
 // E. LAYER ORDERING (Z-Index)
 const LAYER_ORDER_CONFIG = {
-    // Backmost (0) -> Frontmost (100)
+    // Standardized Keys: wing, armLeft, legLeft, base, clothes, sigil, legRight, armRight, tool, head
     facingRight: {
         wing: 0,
-        armRight_Back: 10, // Wait, prompt said: Wings, Right Arm(Back?), Left Leg, Torso... 
-        // Prompt Re-Check: "wings, right arm, left leg, torso, garb, sigil, right arm, right leg, tools, hats"
-        // Wait, "right arm" listed twice in prompt. I will assume Back=Left, Front=Right standard.
-        // If prompt specifically meant: Back=RightArm, Front=RightArm (impossible), I will stick to standard:
-        // Back: Left Limbs. Front: Right Limbs.
-        armLeft: 10,   
-        legLeft: 20,   
-        base: 30,      
-        clothes: 40,   
-        sigil: 50,     
-        armRight: 60, 
-        legRight: 70,  
-        tool: 80,      
-        head: 90       
+        armLeft: 10,   // Back Arm
+        legLeft: 20,   // Back Leg
+        base: 30,      // Torso
+        clothes: 40,   // Garb
+        sigil: 50,     // Chest Sigil
+        legRight: 60,  // Front Leg
+        armRight: 70,  // Front Arm
+        tool: 80,      // Tool
+        head: 90       // Hat
     },
     facingLeft: {
-        // Prompt: "wings, right leg, right arm, torso, garb, left leg, sigil, tools, right arm, hats"
-        // Again "right arm" twice. Assuming Back=Right, Front=Left for "Facing Left" (Mirrored).
         wing: 0,
-        legRight: 10,  
-        armRight: 20,  
+        legRight: 10,  // Back Leg (was Front)
+        armRight: 20,  // Back Arm (was Front)
         base: 30,
         clothes: 40,
-        legLeft: 50,   
+        legLeft: 50,   // Front Leg (was Back)
         sigil: 60,
         tool: 70,
-        armLeft: 80,   
+        armLeft: 80,   // Front Arm (was Back)
         head: 90
     }
 };
@@ -175,7 +168,7 @@ export default function ServitorWildUnknown() {
     const [isRunning, setIsRunning] = useState(false);
     const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
-    // This state controls the Rig Animation & Direction explicitly (Solving the "Flip Back" issue)
+    // This state controls the Rig Animation & Direction explicitly
     const [rigAnimation, setRigAnimation] = useState('anim-idle');
 
     const runningRef = useRef(false); 
@@ -477,7 +470,7 @@ export default function ServitorWildUnknown() {
         );
     };
 
-    const ServitorRig = ({ idPrefix, isPreview = false }: { idPrefix: string, isPreview?: boolean }) => {
+    const ServitorRig = ({ idPrefix, isPreview = false, overrideDirection }: { idPrefix: string, isPreview?: boolean, overrideDirection?: 'left'|'right' }) => {
         const wrapperClass = isFeeding ? 'anim-feed' : 'anim-idle';
         
         // Determine facing direction from REACT STATE
@@ -661,11 +654,13 @@ export default function ServitorWildUnknown() {
                  style={{ borderImage: `url('${ASSET_PATH}${ASSETS.UI_PANEL}') 18% 15% fill stretch`, borderWidth: '40px', padding: '20px' }}>
                 
                 {/* 1. FIXED PREVIEW AREA */}
-                <div className="h-[45%] w-full relative border-b border-[#5d4037] shrink-0 overflow-hidden flex flex-col items-center justify-center z-50">
+                {/* Removed overflow-hidden to fix cutoff, added z-index to pop over */}
+                <div className="h-[45%] w-full relative border-b border-[#5d4037] shrink-0 flex flex-col items-center justify-center z-50">
                     <div className="absolute top-2 left-2 right-2 flex gap-2 z-50">
                         <input type="text" value={sName} onChange={e => setSName(e.target.value)} className="flex-1 bg-black/50 border border-[#5d4037] p-1 text-xs text-white rounded" placeholder="Spirit Name" />
                         <input type="text" value={sPurpose} onChange={e => setSPurpose(e.target.value)} className="flex-1 bg-black/50 border border-[#5d4037] p-1 text-xs text-white rounded" placeholder="Purpose" />
                     </div>
+                    {/* Render Servitor in Center with Default UI Scale */}
                     <div className="relative z-10 mt-8">
                         <ServitorRig idPrefix="preview-rig" isPreview={true} />
                     </div>
@@ -719,6 +714,7 @@ export default function ServitorWildUnknown() {
                                     </div>
                                 ) : (
                                     <>
+                                        {/* Grid */}
                                         {CATEGORIES.find(c => c.id === activeCategory)?.indexKey && (
                                             <div className="grid grid-cols-4 gap-2 mb-4">
                                                 {GENERIC_LIST.map((_, i) => (
@@ -731,6 +727,7 @@ export default function ServitorWildUnknown() {
                                                 ))}
                                             </div>
                                         )}
+                                        {/* Controls */}
                                         {CATEGORIES.find(c => c.id === activeCategory)?.offsetKey && (
                                             <DPad 
                                                 part={CATEGORIES.find(c => c.id === activeCategory)?.offsetKey as string} 
