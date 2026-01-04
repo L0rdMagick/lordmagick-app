@@ -30,36 +30,44 @@ const ASSETS = {
 // --- 2. CONFIGURATION SECTION (CODE ONLY) ---
 
 // A. MASTER DIRECTIONAL OFFSETS & BASE DEFAULTS
-// facingRight: These are the BASE values (The Default Look). 
-// facingLeft:  These are added to the Base values when walking Left.
+//
+// HOW TO EDIT:
+// 1. facingRight (BASE): This controls the position for BOTH directions.
+//    If you move an arm here, it moves in both Right and Left views.
+//
+// 2. facingLeft (OFFSET): This is ONLY for fine-tuning the Left view.
+//    Values here are ADDED to the Base. Leave them at 0 to perfectly mirror the Base.
+//    Example: If Base X is 10, and facingLeft X is 0 -> Result is 10.
+//             If Base X is 10, and facingLeft X is -5 -> Result is 5.
+
 const DIRECTIONAL_OFFSETS = {
     facingRight: {
-        // --- BASE POSITIONS (Default/Right) ---
+        // --- BASE POSITIONS (Master Control) ---
         global:  { x: 0, y: 0, s: 1.0, f: false }, 
         
         // Static Parts
         wing:    { x: 0, y: 3, s: 1.0, f: false },
         base:    { x: 0, y: 0, s: 1.0, f: false },
         head:    { x: 0, y: -51, s: 0.7, f: false },
-        clothes: { x: -1, y: 10, s: 0.3, f: false },
+        clothes: { x: 0, y: 10, s: 0.6, f: false },
         sigil:   { x: 3, y: 2, s: 0.2, f: false },
         tool:    { x: 27, y: 11, s: 0.4, f: false },
         
-        // Specific Limbs (Consolidated & Tuned for Natural Pivot)
-        // Note: Arms are pulled slightly left to align the shoulder pivot with the torso
-        // Legs are pulled slightly up to align hip pivot
-        armRight: { x: -3, y: 10, s: 0.5, f: false },
-        armLeft:  { x: 23, y: 7, s: 0.5, f: false }, 
+        // Limbs (Master Position)
+        // Arms shifted left/right to align shoulders with torso
+        armRight: { x: -5, y: 7, s: 0.5, f: false },
+        armLeft:  { x: 15, y: 7, s: 0.5, f: false }, 
         
-        legRight: { x: -5, y: 60, s: 0.7, f: true },
-        legLeft:  { x: 15, y: 60, s: 0.7, f: true },
+        legRight: { x: -6, y: 45, s: 0.7, f: true },
+        legLeft:  { x: 14, y: 45, s: 0.7, f: true },
 
         // World Objects
         vessel:  { x: 0, y: 0, s: 1.8, f: false },
         mound:   { x: 0, y: 0, s: 2.8, f: false },
     },
     facingLeft: {
-        // --- ADJUSTMENTS (Added to Base when Facing Left) ---
+        // --- OFFSETS (Added to Base when walking Left) ---
+        // 0 = Follows Base exactly.
         global: { x: 0, y: 0, s: 0 },
         base: { x: 0, y: 0, s: 0 },
         head: { x: 0, y: 0, s: 0 },
@@ -68,8 +76,8 @@ const DIRECTIONAL_OFFSETS = {
         tool: { x: 0, y: 0, s: 0 },
         sigil: { x: 0, y: 0, s: 0 },
         
-        // Limb Shifts for Left Walk
-        // When flipping to left, we shift the arms back to align with the reversed body
+        // Limbs
+        // We shift X by -10 to account for the sprite flip perspective
         armRight: { x: -10, y: 0, s: 0 },
         armLeft:  { x: -10, y: 0, s: 0 },
         
@@ -529,6 +537,7 @@ export default function ServitorWildUnknown() {
                 if (specificLimb?.includes('Right')) spreadMod = userCfg.spread;
             }
 
+            // MATH: Base + Direction Adjustment + User Adjustment + Spread
             const totalX = baseCfg.x + (dirCfg?.x || 0) + userCfg.x + spreadMod;
             const totalY = baseCfg.y + (dirCfg?.y || 0) + userCfg.y;
             const totalS = baseCfg.s + (dirCfg?.s || 0) + userCfg.s; 
@@ -541,17 +550,17 @@ export default function ServitorWildUnknown() {
             let originY = '20%';
 
             if (specificLimb?.includes('arm')) {
-                // Arms (Right Default): Shoulder is Top-Left (approx 25%)
-                // If facing Right: 25%. If facing Left (flipped): 75%
-                const baseArmX = 25; 
+                // Arms (Right Default): Shoulder is Top-Left (approx 15%)
+                // If facing Right: 15%. If facing Left (flipped): 85%
+                const baseArmX = 15; 
                 originX = isFacingLeft ? `${100 - baseArmX}%` : `${baseArmX}%`;
-                originY = '20%'; // Shoulder height
+                originY = '15%'; // Shoulder height
             } else if (specificLimb?.includes('leg')) {
-                // Legs (Left Default): Hip is Top-Right (approx 70%)
-                // If facing Left (default orientation): 70%. If facing Right (flipped): 30%
-                const baseLegX = 70;
+                // Legs (Left Default): Hip is Top-Right (approx 85%)
+                // If facing Left (default orientation): 85%. If facing Right (flipped): 15%
+                const baseLegX = 85;
                 originX = isFacingLeft ? `${baseLegX}%` : `${100 - baseLegX}%`;
-                originY = '15%'; // Hip height
+                originY = '10%'; // Hip height
             }
 
             // Joint logic
@@ -630,8 +639,8 @@ export default function ServitorWildUnknown() {
                 
                 @keyframes bounce { 0% { top: 0; } 50% { top: -5px; } }
                 /* Updated Animations: Reduced degrees for cleaner, heavier movement */
-                @keyframes rotate-l { 0% { transform: rotate(-8deg); } 50% { transform: rotate(8deg); } 100% { transform: rotate(-8deg); } }
-                @keyframes rotate-r { 0% { transform: rotate(8deg); } 50% { transform: rotate(-8deg); } 100% { transform: rotate(8deg); } }
+                @keyframes rotate-l { 0% { transform: rotate(-5deg); } 50% { transform: rotate(5deg); } 100% { transform: rotate(-5deg); } }
+                @keyframes rotate-r { 0% { transform: rotate(5deg); } 50% { transform: rotate(-5deg); } 100% { transform: rotate(5deg); } }
                 @keyframes fall { from { top: -10%; opacity: 1; } to { top: 100%; opacity: 0; } }
 
                 .anim-walk-left .servitor-rig { animation: bounce 0.6s infinite; }
