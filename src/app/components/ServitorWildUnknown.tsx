@@ -29,15 +29,7 @@ const ASSETS = {
 
 // --- 2. CONFIGURATION SECTION (CODE ONLY) ---
 
-// A. PIVOT POINTS (Normalized 0-100%)
-// Arm: Shoulder Socket at Top-Left (22, 18)
-// Leg: Hip Ball at Top-Center (50, 15)
-const LIMB_ANCHORS = {
-    arm: { x: 22, y: 18 },
-    leg: { x: 50, y: 15 }
-};
-
-// B. DEFAULT FLIP CONFIG (Base Sprite Orientation)
+// A. DEFAULT FLIP CONFIG (Base Sprite Orientation)
 const DEFAULT_FLIP_CONFIG = {
     armRight: false, // Right Arm
     armLeft: false,  // Left Arm
@@ -45,7 +37,7 @@ const DEFAULT_FLIP_CONFIG = {
     legLeft: true    // Left Leg
 };
 
-// C. STATIC LIMB ADJUSTMENTS (Fine-tune default positions)
+// B. STATIC LIMB ADJUSTMENTS (Fine-tune default positions globally)
 const STATIC_LIMB_ADJUSTMENTS = {
     armRight: { x: 0, y: 0 },
     armLeft:  { x: 20, y: 0 },
@@ -53,28 +45,34 @@ const STATIC_LIMB_ADJUSTMENTS = {
     legLeft:  { x: 20, y: 0 }
 };
 
-// D. DIRECTIONAL OFFSETS (Adjust placements when Facing Right vs Left)
+// C. DIRECTIONAL OFFSETS (Adjust placements when Facing Right vs Left)
+// Change 'x' values here to shift specific limbs when walking Left or Right
 const DIRECTIONAL_OFFSETS = {
     facingRight: {
         global: { x: 0 }, base: { x: 0 }, head: { x: 0 }, clothes: { x: 0 },
         wing: { x: 0 }, tool: { x: 0 }, sigil: { x: 0 },
-        armRight: { x: 0 }, armLeft: { x: 0 }, legRight: { x: 0 }, legLeft: { x: 0 }
+        // Specific Limbs (Facing Right)
+        armRight: { x: 0 }, armLeft: { x: 0 },
+        legRight: { x: 0 }, legLeft: { x: 0 }
     },
     facingLeft: {
         global: { x: 0 }, base: { x: 0 }, head: { x: 0 }, clothes: { x: 0 },
         wing: { x: 0 }, tool: { x: 0 }, sigil: { x: 0 },
-        armRight: { x: 0 }, armLeft: { x: 0 }, legRight: { x: 0 }, legLeft: { x: 0 }
+        // Specific Limbs (Facing Left)
+        armRight: { x: -20 }, armLeft: { x: -20 },
+        legRight: { x: 0 }, legLeft: { x: 0 }
     }
 };
 
-// E. UI PREVIEW SETTINGS
+// D. UI PREVIEW SETTINGS
 const UI_PREVIEW_SETTINGS = {
     scale: 1.0, 
     y: -11      
 };
 
-// F. LAYER ORDERING (Z-Index)
+// E. LAYER ORDERING (Z-Index)
 const LAYER_ORDER_CONFIG = {
+    // Backmost (0) -> Frontmost (100)
     facingRight: {
         wing: 0,
         armLeft: 10,   
@@ -101,7 +99,7 @@ const LAYER_ORDER_CONFIG = {
     }
 };
 
-// G. DEFAULT USER OFFSETS
+// F. DEFAULT USER OFFSETS
 const DEFAULT_OFFSETS = {
     global:  { x: 0, y: 0, s: 1.0, f: false, v: true, spread: 0 }, 
     wing:    { x: 0, y: 3, s: 1.0, f: false, v: true, spread: 0 },
@@ -177,6 +175,7 @@ export default function ServitorWildUnknown() {
     const [isRunning, setIsRunning] = useState(false);
     const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
+    // This state controls the Rig Animation & Direction explicitly (Solving the "Flip Back" issue)
     const [rigAnimation, setRigAnimation] = useState('anim-idle');
 
     const runningRef = useRef(false); 
@@ -196,6 +195,7 @@ export default function ServitorWildUnknown() {
         baseIndex: 0, limbIndex: 0, legIndex: 0, toolIndex: 0,
         hatIndex: 0, wingIndex: 0, vesselIndex: 0, clothingIndex: 0,
         sigilIndex: 0, foodIndex: 0, treasureIndex: 0,
+        
         movementType: "walk", 
         feedFreq: 5,
         offsets: JSON.parse(JSON.stringify(DEFAULT_OFFSETS))
@@ -479,12 +479,11 @@ export default function ServitorWildUnknown() {
 
     const ServitorRig = ({ idPrefix, isPreview = false, overrideDirection }: { idPrefix: string, isPreview?: boolean, overrideDirection?: 'left'|'right' }) => {
         const wrapperClass = isFeeding ? 'anim-feed' : 'anim-idle';
-        const rigEl = typeof document !== 'undefined' ? document.getElementById('game-rig') : null;
         
-        // Direction Logic
-        const isFacingLeft = overrideDirection === 'left' || (idPrefix === 'game-rig' && rigEl?.classList.contains('anim-walk-left'));
+        // Determine facing direction from REACT STATE
+        const isFacingLeft = rigAnimation.includes('left');
         
-        // Dynamic Z-Index based on direction
+        // Helper for Z-Index from Config
         const getZ = (key: keyof typeof LAYER_ORDER_CONFIG.facingRight) => {
             const map = isFacingLeft ? LAYER_ORDER_CONFIG.facingLeft : LAYER_ORDER_CONFIG.facingRight;
             return map[key];
@@ -526,20 +525,9 @@ export default function ServitorWildUnknown() {
             const totalX = cfg.x + xMod + spreadMod;
             const totalY = cfg.y + yMod;
 
-            // PIVOT POINT ADJUSTMENTS FOR FLIPPING
-            // When we scaleX(-1), the pivot point (transform-origin) visually flips.
-            // If origin is 22% Left (Arms), flipping makes it 22% from Right (78% Left).
-            // We need to invert the origin X coordinate if flipped.
-            let originX = (partType === 'limb' && partKey === 'arm') ? LIMB_ANCHORS.arm.x : (partType === 'limb' && partKey === 'leg') ? LIMB_ANCHORS.leg.x : 50;
-            const originY = (partType === 'limb' && partKey === 'arm') ? LIMB_ANCHORS.arm.y : (partType === 'limb' && partKey === 'leg') ? LIMB_ANCHORS.leg.y : 50;
-
-            if (flip && partType === 'limb' && partKey === 'arm') {
-                originX = 100 - originX;
-            }
-
             const spriteTransform = `translate(${totalX}%, ${totalY}%) scale(${cfg.s}) ${flip ? 'scaleX(-1)' : ''}`;
             
-            // Animation Classes
+            // Joint logic
             let jointClass = '';
             if (partType === 'limb' && specificLimb) {
                 if (specificLimb === 'armLeft') jointClass = 'arm-left-joint';
@@ -549,7 +537,7 @@ export default function ServitorWildUnknown() {
             }
 
             return (
-                <div className={`joint absolute w-full h-full top-0 left-0 ${jointClass}`} style={{ zIndex: z, transformOrigin: `${originX}% ${originY}%` }}>
+                <div className={`joint absolute w-full h-full top-0 left-0 origin-top-center ${jointClass}`} style={{ zIndex: z }}>
                     <div className="sprite absolute w-full h-full top-0 left-0 pointer-events-none"
                          style={{ ...getSpriteStyle(idx, asset), transform: spriteTransform }} />
                 </div>
@@ -560,9 +548,11 @@ export default function ServitorWildUnknown() {
             const cfg = (config.offsets as any)[partKey];
             if (!cfg.v) return null;
             
+            // Static parts also need to flip when walking left
             let flip = cfg.f;
             if (isFacingLeft) flip = !flip;
 
+            // Apply Directional Offset
             let xMod = 0;
             const dirOffsets = isFacingLeft ? DIRECTIONAL_OFFSETS.facingLeft : DIRECTIONAL_OFFSETS.facingRight;
             if ((dirOffsets as any)[partKey]) {
@@ -576,6 +566,7 @@ export default function ServitorWildUnknown() {
             );
         };
 
+        // GLOBAL TRANSFORM
         const g = config.offsets.global;
         const previewStyle = isPreview ? `translateY(${UI_PREVIEW_SETTINGS.y}%) scale(${UI_PREVIEW_SETTINGS.scale})` : '';
         const userGlobal = `translate(${g.x}%, ${g.y}%) scale(${g.s}) ${g.f ? 'scaleX(-1)' : ''}`;
@@ -619,23 +610,21 @@ export default function ServitorWildUnknown() {
                 .runic-btn:active { transform: scale(0.95); filter: brightness(0.8); }
                 
                 @keyframes bounce { 0% { top: 0; } 50% { top: -5px; } }
-                @keyframes pendulum-phase-1 { 0% { transform: rotate(15deg); } 100% { transform: rotate(-15deg); } }
-                @keyframes pendulum-phase-2 { 0% { transform: rotate(-15deg); } 100% { transform: rotate(15deg); } }
+                @keyframes rotate-l { 0% { transform: rotate(-10deg); } 50% { transform: rotate(20deg); } 100% { transform: rotate(-10deg); } }
+                @keyframes rotate-r { 0% { transform: rotate(20deg); } 50% { transform: rotate(-10deg); } 100% { transform: rotate(20deg); } }
                 @keyframes fall { from { top: -10%; opacity: 1; } to { top: 100%; opacity: 0; } }
 
                 .anim-walk-left .servitor-rig { animation: bounce 0.5s infinite; }
-                /* Phase 1 = Right Limbs (Front when walking Right, Back when walking Left?) */
-                /* Just alternate them */
-                .anim-walk-left .leg-left-joint { animation: pendulum-phase-1 1s infinite alternate ease-in-out; }
-                .anim-walk-left .leg-right-joint { animation: pendulum-phase-2 1s infinite alternate ease-in-out; }
-                .anim-walk-left .arm-left-joint { animation: pendulum-phase-2 1s infinite alternate ease-in-out; }
-                .anim-walk-left .arm-right-joint { animation: pendulum-phase-1 1s infinite alternate ease-in-out; }
+                .anim-walk-left .leg-left-joint { animation: rotate-l 1s infinite; }
+                .anim-walk-left .leg-right-joint { animation: rotate-r 1s infinite; }
+                .anim-walk-left .arm-left-joint { animation: rotate-r 1s infinite; }
+                .anim-walk-left .arm-right-joint { animation: rotate-l 1s infinite; }
                 
                 .anim-walk-right .servitor-rig { animation: bounce 0.5s infinite; }
-                .anim-walk-right .leg-left-joint { animation: pendulum-phase-2 1s infinite alternate ease-in-out; }
-                .anim-walk-right .leg-right-joint { animation: pendulum-phase-1 1s infinite alternate ease-in-out; }
-                .anim-walk-right .arm-left-joint { animation: pendulum-phase-1 1s infinite alternate ease-in-out; }
-                .anim-walk-right .arm-right-joint { animation: pendulum-phase-2 1s infinite alternate ease-in-out; }
+                .anim-walk-right .leg-left-joint { animation: rotate-r 1s infinite; }
+                .anim-walk-right .leg-right-joint { animation: rotate-l 1s infinite; }
+                .anim-walk-right .arm-left-joint { animation: rotate-l 1s infinite; }
+                .anim-walk-right .arm-right-joint { animation: rotate-r 1s infinite; }
 
                 .pulse-glow-void { animation: pulse-void 1s infinite alternate; }
                 @keyframes pulse-void { from { filter: drop-shadow(0 0 5px #4b0082); } to { filter: drop-shadow(0 0 20px #8a2be2); } }
@@ -687,7 +676,7 @@ export default function ServitorWildUnknown() {
                  style={{ borderImage: `url('${ASSET_PATH}${ASSETS.UI_PANEL}') 18% 15% fill stretch`, borderWidth: '40px', padding: '20px' }}>
                 
                 {/* 1. FIXED PREVIEW AREA */}
-                <div className="h-[45%] w-full relative border-b border-[#5d4037] shrink-0 overflow-hidden flex flex-col items-center justify-center z-50">
+                <div className="h-[45%] w-full relative border-b border-[#5d4037] shrink-0 flex flex-col items-center justify-center z-50">
                     <div className="absolute top-2 left-2 right-2 flex gap-2 z-50">
                         <input type="text" value={sName} onChange={e => setSName(e.target.value)} className="flex-1 bg-black/50 border border-[#5d4037] p-1 text-xs text-white rounded" placeholder="Spirit Name" />
                         <input type="text" value={sPurpose} onChange={e => setSPurpose(e.target.value)} className="flex-1 bg-black/50 border border-[#5d4037] p-1 text-xs text-white rounded" placeholder="Purpose" />
