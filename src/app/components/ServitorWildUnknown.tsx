@@ -41,18 +41,18 @@ const DIRECTIONAL_OFFSETS = {
         wing:    { x: 0, y: 3, s: 1.0, f: false },
         base:    { x: 0, y: 0, s: 1.0, f: false },
         head:    { x: 0, y: -51, s: 0.7, f: false },
-        clothes: { x: 0, y: 10, s: 0.6, f: false },
+        clothes: { x: -1, y: 10, s: 0.3, f: false },
         sigil:   { x: 3, y: 2, s: 0.2, f: false },
         tool:    { x: 27, y: 11, s: 0.4, f: false },
         
         // Specific Limbs (Consolidated & Tuned for Natural Pivot)
         // Note: Arms are pulled slightly left to align the shoulder pivot with the torso
         // Legs are pulled slightly up to align hip pivot
-        armRight: { x: -5, y: 7, s: 0.5, f: false },
-        armLeft:  { x: 15, y: 7, s: 0.5, f: false }, 
+        armRight: { x: -3, y: 10, s: 0.5, f: false },
+        armLeft:  { x: 23, y: 7, s: 0.5, f: false }, 
         
-        legRight: { x: -6, y: 45, s: 0.7, f: true },
-        legLeft:  { x: 14, y: 45, s: 0.7, f: true },
+        legRight: { x: -5, y: 60, s: 0.7, f: true },
+        legLeft:  { x: 15, y: 60, s: 0.7, f: true },
 
         // World Objects
         vessel:  { x: 0, y: 0, s: 1.8, f: false },
