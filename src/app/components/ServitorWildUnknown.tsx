@@ -32,20 +32,29 @@ const ASSETS = {
 // A. DEFAULT LIMB FLIPPING (Code Only)
 // Set to true to mirror the sprite horizontally by default
 const DEFAULT_FLIP_CONFIG = {
-    armRight: true, // Right Arm
-    armLeft: true,   // Left Arm
-    legRight: true, // Right Leg
+    armRight: false, // Right Arm
+    armLeft: false,  // Left Arm
+    legRight: true,  // Right Leg
     legLeft: true    // Left Leg
 };
 
-// B. UI PREVIEW SETTINGS (Code Only)
-// Adjusts the Servitor appearance specifically in the UI panel to prevent cutoff
-const UI_PREVIEW_SETTINGS = {
-    scale: 1.0, // Reduce to ensure it fits (0.7 = 70%)
-    y: -11       // Move down slightly (Positive = Down)
+// B. LIMB POSITION FINE-TUNING (Code Only)
+// Adjust these X/Y values to move specific limbs independently of the main group
+const STATIC_LIMB_ADJUSTMENTS = {
+    armRight: { x: 0, y: 0 },
+    armLeft:  { x: 0, y: 0 },
+    legRight: { x: 0, y: 0 },
+    legLeft:  { x: 0, y: 0 }
 };
 
-// C. LAYER ORDERING (Z-Index)
+// C. UI PREVIEW SETTINGS (Code Only)
+// Adjusts the Servitor appearance specifically in the UI panel to prevent cutoff
+const UI_PREVIEW_SETTINGS = {
+    scale: 1.0, 
+    y: -11      
+};
+
+// D. LAYER ORDERING (Z-Index)
 // 0 = Backmost, Higher Numbers = Frontmost
 const LAYER_ORDER_CONFIG = {
     // Default State (Facing Right)
@@ -64,19 +73,19 @@ const LAYER_ORDER_CONFIG = {
     // Return State (Facing Left / Walking to Mound)
     facingLeft: {
         wing: 0,
-        legRight: 10,  // Back Leg (was Front)
-        armRight: 20,  // Back Arm (was Front)
+        legRight: 10,  // Back Leg
+        armRight: 20,  // Back Arm
         base: 30,
         clothes: 40,
-        legLeft: 50,   // Front Leg (was Back)
+        legLeft: 50,   // Front Leg
         sigil: 60,
         tool: 70,
-        armLeft: 80,   // Front Arm (was Back)
+        armLeft: 80,   // Front Arm
         head: 90
     }
 };
 
-// D. DEFAULT OFFSETS (User Adjustable Defaults)
+// E. DEFAULT OFFSETS (User Adjustable Defaults)
 const DEFAULT_OFFSETS = {
     global:  { x: 0, y: 0, s: 1.0, f: false, v: true }, 
     wing:    { x: 0, y: 3, s: 1.0, f: false, v: true },
@@ -306,6 +315,7 @@ export default function ServitorWildUnknown() {
         const rig = document.getElementById('game-rig');
 
         while(runningRef.current && loopIdRef.current === id) {
+            // 1. Walk to Mound (Left)
             if(servitor) { servitor.style.opacity = '1'; servitor.style.transform = 'scale(1)'; }
             if(rig) {
                 rig.classList.remove('anim-idle', 'anim-walk-right', 'anim-fly-right');
@@ -315,17 +325,20 @@ export default function ServitorWildUnknown() {
             await moveTo(15, id);
             if(!runningRef.current) break;
 
+            // 2. Enter Void
             if(servitor) {
                 servitor.style.opacity = '0';
                 servitor.style.transform = 'scale(0.1) translateY(50px)';
             }
             await wait(500);
 
+            // 3. Search Pulse
             if(mound) mound.classList.add('pulse-glow-void');
             playSound('search');
             await wait(2000);
             if(mound) mound.classList.remove('pulse-glow-void');
 
+            // 4. Return
             if(servitor) {
                 servitor.style.opacity = '1';
                 servitor.style.transform = 'scale(1)';
@@ -338,6 +351,7 @@ export default function ServitorWildUnknown() {
             await moveTo(80, id);
             if(!runningRef.current) break;
 
+            // 5. Deposit
             if(rig) {
                 rig.classList.remove('anim-walk-right', 'anim-fly-right');
                 rig.classList.add('anim-idle');
@@ -359,6 +373,7 @@ export default function ServitorWildUnknown() {
         }
     };
 
+    // --- HOLD HANDLERS ---
     const startHold = (type: 'awaken' | 'feed') => {
         const start = Date.now();
         const dur = type === 'awaken' ? 5000 : 3000;
@@ -378,6 +393,7 @@ export default function ServitorWildUnknown() {
                     setIsFeeding(false); setHungerState('fed');
                 }
             }
+            // Food Logic
             if(type === 'feed' && Math.random() > 0.6) {
                 const targetX = servitorPosRef.current;
                 setFallingFood(prev => [...prev, {
@@ -448,10 +464,9 @@ export default function ServitorWildUnknown() {
         const wrapperClass = isFeeding ? 'anim-feed' : 'anim-idle';
         const rigEl = typeof document !== 'undefined' ? document.getElementById('game-rig') : null;
         
-        // Direction Logic
         const isFacingLeft = overrideDirection === 'left' || (idPrefix === 'game-rig' && rigEl?.classList.contains('anim-walk-left'));
         
-        // Helper for Z-Index from Config
+        // Dynamic Z-Index based on direction
         const getZ = (key: keyof typeof LAYER_ORDER_CONFIG.facingRight) => {
             const map = isFacingLeft ? LAYER_ORDER_CONFIG.facingLeft : LAYER_ORDER_CONFIG.facingRight;
             return map[key];
@@ -461,21 +476,30 @@ export default function ServitorWildUnknown() {
             const cfg = (config.offsets as any)[partKey];
             if (!cfg.v) return null;
 
-            // Flip Logic (User Config + Default Config)
-            // Start with user flip setting
+            // 1. Base Flip (User Preference + Default Config)
             let flip = cfg.f;
 
-            // Apply Hardcoded Limb Defaults
+            // 2. Specific Limb Defaults
             if (specificLimb && (DEFAULT_FLIP_CONFIG as any)[specificLimb]) {
-                flip = !flip; // Invert based on default config
+                flip = !flip; 
             }
 
-            const spriteTransform = `translate(${cfg.x}%, ${cfg.y}%) scale(${cfg.s}) ${flip ? 'scaleX(-1)' : ''}`;
+            // 3. Static Adjustments (Code Only)
+            let xMod = 0;
+            let yMod = 0;
+            if (specificLimb && (STATIC_LIMB_ADJUSTMENTS as any)[specificLimb]) {
+                xMod = (STATIC_LIMB_ADJUSTMENTS as any)[specificLimb].x;
+                yMod = (STATIC_LIMB_ADJUSTMENTS as any)[specificLimb].y;
+            }
+
+            const totalX = cfg.x + xMod;
+            const totalY = cfg.y + yMod;
+
+            const spriteTransform = `translate(${totalX}%, ${totalY}%) scale(${cfg.s}) ${flip ? 'scaleX(-1)' : ''}`;
             
-            // Joint logic for animation
+            // Joint logic
             let jointClass = '';
             if (partType === 'limb' && specificLimb) {
-                // Map specific limb to joint name
                 if (specificLimb === 'armLeft') jointClass = 'arm-left-joint';
                 if (specificLimb === 'armRight') jointClass = 'arm-right-joint';
                 if (specificLimb === 'legLeft') jointClass = 'leg-left-joint';
@@ -490,29 +514,38 @@ export default function ServitorWildUnknown() {
             );
         };
 
+        const renderStatic = (idx: number, asset: string, partKey: string, z: number) => {
+            const cfg = (config.offsets as any)[partKey];
+            if (!cfg.v) return null;
+            const transform = `translate(${cfg.x}%, ${cfg.y}%) scale(${cfg.s}) ${cfg.f ? 'scaleX(-1)' : ''}`;
+            return (
+                <div className="absolute w-full h-full top-0 left-0 pointer-events-none"
+                     style={{ ...getSpriteStyle(idx, asset), transform, zIndex: z }} />
+            );
+        };
+
         // GLOBAL TRANSFORM
         const g = config.offsets.global;
-        // In UI Preview: Apply PREVIEW Settings + User Global
+        // Apply Preview Settings if in preview
         const previewStyle = isPreview ? `translateY(${UI_PREVIEW_SETTINGS.y}%) scale(${UI_PREVIEW_SETTINGS.scale})` : '';
         const userGlobal = `translate(${g.x}%, ${g.y}%) scale(${g.s}) ${g.f ? 'scaleX(-1)' : ''}`;
         
         return (
             <div id={idPrefix} className={`servitor-rig relative w-32 h-32 ${wrapperClass}`} style={{ transform: `${previewStyle} ${userGlobal}` }}>
-                
-                {renderPart(config.wingIndex, ASSETS.BACK, 'wing', getZ('wing'), 'static')}
+                {renderStatic(config.wingIndex, ASSETS.BACK, 'wing', getZ('wing'))}
                 
                 {renderPart(config.legIndex, ASSETS.LEGS, 'leg', getZ('legLeft'), 'limb', 'legLeft')}
                 {renderPart(config.legIndex, ASSETS.LEGS, 'leg', getZ('legRight'), 'limb', 'legRight')}
 
-                {renderPart(config.baseIndex, ASSETS.BASES, 'base', getZ('base'), 'static')}
-                {renderPart(config.clothingIndex, ASSETS.CLOTHES, 'clothes', getZ('clothes'), 'static')}
-                {renderPart(config.sigilIndex, ASSETS.TREASURES, 'sigil', getZ('sigil'), 'static')}
+                {renderStatic(config.baseIndex, ASSETS.BASES, 'base', getZ('base'))}
+                {renderStatic(config.clothingIndex, ASSETS.CLOTHES, 'clothes', getZ('clothes'))}
+                {renderStatic(config.sigilIndex, ASSETS.TREASURES, 'sigil', getZ('sigil'))} 
                 
                 {renderPart(config.limbIndex, ASSETS.ARMS, 'arm', getZ('armLeft'), 'limb', 'armLeft')}
                 {renderPart(config.limbIndex, ASSETS.ARMS, 'arm', getZ('armRight'), 'limb', 'armRight')}
 
                 {renderPart(config.toolIndex, ASSETS.TOOLS, 'tool', getZ('tool'), 'static')} 
-                {renderPart(config.hatIndex, ASSETS.HEAD, 'head', getZ('head'), 'static')}
+                {renderStatic(config.hatIndex, ASSETS.HEAD, 'head', getZ('head'))}
             </div>
         );
     };
@@ -601,12 +634,13 @@ export default function ServitorWildUnknown() {
                  style={{ borderImage: `url('${ASSET_PATH}${ASSETS.UI_PANEL}') 18% 15% fill stretch`, borderWidth: '40px', padding: '20px' }}>
                 
                 {/* 1. FIXED PREVIEW AREA */}
-                <div className="h-[45%] w-full relative border-b border-[#5d4037] shrink-0 overflow-hidden flex flex-col items-center justify-center">
+                {/* Removed overflow-hidden to fix cutoff, added z-index to pop over */}
+                <div className="h-[45%] w-full relative border-b border-[#5d4037] shrink-0 flex flex-col items-center justify-center z-50">
                     <div className="absolute top-2 left-2 right-2 flex gap-2 z-50">
                         <input type="text" value={sName} onChange={e => setSName(e.target.value)} className="flex-1 bg-black/50 border border-[#5d4037] p-1 text-xs text-white rounded" placeholder="Spirit Name" />
                         <input type="text" value={sPurpose} onChange={e => setSPurpose(e.target.value)} className="flex-1 bg-black/50 border border-[#5d4037] p-1 text-xs text-white rounded" placeholder="Purpose" />
                     </div>
-                    {/* Render Servitor with PREVIEW settings */}
+                    {/* Render Servitor in Center with Default UI Scale */}
                     <div className="relative z-10 mt-8">
                         <ServitorRig idPrefix="preview-rig" isPreview={true} />
                     </div>
