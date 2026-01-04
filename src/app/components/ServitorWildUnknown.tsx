@@ -56,11 +56,11 @@ const DIRECTIONAL_OFFSETS = {
         // Specific Limbs (Consolidated & Tuned for Natural Pivot)
         // Note: Arms are pulled slightly left to align the shoulder pivot with the torso
         // Legs are pulled slightly up to align hip pivot
-        armRight: { x: 0, y: 14, s: 0.5, f: false },
-        armLeft:  { x: 20, y: 14, s: 0.5, f: false }, 
+        armRight: { x: 2, y: 15, s: 0.6, f: false },
+        armLeft:  { x: 25, y: 19, s: 0.6, f: false }, 
         
-        legRight: { x: -4, y: 64, s: 0.8, f: true },
-        legLeft:  { x: 8, y: 64, s: 0.8, f: true },
+        legRight: { x: -6, y: 64, s: 0.9, f: true },
+        legLeft:  { x: 6, y: 63, s: 0.9, f: true },
 
         // World Objects
         vessel:  { x: 0, y: 0, s: 1.8, f: false },
