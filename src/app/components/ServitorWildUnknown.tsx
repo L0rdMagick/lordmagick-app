@@ -59,7 +59,7 @@ const DIRECTIONAL_OFFSETS = {
         global: { x: 0 }, base: { x: 0 }, head: { x: 0 }, clothes: { x: 0 },
         wing: { x: 0 }, tool: { x: 0 }, sigil: { x: 0 },
         // Specific Limbs (Facing Left)
-        armRight: { x: -20 }, armLeft: { x: -20 },
+        armRight: { x: 0 }, armLeft: { x: 0 },
         legRight: { x: 0 }, legLeft: { x: 0 }
     }
 };
@@ -103,9 +103,9 @@ const LAYER_ORDER_CONFIG = {
 const DEFAULT_OFFSETS = {
     global:  { x: 0, y: 0, s: 1.0, f: false, v: true, spread: 0 }, 
     wing:    { x: 0, y: 3, s: 1.0, f: false, v: true, spread: 0 },
-    leg:     { x: -12, y: 112, s: 0.4, f: false, v: true, spread: 0 },
+    leg:     { x: -6, y: 55, s: 0.7, f: false, v: true, spread: 0 },
     tool:    { x: 27, y: 11, s: 0.4, f: false, v: true, spread: 0 },
-    arm:     { x: 0, y: 21, s: 0.25, f: false, v: true, spread: 0 },
+    arm:     { x: 0, y: 10, s: 0.5, f: false, v: true, spread: 0 },
     base:    { x: 0, y: 0, s: 1.0, f: false, v: true, spread: 0 },
     head:    { x: 0, y: -51, s: 0.7, f: false, v: true, spread: 0 },
     clothes: { x: 0, y: 10, s: 0.6, f: false, v: true, spread: 0 },
