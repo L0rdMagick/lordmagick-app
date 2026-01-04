@@ -41,8 +41,8 @@ const DEFAULT_FLIP_CONFIG = {
 const STATIC_LIMB_ADJUSTMENTS = {
     armRight: { x: 0, y: 0 },
     armLeft:  { x: 20, y: 0 },
-    legRight: { x: -6, y: 5 },
-    legLeft:  { x: 17, y: 5 }
+    legRight: { x: 0, y: 0 },
+    legLeft:  { x: 20, y: 0 }
 };
 
 // C. DIRECTIONAL OFFSETS (Adjust placements when Facing Right vs Left)
@@ -60,7 +60,7 @@ const DIRECTIONAL_OFFSETS = {
         wing: { x: 0 }, tool: { x: 0 }, sigil: { x: 0 },
         // Specific Limbs (Facing Left)
         armRight: { x: 0 }, armLeft: { x: 0 },
-        legRight: { x: -20 }, legLeft: { x: -20 }
+        legRight: { x: 0 }, legLeft: { x: 0 }
     }
 };
 
@@ -108,7 +108,7 @@ const DEFAULT_OFFSETS = {
     arm:     { x: 0, y: 10, s: 0.5, f: false, v: true, spread: 0 },
     base:    { x: 0, y: 0, s: 1.0, f: false, v: true, spread: 0 },
     head:    { x: 0, y: -51, s: 0.7, f: false, v: true, spread: 0 },
-    clothes: { x: 0, y: 10, s: 0.5, f: false, v: true, spread: 0 },
+    clothes: { x: 0, y: 10, s: 0.6, f: false, v: true, spread: 0 },
     sigil:   { x: 3, y: 2, s: 0.2, f: false, v: true, spread: 0 },
     vessel:  { x: 0, y: 0, s: 1.8, f: false, v: true, spread: 0 },
     mound:   { x: 0, y: 0, s: 2.8, f: false, v: true, spread: 0 },
