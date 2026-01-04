@@ -59,7 +59,7 @@ const DIRECTIONAL_OFFSETS = {
         global: { x: 0 }, base: { x: 0 }, head: { x: 0 }, clothes: { x: 0 },
         wing: { x: 0 }, tool: { x: 0 }, sigil: { x: 0 },
         // Specific Limbs (Facing Left)
-        armRight: { x: 0 }, armLeft: { x: 0 },
+        armRight: { x: -20 }, armLeft: { x: -20 },
         legRight: { x: 0 }, legLeft: { x: 0 }
     }
 };
