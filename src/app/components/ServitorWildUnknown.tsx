@@ -37,7 +37,7 @@ const DEFAULT_FLIP_CONFIG = {
     legLeft: true    // Left Leg
 };
 
-// B. STATIC LIMB ADJUSTMENTS (Fine-tune default positions globally)
+// B. STATIC LIMB ADJUSTMENTS (Fine-tune default positions)
 const STATIC_LIMB_ADJUSTMENTS = {
     armRight: { x: 0, y: 0 },
     armLeft:  { x: 20, y: 0 },
@@ -46,21 +46,16 @@ const STATIC_LIMB_ADJUSTMENTS = {
 };
 
 // C. DIRECTIONAL OFFSETS (Adjust placements when Facing Right vs Left)
-// Change 'x' values here to shift specific limbs when walking Left or Right
 const DIRECTIONAL_OFFSETS = {
     facingRight: {
         global: { x: 0 }, base: { x: 0 }, head: { x: 0 }, clothes: { x: 0 },
         wing: { x: 0 }, tool: { x: 0 }, sigil: { x: 0 },
-        // Specific Limbs (Facing Right)
-        armRight: { x: 0 }, armLeft: { x: 0 },
-        legRight: { x: 0 }, legLeft: { x: 0 }
+        armRight: { x: 0 }, armLeft: { x: 0 }, legRight: { x: 0 }, legLeft: { x: 0 }
     },
     facingLeft: {
         global: { x: 0 }, base: { x: 0 }, head: { x: 0 }, clothes: { x: 0 },
         wing: { x: 0 }, tool: { x: 0 }, sigil: { x: 0 },
-        // Specific Limbs (Facing Left)
-        armRight: { x: -20 }, armLeft: { x: -20 },
-        legRight: { x: 0 }, legLeft: { x: 0 }
+        armRight: { x: 0 }, armLeft: { x: 0 }, legRight: { x: 0 }, legLeft: { x: 0 }
     }
 };
 
@@ -72,29 +67,29 @@ const UI_PREVIEW_SETTINGS = {
 
 // E. LAYER ORDERING (Z-Index)
 const LAYER_ORDER_CONFIG = {
-    // Backmost (0) -> Frontmost (100)
+    // Standardized Keys: wing, armLeft, legLeft, base, clothes, sigil, legRight, armRight, tool, head
     facingRight: {
         wing: 0,
-        armLeft: 10,   
-        legLeft: 20,   
-        base: 30,      
-        clothes: 40,   
-        sigil: 50,     
-        armRight: 60, 
-        legRight: 70,  
-        tool: 80,      
-        head: 90       
+        armLeft: 10,   // Back Arm
+        legLeft: 20,   // Back Leg
+        base: 30,      // Torso
+        clothes: 40,   // Garb
+        sigil: 50,     // Chest Sigil
+        legRight: 60,  // Front Leg
+        armRight: 70,  // Front Arm
+        tool: 80,      // Tool
+        head: 90       // Hat
     },
     facingLeft: {
         wing: 0,
-        legRight: 10,  
-        armRight: 20,  
+        legRight: 10,  // Back Leg (was Front)
+        armRight: 20,  // Back Arm (was Front)
         base: 30,
         clothes: 40,
-        legLeft: 50,   
+        legLeft: 50,   // Front Leg (was Back)
         sigil: 60,
         tool: 70,
-        armLeft: 80,   
+        armLeft: 80,   // Front Arm (was Back)
         head: 90
     }
 };
@@ -479,11 +474,12 @@ export default function ServitorWildUnknown() {
 
     const ServitorRig = ({ idPrefix, isPreview = false, overrideDirection }: { idPrefix: string, isPreview?: boolean, overrideDirection?: 'left'|'right' }) => {
         const wrapperClass = isFeeding ? 'anim-feed' : 'anim-idle';
+        const rigEl = typeof document !== 'undefined' ? document.getElementById('game-rig') : null;
         
-        // Determine facing direction from REACT STATE
-        const isFacingLeft = rigAnimation.includes('left');
+        // Direction Logic: Check class presence for 'left'
+        const isFacingLeft = overrideDirection === 'left' || (idPrefix === 'game-rig' && rigEl?.classList.contains('anim-walk-left'));
         
-        // Helper for Z-Index from Config
+        // Dynamic Z-Index based on direction
         const getZ = (key: keyof typeof LAYER_ORDER_CONFIG.facingRight) => {
             const map = isFacingLeft ? LAYER_ORDER_CONFIG.facingLeft : LAYER_ORDER_CONFIG.facingRight;
             return map[key];
@@ -497,16 +493,22 @@ export default function ServitorWildUnknown() {
             let flip = cfg.f;
             if (specificLimb && (DEFAULT_FLIP_CONFIG as any)[specificLimb]) flip = !flip; 
             
-            // If Walking Left, we flip EVERYTHING to mirror it
-            if (isFacingLeft) flip = !flip;
+            // DIRECTIONAL FLIP FIX:
+            // If Walking Left (Facing Left), we DO NOT flip (assume natural Left facing assets?)
+            // OR If Walking Right (Facing Right), we DO flip (Mirror).
+            // Logic derived from prompt feedback: "Walking right... facing left" = Inverted logic needed.
+            // Current Fix: Walking Left = Normal. Walking Right = Flipped.
+            if (!isFacingLeft) flip = !flip;
 
             // 2. Adjustments
             let xMod = 0, yMod = 0;
+            
             // Static Code Adjustment
             if (specificLimb && (STATIC_LIMB_ADJUSTMENTS as any)[specificLimb]) {
                 xMod = (STATIC_LIMB_ADJUSTMENTS as any)[specificLimb].x;
                 yMod = (STATIC_LIMB_ADJUSTMENTS as any)[specificLimb].y;
             }
+            
             // Directional Code Adjustment (New Feature)
             const dirOffsets = isFacingLeft ? DIRECTIONAL_OFFSETS.facingLeft : DIRECTIONAL_OFFSETS.facingRight;
             if (specificLimb && (dirOffsets as any)[specificLimb]) {
@@ -548,11 +550,10 @@ export default function ServitorWildUnknown() {
             const cfg = (config.offsets as any)[partKey];
             if (!cfg.v) return null;
             
-            // Static parts also need to flip when walking left
             let flip = cfg.f;
-            if (isFacingLeft) flip = !flip;
+            // Directional Flip Fix for Static Parts too
+            if (!isFacingLeft) flip = !flip;
 
-            // Apply Directional Offset
             let xMod = 0;
             const dirOffsets = isFacingLeft ? DIRECTIONAL_OFFSETS.facingLeft : DIRECTIONAL_OFFSETS.facingRight;
             if ((dirOffsets as any)[partKey]) {
@@ -676,7 +677,7 @@ export default function ServitorWildUnknown() {
                  style={{ borderImage: `url('${ASSET_PATH}${ASSETS.UI_PANEL}') 18% 15% fill stretch`, borderWidth: '40px', padding: '20px' }}>
                 
                 {/* 1. FIXED PREVIEW AREA */}
-                <div className="h-[45%] w-full relative border-b border-[#5d4037] shrink-0 flex flex-col items-center justify-center z-50">
+                <div className="h-[45%] w-full relative border-b border-[#5d4037] shrink-0 overflow-hidden flex flex-col items-center justify-center z-50">
                     <div className="absolute top-2 left-2 right-2 flex gap-2 z-50">
                         <input type="text" value={sName} onChange={e => setSName(e.target.value)} className="flex-1 bg-black/50 border border-[#5d4037] p-1 text-xs text-white rounded" placeholder="Spirit Name" />
                         <input type="text" value={sPurpose} onChange={e => setSPurpose(e.target.value)} className="flex-1 bg-black/50 border border-[#5d4037] p-1 text-xs text-white rounded" placeholder="Purpose" />
