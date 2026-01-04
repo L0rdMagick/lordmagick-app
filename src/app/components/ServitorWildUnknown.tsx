@@ -632,7 +632,7 @@ export default function ServitorWildUnknown() {
     };
 
     if (!assetsLoaded) return (
-        <div className="fixed inset-0 bg-black flex flex-col items-center justify-center z-999">
+        <div className="fixed inset-0 bg-black flex flex-col items-center justify-center z-200">
             <div className="w-32 h-32 animate-spin" style={getSpriteStyle(0, ASSETS.TREASURES)}></div>
             <p className="text-[#FFD700] mt-4 font-serif">Summoning Assets... {loadProgress}%</p>
         </div>
@@ -738,7 +738,7 @@ export default function ServitorWildUnknown() {
                 </div>
 
                 {fallingFood.map(f => (
-                    <div key={f.id} className="absolute w-16 h-16 z-[200] animate-bounce"
+                    <div key={f.id} className="absolute w-16 h-16 z-200 animate-bounce"
                          style={{ left: f.left + '%', top: f.top + '%', animation: 'fall 1.5s linear forwards', ...getSpriteStyle(f.spriteIndex, ASSETS.FOOD) }} />
                 ))}
             </div>
@@ -867,7 +867,7 @@ export default function ServitorWildUnknown() {
             {/* FEEDING MODAL */}
             {isFeedingActive && (
                 // Background opacity is removed (bg-black/0) when holding (isFeeding=true)
-                <div className={`absolute inset-0 z-[200] flex flex-col items-center justify-center transition-colors duration-300 ${isFeeding ? 'bg-black/0' : 'bg-black/80'}`}>
+                <div className={`absolute inset-0 z-200 flex flex-col items-center justify-center transition-colors duration-300 ${isFeeding ? 'bg-black/0' : 'bg-black/80'}`}>
                     {hungerState === 'fed' ? (
                         <div className="text-center animate-in zoom-in">
                             <h2 className="text-[#FFD700] magick-font text-3xl mb-4">Hunger Sated</h2>
@@ -888,7 +888,7 @@ export default function ServitorWildUnknown() {
                 </div>
             )}
             {showCreditModal && (
-                 <div className="fixed inset-0 z-[500] flex items-center justify-center bg-black/80 p-6">
+                 <div className="fixed inset-0 z-500 flex items-center justify-center bg-black/80 p-6">
                     <div className="bg-[#1a1528] border border-amber-600 p-8 rounded text-center max-w-sm">
                         <Lock className="mx-auto mb-4 text-amber-500" /><p className="text-gray-300 mb-6">Insufficient Aether.</p>
                         <button onClick={() => setShowCreditModal(false)} className="w-full bg-amber-900/50 border border-amber-600 py-2 uppercase text-amber-100">Close</button>
