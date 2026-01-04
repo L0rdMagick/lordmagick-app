@@ -71,7 +71,7 @@ const DIRECTIONAL_OFFSETS = {
         global: { x: 0, y: 0, s: 0 },
         base: { x: 0, y: 0, s: 0 },
         head: { x: 0, y: 0, s: 0 },
-        clothes: { x: 3, y: 0, s: 0 },
+        clothes: { x: 1, y: 0, s: 0 },
         wing: { x: 0, y: 0, s: 0 },
         tool: { x: 0, y: 0, s: 0 },
         sigil: { x: -8, y: 0, s: 0 },
