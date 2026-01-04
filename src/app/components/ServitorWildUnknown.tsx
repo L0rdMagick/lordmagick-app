@@ -41,7 +41,7 @@ const DEFAULT_FLIP_CONFIG = {
 // B. UI PREVIEW SETTINGS (Code Only)
 // Adjusts the Servitor appearance specifically in the UI panel to prevent cutoff
 const UI_PREVIEW_SETTINGS = {
-    scale: 2.0, // Reduce to ensure it fits (0.7 = 70%)
+    scale: 1.0, // Reduce to ensure it fits (0.7 = 70%)
     y: -11       // Move down slightly (Positive = Down)
 };
 
