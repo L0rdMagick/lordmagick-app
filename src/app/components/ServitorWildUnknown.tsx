@@ -48,7 +48,7 @@ const DIRECTIONAL_OFFSETS = {
         // Static Parts
         wing:    { x: 0, y: 3, s: 1.0, f: false },
         base:    { x: 0, y: 0, s: 1.0, f: false },
-        head:    { x: 0, y: -51, s: 0.7, f: false },
+        head:    { x: 0, y: -49, s: 0.6, f: false },
         clothes: { x: -1, y: 10, s: 0.55, f: false },
         sigil:   { x: 3, y: 2, s: 0.2, f: false },
         tool:    { x: 27, y: 11, s: 0.4, f: false },
@@ -60,7 +60,7 @@ const DIRECTIONAL_OFFSETS = {
         armLeft:  { x: 25, y: 19, s: 0.6, f: false }, 
         
         legRight: { x: -5, y: 65, s: 0.9, f: true },
-        legLeft:  { x: 5, y: 66, s: 0.9, f: true },
+        legLeft:  { x: 4, y: 67, s: 0.9, f: true },
 
         // World Objects
         vessel:  { x: 0, y: 0, s: 1.8, f: false },
