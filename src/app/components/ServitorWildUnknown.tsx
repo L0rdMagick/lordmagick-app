@@ -54,8 +54,6 @@ const DIRECTIONAL_OFFSETS = {
         tool:    { x: 32, y: 15, s: 0.5, f: false },
         
         // Specific Limbs (Consolidated & Tuned for Natural Pivot)
-        // Note: Arms are pulled slightly left to align the shoulder pivot with the torso
-        // Legs are pulled slightly up to align hip pivot
         armRight: { x: 2, y: 15, s: 0.6, f: false },
         armLeft:  { x: 25, y: 19, s: 0.6, f: false }, 
         
@@ -64,7 +62,7 @@ const DIRECTIONAL_OFFSETS = {
 
         // World Objects
         vessel:  { x: 0, y: 0, s: 1.8, f: false },
-        mound:   { x: 0, y: 0, s: 2.8, f: false },
+        mound:   { x: 0, y: 3, s: 2.8, f: false },
     },
     facingLeft: {
         // --- ADJUSTMENTS (Added to Base when Facing Left) ---
@@ -77,7 +75,6 @@ const DIRECTIONAL_OFFSETS = {
         sigil: { x: -8, y: 0, s: 0 },
         
         // Limb Shifts for Left Walk
-        // When flipping to left, we shift the arms back to align with the reversed body
         armRight: { x: -23, y: 3, s: 0 },
         armLeft:  { x: -26, y: -6, s: 0 },
         
@@ -164,7 +161,7 @@ const CATEGORIES: CategoryItem[] = [
     { id: 'mound', label: 'MOUNDS', asset: ASSETS.MOUND, indexKey: null, offsetKey: 'mound', single: true, canFlip: true },
     { id: 'vessel', label: 'VESSELS', asset: ASSETS.VESSELS, indexKey: 'vesselIndex', offsetKey: 'vessel', canFlip: true },
     { id: 'food', label: 'FOOD', asset: ASSETS.FOOD, indexKey: 'foodIndex', offsetKey: null },
-    { id: 'settings', label: 'SETTINGS', asset: null, indexKey: null, offsetKey: null }
+    { id: 'settings', label: 'BEHAVIOR', asset: null, indexKey: null, offsetKey: null } // Renamed to BEHAVIOR
 ];
 
 const GENERIC_LIST = Array.from({length: 16}).map((_, i) => `Option ${i + 1}`);
@@ -358,10 +355,11 @@ export default function ServitorWildUnknown() {
         while(runningRef.current && loopIdRef.current === id) {
             
             // 1. Walk to Mound (Left)
+            // UPDATED: Go deeper into the void (7% instead of 15%)
             if(servitor) { servitor.style.opacity = '1'; servitor.style.transform = 'scale(1)'; }
             setRigAnimation(config.movementType === 'fly' ? 'anim-fly-left' : 'anim-walk-left');
             
-            await moveTo(15, id);
+            await moveTo(7, id); 
             if(!runningRef.current) break;
 
             // 2. Enter Void
@@ -384,7 +382,8 @@ export default function ServitorWildUnknown() {
             }
             setRigAnimation(config.movementType === 'fly' ? 'anim-fly-right' : 'anim-walk-right');
             
-            await moveTo(80, id);
+            // UPDATED: Walk further past vessel (88% instead of 80%)
+            await moveTo(88, id);
             if(!runningRef.current) break;
 
             // 5. Deposit
@@ -507,7 +506,8 @@ export default function ServitorWildUnknown() {
         
         // Determine facing direction
         const isFacingLeft = rigAnimation.includes('left');
-        
+        const isFlying = config.movementType === 'fly' || rigAnimation.includes('fly');
+
         // Helper for Z-Index from Config
         const getZ = (key: keyof typeof LAYER_ORDER_CONFIG.facingRight) => {
             const map = isFacingLeft ? LAYER_ORDER_CONFIG.facingLeft : LAYER_ORDER_CONFIG.facingRight;
@@ -549,7 +549,7 @@ export default function ServitorWildUnknown() {
             let originX = '50%';
             let originY = '20%';
 
-            if (specificLimb?.includes('arm')) {
+            if (specificLimb?.includes('arm') || partKey === 'tool') {
                 // Arms (Right Default): Shoulder is Top-Left (approx 15%)
                 // If facing Right: 15%. If facing Left (flipped): 85%
                 const baseArmX = 15; 
@@ -570,6 +570,17 @@ export default function ServitorWildUnknown() {
                 if (specificLimb === 'armRight') jointClass = 'arm-right-joint';
                 if (specificLimb === 'legLeft') jointClass = 'leg-left-joint';
                 if (specificLimb === 'legRight') jointClass = 'leg-right-joint';
+            }
+            
+            // Tool Animation Logic (Sync with Right Arm)
+            // If this part is the 'tool', we apply the exact same animation class as the arm-right-joint
+            if (partKey === 'tool') {
+                 // Determine which joint class mimics the right arm for the current direction
+                 if (isFacingLeft) {
+                    jointClass = 'tool-hand-anim'; // Will use same keyframes as arm-right but handle flipping if needed
+                 } else {
+                    jointClass = 'tool-hand-anim';
+                 }
             }
 
             return (
@@ -592,11 +603,20 @@ export default function ServitorWildUnknown() {
         const finalGs = gBase.s + gUser.s;
         const finalGf = gBase.f !== gUser.f; 
 
+        // Add floating class if flying
+        const flyClass = isFlying ? 'anim-floating' : '';
+
+        // Force transform-origin to bottom center for proper global scaling
         const globalTransform = `translate(${finalGx}%, ${finalGy}%) scale(${finalGs}) ${finalGf ? 'scaleX(-1)' : ''}`;
         const previewStyle = isPreview ? `translateY(${UI_PREVIEW_SETTINGS.y}%) scale(${UI_PREVIEW_SETTINGS.scale})` : '';
 
         return (
-            <div id={idPrefix} className={`servitor-rig relative w-32 h-32 ${rigAnimation} ${wrapperClass}`} style={{ transform: `${previewStyle} ${globalTransform}` }}>
+            <div id={idPrefix} 
+                 className={`servitor-rig relative w-32 h-32 ${rigAnimation} ${wrapperClass} ${flyClass}`} 
+                 style={{ 
+                     transform: `${previewStyle} ${globalTransform}`,
+                     transformOrigin: 'bottom center' // CRITICAL: Ensures "Whole" scaling keeps feet planted/centered
+                 }}>
                 {renderStatic(config.wingIndex, ASSETS.BACK, 'wing', getZ('wing'))}
                 {renderPart(config.legIndex, ASSETS.LEGS, 'leg', getZ('legLeft'), 'limb', 'legLeft')}
                 {renderPart(config.legIndex, ASSETS.LEGS, 'leg', getZ('legRight'), 'limb', 'legRight')}
@@ -632,34 +652,64 @@ export default function ServitorWildUnknown() {
     return (
         <div className="fixed inset-0 w-full h-full bg-[#0f0f1a] text-[#dcdcdc] overflow-hidden select-none font-sans flex flex-col">
             <style jsx global>{`
-                @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap');
-                .magick-font { font-family: 'Cinzel', serif; }
+                @import url('https://fonts.googleapis.com/css2?family=MedievalSharp&display=swap');
+                
+                .magick-font { font-family: 'MedievalSharp', cursive; }
+                body { font-family: 'MedievalSharp', cursive; }
+
                 .runic-btn { background: url('${ASSET_PATH}${ASSETS.UI_BUTTONS}') center/cover; color: #FFD700; text-shadow: 0 1px 2px black; border: 1px solid #FFD70050; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
                 .runic-btn:active { transform: scale(0.95); filter: brightness(0.8); }
                 
                 @keyframes bounce { 0% { top: 0; } 50% { top: -5px; } }
-                /* Updated Animations: Reduced degrees for cleaner, heavier movement */
+                
+                /* Rotation for walking limbs */
                 @keyframes rotate-l { 0% { transform: rotate(-5deg); } 50% { transform: rotate(5deg); } 100% { transform: rotate(-5deg); } }
                 @keyframes rotate-r { 0% { transform: rotate(5deg); } 50% { transform: rotate(-5deg); } 100% { transform: rotate(5deg); } }
+                
+                /* Feeding Wave Animation (Arms wave up and down) */
+                @keyframes feed-wave {
+                    0% { transform: rotate(0deg); }
+                    50% { transform: rotate(-45deg); } 
+                    100% { transform: rotate(0deg); }
+                }
+
+                /* Flying Bob */
+                @keyframes float-bob {
+                    0% { transform: translateY(-40px); }
+                    50% { transform: translateY(-60px); }
+                    100% { transform: translateY(-40px); }
+                }
+                .anim-floating { animation: float-bob 3s ease-in-out infinite; }
+
                 @keyframes fall { from { top: -10%; opacity: 1; } to { top: 100%; opacity: 0; } }
 
                 .anim-walk-left .servitor-rig { animation: bounce 0.6s infinite; }
-                /* Adjusted timing slightly for weight */
                 .anim-walk-left .leg-left-joint { animation: rotate-l 1.2s infinite ease-in-out; }
                 .anim-walk-left .leg-right-joint { animation: rotate-r 1.2s infinite ease-in-out; }
                 .anim-walk-left .arm-left-joint { animation: rotate-r 1.2s infinite ease-in-out; }
                 .anim-walk-left .arm-right-joint { animation: rotate-l 1.2s infinite ease-in-out; }
+                /* Tool syncs with Right Arm logic when walking Left (which is "back" arm) */
+                .anim-walk-left .tool-hand-anim { animation: rotate-l 1.2s infinite ease-in-out; }
                 
                 .anim-walk-right .servitor-rig { animation: bounce 0.6s infinite; }
                 .anim-walk-right .leg-left-joint { animation: rotate-r 1.2s infinite ease-in-out; }
                 .anim-walk-right .leg-right-joint { animation: rotate-l 1.2s infinite ease-in-out; }
                 .anim-walk-right .arm-left-joint { animation: rotate-l 1.2s infinite ease-in-out; }
                 .anim-walk-right .arm-right-joint { animation: rotate-r 1.2s infinite ease-in-out; }
+                /* Tool syncs with Right Arm logic when walking Right (Front arm) */
+                .anim-walk-right .tool-hand-anim { animation: rotate-r 1.2s infinite ease-in-out; }
 
+                /* Feeding Animation Overrides */
+                .anim-feed .arm-left-joint { animation: feed-wave 0.5s infinite ease-in-out; }
+                .anim-feed .arm-right-joint { animation: feed-wave 0.5s infinite ease-in-out; animation-delay: 0.1s; }
+                .anim-feed .tool-hand-anim { animation: feed-wave 0.5s infinite ease-in-out; animation-delay: 0.1s; }
+
+                /* Enhanced Glow Effects */
                 .pulse-glow-void { animation: pulse-void 1s infinite alternate; }
-                @keyframes pulse-void { from { filter: drop-shadow(0 0 5px #4b0082); } to { filter: drop-shadow(0 0 20px #8a2be2); } }
+                @keyframes pulse-void { from { filter: drop-shadow(0 0 10px #4b0082); } to { filter: drop-shadow(0 0 40px #8a2be2); } }
                 .pulse-glow-gold { animation: pulse-gold 0.5s infinite alternate; }
-                @keyframes pulse-gold { from { filter: drop-shadow(0 0 5px #FFD700); } to { filter: drop-shadow(0 0 25px #FFFF00); } }
+                @keyframes pulse-gold { from { filter: drop-shadow(0 0 10px #FFD700); } to { filter: drop-shadow(0 0 50px #FFFF00); } }
+                
                 .custom-scrollbar::-webkit-scrollbar { width: 4px; } .custom-scrollbar::-webkit-scrollbar-thumb { background: #5d4037; border-radius: 4px; }
             `}</style>
 
@@ -701,18 +751,23 @@ export default function ServitorWildUnknown() {
                 </div>
             )}
 
-            {/* CONFIG PANEL */}
-            <div className={`absolute top-0 left-0 h-full w-full md:w-[500px] z-50 transition-transform duration-500 ease-in-out ${isRunning ? '-translate-x-full' : 'translate-x-0'} pointer-events-auto flex flex-col bg-[#0f0f1a]`}
+            {/* CONFIG PANEL - Lowered by 30px via top-[30px] and h-[calc(100%-30px)] */}
+            <div className={`absolute top-[30px] left-0 h-[calc(100%-30px)] w-full md:w-[500px] z-50 transition-transform duration-500 ease-in-out ${isRunning ? '-translate-x-full' : 'translate-x-0'} pointer-events-auto flex flex-col bg-[#0f0f1a]`}
                  style={{ borderImage: `url('${ASSET_PATH}${ASSETS.UI_PANEL}') 18% 15% fill stretch`, borderWidth: '40px', padding: '20px' }}>
                 
                 {/* 1. FIXED PREVIEW AREA */}
                 <div className="h-[45%] w-full relative border-b border-[#5d4037] shrink-0 flex flex-col items-center justify-center z-50">
-                    <div className="absolute top-2 left-2 right-2 flex gap-2 z-50">
-                        <input type="text" value={sName} onChange={e => setSName(e.target.value)} className="flex-1 bg-black/50 border border-[#5d4037] p-1 text-xs text-white rounded" placeholder="Spirit Name" />
-                        <input type="text" value={sPurpose} onChange={e => setSPurpose(e.target.value)} className="flex-1 bg-black/50 border border-[#5d4037] p-1 text-xs text-white rounded" placeholder="Purpose" />
+                    {/* Inputs raised higher (mt-2 instead of absolute top), stacked on mobile */}
+                    <div className="absolute top-0 w-full p-2 flex flex-col md:flex-row gap-2 z-50">
+                        <input type="text" value={sName} onChange={e => setSName(e.target.value)} 
+                            className="flex-1 bg-[#f0e6d2] shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)] border border-[#5d4037] p-2 text-sm text-black rounded magick-font placeholder-gray-600" 
+                            placeholder="Spirit Name" />
+                        <input type="text" value={sPurpose} onChange={e => setSPurpose(e.target.value)} 
+                            className="flex-1 bg-[#f0e6d2] shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)] border border-[#5d4037] p-2 text-sm text-black rounded magick-font placeholder-gray-600" 
+                            placeholder="Purpose" />
                     </div>
                     {/* Render Servitor with Preview Settings */}
-                    <div className="relative z-10 mt-8">
+                    <div className="relative z-10 mt-12">
                         <ServitorRig idPrefix="preview-rig" isPreview={true} />
                     </div>
                 </div>
@@ -758,13 +813,24 @@ export default function ServitorWildUnknown() {
                                         </div>
                                         <div className="flex gap-4 items-center">
                                             <label className="text-xs font-bold text-[#3e2723]">Mode:</label>
-                                            <select value={config.movementType} onChange={e => setConfig({...config, movementType: e.target.value})} className="bg-white/50 text-xs p-1 rounded border border-[#8d6e63]">
+                                            <select value={config.movementType} onChange={e => setConfig({...config, movementType: e.target.value})} className="bg-white/50 text-xs text-black p-1 rounded border border-[#8d6e63]">
                                                 <option value="walk">Walk</option><option value="fly">Fly</option>
                                             </select>
                                         </div>
                                     </div>
                                 ) : (
                                     <>
+                                        {/* Controls (DPad) - Moved ABOVE Grid */}
+                                        {CATEGORIES.find(c => c.id === activeCategory)?.offsetKey && (
+                                            <div className="mb-4">
+                                                <DPad 
+                                                    part={CATEGORIES.find(c => c.id === activeCategory)?.offsetKey as string} 
+                                                    allowFlip={CATEGORIES.find(c => c.id === activeCategory)?.canFlip} 
+                                                    allowSpread={CATEGORIES.find(c => c.id === activeCategory)?.canSpread}
+                                                />
+                                            </div>
+                                        )}
+                                        
                                         {/* Grid */}
                                         {CATEGORIES.find(c => c.id === activeCategory)?.indexKey && (
                                             <div className="grid grid-cols-4 gap-2 mb-4">
@@ -777,14 +843,6 @@ export default function ServitorWildUnknown() {
                                                     </button>
                                                 ))}
                                             </div>
-                                        )}
-                                        {/* Controls */}
-                                        {CATEGORIES.find(c => c.id === activeCategory)?.offsetKey && (
-                                            <DPad 
-                                                part={CATEGORIES.find(c => c.id === activeCategory)?.offsetKey as string} 
-                                                allowFlip={CATEGORIES.find(c => c.id === activeCategory)?.canFlip} 
-                                                allowSpread={CATEGORIES.find(c => c.id === activeCategory)?.canSpread}
-                                            />
                                         )}
                                     </>
                                 )}
@@ -808,7 +866,8 @@ export default function ServitorWildUnknown() {
 
             {/* FEEDING MODAL */}
             {isFeedingActive && (
-                <div className="absolute inset-0 z-[200] bg-black/80 flex flex-col items-center justify-center">
+                // Background opacity is removed (bg-black/0) when holding (isFeeding=true)
+                <div className={`absolute inset-0 z-[200] flex flex-col items-center justify-center transition-colors duration-300 ${isFeeding ? 'bg-black/0' : 'bg-black/80'}`}>
                     {hungerState === 'fed' ? (
                         <div className="text-center animate-in zoom-in">
                             <h2 className="text-[#FFD700] magick-font text-3xl mb-4">Hunger Sated</h2>
@@ -816,9 +875,11 @@ export default function ServitorWildUnknown() {
                         </div>
                     ) : (
                         <div className="flex flex-col items-center">
-                            <p className="text-[#FFD700] mb-8 animate-pulse text-xl font-serif">{sName} requires sustenance...</p>
+                            {/* Text disappears while feeding to clear view */}
+                            {!isFeeding && <p className="text-[#FFD700] mb-8 animate-pulse text-xl font-serif">{sName} requires sustenance...</p>}
+                            
                             <button onMouseDown={() => startHold('feed')} onMouseUp={stopHold} onMouseLeave={stopHold} onTouchStart={() => startHold('feed')} onTouchEnd={stopHold}
-                                className="w-40 h-40 rounded-full border-4 border-[#FFD700] flex items-center justify-center relative overflow-hidden bg-black shadow-[0_0_50px_#FFD700]">
+                                className={`w-40 h-40 rounded-full border-4 border-[#FFD700] flex items-center justify-center relative overflow-hidden bg-black shadow-[0_0_50px_#FFD700] transition-opacity duration-300 ${isFeeding ? 'opacity-50 scale-75' : 'opacity-100'}`}>
                                 <div className="absolute bottom-0 left-0 w-full bg-[#FFD700]/30 transition-all duration-75" style={{height: `${feedProgress}%`}}></div>
                                 <div className="w-20 h-20" style={getSpriteStyle(config.foodIndex, ASSETS.FOOD)} />
                             </button>
