@@ -73,7 +73,7 @@ const DIRECTIONAL_OFFSETS = {
         head: { x: 0, y: 0, s: 0 },
         clothes: { x: 1, y: 0, s: 0 },
         wing: { x: 0, y: 0, s: 0 },
-        tool: { x: 0, y: 0, s: 0 },
+        tool: { x: -64, y: -4, s: 0 },
         sigil: { x: -8, y: 0, s: 0 },
         
         // Limb Shifts for Left Walk
