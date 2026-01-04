@@ -33,9 +33,9 @@ const ASSETS = {
 // Set to true to mirror the sprite horizontally by default
 const DEFAULT_FLIP_CONFIG = {
     armRight: false, // Right Arm
-    armLeft: true,   // Left Arm
+    armLeft: false,   // Left Arm
     legRight: false, // Right Leg
-    legLeft: true    // Left Leg
+    legLeft: false    // Left Leg
 };
 
 // B. UI PREVIEW SETTINGS (Code Only)
