@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { X, Trash2, Lock, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Plus, Minus, RefreshCw, Move, Eye, EyeOff, Settings, User } from 'lucide-react';
+import { X, Lock, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Plus, Minus, RefreshCw, Move, Eye, EyeOff, Settings, User, ArrowLeftRight } from 'lucide-react';
 import { createBrowserClient } from '@supabase/ssr';
 import { checkAndSpendCredits, getWalletStatus, COST_BIND_SERVITOR } from '@/lib/economy';
 import { saveServitorToGrimoire, getMyServitors } from '@/lib/services/spellService';
@@ -27,19 +27,17 @@ const ASSETS = {
     UI_BUTTONS: 'Runic_Glass_Button_Set.png'
 };
 
-// --- 2. CONFIGURATION SECTION ---
+// --- 2. CONFIGURATION SECTION (CODE ONLY) ---
 
-// A. DEFAULT LIMB FLIPPING (Code Only)
-// Set to true to mirror the sprite horizontally by default
+// A. DEFAULT FLIP CONFIG (Base Sprite Orientation)
 const DEFAULT_FLIP_CONFIG = {
-    armRight: false, // Right Arm
-    armLeft: false,  // Left Arm
-    legRight: true,  // Right Leg
-    legLeft: true    // Left Leg
+    armRight: false, 
+    armLeft: false,   
+    legRight: true, 
+    legLeft: true    
 };
 
-// B. LIMB POSITION FINE-TUNING (Code Only)
-// Adjust these X/Y values to move specific limbs independently of the main group
+// B. STATIC LIMB ADJUSTMENTS (Fine-tune default positions)
 const STATIC_LIMB_ADJUSTMENTS = {
     armRight: { x: 0, y: 0 },
     armLeft:  { x: 20, y: 0 },
@@ -47,57 +45,57 @@ const STATIC_LIMB_ADJUSTMENTS = {
     legLeft:  { x: 20, y: 0 }
 };
 
-// C. UI PREVIEW SETTINGS (Code Only)
-// Adjusts the Servitor appearance specifically in the UI panel to prevent cutoff
+// C. DIRECTIONAL OFFSETS (Adjust placements when Facing Right vs Left)
+// Use this to fix alignment issues when the servitor turns around.
+const DIRECTIONAL_OFFSETS = {
+    facingRight: {
+        global: { x: 0 }, base: { x: 0 }, head: { x: 0 }, clothes: { x: 0 },
+        wing: { x: 0 }, tool: { x: 0 }, sigil: { x: 0 }
+    },
+    facingLeft: {
+        global: { x: 0 }, base: { x: 0 }, head: { x: 0 }, clothes: { x: 0 },
+        wing: { x: 0 }, tool: { x: 0 }, sigil: { x: 0 }
+    }
+};
+
+// D. UI PREVIEW SETTINGS
 const UI_PREVIEW_SETTINGS = {
     scale: 1.0, 
     y: -11      
 };
 
-// D. LAYER ORDERING (Z-Index)
-// 0 = Backmost, Higher Numbers = Frontmost
+// E. LAYER ORDERING (Z-Index)
 const LAYER_ORDER_CONFIG = {
-    // Default State (Facing Right)
     facingRight: {
         wing: 0,
-        armLeft: 10,   // Back Arm
-        legLeft: 20,   // Back Leg
-        base: 30,      // Torso
-        clothes: 40,   // Garb
-        sigil: 50,     // Chest Sigil
-        legRight: 60,  // Front Leg
-        armRight: 70,  // Front Arm
-        tool: 80,      // Tool
-        head: 90       // Hat
+        armLeft: 10,   legLeft: 20,
+        base: 30,      clothes: 40,   sigil: 50,
+        legRight: 60,  armRight: 70,
+        tool: 80,      head: 90
     },
-    // Return State (Facing Left / Walking to Mound)
     facingLeft: {
         wing: 0,
-        legRight: 10,  // Back Leg
-        armRight: 20,  // Back Arm
-        base: 30,
-        clothes: 40,
-        legLeft: 50,   // Front Leg
-        sigil: 60,
-        tool: 70,
-        armLeft: 80,   // Front Arm
-        head: 90
+        legRight: 10,  armRight: 20,
+        base: 30,      clothes: 40,
+        legLeft: 50,   sigil: 60,
+        tool: 70,      armLeft: 80,   head: 90
     }
 };
 
-// E. DEFAULT OFFSETS (User Adjustable Defaults)
+// F. DEFAULT USER OFFSETS
+// "spread" is used to move left/right limbs apart horizontally
 const DEFAULT_OFFSETS = {
-    global:  { x: 0, y: 0, s: 1.0, f: false, v: true }, 
-    wing:    { x: 0, y: 3, s: 1.0, f: false, v: true },
-    leg:     { x: -6, y: 55, s: 0.7, f: false, v: true },
-    tool:    { x: 27, y: 11, s: 0.4, f: false, v: true },
-    arm:     { x: 0, y: 10, s: 0.5, f: false, v: true },
-    base:    { x: 0, y: 0, s: 1.0, f: false, v: true },
-    head:    { x: 0, y: -51, s: 0.7, f: false, v: true },
-    clothes: { x: 0, y: 10, s: 0.6, f: false, v: true },
-    sigil:   { x: 3, y: 2, s: 0.2, f: false, v: true },
-    vessel:  { x: 0, y: 0, s: 1.8, f: false, v: true },
-    mound:   { x: 0, y: 0, s: 2.8, f: false, v: true },
+    global:  { x: 0, y: 0, s: 1.0, f: false, v: true, spread: 0 }, 
+    wing:    { x: 0, y: 3, s: 1.0, f: false, v: true, spread: 0 },
+    leg:     { x: -6, y: 55, s: 0.7, f: false, v: true, spread: 0 },
+    tool:    { x: 27, y: 11, s: 0.4, f: false, v: true, spread: 0 },
+    arm:     { x: 0, y: 10, s: 0.5, f: false, v: true, spread: 0 },
+    base:    { x: 0, y: 0, s: 1.0, f: false, v: true, spread: 0 },
+    head:    { x: 0, y: -51, s: 0.7, f: false, v: true, spread: 0 },
+    clothes: { x: 0, y: 10, s: 0.6, f: false, v: true, spread: 0 },
+    sigil:   { x: 3, y: 2, s: 0.2, f: false, v: true, spread: 0 },
+    vessel:  { x: 0, y: 0, s: 1.8, f: false, v: true, spread: 0 },
+    mound:   { x: 0, y: 0, s: 2.8, f: false, v: true, spread: 0 },
 };
 
 // --- END CONFIGURATION ---
@@ -109,6 +107,7 @@ interface CategoryItem {
     indexKey: string | null;
     offsetKey: string | null;
     canFlip?: boolean;
+    canSpread?: boolean;
     single?: boolean;
 }
 
@@ -116,8 +115,8 @@ const CATEGORIES: CategoryItem[] = [
     { id: 'global', label: 'WHOLE', asset: null, indexKey: null, offsetKey: 'global', canFlip: true },
     { id: 'head', label: 'HATS', asset: ASSETS.HEAD, indexKey: 'hatIndex', offsetKey: 'head', canFlip: true },
     { id: 'base', label: 'TORSOS', asset: ASSETS.BASES, indexKey: 'baseIndex', offsetKey: 'base', canFlip: true },
-    { id: 'leg', label: 'LEGS', asset: ASSETS.LEGS, indexKey: 'legIndex', offsetKey: 'leg', canFlip: false },
-    { id: 'arm', label: 'ARMS', asset: ASSETS.ARMS, indexKey: 'limbIndex', offsetKey: 'arm', canFlip: false },
+    { id: 'leg', label: 'LEGS', asset: ASSETS.LEGS, indexKey: 'legIndex', offsetKey: 'leg', canFlip: false, canSpread: true },
+    { id: 'arm', label: 'ARMS', asset: ASSETS.ARMS, indexKey: 'limbIndex', offsetKey: 'arm', canFlip: false, canSpread: true },
     { id: 'tool', label: 'TOOLS', asset: ASSETS.TOOLS, indexKey: 'toolIndex', offsetKey: 'tool', canFlip: true },
     { id: 'clothes', label: 'ROBES', asset: ASSETS.CLOTHES, indexKey: 'clothingIndex', offsetKey: 'clothes', canFlip: true },
     { id: 'wing', label: 'WINGS', asset: ASSETS.BACK, indexKey: 'wingIndex', offsetKey: 'wing', canFlip: true },
@@ -223,7 +222,7 @@ export default function ServitorWildUnknown() {
     }, []);
 
     // --- ACTIONS ---
-    const updateOffset = (part: string, field: 'x'|'y'|'s'|'f'|'v', value: number | boolean) => {
+    const updateOffset = (part: string, field: 'x'|'y'|'s'|'f'|'v'|'spread', value: number | boolean) => {
         setConfig(prev => ({
             ...prev,
             offsets: {
@@ -233,14 +232,14 @@ export default function ServitorWildUnknown() {
         }));
     };
 
-    const handleOffsetStart = (part: string, field: 'x'|'y'|'s', change: number) => {
-        const current = (config.offsets as any)[part][field];
+    const handleOffsetStart = (part: string, field: 'x'|'y'|'s'|'spread', change: number) => {
+        const current = (config.offsets as any)[part][field] || 0;
         const step = field === 's' ? 0.1 : 1.0; 
         updateOffset(part, field, current + (change * step));
 
         buttonIntervalRef.current = setInterval(() => {
             setConfig(prev => {
-                const cur = (prev.offsets as any)[part][field];
+                const cur = (prev.offsets as any)[part][field] || 0;
                 return {
                     ...prev,
                     offsets: {
@@ -418,7 +417,7 @@ export default function ServitorWildUnknown() {
 
     // --- RIG COMPONENTS ---
 
-    const DPad = ({ part, allowFlip = false }: { part: string, allowFlip?: boolean }) => {
+    const DPad = ({ part, allowFlip = false, allowSpread = false }: { part: string, allowFlip?: boolean, allowSpread?: boolean }) => {
         const cfg = (config.offsets as any)[part];
         if(!cfg) return null;
         const btnClass = "p-1 bg-[#3e2723] hover:bg-[#5d4037] active:bg-[#8d6e63] rounded flex justify-center items-center shadow border border-black/30 text-white";
@@ -445,16 +444,19 @@ export default function ServitorWildUnknown() {
                         <button onMouseDown={() => handleOffsetStart(part, 's', -0.1)} onMouseUp={handleOffsetStop} onMouseLeave={handleOffsetStop} className={btnClass}><Minus size={12}/></button>
                         <button onMouseDown={() => handleOffsetStart(part, 's', 0.1)} onMouseUp={handleOffsetStop} onMouseLeave={handleOffsetStop} className={btnClass}><Plus size={12}/></button>
                     </div>
+                    
+                    {allowSpread && (
+                        <div className="flex gap-1">
+                            <button onMouseDown={() => handleOffsetStart(part, 'spread', -1)} onMouseUp={handleOffsetStop} onMouseLeave={handleOffsetStop} className={btnClass} title="Decrease Spread"><ArrowLeftRight size={12} className="rotate-90"/></button>
+                            <button onMouseDown={() => handleOffsetStart(part, 'spread', 1)} onMouseUp={handleOffsetStop} onMouseLeave={handleOffsetStop} className={btnClass} title="Increase Spread"><ArrowLeftRight size={12}/></button>
+                        </div>
+                    )}
+
                     {allowFlip && (
                         <button onClick={() => updateOffset(part, 'f', !cfg.f)} className={`p-1 rounded flex gap-1 items-center justify-center text-[10px] border ${cfg.f ? 'bg-amber-700 border-amber-500 text-white' : 'bg-[#3e2723] border-[#5d4037] text-gray-400'}`}>
                             <RefreshCw size={10} /> Flip
                         </button>
                     )}
-                </div>
-                <div className="text-[9px] text-gray-400 font-mono flex flex-col leading-tight ml-1 w-12">
-                    <span>X: {cfg.x.toFixed(0)}</span>
-                    <span>Y: {cfg.y.toFixed(0)}</span>
-                    <span>S: {cfg.s.toFixed(1)}</span>
                 </div>
             </div>
         );
@@ -464,6 +466,7 @@ export default function ServitorWildUnknown() {
         const wrapperClass = isFeeding ? 'anim-feed' : 'anim-idle';
         const rigEl = typeof document !== 'undefined' ? document.getElementById('game-rig') : null;
         
+        // Direction Logic
         const isFacingLeft = overrideDirection === 'left' || (idPrefix === 'game-rig' && rigEl?.classList.contains('anim-walk-left'));
         
         // Dynamic Z-Index based on direction
@@ -476,23 +479,32 @@ export default function ServitorWildUnknown() {
             const cfg = (config.offsets as any)[partKey];
             if (!cfg.v) return null;
 
-            // 1. Base Flip (User Preference + Default Config)
+            // 1. Flip Logic
             let flip = cfg.f;
+            if (specificLimb && (DEFAULT_FLIP_CONFIG as any)[specificLimb]) flip = !flip; 
 
-            // 2. Specific Limb Defaults
-            if (specificLimb && (DEFAULT_FLIP_CONFIG as any)[specificLimb]) {
-                flip = !flip; 
-            }
-
-            // 3. Static Adjustments (Code Only)
-            let xMod = 0;
-            let yMod = 0;
+            // 2. Static Adjustment (Code Only)
+            let xMod = 0, yMod = 0;
             if (specificLimb && (STATIC_LIMB_ADJUSTMENTS as any)[specificLimb]) {
                 xMod = (STATIC_LIMB_ADJUSTMENTS as any)[specificLimb].x;
                 yMod = (STATIC_LIMB_ADJUSTMENTS as any)[specificLimb].y;
             }
 
-            const totalX = cfg.x + xMod;
+            // 3. Directional Adjustment (Code Only)
+            const dirOffsets = isFacingLeft ? DIRECTIONAL_OFFSETS.facingLeft : DIRECTIONAL_OFFSETS.facingRight;
+            if ((dirOffsets as any)[partKey]) {
+                xMod += (dirOffsets as any)[partKey].x;
+            }
+
+            // 4. Spread Logic (User Defined Spread for Limbs)
+            let spreadMod = 0;
+            if (partType === 'limb' && cfg.spread) {
+                // Left Limbs move Left (-), Right Limbs move Right (+)
+                if (specificLimb?.includes('Left')) spreadMod = -cfg.spread;
+                if (specificLimb?.includes('Right')) spreadMod = cfg.spread;
+            }
+
+            const totalX = cfg.x + xMod + spreadMod;
             const totalY = cfg.y + yMod;
 
             const spriteTransform = `translate(${totalX}%, ${totalY}%) scale(${cfg.s}) ${flip ? 'scaleX(-1)' : ''}`;
@@ -526,26 +538,31 @@ export default function ServitorWildUnknown() {
 
         // GLOBAL TRANSFORM
         const g = config.offsets.global;
-        // Apply Preview Settings if in preview
+        // In UI Preview: Apply PREVIEW Settings + User Global
         const previewStyle = isPreview ? `translateY(${UI_PREVIEW_SETTINGS.y}%) scale(${UI_PREVIEW_SETTINGS.scale})` : '';
-        const userGlobal = `translate(${g.x}%, ${g.y}%) scale(${g.s}) ${g.f ? 'scaleX(-1)' : ''}`;
+        
+        // MAIN FLIP LOGIC: If Facing Left, flip the entire container horizontally. 
+        // This is the cleanest way to mirror the servitor. Z-Indexes are handled separately.
+        const directionFlip = isFacingLeft ? 'scaleX(-1)' : '';
+        const userGlobal = `translate(${g.x}%, ${g.y}%) scale(${g.s}) ${g.f ? 'scaleX(-1)' : ''} ${directionFlip}`;
         
         return (
             <div id={idPrefix} className={`servitor-rig relative w-32 h-32 ${wrapperClass}`} style={{ transform: `${previewStyle} ${userGlobal}` }}>
-                {renderStatic(config.wingIndex, ASSETS.BACK, 'wing', getZ('wing'))}
+                
+                {renderPart(config.wingIndex, ASSETS.BACK, 'wing', getZ('wing'), 'static')}
                 
                 {renderPart(config.legIndex, ASSETS.LEGS, 'leg', getZ('legLeft'), 'limb', 'legLeft')}
                 {renderPart(config.legIndex, ASSETS.LEGS, 'leg', getZ('legRight'), 'limb', 'legRight')}
 
-                {renderStatic(config.baseIndex, ASSETS.BASES, 'base', getZ('base'))}
-                {renderStatic(config.clothingIndex, ASSETS.CLOTHES, 'clothes', getZ('clothes'))}
-                {renderStatic(config.sigilIndex, ASSETS.TREASURES, 'sigil', getZ('sigil'))} 
+                {renderPart(config.baseIndex, ASSETS.BASES, 'base', getZ('base'), 'static')}
+                {renderPart(config.clothingIndex, ASSETS.CLOTHES, 'clothes', getZ('clothes'), 'static')}
+                {renderPart(config.sigilIndex, ASSETS.TREASURES, 'sigil', getZ('sigil'), 'static')}
                 
                 {renderPart(config.limbIndex, ASSETS.ARMS, 'arm', getZ('armLeft'), 'limb', 'armLeft')}
                 {renderPart(config.limbIndex, ASSETS.ARMS, 'arm', getZ('armRight'), 'limb', 'armRight')}
 
                 {renderPart(config.toolIndex, ASSETS.TOOLS, 'tool', getZ('tool'), 'static')} 
-                {renderStatic(config.hatIndex, ASSETS.HEAD, 'head', getZ('head'))}
+                {renderPart(config.hatIndex, ASSETS.HEAD, 'head', getZ('head'), 'static')}
             </div>
         );
     };
@@ -634,13 +651,12 @@ export default function ServitorWildUnknown() {
                  style={{ borderImage: `url('${ASSET_PATH}${ASSETS.UI_PANEL}') 18% 15% fill stretch`, borderWidth: '40px', padding: '20px' }}>
                 
                 {/* 1. FIXED PREVIEW AREA */}
-                {/* Removed overflow-hidden to fix cutoff, added z-index to pop over */}
-                <div className="h-[45%] w-full relative border-b border-[#5d4037] shrink-0 flex flex-col items-center justify-center z-50">
+                <div className="h-[45%] w-full relative border-b border-[#5d4037] shrink-0 overflow-hidden flex flex-col items-center justify-center z-50">
                     <div className="absolute top-2 left-2 right-2 flex gap-2 z-50">
                         <input type="text" value={sName} onChange={e => setSName(e.target.value)} className="flex-1 bg-black/50 border border-[#5d4037] p-1 text-xs text-white rounded" placeholder="Spirit Name" />
                         <input type="text" value={sPurpose} onChange={e => setSPurpose(e.target.value)} className="flex-1 bg-black/50 border border-[#5d4037] p-1 text-xs text-white rounded" placeholder="Purpose" />
                     </div>
-                    {/* Render Servitor in Center with Default UI Scale */}
+                    {/* Render Servitor with Preview Settings */}
                     <div className="relative z-10 mt-8">
                         <ServitorRig idPrefix="preview-rig" isPreview={true} />
                     </div>
@@ -694,7 +710,7 @@ export default function ServitorWildUnknown() {
                                     </div>
                                 ) : (
                                     <>
-                                        {/* Grid */}
+                                        {/* Selection Grid */}
                                         {CATEGORIES.find(c => c.id === activeCategory)?.indexKey && (
                                             <div className="grid grid-cols-4 gap-2 mb-4">
                                                 {GENERIC_LIST.map((_, i) => (
@@ -709,7 +725,11 @@ export default function ServitorWildUnknown() {
                                         )}
                                         {/* Controls */}
                                         {CATEGORIES.find(c => c.id === activeCategory)?.offsetKey && (
-                                            <DPad part={CATEGORIES.find(c => c.id === activeCategory)?.offsetKey as string} allowFlip={CATEGORIES.find(c => c.id === activeCategory)?.canFlip} />
+                                            <DPad 
+                                                part={CATEGORIES.find(c => c.id === activeCategory)?.offsetKey as string} 
+                                                allowFlip={CATEGORIES.find(c => c.id === activeCategory)?.canFlip} 
+                                                allowSpread={CATEGORIES.find(c => c.id === activeCategory)?.canSpread}
+                                            />
                                         )}
                                     </>
                                 )}
