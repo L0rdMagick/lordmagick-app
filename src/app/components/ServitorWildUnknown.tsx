@@ -32,17 +32,17 @@ const ASSETS = {
 // A. DEFAULT LIMB FLIPPING (Code Only)
 // Set to true to mirror the sprite horizontally by default
 const DEFAULT_FLIP_CONFIG = {
-    armRight: false, // Right Arm
-    armLeft: false,   // Left Arm
-    legRight: false, // Right Leg
-    legLeft: false    // Left Leg
+    armRight: true, // Right Arm
+    armLeft: true,   // Left Arm
+    legRight: true, // Right Leg
+    legLeft: true    // Left Leg
 };
 
 // B. UI PREVIEW SETTINGS (Code Only)
 // Adjusts the Servitor appearance specifically in the UI panel to prevent cutoff
 const UI_PREVIEW_SETTINGS = {
-    scale: 0.7, // Reduce to ensure it fits (0.7 = 70%)
-    y: 10       // Move down slightly (Positive = Down)
+    scale: 2.0, // Reduce to ensure it fits (0.7 = 70%)
+    y: -11       // Move down slightly (Positive = Down)
 };
 
 // C. LAYER ORDERING (Z-Index)
