@@ -488,6 +488,7 @@ export default function ServitorWildUnknown() {
                     <span>X: {cfg.x.toFixed(0)}</span>
                     <span>Y: {cfg.y.toFixed(0)}</span>
                     <span>S: {cfg.s.toFixed(1)}</span>
+                    {allowSpread && <span>Spr: {cfg.spread.toFixed(1)}</span>}
                 </div>
             </div>
         );
