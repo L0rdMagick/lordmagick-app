@@ -29,13 +29,9 @@ const ASSETS = {
 
 // --- 2. CONFIGURATION SECTION (CODE ONLY) ---
 
-// A. MASTER DIRECTIONAL OFFSETS & BASE DEFAULTS
 const DIRECTIONAL_OFFSETS = {
     facingRight: {
-        // --- BASE POSITIONS (Default/Right) ---
         global:  { x: 0, y: 0, s: 1.0, f: false }, 
-        
-        // Static Parts
         wing:    { x: 0, y: 3, s: 1.0, f: false },
         base:    { x: 0, y: 0, s: 1.0, f: false },
         head:    { x: 0, y: -49, s: 0.6, f: false },
@@ -43,19 +39,16 @@ const DIRECTIONAL_OFFSETS = {
         sigil:   { x: 3, y: 2, s: 0.2, f: false },
         tool:    { x: 32, y: 15, s: 0.5, f: false },
         
-        // Specific Limbs (Consolidated & Tuned for Natural Pivot)
         armRight: { x: 2, y: 15, s: 0.6, f: false },
         armLeft:  { x: 25, y: 19, s: 0.6, f: false }, 
         
         legRight: { x: -5, y: 65, s: 0.9, f: true },
         legLeft:  { x: 5, y: 60, s: 0.9, f: true },
 
-        // World Objects
         vessel:  { x: 0, y: 0, s: 1.8, f: false },
         mound:   { x: 0, y: 3, s: 2.8, f: false },
     },
     facingLeft: {
-        // --- ADJUSTMENTS (Added to Base when Facing Left) ---
         global: { x: 0, y: 0, s: 0 },
         base: { x: 0, y: 0, s: 0 },
         head: { x: 0, y: 0, s: 0 },
@@ -64,7 +57,6 @@ const DIRECTIONAL_OFFSETS = {
         tool: { x: -64, y: -4, s: 0 },
         sigil: { x: -8, y: 0, s: 0 },
         
-        // Limb Shifts for Left Walk
         armRight: { x: -23, y: 3, s: 0 },
         armLeft:  { x: -26, y: -6, s: 0 },
         
@@ -76,13 +68,11 @@ const DIRECTIONAL_OFFSETS = {
     }
 };
 
-// B. UI PREVIEW SETTINGS
 const UI_PREVIEW_SETTINGS = {
     scale: 1.0, 
     y: -11      
 };
 
-// C. LAYER ORDERING (Z-Index)
 const LAYER_ORDER_CONFIG = {
     facingRight: {
         wing: 0,
@@ -110,7 +100,6 @@ const LAYER_ORDER_CONFIG = {
     }
 };
 
-// D. DEFAULT USER OFFSETS (Zeroed out as requested)
 const DEFAULT_OFFSETS = {
     global:  { x: 0, y: 0, s: 0.0, f: false, v: true, spread: 0 }, 
     wing:    { x: 0, y: 0, s: 0.0, f: false, v: true, spread: 0 },
@@ -124,8 +113,6 @@ const DEFAULT_OFFSETS = {
     vessel:  { x: 0, y: 0, s: 0.0, f: false, v: true, spread: 0 },
     mound:   { x: 0, y: 0, s: 0.0, f: false, v: true, spread: 0 },
 };
-
-// --- END CONFIGURATION ---
 
 interface CategoryItem {
     id: string;
@@ -186,7 +173,6 @@ export default function ServitorWildUnknown() {
     const [isRunning, setIsRunning] = useState(false);
     const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
-    // This state controls the Rig Animation & Direction explicitly
     const [rigAnimation, setRigAnimation] = useState('anim-idle');
 
     const runningRef = useRef(false); 
@@ -225,7 +211,6 @@ export default function ServitorWildUnknown() {
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const [showExitWarning, setShowExitWarning] = useState(false);
 
-    // --- INIT ---
     useEffect(() => {
         const imageUrls = Object.values(ASSETS);
         let loadedCount = 0;
@@ -251,7 +236,6 @@ export default function ServitorWildUnknown() {
         initUser();
     }, []);
 
-    // --- ACTIONS ---
     const updateOffset = (part: string, field: 'x'|'y'|'s'|'f'|'v'|'spread', value: number | boolean) => {
         setConfig(prev => ({
             ...prev,
@@ -311,7 +295,6 @@ export default function ServitorWildUnknown() {
         osc.start(now); osc.stop(now + 0.2);
     };
 
-    // --- GAME LOOP ---
     const wait = (ms: number) => new Promise(r => setTimeout(r, ms));
 
     const moveTo = (targetPercent: number, id: number) => {
@@ -348,14 +331,13 @@ export default function ServitorWildUnknown() {
             if(servitor) { servitor.style.opacity = '1'; servitor.style.transform = 'scale(1)'; }
             setRigAnimation(config.movementType === 'fly' ? 'anim-fly-left' : 'anim-walk-left');
             
-            // FIXED: Stop earlier at 15% (was 7% or 15% in previous iteration requests, making it stop ~50px earlier)
+            // LEFT STOP: Stops earlier at 15%
             await moveTo(15, id); 
             if(!runningRef.current) break;
 
             // 2. Enter Void
             if(servitor) {
                 servitor.style.opacity = '0';
-                // FIXED: Goes deeper into void with translateX(-20px)
                 servitor.style.transform = 'scale(0.1) translateY(50px) translateX(-20px)';
             }
             await wait(500);
@@ -373,8 +355,12 @@ export default function ServitorWildUnknown() {
             }
             setRigAnimation(config.movementType === 'fly' ? 'anim-fly-right' : 'anim-walk-right');
             
-            // FIXED: Stop before edge of vessel (72% instead of 88%)
-            await moveTo(72, id);
+            // RIGHT STOP: Responsive logic
+            const isMobile = window.innerWidth < 768;
+            // 60% for Mobile (prevents going off screen), 72% for Desktop
+            const rightDestination = isMobile ? 60 : 72;
+            
+            await moveTo(rightDestination, id);
             if(!runningRef.current) break;
 
             // 5. Deposit
@@ -396,7 +382,6 @@ export default function ServitorWildUnknown() {
         }
     };
 
-    // --- HOLD HANDLERS ---
     const startHold = (type: 'awaken' | 'feed') => {
         const start = Date.now();
         const dur = type === 'awaken' ? 5000 : 3000;
@@ -438,8 +423,6 @@ export default function ServitorWildUnknown() {
         setHungerState('sated'); depositRef.current = 0; setDepositCount(0);
         runningRef.current = true; loopIdRef.current++; mainLoop(loopIdRef.current);
     };
-
-    // --- RIG COMPONENTS ---
 
     const DPad = ({ part, allowFlip = false, allowSpread = false }: { part: string, allowFlip?: boolean, allowSpread?: boolean }) => {
         const cfg = (config.offsets as any)[part];
@@ -495,30 +478,24 @@ export default function ServitorWildUnknown() {
     const ServitorRig = ({ idPrefix, isPreview = false, overrideDirection }: { idPrefix: string, isPreview?: boolean, overrideDirection?: 'left'|'right' }) => {
         const wrapperClass = isFeeding ? 'anim-feed' : 'anim-idle';
         
-        // Determine facing direction
         const isFacingLeft = rigAnimation.includes('left');
         const isFlying = config.movementType === 'fly' || rigAnimation.includes('fly');
 
-        // Helper for Z-Index from Config
         const getZ = (key: keyof typeof LAYER_ORDER_CONFIG.facingRight) => {
             const map = isFacingLeft ? LAYER_ORDER_CONFIG.facingLeft : LAYER_ORDER_CONFIG.facingRight;
             return map[key];
         };
 
         const renderPart = (idx: number, asset: string, partKey: string, z: number, partType: 'limb' | 'static', specificLimb?: 'armLeft' | 'armRight' | 'legLeft' | 'legRight') => {
-            // 1. Get User Config (Starts at 0/0/0)
             const userCfg = (config.offsets as any)[partKey];
             if (!userCfg.v) return null;
 
-            // 2. Get Base Config (The consolidated Default)
             const baseMap = DIRECTIONAL_OFFSETS.facingRight;
             const baseCfg = specificLimb ? (baseMap as any)[specificLimb] : (baseMap as any)[partKey] || { x:0, y:0, s:1, f:false };
 
-            // 3. Get Directional Adjustments (Left Walk offsets)
             const dirMap = isFacingLeft ? DIRECTIONAL_OFFSETS.facingLeft : null;
             const dirCfg = dirMap ? (specificLimb ? (dirMap as any)[specificLimb] : (dirMap as any)[partKey]) : { x:0, y:0, s:0 };
 
-            // 4. Calculate Final Values
             let flip = baseCfg.f !== userCfg.f; 
             if (isFacingLeft) flip = !flip;
 
@@ -528,33 +505,25 @@ export default function ServitorWildUnknown() {
                 if (specificLimb?.includes('Right')) spreadMod = userCfg.spread;
             }
 
-            // MATH: Base + Direction Adjustment + User Adjustment + Spread
             const totalX = baseCfg.x + (dirCfg?.x || 0) + userCfg.x + spreadMod;
             const totalY = baseCfg.y + (dirCfg?.y || 0) + userCfg.y;
             const totalS = baseCfg.s + (dirCfg?.s || 0) + userCfg.s; 
 
             const spriteTransform = `translate(${totalX}%, ${totalY}%) scale(${totalS}) ${flip ? 'scaleX(-1)' : ''}`;
             
-            // 5. Dynamic Transform Origin Calculation
-            // This ensures pivots stay on the Shoulder/Hip regardless of flip
             let originX = '50%';
             let originY = '20%';
 
             if (specificLimb?.includes('arm') || partKey === 'tool') {
-                // Arms (Right Default): Shoulder is Top-Left (approx 15%)
-                // If facing Right: 15%. If facing Left (flipped): 85%
                 const baseArmX = 15; 
                 originX = isFacingLeft ? `${100 - baseArmX}%` : `${baseArmX}%`;
-                originY = '15%'; // Shoulder height
+                originY = '15%'; 
             } else if (specificLimb?.includes('leg')) {
-                // Legs (Left Default): Hip is Top-Right (approx 85%)
-                // If facing Left (default orientation): 85%. If facing Right (flipped): 15%
                 const baseLegX = 85;
                 originX = isFacingLeft ? `${baseLegX}%` : `${100 - baseLegX}%`;
-                originY = '10%'; // Hip height
+                originY = '10%'; 
             }
 
-            // Joint logic
             let jointClass = '';
             if (partType === 'limb' && specificLimb) {
                 if (specificLimb === 'armLeft') jointClass = 'arm-left-joint';
@@ -563,12 +532,9 @@ export default function ServitorWildUnknown() {
                 if (specificLimb === 'legRight') jointClass = 'leg-right-joint';
             }
             
-            // Tool Animation Logic (Sync with Right Arm)
-            // If this part is the 'tool', we apply the exact same animation class as the arm-right-joint
             if (partKey === 'tool') {
-                 // Determine which joint class mimics the right arm for the current direction
                  if (isFacingLeft) {
-                    jointClass = 'tool-hand-anim'; // Will use same keyframes as arm-right but handle flipping if needed
+                    jointClass = 'tool-hand-anim'; 
                  } else {
                     jointClass = 'tool-hand-anim';
                  }
@@ -594,30 +560,34 @@ export default function ServitorWildUnknown() {
         const finalGs = gBase.s + gUser.s;
         const finalGf = gBase.f !== gUser.f; 
 
-        // Add floating class if flying
+        // CRITICAL FIX: Bobbing animation applied to outer wrapper to prevent position reset on flip
         const flyClass = isFlying ? 'anim-floating' : '';
 
-        // Force transform-origin to bottom center for proper global scaling
         const globalTransform = `translate(${finalGx}%, ${finalGy}%) scale(${finalGs}) ${finalGf ? 'scaleX(-1)' : ''}`;
         const previewStyle = isPreview ? `translateY(${UI_PREVIEW_SETTINGS.y}%) scale(${UI_PREVIEW_SETTINGS.scale})` : '';
 
         return (
-            <div id={idPrefix} 
-                 className={`servitor-rig relative w-32 h-32 ${rigAnimation} ${wrapperClass} ${flyClass}`} 
-                 style={{ 
-                     transform: `${previewStyle} ${globalTransform}`,
-                     transformOrigin: 'bottom center' // CRITICAL: Ensures "Whole" scaling keeps feet planted/centered
-                 }}>
-                {renderStatic(config.wingIndex, ASSETS.BACK, 'wing', getZ('wing'))}
-                {renderPart(config.legIndex, ASSETS.LEGS, 'leg', getZ('legLeft'), 'limb', 'legLeft')}
-                {renderPart(config.legIndex, ASSETS.LEGS, 'leg', getZ('legRight'), 'limb', 'legRight')}
-                {renderStatic(config.baseIndex, ASSETS.BASES, 'base', getZ('base'))}
-                {renderStatic(config.clothingIndex, ASSETS.CLOTHES, 'clothes', getZ('clothes'))}
-                {renderStatic(config.sigilIndex, ASSETS.TREASURES, 'sigil', getZ('sigil'))} 
-                {renderPart(config.limbIndex, ASSETS.ARMS, 'arm', getZ('armLeft'), 'limb', 'armLeft')}
-                {renderPart(config.limbIndex, ASSETS.ARMS, 'arm', getZ('armRight'), 'limb', 'armRight')}
-                {renderStatic(config.toolIndex, ASSETS.TOOLS, 'tool', getZ('tool'))} 
-                {renderStatic(config.hatIndex, ASSETS.HEAD, 'head', getZ('head'))}
+            <div id={idPrefix} className="relative w-32 h-32" style={{ transform: previewStyle }}>
+                {/* Floating Wrapper - Persists across state changes to prevent gltich */}
+                <div className={`w-full h-full ${flyClass}`}>
+                    {/* The Actual Rig - Handles offsets/flipping */}
+                    <div className={`servitor-rig relative w-full h-full ${rigAnimation} ${wrapperClass}`} 
+                        style={{ 
+                            transform: globalTransform,
+                            transformOrigin: 'bottom center'
+                        }}>
+                        {renderStatic(config.wingIndex, ASSETS.BACK, 'wing', getZ('wing'))}
+                        {renderPart(config.legIndex, ASSETS.LEGS, 'leg', getZ('legLeft'), 'limb', 'legLeft')}
+                        {renderPart(config.legIndex, ASSETS.LEGS, 'leg', getZ('legRight'), 'limb', 'legRight')}
+                        {renderStatic(config.baseIndex, ASSETS.BASES, 'base', getZ('base'))}
+                        {renderStatic(config.clothingIndex, ASSETS.CLOTHES, 'clothes', getZ('clothes'))}
+                        {renderStatic(config.sigilIndex, ASSETS.TREASURES, 'sigil', getZ('sigil'))} 
+                        {renderPart(config.limbIndex, ASSETS.ARMS, 'arm', getZ('armLeft'), 'limb', 'armLeft')}
+                        {renderPart(config.limbIndex, ASSETS.ARMS, 'arm', getZ('armRight'), 'limb', 'armRight')}
+                        {renderStatic(config.toolIndex, ASSETS.TOOLS, 'tool', getZ('tool'))} 
+                        {renderStatic(config.hatIndex, ASSETS.HEAD, 'head', getZ('head'))}
+                    </div>
+                </div>
             </div>
         );
     };
@@ -657,7 +627,7 @@ export default function ServitorWildUnknown() {
                 @keyframes rotate-l { 0% { transform: rotate(-5deg); } 50% { transform: rotate(5deg); } 100% { transform: rotate(-5deg); } }
                 @keyframes rotate-r { 0% { transform: rotate(5deg); } 50% { transform: rotate(-5deg); } 100% { transform: rotate(5deg); } }
                 
-                /* Feeding Wave Animation (Arms wave up and down) */
+                /* Feeding Wave Animation (Arms wave up and down) - SLOWED to 0.8s */
                 @keyframes feed-wave {
                     0% { transform: rotate(0deg); }
                     50% { transform: rotate(-45deg); } 
@@ -679,7 +649,6 @@ export default function ServitorWildUnknown() {
                 .anim-walk-left .leg-right-joint { animation: rotate-r 1.2s infinite ease-in-out; }
                 .anim-walk-left .arm-left-joint { animation: rotate-r 1.2s infinite ease-in-out; }
                 .anim-walk-left .arm-right-joint { animation: rotate-l 1.2s infinite ease-in-out; }
-                /* Tool syncs with Right Arm logic when walking Left (which is "back" arm) */
                 .anim-walk-left .tool-hand-anim { animation: rotate-l 1.2s infinite ease-in-out; }
                 
                 .anim-walk-right .servitor-rig { animation: bounce 0.6s infinite; }
@@ -687,13 +656,12 @@ export default function ServitorWildUnknown() {
                 .anim-walk-right .leg-right-joint { animation: rotate-l 1.2s infinite ease-in-out; }
                 .anim-walk-right .arm-left-joint { animation: rotate-l 1.2s infinite ease-in-out; }
                 .anim-walk-right .arm-right-joint { animation: rotate-r 1.2s infinite ease-in-out; }
-                /* Tool syncs with Right Arm logic when walking Right (Front arm) */
                 .anim-walk-right .tool-hand-anim { animation: rotate-r 1.2s infinite ease-in-out; }
 
-                /* Feeding Animation Overrides */
-                .anim-feed .arm-left-joint { animation: feed-wave 0.5s infinite ease-in-out; }
-                .anim-feed .arm-right-joint { animation: feed-wave 0.5s infinite ease-in-out; animation-delay: 0.1s; }
-                .anim-feed .tool-hand-anim { animation: feed-wave 0.5s infinite ease-in-out; animation-delay: 0.1s; }
+                /* Feeding Animation Overrides - 0.8s duration */
+                .anim-feed .arm-left-joint { animation: feed-wave 0.8s infinite ease-in-out; }
+                .anim-feed .arm-right-joint { animation: feed-wave 0.8s infinite ease-in-out; animation-delay: 0.1s; }
+                .anim-feed .tool-hand-anim { animation: feed-wave 0.8s infinite ease-in-out; animation-delay: 0.1s; }
 
                 /* Enhanced Glow Effects */
                 .pulse-glow-void { animation: pulse-void 1s infinite alternate; }
@@ -742,14 +710,14 @@ export default function ServitorWildUnknown() {
                 </div>
             )}
 
-            {/* CONFIG PANEL - Lowered by 30px MORE (total 60px) via top-[60px] */}
-            <div className={`absolute top-[60px] left-0 h-[calc(100%-60px)] w-full md:w-[500px] z-50 transition-transform duration-500 ease-in-out ${isRunning ? '-translate-x-full' : 'translate-x-0'} pointer-events-auto flex flex-col bg-[#0f0f1a]`}
-                 style={{ borderImage: `url('${ASSET_PATH}${ASSETS.UI_PANEL}') 18% 15% fill stretch`, borderWidth: '40px', padding: '20px' }}>
+            {/* CONFIG PANEL - Full Screen on Mobile, Bordered on Desktop */}
+            <div className={`absolute top-0 left-0 h-full w-full md:w-[500px] z-50 transition-transform duration-500 ease-in-out ${isRunning ? '-translate-x-full' : 'translate-x-0'} pointer-events-auto flex flex-col bg-[#0f0f1a] border-0 md:border-[40px] md:p-5`}
+                 style={{ borderImage: `url('${ASSET_PATH}${ASSETS.UI_PANEL}') 18% 15% fill stretch` }}>
                 
                 {/* 1. FIXED PREVIEW AREA */}
                 <div className="h-[45%] w-full relative border-b border-[#5d4037] shrink-0 flex flex-col items-center justify-center z-50">
-                    {/* Inputs raised higher via -top-6 (~24px up) */}
-                    <div className="absolute -top-6 w-full p-2 flex flex-col md:flex-row gap-2 z-50">
+                    {/* Inputs raised higher via -top-8 (~32px up) */}
+                    <div className="absolute -top-8 w-full p-4 md:p-2 flex flex-col md:flex-row gap-2 z-50">
                         <input type="text" value={sName} onChange={e => setSName(e.target.value)} 
                             className="flex-1 bg-[#f0e6d2] shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)] border border-[#5d4037] p-2 text-sm text-black rounded magick-font placeholder-gray-600" 
                             placeholder="Spirit Name" />
@@ -763,8 +731,8 @@ export default function ServitorWildUnknown() {
                     </div>
                 </div>
 
-                {/* 2. MENU GRID */}
-                <div className="flex-1 overflow-y-auto custom-scrollbar p-2 bg-[#eaddcf]/90 relative">
+                {/* 2. MENU GRID - Added mt-[30px] to lower content as requested */}
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-2 bg-[#eaddcf]/90 relative mt-[30px]">
                     {!activeCategory ? (
                         <div className="grid grid-cols-3 gap-2">
                             {CATEGORIES.map(cat => {
@@ -869,9 +837,9 @@ export default function ServitorWildUnknown() {
                             {/* Text disappears while feeding to clear view */}
                             {!isFeeding && <p className="text-[#FFD700] mb-8 animate-pulse text-xl font-serif">{sName} requires sustenance...</p>}
                             
-                            {/* FIXED: Removed opacity-50 and scale-75 to keep button steady and visible */}
+                            {/* FIXED: Button remains visible and stationary. Removed active:scale */}
                             <button onMouseDown={() => startHold('feed')} onMouseUp={stopHold} onMouseLeave={stopHold} onTouchStart={() => startHold('feed')} onTouchEnd={stopHold}
-                                className={`w-40 h-40 rounded-full border-4 border-[#FFD700] flex items-center justify-center relative overflow-hidden bg-black shadow-[0_0_50px_#FFD700] transition-opacity duration-300`}>
+                                className={`w-40 h-40 rounded-full border-4 border-[#FFD700] flex items-center justify-center relative overflow-hidden bg-black shadow-[0_0_50px_#FFD700] transition-opacity duration-300 ${isFeeding ? 'opacity-90' : 'opacity-100'}`}>
                                 <div className="absolute bottom-0 left-0 w-full bg-[#FFD700]/30 transition-all duration-75" style={{height: `${feedProgress}%`}}></div>
                                 <div className="w-20 h-20" style={getSpriteStyle(config.foodIndex, ASSETS.FOOD)} />
                             </button>
