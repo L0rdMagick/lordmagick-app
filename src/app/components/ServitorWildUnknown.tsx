@@ -42,9 +42,9 @@ const DEFAULT_FLIP_CONFIG = {
 // Adjust these X/Y values to move specific limbs independently of the main group
 const STATIC_LIMB_ADJUSTMENTS = {
     armRight: { x: 0, y: 0 },
-    armLeft:  { x: 0, y: 0 },
+    armLeft:  { x: 2, y: 0 },
     legRight: { x: 0, y: 0 },
-    legLeft:  { x: 0, y: 0 }
+    legLeft:  { x: 2, y: 0 }
 };
 
 // C. UI PREVIEW SETTINGS (Code Only)
