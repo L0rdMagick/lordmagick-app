@@ -29,50 +29,65 @@ const ASSETS = {
 
 // --- 2. CONFIGURATION SECTION (CODE ONLY) ---
 
-// A. DEFAULT FLIP CONFIG (Base Sprite Orientation)
-const DEFAULT_FLIP_CONFIG = {
-    armRight: false, // Right Arm
-    armLeft: false,  // Left Arm
-    legRight: true,  // Right Leg
-    legLeft: true    // Left Leg
-};
-
-// B. STATIC LIMB ADJUSTMENTS (Fine-tune default positions globally)
-const STATIC_LIMB_ADJUSTMENTS = {
-    armRight: { x: 0, y: 0 },
-    armLeft:  { x: 20, y: 0 },
-    legRight: { x: 0, y: 0 },
-    legLeft:  { x: 20, y: 0 }
-};
-
-// C. DIRECTIONAL OFFSETS (Adjust placements when Facing Right vs Left)
-// Change 'x' values here to shift specific limbs when walking Left or Right
+// A. MASTER DIRECTIONAL OFFSETS & BASE DEFAULTS
+// facingRight: These are the BASE values (The Default Look). 
+//              If you want to change the starting position of limbs, change them here.
+// facingLeft:  These are added to the Base values when walking Left.
 const DIRECTIONAL_OFFSETS = {
     facingRight: {
-        global: { x: 0 }, base: { x: 0 }, head: { x: 0 }, clothes: { x: 0 },
-        wing: { x: 0 }, tool: { x: 0 }, sigil: { x: 0 },
-        // Specific Limbs (Facing Right)
-        armRight: { x: 0 }, armLeft: { x: 0 },
-        legRight: { x: 0 }, legLeft: { x: 0 }
+        // --- BASE POSITIONS (Default/Right) ---
+        global:  { x: 0, y: 0, s: 1.0, f: false }, 
+        
+        // Static Parts
+        wing:    { x: 0, y: 3, s: 1.0, f: false },
+        base:    { x: 0, y: 0, s: 1.0, f: false },
+        head:    { x: 0, y: -51, s: 0.7, f: false },
+        clothes: { x: 0, y: 10, s: 0.6, f: false },
+        sigil:   { x: 3, y: 2, s: 0.2, f: false },
+        tool:    { x: 27, y: 11, s: 0.4, f: false },
+        
+        // Specific Limbs (Consolidated)
+        // Note: 'f' here sets the default flip state (e.g., Legs are usually flipped by default in the sprite sheet)
+        armRight: { x: 0, y: 10, s: 0.5, f: false },
+        armLeft:  { x: 20, y: 10, s: 0.5, f: false }, // Shifted +20 for visual balance
+        
+        legRight: { x: -6, y: 55, s: 0.7, f: true },
+        legLeft:  { x: 14, y: 55, s: 0.7, f: true },  // Shifted -6 + 20 = 14 for visual balance
+
+        // World Objects
+        vessel:  { x: 0, y: 0, s: 1.8, f: false },
+        mound:   { x: 0, y: 0, s: 2.8, f: false },
     },
     facingLeft: {
-        global: { x: 0 }, base: { x: 0 }, head: { x: 0 }, clothes: { x: 0 },
-        wing: { x: 0 }, tool: { x: 0 }, sigil: { x: 0 },
-        // Specific Limbs (Facing Left)
-        armRight: { x: -20 }, armLeft: { x: -20 },
-        legRight: { x: 0 }, legLeft: { x: 0 }
+        // --- ADJUSTMENTS (Added to Base when Facing Left) ---
+        global: { x: 0, y: 0, s: 0 },
+        base: { x: 0, y: 0, s: 0 },
+        head: { x: 0, y: 0, s: 0 },
+        clothes: { x: 0, y: 0, s: 0 },
+        wing: { x: 0, y: 0, s: 0 },
+        tool: { x: 0, y: 0, s: 0 },
+        sigil: { x: 0, y: 0, s: 0 },
+        
+        // Limb Shifts for Left Walk
+        armRight: { x: -20, y: 0, s: 0 },
+        armLeft:  { x: -20, y: 0, s: 0 },
+        
+        legRight: { x: 0, y: 0, s: 0 },
+        legLeft:  { x: 0, y: 0, s: 0 },
+
+        vessel: { x: 0, y: 0, s: 0 },
+        mound: { x: 0, y: 0, s: 0 }
     }
 };
 
-// D. UI PREVIEW SETTINGS
+// B. UI PREVIEW SETTINGS
 const UI_PREVIEW_SETTINGS = {
     scale: 1.0, 
     y: -11      
 };
 
-// E. LAYER ORDERING (Z-Index)
+// C. LAYER ORDERING (Z-Index)
 const LAYER_ORDER_CONFIG = {
-    // Backmost (0) -> Frontmost (100)
     facingRight: {
         wing: 0,
         armLeft: 10,   
@@ -99,19 +114,21 @@ const LAYER_ORDER_CONFIG = {
     }
 };
 
-// F. DEFAULT USER OFFSETS
+// D. DEFAULT USER OFFSETS
+// These are now ZEROED out so the UI starts at 0, 0, 0.
+// The actual starting positions are handled by DIRECTIONAL_OFFSETS (facingRight) above.
 const DEFAULT_OFFSETS = {
-    global:  { x: 0, y: 0, s: 1.0, f: false, v: true, spread: 0 }, 
-    wing:    { x: 0, y: 3, s: 1.0, f: false, v: true, spread: 0 },
-    leg:     { x: -6, y: 55, s: 0.7, f: false, v: true, spread: 0 },
-    tool:    { x: 27, y: 11, s: 0.4, f: false, v: true, spread: 0 },
-    arm:     { x: 0, y: 10, s: 0.5, f: false, v: true, spread: 0 },
-    base:    { x: 0, y: 0, s: 1.0, f: false, v: true, spread: 0 },
-    head:    { x: 0, y: -51, s: 0.7, f: false, v: true, spread: 0 },
-    clothes: { x: 0, y: 10, s: 0.6, f: false, v: true, spread: 0 },
-    sigil:   { x: 3, y: 2, s: 0.2, f: false, v: true, spread: 0 },
-    vessel:  { x: 0, y: 0, s: 1.8, f: false, v: true, spread: 0 },
-    mound:   { x: 0, y: 0, s: 2.8, f: false, v: true, spread: 0 },
+    global:  { x: 0, y: 0, s: 0.0, f: false, v: true, spread: 0 }, 
+    wing:    { x: 0, y: 0, s: 0.0, f: false, v: true, spread: 0 },
+    leg:     { x: 0, y: 0, s: 0.0, f: false, v: true, spread: 0 },
+    tool:    { x: 0, y: 0, s: 0.0, f: false, v: true, spread: 0 },
+    arm:     { x: 0, y: 0, s: 0.0, f: false, v: true, spread: 0 },
+    base:    { x: 0, y: 0, s: 0.0, f: false, v: true, spread: 0 },
+    head:    { x: 0, y: 0, s: 0.0, f: false, v: true, spread: 0 },
+    clothes: { x: 0, y: 0, s: 0.0, f: false, v: true, spread: 0 },
+    sigil:   { x: 0, y: 0, s: 0.0, f: false, v: true, spread: 0 },
+    vessel:  { x: 0, y: 0, s: 0.0, f: false, v: true, spread: 0 },
+    mound:   { x: 0, y: 0, s: 0.0, f: false, v: true, spread: 0 },
 };
 
 // --- END CONFIGURATION ---
@@ -175,7 +192,7 @@ export default function ServitorWildUnknown() {
     const [isRunning, setIsRunning] = useState(false);
     const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
-    // This state controls the Rig Animation & Direction explicitly (Solving the "Flip Back" issue)
+    // This state controls the Rig Animation & Direction explicitly
     const [rigAnimation, setRigAnimation] = useState('anim-idle');
 
     const runningRef = useRef(false); 
@@ -480,7 +497,7 @@ export default function ServitorWildUnknown() {
     const ServitorRig = ({ idPrefix, isPreview = false, overrideDirection }: { idPrefix: string, isPreview?: boolean, overrideDirection?: 'left'|'right' }) => {
         const wrapperClass = isFeeding ? 'anim-feed' : 'anim-idle';
         
-        // Determine facing direction from REACT STATE
+        // Determine facing direction
         const isFacingLeft = rigAnimation.includes('left');
         
         // Helper for Z-Index from Config
@@ -490,42 +507,39 @@ export default function ServitorWildUnknown() {
         };
 
         const renderPart = (idx: number, asset: string, partKey: string, z: number, partType: 'limb' | 'static', specificLimb?: 'armLeft' | 'armRight' | 'legLeft' | 'legRight') => {
-            const cfg = (config.offsets as any)[partKey];
-            if (!cfg.v) return null;
+            // 1. Get User Config (Starts at 0/0/0)
+            const userCfg = (config.offsets as any)[partKey];
+            if (!userCfg.v) return null;
 
-            // 1. Flip Logic
-            let flip = cfg.f;
-            if (specificLimb && (DEFAULT_FLIP_CONFIG as any)[specificLimb]) flip = !flip; 
+            // 2. Get Base Config (The consolidated Default)
+            const baseMap = DIRECTIONAL_OFFSETS.facingRight;
+            // Use specific limb config if available (e.g. armLeft), else generic partKey (e.g. tool)
+            const baseCfg = specificLimb ? (baseMap as any)[specificLimb] : (baseMap as any)[partKey] || { x:0, y:0, s:1, f:false };
+
+            // 3. Get Directional Adjustments (Left Walk offsets)
+            const dirMap = isFacingLeft ? DIRECTIONAL_OFFSETS.facingLeft : null;
+            const dirCfg = dirMap ? (specificLimb ? (dirMap as any)[specificLimb] : (dirMap as any)[partKey]) : { x:0, y:0, s:0 };
+
+            // 4. Calculate Final Values
             
-            // If Walking Left, we flip EVERYTHING to mirror it
+            // Flip Logic: Base Flip XOR User Flip (Standard)
+            // If facing Left, we physically flip the div with scaleX(-1) unless specific overrides exist.
+            // Generally, if facing left, we invert the flip state relative to right.
+            let flip = baseCfg.f !== userCfg.f; // XOR-like behavior for toggle
             if (isFacingLeft) flip = !flip;
 
-            // 2. Adjustments
-            let xMod = 0, yMod = 0;
-            // Static Code Adjustment
-            if (specificLimb && (STATIC_LIMB_ADJUSTMENTS as any)[specificLimb]) {
-                xMod = (STATIC_LIMB_ADJUSTMENTS as any)[specificLimb].x;
-                yMod = (STATIC_LIMB_ADJUSTMENTS as any)[specificLimb].y;
-            }
-            // Directional Code Adjustment (New Feature)
-            const dirOffsets = isFacingLeft ? DIRECTIONAL_OFFSETS.facingLeft : DIRECTIONAL_OFFSETS.facingRight;
-            if (specificLimb && (dirOffsets as any)[specificLimb]) {
-                xMod += (dirOffsets as any)[specificLimb].x;
-            } else if ((dirOffsets as any)[partKey]) {
-                xMod += (dirOffsets as any)[partKey].x;
-            }
-
-            // 3. Spread Logic
+            // Spread Logic (User Only)
             let spreadMod = 0;
-            if (partType === 'limb' && cfg.spread) {
-                if (specificLimb?.includes('Left')) spreadMod = -cfg.spread;
-                if (specificLimb?.includes('Right')) spreadMod = cfg.spread;
+            if (partType === 'limb' && userCfg.spread) {
+                if (specificLimb?.includes('Left')) spreadMod = -userCfg.spread;
+                if (specificLimb?.includes('Right')) spreadMod = userCfg.spread;
             }
 
-            const totalX = cfg.x + xMod + spreadMod;
-            const totalY = cfg.y + yMod;
+            const totalX = baseCfg.x + (dirCfg?.x || 0) + userCfg.x + spreadMod;
+            const totalY = baseCfg.y + (dirCfg?.y || 0) + userCfg.y;
+            const totalS = baseCfg.s + (dirCfg?.s || 0) + userCfg.s; // Additive Scale for easier UI adjustment
 
-            const spriteTransform = `translate(${totalX}%, ${totalY}%) scale(${cfg.s}) ${flip ? 'scaleX(-1)' : ''}`;
+            const spriteTransform = `translate(${totalX}%, ${totalY}%) scale(${totalS}) ${flip ? 'scaleX(-1)' : ''}`;
             
             // Joint logic
             let jointClass = '';
@@ -545,34 +559,27 @@ export default function ServitorWildUnknown() {
         };
 
         const renderStatic = (idx: number, asset: string, partKey: string, z: number) => {
-            const cfg = (config.offsets as any)[partKey];
-            if (!cfg.v) return null;
-            
-            // Static parts also need to flip when walking left
-            let flip = cfg.f;
-            if (isFacingLeft) flip = !flip;
-
-            // Apply Directional Offset
-            let xMod = 0;
-            const dirOffsets = isFacingLeft ? DIRECTIONAL_OFFSETS.facingLeft : DIRECTIONAL_OFFSETS.facingRight;
-            if ((dirOffsets as any)[partKey]) {
-                xMod = (dirOffsets as any)[partKey].x;
-            }
-
-            const transform = `translate(${cfg.x + xMod}%, ${cfg.y}%) scale(${cfg.s}) ${flip ? 'scaleX(-1)' : ''}`;
-            return (
-                <div className="absolute w-full h-full top-0 left-0 pointer-events-none"
-                     style={{ ...getSpriteStyle(idx, asset), transform, zIndex: z }} />
-            );
+            return renderPart(idx, asset, partKey, z, 'static');
         };
 
         // GLOBAL TRANSFORM
-        const g = config.offsets.global;
-        const previewStyle = isPreview ? `translateY(${UI_PREVIEW_SETTINGS.y}%) scale(${UI_PREVIEW_SETTINGS.scale})` : '';
-        const userGlobal = `translate(${g.x}%, ${g.y}%) scale(${g.s}) ${g.f ? 'scaleX(-1)' : ''}`;
+        const gUser = config.offsets.global;
+        const gBase = DIRECTIONAL_OFFSETS.facingRight.global;
         
+        const finalGx = gBase.x + gUser.x;
+        const finalGy = gBase.y + gUser.y;
+        const finalGs = gBase.s + gUser.s;
+        const finalGf = gBase.f !== gUser.f; // XOR Flip
+
+        // If walking left, usually we flip the whole container or just parts. 
+        // In this rig, parts flip individually, so global usually just stays or scales.
+        // However, if the user wants to flip the WHOLE thing via Global controls:
+        const globalTransform = `translate(${finalGx}%, ${finalGy}%) scale(${finalGs}) ${finalGf ? 'scaleX(-1)' : ''}`;
+        
+        const previewStyle = isPreview ? `translateY(${UI_PREVIEW_SETTINGS.y}%) scale(${UI_PREVIEW_SETTINGS.scale})` : '';
+
         return (
-            <div id={idPrefix} className={`servitor-rig relative w-32 h-32 ${rigAnimation} ${wrapperClass}`} style={{ transform: `${previewStyle} ${userGlobal}` }}>
+            <div id={idPrefix} className={`servitor-rig relative w-32 h-32 ${rigAnimation} ${wrapperClass}`} style={{ transform: `${previewStyle} ${globalTransform}` }}>
                 
                 {renderStatic(config.wingIndex, ASSETS.BACK, 'wing', getZ('wing'))}
                 
@@ -586,7 +593,7 @@ export default function ServitorWildUnknown() {
                 {renderPart(config.limbIndex, ASSETS.ARMS, 'arm', getZ('armLeft'), 'limb', 'armLeft')}
                 {renderPart(config.limbIndex, ASSETS.ARMS, 'arm', getZ('armRight'), 'limb', 'armRight')}
 
-                {renderPart(config.toolIndex, ASSETS.TOOLS, 'tool', getZ('tool'), 'static')} 
+                {renderStatic(config.toolIndex, ASSETS.TOOLS, 'tool', getZ('tool'))} 
                 {renderStatic(config.hatIndex, ASSETS.HEAD, 'head', getZ('head'))}
             </div>
         );
@@ -600,6 +607,18 @@ export default function ServitorWildUnknown() {
     );
 
     const isFeedingActive = hungerState === 'hungry' || isFeeding || hungerState === 'fed';
+
+    // Game Object Renders (Mound/Vessel) also need Base + User offsets
+    const getGameObjectStyle = (key: 'mound' | 'vessel') => {
+        const u = (config.offsets as any)[key];
+        const b = (DIRECTIONAL_OFFSETS.facingRight as any)[key];
+        // Directions usually don't apply to mound/vessel as they are world objects, not char parts,
+        // but for consistency in data structure, we use the base/user logic.
+        return {
+            transform: `scale(${b.s + u.s}) translate(${b.x + u.x}%, ${b.y + u.y}%)`,
+            filter: !u.v ? 'opacity(0)' : 'none'
+        };
+    };
 
     return (
         <div className="fixed inset-0 w-full h-full bg-[#0f0f1a] text-[#dcdcdc] overflow-hidden select-none font-sans flex flex-col">
@@ -643,7 +662,7 @@ export default function ServitorWildUnknown() {
             {/* GAME WORLD */}
             <div className="relative w-full h-full z-10 pointer-events-none">
                 <div id="game-mound" className="absolute bottom-[15vh] left-[10%] w-40 h-[100px] z-20 bg-contain bg-no-repeat bg-bottom transition-all duration-500"
-                     style={{ backgroundImage: `url('${ASSET_PATH}${ASSETS.MOUND}')`, transform: `scale(${config.offsets.mound.s}) translate(${config.offsets.mound.x}%, ${config.offsets.mound.y}%)`, filter: !config.offsets.mound.v ? 'opacity(0)' : 'none' }} />
+                     style={{ backgroundImage: `url('${ASSET_PATH}${ASSETS.MOUND}')`, ...getGameObjectStyle('mound') }} />
 
                 <div id="servitor-container" className="absolute bottom-[18vh] left-[20%] w-32 h-32 z-100 transition-all duration-100 pointer-events-auto origin-bottom">
                     <ServitorRig idPrefix="game-rig" />
@@ -652,7 +671,7 @@ export default function ServitorWildUnknown() {
                 <div className="absolute bottom-[20vh] right-[10%] w-32 h-32 z-20 flex flex-col items-center">
                     {config.offsets.vessel.v && (
                         <div id="game-vessel" className="w-full h-full relative transition-all duration-500" 
-                             style={{ ...getSpriteStyle(config.vesselIndex, ASSETS.VESSELS), transform: `scale(${config.offsets.vessel.s}) translate(${config.offsets.vessel.x}%, ${config.offsets.vessel.y}%)` }} />
+                             style={{ ...getSpriteStyle(config.vesselIndex, ASSETS.VESSELS), ...getGameObjectStyle('vessel') }} />
                     )}
                     <div id="vessel-shine" className="absolute top-0 text-4xl opacity-0 transition-opacity duration-500">✨</div>
                 </div>
