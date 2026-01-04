@@ -60,7 +60,7 @@ const DIRECTIONAL_OFFSETS = {
         wing: { x: 0 }, tool: { x: 0 }, sigil: { x: 0 },
         // Specific Limbs (Facing Left)
         armRight: { x: 0 }, armLeft: { x: 0 },
-        legRight: { x: -17 }, legLeft: { x: -17 }
+        legRight: { x: -20 }, legLeft: { x: -20 }
     }
 };
 
