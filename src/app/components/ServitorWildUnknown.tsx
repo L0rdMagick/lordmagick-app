@@ -29,14 +29,15 @@ const ASSETS = {
 
 // --- AUDIO CONFIGURATION ---
 const AUDIO_PATHS = {
-    SPIRIT_LOOP: '/audio/spirit.mp3',               // Hold to Awaken / Hold to Feed
-    BIND_ACTIVATE: '/audio/sfx-chaos-activate.mp3', // Bind Save
-    DEPOSIT: '/audio/old-sfx-library-portal.mp3',   // Deposit Treasure
-    FEED_COMPLETE: '/audio/sfx-chaos-hold.mp3',     // Finished Feeding
-    MOUND_JUMP_IN: '/audio/sfx-searching-2.mp3',    // Jumps into mound
-    MOUND_JUMP_OUT: '/audio/sfx-finding-something-1.mp3' // Jumps out of mound
+    SPIRIT_LOOP: '/audio/spirit.mp3',               
+    BIND_ACTIVATE: '/audio/sfx-chaos-activate.mp3', 
+    DEPOSIT: '/audio/old-sfx-library-portal.mp3',   
+    FEED_COMPLETE: '/audio/sfx-chaos-hold.mp3',     
+    MOUND_JUMP_IN: '/audio/sfx-searching-2.mp3',    
+    MOUND_JUMP_OUT: '/audio/sfx-finding-something-1.mp3' 
 };
 
+// UPDATED BACKGROUND NAMES
 const BACKGROUND_OPTIONS = [
     'Crystal_Cave.jpg',
     'Magick_Forest.jpg',
@@ -285,7 +286,6 @@ export default function ServitorWildUnknown() {
 
     const runningRef = useRef(false); 
     const loopIdRef = useRef(0);
-    // REMOVED audioCtxRef, replaced with audioRefs for file playback
     const audioRefs = useRef<{[key: string]: HTMLAudioElement}>({});
 
     const servitorPosRef = useRef(20);
@@ -397,9 +397,8 @@ export default function ServitorWildUnknown() {
         if (buttonIntervalRef.current) clearInterval(buttonIntervalRef.current);
     };
 
-    // --- NEW AUDIO LOGIC ---
+    // --- AUDIO LOGIC ---
     const playAudio = (path: string, loop: boolean = false) => {
-        // Stop existing if any (optional, but prevents layering chaos for same sound)
         if (!audioRefs.current[path]) {
             audioRefs.current[path] = new Audio(path);
         }
@@ -407,7 +406,7 @@ export default function ServitorWildUnknown() {
         const audio = audioRefs.current[path];
         audio.loop = loop;
         audio.currentTime = 0;
-        audio.volume = 0.5; // Reasonable default
+        audio.volume = 0.5; 
         audio.play().catch(e => console.error("Audio play failed:", e));
     };
 
@@ -419,7 +418,6 @@ export default function ServitorWildUnknown() {
     };
 
     const handleBind = async () => {
-        // Play Bind Sound
         playAudio(AUDIO_PATHS.BIND_ACTIVATE);
 
         if (!user || !sName) return alert("Name & Login required.");
@@ -461,7 +459,8 @@ export default function ServitorWildUnknown() {
             retries++;
         }
 
-        const mound = document.getElementById('game-mound');
+        // Updated selector to target the inner mound div for animation
+        const moundInner = document.getElementById('game-mound-inner');
         const vessel = document.getElementById('game-vessel');
         const shine = document.getElementById('vessel-shine');
 
@@ -503,11 +502,14 @@ export default function ServitorWildUnknown() {
                 servitor.style.animation = 'none'; 
             }
             
-            // 3. Search Pulse
-            if(mound) mound.classList.add('pulse-glow-void');
-            // Removed old playSound('search') as we have specific jump in/out sounds now
-            await wait(1500); 
-            if(mound) mound.classList.remove('pulse-glow-void');
+            // 3. Search Pulse (Random Time + Rumble)
+            if(moundInner) moundInner.classList.add('anim-searching');
+            
+            // RANDOM DURATION: 3 to 10 seconds (3000ms + 0-7000ms)
+            const searchDuration = Math.random() * 7000 + 3000;
+            await wait(searchDuration); 
+            
+            if(moundInner) moundInner.classList.remove('anim-searching');
 
             // 4. JUMP OUT (Change to Facing Right & Holding Treasure IMMEDIATELY)
             if(servitor) {
@@ -571,11 +573,11 @@ export default function ServitorWildUnknown() {
         if(isHoldingRef.current) return;
         isHoldingRef.current = true;
 
-        // AUDIO: Start Looping Spirit Sound (Awaken or Feed)
         playAudio(AUDIO_PATHS.SPIRIT_LOOP, true);
 
         const start = Date.now();
-        const dur = type === 'awaken' ? 5000 : 3000;
+        // UPDATED: Feed time increased to 7000ms
+        const dur = type === 'awaken' ? 5000 : 7000;
         
         if(type === 'awaken') {
             setIsAwakening(true); 
@@ -593,13 +595,9 @@ export default function ServitorWildUnknown() {
                 clearInterval(holdIntervalRef.current);
                 isHoldingRef.current = false; 
 
-                // AUDIO: Stop Loop
                 stopAudio(AUDIO_PATHS.SPIRIT_LOOP);
 
                 if(type === 'awaken') {
-                    // Success sound for awaken wasn't explicitly requested separately from bind, 
-                    // but we can play the Activate sound or just proceed.
-                    // For now, let's play the bind/activate sound as a success indicator.
                     playAudio(AUDIO_PATHS.BIND_ACTIVATE);
 
                     setIsAwakening(false); 
@@ -610,7 +608,6 @@ export default function ServitorWildUnknown() {
                         mainLoop(loopIdRef.current);
                     }, 100);
                 } else {
-                    // AUDIO: Finished Feeding Sound
                     playAudio(AUDIO_PATHS.FEED_COMPLETE);
                     
                     setIsFeeding(false); 
@@ -632,7 +629,6 @@ export default function ServitorWildUnknown() {
     };
 
     const stopHold = () => {
-        // AUDIO: Stop Loop if user lets go early
         stopAudio(AUDIO_PATHS.SPIRIT_LOOP);
 
         isHoldingRef.current = false;
@@ -785,6 +781,20 @@ export default function ServitorWildUnknown() {
                     100% { transform: translateY(0) scale(1); opacity: 1; } /* Land */
                 }
 
+                /* NEW SEARCH ANIMATION */
+                @keyframes rumble-search {
+                    0% { transform: scale(1) translate(0, 0); }
+                    25% { transform: scale(1.05) translate(-1px, 1px); } /* Pulse up + Left */
+                    50% { transform: scale(1.1) translate(1px, -1px); }  /* Pulse max + Right */
+                    75% { transform: scale(1.05) translate(-1px, 1px); } /* Pulse down + Left */
+                    100% { transform: scale(1) translate(0, 0); }
+                }
+                
+                .anim-searching {
+                    animation: rumble-search 0.25s infinite linear;
+                    filter: drop-shadow(0 0 20px #8a2be2) !important;
+                }
+
                 @keyframes fall { from { top: -10%; opacity: 1; } to { top: 100%; opacity: 0; } }
 
                 .anim-walk-left .servitor-rig { animation: bounce 0.6s infinite; }
@@ -868,8 +878,12 @@ export default function ServitorWildUnknown() {
                     </div>
                 )}
 
-                <div id="game-mound" className="absolute bottom-[15vh] left-[10%] w-40 h-[100px] z-20 bg-contain bg-no-repeat bg-bottom transition-all duration-500"
-                     style={{ backgroundImage: `url('${ASSET_PATH}${ASSETS.MOUND}')`, ...getGameObjectStyle('mound') }} />
+                {/* REFACTORED MOUND WRAPPER FOR SEPARATE ANIMATION */}
+                <div id="mound-wrapper" className="absolute bottom-[15vh] left-[10%] w-40 h-[100px] z-20 transition-all duration-500" 
+                     style={{ ...getGameObjectStyle('mound') }}>
+                    <div id="game-mound-inner" className="w-full h-full bg-contain bg-no-repeat bg-bottom" 
+                         style={{ backgroundImage: `url('${ASSET_PATH}${ASSETS.MOUND}')` }} />
+                </div>
 
                 {/* VISIBILITY LOGIC FIXED: Only show game servitor if running */}
                 {isRunning && (
