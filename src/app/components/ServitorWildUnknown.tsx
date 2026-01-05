@@ -37,7 +37,6 @@ const AUDIO_PATHS = {
     MOUND_JUMP_OUT: '/audio/sfx-finding-something-1.mp3' 
 };
 
-// UPDATED BACKGROUND NAMES
 const BACKGROUND_OPTIONS = [
     'Crystal_Cave.jpg',
     'Magick_Forest.jpg',
@@ -144,17 +143,21 @@ const ServitorRig = React.memo(({
     rigAnimation, 
     isFeeding = false,
     isPreview = false, 
-    showCarriedTreasure = false 
+    showCarriedTreasure = false,
+    isHappy = false // NEW PROP
 }: { 
     idPrefix: string, 
     config: any, 
     rigAnimation: string, 
     isFeeding?: boolean,
     isPreview?: boolean, 
-    showCarriedTreasure?: boolean 
+    showCarriedTreasure?: boolean,
+    isHappy?: boolean 
 }) => {
-    // If feeding, override animation class
-    const animationClass = isFeeding ? 'anim-feed' : rigAnimation;
+    // If feeding, override animation class. If Happy, override to happy jump.
+    let animationClass = rigAnimation;
+    if (isFeeding) animationClass = 'anim-feed';
+    if (isHappy) animationClass = 'anim-happy-jump';
     
     const isFacingLeft = rigAnimation.includes('left');
     const isFlying = config.movementType === 'fly' || rigAnimation.includes('fly');
@@ -244,6 +247,13 @@ const ServitorRig = React.memo(({
 
     return (
         <div id={idPrefix} className="relative w-32 h-32" style={{ transform: previewStyle }}>
+            {/* SPARKLE OVER HEAD WHEN HAPPY */}
+            {isHappy && (
+                <div className="absolute -top-16 left-1/2 -translate-x-1/2 z-[200] text-4xl animate-pulse filter drop-shadow-[0_0_10px_gold]">
+                    ✨
+                </div>
+            )}
+            
             <div className={`w-full h-full ${flyClass}`} style={{ transformStyle: 'preserve-3d' }}>
                 <div className={`servitor-rig relative w-full h-full ${animationClass}`} 
                     style={{ 
@@ -283,6 +293,7 @@ export default function ServitorWildUnknown() {
 
     const [rigAnimation, setRigAnimation] = useState('anim-idle');
     const [isCarryingTreasure, setIsCarryingTreasure] = useState(false);
+    const [isHappy, setIsHappy] = useState(false); // NEW STATE FOR JUMP
 
     const runningRef = useRef(false); 
     const loopIdRef = useRef(0);
@@ -459,7 +470,6 @@ export default function ServitorWildUnknown() {
             retries++;
         }
 
-        // Updated selector to target the inner mound div for animation
         const moundInner = document.getElementById('game-mound-inner');
         const vessel = document.getElementById('game-vessel');
         const shine = document.getElementById('vessel-shine');
@@ -505,7 +515,6 @@ export default function ServitorWildUnknown() {
             // 3. Search Pulse (Random Time + Rumble)
             if(moundInner) moundInner.classList.add('anim-searching');
             
-            // RANDOM DURATION: 3 to 10 seconds (3000ms + 0-7000ms)
             const searchDuration = Math.random() * 7000 + 3000;
             await wait(searchDuration); 
             
@@ -552,10 +561,14 @@ export default function ServitorWildUnknown() {
             // AUDIO: Deposit
             playAudio(AUDIO_PATHS.DEPOSIT);
 
-            if(vessel) vessel.classList.add('pulse-glow-gold');
+            // ANIM: Vessel Shake & Pulse
+            if(vessel) {
+                vessel.classList.add('anim-vessel-deposit');
+                setTimeout(() => vessel.classList.remove('anim-vessel-deposit'), 500);
+            }
+            
             if(shine) { shine.style.opacity = '1'; setTimeout(() => shine.style.opacity = '0', 1000); }
             await wait(1000);
-            if(vessel) vessel.classList.remove('pulse-glow-gold');
 
             depositRef.current++;
             setDepositCount(depositRef.current);
@@ -576,7 +589,6 @@ export default function ServitorWildUnknown() {
         playAudio(AUDIO_PATHS.SPIRIT_LOOP, true);
 
         const start = Date.now();
-        // UPDATED: Feed time increased to 7000ms
         const dur = type === 'awaken' ? 5000 : 7000;
         
         if(type === 'awaken') {
@@ -641,8 +653,21 @@ export default function ServitorWildUnknown() {
     };
 
     const handleResume = () => {
-        setHungerState('sated'); depositRef.current = 0; setDepositCount(0);
-        runningRef.current = true; loopIdRef.current++; mainLoop(loopIdRef.current);
+        // 1. Play Resume Sound
+        playAudio(AUDIO_PATHS.DEPOSIT);
+
+        // 2. Trigger Happiness Animation (Jump + Sparkle)
+        setIsHappy(true);
+        setTimeout(() => setIsHappy(false), 1200);
+
+        setHungerState('sated'); 
+        depositRef.current = 0; 
+        setDepositCount(0);
+        runningRef.current = true; 
+        loopIdRef.current++; 
+        
+        // Short delay to let jump finish before walking again
+        setTimeout(() => mainLoop(loopIdRef.current), 1300);
     };
 
     const DPad = ({ part, allowFlip = false, allowSpread = false }: { part: string, allowFlip?: boolean, allowSpread?: boolean }) => {
@@ -795,6 +820,49 @@ export default function ServitorWildUnknown() {
                     filter: drop-shadow(0 0 20px #8a2be2) !important;
                 }
 
+                /* NEW VESSEL ANIMATION (Shake & Pulse Once) */
+                @keyframes vessel-shake-pulse {
+                    0% { transform: scale(1) translate(0,0); }
+                    20% { transform: scale(1.1) translate(-2px, 0); }
+                    40% { transform: scale(1.05) translate(2px, 0); }
+                    60% { transform: scale(1.1) translate(-2px, 0); }
+                    80% { transform: scale(1.05) translate(2px, 0); }
+                    100% { transform: scale(1) translate(0,0); }
+                }
+                .anim-vessel-deposit {
+                    animation: vessel-shake-pulse 0.5s ease-in-out;
+                }
+
+                /* NEW HAPPY JUMP ANIMATION */
+                @keyframes jump-celebrate {
+                    0% { transform: translateY(0); }
+                    50% { transform: translateY(-20px); }
+                    100% { transform: translateY(0); }
+                }
+                .anim-happy-jump .servitor-rig {
+                    animation: jump-celebrate 0.6s ease-in-out infinite;
+                }
+
+                /* CSS STARFIELD */
+                .stars-container { position: absolute; top:0; left:0; width:100%; height:100%; overflow:hidden; pointer-events:none; z-index: 5; }
+                .stars-1 {
+                    width: 1px; height: 1px; background: transparent;
+                    box-shadow: 10vw 10vh #FFF, 20vw 80vh #FFF, 80vw 10vh #FFF, 90vw 90vh #FFF, 50vw 50vh #FFF, 30vw 30vh #FFF, 60vw 20vh #FFF, 10vw 90vh #FFF;
+                    animation: twinkle 4s infinite alternate;
+                }
+                .stars-2 {
+                    width: 2px; height: 2px; background: transparent;
+                    box-shadow: 15vw 15vh #FFD700, 25vw 85vh #FFD700, 85vw 15vh #FFD700, 95vw 95vh #FFD700, 55vw 55vh #FFD700;
+                    animation: twinkle 6s infinite alternate-reverse;
+                }
+                .stars-3 {
+                    width: 3px; height: 3px; background: transparent;
+                    box-shadow: 5vw 50vh #FFF, 90vw 20vh #FFF, 40vw 80vh #FFF;
+                    animation: twinkle 8s infinite alternate;
+                    filter: blur(1px);
+                }
+                @keyframes twinkle { from { opacity: 0.3; } to { opacity: 1; } }
+
                 @keyframes fall { from { top: -10%; opacity: 1; } to { top: 100%; opacity: 0; } }
 
                 .anim-walk-left .servitor-rig { animation: bounce 0.6s infinite; }
@@ -867,6 +935,15 @@ export default function ServitorWildUnknown() {
                 <div className="absolute inset-0 bg-black/40" />
             </div>
 
+            {/* MAGICAL BACKGROUND SPARKLES (Task 4) */}
+            {isRunning && !isFeedingActive && (
+                <div className="stars-container">
+                    <div className="stars-1"></div>
+                    <div className="stars-2"></div>
+                    <div className="stars-3"></div>
+                </div>
+            )}
+
             {/* GAME WORLD */}
             <div className="relative w-full h-full z-10 pointer-events-none">
                 {/* GAMEPLAY HUD: Name & Purpose */}
@@ -888,7 +965,14 @@ export default function ServitorWildUnknown() {
                 {/* VISIBILITY LOGIC FIXED: Only show game servitor if running */}
                 {isRunning && (
                     <div id="servitor-container" className="absolute bottom-[18vh] left-[20%] w-32 h-32 z-100 pointer-events-auto origin-bottom">
-                        <ServitorRig idPrefix="game-rig" config={config} rigAnimation={rigAnimation} isFeeding={isFeeding} showCarriedTreasure={isCarryingTreasure} />
+                        <ServitorRig 
+                            idPrefix="game-rig" 
+                            config={config} 
+                            rigAnimation={rigAnimation} 
+                            isFeeding={isFeeding} 
+                            showCarriedTreasure={isCarryingTreasure} 
+                            isHappy={isHappy} // Pass Happy State
+                        />
                     </div>
                 )}
 
