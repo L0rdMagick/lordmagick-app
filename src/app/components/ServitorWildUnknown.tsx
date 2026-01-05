@@ -32,14 +32,17 @@ const ASSETS = {
 
 const DIRECTIONAL_OFFSETS = {
     facingRight: {
-        global:  { x: 0, y: 0, s: 1.5, f: false }, 
+        // --- SEPARATE GLOBAL DEFAULTS ---
+        globalUI:   { x: 0, y: 0, s: 1.0, f: false }, // Default for UI Preview
+        globalGame: { x: 0, y: 0, s: 1.0, f: false }, // Default for Gameplay
+        
         wing:    { x: 0, y: 3, s: 1.0, f: false },
         base:    { x: 0, y: 0, s: 1.0, f: false },
         head:    { x: 0, y: -49, s: 0.6, f: false },
         clothes: { x: -1, y: 10, s: 0.55, f: false },
         sigil:   { x: 3, y: 2, s: 0.2, f: false },
         tool:    { x: 28, y: 17, s: 0.5, f: false },
-        carryTreasure: { x: 53, y: 23, s: 0.5, f: false }, 
+        carryTreasure: { x: 28, y: 17, s: 0.5, f: false }, 
         
         armRight: { x: 2, y: 15, s: 0.6, f: false },
         armLeft:  { x: 25, y: 19, s: 0.6, f: false }, 
@@ -51,7 +54,8 @@ const DIRECTIONAL_OFFSETS = {
         mound:   { x: 0, y: 3, s: 2.8, f: false },
     },
     facingLeft: {
-        global: { x: 0, y: 0, s: 0 },
+        globalUI:   { x: 0, y: 0, s: 0 }, 
+        globalGame: { x: 0, y: 0, s: 0 },
         base: { x: 0, y: 0, s: 0 },
         head: { x: 0, y: 0, s: 0 },
         clothes: { x: 1, y: 0, s: 0 },
@@ -382,17 +386,25 @@ export default function ServitorWildUnknown() {
             await wait(1500); 
             if(mound) mound.classList.remove('pulse-glow-void');
 
-            // 4. JUMP OUT (Still Facing Left)
+            // 4. JUMP OUT (Change to Facing Right & Holding Treasure IMMEDIATELY)
             if(servitor) {
+                // Ensure visibility
                 servitor.style.opacity = '1';
                 servitor.style.removeProperty('transform');
                 void servitor.offsetWidth;
+                
+                // IMPORTANT: Set state to holding treasure BEFORE animation starts
+                setIsCarryingTreasure(true);
+                // IMPORTANT: Set orientation to RIGHT for the jump out
+                setRigAnimation(config.movementType === 'fly' ? 'anim-fly-right' : 'anim-walk-right'); 
+
+                // Trigger Animation
                 servitor.style.animation = 'jump-out-of-void 0.8s forwards ease-in-out';
             }
             await wait(800); 
 
-            // 5. TURN & WALK BACK (HOLDING TREASURE)
-            setIsCarryingTreasure(true); 
+            // 5. WALK BACK (Already facing right and holding treasure)
+            // Just reconfirm animation state incase jump changed anything
             setRigAnimation(config.movementType === 'fly' ? 'anim-fly-right' : 'anim-walk-right');
             
             // RIGHT STOP
@@ -609,8 +621,11 @@ export default function ServitorWildUnknown() {
             return renderPart(idx, asset, partKey, z, 'static');
         };
 
+        // NEW: Select separate global default depending on view mode
         const gUser = config.offsets.global;
-        const gBase = DIRECTIONAL_OFFSETS.facingRight.global;
+        const baseMap = DIRECTIONAL_OFFSETS.facingRight;
+        const gBase = isPreview ? baseMap.globalUI : baseMap.globalGame;
+        
         const finalGx = gBase.x + gUser.x;
         const finalGy = gBase.y + gUser.y;
         const finalGs = gBase.s + gUser.s;
@@ -688,8 +703,10 @@ export default function ServitorWildUnknown() {
                     align-items: center;
                     justify-content: center;
                     transition: all 0.2s;
+                    user-select: none;
+                    touch-action: none;
                 }
-                .ornate-btn:active { transform: scale(0.98); background-color: #1a1a00; }
+                .ornate-btn:active { background-color: #1a1a00; transform: none !important; }
                 
                 @keyframes bounce { 0% { top: 0; } 50% { top: -5px; } }
                 
@@ -697,7 +714,7 @@ export default function ServitorWildUnknown() {
                 @keyframes rotate-l { 0% { transform: rotate(-5deg); } 50% { transform: rotate(5deg); } 100% { transform: rotate(-5deg); } }
                 @keyframes rotate-r { 0% { transform: rotate(5deg); } 50% { transform: rotate(-5deg); } 100% { transform: rotate(5deg); } }
                 
-                /* Feeding Wave Animation - SYNCHRONIZED UP/DOWN */
+                /* Feeding Wave Animation - SYNCHRONIZED ARMS UP/DOWN */
                 @keyframes feed-wave {
                     0% { transform: rotate(0deg); }
                     50% { transform: rotate(-45deg); } 
@@ -747,10 +764,12 @@ export default function ServitorWildUnknown() {
                 .anim-walk-right .arm-right-joint { animation: rotate-r 1.2s infinite ease-in-out; }
                 .anim-walk-right .tool-hand-anim { animation: rotate-r 1.2s infinite ease-in-out; }
 
-                /* Feeding Animation Overrides - SYNCHRONIZED ARMS */
-                .anim-feed .arm-left-joint { animation: feed-wave 0.8s infinite ease-in-out; }
-                .anim-feed .arm-right-joint { animation: feed-wave 0.8s infinite ease-in-out; }
-                .anim-feed .tool-hand-anim { animation: feed-wave 0.8s infinite ease-in-out; }
+                /* Feeding Animation Overrides - SYNCHRONIZED ARMS (Moving together) */
+                .anim-feed .arm-left-joint,
+                .anim-feed .arm-right-joint,
+                .anim-feed .tool-hand-anim { 
+                    animation: feed-wave 0.8s infinite ease-in-out; 
+                }
 
                 /* Enhanced Glow Effects */
                 .pulse-glow-void { animation: pulse-void 1s infinite alternate; }
@@ -950,8 +969,8 @@ export default function ServitorWildUnknown() {
                             {!isFeeding && <p className="text-[#FFD700] mb-8 animate-pulse text-xl font-serif">{sName} requires sustenance...</p>}
                             <button onMouseDown={() => startHold('feed')} onMouseUp={stopHold} onMouseLeave={stopHold} onTouchStart={() => startHold('feed')} onTouchEnd={stopHold}
                                 className={`w-40 h-40 rounded-full border-4 border-[#FFD700] flex items-center justify-center relative overflow-hidden bg-black shadow-[0_0_50px_#FFD700] transition-opacity duration-300 active:transform-none ${isFeeding ? 'opacity-90' : 'opacity-100'}`}>
-                                <div className="absolute bottom-0 left-0 w-full bg-[#FFD700]/50 transition-all duration-75 z-10" style={{height: `${feedProgress}%`}}></div>
-                                <div className="w-20 h-20 relative z-20" style={getSpriteStyle(config.foodIndex, ASSETS.FOOD)} />
+                                <div className="absolute bottom-0 left-0 w-full bg-[#FFD700]/50 transition-all duration-75 z-20" style={{height: `${feedProgress}%`}}></div>
+                                <div className="w-20 h-20 relative z-30" style={getSpriteStyle(config.foodIndex, ASSETS.FOOD)} />
                             </button>
                         </div>
                     )}
