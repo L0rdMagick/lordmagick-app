@@ -92,7 +92,7 @@ const LAYER_ORDER_CONFIG = {
         armRight: 70, 
         legRight: 60,  
         tool: 65,
-        carryTreasure: 80, 
+        carryTreasure: 15, 
         head: 90       
     },
     facingLeft: {
