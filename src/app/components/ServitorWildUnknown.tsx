@@ -2,7 +2,6 @@
 
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-// ADDED Globe to imports
 import { X, Lock, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Plus, Minus, RefreshCw, Move, Eye, EyeOff, Settings, User, ArrowLeftRight, Info, Globe } from 'lucide-react';
 import { createBrowserClient } from '@supabase/ssr';
 import { checkAndSpendCredits, COST_BIND_SERVITOR } from '@/lib/economy';
@@ -25,11 +24,19 @@ const ASSETS = {
     FOOD: 'Servitor_Sustenance_Food_Sheet.png',
     MOUND: 'mound_into_the_void.png',
     UI_PANEL: 'Parchment_And_Oak_Responsive_Panels.png',
-    // Removed BG_MAIN from here as it is now dynamic
     UI_BUTTONS: 'Runic_Glass_Button_Set.png'
 };
 
-// ADDED: Background Options Array
+// --- AUDIO CONFIGURATION ---
+const AUDIO_PATHS = {
+    SPIRIT_LOOP: '/audio/spirit.mp3',               // Hold to Awaken / Hold to Feed
+    BIND_ACTIVATE: '/audio/sfx-chaos-activate.mp3', // Bind Save
+    DEPOSIT: '/audio/old-sfx-library-portal.mp3',   // Deposit Treasure
+    FEED_COMPLETE: '/audio/sfx-chaos-hold.mp3',     // Finished Feeding
+    MOUND_JUMP_IN: '/audio/sfx-searching-2.mp3',    // Jumps into mound
+    MOUND_JUMP_OUT: '/audio/sfx-finding-something-1.mp3' // Jumps out of mound
+};
+
 const BACKGROUND_OPTIONS = [
     'Crystal_Cave.jpg',
     'Magick_Forest.jpg',
@@ -130,7 +137,6 @@ const getSpriteStyle = (index: number, filename: string, isSingleImage = false) 
 };
 
 // --- EXTRACTED SERVITOR RIG COMPONENT ---
-// This prevents re-creation of the component during state updates, fixing the animation reset/jitter.
 const ServitorRig = React.memo(({ 
     idPrefix, 
     config, 
@@ -272,14 +278,16 @@ export default function ServitorWildUnknown() {
     const [loadProgress, setLoadProgress] = useState(0);
     const [isRunning, setIsRunning] = useState(false);
     const [activeCategory, setActiveCategory] = useState<string | null>(null);
-    const [showInfoModal, setShowInfoModal] = useState(true); // DEFAULT TRUE
+    const [showInfoModal, setShowInfoModal] = useState(true); 
 
     const [rigAnimation, setRigAnimation] = useState('anim-idle');
     const [isCarryingTreasure, setIsCarryingTreasure] = useState(false);
 
     const runningRef = useRef(false); 
     const loopIdRef = useRef(0);
-    const audioCtxRef = useRef<any>(null);
+    // REMOVED audioCtxRef, replaced with audioRefs for file playback
+    const audioRefs = useRef<{[key: string]: HTMLAudioElement}>({});
+
     const servitorPosRef = useRef(20);
     const holdIntervalRef = useRef<any>(null); 
     const buttonIntervalRef = useRef<any>(null); 
@@ -291,7 +299,6 @@ export default function ServitorWildUnknown() {
     const [user, setUser] = useState<any>(null);
     
     // --- CATEGORIES DEFINITION ---
-    // ADDED 'worlds' category
     const CATEGORIES = useMemo(() => [
         { id: 'global', label: 'WHOLE', asset: null, indexKey: null, offsetKey: 'global', canFlip: true },
         { id: 'worlds', label: 'WORLDS', asset: null, indexKey: 'bgIndex', offsetKey: null }, 
@@ -315,10 +322,7 @@ export default function ServitorWildUnknown() {
         hatIndex: 0, wingIndex: 0, vesselIndex: 0, clothingIndex: 0,
         sigilIndex: 0, foodIndex: 0, treasureIndex: 0,
         carryTreasureIndex: 0,
-        
-        // ADDED bgIndex
         bgIndex: 0,
-
         movementType: "walk", 
         feedFreq: 5,
         offsets: JSON.parse(JSON.stringify(DEFAULT_OFFSETS))
@@ -340,8 +344,6 @@ export default function ServitorWildUnknown() {
     const [showExitWarning, setShowExitWarning] = useState(false);
 
     useEffect(() => {
-        // Updated loaded check to include backgrounds? 
-        // For simplicity, we just load the main assets. Backgrounds are standard images, browsers handle them fine.
         const imageUrls = Object.values(ASSETS);
         let loadedCount = 0;
         imageUrls.forEach((url) => {
@@ -395,30 +397,37 @@ export default function ServitorWildUnknown() {
         if (buttonIntervalRef.current) clearInterval(buttonIntervalRef.current);
     };
 
+    // --- NEW AUDIO LOGIC ---
+    const playAudio = (path: string, loop: boolean = false) => {
+        // Stop existing if any (optional, but prevents layering chaos for same sound)
+        if (!audioRefs.current[path]) {
+            audioRefs.current[path] = new Audio(path);
+        }
+        
+        const audio = audioRefs.current[path];
+        audio.loop = loop;
+        audio.currentTime = 0;
+        audio.volume = 0.5; // Reasonable default
+        audio.play().catch(e => console.error("Audio play failed:", e));
+    };
+
+    const stopAudio = (path: string) => {
+        if (audioRefs.current[path]) {
+            audioRefs.current[path].pause();
+            audioRefs.current[path].currentTime = 0;
+        }
+    };
+
     const handleBind = async () => {
+        // Play Bind Sound
+        playAudio(AUDIO_PATHS.BIND_ACTIVATE);
+
         if (!user || !sName) return alert("Name & Login required.");
         const afford = await checkAndSpendCredits(user.id, COST_BIND_SERVITOR);
         if (!afford) { setShowCreditModal(true); return; }
         await saveServitorToGrimoire(user.id, { name: sName, master_name: uName, purpose: sPurpose, config });
         setHasUnsavedChanges(false);
         alert("Bound!");
-    };
-
-    const playSound = (type: string) => {
-        if(!audioCtxRef.current) {
-            const AC = (window as any).AudioContext || (window as any).webkitAudioContext;
-            if(AC) audioCtxRef.current = new AC();
-        }
-        if (audioCtxRef.current?.state === 'suspended') audioCtxRef.current.resume();
-        const ctx = audioCtxRef.current;
-        if(!ctx) return;
-        const osc = ctx.createOscillator();
-        const g = ctx.createGain();
-        osc.connect(g); g.connect(ctx.destination);
-        const now = ctx.currentTime;
-        osc.frequency.setValueAtTime(type === 'deposit' ? 600 : 200, now);
-        g.gain.setValueAtTime(0.1, now);
-        osc.start(now); osc.stop(now + 0.2);
     };
 
     const wait = (ms: number) => new Promise(r => setTimeout(r, ms));
@@ -480,6 +489,10 @@ export default function ServitorWildUnknown() {
                 servitor.style.transition = 'none';
                 servitor.style.removeProperty('transform');
                 void servitor.offsetWidth; 
+                
+                // AUDIO: Jump In
+                playAudio(AUDIO_PATHS.MOUND_JUMP_IN);
+                
                 servitor.style.animation = 'jump-into-void 0.8s forwards ease-in-out';
             }
             await wait(800); 
@@ -492,7 +505,7 @@ export default function ServitorWildUnknown() {
             
             // 3. Search Pulse
             if(mound) mound.classList.add('pulse-glow-void');
-            playSound('search');
+            // Removed old playSound('search') as we have specific jump in/out sounds now
             await wait(1500); 
             if(mound) mound.classList.remove('pulse-glow-void');
 
@@ -504,6 +517,9 @@ export default function ServitorWildUnknown() {
                 
                 setIsCarryingTreasure(true);
                 setRigAnimation(config.movementType === 'fly' ? 'anim-fly-right' : 'anim-walk-right'); 
+
+                // AUDIO: Jump Out / Find
+                playAudio(AUDIO_PATHS.MOUND_JUMP_OUT);
 
                 servitor.style.animation = 'jump-out-of-void 0.8s forwards ease-in-out';
             }
@@ -531,7 +547,9 @@ export default function ServitorWildUnknown() {
                 index: config.carryTreasureIndex
             }]);
 
-            playSound('deposit');
+            // AUDIO: Deposit
+            playAudio(AUDIO_PATHS.DEPOSIT);
+
             if(vessel) vessel.classList.add('pulse-glow-gold');
             if(shine) { shine.style.opacity = '1'; setTimeout(() => shine.style.opacity = '0', 1000); }
             await wait(1000);
@@ -553,6 +571,9 @@ export default function ServitorWildUnknown() {
         if(isHoldingRef.current) return;
         isHoldingRef.current = true;
 
+        // AUDIO: Start Looping Spirit Sound (Awaken or Feed)
+        playAudio(AUDIO_PATHS.SPIRIT_LOOP, true);
+
         const start = Date.now();
         const dur = type === 'awaken' ? 5000 : 3000;
         
@@ -571,8 +592,16 @@ export default function ServitorWildUnknown() {
             if(p >= 100) {
                 clearInterval(holdIntervalRef.current);
                 isHoldingRef.current = false; 
-                playSound('glitter');
+
+                // AUDIO: Stop Loop
+                stopAudio(AUDIO_PATHS.SPIRIT_LOOP);
+
                 if(type === 'awaken') {
+                    // Success sound for awaken wasn't explicitly requested separately from bind, 
+                    // but we can play the Activate sound or just proceed.
+                    // For now, let's play the bind/activate sound as a success indicator.
+                    playAudio(AUDIO_PATHS.BIND_ACTIVATE);
+
                     setIsAwakening(false); 
                     setIsRunning(true); 
                     runningRef.current = true;
@@ -581,6 +610,9 @@ export default function ServitorWildUnknown() {
                         mainLoop(loopIdRef.current);
                     }, 100);
                 } else {
+                    // AUDIO: Finished Feeding Sound
+                    playAudio(AUDIO_PATHS.FEED_COMPLETE);
+                    
                     setIsFeeding(false); 
                     setHungerState('fed');
                     setTreasurePile([]); 
@@ -600,6 +632,9 @@ export default function ServitorWildUnknown() {
     };
 
     const stopHold = () => {
+        // AUDIO: Stop Loop if user lets go early
+        stopAudio(AUDIO_PATHS.SPIRIT_LOOP);
+
         isHoldingRef.current = false;
         if(holdIntervalRef.current) clearInterval(holdIntervalRef.current);
         setIsAwakening(false); 
