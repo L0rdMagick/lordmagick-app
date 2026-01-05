@@ -75,7 +75,6 @@ const DIRECTIONAL_OFFSETS = {
     }
 };
 
-// UPDATED: Scale reduced (0.65) and adjusted Y to center in smaller preview box
 const UI_PREVIEW_SETTINGS = {
     scale: 0.65, 
     y: -25 
@@ -442,7 +441,15 @@ export default function ServitorWildUnknown() {
     const startHold = (type: 'awaken' | 'feed') => {
         const start = Date.now();
         const dur = type === 'awaken' ? 5000 : 3000;
-        if(type === 'awaken') setIsAwakening(true); else setIsFeeding(true);
+        
+        // Reset progress explicitly at start of hold to prevent glitches
+        if(type === 'awaken') {
+            setIsAwakening(true); 
+            setAwakenProgress(0);
+        } else {
+            setIsFeeding(true);
+            setFeedProgress(0);
+        }
 
         holdIntervalRef.current = setInterval(() => {
             const p = Math.min(100, ((Date.now() - start) / dur) * 100);
@@ -540,6 +547,7 @@ export default function ServitorWildUnknown() {
     };
 
     const ServitorRig = ({ idPrefix, isPreview = false, showCarriedTreasure = false }: { idPrefix: string, isPreview?: boolean, showCarriedTreasure?: boolean }) => {
+        // NOTE: isFeeding is captured from the parent scope here.
         const wrapperClass = isFeeding ? 'anim-feed' : 'anim-idle';
         
         const isFacingLeft = rigAnimation.includes('left');
@@ -606,7 +614,7 @@ export default function ServitorWildUnknown() {
 
             return (
                 <div className={`joint absolute w-full h-full top-0 left-0 ${jointClass}`} 
-                     style={{ zIndex: z, transformOrigin: `${originX} ${originY}`, willChange: 'transform' }}>
+                     style={{ zIndex: z, transformOrigin: `${originX} ${originY}` }}>
                     <div className="sprite absolute w-full h-full top-0 left-0 pointer-events-none"
                          style={{ ...getSpriteStyle(idx, asset), transform: spriteTransform }} />
                 </div>
@@ -617,7 +625,6 @@ export default function ServitorWildUnknown() {
             return renderPart(idx, asset, partKey, z, 'static');
         };
 
-        // NEW: Select separate global default depending on view mode
         const gUser = config.offsets.global;
         const baseMap = DIRECTIONAL_OFFSETS.facingRight;
         const gBase = isPreview ? baseMap.globalUI : baseMap.globalGame;
@@ -710,19 +717,23 @@ export default function ServitorWildUnknown() {
                 @keyframes rotate-l { 0% { transform: rotate(-5deg); } 50% { transform: rotate(5deg); } 100% { transform: rotate(-5deg); } }
                 @keyframes rotate-r { 0% { transform: rotate(5deg); } 50% { transform: rotate(-5deg); } 100% { transform: rotate(5deg); } }
                 
-                /* FEEDING WAVE: Hands moving UP (towards mouth) TOGETHER - INCREASED ANGLE */
-                @keyframes feed-lift-left {
+                /* 
+                   UPDATED FEEDING WAVE: Hands moving UP and DOWN together.
+                   Range increased to 60deg to be clearly visible.
+                   Synchronized timing (both hands use same timing function).
+                */
+                @keyframes feed-wave-left {
                     0% { transform: rotate(0deg); }
-                    50% { transform: rotate(60deg); } /* Lifts left hand up/back significantly */
+                    50% { transform: rotate(60deg); } 
                     100% { transform: rotate(0deg); }
                 }
-                @keyframes feed-lift-right {
+                @keyframes feed-wave-right {
                     0% { transform: rotate(0deg); }
-                    50% { transform: rotate(-60deg); } /* Lifts right hand up/back significantly */
+                    50% { transform: rotate(-60deg); } 
                     100% { transform: rotate(0deg); }
                 }
 
-                /* Flying Bob - UPDATED to float higher (-60 to -90px) with smooth curve */
+                /* Flying Bob */
                 @keyframes float-bob {
                     0% { transform: translateY(-60px); }
                     50% { transform: translateY(-90px); }
@@ -762,6 +773,16 @@ export default function ServitorWildUnknown() {
                 .anim-walk-right .tool-hand-anim { animation: rotate-r 1.2s infinite ease-in-out; }
                 .anim-walk-right .carry-hand-anim { animation: rotate-l 1.2s infinite ease-in-out; }
 
+                /* 
+                   FEEDING ANIMATION OVERRIDES
+                   Using !important to ensure these trigger on both Desktop and Mobile,
+                   overriding any existing walk/idle classes on the rig.
+                */
+                .anim-feed .arm-left-joint { animation: feed-wave-left 0.5s infinite ease-in-out !important; }
+                .anim-feed .arm-right-joint { animation: feed-wave-right 0.5s infinite ease-in-out !important; }
+                .anim-feed .tool-hand-anim { animation: feed-wave-right 0.5s infinite ease-in-out !important; }
+                .anim-feed .carry-hand-anim { animation: feed-wave-left 0.5s infinite ease-in-out !important; }
+
                 /* Enhanced Glow Effects */
                 .pulse-glow-void { animation: pulse-void 1s infinite alternate; }
                 @keyframes pulse-void { from { filter: drop-shadow(0 0 10px #4b0082); } to { filter: drop-shadow(0 0 40px #8a2be2); } }
@@ -769,12 +790,6 @@ export default function ServitorWildUnknown() {
                 @keyframes pulse-gold { from { filter: drop-shadow(0 0 10px #FFD700); } to { filter: drop-shadow(0 0 50px #FFFF00); } }
                 
                 .custom-scrollbar::-webkit-scrollbar { width: 4px; } .custom-scrollbar::-webkit-scrollbar-thumb { background: #5d4037; border-radius: 4px; }
-
-                /* HIGH SPECIFICITY FEEDING OVERRIDES - MOVED TO END */
-                .anim-feed .arm-left-joint { animation: feed-lift-left 0.8s infinite ease-in-out !important; }
-                .anim-feed .arm-right-joint { animation: feed-lift-right 0.8s infinite ease-in-out !important; }
-                .anim-feed .tool-hand-anim { animation: feed-lift-right 0.8s infinite ease-in-out !important; }
-                .anim-feed .carry-hand-anim { animation: feed-lift-left 0.8s infinite ease-in-out !important; }
             `}</style>
 
             <button onClick={() => hasUnsavedChanges ? setShowExitWarning(true) : router.push('/spell-room')} className="absolute top-4 right-4 z-60 text-gray-400 hover:text-white"><X /></button>
@@ -998,11 +1013,24 @@ export default function ServitorWildUnknown() {
                     ) : (
                         <div className="flex flex-col items-center">
                             {!isFeeding && <p className="text-[#FFD700] mb-8 animate-pulse text-xl font-serif">{sName} requires sustenance...</p>}
-                            <button onMouseDown={() => startHold('feed')} onMouseUp={stopHold} onMouseLeave={stopHold} onTouchStart={() => startHold('feed')} onTouchEnd={stopHold}
-                                style={{ transform: 'none' }} 
-                                className={`w-40 h-40 rounded-full border-4 border-[#FFD700] flex items-center justify-center relative overflow-hidden bg-black shadow-[0_0_50px_#FFD700] transition-opacity duration-300 active:scale-100 transform-none ${isFeeding ? 'opacity-90' : 'opacity-100'}`}>
-                                <div className="absolute bottom-0 left-0 w-full bg-[#FFD700] z-0 transition-all duration-75" style={{height: `${feedProgress}%`}}></div>
-                                <div className="w-20 h-20 relative z-20" style={getSpriteStyle(config.foodIndex, ASSETS.FOOD)} />
+                            <button 
+                                onMouseDown={() => startHold('feed')} 
+                                onMouseUp={stopHold} 
+                                onMouseLeave={stopHold} 
+                                onTouchStart={() => startHold('feed')} 
+                                onTouchEnd={stopHold}
+                                style={{ transform: 'translateZ(0) scale(1)' }} // FORCE NO SCALE/MOVE
+                                className={`w-40 h-40 rounded-full border-4 border-[#FFD700] flex items-center justify-center relative overflow-hidden bg-black shadow-[0_0_50px_#FFD700] transition-opacity duration-300 ${isFeeding ? 'opacity-90' : 'opacity-100'}`}
+                            >
+                                {/* Progress Bar with Dynamic Transition: Transition only when filling up (>0), instant when resetting (0) */}
+                                <div 
+                                    className="absolute bottom-0 left-0 w-full bg-[#FFD700] z-10" 
+                                    style={{
+                                        height: `${feedProgress}%`,
+                                        transition: feedProgress > 0 ? 'height 0.05s linear' : 'none' 
+                                    }}>
+                                </div>
+                                <div className="w-20 h-20 relative z-20 pointer-events-none" style={getSpriteStyle(config.foodIndex, ASSETS.FOOD)} />
                             </button>
                         </div>
                     )}
