@@ -282,6 +282,7 @@ export default function ServitorWildUnknown() {
     // --- CATEGORIES DEFINITION ---
     const CATEGORIES = useMemo(() => [
         { id: 'global', label: 'WHOLE', asset: null, indexKey: null, offsetKey: 'global', canFlip: true },
+        { id: 'settings', label: 'BEHAVIOR', asset: null, indexKey: null, offsetKey: null }, // MOVED HERE
         { id: 'head', label: 'HATS', asset: ASSETS.HEAD, indexKey: 'hatIndex', offsetKey: 'head', canFlip: true },
         { id: 'base', label: 'TORSOS', asset: ASSETS.BASES, indexKey: 'baseIndex', offsetKey: 'base', canFlip: true },
         { id: 'leg', label: 'LEGS', asset: ASSETS.LEGS, indexKey: 'legIndex', offsetKey: 'leg', canFlip: false, canSpread: true },
@@ -293,8 +294,7 @@ export default function ServitorWildUnknown() {
         { id: 'sigil', label: 'SIGILS', asset: ASSETS.TREASURES, indexKey: 'sigilIndex', offsetKey: 'sigil', canFlip: true },
         { id: 'mound', label: 'MOUNDS', asset: ASSETS.MOUND, indexKey: null, offsetKey: 'mound', single: true, canFlip: true },
         { id: 'vessel', label: 'VESSELS', asset: ASSETS.VESSELS, indexKey: 'vesselIndex', offsetKey: 'vessel', canFlip: true },
-        { id: 'food', label: 'FOOD', asset: ASSETS.FOOD, indexKey: 'foodIndex', offsetKey: null },
-        { id: 'settings', label: 'BEHAVIOR', asset: null, indexKey: null, offsetKey: null }
+        { id: 'food', label: 'FOOD', asset: ASSETS.FOOD, indexKey: 'foodIndex', offsetKey: null }
     ], []);
 
     const [config, setConfig] = useState({
@@ -700,13 +700,15 @@ export default function ServitorWildUnknown() {
                 @keyframes rotate-l { 0% { transform: rotate(-5deg); } 50% { transform: rotate(5deg); } 100% { transform: rotate(-5deg); } }
                 @keyframes rotate-r { 0% { transform: rotate(5deg); } 50% { transform: rotate(-5deg); } 100% { transform: rotate(5deg); } }
                 
-                /* 
-                   UPDATED FEEDING WAVE: SYNCHRONIZED, REDUCED RANGE 
-                   -12deg provides a subtle "lift" motion similar to walking scale.
-                */
-                @keyframes feed-wave-sync {
+                /* UPDATED FEEDING WAVE */
+                @keyframes feed-wave-left {
                     0% { transform: rotate(0deg); }
-                    50% { transform: rotate(-12deg); } /* Lifts both arms slightly */
+                    50% { transform: rotate(45deg); } 
+                    100% { transform: rotate(0deg); }
+                }
+                @keyframes feed-wave-right {
+                    0% { transform: rotate(0deg); }
+                    50% { transform: rotate(-45deg); } 
                     100% { transform: rotate(0deg); }
                 }
 
@@ -750,15 +752,11 @@ export default function ServitorWildUnknown() {
                 .anim-walk-right .tool-hand-anim { animation: rotate-r 1.2s infinite ease-in-out; }
                 .anim-walk-right .carry-hand-anim { animation: rotate-l 1.2s infinite ease-in-out; }
 
-                /* 
-                   FEEDING ANIMATION OVERRIDES
-                   Using feed-wave-sync for ALL arm/hand components ensuring synchronization.
-                   Strict !important used to override walking anims.
-                */
-                .anim-feed .arm-left-joint { animation: feed-wave-sync 0.6s infinite ease-in-out !important; }
-                .anim-feed .arm-right-joint { animation: feed-wave-sync 0.6s infinite ease-in-out !important; }
-                .anim-feed .tool-hand-anim { animation: feed-wave-sync 0.6s infinite ease-in-out !important; }
-                .anim-feed .carry-hand-anim { animation: feed-wave-sync 0.6s infinite ease-in-out !important; }
+                /* FEEDING ANIMATION OVERRIDES - Strict !important */
+                .anim-feed .arm-left-joint { animation: feed-wave-left 0.6s infinite ease-in-out !important; }
+                .anim-feed .arm-right-joint { animation: feed-wave-right 0.6s infinite ease-in-out !important; }
+                .anim-feed .tool-hand-anim { animation: feed-wave-right 0.6s infinite ease-in-out !important; }
+                .anim-feed .carry-hand-anim { animation: feed-wave-left 0.6s infinite ease-in-out !important; }
 
                 /* Enhanced Glow Effects */
                 .pulse-glow-void { animation: pulse-void 1s infinite alternate; }
@@ -766,7 +764,9 @@ export default function ServitorWildUnknown() {
                 .pulse-glow-gold { animation: pulse-gold 0.5s infinite alternate; }
                 @keyframes pulse-gold { from { filter: drop-shadow(0 0 10px #FFD700); } to { filter: drop-shadow(0 0 50px #FFFF00); } }
                 
-                .custom-scrollbar::-webkit-scrollbar { width: 4px; } .custom-scrollbar::-webkit-scrollbar-thumb { background: #5d4037; border-radius: 4px; }
+                /* DOUBLED SCROLLBAR WIDTH */
+                .custom-scrollbar::-webkit-scrollbar { width: 8px; } 
+                .custom-scrollbar::-webkit-scrollbar-thumb { background: #5d4037; border-radius: 4px; }
             `}</style>
 
             <button onClick={() => hasUnsavedChanges ? setShowExitWarning(true) : router.push('/spell-room')} className="absolute top-5 right-4 z-60 text-gray-400 hover:text-white"><X /></button>
@@ -996,9 +996,9 @@ export default function ServitorWildUnknown() {
                 </div>
             </div>
 
-            {/* FEEDING MODAL */}
+            {/* FEEDING MODAL - RELOCATED TO TOP */}
             {isFeedingActive && (
-                <div className={`absolute inset-0 z-200 flex flex-col items-center justify-center transition-colors duration-300 ${isFeeding ? 'bg-black/0' : 'bg-black/80'}`}>
+                <div className={`absolute inset-0 z-200 flex flex-col items-center justify-start pt-[50px] transition-colors duration-300 ${isFeeding ? 'bg-black/0' : 'bg-black/80'}`}>
                     {hungerState === 'fed' ? (
                         <div className="text-center animate-in zoom-in">
                             <h2 className="text-[#FFD700] magick-font text-3xl mb-4">Hunger Sated</h2>
