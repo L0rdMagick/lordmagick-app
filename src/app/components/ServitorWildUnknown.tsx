@@ -68,10 +68,10 @@ const DIRECTIONAL_OFFSETS = {
     }
 };
 
-// UPDATED: Scale reduced further (0.70) and lifted UP (-30) to prevent overlap
+// UPDATED: Scale reduced (0.65) and adjusted Y to center in smaller preview box
 const UI_PREVIEW_SETTINGS = {
-    scale: 0.70, 
-    y: -30 
+    scale: 0.65, 
+    y: -25 
 };
 
 const LAYER_ORDER_CONFIG = {
@@ -335,12 +335,19 @@ export default function ServitorWildUnknown() {
             // LEFT STOP: Stops earlier at 15%
             await moveTo(15, id); 
             if(!runningRef.current) break;
+            // Stop animation after moving
+            setRigAnimation('anim-idle');
 
-            // 2. Enter Void (Jump Animation FORCE FIX)
+            // 2. Enter Void (Jump Animation with Robust Replay)
             if(servitor) {
-                // FORCE REFLOW: Critical for browser to accept animation start
+                // A. Stop movement transitions
+                servitor.style.transition = 'none';
+                // B. Clean slate: Remove class if it exists (fix for 2nd cycle)
+                servitor.classList.remove('anim-jump-into-void');
+                
+                // C. Force Browser Reflow (Critical for animation restart)
                 void servitor.offsetWidth; 
-                // Apply animation
+                // D. Add class to trigger animation
                 servitor.classList.add('anim-jump-into-void');
             }
             await wait(800); // Wait for jump to finish
@@ -740,8 +747,8 @@ export default function ServitorWildUnknown() {
             {/* MASTER UI PANEL - Unified Container */}
             <div className={`fixed inset-0 z-50 flex items-center justify-center transition-all duration-500 ${isRunning ? 'opacity-0 pointer-events-none transform scale-95' : 'opacity-100 pointer-events-auto transform scale-100'} p-0 md:p-4`}>
                 
-                {/* PARCHMENT FRAME - LAYOUT TIGHTENED (px-6 pt-12 pb-8 md:px-16 md:pt-16 md:pb-12) */}
-                <div className="relative w-full h-[95dvh] md:w-[600px] md:h-auto md:max-h-[90vh] md:aspect-[3/4] flex flex-col px-6 pt-12 pb-8 md:px-16 md:pt-16 md:pb-12 box-border"
+                {/* PARCHMENT FRAME - OPTIMIZED PADDING & SIZING */}
+                <div className="relative w-full h-[95dvh] md:w-[600px] md:h-auto md:max-h-[90vh] md:aspect-[3/4] flex flex-col px-6 pt-12 pb-6 md:px-16 md:pt-14 md:pb-8 box-border"
                     style={{ 
                         backgroundImage: `url('${ASSET_PATH}${ASSETS.UI_PANEL}')`,
                         backgroundSize: '100% 100%',
@@ -758,15 +765,15 @@ export default function ServitorWildUnknown() {
                             placeholder="Purpose" />
                     </div>
 
-                    {/* 2. PREVIEW AREA - REDUCED HEIGHT (h-48 md:h-56) & Z-INDEX 30 */}
-                    <div className="relative shrink-0 h-48 md:h-56 w-full flex justify-center items-end border-b border-[#5d4037]/30 mb-2 overflow-visible z-30">
+                    {/* 2. PREVIEW AREA - REDUCED HEIGHT (h-44 md:h-48) */}
+                    <div className="relative shrink-0 h-44 md:h-48 w-full flex justify-center items-end border-b border-[#5d4037]/30 mb-2 overflow-visible z-30">
                         <div className="w-full h-full flex items-end justify-center pb-4">
                             <ServitorRig idPrefix="preview-rig" isPreview={true} />
                         </div>
                     </div>
 
-                    {/* 3. SCROLLABLE GRID - UPDATED MIN-HEIGHT FOR VISIBILITY */}
-                    <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar bg-[#eaddcf]/60 rounded p-2 z-20 relative border border-[#8d6e63]/30">
+                    {/* 3. SCROLLABLE GRID - ENFORCED MIN-HEIGHT */}
+                    <div className="flex-1 min-h-[160px] overflow-y-auto custom-scrollbar bg-[#eaddcf]/60 rounded p-2 z-20 relative border border-[#8d6e63]/30">
                         {!activeCategory ? (
                             <div className="grid grid-cols-4 gap-2">
                                 {CATEGORIES.map(cat => {
