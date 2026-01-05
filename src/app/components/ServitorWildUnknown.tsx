@@ -811,14 +811,14 @@ export default function ServitorWildUnknown() {
                     )}
                 </div>
 
-                {/* 4. FIXED ACTION BUTTONS - Extended Downward by 25px (pb-10) */}
-                <div className="p-4 pb-10 border-t border-[#5d4037]/30 flex gap-2 shrink-0 bg-[#eaddcf]">
+                {/* 4. FIXED ACTION BUTTONS - Compact and at bottom */}
+                <div className="p-2 pb-3 border-t border-[#5d4037]/30 flex gap-2 shrink-0 bg-[#eaddcf]">
                     <button onMouseDown={() => startHold('awaken')} onMouseUp={stopHold} onMouseLeave={stopHold} onTouchStart={() => startHold('awaken')} onTouchEnd={stopHold}
-                        className="runic-btn flex-1 py-3 text-xs font-bold uppercase tracking-widest relative overflow-hidden text-center">
+                        className="runic-btn flex-1 py-[5px] text-xs font-bold uppercase tracking-widest relative overflow-hidden text-center">
                         <div className="absolute top-0 left-0 h-full bg-white/20 transition-all duration-75 ease-linear" style={{width: `${awakenProgress}%`}}></div>
                         <span className="relative z-10 text-center w-full block">{isAwakening ? "Awakening..." : "Hold to Awaken"}</span>
                     </button>
-                    <button onClick={handleBind} className="flex-1 py-3 bg-[#5d4037] text-white text-xs uppercase font-bold rounded shadow hover:bg-[#3e2723] text-center">
+                    <button onClick={handleBind} className="flex-1 py-[5px] bg-[#5d4037] text-white text-xs uppercase font-bold rounded shadow hover:bg-[#3e2723] text-center">
                         Bind/Save ({COST_BIND_SERVITOR})
                     </button>
                 </div>
