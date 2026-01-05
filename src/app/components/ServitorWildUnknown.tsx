@@ -31,12 +31,12 @@ const ASSETS = {
 
 // ADDED: Background Options Array
 const BACKGROUND_OPTIONS = [
-    'Astral_Plane_Parallax_Layers.jpg',
-    'forest.jpg',
-    'cave.jpg',
-    'island.jpg',
-    'love_planet.jpg',
-    'sparkle_land.jpg'
+    'Treasure_Cave.jpg',
+    'Magick_Forest.jpg',
+    'Crystal_Cave.jpg',
+    'Enchanted_Island.jpg',
+    'Love_Planet.jpg',
+    'Sparkle_Land.jpg'
 ];
 
 // --- 2. CONFIGURATION SECTION ---
