@@ -858,11 +858,11 @@ export default function ServitorWildUnknown() {
             )}
 
             {/* MASTER UI PANEL - Unified Container */}
-            <div className={`fixed inset-0 z-50 flex items-center justify-center transition-all duration-500 ${isRunning ? 'opacity-0 pointer-events-none transform scale-95' : 'opacity-100 pointer-events-auto transform scale-100'} p-0 md:p-4`}>
+            <div className={`fixed inset-0 z-50 flex items-center justify-center transition-all duration-500 ${isRunning ? 'opacity-0 pointer-events-none transform scale-95' : 'opacity-100 pointer-events-auto transform scale-100'} p-0 md:p-0`}>
                 
                 {/* PARCHMENT FRAME - OPTIMIZED PADDING & SIZING */}
-                {/* UPDATED: h-[calc(100vh-50px)] ensures 25px top/bottom margin on large screens */}
-                <div className="relative w-full h-[95dvh] md:w-[600px] md:h-[calc(100vh-50px)] flex flex-col px-6 pt-12 pb-6 md:px-16 md:pt-14 md:pb-8 box-border"
+                {/* UPDATED: h-[calc(100vh-24px)] ensures 12px top/bottom margin on large screens */}
+                <div className="relative w-full h-[95dvh] md:w-[600px] md:h-[calc(100vh-24px)] flex flex-col px-6 pt-12 pb-6 md:px-16 md:pt-14 md:pb-8 box-border"
                     style={{ 
                         backgroundImage: `url('${ASSET_PATH}${ASSETS.UI_PANEL}')`,
                         backgroundSize: '100% 100%',
