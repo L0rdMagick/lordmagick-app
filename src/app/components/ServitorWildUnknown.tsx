@@ -32,7 +32,7 @@ const ASSETS = {
 
 const DIRECTIONAL_OFFSETS = {
     facingRight: {
-        global:  { x: 0, y: -5, s: 1.0, f: false }, 
+        global:  { x: 0, y: 0, s: 1.5, f: false }, 
         wing:    { x: 0, y: 3, s: 1.0, f: false },
         base:    { x: 0, y: 0, s: 1.0, f: false },
         head:    { x: 0, y: -49, s: 0.6, f: false },
