@@ -68,7 +68,6 @@ const DIRECTIONAL_OFFSETS = {
     }
 };
 
-// UPDATED: Scale reduced and shifted up to prevent overlap
 const UI_PREVIEW_SETTINGS = {
     scale: 0.85, 
     y: -5 
@@ -336,10 +335,13 @@ export default function ServitorWildUnknown() {
             await moveTo(15, id); 
             if(!runningRef.current) break;
 
-            // 2. Enter Void (Jump Animation RESTORED)
+            // 2. Enter Void (Jump Animation RESTORED & FORCED)
             if(servitor) {
-                // Remove transition temporarily so animation takes over
+                // 1. Clear transitions from walking to prevent conflict
                 servitor.style.transition = 'none'; 
+                // 2. FORCE REFLOW: Critical for browser to accept animation start
+                void servitor.offsetWidth; 
+                // 3. Apply animation
                 servitor.classList.add('anim-jump-into-void');
             }
             await wait(800); // Wait for jump to finish
@@ -359,6 +361,7 @@ export default function ServitorWildUnknown() {
 
             // 4. Return (Pop Up)
             if(servitor) {
+                // Re-enable transitions specifically for the "Pop Up" effect
                 servitor.style.transition = 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s';
                 servitor.style.opacity = '1';
                 servitor.style.transform = 'scale(1) translateY(0)';
@@ -708,7 +711,8 @@ export default function ServitorWildUnknown() {
 
                 {/* VISIBILITY LOGIC FIXED: Only show game servitor if running */}
                 {isRunning && (
-                    <div id="servitor-container" className="absolute bottom-[18vh] left-[20%] w-32 h-32 z-100 transition-all duration-100 pointer-events-auto origin-bottom">
+                    // REMOVED transition-all to fix jump animation conflict
+                    <div id="servitor-container" className="absolute bottom-[18vh] left-[20%] w-32 h-32 z-100 pointer-events-auto origin-bottom">
                         <ServitorRig idPrefix="game-rig" />
                     </div>
                 )}
