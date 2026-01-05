@@ -68,9 +68,10 @@ const DIRECTIONAL_OFFSETS = {
     }
 };
 
+// UPDATED: Scale reduced further and shifted up higher to clear buttons
 const UI_PREVIEW_SETTINGS = {
-    scale: 0.85, 
-    y: -5 
+    scale: 0.75, 
+    y: -20 
 };
 
 const LAYER_ORDER_CONFIG = {
@@ -337,8 +338,9 @@ export default function ServitorWildUnknown() {
 
             // 2. Enter Void (Jump Animation RESTORED & FORCED)
             if(servitor) {
-                // 1. Clear transitions from walking to prevent conflict
+                // 1. HARD RESET: Remove transition and force browser to paint
                 servitor.style.transition = 'none'; 
+                servitor.style.transform = 'none'; // Reset any transforms from movement
                 // 2. FORCE REFLOW: Critical for browser to accept animation start
                 void servitor.offsetWidth; 
                 // 3. Apply animation
@@ -711,7 +713,6 @@ export default function ServitorWildUnknown() {
 
                 {/* VISIBILITY LOGIC FIXED: Only show game servitor if running */}
                 {isRunning && (
-                    // REMOVED transition-all to fix jump animation conflict
                     <div id="servitor-container" className="absolute bottom-[18vh] left-[20%] w-32 h-32 z-100 pointer-events-auto origin-bottom">
                         <ServitorRig idPrefix="game-rig" />
                     </div>
@@ -742,8 +743,8 @@ export default function ServitorWildUnknown() {
             {/* MASTER UI PANEL - Unified Container */}
             <div className={`fixed inset-0 z-50 flex items-center justify-center transition-all duration-500 ${isRunning ? 'opacity-0 pointer-events-none transform scale-95' : 'opacity-100 pointer-events-auto transform scale-100'} p-0 md:p-4`}>
                 
-                {/* PARCHMENT FRAME - UPDATED PADDING TO PREVENT BLEEDING */}
-                <div className="relative w-full h-[95dvh] md:w-[600px] md:h-[90vh] flex flex-col px-8 pt-16 pb-14 md:px-16 md:pt-20 md:pb-20 box-border"
+                {/* PARCHMENT FRAME - RESPONSIVE LAYOUT UPDATED */}
+                <div className="relative w-full h-[95dvh] md:w-[600px] md:h-auto md:max-h-[90vh] md:aspect-[3/4] flex flex-col px-6 pt-12 pb-12 md:px-16 md:pt-24 md:pb-24 box-border"
                     style={{ 
                         backgroundImage: `url('${ASSET_PATH}${ASSETS.UI_PANEL}')`,
                         backgroundSize: '100% 100%',
@@ -767,8 +768,8 @@ export default function ServitorWildUnknown() {
                         </div>
                     </div>
 
-                    {/* 3. SCROLLABLE GRID - UPDATED MIN-HEIGHT FOR VISIBILITY */}
-                    <div className="flex-1 min-h-[220px] overflow-y-auto custom-scrollbar bg-[#eaddcf]/80 rounded p-2 z-20 relative border border-[#8d6e63]/30">
+                    {/* 3. SCROLLABLE GRID - FLEX SIZING FIX */}
+                    <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar bg-[#eaddcf]/60 rounded p-2 z-20 relative border border-[#8d6e63]/30">
                         {!activeCategory ? (
                             <div className="grid grid-cols-4 gap-2">
                                 {CATEGORIES.map(cat => {
