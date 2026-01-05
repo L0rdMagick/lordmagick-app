@@ -319,9 +319,17 @@ export default function ServitorWildUnknown() {
     };
 
     const mainLoop = async (id: number) => {
+        // RACE CONDITION FIX: Wait for DOM element to mount
+        let retries = 0;
+        let servitor = document.getElementById('servitor-container');
+        while (!servitor && retries < 20 && runningRef.current) {
+            await wait(50);
+            servitor = document.getElementById('servitor-container');
+            retries++;
+        }
+
         const mound = document.getElementById('game-mound');
         const vessel = document.getElementById('game-vessel');
-        const servitor = document.getElementById('servitor-container');
         const shine = document.getElementById('vessel-shine');
 
         while(runningRef.current && loopIdRef.current === id) {
@@ -422,8 +430,14 @@ export default function ServitorWildUnknown() {
                 clearInterval(holdIntervalRef.current);
                 playSound('glitter');
                 if(type === 'awaken') {
-                    setIsAwakening(false); setIsRunning(true); runningRef.current = true;
-                    loopIdRef.current++; mainLoop(loopIdRef.current);
+                    setIsAwakening(false); 
+                    setIsRunning(true); 
+                    runningRef.current = true;
+                    // FIX: Delay loop start to allow React to mount the Servitor DOM element
+                    setTimeout(() => {
+                        loopIdRef.current++; 
+                        mainLoop(loopIdRef.current);
+                    }, 100);
                 } else {
                     setIsFeeding(false); setHungerState('fed');
                 }
