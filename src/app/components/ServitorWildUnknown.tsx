@@ -70,7 +70,7 @@ const DIRECTIONAL_OFFSETS = {
 
 const UI_PREVIEW_SETTINGS = {
     scale: 1.0, 
-    y: -20 // Moved up 20px as requested (was -11)
+    y: 0 // Reset to 0 as flexbox handles centering now
 };
 
 const LAYER_ORDER_CONFIG = {
@@ -716,24 +716,24 @@ export default function ServitorWildUnknown() {
                  style={{ borderImage: `url('${ASSET_PATH}${ASSETS.UI_PANEL}') 18% 15% fill stretch` }}>
                 
                 {/* 1. FIXED PREVIEW AREA */}
-                <div className="h-[45%] w-full relative border-b border-[#5d4037] shrink-0 flex flex-col items-center justify-center z-50">
-                    {/* Inputs raised higher via -top-8 (~32px up) */}
-                    <div className="absolute -top-8 w-full p-4 md:p-2 flex flex-col md:flex-row gap-2 z-50">
+                <div className="h-[45%] w-full relative border-b border-[#5d4037] shrink-0 flex flex-col z-50">
+                    {/* INPUTS: Now in flow (relative), padded for mobile */}
+                    <div className="w-full p-4 md:p-2 flex flex-col md:flex-row gap-2 shrink-0 pt-6 md:pt-2">
                         <input type="text" value={sName} onChange={e => setSName(e.target.value)} 
-                            className="flex-1 bg-[#f0e6d2] shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)] border border-[#5d4037] p-2 text-sm text-black rounded magick-font placeholder-gray-600" 
+                            className="flex-1 bg-[#f0e6d2] shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)] border border-[#5d4037] p-2 h-10 md:h-auto text-sm text-black rounded magick-font placeholder-gray-600 px-3" 
                             placeholder="Spirit Name" />
                         <input type="text" value={sPurpose} onChange={e => setSPurpose(e.target.value)} 
-                            className="flex-1 bg-[#f0e6d2] shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)] border border-[#5d4037] p-2 text-sm text-black rounded magick-font placeholder-gray-600" 
+                            className="flex-1 bg-[#f0e6d2] shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)] border border-[#5d4037] p-2 h-10 md:h-auto text-sm text-black rounded magick-font placeholder-gray-600 px-3" 
                             placeholder="Purpose" />
                     </div>
-                    {/* Render Servitor with Preview Settings */}
-                    <div className="relative z-10 mt-12">
+                    {/* Render Servitor: Centered in remaining space */}
+                    <div className="flex-1 w-full flex items-center justify-center relative overflow-hidden">
                         <ServitorRig idPrefix="preview-rig" isPreview={true} />
                     </div>
                 </div>
 
-                {/* 2. MENU GRID - Added mt-[1px] to lower content as requested */}
-                <div className="flex-1 overflow-y-auto custom-scrollbar p-2 bg-[#eaddcf]/90 relative mt-[1px]">
+                {/* 2. MENU GRID - Added mx-2 mb-2 to pull away from edges */}
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-2 bg-[#eaddcf]/90 relative mt-2 mx-2 rounded shadow-inner">
                     {!activeCategory ? (
                         <div className="grid grid-cols-4 gap-2">
                             {CATEGORIES.map(cat => {
@@ -811,8 +811,8 @@ export default function ServitorWildUnknown() {
                     )}
                 </div>
 
-                {/* 4. FIXED ACTION BUTTONS - Compact and at bottom */}
-                <div className="p-2 pb-3 border-t border-[#5d4037]/30 flex gap-2 shrink-0 bg-[#eaddcf]">
+                {/* 4. FIXED ACTION BUTTONS - Added mx-2 mb-2 */}
+                <div className="p-2 pb-2 border-t border-[#5d4037]/30 flex gap-2 shrink-0 bg-[#eaddcf] mx-2 mb-2 rounded-b">
                     <button onMouseDown={() => startHold('awaken')} onMouseUp={stopHold} onMouseLeave={stopHold} onTouchStart={() => startHold('awaken')} onTouchEnd={stopHold}
                         className="runic-btn flex-1 py-[5px] text-xs font-bold uppercase tracking-widest relative overflow-hidden text-center">
                         <div className="absolute top-0 left-0 h-full bg-white/20 transition-all duration-75 ease-linear" style={{width: `${awakenProgress}%`}}></div>
