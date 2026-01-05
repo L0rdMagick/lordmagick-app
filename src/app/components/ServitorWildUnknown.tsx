@@ -711,29 +711,33 @@ export default function ServitorWildUnknown() {
                 </div>
             )}
 
-            {/* CONFIG PANEL - Full Screen on Mobile, Bordered on Desktop */}
-            <div className={`absolute top-0 left-0 h-full w-full md:w-[500px] z-50 transition-transform duration-500 ease-in-out ${isRunning ? '-translate-x-full' : 'translate-x-0'} pointer-events-auto flex flex-col bg-[#0f0f1a] border-0 md:border-[40px] md:p-5`}
-                 style={{ borderImage: `url('${ASSET_PATH}${ASSETS.UI_PANEL}') 18% 15% fill stretch` }}>
+            {/* CONFIG PANEL - Responsive Updates */}
+            <div className={`absolute top-0 left-0 h-full w-full md:w-[500px] z-50 transition-transform duration-500 ease-in-out ${isRunning ? '-translate-x-full' : 'translate-x-0'} pointer-events-auto flex flex-col p-6 md:p-8 box-border`}
+                 style={{ 
+                     backgroundImage: `url('${ASSET_PATH}${ASSETS.UI_PANEL}')`,
+                     backgroundSize: '100% 100%',
+                     backgroundRepeat: 'no-repeat'
+                 }}>
                 
-                {/* 1. FIXED PREVIEW AREA */}
-                <div className="h-[45%] w-full relative border-b border-[#5d4037] shrink-0 flex flex-col z-50">
-                    {/* INPUTS: Now in flow (relative), padded for mobile */}
-                    <div className="w-full p-4 md:p-2 flex flex-col md:flex-row gap-2 shrink-0 pt-6 md:pt-2">
+                {/* 1. FIXED PREVIEW AREA - Z=10 to sit under inputs but feet might dangle */}
+                <div className="h-[45%] w-full relative border-b border-[#5d4037] shrink-0 flex flex-col z-10">
+                    {/* INPUTS: Centered, max width 90% */}
+                    <div className="w-full max-w-[90%] mx-auto flex flex-col md:flex-row gap-2 shrink-0 pt-2 pb-2 z-20">
                         <input type="text" value={sName} onChange={e => setSName(e.target.value)} 
-                            className="flex-1 bg-[#f0e6d2] shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)] border border-[#5d4037] p-2 h-10 md:h-auto text-sm text-black rounded magick-font placeholder-gray-600 px-3" 
+                            className="flex-1 bg-[#f0e6d2] shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)] border border-[#5d4037] p-2 h-10 md:h-auto text-sm text-black rounded magick-font placeholder-gray-600 px-3 min-w-0" 
                             placeholder="Spirit Name" />
                         <input type="text" value={sPurpose} onChange={e => setSPurpose(e.target.value)} 
-                            className="flex-1 bg-[#f0e6d2] shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)] border border-[#5d4037] p-2 h-10 md:h-auto text-sm text-black rounded magick-font placeholder-gray-600 px-3" 
+                            className="flex-1 bg-[#f0e6d2] shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)] border border-[#5d4037] p-2 h-10 md:h-auto text-sm text-black rounded magick-font placeholder-gray-600 px-3 min-w-0" 
                             placeholder="Purpose" />
                     </div>
-                    {/* Render Servitor: Centered in remaining space */}
-                    <div className="flex-1 w-full flex items-center justify-center relative overflow-hidden">
+                    {/* Render Servitor: Overflow Visible to show legs */}
+                    <div className="flex-1 w-full flex items-center justify-center relative overflow-visible z-10">
                         <ServitorRig idPrefix="preview-rig" isPreview={true} />
                     </div>
                 </div>
 
-                {/* 2. MENU GRID - Added mx-2 mb-2 to pull away from edges */}
-                <div className="flex-1 overflow-y-auto custom-scrollbar p-2 bg-[#eaddcf]/90 relative mt-2 mx-2 rounded shadow-inner">
+                {/* 2. MENU GRID - Z=20 to cover dangling feet if needed, or allow interaction */}
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-2 bg-[#eaddcf]/90 relative mt-2 mx-1 rounded shadow-inner z-20">
                     {!activeCategory ? (
                         <div className="grid grid-cols-4 gap-2">
                             {CATEGORIES.map(cat => {
@@ -780,7 +784,7 @@ export default function ServitorWildUnknown() {
                                     </div>
                                 ) : (
                                     <>
-                                        {/* Controls (DPad) - Moved ABOVE Grid */}
+                                        {/* Controls (DPad) */}
                                         {CATEGORIES.find(c => c.id === activeCategory)?.offsetKey && (
                                             <div className="mb-4">
                                                 <DPad 
@@ -811,8 +815,8 @@ export default function ServitorWildUnknown() {
                     )}
                 </div>
 
-                {/* 4. FIXED ACTION BUTTONS - Added mx-2 mb-2 */}
-                <div className="p-2 pb-2 border-t border-[#5d4037]/30 flex gap-2 shrink-0 bg-[#eaddcf] mx-2 mb-2 rounded-b">
+                {/* 4. FIXED ACTION BUTTONS - Consistent Margins */}
+                <div className="p-2 pt-3 pb-1 border-t border-[#5d4037]/30 flex gap-2 shrink-0 bg-[#eaddcf] mx-1 mb-1 rounded-b z-20">
                     <button onMouseDown={() => startHold('awaken')} onMouseUp={stopHold} onMouseLeave={stopHold} onTouchStart={() => startHold('awaken')} onTouchEnd={stopHold}
                         className="runic-btn flex-1 py-[5px] text-xs font-bold uppercase tracking-widest relative overflow-hidden text-center">
                         <div className="absolute top-0 left-0 h-full bg-white/20 transition-all duration-75 ease-linear" style={{width: `${awakenProgress}%`}}></div>
