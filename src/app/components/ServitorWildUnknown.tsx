@@ -33,7 +33,7 @@ const ASSETS = {
 const DIRECTIONAL_OFFSETS = {
     facingRight: {
         // --- SEPARATE GLOBAL DEFAULTS ---
-        globalUI:   { x: 0, y: 0, s: 1.0, f: false }, // Default for UI Preview
+        globalUI:   { x: 0, y: 14, s: 1.3, f: false }, // Default for UI Preview
         globalGame: { x: 0, y: 0, s: 1.0, f: false }, // Default for Gameplay
         
         wing:    { x: 0, y: 3, s: 1.0, f: false },
@@ -42,7 +42,7 @@ const DIRECTIONAL_OFFSETS = {
         clothes: { x: -1, y: 10, s: 0.55, f: false },
         sigil:   { x: 3, y: 2, s: 0.2, f: false },
         tool:    { x: 28, y: 17, s: 0.5, f: false },
-        carryTreasure: { x: 28, y: 17, s: 0.5, f: false }, 
+        carryTreasure: { x: 53, y: 20, s: 0.5, f: false }, 
         
         armRight: { x: 2, y: 15, s: 0.6, f: false },
         armLeft:  { x: 25, y: 19, s: 0.6, f: false }, 
@@ -89,21 +89,21 @@ const LAYER_ORDER_CONFIG = {
         base: 30,      
         clothes: 40,   
         sigil: 50,     
-        armRight: 60, 
-        legRight: 70,  
-        tool: 80,
-        carryTreasure: 85, 
+        armRight: 70, 
+        legRight: 60,  
+        tool: 85,
+        carryTreasure: 80, 
         head: 90       
     },
     facingLeft: {
         wing: 0,
-        legRight: 10,  
-        armRight: 20,  
+        legRight: 20,  
+        armRight: 10,  
         base: 30,
         clothes: 40,
         legLeft: 50,   
         sigil: 60,
-        tool: 70,
+        tool: 15,
         carryTreasure: 75,
         armLeft: 80,   
         head: 90
