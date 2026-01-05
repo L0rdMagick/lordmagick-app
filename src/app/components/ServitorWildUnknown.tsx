@@ -19,7 +19,8 @@ const ASSETS = {
     HEAD: 'Servitor_Headgear_Master_Sheet.png',
     TOOLS: 'Servitor_Magickal_Tools_Sheet.png',
     VESSELS: 'Ritual_Vessels_Master_Sheet.png',
-    TREASURES: 'Chest_Sigils_And_Treasures_Sheet.png',
+    TREASURES: 'Chest_Sigils_And_Treasures_Sheet.png', // Background/Chest elements
+    CARRY_TREASURE: 'treasures.png', // NEW: The specific loot sprites
     FOOD: 'Servitor_Sustenance_Food_Sheet.png',
     MOUND: 'mound_into_the_void.png',
     UI_PANEL: 'Parchment_And_Oak_Responsive_Panels.png',
@@ -38,6 +39,7 @@ const DIRECTIONAL_OFFSETS = {
         clothes: { x: -1, y: 10, s: 0.55, f: false },
         sigil:   { x: 3, y: 2, s: 0.2, f: false },
         tool:    { x: 28, y: 17, s: 0.5, f: false },
+        carryTreasure: { x: 28, y: 17, s: 0.5, f: false }, // NEW: Default near hand
         
         armRight: { x: 2, y: 15, s: 0.6, f: false },
         armLeft:  { x: 25, y: 19, s: 0.6, f: false }, 
@@ -55,6 +57,7 @@ const DIRECTIONAL_OFFSETS = {
         clothes: { x: 1, y: 0, s: 0 },
         wing: { x: 0, y: 0, s: 0 },
         tool: { x: -75, y: 2, s: 0 },
+        carryTreasure: { x: -75, y: 2, s: 0 }, // Mirrored position
         sigil: { x: -8, y: 0, s: 0 },
         
         armRight: { x: -23, y: 3, s: 0 },
@@ -84,7 +87,8 @@ const LAYER_ORDER_CONFIG = {
         sigil: 50,     
         armRight: 60, 
         legRight: 70,  
-        tool: 80,      
+        tool: 80,
+        carryTreasure: 85, // On top of tool/hand
         head: 90       
     },
     facingLeft: {
@@ -96,6 +100,7 @@ const LAYER_ORDER_CONFIG = {
         legLeft: 50,   
         sigil: 60,
         tool: 70,
+        carryTreasure: 75,
         armLeft: 80,   
         head: 90
     }
@@ -106,6 +111,7 @@ const DEFAULT_OFFSETS = {
     wing:    { x: 0, y: 0, s: 0.0, f: false, v: true, spread: 0 },
     leg:     { x: 0, y: 0, s: 0.0, f: false, v: true, spread: 0 },
     tool:    { x: 0, y: 0, s: 0.0, f: false, v: true, spread: 0 },
+    carryTreasure: { x: 0, y: 0, s: 0.0, f: false, v: true, spread: 0 },
     arm:     { x: 0, y: 0, s: 0.0, f: false, v: true, spread: 0 },
     base:    { x: 0, y: 0, s: 0.0, f: false, v: true, spread: 0 },
     head:    { x: 0, y: 0, s: 0.0, f: false, v: true, spread: 0 },
@@ -133,6 +139,7 @@ const CATEGORIES: CategoryItem[] = [
     { id: 'leg', label: 'LEGS', asset: ASSETS.LEGS, indexKey: 'legIndex', offsetKey: 'leg', canFlip: false, canSpread: true },
     { id: 'arm', label: 'ARMS', asset: ASSETS.ARMS, indexKey: 'limbIndex', offsetKey: 'arm', canFlip: false, canSpread: true },
     { id: 'tool', label: 'TOOLS', asset: ASSETS.TOOLS, indexKey: 'toolIndex', offsetKey: 'tool', canFlip: true },
+    { id: 'treasure', label: 'TREASURE', asset: ASSETS.CARRY_TREASURE, indexKey: 'carryTreasureIndex', offsetKey: 'carryTreasure', canFlip: true }, // NEW BUTTON
     { id: 'clothes', label: 'ROBES', asset: ASSETS.CLOTHES, indexKey: 'clothingIndex', offsetKey: 'clothes', canFlip: true },
     { id: 'wing', label: 'WINGS', asset: ASSETS.BACK, indexKey: 'wingIndex', offsetKey: 'wing', canFlip: true },
     { id: 'sigil', label: 'SIGILS', asset: ASSETS.TREASURES, indexKey: 'sigilIndex', offsetKey: 'sigil', canFlip: true },
@@ -175,6 +182,7 @@ export default function ServitorWildUnknown() {
     const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
     const [rigAnimation, setRigAnimation] = useState('anim-idle');
+    const [isCarryingTreasure, setIsCarryingTreasure] = useState(false); // Controls visibility during walk
 
     const runningRef = useRef(false); 
     const loopIdRef = useRef(0);
@@ -193,11 +201,15 @@ export default function ServitorWildUnknown() {
         baseIndex: 0, limbIndex: 0, legIndex: 0, toolIndex: 0,
         hatIndex: 0, wingIndex: 0, vesselIndex: 0, clothingIndex: 0,
         sigilIndex: 0, foodIndex: 0, treasureIndex: 0,
+        carryTreasureIndex: 0, // NEW CONFIG
         
         movementType: "walk", 
         feedFreq: 5,
         offsets: JSON.parse(JSON.stringify(DEFAULT_OFFSETS))
     });
+
+    // Treasure Pile State
+    const [treasurePile, setTreasurePile] = useState<{id: number, x: number, y: number, r: number, index: number}[]>([]);
 
     const [depositCount, setDepositCount] = useState(0);
     const depositRef = useRef(0);
@@ -334,15 +346,14 @@ export default function ServitorWildUnknown() {
 
         while(runningRef.current && loopIdRef.current === id) {
             
-            // 1. Walk to Mound (Left)
-            // Ensure starting state is clean for this loop
+            // 1. Walk to Mound (Left) - Empty Handed
             if(servitor) { 
                 servitor.style.opacity = '1'; 
                 servitor.style.transform = 'scale(1)'; 
                 servitor.style.animation = 'none'; 
-                // Ensure transforms from previous animations are gone
                 servitor.style.removeProperty('transform');
             }
+            setIsCarryingTreasure(false); // Reset carry state
             setRigAnimation(config.movementType === 'fly' ? 'anim-fly-left' : 'anim-walk-left');
             
             // LEFT STOP
@@ -350,18 +361,16 @@ export default function ServitorWildUnknown() {
             if(!runningRef.current) break;
             
             // 2. STOP & JUMP IN (Stay Facing Left)
-            // We use 'anim-idle-left' to ensure it doesn't turn around yet
             setRigAnimation('anim-idle-left'); 
-            await wait(200); // Brief pause before jumping
+            await wait(200);
 
             if(servitor) {
                 servitor.style.transition = 'none';
                 servitor.style.removeProperty('transform');
-                void servitor.offsetWidth; // Force Reflow
-                // Apply Jump Into Void
+                void servitor.offsetWidth; 
                 servitor.style.animation = 'jump-into-void 0.8s forwards ease-in-out';
             }
-            await wait(800); // Wait for jump animation
+            await wait(800); 
 
             // Hide
             if(servitor) {
@@ -369,7 +378,7 @@ export default function ServitorWildUnknown() {
                 servitor.style.animation = 'none'; 
             }
             
-            // 3. Search Pulse (HUNTING TIME)
+            // 3. Search Pulse
             if(mound) mound.classList.add('pulse-glow-void');
             playSound('search');
             await wait(1500); 
@@ -377,18 +386,15 @@ export default function ServitorWildUnknown() {
 
             // 4. JUMP OUT (Still Facing Left)
             if(servitor) {
-                // Ensure it is visible but ready for jump-out animation
                 servitor.style.opacity = '1';
-                servitor.style.removeProperty('transform'); // Reset scale
+                servitor.style.removeProperty('transform');
                 void servitor.offsetWidth;
-                
-                // Jump Out Animation
                 servitor.style.animation = 'jump-out-of-void 0.8s forwards ease-in-out';
             }
             await wait(800); // Wait for landing
 
-            // 5. TURN & WALK BACK
-            // Now that we have landed, we turn right
+            // 5. TURN & WALK BACK (HOLDING TREASURE)
+            setIsCarryingTreasure(true); // Pick up treasure
             setRigAnimation(config.movementType === 'fly' ? 'anim-fly-right' : 'anim-walk-right');
             
             // RIGHT STOP
@@ -399,7 +405,18 @@ export default function ServitorWildUnknown() {
             if(!runningRef.current) break;
 
             // 6. Deposit
-            setRigAnimation('anim-idle'); // Default idle (usually faces right/neutral)
+            setRigAnimation('anim-idle');
+            setIsCarryingTreasure(false); // Drop treasure
+
+            // Add to pile visual
+            setTreasurePile(prev => [...prev, {
+                id: Math.random(),
+                x: (Math.random() * 50) - 25, // Random stacking X
+                y: (Math.random() * -20) - 10, // Random stacking Y
+                r: (Math.random() * 60) - 30, // Random rotation
+                index: config.carryTreasureIndex
+            }]);
+
             playSound('deposit');
             if(vessel) vessel.classList.add('pulse-glow-gold');
             if(shine) { shine.style.opacity = '1'; setTimeout(() => shine.style.opacity = '0', 1000); }
@@ -433,13 +450,15 @@ export default function ServitorWildUnknown() {
                     setIsAwakening(false); 
                     setIsRunning(true); 
                     runningRef.current = true;
-                    // FIX: Delay loop start to allow React to mount the Servitor DOM element
                     setTimeout(() => {
                         loopIdRef.current++; 
                         mainLoop(loopIdRef.current);
                     }, 100);
                 } else {
-                    setIsFeeding(false); setHungerState('fed');
+                    // Feeding complete, clear pile, resume
+                    setIsFeeding(false); 
+                    setHungerState('fed');
+                    setTreasurePile([]); // Clear pile on feed
                 }
             }
             // Food Logic
@@ -516,10 +535,9 @@ export default function ServitorWildUnknown() {
         );
     };
 
-    const ServitorRig = ({ idPrefix, isPreview = false, overrideDirection }: { idPrefix: string, isPreview?: boolean, overrideDirection?: 'left'|'right' }) => {
+    const ServitorRig = ({ idPrefix, isPreview = false, showCarriedTreasure = false }: { idPrefix: string, isPreview?: boolean, showCarriedTreasure?: boolean }) => {
         const wrapperClass = isFeeding ? 'anim-feed' : 'anim-idle';
         
-        // Updated direction logic to support 'anim-idle-left'
         const isFacingLeft = rigAnimation.includes('left');
         const isFlying = config.movementType === 'fly' || rigAnimation.includes('fly');
 
@@ -529,6 +547,9 @@ export default function ServitorWildUnknown() {
         };
 
         const renderPart = (idx: number, asset: string, partKey: string, z: number, partType: 'limb' | 'static', specificLimb?: 'armLeft' | 'armRight' | 'legLeft' | 'legRight') => {
+            // Special check for treasure visibility
+            if (partKey === 'carryTreasure' && !isPreview && !showCarriedTreasure) return null;
+
             const userCfg = (config.offsets as any)[partKey];
             if (!userCfg.v) return null;
 
@@ -556,7 +577,7 @@ export default function ServitorWildUnknown() {
             let originX = '50%';
             let originY = '20%';
 
-            if (specificLimb?.includes('arm') || partKey === 'tool') {
+            if (specificLimb?.includes('arm') || partKey === 'tool' || partKey === 'carryTreasure') {
                 const baseArmX = 15; 
                 originX = isFacingLeft ? `${100 - baseArmX}%` : `${baseArmX}%`;
                 originY = '15%'; 
@@ -574,12 +595,8 @@ export default function ServitorWildUnknown() {
                 if (specificLimb === 'legRight') jointClass = 'leg-right-joint';
             }
             
-            if (partKey === 'tool') {
-                 if (isFacingLeft) {
-                    jointClass = 'tool-hand-anim'; 
-                 } else {
-                    jointClass = 'tool-hand-anim';
-                 }
+            if (partKey === 'tool' || partKey === 'carryTreasure') {
+                 jointClass = 'tool-hand-anim';
             }
 
             return (
@@ -603,7 +620,6 @@ export default function ServitorWildUnknown() {
         const finalGf = gBase.f !== gUser.f; 
 
         // CRITICAL FIX: Bobbing animation applied to outer wrapper to prevent position reset on flip
-        // We use a constant class for the parent if in flying mode to prevent resetting the animation keyframe on re-render
         const flyClass = isFlying ? 'anim-floating' : '';
 
         const globalTransform = `translate(${finalGx}%, ${finalGy}%) scale(${finalGs}) ${finalGf ? 'scaleX(-1)' : ''}`;
@@ -628,6 +644,7 @@ export default function ServitorWildUnknown() {
                         {renderPart(config.limbIndex, ASSETS.ARMS, 'arm', getZ('armLeft'), 'limb', 'armLeft')}
                         {renderPart(config.limbIndex, ASSETS.ARMS, 'arm', getZ('armRight'), 'limb', 'armRight')}
                         {renderStatic(config.toolIndex, ASSETS.TOOLS, 'tool', getZ('tool'))} 
+                        {renderStatic(config.carryTreasureIndex, ASSETS.CARRY_TREASURE, 'carryTreasure', getZ('carryTreasure'))} 
                         {renderStatic(config.hatIndex, ASSETS.HEAD, 'head', getZ('head'))}
                     </div>
                 </div>
@@ -663,6 +680,22 @@ export default function ServitorWildUnknown() {
 
                 .runic-btn { background: url('${ASSET_PATH}${ASSETS.UI_BUTTONS}') center/cover; color: #FFD700; text-shadow: 0 1px 2px black; border: 1px solid #FFD70050; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
                 .runic-btn:active { transform: scale(0.95); filter: brightness(0.8); }
+
+                /* NEW ORNATE BUTTON STYLE */
+                .ornate-btn {
+                    background-color: #000;
+                    border: 2px solid #FFD700;
+                    border-radius: 8px; /* Slightly curved corners */
+                    box-shadow: 0 0 5px #FFD700, inset 0 0 10px #FFD700aa;
+                    font-family: 'MedievalSharp', serif;
+                    color: #FFD700;
+                    text-transform: uppercase;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    transition: all 0.2s;
+                }
+                .ornate-btn:active { transform: scale(0.98); background-color: #1a1a00; }
                 
                 @keyframes bounce { 0% { top: 0; } 50% { top: -5px; } }
                 
@@ -744,14 +777,26 @@ export default function ServitorWildUnknown() {
                 {/* VISIBILITY LOGIC FIXED: Only show game servitor if running */}
                 {isRunning && (
                     <div id="servitor-container" className="absolute bottom-[18vh] left-[20%] w-32 h-32 z-100 pointer-events-auto origin-bottom">
-                        <ServitorRig idPrefix="game-rig" />
+                        <ServitorRig idPrefix="game-rig" showCarriedTreasure={isCarryingTreasure} />
                     </div>
                 )}
 
                 <div className="absolute bottom-[20vh] right-[10%] w-32 h-32 z-20 flex flex-col items-center">
                     {config.offsets.vessel.v && (
                         <div id="game-vessel" className="w-full h-full relative transition-all duration-500" 
-                             style={{ ...getSpriteStyle(config.vesselIndex, ASSETS.VESSELS), ...getGameObjectStyle('vessel') }} />
+                             style={{ ...getSpriteStyle(config.vesselIndex, ASSETS.VESSELS), ...getGameObjectStyle('vessel') }}>
+                             {/* TREASURE PILE */}
+                             {treasurePile.map(t => (
+                                 <div key={t.id} className="absolute w-8 h-8 opacity-90" 
+                                      style={{
+                                          left: `calc(50% + ${t.x}px)`,
+                                          bottom: `calc(30% + ${t.y}px)`,
+                                          transform: `rotate(${t.r}deg)`,
+                                          ...getSpriteStyle(t.index, ASSETS.CARRY_TREASURE)
+                                      }}
+                                 />
+                             ))}
+                        </div>
                     )}
                     <div id="vessel-shine" className="absolute top-0 text-4xl opacity-0 transition-opacity duration-500">✨</div>
                 </div>
@@ -794,7 +839,8 @@ export default function ServitorWildUnknown() {
                     {/* 2. PREVIEW AREA - REDUCED HEIGHT (h-44 md:h-48) */}
                     <div className="relative shrink-0 h-44 md:h-48 w-full flex justify-center items-end border-b border-[#5d4037]/30 mb-2 overflow-visible z-30">
                         <div className="w-full h-full flex items-end justify-center pb-4">
-                            <ServitorRig idPrefix="preview-rig" isPreview={true} />
+                            {/* Always show selected treasure in preview */}
+                            <ServitorRig idPrefix="preview-rig" isPreview={true} showCarriedTreasure={true} />
                         </div>
                     </div>
 
@@ -877,14 +923,14 @@ export default function ServitorWildUnknown() {
                         )}
                     </div>
 
-                    {/* 4. FOOTER: Action Buttons */}
+                    {/* 4. FOOTER: Action Buttons (UPDATED STYLE) */}
                     <div className="mt-2 shrink-0 flex gap-2 w-full z-20">
                         <button onMouseDown={() => startHold('awaken')} onMouseUp={stopHold} onMouseLeave={stopHold} onTouchStart={() => startHold('awaken')} onTouchEnd={stopHold}
-                            className="runic-btn flex-1 py-[5px] text-xs font-bold uppercase tracking-widest relative overflow-hidden text-center">
-                            <div className="absolute top-0 left-0 h-full bg-white/20 transition-all duration-75 ease-linear" style={{width: `${awakenProgress}%`}}></div>
+                            className="ornate-btn flex-1 py-3 text-sm font-bold tracking-widest relative overflow-hidden">
+                            <div className="absolute top-0 left-0 h-full bg-[#FFD700]/30 transition-all duration-75 ease-linear" style={{width: `${awakenProgress}%`}}></div>
                             <span className="relative z-10 text-center w-full block">{isAwakening ? "Awakening..." : "Hold to Awaken"}</span>
                         </button>
-                        <button onClick={handleBind} className="flex-1 py-[5px] bg-[#5d4037] text-white text-xs uppercase font-bold rounded shadow hover:bg-[#3e2723] text-center">
+                        <button onClick={handleBind} className="ornate-btn flex-1 py-3 text-sm font-bold">
                             Bind/Save ({COST_BIND_SERVITOR})
                         </button>
                     </div>
