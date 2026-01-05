@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { X, Lock, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Plus, Minus, RefreshCw, Move, Eye, EyeOff, Settings, User, ArrowLeftRight, Info } from 'lucide-react';
 import { createBrowserClient } from '@supabase/ssr';
@@ -28,14 +28,12 @@ const ASSETS = {
     UI_BUTTONS: 'Runic_Glass_Button_Set.png'
 };
 
-// --- 2. CONFIGURATION SECTION (CODE ONLY) ---
+// --- 2. CONFIGURATION SECTION ---
 
 const DIRECTIONAL_OFFSETS = {
     facingRight: {
-        // --- SEPARATE GLOBAL DEFAULTS ---
-        globalUI:   { x: 0, y: 14, s: 1.3, f: false }, // Default for UI Preview
-        globalGame: { x: -20, y: -40, s: 1.2, f: false }, // Default for Gameplay
-        
+        globalUI:   { x: 0, y: 14, s: 1.3, f: false },
+        globalGame: { x: -20, y: -40, s: 1.2, f: false },
         wing:    { x: 0, y: 3, s: 1.0, f: false },
         base:    { x: 0, y: 0, s: 1.0, f: false },
         head:    { x: 0, y: -49, s: 0.6, f: false },
@@ -43,13 +41,10 @@ const DIRECTIONAL_OFFSETS = {
         sigil:   { x: 3, y: 2, s: 0.2, f: false },
         tool:    { x: 28, y: 17, s: 0.5, f: false },
         carryTreasure: { x: 53, y: 20, s: 0.5, f: false }, 
-        
         armRight: { x: 2, y: 15, s: 0.6, f: false },
         armLeft:  { x: 25, y: 19, s: 0.6, f: false }, 
-        
         legRight: { x: -5, y: 65, s: 0.9, f: true },
         legLeft:  { x: 5, y: 60, s: 0.9, f: true },
-
         vessel:  { x: 0, y: 0, s: 1.8, f: false },
         mound:   { x: 0, y: 3, s: 2.8, f: false },
     },
@@ -63,49 +58,25 @@ const DIRECTIONAL_OFFSETS = {
         tool: { x: -75, y: 2, s: 0 },
         carryTreasure: { x: -75, y: 2, s: 0 },
         sigil: { x: -8, y: 0, s: 0 },
-        
         armRight: { x: -23, y: 3, s: 0 },
         armLeft:  { x: -26, y: -6, s: 0 },
-        
         legRight: { x: -5, y: 2, s: 0 },
         legLeft:  { x: -1, y: 10, s: 0 },
-
         vessel: { x: 0, y: 0, s: 0 },
         mound: { x: 0, y: 0, s: 0 }
     }
 };
 
-const UI_PREVIEW_SETTINGS = {
-    scale: 0.65, 
-    y: -25 
-};
+const UI_PREVIEW_SETTINGS = { scale: 0.65, y: -25 };
 
 const LAYER_ORDER_CONFIG = {
     facingRight: {
-        wing: 0,
-        armLeft: 10,   
-        legLeft: 20,   
-        base: 30,      
-        clothes: 40,   
-        sigil: 50,     
-        armRight: 70, 
-        legRight: 60,  
-        tool: 65,
-        carryTreasure: 15, 
-        head: 90       
+        wing: 0, armLeft: 10, legLeft: 20, base: 30, clothes: 40, sigil: 50,
+        armRight: 70, legRight: 60, tool: 65, carryTreasure: 15, head: 90
     },
     facingLeft: {
-        wing: 0,
-        legRight: 20,  
-        armRight: 10,  
-        base: 30,
-        clothes: 40,
-        legLeft: 50,   
-        sigil: 60,
-        tool: 15,
-        carryTreasure: 75,
-        armLeft: 80,   
-        head: 90
+        wing: 0, legRight: 20, armRight: 10, base: 30, clothes: 40, legLeft: 50,
+        sigil: 60, tool: 15, carryTreasure: 75, armLeft: 80, head: 90
     }
 };
 
@@ -124,36 +95,7 @@ const DEFAULT_OFFSETS = {
     mound:   { x: 0, y: 0, s: 0.0, f: false, v: true, spread: 0 },
 };
 
-interface CategoryItem {
-    id: string;
-    label: string;
-    asset: string | null;
-    indexKey: string | null;
-    offsetKey: string | null;
-    canFlip?: boolean;
-    canSpread?: boolean;
-    single?: boolean;
-}
-
-const CATEGORIES: CategoryItem[] = [
-    { id: 'global', label: 'WHOLE', asset: null, indexKey: null, offsetKey: 'global', canFlip: true },
-    { id: 'head', label: 'HATS', asset: ASSETS.HEAD, indexKey: 'hatIndex', offsetKey: 'head', canFlip: true },
-    { id: 'base', label: 'TORSOS', asset: ASSETS.BASES, indexKey: 'baseIndex', offsetKey: 'base', canFlip: true },
-    { id: 'leg', label: 'LEGS', asset: ASSETS.LEGS, indexKey: 'legIndex', offsetKey: 'leg', canFlip: false, canSpread: true },
-    { id: 'arm', label: 'ARMS', asset: ASSETS.ARMS, indexKey: 'limbIndex', offsetKey: 'arm', canFlip: false, canSpread: true },
-    { id: 'tool', label: 'TOOLS', asset: ASSETS.TOOLS, indexKey: 'toolIndex', offsetKey: 'tool', canFlip: true },
-    { id: 'treasure', label: 'TREASURE', asset: ASSETS.CARRY_TREASURE, indexKey: 'carryTreasureIndex', offsetKey: 'carryTreasure', canFlip: true },
-    { id: 'clothes', label: 'ROBES', asset: ASSETS.CLOTHES, indexKey: 'clothingIndex', offsetKey: 'clothes', canFlip: true },
-    { id: 'wing', label: 'WINGS', asset: ASSETS.BACK, indexKey: 'wingIndex', offsetKey: 'wing', canFlip: true },
-    { id: 'sigil', label: 'SIGILS', asset: ASSETS.TREASURES, indexKey: 'sigilIndex', offsetKey: 'sigil', canFlip: true },
-    { id: 'mound', label: 'MOUNDS', asset: ASSETS.MOUND, indexKey: null, offsetKey: 'mound', single: true, canFlip: true },
-    { id: 'vessel', label: 'VESSELS', asset: ASSETS.VESSELS, indexKey: 'vesselIndex', offsetKey: 'vessel', canFlip: true },
-    { id: 'food', label: 'FOOD', asset: ASSETS.FOOD, indexKey: 'foodIndex', offsetKey: null },
-    { id: 'settings', label: 'BEHAVIOR', asset: null, indexKey: null, offsetKey: null }
-];
-
-const GENERIC_LIST = Array.from({length: 16}).map((_, i) => `Option ${i + 1}`);
-
+// ... Helper Functions ...
 const getSpriteStyle = (index: number, filename: string, isSingleImage = false) => {
     if (isSingleImage) {
         return {
@@ -173,6 +115,140 @@ const getSpriteStyle = (index: number, filename: string, isSingleImage = false) 
         backgroundRepeat: 'no-repeat'
     };
 };
+
+// --- EXTRACTED SERVITOR RIG COMPONENT ---
+// This prevents re-creation of the component during state updates, fixing the animation reset/jitter.
+const ServitorRig = React.memo(({ 
+    idPrefix, 
+    config, 
+    rigAnimation, 
+    isFeeding = false,
+    isPreview = false, 
+    showCarriedTreasure = false 
+}: { 
+    idPrefix: string, 
+    config: any, 
+    rigAnimation: string, 
+    isFeeding?: boolean,
+    isPreview?: boolean, 
+    showCarriedTreasure?: boolean 
+}) => {
+    // If feeding, override animation class
+    const animationClass = isFeeding ? 'anim-feed' : rigAnimation;
+    
+    const isFacingLeft = rigAnimation.includes('left');
+    const isFlying = config.movementType === 'fly' || rigAnimation.includes('fly');
+
+    const getZ = (key: keyof typeof LAYER_ORDER_CONFIG.facingRight) => {
+        const map = isFacingLeft ? LAYER_ORDER_CONFIG.facingLeft : LAYER_ORDER_CONFIG.facingRight;
+        return map[key];
+    };
+
+    const renderPart = (idx: number, asset: string, partKey: string, z: number, partType: 'limb' | 'static', specificLimb?: 'armLeft' | 'armRight' | 'legLeft' | 'legRight') => {
+        if (partKey === 'carryTreasure' && !isPreview && !showCarriedTreasure) return null;
+
+        const userCfg = config.offsets[partKey];
+        if (!userCfg?.v) return null;
+
+        const baseMap = DIRECTIONAL_OFFSETS.facingRight;
+        const baseCfg = specificLimb ? (baseMap as any)[specificLimb] : (baseMap as any)[partKey] || { x:0, y:0, s:1, f:false };
+
+        const dirMap = isFacingLeft ? DIRECTIONAL_OFFSETS.facingLeft : null;
+        const dirCfg = dirMap ? (specificLimb ? (dirMap as any)[specificLimb] : (dirMap as any)[partKey]) : { x:0, y:0, s:0 };
+
+        let flip = baseCfg.f !== userCfg.f; 
+        if (isFacingLeft) flip = !flip;
+
+        let spreadMod = 0;
+        if (partType === 'limb' && userCfg.spread) {
+            if (specificLimb?.includes('Left')) spreadMod = -userCfg.spread;
+            if (specificLimb?.includes('Right')) spreadMod = userCfg.spread;
+        }
+
+        const totalX = baseCfg.x + (dirCfg?.x || 0) + userCfg.x + spreadMod;
+        const totalY = baseCfg.y + (dirCfg?.y || 0) + userCfg.y;
+        const totalS = baseCfg.s + (dirCfg?.s || 0) + userCfg.s; 
+
+        const spriteTransform = `translate(${totalX}%, ${totalY}%) scale(${totalS}) ${flip ? 'scaleX(-1)' : ''}`;
+        
+        let originX = '50%';
+        let originY = '20%';
+
+        if (specificLimb?.includes('arm') || partKey === 'tool' || partKey === 'carryTreasure') {
+            const baseArmX = 15; 
+            originX = isFacingLeft ? `${100 - baseArmX}%` : `${baseArmX}%`;
+            originY = '15%'; 
+        } else if (specificLimb?.includes('leg')) {
+            const baseLegX = 85;
+            originX = isFacingLeft ? `${baseLegX}%` : `${100 - baseLegX}%`;
+            originY = '10%'; 
+        }
+
+        let jointClass = '';
+        if (partType === 'limb' && specificLimb) {
+            if (specificLimb === 'armLeft') jointClass = 'arm-left-joint';
+            if (specificLimb === 'armRight') jointClass = 'arm-right-joint';
+            if (specificLimb === 'legLeft') jointClass = 'leg-left-joint';
+            if (specificLimb === 'legRight') jointClass = 'leg-right-joint';
+        }
+        
+        if (partKey === 'tool') jointClass = 'tool-hand-anim';
+        else if (partKey === 'carryTreasure') jointClass = 'carry-hand-anim';
+
+        return (
+            <div className={`joint absolute w-full h-full top-0 left-0 ${jointClass}`} 
+                    style={{ zIndex: z, transformOrigin: `${originX} ${originY}` }}>
+                <div className="sprite absolute w-full h-full top-0 left-0 pointer-events-none"
+                        style={{ ...getSpriteStyle(idx, asset), transform: spriteTransform }} />
+            </div>
+        );
+    };
+
+    const renderStatic = (idx: number, asset: string, partKey: string, z: number) => {
+        return renderPart(idx, asset, partKey, z, 'static');
+    };
+
+    const gUser = config.offsets.global;
+    const baseMap = DIRECTIONAL_OFFSETS.facingRight;
+    const gBase = isPreview ? baseMap.globalUI : baseMap.globalGame;
+    
+    const finalGx = gBase.x + gUser.x;
+    const finalGy = gBase.y + gUser.y;
+    const finalGs = gBase.s + gUser.s;
+    const finalGf = gBase.f !== gUser.f; 
+
+    const flyClass = isFlying ? 'anim-floating' : '';
+
+    const globalTransform = `translate(${finalGx}%, ${finalGy}%) scale(${finalGs}) ${finalGf ? 'scaleX(-1)' : ''}`;
+    const previewStyle = isPreview ? `translateY(${UI_PREVIEW_SETTINGS.y}%) scale(${UI_PREVIEW_SETTINGS.scale})` : '';
+
+    return (
+        <div id={idPrefix} className="relative w-32 h-32" style={{ transform: previewStyle }}>
+            <div className={`w-full h-full ${flyClass}`} style={{ transformStyle: 'preserve-3d' }}>
+                <div className={`servitor-rig relative w-full h-full ${animationClass}`} 
+                    style={{ 
+                        transform: globalTransform,
+                        transformOrigin: 'bottom center'
+                    }}>
+                    {renderStatic(config.wingIndex, ASSETS.BACK, 'wing', getZ('wing'))}
+                    {renderPart(config.legIndex, ASSETS.LEGS, 'leg', getZ('legLeft'), 'limb', 'legLeft')}
+                    {renderPart(config.legIndex, ASSETS.LEGS, 'leg', getZ('legRight'), 'limb', 'legRight')}
+                    {renderStatic(config.baseIndex, ASSETS.BASES, 'base', getZ('base'))}
+                    {renderStatic(config.clothingIndex, ASSETS.CLOTHES, 'clothes', getZ('clothes'))}
+                    {renderStatic(config.sigilIndex, ASSETS.TREASURES, 'sigil', getZ('sigil'))} 
+                    {renderPart(config.limbIndex, ASSETS.ARMS, 'arm', getZ('armLeft'), 'limb', 'armLeft')}
+                    {renderPart(config.limbIndex, ASSETS.ARMS, 'arm', getZ('armRight'), 'limb', 'armRight')}
+                    {renderStatic(config.toolIndex, ASSETS.TOOLS, 'tool', getZ('tool'))} 
+                    {renderStatic(config.carryTreasureIndex, ASSETS.CARRY_TREASURE, 'carryTreasure', getZ('carryTreasure'))} 
+                    {renderStatic(config.hatIndex, ASSETS.HEAD, 'head', getZ('head'))}
+                </div>
+            </div>
+        </div>
+    );
+});
+ServitorRig.displayName = 'ServitorRig';
+
+// --- MAIN COMPONENT ---
 
 export default function ServitorWildUnknown() {
     const router = useRouter();
@@ -194,14 +270,32 @@ export default function ServitorWildUnknown() {
     const servitorPosRef = useRef(20);
     const holdIntervalRef = useRef<any>(null); 
     const buttonIntervalRef = useRef<any>(null); 
-    const isHoldingRef = useRef(false); // NEW: Track hold state to prevent touch/mouse conflict
+    const isHoldingRef = useRef(false);
 
     const [sName, setSName] = useState("");
     const [sPurpose, setSPurpose] = useState("");
     const [uName, setUName] = useState("");
     const [user, setUser] = useState<any>(null);
-    const [savedServitors, setSavedServitors] = useState<any[]>([]);
     
+    // --- CATEGORIES DEFINITION (Simplified for brevity, same as before) ---
+    // (We reuse the external CATEGORIES constant if needed, but here it depends on ASSETS which are global)
+    const CATEGORIES = useMemo(() => [
+        { id: 'global', label: 'WHOLE', asset: null, indexKey: null, offsetKey: 'global', canFlip: true },
+        { id: 'head', label: 'HATS', asset: ASSETS.HEAD, indexKey: 'hatIndex', offsetKey: 'head', canFlip: true },
+        { id: 'base', label: 'TORSOS', asset: ASSETS.BASES, indexKey: 'baseIndex', offsetKey: 'base', canFlip: true },
+        { id: 'leg', label: 'LEGS', asset: ASSETS.LEGS, indexKey: 'legIndex', offsetKey: 'leg', canFlip: false, canSpread: true },
+        { id: 'arm', label: 'ARMS', asset: ASSETS.ARMS, indexKey: 'limbIndex', offsetKey: 'arm', canFlip: false, canSpread: true },
+        { id: 'tool', label: 'TOOLS', asset: ASSETS.TOOLS, indexKey: 'toolIndex', offsetKey: 'tool', canFlip: true },
+        { id: 'treasure', label: 'TREASURE', asset: ASSETS.CARRY_TREASURE, indexKey: 'carryTreasureIndex', offsetKey: 'carryTreasure', canFlip: true },
+        { id: 'clothes', label: 'ROBES', asset: ASSETS.CLOTHES, indexKey: 'clothingIndex', offsetKey: 'clothes', canFlip: true },
+        { id: 'wing', label: 'WINGS', asset: ASSETS.BACK, indexKey: 'wingIndex', offsetKey: 'wing', canFlip: true },
+        { id: 'sigil', label: 'SIGILS', asset: ASSETS.TREASURES, indexKey: 'sigilIndex', offsetKey: 'sigil', canFlip: true },
+        { id: 'mound', label: 'MOUNDS', asset: ASSETS.MOUND, indexKey: null, offsetKey: 'mound', single: true, canFlip: true },
+        { id: 'vessel', label: 'VESSELS', asset: ASSETS.VESSELS, indexKey: 'vesselIndex', offsetKey: 'vessel', canFlip: true },
+        { id: 'food', label: 'FOOD', asset: ASSETS.FOOD, indexKey: 'foodIndex', offsetKey: null },
+        { id: 'settings', label: 'BEHAVIOR', asset: null, indexKey: null, offsetKey: null }
+    ], []);
+
     const [config, setConfig] = useState({
         baseIndex: 0, limbIndex: 0, legIndex: 0, toolIndex: 0,
         hatIndex: 0, wingIndex: 0, vesselIndex: 0, clothingIndex: 0,
@@ -245,10 +339,6 @@ export default function ServitorWildUnknown() {
         const initUser = async () => {
             const { data: { user } } = await supabase.auth.getUser();
             setUser(user);
-            if (user) { 
-                const data = await getMyServitors(user.id);
-                setSavedServitors(data as any[]);
-            }
         };
         initUser();
     }, []);
@@ -433,7 +523,6 @@ export default function ServitorWildUnknown() {
 
             if(depositRef.current >= config.feedFreq) {
                 setHungerState('hungry');
-                // IMPORTANT: Explicitly reset progress here to ensure circle is empty on next appearance
                 setFeedProgress(0);
                 break;
             }
@@ -442,20 +531,18 @@ export default function ServitorWildUnknown() {
     };
 
     const startHold = (type: 'awaken' | 'feed') => {
-        // Prevent double-firing (touch then mouse)
         if(isHoldingRef.current) return;
         isHoldingRef.current = true;
 
         const start = Date.now();
         const dur = type === 'awaken' ? 5000 : 3000;
         
-        // Reset progress explicitly at start of hold to prevent glitches
         if(type === 'awaken') {
             setIsAwakening(true); 
             setAwakenProgress(0);
         } else {
             setIsFeeding(true);
-            setFeedProgress(0); // Force 0 immediately
+            setFeedProgress(0);
         }
 
         holdIntervalRef.current = setInterval(() => {
@@ -464,7 +551,7 @@ export default function ServitorWildUnknown() {
 
             if(p >= 100) {
                 clearInterval(holdIntervalRef.current);
-                isHoldingRef.current = false; // Release hold lock
+                isHoldingRef.current = false; 
                 playSound('glitter');
                 if(type === 'awaken') {
                     setIsAwakening(false); 
@@ -478,10 +565,9 @@ export default function ServitorWildUnknown() {
                     setIsFeeding(false); 
                     setHungerState('fed');
                     setTreasurePile([]); 
-                    // feedProgress left at 100 temporarily, but loop will reset it next time
                 }
             }
-            // Food Logic
+            
             if(type === 'feed' && Math.random() > 0.6) {
                 const targetX = servitorPosRef.current;
                 setFallingFood(prev => [...prev, {
@@ -560,127 +646,6 @@ export default function ServitorWildUnknown() {
         );
     };
 
-    const ServitorRig = ({ idPrefix, isPreview = false, showCarriedTreasure = false }: { idPrefix: string, isPreview?: boolean, showCarriedTreasure?: boolean }) => {
-        // --- ANIMATION FIX: COMPLETELY REPLACE CLASS IF FEEDING ---
-        // If isFeeding is true, we ignore `rigAnimation` (walking/idle) entirely in the DOM class string.
-        // This prevents the "vibrating" conflict between walk animations and feed animations.
-        // We still use rigAnimation state to determine direction (isFacingLeft).
-        const animationClass = isFeeding ? 'anim-feed' : rigAnimation;
-        
-        const isFacingLeft = rigAnimation.includes('left');
-        const isFlying = config.movementType === 'fly' || rigAnimation.includes('fly');
-
-        const getZ = (key: keyof typeof LAYER_ORDER_CONFIG.facingRight) => {
-            const map = isFacingLeft ? LAYER_ORDER_CONFIG.facingLeft : LAYER_ORDER_CONFIG.facingRight;
-            return map[key];
-        };
-
-        const renderPart = (idx: number, asset: string, partKey: string, z: number, partType: 'limb' | 'static', specificLimb?: 'armLeft' | 'armRight' | 'legLeft' | 'legRight') => {
-            if (partKey === 'carryTreasure' && !isPreview && !showCarriedTreasure) return null;
-
-            const userCfg = (config.offsets as any)[partKey];
-            if (!userCfg.v) return null;
-
-            const baseMap = DIRECTIONAL_OFFSETS.facingRight;
-            const baseCfg = specificLimb ? (baseMap as any)[specificLimb] : (baseMap as any)[partKey] || { x:0, y:0, s:1, f:false };
-
-            const dirMap = isFacingLeft ? DIRECTIONAL_OFFSETS.facingLeft : null;
-            const dirCfg = dirMap ? (specificLimb ? (dirMap as any)[specificLimb] : (dirMap as any)[partKey]) : { x:0, y:0, s:0 };
-
-            let flip = baseCfg.f !== userCfg.f; 
-            if (isFacingLeft) flip = !flip;
-
-            let spreadMod = 0;
-            if (partType === 'limb' && userCfg.spread) {
-                if (specificLimb?.includes('Left')) spreadMod = -userCfg.spread;
-                if (specificLimb?.includes('Right')) spreadMod = userCfg.spread;
-            }
-
-            const totalX = baseCfg.x + (dirCfg?.x || 0) + userCfg.x + spreadMod;
-            const totalY = baseCfg.y + (dirCfg?.y || 0) + userCfg.y;
-            const totalS = baseCfg.s + (dirCfg?.s || 0) + userCfg.s; 
-
-            const spriteTransform = `translate(${totalX}%, ${totalY}%) scale(${totalS}) ${flip ? 'scaleX(-1)' : ''}`;
-            
-            let originX = '50%';
-            let originY = '20%';
-
-            if (specificLimb?.includes('arm') || partKey === 'tool' || partKey === 'carryTreasure') {
-                const baseArmX = 15; 
-                originX = isFacingLeft ? `${100 - baseArmX}%` : `${baseArmX}%`;
-                originY = '15%'; 
-            } else if (specificLimb?.includes('leg')) {
-                const baseLegX = 85;
-                originX = isFacingLeft ? `${baseLegX}%` : `${100 - baseLegX}%`;
-                originY = '10%'; 
-            }
-
-            let jointClass = '';
-            if (partType === 'limb' && specificLimb) {
-                if (specificLimb === 'armLeft') jointClass = 'arm-left-joint';
-                if (specificLimb === 'armRight') jointClass = 'arm-right-joint';
-                if (specificLimb === 'legLeft') jointClass = 'leg-left-joint';
-                if (specificLimb === 'legRight') jointClass = 'leg-right-joint';
-            }
-            
-            if (partKey === 'tool') {
-                 jointClass = 'tool-hand-anim';
-            } else if (partKey === 'carryTreasure') {
-                 jointClass = 'carry-hand-anim';
-            }
-
-            return (
-                <div className={`joint absolute w-full h-full top-0 left-0 ${jointClass}`} 
-                     style={{ zIndex: z, transformOrigin: `${originX} ${originY}` }}>
-                    <div className="sprite absolute w-full h-full top-0 left-0 pointer-events-none"
-                         style={{ ...getSpriteStyle(idx, asset), transform: spriteTransform }} />
-                </div>
-            );
-        };
-
-        const renderStatic = (idx: number, asset: string, partKey: string, z: number) => {
-            return renderPart(idx, asset, partKey, z, 'static');
-        };
-
-        const gUser = config.offsets.global;
-        const baseMap = DIRECTIONAL_OFFSETS.facingRight;
-        const gBase = isPreview ? baseMap.globalUI : baseMap.globalGame;
-        
-        const finalGx = gBase.x + gUser.x;
-        const finalGy = gBase.y + gUser.y;
-        const finalGs = gBase.s + gUser.s;
-        const finalGf = gBase.f !== gUser.f; 
-
-        const flyClass = isFlying ? 'anim-floating' : '';
-
-        const globalTransform = `translate(${finalGx}%, ${finalGy}%) scale(${finalGs}) ${finalGf ? 'scaleX(-1)' : ''}`;
-        const previewStyle = isPreview ? `translateY(${UI_PREVIEW_SETTINGS.y}%) scale(${UI_PREVIEW_SETTINGS.scale})` : '';
-
-        return (
-            <div id={idPrefix} className="relative w-32 h-32" style={{ transform: previewStyle }}>
-                <div className={`w-full h-full ${flyClass}`} style={{ transformStyle: 'preserve-3d' }}>
-                    <div className={`servitor-rig relative w-full h-full ${animationClass}`} 
-                        style={{ 
-                            transform: globalTransform,
-                            transformOrigin: 'bottom center'
-                        }}>
-                        {renderStatic(config.wingIndex, ASSETS.BACK, 'wing', getZ('wing'))}
-                        {renderPart(config.legIndex, ASSETS.LEGS, 'leg', getZ('legLeft'), 'limb', 'legLeft')}
-                        {renderPart(config.legIndex, ASSETS.LEGS, 'leg', getZ('legRight'), 'limb', 'legRight')}
-                        {renderStatic(config.baseIndex, ASSETS.BASES, 'base', getZ('base'))}
-                        {renderStatic(config.clothingIndex, ASSETS.CLOTHES, 'clothes', getZ('clothes'))}
-                        {renderStatic(config.sigilIndex, ASSETS.TREASURES, 'sigil', getZ('sigil'))} 
-                        {renderPart(config.limbIndex, ASSETS.ARMS, 'arm', getZ('armLeft'), 'limb', 'armLeft')}
-                        {renderPart(config.limbIndex, ASSETS.ARMS, 'arm', getZ('armRight'), 'limb', 'armRight')}
-                        {renderStatic(config.toolIndex, ASSETS.TOOLS, 'tool', getZ('tool'))} 
-                        {renderStatic(config.carryTreasureIndex, ASSETS.CARRY_TREASURE, 'carryTreasure', getZ('carryTreasure'))} 
-                        {renderStatic(config.hatIndex, ASSETS.HEAD, 'head', getZ('head'))}
-                    </div>
-                </div>
-            </div>
-        );
-    };
-
     if (!assetsLoaded) return (
         <div className="fixed inset-0 bg-black flex flex-col items-center justify-center z-200">
             <div className="w-32 h-32 animate-spin" style={getSpriteStyle(0, ASSETS.TREASURES)}></div>
@@ -734,9 +699,7 @@ export default function ServitorWildUnknown() {
                 @keyframes rotate-l { 0% { transform: rotate(-5deg); } 50% { transform: rotate(5deg); } 100% { transform: rotate(-5deg); } }
                 @keyframes rotate-r { 0% { transform: rotate(5deg); } 50% { transform: rotate(-5deg); } 100% { transform: rotate(5deg); } }
                 
-                /* 
-                   UPDATED FEEDING WAVE: SMOOTHER 0-45deg range
-                */
+                /* UPDATED FEEDING WAVE */
                 @keyframes feed-wave-left {
                     0% { transform: rotate(0deg); }
                     50% { transform: rotate(45deg); } 
@@ -788,11 +751,7 @@ export default function ServitorWildUnknown() {
                 .anim-walk-right .tool-hand-anim { animation: rotate-r 1.2s infinite ease-in-out; }
                 .anim-walk-right .carry-hand-anim { animation: rotate-l 1.2s infinite ease-in-out; }
 
-                /* 
-                   FEEDING ANIMATION OVERRIDES
-                   Using !important to ensure these trigger on both Desktop and Mobile,
-                   overriding any existing walk/idle classes on the rig.
-                */
+                /* FEEDING ANIMATION OVERRIDES - Strict !important */
                 .anim-feed .arm-left-joint { animation: feed-wave-left 0.6s infinite ease-in-out !important; }
                 .anim-feed .arm-right-joint { animation: feed-wave-right 0.6s infinite ease-in-out !important; }
                 .anim-feed .tool-hand-anim { animation: feed-wave-right 0.6s infinite ease-in-out !important; }
@@ -856,7 +815,7 @@ export default function ServitorWildUnknown() {
                 {/* VISIBILITY LOGIC FIXED: Only show game servitor if running */}
                 {isRunning && (
                     <div id="servitor-container" className="absolute bottom-[18vh] left-[20%] w-32 h-32 z-100 pointer-events-auto origin-bottom">
-                        <ServitorRig idPrefix="game-rig" showCarriedTreasure={isCarryingTreasure} />
+                        <ServitorRig idPrefix="game-rig" config={config} rigAnimation={rigAnimation} isFeeding={isFeeding} showCarriedTreasure={isCarryingTreasure} />
                     </div>
                 )}
 
@@ -919,7 +878,7 @@ export default function ServitorWildUnknown() {
                     <div className="relative shrink-0 h-44 md:h-48 w-full flex justify-center items-end border-b border-[#5d4037]/30 mb-2 overflow-visible z-30">
                         <div className="w-full h-full flex items-end justify-center pb-4">
                             {/* Always show selected treasure in preview */}
-                            <ServitorRig idPrefix="preview-rig" isPreview={true} showCarriedTreasure={true} />
+                            <ServitorRig idPrefix="preview-rig" config={config} rigAnimation="anim-idle" isPreview={true} showCarriedTreasure={true} />
                         </div>
                     </div>
 
@@ -1004,8 +963,25 @@ export default function ServitorWildUnknown() {
 
                     {/* 4. FOOTER: Action Buttons (UPDATED STYLE) */}
                     <div className="mt-2 shrink-0 flex gap-2 w-full z-20">
-                        <button onMouseDown={() => startHold('awaken')} onMouseUp={stopHold} onMouseLeave={stopHold} onTouchStart={() => startHold('awaken')} onTouchEnd={stopHold}
-                            className="ornate-btn flex-1 py-3 text-sm font-bold tracking-widest relative overflow-hidden">
+                        {/* 
+                           POINTER EVENTS IMPLEMENTED FOR MOBILE/TOUCH STABILITY
+                           Using onPointerDown/Up instead of Mouse/Touch events prevents conflict and ghost clicks.
+                        */}
+                        <button 
+                            onPointerDown={(e) => {
+                                e.preventDefault();
+                                e.currentTarget.setPointerCapture(e.pointerId); // LOCKS BUTTON TO FINGER
+                                startHold('awaken');
+                            }}
+                            onPointerUp={(e) => {
+                                e.preventDefault();
+                                e.currentTarget.releasePointerCapture(e.pointerId);
+                                stopHold();
+                            }}
+                            onPointerCancel={(e) => stopHold()}
+                            className="ornate-btn flex-1 py-3 text-sm font-bold tracking-widest relative overflow-hidden"
+                            style={{ touchAction: 'none' }} // Prevents scrolling while holding
+                        >
                             <div className="absolute top-0 left-0 h-full bg-[#FFD700]/30 transition-all duration-75 ease-linear" style={{width: `${awakenProgress}%`}}></div>
                             <span className="relative z-10 text-center w-full block">{isAwakening ? "Awakening..." : "Hold to Awaken"}</span>
                         </button>
@@ -1036,13 +1012,22 @@ export default function ServitorWildUnknown() {
                             
                             {/* BUTTON WRAPPER */}
                             <div className="w-40 h-40 flex items-center justify-center">
+                                {/* 
+                                   POINTER EVENTS FOR FEEDING BUTTON
+                                   This ensures smooth filling even if finger moves slightly.
+                                */}
                                 <button 
-                                    onMouseDown={(e) => { e.preventDefault(); startHold('feed'); }} 
-                                    onMouseUp={(e) => { e.preventDefault(); stopHold(); }} 
-                                    onMouseLeave={(e) => { e.preventDefault(); stopHold(); }} 
-                                    onTouchStart={(e) => { e.preventDefault(); startHold('feed'); }} 
-                                    onTouchEnd={(e) => { e.preventDefault(); stopHold(); }}
-                                    onTouchCancel={(e) => { e.preventDefault(); stopHold(); }} // Added robust cancellation
+                                    onPointerDown={(e) => {
+                                        e.preventDefault();
+                                        e.currentTarget.setPointerCapture(e.pointerId);
+                                        startHold('feed');
+                                    }}
+                                    onPointerUp={(e) => {
+                                        e.preventDefault();
+                                        e.currentTarget.releasePointerCapture(e.pointerId);
+                                        stopHold();
+                                    }}
+                                    onPointerCancel={(e) => stopHold()}
                                     style={{ transform: 'translateZ(0) scale(1)', touchAction: 'none' }} 
                                     className={`w-40 h-40 rounded-full border-4 border-[#FFD700] flex items-center justify-center relative overflow-hidden bg-black shadow-[0_0_50px_#FFD700] transition-opacity duration-300 ${isFeeding ? 'opacity-90' : 'opacity-100'}`}
                                 >
@@ -1050,8 +1035,7 @@ export default function ServitorWildUnknown() {
                                         className="absolute bottom-0 left-0 w-full bg-[#FFD700] z-10" 
                                         style={{
                                             height: `${feedProgress}%`,
-                                            // Simplified transition to ensure update visibility
-                                            transition: 'height 0.1s linear'
+                                            transition: feedProgress > 0 ? 'height 0.1s linear' : 'none'
                                         }}>
                                     </div>
                                     <div className="w-20 h-20 relative z-20 pointer-events-none" style={getSpriteStyle(config.foodIndex, ASSETS.FOOD)} />
