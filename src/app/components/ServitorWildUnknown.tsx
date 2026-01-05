@@ -2,9 +2,9 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { X, Trash2, Lock, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Plus, Minus, RefreshCw, Move, Eye, EyeOff, Settings, User, ArrowLeftRight } from 'lucide-react';
+import { X, Lock, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Plus, Minus, RefreshCw, Move, Eye, EyeOff, Settings, User, ArrowLeftRight } from 'lucide-react';
 import { createBrowserClient } from '@supabase/ssr';
-import { checkAndSpendCredits, getWalletStatus, COST_BIND_SERVITOR } from '@/lib/economy';
+import { checkAndSpendCredits, COST_BIND_SERVITOR } from '@/lib/economy';
 import { saveServitorToGrimoire, getMyServitors } from '@/lib/services/spellService';
 
 // --- 1. ASSET CONFIGURATION ---
@@ -307,7 +307,6 @@ export default function ServitorWildUnknown() {
             const dist = Math.abs(targetPercent - current);
             const time = dist * 40; 
 
-            // FIX: Only transition 'left'. Do not touch transform/opacity transitions here.
             el.style.transition = `left ${time}ms linear`;
             
             requestAnimationFrame(() => {
@@ -328,12 +327,13 @@ export default function ServitorWildUnknown() {
         while(runningRef.current && loopIdRef.current === id) {
             
             // 1. Walk to Mound (Left)
-            // Ensure starting state is visible and clean (scale 1)
+            // Ensure starting state is clean for this loop
             if(servitor) { 
                 servitor.style.opacity = '1'; 
                 servitor.style.transform = 'scale(1)'; 
-                // Ensure no animation class from previous failures
-                servitor.classList.remove('anim-jump-into-void'); 
+                servitor.style.animation = 'none'; 
+                // Ensure transforms from previous animations are gone
+                servitor.style.removeProperty('transform');
             }
             setRigAnimation(config.movementType === 'fly' ? 'anim-fly-left' : 'anim-walk-left');
             
@@ -341,52 +341,46 @@ export default function ServitorWildUnknown() {
             await moveTo(15, id); 
             if(!runningRef.current) break;
             
-            // Stop animation after moving
-            setRigAnimation('anim-idle');
+            // 2. STOP & JUMP IN (Stay Facing Left)
+            // We use 'anim-idle-left' to ensure it doesn't turn around yet
+            setRigAnimation('anim-idle-left'); 
+            await wait(200); // Brief pause before jumping
 
-            // 2. Enter Void (Jump Animation with Robust Replay)
             if(servitor) {
-                // A. Stop movement transitions
                 servitor.style.transition = 'none';
-                
-                // B. Remove INLINE transform (This is the critical fix for "stands still")
-                // If this is set to scale(1), it might override the CSS animation depending on precedence
                 servitor.style.removeProperty('transform');
-                
-                // C. Reset class for replay
-                servitor.classList.remove('anim-jump-into-void');
-                
-                // D. Force Browser Reflow
-                void servitor.offsetWidth; 
-                
-                // E. Add Class
-                servitor.classList.add('anim-jump-into-void');
+                void servitor.offsetWidth; // Force Reflow
+                // Apply Jump Into Void
+                servitor.style.animation = 'jump-into-void 0.8s forwards ease-in-out';
             }
             await wait(800); // Wait for jump animation
 
-            // Ensure it stays hidden after animation
+            // Hide
             if(servitor) {
                 servitor.style.opacity = '0';
-                servitor.classList.remove('anim-jump-into-void');
+                servitor.style.animation = 'none'; 
             }
             
             // 3. Search Pulse (HUNTING TIME)
             if(mound) mound.classList.add('pulse-glow-void');
             playSound('search');
-            await wait(1500); // Wait longer so the disappearance is noticeable
+            await wait(1500); 
             if(mound) mound.classList.remove('pulse-glow-void');
 
-            // 4. Return (Pop Up)
+            // 4. JUMP OUT (Still Facing Left)
             if(servitor) {
-                // Remove animation class again just to be safe
-                servitor.classList.remove('anim-jump-into-void');
-                void servitor.offsetWidth; 
-
-                // Re-enable transitions specifically for the "Pop Up" effect
-                servitor.style.transition = 'transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.5s';
+                // Ensure it is visible but ready for jump-out animation
                 servitor.style.opacity = '1';
-                servitor.style.transform = 'scale(1) translateY(0)';
+                servitor.style.removeProperty('transform'); // Reset scale
+                void servitor.offsetWidth;
+                
+                // Jump Out Animation
+                servitor.style.animation = 'jump-out-of-void 0.8s forwards ease-in-out';
             }
+            await wait(800); // Wait for landing
+
+            // 5. TURN & WALK BACK
+            // Now that we have landed, we turn right
             setRigAnimation(config.movementType === 'fly' ? 'anim-fly-right' : 'anim-walk-right');
             
             // RIGHT STOP
@@ -396,8 +390,8 @@ export default function ServitorWildUnknown() {
             await moveTo(rightDestination, id);
             if(!runningRef.current) break;
 
-            // 5. Deposit
-            setRigAnimation('anim-idle');
+            // 6. Deposit
+            setRigAnimation('anim-idle'); // Default idle (usually faces right/neutral)
             playSound('deposit');
             if(vessel) vessel.classList.add('pulse-glow-gold');
             if(shine) { shine.style.opacity = '1'; setTimeout(() => shine.style.opacity = '0', 1000); }
@@ -511,6 +505,7 @@ export default function ServitorWildUnknown() {
     const ServitorRig = ({ idPrefix, isPreview = false, overrideDirection }: { idPrefix: string, isPreview?: boolean, overrideDirection?: 'left'|'right' }) => {
         const wrapperClass = isFeeding ? 'anim-feed' : 'anim-idle';
         
+        // Updated direction logic to support 'anim-idle-left'
         const isFacingLeft = rigAnimation.includes('left');
         const isFlying = config.movementType === 'fly' || rigAnimation.includes('fly');
 
@@ -676,15 +671,18 @@ export default function ServitorWildUnknown() {
                 }
                 .anim-floating { animation: float-bob 3s ease-in-out infinite; }
                 
-                /* JUMP INTO VOID ANIMATION RESTORED & FORCED VIA !IMPORTANT */
+                /* JUMP INTO VOID ANIMATION */
                 @keyframes jump-into-void {
                     0% { transform: translateY(0) scale(1); opacity: 1; }
                     50% { transform: translateY(-100px) scale(1); opacity: 1; } /* Jump Peak */
                     100% { transform: translateY(20px) scale(0); opacity: 0; } /* Dive into Mound */
                 }
 
-                .anim-jump-into-void {
-                    animation: jump-into-void 0.8s forwards ease-in-out;
+                /* JUMP OUT OF VOID ANIMATION */
+                @keyframes jump-out-of-void {
+                    0% { transform: translateY(20px) scale(0); opacity: 1; } /* Start inside mound */
+                    50% { transform: translateY(-100px) scale(1); opacity: 1; } /* Jump Peak */
+                    100% { transform: translateY(0) scale(1); opacity: 1; } /* Land */
                 }
 
                 @keyframes fall { from { top: -10%; opacity: 1; } to { top: 100%; opacity: 0; } }
