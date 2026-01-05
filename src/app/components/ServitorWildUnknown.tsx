@@ -731,8 +731,8 @@ export default function ServitorWildUnknown() {
                     </div>
                 </div>
 
-                {/* 2. MENU GRID - Added mt-[30px] to lower content as requested */}
-                <div className="flex-1 overflow-y-auto custom-scrollbar p-2 bg-[#eaddcf]/90 relative mt-[100px]">
+                {/* 2. MENU GRID - Added mt-[1px] to lower content as requested */}
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-2 bg-[#eaddcf]/90 relative mt-[1px]">
                     {!activeCategory ? (
                         <div className="grid grid-cols-3 gap-2">
                             {CATEGORIES.map(cat => {
