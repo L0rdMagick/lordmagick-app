@@ -307,9 +307,8 @@ export default function ServitorWildUnknown() {
             const dist = Math.abs(targetPercent - current);
             const time = dist * 40; 
 
-            el.style.transition = `left ${time}ms linear, opacity 0.5s, transform 0.5s`;
-            el.style.opacity = '1';
-            el.style.transform = 'scale(1)';
+            // FIX: Only transition 'left'. Do not touch transform/opacity transitions here.
+            el.style.transition = `left ${time}ms linear`;
             
             requestAnimationFrame(() => {
                 el.style.left = targetPercent + "%";
@@ -340,9 +339,11 @@ export default function ServitorWildUnknown() {
 
             // 2. Enter Void (Jump Animation with Robust Replay)
             if(servitor) {
-                // A. Stop movement transitions
+                // A. KILL ALL TRANSITIONS & INLINE TRANSFORMS
                 servitor.style.transition = 'none';
-                // B. Clean slate: Remove class if it exists (fix for 2nd cycle)
+                servitor.style.removeProperty('transform'); // Critical: Remove inline scale(1)
+
+                // B. Reset Animation Class
                 servitor.classList.remove('anim-jump-into-void');
                 
                 // C. Force Browser Reflow (Critical for animation restart)
@@ -367,7 +368,7 @@ export default function ServitorWildUnknown() {
 
             // 4. Return (Pop Up)
             if(servitor) {
-                // Re-enable transitions specifically for the "Pop Up" effect
+                // Manually apply transition for the pop-up effect
                 servitor.style.transition = 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s';
                 servitor.style.opacity = '1';
                 servitor.style.transform = 'scale(1) translateY(0)';
