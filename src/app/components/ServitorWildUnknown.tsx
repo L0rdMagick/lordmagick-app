@@ -432,6 +432,8 @@ export default function ServitorWildUnknown() {
 
             if(depositRef.current >= config.feedFreq) {
                 setHungerState('hungry');
+                // IMPORTANT: Explicitly reset progress here to ensure circle is empty on next appearance
+                setFeedProgress(0);
                 break;
             }
             await wait(500);
@@ -470,6 +472,7 @@ export default function ServitorWildUnknown() {
                     setIsFeeding(false); 
                     setHungerState('fed');
                     setTreasurePile([]); 
+                    // feedProgress left at 100 temporarily, but loop will reset it next time
                 }
             }
             // Food Logic
@@ -487,7 +490,11 @@ export default function ServitorWildUnknown() {
 
     const stopHold = () => {
         if(holdIntervalRef.current) clearInterval(holdIntervalRef.current);
-        setIsAwakening(false); setAwakenProgress(0); setIsFeeding(false); setFeedProgress(0); setFallingFood([]);
+        setIsAwakening(false); 
+        setAwakenProgress(0); 
+        setIsFeeding(false); 
+        setFeedProgress(0); 
+        setFallingFood([]);
     };
 
     const handleResume = () => {
@@ -547,8 +554,11 @@ export default function ServitorWildUnknown() {
     };
 
     const ServitorRig = ({ idPrefix, isPreview = false, showCarriedTreasure = false }: { idPrefix: string, isPreview?: boolean, showCarriedTreasure?: boolean }) => {
-        // NOTE: isFeeding is captured from the parent scope here.
-        const wrapperClass = isFeeding ? 'anim-feed' : 'anim-idle';
+        // --- ANIMATION FIX: COMPLETELY REPLACE CLASS IF FEEDING ---
+        // If isFeeding is true, we ignore `rigAnimation` (walking/idle) entirely in the DOM class string.
+        // This prevents the "vibrating" conflict between walk animations and feed animations.
+        // We still use rigAnimation state to determine direction (isFacingLeft).
+        const animationClass = isFeeding ? 'anim-feed' : rigAnimation;
         
         const isFacingLeft = rigAnimation.includes('left');
         const isFlying = config.movementType === 'fly' || rigAnimation.includes('fly');
@@ -642,7 +652,7 @@ export default function ServitorWildUnknown() {
         return (
             <div id={idPrefix} className="relative w-32 h-32" style={{ transform: previewStyle }}>
                 <div className={`w-full h-full ${flyClass}`} style={{ transformStyle: 'preserve-3d' }}>
-                    <div className={`servitor-rig relative w-full h-full ${rigAnimation} ${wrapperClass}`} 
+                    <div className={`servitor-rig relative w-full h-full ${animationClass}`} 
                         style={{ 
                             transform: globalTransform,
                             transformOrigin: 'bottom center'
@@ -1012,30 +1022,35 @@ export default function ServitorWildUnknown() {
                         </div>
                     ) : (
                         <div className="flex flex-col items-center justify-center min-h-[240px]">
-                            {/* CHANGED: Text persists but content changes to prevent layout shift */}
-                            <p className="text-[#FFD700] mb-8 text-xl font-serif animate-pulse h-8 transition-all text-center">
-                                {isFeeding ? "Feeding your Servitor..." : `${sName || 'Spirit'} requires sustenance...`}
-                            </p>
+                            {/* FIXED TEXT CONTAINER to prevent layout shift */}
+                            <div className="h-8 mb-8 flex items-center justify-center w-full">
+                                <p className="text-[#FFD700] text-xl font-serif animate-pulse text-center whitespace-nowrap">
+                                    {isFeeding ? "Feeding your Servitor..." : `${sName || 'Spirit'} requires sustenance...`}
+                                </p>
+                            </div>
                             
-                            <button 
-                                onMouseDown={(e) => { e.preventDefault(); startHold('feed'); }} 
-                                onMouseUp={(e) => { e.preventDefault(); stopHold(); }} 
-                                onMouseLeave={(e) => { e.preventDefault(); stopHold(); }} 
-                                onTouchStart={(e) => { e.preventDefault(); startHold('feed'); }} 
-                                onTouchEnd={(e) => { e.preventDefault(); stopHold(); }}
-                                style={{ transform: 'translateZ(0) scale(1)' }} // FORCE NO SCALE/MOVE
-                                className={`w-40 h-40 rounded-full border-4 border-[#FFD700] flex items-center justify-center relative overflow-hidden bg-black shadow-[0_0_50px_#FFD700] transition-opacity duration-300 ${isFeeding ? 'opacity-90' : 'opacity-100'}`}
-                            >
-                                {/* Progress Bar with Dynamic Transition: Transition only when filling up (>0), instant when resetting (0) */}
-                                <div 
-                                    className="absolute bottom-0 left-0 w-full bg-[#FFD700] z-10" 
-                                    style={{
-                                        height: `${feedProgress}%`,
-                                        transition: feedProgress > 0 ? 'height 0.05s linear' : 'none' 
-                                    }}>
-                                </div>
-                                <div className="w-20 h-20 relative z-20 pointer-events-none" style={getSpriteStyle(config.foodIndex, ASSETS.FOOD)} />
-                            </button>
+                            {/* BUTTON WRAPPER */}
+                            <div className="w-40 h-40 flex items-center justify-center">
+                                <button 
+                                    onMouseDown={(e) => { e.preventDefault(); startHold('feed'); }} 
+                                    onMouseUp={(e) => { e.preventDefault(); stopHold(); }} 
+                                    onMouseLeave={(e) => { e.preventDefault(); stopHold(); }} 
+                                    onTouchStart={(e) => { e.preventDefault(); startHold('feed'); }} 
+                                    onTouchEnd={(e) => { e.preventDefault(); stopHold(); }}
+                                    style={{ transform: 'translateZ(0) scale(1)', touchAction: 'none' }} 
+                                    className={`w-40 h-40 rounded-full border-4 border-[#FFD700] flex items-center justify-center relative overflow-hidden bg-black shadow-[0_0_50px_#FFD700] transition-opacity duration-300 ${isFeeding ? 'opacity-90' : 'opacity-100'}`}
+                                >
+                                    {/* Progress Bar with Dynamic Transition: Transition only when filling up (>0), instant when resetting (0) */}
+                                    <div 
+                                        className="absolute bottom-0 left-0 w-full bg-[#FFD700] z-10" 
+                                        style={{
+                                            height: `${feedProgress}%`,
+                                            transition: feedProgress > 0 ? 'height 0.05s linear' : 'none' 
+                                        }}>
+                                    </div>
+                                    <div className="w-20 h-20 relative z-20 pointer-events-none" style={getSpriteStyle(config.foodIndex, ASSETS.FOOD)} />
+                                </button>
+                            </div>
                         </div>
                     )}
                 </div>
