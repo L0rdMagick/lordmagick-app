@@ -70,7 +70,7 @@ const DIRECTIONAL_OFFSETS = {
 
 const UI_PREVIEW_SETTINGS = {
     scale: 1.0, 
-    y: 0 // Reset to 0 as flexbox handles centering now
+    y: 0 
 };
 
 const LAYER_ORDER_CONFIG = {
@@ -711,18 +711,19 @@ export default function ServitorWildUnknown() {
                 </div>
             )}
 
-            {/* CONFIG PANEL - Responsive Updates */}
-            <div className={`absolute top-0 left-0 h-full w-full md:w-[500px] z-50 transition-transform duration-500 ease-in-out ${isRunning ? '-translate-x-full' : 'translate-x-0'} pointer-events-auto flex flex-col p-6 md:p-8 box-border`}
-                 style={{ 
-                     backgroundImage: `url('${ASSET_PATH}${ASSETS.UI_PANEL}')`,
-                     backgroundSize: '100% 100%',
-                     backgroundRepeat: 'no-repeat'
-                 }}>
+            {/* MASTER UI PANEL - Unified Container */}
+            <div className={`fixed inset-0 z-50 flex items-center justify-center transition-all duration-500 ${isRunning ? 'opacity-0 pointer-events-none transform scale-95' : 'opacity-100 pointer-events-auto transform scale-100'} p-0 md:p-4`}>
                 
-                {/* 1. FIXED PREVIEW AREA - Z=10 to sit under inputs but feet might dangle */}
-                <div className="h-[45%] w-full relative border-b border-[#5d4037] shrink-0 flex flex-col z-10">
-                    {/* INPUTS: Centered, max width 90% */}
-                    <div className="w-full max-w-[90%] mx-auto flex flex-col md:flex-row gap-2 shrink-0 pt-2 pb-2 z-20">
+                {/* PARCHMENT FRAME */}
+                <div className="relative w-full h-full md:w-[600px] md:h-[90vh] flex flex-col p-8 md:p-12 box-border"
+                    style={{ 
+                        backgroundImage: `url('${ASSET_PATH}${ASSETS.UI_PANEL}')`,
+                        backgroundSize: '100% 100%',
+                        backgroundRepeat: 'no-repeat'
+                    }}>
+                    
+                    {/* 1. HEADER: Inputs - Padded from top for mobile */}
+                    <div className="flex flex-col md:flex-row gap-2 shrink-0 mb-4 pt-4 md:pt-2 w-full max-w-[90%] mx-auto z-20">
                         <input type="text" value={sName} onChange={e => setSName(e.target.value)} 
                             className="flex-1 bg-[#f0e6d2] shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)] border border-[#5d4037] p-2 h-10 md:h-auto text-sm text-black rounded magick-font placeholder-gray-600 px-3 min-w-0" 
                             placeholder="Spirit Name" />
@@ -730,107 +731,110 @@ export default function ServitorWildUnknown() {
                             className="flex-1 bg-[#f0e6d2] shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)] border border-[#5d4037] p-2 h-10 md:h-auto text-sm text-black rounded magick-font placeholder-gray-600 px-3 min-w-0" 
                             placeholder="Purpose" />
                     </div>
-                    {/* Render Servitor: Overflow Visible to show legs */}
-                    <div className="flex-1 w-full flex items-center justify-center relative overflow-visible z-10">
-                        <ServitorRig idPrefix="preview-rig" isPreview={true} />
+
+                    {/* 2. PREVIEW AREA - Scalable Height */}
+                    <div className="relative shrink-0 h-48 md:h-64 w-full flex justify-center items-end border-b border-[#5d4037]/30 mb-2 overflow-visible z-10">
+                        <div className="w-full h-full flex items-end justify-center pb-4">
+                            <ServitorRig idPrefix="preview-rig" isPreview={true} />
+                        </div>
                     </div>
-                </div>
 
-                {/* 2. MENU GRID - Z=20 to cover dangling feet if needed, or allow interaction */}
-                <div className="flex-1 overflow-y-auto custom-scrollbar p-2 bg-[#eaddcf]/90 relative mt-2 mx-1 rounded shadow-inner z-20">
-                    {!activeCategory ? (
-                        <div className="grid grid-cols-4 gap-2">
-                            {CATEGORIES.map(cat => {
-                                const currentIdx = cat.indexKey ? (config as any)[cat.indexKey] : 0;
-                                const isSingle = cat.single || false;
-                                return (
-                                    <button key={cat.id} onClick={() => setActiveCategory(cat.id)}
-                                        className="flex flex-col items-center gap-1 group bg-[#eaddcf] p-2 border border-[#8d6e63] rounded shadow-sm hover:border-[#3e2723]">
-                                        <div className="w-12 h-12 flex items-center justify-center relative overflow-hidden">
-                                            {cat.asset ? (
-                                                <div className="w-full h-full transform scale-90" style={getSpriteStyle(currentIdx, cat.asset, isSingle)} />
-                                            ) : cat.id === 'global' ? (
-                                                <User size={24} className="text-[#3e2723]" />
-                                            ) : (
-                                                <Settings size={24} className="text-[#3e2723]"/>
+                    {/* 3. SCROLLABLE GRID - Transparent Background */}
+                    <div className="flex-1 overflow-y-auto custom-scrollbar bg-[#eaddcf]/80 rounded p-2 z-20 relative border border-[#8d6e63]/30">
+                        {!activeCategory ? (
+                            <div className="grid grid-cols-4 gap-2">
+                                {CATEGORIES.map(cat => {
+                                    const currentIdx = cat.indexKey ? (config as any)[cat.indexKey] : 0;
+                                    const isSingle = cat.single || false;
+                                    return (
+                                        <button key={cat.id} onClick={() => setActiveCategory(cat.id)}
+                                            className="flex flex-col items-center gap-1 group bg-[#eaddcf] p-2 border border-[#8d6e63] rounded shadow-sm hover:border-[#3e2723]">
+                                            <div className="w-12 h-12 flex items-center justify-center relative overflow-hidden">
+                                                {cat.asset ? (
+                                                    <div className="w-full h-full transform scale-90" style={getSpriteStyle(currentIdx, cat.asset, isSingle)} />
+                                                ) : cat.id === 'global' ? (
+                                                    <User size={24} className="text-[#3e2723]" />
+                                                ) : (
+                                                    <Settings size={24} className="text-[#3e2723]"/>
+                                                )}
+                                            </div>
+                                            <span className="text-[9px] text-[#3e2723] font-bold uppercase tracking-wider">{cat.label}</span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        ) : (
+                            // POPUP CONTROLS INSIDE GRID AREA
+                            <div className="w-full h-full flex flex-col">
+                                <div className="flex justify-between items-center mb-2 border-b border-[#3e2723] pb-1 sticky top-0 bg-[#eaddcf] z-30 pt-1">
+                                    <h3 className="text-[#3e2723] font-bold uppercase">{CATEGORIES.find(c => c.id === activeCategory)?.label}</h3>
+                                    <button onClick={() => setActiveCategory(null)}><X size={20} className="text-[#3e2723]"/></button>
+                                </div>
+                                
+                                <div className="flex-1">
+                                    {activeCategory === 'settings' ? (
+                                        <div className="space-y-4 p-2">
+                                            <div className="bg-black/10 p-3 rounded">
+                                                <label className="text-xs font-bold text-[#3e2723]">Feeding Frequency: {config.feedFreq}</label>
+                                                <input type="range" min="1" max="50" value={config.feedFreq} onChange={e => setConfig({...config, feedFreq: parseInt(e.target.value)})} className="w-full accent-[#3e2723]" />
+                                            </div>
+                                            <div className="flex gap-4 items-center">
+                                                <label className="text-xs font-bold text-[#3e2723]">Mode:</label>
+                                                <select value={config.movementType} onChange={e => setConfig({...config, movementType: e.target.value})} className="bg-white/50 text-xs text-black p-1 rounded border border-[#8d6e63]">
+                                                    <option value="walk">Walk</option><option value="fly">Fly</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            {/* Controls (DPad) */}
+                                            {CATEGORIES.find(c => c.id === activeCategory)?.offsetKey && (
+                                                <div className="mb-4">
+                                                    <DPad 
+                                                        part={CATEGORIES.find(c => c.id === activeCategory)?.offsetKey as string} 
+                                                        allowFlip={CATEGORIES.find(c => c.id === activeCategory)?.canFlip} 
+                                                        allowSpread={CATEGORIES.find(c => c.id === activeCategory)?.canSpread}
+                                                    />
+                                                </div>
                                             )}
-                                        </div>
-                                        <span className="text-[9px] text-[#3e2723] font-bold uppercase tracking-wider">{cat.label}</span>
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    ) : (
-                        // 3. POPUP CONTROLS
-                        <div className="absolute inset-0 bg-[#eaddcf] p-2 z-20 flex flex-col">
-                            <div className="flex justify-between items-center mb-2 border-b border-[#3e2723] pb-1">
-                                <h3 className="text-[#3e2723] font-bold uppercase">{CATEGORIES.find(c => c.id === activeCategory)?.label}</h3>
-                                <button onClick={() => setActiveCategory(null)}><X size={20} className="text-[#3e2723]"/></button>
+                                            
+                                            {/* Grid */}
+                                            {CATEGORIES.find(c => c.id === activeCategory)?.indexKey && (
+                                                <div className="grid grid-cols-4 gap-2 mb-4 pb-2">
+                                                    {GENERIC_LIST.map((_, i) => (
+                                                        <button key={i} 
+                                                            onClick={() => setConfig({...config, [(CATEGORIES.find(c => c.id === activeCategory)?.indexKey as string)]: i})}
+                                                            className={`w-full aspect-square border-2 rounded overflow-hidden bg-white/50 ${(config as any)[CATEGORIES.find(c => c.id === activeCategory)?.indexKey as string] === i ? 'border-[#3e2723] ring-1 ring-[#3e2723]' : 'border-transparent'}`}>
+                                                            <div className="w-full h-full transform scale-75" 
+                                                                 style={getSpriteStyle(i, (CATEGORIES.find(c => c.id === activeCategory)?.asset as string), CATEGORIES.find(c => c.id === activeCategory)?.single)} />
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </>
+                                    )}
+                                </div>
                             </div>
-                            
-                            <div className="flex-1 overflow-y-auto custom-scrollbar">
-                                {activeCategory === 'settings' ? (
-                                    <div className="space-y-4 p-2">
-                                        <div className="bg-black/10 p-3 rounded">
-                                            <label className="text-xs font-bold text-[#3e2723]">Feeding Frequency: {config.feedFreq}</label>
-                                            <input type="range" min="1" max="50" value={config.feedFreq} onChange={e => setConfig({...config, feedFreq: parseInt(e.target.value)})} className="w-full accent-[#3e2723]" />
-                                        </div>
-                                        <div className="flex gap-4 items-center">
-                                            <label className="text-xs font-bold text-[#3e2723]">Mode:</label>
-                                            <select value={config.movementType} onChange={e => setConfig({...config, movementType: e.target.value})} className="bg-white/50 text-xs text-black p-1 rounded border border-[#8d6e63]">
-                                                <option value="walk">Walk</option><option value="fly">Fly</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <>
-                                        {/* Controls (DPad) */}
-                                        {CATEGORIES.find(c => c.id === activeCategory)?.offsetKey && (
-                                            <div className="mb-4">
-                                                <DPad 
-                                                    part={CATEGORIES.find(c => c.id === activeCategory)?.offsetKey as string} 
-                                                    allowFlip={CATEGORIES.find(c => c.id === activeCategory)?.canFlip} 
-                                                    allowSpread={CATEGORIES.find(c => c.id === activeCategory)?.canSpread}
-                                                />
-                                            </div>
-                                        )}
-                                        
-                                        {/* Grid */}
-                                        {CATEGORIES.find(c => c.id === activeCategory)?.indexKey && (
-                                            <div className="grid grid-cols-4 gap-2 mb-4">
-                                                {GENERIC_LIST.map((_, i) => (
-                                                    <button key={i} 
-                                                        onClick={() => setConfig({...config, [(CATEGORIES.find(c => c.id === activeCategory)?.indexKey as string)]: i})}
-                                                        className={`w-full aspect-square border-2 rounded overflow-hidden bg-white/50 ${(config as any)[CATEGORIES.find(c => c.id === activeCategory)?.indexKey as string] === i ? 'border-[#3e2723] ring-1 ring-[#3e2723]' : 'border-transparent'}`}>
-                                                        <div className="w-full h-full transform scale-75" 
-                                                             style={getSpriteStyle(i, (CATEGORIES.find(c => c.id === activeCategory)?.asset as string), CATEGORIES.find(c => c.id === activeCategory)?.single)} />
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </>
-                                )}
-                            </div>
-                        </div>
-                    )}
-                </div>
+                        )}
+                    </div>
 
-                {/* 4. FIXED ACTION BUTTONS - Consistent Margins */}
-                <div className="p-2 pt-3 pb-1 border-t border-[#5d4037]/30 flex gap-2 shrink-0 bg-[#eaddcf] mx-1 mb-1 rounded-b z-20">
-                    <button onMouseDown={() => startHold('awaken')} onMouseUp={stopHold} onMouseLeave={stopHold} onTouchStart={() => startHold('awaken')} onTouchEnd={stopHold}
-                        className="runic-btn flex-1 py-[5px] text-xs font-bold uppercase tracking-widest relative overflow-hidden text-center">
-                        <div className="absolute top-0 left-0 h-full bg-white/20 transition-all duration-75 ease-linear" style={{width: `${awakenProgress}%`}}></div>
-                        <span className="relative z-10 text-center w-full block">{isAwakening ? "Awakening..." : "Hold to Awaken"}</span>
-                    </button>
-                    <button onClick={handleBind} className="flex-1 py-[5px] bg-[#5d4037] text-white text-xs uppercase font-bold rounded shadow hover:bg-[#3e2723] text-center">
-                        Bind/Save ({COST_BIND_SERVITOR})
-                    </button>
+                    {/* 4. FOOTER: Action Buttons */}
+                    <div className="mt-2 shrink-0 flex gap-2 w-full z-20">
+                        <button onMouseDown={() => startHold('awaken')} onMouseUp={stopHold} onMouseLeave={stopHold} onTouchStart={() => startHold('awaken')} onTouchEnd={stopHold}
+                            className="runic-btn flex-1 py-[5px] text-xs font-bold uppercase tracking-widest relative overflow-hidden text-center">
+                            <div className="absolute top-0 left-0 h-full bg-white/20 transition-all duration-75 ease-linear" style={{width: `${awakenProgress}%`}}></div>
+                            <span className="relative z-10 text-center w-full block">{isAwakening ? "Awakening..." : "Hold to Awaken"}</span>
+                        </button>
+                        <button onClick={handleBind} className="flex-1 py-[5px] bg-[#5d4037] text-white text-xs uppercase font-bold rounded shadow hover:bg-[#3e2723] text-center">
+                            Bind/Save ({COST_BIND_SERVITOR})
+                        </button>
+                    </div>
+
                 </div>
             </div>
 
             {/* FEEDING MODAL */}
             {isFeedingActive && (
-                // Background opacity is removed (bg-black/0) when holding (isFeeding=true)
                 <div className={`absolute inset-0 z-200 flex flex-col items-center justify-center transition-colors duration-300 ${isFeeding ? 'bg-black/0' : 'bg-black/80'}`}>
                     {hungerState === 'fed' ? (
                         <div className="text-center animate-in zoom-in">
@@ -839,10 +843,7 @@ export default function ServitorWildUnknown() {
                         </div>
                     ) : (
                         <div className="flex flex-col items-center">
-                            {/* Text disappears while feeding to clear view */}
                             {!isFeeding && <p className="text-[#FFD700] mb-8 animate-pulse text-xl font-serif">{sName} requires sustenance...</p>}
-                            
-                            {/* FIXED: Button remains visible and stationary. Removed active:scale */}
                             <button onMouseDown={() => startHold('feed')} onMouseUp={stopHold} onMouseLeave={stopHold} onTouchStart={() => startHold('feed')} onTouchEnd={stopHold}
                                 className={`w-40 h-40 rounded-full border-4 border-[#FFD700] flex items-center justify-center relative overflow-hidden bg-black shadow-[0_0_50px_#FFD700] transition-opacity duration-300 active:transform-none ${isFeeding ? 'opacity-90' : 'opacity-100'}`}>
                                 <div className="absolute bottom-0 left-0 w-full bg-[#FFD700]/50 transition-all duration-75 z-10" style={{height: `${feedProgress}%`}}></div>
