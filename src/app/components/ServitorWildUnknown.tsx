@@ -68,9 +68,10 @@ const DIRECTIONAL_OFFSETS = {
     }
 };
 
+// UPDATED: Scale reduced and shifted up to prevent overlap
 const UI_PREVIEW_SETTINGS = {
-    scale: 1.0, 
-    y: 0 
+    scale: 0.85, 
+    y: -5 
 };
 
 const LAYER_ORDER_CONFIG = {
@@ -335,10 +336,18 @@ export default function ServitorWildUnknown() {
             await moveTo(15, id); 
             if(!runningRef.current) break;
 
-            // 2. Enter Void
+            // 2. Enter Void (Jump Animation RESTORED)
+            if(servitor) {
+                // Remove transition temporarily so animation takes over
+                servitor.style.transition = 'none'; 
+                servitor.classList.add('anim-jump-into-void');
+            }
+            await wait(800); // Wait for jump to finish
+
+            // Ensure it stays hidden after animation
             if(servitor) {
                 servitor.style.opacity = '0';
-                servitor.style.transform = 'scale(0.1) translateY(50px) translateX(-20px)';
+                servitor.classList.remove('anim-jump-into-void');
             }
             await wait(500);
 
@@ -348,10 +357,11 @@ export default function ServitorWildUnknown() {
             await wait(2000);
             if(mound) mound.classList.remove('pulse-glow-void');
 
-            // 4. Return
+            // 4. Return (Pop Up)
             if(servitor) {
+                servitor.style.transition = 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s';
                 servitor.style.opacity = '1';
-                servitor.style.transform = 'scale(1)';
+                servitor.style.transform = 'scale(1) translateY(0)';
             }
             setRigAnimation(config.movementType === 'fly' ? 'anim-fly-right' : 'anim-walk-right');
             
@@ -642,6 +652,17 @@ export default function ServitorWildUnknown() {
                     100% { transform: translateY(-60px); }
                 }
                 .anim-floating { animation: float-bob 3s ease-in-out infinite; }
+                
+                /* JUMP INTO VOID ANIMATION RESTORED */
+                @keyframes jump-into-void {
+                    0% { transform: translateY(0) scale(1); opacity: 1; }
+                    50% { transform: translateY(-100px) scale(1); opacity: 1; } /* Jump Peak */
+                    100% { transform: translateY(20px) scale(0); opacity: 0; } /* Dive into Mound */
+                }
+
+                .anim-jump-into-void {
+                    animation: jump-into-void 0.8s forwards ease-in-out;
+                }
 
                 @keyframes fall { from { top: -10%; opacity: 1; } to { top: 100%; opacity: 0; } }
 
@@ -717,15 +738,15 @@ export default function ServitorWildUnknown() {
             {/* MASTER UI PANEL - Unified Container */}
             <div className={`fixed inset-0 z-50 flex items-center justify-center transition-all duration-500 ${isRunning ? 'opacity-0 pointer-events-none transform scale-95' : 'opacity-100 pointer-events-auto transform scale-100'} p-0 md:p-4`}>
                 
-                {/* PARCHMENT FRAME - MOBILE PADDING OPTIMIZED (p-5 pt-10 md:p-12) */}
-                <div className="relative w-full h-full md:w-[600px] md:h-[90vh] flex flex-col p-5 pt-10 md:p-12 box-border"
+                {/* PARCHMENT FRAME - UPDATED PADDING TO PREVENT BLEEDING */}
+                <div className="relative w-full h-[95dvh] md:w-[600px] md:h-[90vh] flex flex-col px-8 pt-16 pb-14 md:px-16 md:pt-20 md:pb-20 box-border"
                     style={{ 
                         backgroundImage: `url('${ASSET_PATH}${ASSETS.UI_PANEL}')`,
                         backgroundSize: '100% 100%',
                         backgroundRepeat: 'no-repeat'
                     }}>
                     
-                    {/* 1. HEADER: Inputs - Padded from top for mobile - STYLING REFINED */}
+                    {/* 1. HEADER: Inputs - Padded from top for mobile */}
                     <div className="flex flex-col md:flex-row gap-2 shrink-0 mb-4 pt-4 md:pt-2 w-full max-w-[90%] mx-auto z-20">
                         <input type="text" value={sName} onChange={e => setSName(e.target.value)} 
                             className="flex-1 bg-[#f0e6d2] shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border-2 border-[#3e2723] p-2 h-10 md:h-auto text-sm text-black rounded magick-font placeholder-gray-600 px-3 min-w-0" 
@@ -735,15 +756,15 @@ export default function ServitorWildUnknown() {
                             placeholder="Purpose" />
                     </div>
 
-                    {/* 2. PREVIEW AREA - Scalable Height - Z-INDEX INCREASED to 30 */}
+                    {/* 2. PREVIEW AREA - Scalable Height - Z-INDEX 30 */}
                     <div className="relative shrink-0 h-48 md:h-64 w-full flex justify-center items-end border-b border-[#5d4037]/30 mb-2 overflow-visible z-30">
                         <div className="w-full h-full flex items-end justify-center pb-4">
                             <ServitorRig idPrefix="preview-rig" isPreview={true} />
                         </div>
                     </div>
 
-                    {/* 3. SCROLLABLE GRID - Transparent Background - Z-INDEX 20 */}
-                    <div className="flex-1 overflow-y-auto custom-scrollbar bg-[#eaddcf]/80 rounded p-2 z-20 relative border border-[#8d6e63]/30">
+                    {/* 3. SCROLLABLE GRID - UPDATED MIN-HEIGHT FOR VISIBILITY */}
+                    <div className="flex-1 min-h-[220px] overflow-y-auto custom-scrollbar bg-[#eaddcf]/80 rounded p-2 z-20 relative border border-[#8d6e63]/30">
                         {!activeCategory ? (
                             <div className="grid grid-cols-4 gap-2">
                                 {CATEGORIES.map(cat => {
