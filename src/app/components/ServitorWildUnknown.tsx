@@ -328,56 +328,61 @@ export default function ServitorWildUnknown() {
         while(runningRef.current && loopIdRef.current === id) {
             
             // 1. Walk to Mound (Left)
-            if(servitor) { servitor.style.opacity = '1'; servitor.style.transform = 'scale(1)'; }
+            // Ensure starting state is visible and clean
+            if(servitor) { 
+                servitor.style.opacity = '1'; 
+                servitor.style.transform = 'scale(1)'; 
+                servitor.style.animation = 'none'; 
+            }
             setRigAnimation(config.movementType === 'fly' ? 'anim-fly-left' : 'anim-walk-left');
             
-            // LEFT STOP: Stops earlier at 15%
+            // LEFT STOP
             await moveTo(15, id); 
             if(!runningRef.current) break;
+            
             // Stop animation after moving
             setRigAnimation('anim-idle');
 
             // 2. Enter Void (Jump Animation with Robust Replay)
             if(servitor) {
-                // A. KILL ALL TRANSITIONS & INLINE TRANSFORMS
+                // A. Stop movement transitions
                 servitor.style.transition = 'none';
-                servitor.style.removeProperty('transform'); // Critical: Remove inline scale(1)
-
-                // B. Reset Animation Class
-                servitor.classList.remove('anim-jump-into-void');
+                
+                // B. Reset EVERYTHING to ensure clean state
+                servitor.style.animation = 'none';
+                servitor.style.removeProperty('transform');
                 
                 // C. Force Browser Reflow (Critical for animation restart)
                 void servitor.offsetWidth; 
-                // D. Add class to trigger animation
-                servitor.classList.add('anim-jump-into-void');
+                
+                // D. Trigger Animation DIRECTLY via style (Bypasses React ClassName conflicts)
+                servitor.style.animation = 'jump-into-void 0.8s forwards ease-in-out';
             }
-            await wait(800); // Wait for jump to finish
+            await wait(800); // Wait for jump animation
 
             // Ensure it stays hidden after animation
             if(servitor) {
                 servitor.style.opacity = '0';
-                servitor.classList.remove('anim-jump-into-void');
+                servitor.style.animation = 'none'; // Clear animation lock so we can transform later
             }
-            await wait(500);
-
-            // 3. Search Pulse
+            
+            // 3. Search Pulse (HUNTING TIME)
             if(mound) mound.classList.add('pulse-glow-void');
             playSound('search');
-            await wait(2000);
+            await wait(1500); // Wait longer so the disappearance is noticeable
             if(mound) mound.classList.remove('pulse-glow-void');
 
             // 4. Return (Pop Up)
             if(servitor) {
-                // Manually apply transition for the pop-up effect
-                servitor.style.transition = 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s';
+                // Re-enable transitions specifically for the "Pop Up" effect
+                servitor.style.transition = 'transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.5s';
                 servitor.style.opacity = '1';
                 servitor.style.transform = 'scale(1) translateY(0)';
             }
             setRigAnimation(config.movementType === 'fly' ? 'anim-fly-right' : 'anim-walk-right');
             
-            // RIGHT STOP: Responsive logic
+            // RIGHT STOP
             const isMobile = window.innerWidth < 768;
-            // 60% for Mobile (prevents going off screen), 72% for Desktop
             const rightDestination = isMobile ? 60 : 72;
             
             await moveTo(rightDestination, id);
