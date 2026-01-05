@@ -261,7 +261,7 @@ export default function ServitorWildUnknown() {
     const [loadProgress, setLoadProgress] = useState(0);
     const [isRunning, setIsRunning] = useState(false);
     const [activeCategory, setActiveCategory] = useState<string | null>(null);
-    const [showInfoModal, setShowInfoModal] = useState(false);
+    const [showInfoModal, setShowInfoModal] = useState(true); // DEFAULT TRUE
 
     const [rigAnimation, setRigAnimation] = useState('anim-idle');
     const [isCarryingTreasure, setIsCarryingTreasure] = useState(false);
@@ -282,7 +282,7 @@ export default function ServitorWildUnknown() {
     // --- CATEGORIES DEFINITION ---
     const CATEGORIES = useMemo(() => [
         { id: 'global', label: 'WHOLE', asset: null, indexKey: null, offsetKey: 'global', canFlip: true },
-        { id: 'settings', label: 'BEHAVIOR', asset: null, indexKey: null, offsetKey: null }, // MOVED HERE
+        { id: 'settings', label: 'BEHAVIOR', asset: null, indexKey: null, offsetKey: null },
         { id: 'head', label: 'HATS', asset: ASSETS.HEAD, indexKey: 'hatIndex', offsetKey: 'head', canFlip: true },
         { id: 'base', label: 'TORSOS', asset: ASSETS.BASES, indexKey: 'baseIndex', offsetKey: 'base', canFlip: true },
         { id: 'leg', label: 'LEGS', asset: ASSETS.LEGS, indexKey: 'legIndex', offsetKey: 'leg', canFlip: false, canSpread: true },
@@ -700,15 +700,13 @@ export default function ServitorWildUnknown() {
                 @keyframes rotate-l { 0% { transform: rotate(-5deg); } 50% { transform: rotate(5deg); } 100% { transform: rotate(-5deg); } }
                 @keyframes rotate-r { 0% { transform: rotate(5deg); } 50% { transform: rotate(-5deg); } 100% { transform: rotate(5deg); } }
                 
-                /* UPDATED FEEDING WAVE */
-                @keyframes feed-wave-left {
+                /* 
+                   UPDATED FEEDING WAVE: SYNCHRONIZED, REDUCED RANGE 
+                   -12deg provides a subtle "lift" motion similar to walking scale.
+                */
+                @keyframes feed-wave-sync {
                     0% { transform: rotate(0deg); }
-                    50% { transform: rotate(45deg); } 
-                    100% { transform: rotate(0deg); }
-                }
-                @keyframes feed-wave-right {
-                    0% { transform: rotate(0deg); }
-                    50% { transform: rotate(-45deg); } 
+                    50% { transform: rotate(-12deg); } /* Lifts both arms slightly */
                     100% { transform: rotate(0deg); }
                 }
 
@@ -752,11 +750,15 @@ export default function ServitorWildUnknown() {
                 .anim-walk-right .tool-hand-anim { animation: rotate-r 1.2s infinite ease-in-out; }
                 .anim-walk-right .carry-hand-anim { animation: rotate-l 1.2s infinite ease-in-out; }
 
-                /* FEEDING ANIMATION OVERRIDES - Strict !important */
-                .anim-feed .arm-left-joint { animation: feed-wave-left 0.6s infinite ease-in-out !important; }
-                .anim-feed .arm-right-joint { animation: feed-wave-right 0.6s infinite ease-in-out !important; }
-                .anim-feed .tool-hand-anim { animation: feed-wave-right 0.6s infinite ease-in-out !important; }
-                .anim-feed .carry-hand-anim { animation: feed-wave-left 0.6s infinite ease-in-out !important; }
+                /* 
+                   FEEDING ANIMATION OVERRIDES
+                   Using feed-wave-sync for ALL arm/hand components ensuring synchronization.
+                   Strict !important used to override walking anims.
+                */
+                .anim-feed .arm-left-joint { animation: feed-wave-sync 0.6s infinite ease-in-out !important; }
+                .anim-feed .arm-right-joint { animation: feed-wave-sync 0.6s infinite ease-in-out !important; }
+                .anim-feed .tool-hand-anim { animation: feed-wave-sync 0.6s infinite ease-in-out !important; }
+                .anim-feed .carry-hand-anim { animation: feed-wave-sync 0.6s infinite ease-in-out !important; }
 
                 /* Enhanced Glow Effects */
                 .pulse-glow-void { animation: pulse-void 1s infinite alternate; }
@@ -764,7 +766,6 @@ export default function ServitorWildUnknown() {
                 .pulse-glow-gold { animation: pulse-gold 0.5s infinite alternate; }
                 @keyframes pulse-gold { from { filter: drop-shadow(0 0 10px #FFD700); } to { filter: drop-shadow(0 0 50px #FFFF00); } }
                 
-                /* DOUBLED SCROLLBAR WIDTH */
                 .custom-scrollbar::-webkit-scrollbar { width: 8px; } 
                 .custom-scrollbar::-webkit-scrollbar-thumb { background: #5d4037; border-radius: 4px; }
             `}</style>
@@ -860,7 +861,8 @@ export default function ServitorWildUnknown() {
             <div className={`fixed inset-0 z-50 flex items-center justify-center transition-all duration-500 ${isRunning ? 'opacity-0 pointer-events-none transform scale-95' : 'opacity-100 pointer-events-auto transform scale-100'} p-0 md:p-4`}>
                 
                 {/* PARCHMENT FRAME - OPTIMIZED PADDING & SIZING */}
-                <div className="relative w-full h-[95dvh] md:w-[600px] md:h-auto md:max-h-[90vh] md:aspect-3/4 flex flex-col px-6 pt-12 pb-6 md:px-16 md:pt-14 md:pb-8 box-border"
+                {/* UPDATED: h-[calc(100vh-50px)] ensures 25px top/bottom margin on large screens */}
+                <div className="relative w-full h-[95dvh] md:w-[600px] md:h-[calc(100vh-50px)] flex flex-col px-6 pt-12 pb-6 md:px-16 md:pt-14 md:pb-8 box-border"
                     style={{ 
                         backgroundImage: `url('${ASSET_PATH}${ASSETS.UI_PANEL}')`,
                         backgroundSize: '100% 100%',
