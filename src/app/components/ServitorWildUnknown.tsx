@@ -331,7 +331,6 @@ export default function ServitorWildUnknown() {
             if(servitor) { servitor.style.opacity = '1'; servitor.style.transform = 'scale(1)'; }
             setRigAnimation(config.movementType === 'fly' ? 'anim-fly-left' : 'anim-walk-left');
             
-            // LEFT STOP: Stops earlier at 15%
             await moveTo(15, id); 
             if(!runningRef.current) break;
 
@@ -357,7 +356,7 @@ export default function ServitorWildUnknown() {
             
             // RIGHT STOP: Responsive logic
             const isMobile = window.innerWidth < 768;
-            // 60% for Mobile (prevents going off screen), 72% for Desktop
+            // 60% for Mobile (stops before edge), 72% for Desktop
             const rightDestination = isMobile ? 60 : 72;
             
             await moveTo(rightDestination, id);
@@ -560,7 +559,9 @@ export default function ServitorWildUnknown() {
         const finalGs = gBase.s + gUser.s;
         const finalGf = gBase.f !== gUser.f; 
 
-        // CRITICAL FIX: Bobbing animation applied to outer wrapper to prevent position reset on flip
+        // CRITICAL FIX: The floating animation is now always active if flying,
+        // and it is applied to a wrapper div that does NOT change class based on direction.
+        // This ensures the bobbing timeline persists smoothly.
         const flyClass = isFlying ? 'anim-floating' : '';
 
         const globalTransform = `translate(${finalGx}%, ${finalGy}%) scale(${finalGs}) ${finalGf ? 'scaleX(-1)' : ''}`;
@@ -568,9 +569,9 @@ export default function ServitorWildUnknown() {
 
         return (
             <div id={idPrefix} className="relative w-32 h-32" style={{ transform: previewStyle }}>
-                {/* Floating Wrapper - Persists across state changes to prevent gltich */}
+                {/* Wrapper holds the bobbing animation continuously */}
                 <div className={`w-full h-full ${flyClass}`}>
-                    {/* The Actual Rig - Handles offsets/flipping */}
+                    {/* Inner rig handles directional changes/flipping */}
                     <div className={`servitor-rig relative w-full h-full ${rigAnimation} ${wrapperClass}`} 
                         style={{ 
                             transform: globalTransform,
@@ -623,18 +624,16 @@ export default function ServitorWildUnknown() {
                 
                 @keyframes bounce { 0% { top: 0; } 50% { top: -5px; } }
                 
-                /* Rotation for walking limbs */
                 @keyframes rotate-l { 0% { transform: rotate(-5deg); } 50% { transform: rotate(5deg); } 100% { transform: rotate(-5deg); } }
                 @keyframes rotate-r { 0% { transform: rotate(5deg); } 50% { transform: rotate(-5deg); } 100% { transform: rotate(5deg); } }
                 
-                /* Feeding Wave Animation (Arms wave up and down) - SLOWED to 0.8s */
+                /* FEEDING ANIMATION - Waving Up/Down */
                 @keyframes feed-wave {
-                    0% { transform: rotate(0deg); }
-                    50% { transform: rotate(-45deg); } 
-                    100% { transform: rotate(0deg); }
+                    0% { transform: translateY(0px) rotate(0deg); }
+                    50% { transform: translateY(-15px) rotate(-30deg); } 
+                    100% { transform: translateY(0px) rotate(0deg); }
                 }
 
-                /* Flying Bob - UPDATED to float higher (-60 to -90px) */
                 @keyframes float-bob {
                     0% { transform: translateY(-60px); }
                     50% { transform: translateY(-90px); }
@@ -658,18 +657,20 @@ export default function ServitorWildUnknown() {
                 .anim-walk-right .arm-right-joint { animation: rotate-r 1.2s infinite ease-in-out; }
                 .anim-walk-right .tool-hand-anim { animation: rotate-r 1.2s infinite ease-in-out; }
 
-                /* Feeding Animation Overrides - 0.8s duration */
+                /* FEEDING OVERRIDES - Synchronized Waving */
                 .anim-feed .arm-left-joint { animation: feed-wave 0.8s infinite ease-in-out; }
-                .anim-feed .arm-right-joint { animation: feed-wave 0.8s infinite ease-in-out; animation-delay: 0.1s; }
-                .anim-feed .tool-hand-anim { animation: feed-wave 0.8s infinite ease-in-out; animation-delay: 0.1s; }
+                .anim-feed .arm-right-joint { animation: feed-wave 0.8s infinite ease-in-out; }
+                .anim-feed .tool-hand-anim { animation: feed-wave 0.8s infinite ease-in-out; }
 
-                /* Enhanced Glow Effects */
                 .pulse-glow-void { animation: pulse-void 1s infinite alternate; }
                 @keyframes pulse-void { from { filter: drop-shadow(0 0 10px #4b0082); } to { filter: drop-shadow(0 0 40px #8a2be2); } }
                 .pulse-glow-gold { animation: pulse-gold 0.5s infinite alternate; }
                 @keyframes pulse-gold { from { filter: drop-shadow(0 0 10px #FFD700); } to { filter: drop-shadow(0 0 50px #FFFF00); } }
                 
                 .custom-scrollbar::-webkit-scrollbar { width: 4px; } .custom-scrollbar::-webkit-scrollbar-thumb { background: #5d4037; border-radius: 4px; }
+                
+                /* Custom utility to prevent button scale */
+                .no-scale:active { transform: none; }
             `}</style>
 
             <button onClick={() => hasUnsavedChanges ? setShowExitWarning(true) : router.push('/spell-room')} className="absolute top-4 right-4 z-60 text-gray-400 hover:text-white"><X /></button>
@@ -711,12 +712,11 @@ export default function ServitorWildUnknown() {
             )}
 
             {/* CONFIG PANEL - Full Screen on Mobile, Bordered on Desktop */}
-            <div className={`absolute top-0 left-0 h-full w-full md:w-[500px] z-50 transition-transform duration-500 ease-in-out ${isRunning ? '-translate-x-full' : 'translate-x-0'} pointer-events-auto flex flex-col bg-[#0f0f1a] border-0 md:border-[40px] md:p-5`}
+            <div className={`absolute top-[60px] left-0 h-[calc(100%-60px)] w-full md:w-[500px] z-50 transition-transform duration-500 ease-in-out ${isRunning ? '-translate-x-full' : 'translate-x-0'} pointer-events-auto flex flex-col bg-[#0f0f1a] border-0 md:border-[40px] md:p-5`}
                  style={{ borderImage: `url('${ASSET_PATH}${ASSETS.UI_PANEL}') 18% 15% fill stretch` }}>
                 
                 {/* 1. FIXED PREVIEW AREA */}
                 <div className="h-[45%] w-full relative border-b border-[#5d4037] shrink-0 flex flex-col items-center justify-center z-50">
-                    {/* Inputs raised higher via -top-8 (~32px up) */}
                     <div className="absolute -top-8 w-full p-4 md:p-2 flex flex-col md:flex-row gap-2 z-50">
                         <input type="text" value={sName} onChange={e => setSName(e.target.value)} 
                             className="flex-1 bg-[#f0e6d2] shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)] border border-[#5d4037] p-2 text-sm text-black rounded magick-font placeholder-gray-600" 
@@ -725,14 +725,13 @@ export default function ServitorWildUnknown() {
                             className="flex-1 bg-[#f0e6d2] shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)] border border-[#5d4037] p-2 text-sm text-black rounded magick-font placeholder-gray-600" 
                             placeholder="Purpose" />
                     </div>
-                    {/* Render Servitor with Preview Settings */}
                     <div className="relative z-10 mt-12">
                         <ServitorRig idPrefix="preview-rig" isPreview={true} />
                     </div>
                 </div>
 
-                {/* 2. MENU GRID - Added mt-[30px] to lower content as requested */}
-                <div className="flex-1 overflow-y-auto custom-scrollbar p-2 bg-[#eaddcf]/90 relative mt-[30px]">
+                {/* 2. MENU GRID - Increased bottom padding (pb-12) to extend container visually */}
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-2 bg-[#eaddcf]/90 relative mt-[30px] pb-12">
                     {!activeCategory ? (
                         <div className="grid grid-cols-3 gap-2">
                             {CATEGORIES.map(cat => {
@@ -756,14 +755,13 @@ export default function ServitorWildUnknown() {
                             })}
                         </div>
                     ) : (
-                        // 3. POPUP CONTROLS
                         <div className="absolute inset-0 bg-[#eaddcf] p-2 z-20 flex flex-col">
                             <div className="flex justify-between items-center mb-2 border-b border-[#3e2723] pb-1">
                                 <h3 className="text-[#3e2723] font-bold uppercase">{CATEGORIES.find(c => c.id === activeCategory)?.label}</h3>
                                 <button onClick={() => setActiveCategory(null)}><X size={20} className="text-[#3e2723]"/></button>
                             </div>
                             
-                            <div className="flex-1 overflow-y-auto custom-scrollbar">
+                            <div className="flex-1 overflow-y-auto custom-scrollbar pb-12">
                                 {activeCategory === 'settings' ? (
                                     <div className="space-y-4 p-2">
                                         <div className="bg-black/10 p-3 rounded">
@@ -779,7 +777,6 @@ export default function ServitorWildUnknown() {
                                     </div>
                                 ) : (
                                     <>
-                                        {/* Controls (DPad) - Moved ABOVE Grid */}
                                         {CATEGORIES.find(c => c.id === activeCategory)?.offsetKey && (
                                             <div className="mb-4">
                                                 <DPad 
@@ -790,7 +787,6 @@ export default function ServitorWildUnknown() {
                                             </div>
                                         )}
                                         
-                                        {/* Grid */}
                                         {CATEGORIES.find(c => c.id === activeCategory)?.indexKey && (
                                             <div className="grid grid-cols-4 gap-2 mb-4">
                                                 {GENERIC_LIST.map((_, i) => (
@@ -825,7 +821,6 @@ export default function ServitorWildUnknown() {
 
             {/* FEEDING MODAL */}
             {isFeedingActive && (
-                // Background opacity is removed (bg-black/0) when holding (isFeeding=true)
                 <div className={`absolute inset-0 z-200 flex flex-col items-center justify-center transition-colors duration-300 ${isFeeding ? 'bg-black/0' : 'bg-black/80'}`}>
                     {hungerState === 'fed' ? (
                         <div className="text-center animate-in zoom-in">
@@ -834,14 +829,12 @@ export default function ServitorWildUnknown() {
                         </div>
                     ) : (
                         <div className="flex flex-col items-center">
-                            {/* Text disappears while feeding to clear view */}
                             {!isFeeding && <p className="text-[#FFD700] mb-8 animate-pulse text-xl font-serif">{sName} requires sustenance...</p>}
                             
-                            {/* FIXED: Button remains visible and stationary. Removed active:scale */}
                             <button onMouseDown={() => startHold('feed')} onMouseUp={stopHold} onMouseLeave={stopHold} onTouchStart={() => startHold('feed')} onTouchEnd={stopHold}
-                                className={`w-40 h-40 rounded-full border-4 border-[#FFD700] flex items-center justify-center relative overflow-hidden bg-black shadow-[0_0_50px_#FFD700] transition-opacity duration-300 ${isFeeding ? 'opacity-90' : 'opacity-100'}`}>
-                                <div className="absolute bottom-0 left-0 w-full bg-[#FFD700]/30 transition-all duration-75" style={{height: `${feedProgress}%`}}></div>
-                                <div className="w-20 h-20" style={getSpriteStyle(config.foodIndex, ASSETS.FOOD)} />
+                                className={`w-40 h-40 rounded-full border-4 border-[#FFD700] flex items-center justify-center relative overflow-hidden bg-black shadow-[0_0_50px_#FFD700] transition-opacity duration-300 ${isFeeding ? 'opacity-90' : 'opacity-100'} no-scale`}>
+                                <div className="absolute bottom-0 left-0 w-full bg-[#FFD700]/70 transition-all duration-75" style={{height: `${feedProgress}%`}}></div>
+                                <div className="w-20 h-20 relative z-10" style={getSpriteStyle(config.foodIndex, ASSETS.FOOD)} />
                             </button>
                         </div>
                     )}
