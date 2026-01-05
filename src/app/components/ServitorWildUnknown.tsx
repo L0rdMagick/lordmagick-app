@@ -328,11 +328,12 @@ export default function ServitorWildUnknown() {
         while(runningRef.current && loopIdRef.current === id) {
             
             // 1. Walk to Mound (Left)
-            // Ensure starting state is visible and clean
+            // Ensure starting state is visible and clean (scale 1)
             if(servitor) { 
                 servitor.style.opacity = '1'; 
                 servitor.style.transform = 'scale(1)'; 
-                servitor.style.animation = 'none'; 
+                // Ensure no animation class from previous failures
+                servitor.classList.remove('anim-jump-into-void'); 
             }
             setRigAnimation(config.movementType === 'fly' ? 'anim-fly-left' : 'anim-walk-left');
             
@@ -348,22 +349,25 @@ export default function ServitorWildUnknown() {
                 // A. Stop movement transitions
                 servitor.style.transition = 'none';
                 
-                // B. Reset EVERYTHING to ensure clean state
-                servitor.style.animation = 'none';
-                servitor.style.transform = 'translateY(0) scale(1)'; // Explicit start point
+                // B. Remove INLINE transform (This is the critical fix for "stands still")
+                // If this is set to scale(1), it might override the CSS animation depending on precedence
+                servitor.style.removeProperty('transform');
                 
-                // C. Force Browser Reflow (Critical for animation restart)
+                // C. Reset class for replay
+                servitor.classList.remove('anim-jump-into-void');
+                
+                // D. Force Browser Reflow
                 void servitor.offsetWidth; 
                 
-                // D. Trigger Animation DIRECTLY via style (Bypasses React ClassName conflicts)
-                servitor.style.animation = 'jump-into-void 0.8s forwards ease-in-out';
+                // E. Add Class
+                servitor.classList.add('anim-jump-into-void');
             }
             await wait(800); // Wait for jump animation
 
             // Ensure it stays hidden after animation
             if(servitor) {
                 servitor.style.opacity = '0';
-                servitor.style.animation = 'none'; // Clear animation lock so we can transform later
+                servitor.classList.remove('anim-jump-into-void');
             }
             
             // 3. Search Pulse (HUNTING TIME)
@@ -374,6 +378,10 @@ export default function ServitorWildUnknown() {
 
             // 4. Return (Pop Up)
             if(servitor) {
+                // Remove animation class again just to be safe
+                servitor.classList.remove('anim-jump-into-void');
+                void servitor.offsetWidth; 
+
                 // Re-enable transitions specifically for the "Pop Up" effect
                 servitor.style.transition = 'transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.5s';
                 servitor.style.opacity = '1';
