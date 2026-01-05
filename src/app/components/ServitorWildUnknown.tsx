@@ -54,7 +54,7 @@ const DIRECTIONAL_OFFSETS = {
         head: { x: 0, y: 0, s: 0 },
         clothes: { x: 1, y: 0, s: 0 },
         wing: { x: 0, y: 0, s: 0 },
-        tool: { x: -64, y: -4, s: 0 },
+        tool: { x: -75, y: 2, s: 0 },
         sigil: { x: -8, y: 0, s: 0 },
         
         armRight: { x: -23, y: 3, s: 0 },
