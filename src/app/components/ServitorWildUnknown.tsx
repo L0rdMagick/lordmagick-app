@@ -448,7 +448,7 @@ export default function ServitorWildUnknown() {
             setAwakenProgress(0);
         } else {
             setIsFeeding(true);
-            setFeedProgress(0);
+            setFeedProgress(0); // Force 0 immediately
         }
 
         holdIntervalRef.current = setInterval(() => {
@@ -719,17 +719,17 @@ export default function ServitorWildUnknown() {
                 
                 /* 
                    UPDATED FEEDING WAVE: Hands moving UP and DOWN together.
-                   Range increased to 60deg to be clearly visible.
+                   Range increased to 80deg to be clearly visible.
                    Synchronized timing (both hands use same timing function).
                 */
                 @keyframes feed-wave-left {
                     0% { transform: rotate(0deg); }
-                    50% { transform: rotate(60deg); } 
+                    50% { transform: rotate(80deg); } 
                     100% { transform: rotate(0deg); }
                 }
                 @keyframes feed-wave-right {
                     0% { transform: rotate(0deg); }
-                    50% { transform: rotate(-60deg); } 
+                    50% { transform: rotate(-80deg); } 
                     100% { transform: rotate(0deg); }
                 }
 
@@ -1011,14 +1011,18 @@ export default function ServitorWildUnknown() {
                             <button onClick={handleResume} className="runic-btn px-8 py-3 rounded text-lg font-bold">Resume Ritual</button>
                         </div>
                     ) : (
-                        <div className="flex flex-col items-center">
-                            {!isFeeding && <p className="text-[#FFD700] mb-8 animate-pulse text-xl font-serif">{sName} requires sustenance...</p>}
+                        <div className="flex flex-col items-center justify-center min-h-[240px]">
+                            {/* CHANGED: Text persists but content changes to prevent layout shift */}
+                            <p className="text-[#FFD700] mb-8 text-xl font-serif animate-pulse h-8 transition-all text-center">
+                                {isFeeding ? "Feeding your Servitor..." : `${sName || 'Spirit'} requires sustenance...`}
+                            </p>
+                            
                             <button 
-                                onMouseDown={() => startHold('feed')} 
-                                onMouseUp={stopHold} 
-                                onMouseLeave={stopHold} 
-                                onTouchStart={() => startHold('feed')} 
-                                onTouchEnd={stopHold}
+                                onMouseDown={(e) => { e.preventDefault(); startHold('feed'); }} 
+                                onMouseUp={(e) => { e.preventDefault(); stopHold(); }} 
+                                onMouseLeave={(e) => { e.preventDefault(); stopHold(); }} 
+                                onTouchStart={(e) => { e.preventDefault(); startHold('feed'); }} 
+                                onTouchEnd={(e) => { e.preventDefault(); stopHold(); }}
                                 style={{ transform: 'translateZ(0) scale(1)' }} // FORCE NO SCALE/MOVE
                                 className={`w-40 h-40 rounded-full border-4 border-[#FFD700] flex items-center justify-center relative overflow-hidden bg-black shadow-[0_0_50px_#FFD700] transition-opacity duration-300 ${isFeeding ? 'opacity-90' : 'opacity-100'}`}
                             >
