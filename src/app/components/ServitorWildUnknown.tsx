@@ -2,7 +2,8 @@
 
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { X, Lock, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Plus, Minus, RefreshCw, Move, Eye, EyeOff, Settings, User, ArrowLeftRight, Info } from 'lucide-react';
+// ADDED Globe to imports
+import { X, Lock, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Plus, Minus, RefreshCw, Move, Eye, EyeOff, Settings, User, ArrowLeftRight, Info, Globe } from 'lucide-react';
 import { createBrowserClient } from '@supabase/ssr';
 import { checkAndSpendCredits, COST_BIND_SERVITOR } from '@/lib/economy';
 import { saveServitorToGrimoire, getMyServitors } from '@/lib/services/spellService';
@@ -24,9 +25,19 @@ const ASSETS = {
     FOOD: 'Servitor_Sustenance_Food_Sheet.png',
     MOUND: 'mound_into_the_void.png',
     UI_PANEL: 'Parchment_And_Oak_Responsive_Panels.png',
-    BG_MAIN: 'Astral_Plane_Parallax_Layers.jpg',
+    // Removed BG_MAIN from here as it is now dynamic
     UI_BUTTONS: 'Runic_Glass_Button_Set.png'
 };
+
+// ADDED: Background Options Array
+const BACKGROUND_OPTIONS = [
+    'Astral_Plane_Parallax_Layers.jpg',
+    'forest.jpg',
+    'cave.jpg',
+    'island.jpg',
+    'love_planet.jpg',
+    'sparkle_land.jpg'
+];
 
 // --- 2. CONFIGURATION SECTION ---
 
@@ -280,8 +291,10 @@ export default function ServitorWildUnknown() {
     const [user, setUser] = useState<any>(null);
     
     // --- CATEGORIES DEFINITION ---
+    // ADDED 'worlds' category
     const CATEGORIES = useMemo(() => [
         { id: 'global', label: 'WHOLE', asset: null, indexKey: null, offsetKey: 'global', canFlip: true },
+        { id: 'worlds', label: 'WORLDS', asset: null, indexKey: 'bgIndex', offsetKey: null }, 
         { id: 'settings', label: 'BEHAVIOR', asset: null, indexKey: null, offsetKey: null },
         { id: 'head', label: 'HATS', asset: ASSETS.HEAD, indexKey: 'hatIndex', offsetKey: 'head', canFlip: true },
         { id: 'base', label: 'TORSOS', asset: ASSETS.BASES, indexKey: 'baseIndex', offsetKey: 'base', canFlip: true },
@@ -303,6 +316,9 @@ export default function ServitorWildUnknown() {
         sigilIndex: 0, foodIndex: 0, treasureIndex: 0,
         carryTreasureIndex: 0,
         
+        // ADDED bgIndex
+        bgIndex: 0,
+
         movementType: "walk", 
         feedFreq: 5,
         offsets: JSON.parse(JSON.stringify(DEFAULT_OFFSETS))
@@ -324,6 +340,8 @@ export default function ServitorWildUnknown() {
     const [showExitWarning, setShowExitWarning] = useState(false);
 
     useEffect(() => {
+        // Updated loaded check to include backgrounds? 
+        // For simplicity, we just load the main assets. Backgrounds are standard images, browsers handle them fine.
         const imageUrls = Object.values(ASSETS);
         let loadedCount = 0;
         imageUrls.forEach((url) => {
@@ -798,7 +816,9 @@ export default function ServitorWildUnknown() {
             )}
 
             {/* STAGE */}
-            <div className="absolute inset-0 z-0 bg-cover bg-center" style={{ backgroundImage: `url('${ASSET_PATH}${ASSETS.BG_MAIN}')` }}>
+            {/* UPDATED BACKGROUND LOGIC */}
+            <div className="absolute inset-0 z-0 bg-cover bg-center transition-all duration-700" 
+                 style={{ backgroundImage: `url('${ASSET_PATH}${BACKGROUND_OPTIONS[config.bgIndex]}')` }}>
                 <div className="absolute inset-0 bg-black/40" />
             </div>
 
@@ -898,10 +918,13 @@ export default function ServitorWildUnknown() {
                                         <button key={cat.id} onClick={() => setActiveCategory(cat.id)}
                                             className="flex flex-col items-center gap-1 group bg-[#eaddcf] p-2 border border-[#8d6e63] rounded shadow-sm hover:border-[#3e2723]">
                                             <div className="w-12 h-12 flex items-center justify-center relative overflow-hidden">
+                                                {/* CONDITIONAL RENDER FOR SPECIAL CATEGORIES */}
                                                 {cat.asset ? (
                                                     <div className="w-full h-full transform scale-90" style={getSpriteStyle(currentIdx, cat.asset, isSingle)} />
                                                 ) : cat.id === 'global' ? (
                                                     <User size={24} className="text-[#3e2723]" />
+                                                ) : cat.id === 'worlds' ? (
+                                                    <Globe size={24} className="text-[#3e2723]" />
                                                 ) : (
                                                     <Settings size={24} className="text-[#3e2723]"/>
                                                 )}
@@ -948,15 +971,29 @@ export default function ServitorWildUnknown() {
                                             
                                             {/* Grid */}
                                             {CATEGORIES.find(c => c.id === activeCategory)?.indexKey && (
-                                                <div className="grid grid-cols-4 gap-2 mb-4 pb-2">
-                                                    {GENERIC_LIST.map((_, i) => (
-                                                        <button key={i} 
-                                                            onClick={() => setConfig({...config, [(CATEGORIES.find(c => c.id === activeCategory)?.indexKey as string)]: i})}
-                                                            className={`w-full aspect-square border-2 rounded overflow-hidden bg-white/50 ${(config as any)[CATEGORIES.find(c => c.id === activeCategory)?.indexKey as string] === i ? 'border-[#3e2723] ring-1 ring-[#3e2723]' : 'border-transparent'}`}>
-                                                            <div className="w-full h-full transform scale-75" 
-                                                                 style={getSpriteStyle(i, (CATEGORIES.find(c => c.id === activeCategory)?.asset as string), CATEGORIES.find(c => c.id === activeCategory)?.single)} />
-                                                        </button>
-                                                    ))}
+                                                <div className={`grid ${activeCategory === 'worlds' ? 'grid-cols-2' : 'grid-cols-4'} gap-2 mb-4 pb-2`}>
+                                                    {/* SPECIAL RENDER LOOP FOR WORLDS vs STANDARD SPRITES */}
+                                                    {activeCategory === 'worlds' ? (
+                                                        BACKGROUND_OPTIONS.map((bgName, i) => (
+                                                            <button key={i} 
+                                                                onClick={() => setConfig({...config, bgIndex: i})}
+                                                                className={`w-full aspect-video border-2 rounded overflow-hidden relative ${(config as any).bgIndex === i ? 'border-[#3e2723] ring-1 ring-[#3e2723]' : 'border-transparent'}`}>
+                                                                <div className="w-full h-full bg-cover bg-center" style={{ backgroundImage: `url('${ASSET_PATH}${bgName}')` }} />
+                                                                <div className="absolute bottom-0 left-0 w-full bg-black/50 text-[8px] text-white text-center py-1 truncate px-1">
+                                                                    {bgName.split('.')[0].replace(/_/g, ' ')}
+                                                                </div>
+                                                            </button>
+                                                        ))
+                                                    ) : (
+                                                        GENERIC_LIST.map((_, i) => (
+                                                            <button key={i} 
+                                                                onClick={() => setConfig({...config, [(CATEGORIES.find(c => c.id === activeCategory)?.indexKey as string)]: i})}
+                                                                className={`w-full aspect-square border-2 rounded overflow-hidden bg-white/50 ${(config as any)[CATEGORIES.find(c => c.id === activeCategory)?.indexKey as string] === i ? 'border-[#3e2723] ring-1 ring-[#3e2723]' : 'border-transparent'}`}>
+                                                                <div className="w-full h-full transform scale-75" 
+                                                                     style={getSpriteStyle(i, (CATEGORIES.find(c => c.id === activeCategory)?.asset as string), CATEGORIES.find(c => c.id === activeCategory)?.single)} />
+                                                            </button>
+                                                        ))
+                                                    )}
                                                 </div>
                                             )}
                                         </>
