@@ -996,7 +996,7 @@ export default function ServitorWildUnknown() {
 
             {/* FEEDING MODAL */}
             {isFeedingActive && (
-                <div className={`absolute inset-0 z-200 flex flex-col items-center justify-center transition-colors duration-300 ${isFeeding ? 'bg-black/0' : 'bg-black/80'}`}>
+                <div className={`absolute inset-0 z-200 flex flex-col items-center justify-center transition-colors duration-300 ${isFeeding ? 'bg-black/0' : 'bg-black/30'}`}>
                     {hungerState === 'fed' ? (
                         <div className="text-center animate-in zoom-in">
                             <h2 className="text-[#FFD700] magick-font text-3xl mb-4">Hunger Sated</h2>
