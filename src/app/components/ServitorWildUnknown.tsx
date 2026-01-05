@@ -194,6 +194,7 @@ export default function ServitorWildUnknown() {
     const servitorPosRef = useRef(20);
     const holdIntervalRef = useRef<any>(null); 
     const buttonIntervalRef = useRef<any>(null); 
+    const isHoldingRef = useRef(false); // NEW: Track hold state to prevent touch/mouse conflict
 
     const [sName, setSName] = useState("");
     const [sPurpose, setSPurpose] = useState("");
@@ -441,6 +442,10 @@ export default function ServitorWildUnknown() {
     };
 
     const startHold = (type: 'awaken' | 'feed') => {
+        // Prevent double-firing (touch then mouse)
+        if(isHoldingRef.current) return;
+        isHoldingRef.current = true;
+
         const start = Date.now();
         const dur = type === 'awaken' ? 5000 : 3000;
         
@@ -459,6 +464,7 @@ export default function ServitorWildUnknown() {
 
             if(p >= 100) {
                 clearInterval(holdIntervalRef.current);
+                isHoldingRef.current = false; // Release hold lock
                 playSound('glitter');
                 if(type === 'awaken') {
                     setIsAwakening(false); 
@@ -489,6 +495,7 @@ export default function ServitorWildUnknown() {
     };
 
     const stopHold = () => {
+        isHoldingRef.current = false;
         if(holdIntervalRef.current) clearInterval(holdIntervalRef.current);
         setIsAwakening(false); 
         setAwakenProgress(0); 
@@ -728,18 +735,16 @@ export default function ServitorWildUnknown() {
                 @keyframes rotate-r { 0% { transform: rotate(5deg); } 50% { transform: rotate(-5deg); } 100% { transform: rotate(5deg); } }
                 
                 /* 
-                   UPDATED FEEDING WAVE: Hands moving UP and DOWN together.
-                   Range increased to 80deg to be clearly visible.
-                   Synchronized timing (both hands use same timing function).
+                   UPDATED FEEDING WAVE: SMOOTHER 0-45deg range
                 */
                 @keyframes feed-wave-left {
                     0% { transform: rotate(0deg); }
-                    50% { transform: rotate(80deg); } 
+                    50% { transform: rotate(45deg); } 
                     100% { transform: rotate(0deg); }
                 }
                 @keyframes feed-wave-right {
                     0% { transform: rotate(0deg); }
-                    50% { transform: rotate(-80deg); } 
+                    50% { transform: rotate(-45deg); } 
                     100% { transform: rotate(0deg); }
                 }
 
@@ -788,10 +793,10 @@ export default function ServitorWildUnknown() {
                    Using !important to ensure these trigger on both Desktop and Mobile,
                    overriding any existing walk/idle classes on the rig.
                 */
-                .anim-feed .arm-left-joint { animation: feed-wave-left 0.5s infinite ease-in-out !important; }
-                .anim-feed .arm-right-joint { animation: feed-wave-right 0.5s infinite ease-in-out !important; }
-                .anim-feed .tool-hand-anim { animation: feed-wave-right 0.5s infinite ease-in-out !important; }
-                .anim-feed .carry-hand-anim { animation: feed-wave-left 0.5s infinite ease-in-out !important; }
+                .anim-feed .arm-left-joint { animation: feed-wave-left 0.6s infinite ease-in-out !important; }
+                .anim-feed .arm-right-joint { animation: feed-wave-right 0.6s infinite ease-in-out !important; }
+                .anim-feed .tool-hand-anim { animation: feed-wave-right 0.6s infinite ease-in-out !important; }
+                .anim-feed .carry-hand-anim { animation: feed-wave-left 0.6s infinite ease-in-out !important; }
 
                 /* Enhanced Glow Effects */
                 .pulse-glow-void { animation: pulse-void 1s infinite alternate; }
@@ -1037,15 +1042,16 @@ export default function ServitorWildUnknown() {
                                     onMouseLeave={(e) => { e.preventDefault(); stopHold(); }} 
                                     onTouchStart={(e) => { e.preventDefault(); startHold('feed'); }} 
                                     onTouchEnd={(e) => { e.preventDefault(); stopHold(); }}
+                                    onTouchCancel={(e) => { e.preventDefault(); stopHold(); }} // Added robust cancellation
                                     style={{ transform: 'translateZ(0) scale(1)', touchAction: 'none' }} 
                                     className={`w-40 h-40 rounded-full border-4 border-[#FFD700] flex items-center justify-center relative overflow-hidden bg-black shadow-[0_0_50px_#FFD700] transition-opacity duration-300 ${isFeeding ? 'opacity-90' : 'opacity-100'}`}
                                 >
-                                    {/* Progress Bar with Dynamic Transition: Transition only when filling up (>0), instant when resetting (0) */}
                                     <div 
                                         className="absolute bottom-0 left-0 w-full bg-[#FFD700] z-10" 
                                         style={{
                                             height: `${feedProgress}%`,
-                                            transition: feedProgress > 0 ? 'height 0.05s linear' : 'none' 
+                                            // Simplified transition to ensure update visibility
+                                            transition: 'height 0.1s linear'
                                         }}>
                                     </div>
                                     <div className="w-20 h-20 relative z-20 pointer-events-none" style={getSpriteStyle(config.foodIndex, ASSETS.FOOD)} />
