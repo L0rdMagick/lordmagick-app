@@ -685,9 +685,12 @@ export default function ServitorWildUnknown() {
                 <div id="game-mound" className="absolute bottom-[15vh] left-[10%] w-40 h-[100px] z-20 bg-contain bg-no-repeat bg-bottom transition-all duration-500"
                      style={{ backgroundImage: `url('${ASSET_PATH}${ASSETS.MOUND}')`, ...getGameObjectStyle('mound') }} />
 
-                <div id="servitor-container" className="absolute bottom-[18vh] left-[20%] w-32 h-32 z-100 transition-all duration-100 pointer-events-auto origin-bottom">
-                    <ServitorRig idPrefix="game-rig" />
-                </div>
+                {/* VISIBILITY LOGIC FIXED: Only show game servitor if running */}
+                {isRunning && (
+                    <div id="servitor-container" className="absolute bottom-[18vh] left-[20%] w-32 h-32 z-100 transition-all duration-100 pointer-events-auto origin-bottom">
+                        <ServitorRig idPrefix="game-rig" />
+                    </div>
+                )}
 
                 <div className="absolute bottom-[20vh] right-[10%] w-32 h-32 z-20 flex flex-col items-center">
                     {config.offsets.vessel.v && (
@@ -714,32 +717,32 @@ export default function ServitorWildUnknown() {
             {/* MASTER UI PANEL - Unified Container */}
             <div className={`fixed inset-0 z-50 flex items-center justify-center transition-all duration-500 ${isRunning ? 'opacity-0 pointer-events-none transform scale-95' : 'opacity-100 pointer-events-auto transform scale-100'} p-0 md:p-4`}>
                 
-                {/* PARCHMENT FRAME */}
-                <div className="relative w-full h-full md:w-[600px] md:h-[90vh] flex flex-col p-8 md:p-12 box-border"
+                {/* PARCHMENT FRAME - MOBILE PADDING OPTIMIZED (p-5 pt-10 md:p-12) */}
+                <div className="relative w-full h-full md:w-[600px] md:h-[90vh] flex flex-col p-5 pt-10 md:p-12 box-border"
                     style={{ 
                         backgroundImage: `url('${ASSET_PATH}${ASSETS.UI_PANEL}')`,
                         backgroundSize: '100% 100%',
                         backgroundRepeat: 'no-repeat'
                     }}>
                     
-                    {/* 1. HEADER: Inputs - Padded from top for mobile */}
+                    {/* 1. HEADER: Inputs - Padded from top for mobile - STYLING REFINED */}
                     <div className="flex flex-col md:flex-row gap-2 shrink-0 mb-4 pt-4 md:pt-2 w-full max-w-[90%] mx-auto z-20">
                         <input type="text" value={sName} onChange={e => setSName(e.target.value)} 
-                            className="flex-1 bg-[#f0e6d2] shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)] border border-[#5d4037] p-2 h-10 md:h-auto text-sm text-black rounded magick-font placeholder-gray-600 px-3 min-w-0" 
+                            className="flex-1 bg-[#f0e6d2] shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border-2 border-[#3e2723] p-2 h-10 md:h-auto text-sm text-black rounded magick-font placeholder-gray-600 px-3 min-w-0" 
                             placeholder="Spirit Name" />
                         <input type="text" value={sPurpose} onChange={e => setSPurpose(e.target.value)} 
-                            className="flex-1 bg-[#f0e6d2] shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)] border border-[#5d4037] p-2 h-10 md:h-auto text-sm text-black rounded magick-font placeholder-gray-600 px-3 min-w-0" 
+                            className="flex-1 bg-[#f0e6d2] shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border-2 border-[#3e2723] p-2 h-10 md:h-auto text-sm text-black rounded magick-font placeholder-gray-600 px-3 min-w-0" 
                             placeholder="Purpose" />
                     </div>
 
-                    {/* 2. PREVIEW AREA - Scalable Height */}
-                    <div className="relative shrink-0 h-48 md:h-64 w-full flex justify-center items-end border-b border-[#5d4037]/30 mb-2 overflow-visible z-10">
+                    {/* 2. PREVIEW AREA - Scalable Height - Z-INDEX INCREASED to 30 */}
+                    <div className="relative shrink-0 h-48 md:h-64 w-full flex justify-center items-end border-b border-[#5d4037]/30 mb-2 overflow-visible z-30">
                         <div className="w-full h-full flex items-end justify-center pb-4">
                             <ServitorRig idPrefix="preview-rig" isPreview={true} />
                         </div>
                     </div>
 
-                    {/* 3. SCROLLABLE GRID - Transparent Background */}
+                    {/* 3. SCROLLABLE GRID - Transparent Background - Z-INDEX 20 */}
                     <div className="flex-1 overflow-y-auto custom-scrollbar bg-[#eaddcf]/80 rounded p-2 z-20 relative border border-[#8d6e63]/30">
                         {!activeCategory ? (
                             <div className="grid grid-cols-4 gap-2">
