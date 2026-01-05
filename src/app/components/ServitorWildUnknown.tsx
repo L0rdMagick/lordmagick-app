@@ -31,9 +31,9 @@ const ASSETS = {
 
 // ADDED: Background Options Array
 const BACKGROUND_OPTIONS = [
-    'Treasure_Cave.jpg',
-    'Magick_Forest.jpg',
     'Crystal_Cave.jpg',
+    'Magick_Forest.jpg',
+    'Treasure_Cave.jpg',
     'Enchanted_Island.jpg',
     'Love_Planet.jpg',
     'Sparkle_Land.jpg'
