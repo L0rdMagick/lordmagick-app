@@ -91,7 +91,7 @@ const LAYER_ORDER_CONFIG = {
         sigil: 50,     
         armRight: 70, 
         legRight: 60,  
-        tool: 85,
+        tool: 65,
         carryTreasure: 80, 
         head: 90       
     },
