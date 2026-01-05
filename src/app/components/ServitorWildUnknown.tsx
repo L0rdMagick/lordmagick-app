@@ -34,7 +34,7 @@ const DIRECTIONAL_OFFSETS = {
     facingRight: {
         // --- SEPARATE GLOBAL DEFAULTS ---
         globalUI:   { x: 0, y: 14, s: 1.3, f: false }, // Default for UI Preview
-        globalGame: { x: 0, y: 0, s: 1.0, f: false }, // Default for Gameplay
+        globalGame: { x: 0, y: 0, s: 1.2, f: false }, // Default for Gameplay
         
         wing:    { x: 0, y: 3, s: 1.0, f: false },
         base:    { x: 0, y: 0, s: 1.0, f: false },
