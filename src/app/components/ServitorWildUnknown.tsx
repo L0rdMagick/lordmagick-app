@@ -350,7 +350,7 @@ export default function ServitorWildUnknown() {
                 
                 // B. Reset EVERYTHING to ensure clean state
                 servitor.style.animation = 'none';
-                servitor.style.removeProperty('transform');
+                servitor.style.transform = 'translateY(0) scale(1)'; // Explicit start point
                 
                 // C. Force Browser Reflow (Critical for animation restart)
                 void servitor.offsetWidth; 
@@ -670,9 +670,9 @@ export default function ServitorWildUnknown() {
                 
                 /* JUMP INTO VOID ANIMATION RESTORED & FORCED VIA !IMPORTANT */
                 @keyframes jump-into-void {
-                    0% { transform: translateY(0) scale(1) !important; opacity: 1 !important; }
-                    50% { transform: translateY(-100px) scale(1) !important; opacity: 1 !important; } /* Jump Peak */
-                    100% { transform: translateY(20px) scale(0) !important; opacity: 0 !important; } /* Dive into Mound */
+                    0% { transform: translateY(0) scale(1); opacity: 1; }
+                    50% { transform: translateY(-100px) scale(1); opacity: 1; } /* Jump Peak */
+                    100% { transform: translateY(20px) scale(0); opacity: 0; } /* Dive into Mound */
                 }
 
                 .anim-jump-into-void {
