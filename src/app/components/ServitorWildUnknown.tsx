@@ -700,15 +700,13 @@ export default function ServitorWildUnknown() {
                 @keyframes rotate-l { 0% { transform: rotate(-5deg); } 50% { transform: rotate(5deg); } 100% { transform: rotate(-5deg); } }
                 @keyframes rotate-r { 0% { transform: rotate(5deg); } 50% { transform: rotate(-5deg); } 100% { transform: rotate(5deg); } }
                 
-                /* UPDATED FEEDING WAVE */
-                @keyframes feed-wave-left {
+                /* 
+                   UPDATED FEEDING WAVE: SYNCHRONIZED, REDUCED RANGE 
+                   -12deg provides a subtle "lift" motion similar to walking scale.
+                */
+                @keyframes feed-wave-sync {
                     0% { transform: rotate(0deg); }
-                    50% { transform: rotate(45deg); } 
-                    100% { transform: rotate(0deg); }
-                }
-                @keyframes feed-wave-right {
-                    0% { transform: rotate(0deg); }
-                    50% { transform: rotate(-45deg); } 
+                    50% { transform: rotate(-12deg); } /* Lifts both arms slightly */
                     100% { transform: rotate(0deg); }
                 }
 
@@ -752,11 +750,15 @@ export default function ServitorWildUnknown() {
                 .anim-walk-right .tool-hand-anim { animation: rotate-r 1.2s infinite ease-in-out; }
                 .anim-walk-right .carry-hand-anim { animation: rotate-l 1.2s infinite ease-in-out; }
 
-                /* FEEDING ANIMATION OVERRIDES - Strict !important */
-                .anim-feed .arm-left-joint { animation: feed-wave-left 0.6s infinite ease-in-out !important; }
-                .anim-feed .arm-right-joint { animation: feed-wave-right 0.6s infinite ease-in-out !important; }
-                .anim-feed .tool-hand-anim { animation: feed-wave-right 0.6s infinite ease-in-out !important; }
-                .anim-feed .carry-hand-anim { animation: feed-wave-left 0.6s infinite ease-in-out !important; }
+                /* 
+                   FEEDING ANIMATION OVERRIDES
+                   Using feed-wave-sync for ALL arm/hand components ensuring synchronization.
+                   Strict !important used to override walking anims.
+                */
+                .anim-feed .arm-left-joint { animation: feed-wave-sync 0.6s infinite ease-in-out !important; }
+                .anim-feed .arm-right-joint { animation: feed-wave-sync 0.6s infinite ease-in-out !important; }
+                .anim-feed .tool-hand-anim { animation: feed-wave-sync 0.6s infinite ease-in-out !important; }
+                .anim-feed .carry-hand-anim { animation: feed-wave-sync 0.6s infinite ease-in-out !important; }
 
                 /* Enhanced Glow Effects */
                 .pulse-glow-void { animation: pulse-void 1s infinite alternate; }
@@ -996,7 +998,7 @@ export default function ServitorWildUnknown() {
 
             {/* FEEDING MODAL */}
             {isFeedingActive && (
-                <div className={`absolute inset-0 z-200 flex flex-col items-center justify-center transition-colors duration-300 ${isFeeding ? 'bg-black/0' : 'bg-black/30'}`}>
+                <div className={`absolute inset-0 z-200 flex flex-col items-center justify-center transition-colors duration-300 ${isFeeding ? 'bg-black/0' : 'bg-black/80'}`}>
                     {hungerState === 'fed' ? (
                         <div className="text-center animate-in zoom-in">
                             <h2 className="text-[#FFD700] magick-font text-3xl mb-4">Hunger Sated</h2>
