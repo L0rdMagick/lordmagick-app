@@ -30,6 +30,8 @@ const ASSETS = {
 
 // --- 2. CONFIGURATION SECTION ---
 
+const GENERIC_LIST = Array.from({length: 16}).map((_, i) => `Option ${i + 1}`);
+
 const DIRECTIONAL_OFFSETS = {
     facingRight: {
         globalUI:   { x: 0, y: 14, s: 1.3, f: false },
@@ -277,8 +279,7 @@ export default function ServitorWildUnknown() {
     const [uName, setUName] = useState("");
     const [user, setUser] = useState<any>(null);
     
-    // --- CATEGORIES DEFINITION (Simplified for brevity, same as before) ---
-    // (We reuse the external CATEGORIES constant if needed, but here it depends on ASSETS which are global)
+    // --- CATEGORIES DEFINITION ---
     const CATEGORIES = useMemo(() => [
         { id: 'global', label: 'WHOLE', asset: null, indexKey: null, offsetKey: 'global', canFlip: true },
         { id: 'head', label: 'HATS', asset: ASSETS.HEAD, indexKey: 'hatIndex', offsetKey: 'head', canFlip: true },
@@ -766,7 +767,7 @@ export default function ServitorWildUnknown() {
                 .custom-scrollbar::-webkit-scrollbar { width: 4px; } .custom-scrollbar::-webkit-scrollbar-thumb { background: #5d4037; border-radius: 4px; }
             `}</style>
 
-            <button onClick={() => hasUnsavedChanges ? setShowExitWarning(true) : router.push('/spell-room')} className="absolute top-4 right-4 z-60 text-gray-400 hover:text-white"><X /></button>
+            <button onClick={() => hasUnsavedChanges ? setShowExitWarning(true) : router.push('/spell-room')} className="absolute top-5 right-4 z-60 text-gray-400 hover:text-white"><X /></button>
             
             {/* INFO BUTTON */}
             <button onClick={() => setShowInfoModal(true)} className="absolute top-4 left-4 z-60 text-gray-400 hover:text-white"><Info /></button>
@@ -802,7 +803,7 @@ export default function ServitorWildUnknown() {
             <div className="relative w-full h-full z-10 pointer-events-none">
                 {/* GAMEPLAY HUD: Name & Purpose */}
                 {isRunning && !isFeedingActive && (
-                    <div className="fixed top-[20px] left-1/2 -translate-x-1/2 z-50 bg-indigo-900/90 border-double border-4 border-cyan-300 shadow-[0_0_15px_#4FD1C5] px-8 py-2 rounded-lg text-center min-w-[240px] pointer-events-auto">
+                    <div className="fixed top-5 left-1/2 -translate-x-1/2 z-50 bg-indigo-900/90 border-double border-4 border-cyan-300 shadow-[0_0_15px_#4FD1C5] px-8 py-2 rounded-lg text-center min-w-60 pointer-events-auto">
                         <p className="text-[#FFD700] font-bold uppercase text-sm font-serif tracking-wider drop-shadow-md">
                             {sName || "Spirit"}: {sPurpose || "Serve"}
                         </p>
@@ -857,7 +858,7 @@ export default function ServitorWildUnknown() {
             <div className={`fixed inset-0 z-50 flex items-center justify-center transition-all duration-500 ${isRunning ? 'opacity-0 pointer-events-none transform scale-95' : 'opacity-100 pointer-events-auto transform scale-100'} p-0 md:p-4`}>
                 
                 {/* PARCHMENT FRAME - OPTIMIZED PADDING & SIZING */}
-                <div className="relative w-full h-[95dvh] md:w-[600px] md:h-auto md:max-h-[90vh] md:aspect-[3/4] flex flex-col px-6 pt-12 pb-6 md:px-16 md:pt-14 md:pb-8 box-border"
+                <div className="relative w-full h-[95dvh] md:w-[600px] md:h-auto md:max-h-[90vh] md:aspect-3/4 flex flex-col px-6 pt-12 pb-6 md:px-16 md:pt-14 md:pb-8 box-border"
                     style={{ 
                         backgroundImage: `url('${ASSET_PATH}${ASSETS.UI_PANEL}')`,
                         backgroundSize: '100% 100%',
@@ -883,7 +884,7 @@ export default function ServitorWildUnknown() {
                     </div>
 
                     {/* 3. SCROLLABLE GRID - ENFORCED MIN-HEIGHT */}
-                    <div className="flex-1 min-h-[160px] overflow-y-auto custom-scrollbar bg-[#eaddcf]/60 rounded p-2 z-20 relative border border-[#8d6e63]/30">
+                    <div className="flex-1 min-h-40 overflow-y-auto custom-scrollbar bg-[#eaddcf]/60 rounded p-2 z-20 relative border border-[#8d6e63]/30">
                         {!activeCategory ? (
                             <div className="grid grid-cols-4 gap-2">
                                 {CATEGORIES.map(cat => {
@@ -1002,7 +1003,7 @@ export default function ServitorWildUnknown() {
                             <button onClick={handleResume} className="runic-btn px-8 py-3 rounded text-lg font-bold">Resume Ritual</button>
                         </div>
                     ) : (
-                        <div className="flex flex-col items-center justify-center min-h-[240px]">
+                        <div className="flex flex-col items-center justify-center min-h-60">
                             {/* FIXED TEXT CONTAINER to prevent layout shift */}
                             <div className="h-8 mb-8 flex items-center justify-center w-full">
                                 <p className="text-[#FFD700] text-xl font-serif animate-pulse text-center whitespace-nowrap">
