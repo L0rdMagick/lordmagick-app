@@ -70,7 +70,7 @@ const DIRECTIONAL_OFFSETS = {
 
 const UI_PREVIEW_SETTINGS = {
     scale: 1.0, 
-    y: -11      
+    y: -20 // Moved up 20px as requested (was -11)
 };
 
 const LAYER_ORDER_CONFIG = {
@@ -561,6 +561,7 @@ export default function ServitorWildUnknown() {
         const finalGf = gBase.f !== gUser.f; 
 
         // CRITICAL FIX: Bobbing animation applied to outer wrapper to prevent position reset on flip
+        // We use a constant class for the parent if in flying mode to prevent resetting the animation keyframe on re-render
         const flyClass = isFlying ? 'anim-floating' : '';
 
         const globalTransform = `translate(${finalGx}%, ${finalGy}%) scale(${finalGs}) ${finalGf ? 'scaleX(-1)' : ''}`;
@@ -569,7 +570,7 @@ export default function ServitorWildUnknown() {
         return (
             <div id={idPrefix} className="relative w-32 h-32" style={{ transform: previewStyle }}>
                 {/* Floating Wrapper - Persists across state changes to prevent gltich */}
-                <div className={`w-full h-full ${flyClass}`}>
+                <div className={`w-full h-full ${flyClass}`} style={{ transformStyle: 'preserve-3d' }}>
                     {/* The Actual Rig - Handles offsets/flipping */}
                     <div className={`servitor-rig relative w-full h-full ${rigAnimation} ${wrapperClass}`} 
                         style={{ 
@@ -627,14 +628,14 @@ export default function ServitorWildUnknown() {
                 @keyframes rotate-l { 0% { transform: rotate(-5deg); } 50% { transform: rotate(5deg); } 100% { transform: rotate(-5deg); } }
                 @keyframes rotate-r { 0% { transform: rotate(5deg); } 50% { transform: rotate(-5deg); } 100% { transform: rotate(5deg); } }
                 
-                /* Feeding Wave Animation (Arms wave up and down) - SLOWED to 0.8s */
+                /* Feeding Wave Animation - SYNCHRONIZED UP/DOWN */
                 @keyframes feed-wave {
                     0% { transform: rotate(0deg); }
                     50% { transform: rotate(-45deg); } 
                     100% { transform: rotate(0deg); }
                 }
 
-                /* Flying Bob - UPDATED to float higher (-60 to -90px) */
+                /* Flying Bob - UPDATED to float higher (-60 to -90px) with smooth curve */
                 @keyframes float-bob {
                     0% { transform: translateY(-60px); }
                     50% { transform: translateY(-90px); }
@@ -658,10 +659,10 @@ export default function ServitorWildUnknown() {
                 .anim-walk-right .arm-right-joint { animation: rotate-r 1.2s infinite ease-in-out; }
                 .anim-walk-right .tool-hand-anim { animation: rotate-r 1.2s infinite ease-in-out; }
 
-                /* Feeding Animation Overrides - 0.8s duration */
+                /* Feeding Animation Overrides - SYNCHRONIZED ARMS */
                 .anim-feed .arm-left-joint { animation: feed-wave 0.8s infinite ease-in-out; }
-                .anim-feed .arm-right-joint { animation: feed-wave 0.8s infinite ease-in-out; animation-delay: 0.1s; }
-                .anim-feed .tool-hand-anim { animation: feed-wave 0.8s infinite ease-in-out; animation-delay: 0.1s; }
+                .anim-feed .arm-right-joint { animation: feed-wave 0.8s infinite ease-in-out; }
+                .anim-feed .tool-hand-anim { animation: feed-wave 0.8s infinite ease-in-out; }
 
                 /* Enhanced Glow Effects */
                 .pulse-glow-void { animation: pulse-void 1s infinite alternate; }
@@ -810,8 +811,8 @@ export default function ServitorWildUnknown() {
                     )}
                 </div>
 
-                {/* 4. FIXED ACTION BUTTONS */}
-                <div className="p-4 border-t border-[#5d4037]/30 flex gap-2 shrink-0 bg-[#eaddcf]">
+                {/* 4. FIXED ACTION BUTTONS - Extended Downward by 25px (pb-10) */}
+                <div className="p-4 pb-10 border-t border-[#5d4037]/30 flex gap-2 shrink-0 bg-[#eaddcf]">
                     <button onMouseDown={() => startHold('awaken')} onMouseUp={stopHold} onMouseLeave={stopHold} onTouchStart={() => startHold('awaken')} onTouchEnd={stopHold}
                         className="runic-btn flex-1 py-3 text-xs font-bold uppercase tracking-widest relative overflow-hidden text-center">
                         <div className="absolute top-0 left-0 h-full bg-white/20 transition-all duration-75 ease-linear" style={{width: `${awakenProgress}%`}}></div>
@@ -839,9 +840,9 @@ export default function ServitorWildUnknown() {
                             
                             {/* FIXED: Button remains visible and stationary. Removed active:scale */}
                             <button onMouseDown={() => startHold('feed')} onMouseUp={stopHold} onMouseLeave={stopHold} onTouchStart={() => startHold('feed')} onTouchEnd={stopHold}
-                                className={`w-40 h-40 rounded-full border-4 border-[#FFD700] flex items-center justify-center relative overflow-hidden bg-black shadow-[0_0_50px_#FFD700] transition-opacity duration-300 ${isFeeding ? 'opacity-90' : 'opacity-100'}`}>
-                                <div className="absolute bottom-0 left-0 w-full bg-[#FFD700]/30 transition-all duration-75" style={{height: `${feedProgress}%`}}></div>
-                                <div className="w-20 h-20" style={getSpriteStyle(config.foodIndex, ASSETS.FOOD)} />
+                                className={`w-40 h-40 rounded-full border-4 border-[#FFD700] flex items-center justify-center relative overflow-hidden bg-black shadow-[0_0_50px_#FFD700] transition-opacity duration-300 active:transform-none ${isFeeding ? 'opacity-90' : 'opacity-100'}`}>
+                                <div className="absolute bottom-0 left-0 w-full bg-[#FFD700]/50 transition-all duration-75 z-10" style={{height: `${feedProgress}%`}}></div>
+                                <div className="w-20 h-20 relative z-20" style={getSpriteStyle(config.foodIndex, ASSETS.FOOD)} />
                             </button>
                         </div>
                     )}
