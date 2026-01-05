@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { X, Lock, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Plus, Minus, RefreshCw, Move, Eye, EyeOff, Settings, User, ArrowLeftRight } from 'lucide-react';
+import { X, Lock, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Plus, Minus, RefreshCw, Move, Eye, EyeOff, Settings, User, ArrowLeftRight, Info } from 'lucide-react';
 import { createBrowserClient } from '@supabase/ssr';
 import { checkAndSpendCredits, COST_BIND_SERVITOR } from '@/lib/economy';
 import { saveServitorToGrimoire, getMyServitors } from '@/lib/services/spellService';
@@ -184,6 +184,7 @@ export default function ServitorWildUnknown() {
     const [loadProgress, setLoadProgress] = useState(0);
     const [isRunning, setIsRunning] = useState(false);
     const [activeCategory, setActiveCategory] = useState<string | null>(null);
+    const [showInfoModal, setShowInfoModal] = useState(false);
 
     const [rigAnimation, setRigAnimation] = useState('anim-idle');
     const [isCarryingTreasure, setIsCarryingTreasure] = useState(false);
@@ -388,23 +389,18 @@ export default function ServitorWildUnknown() {
 
             // 4. JUMP OUT (Change to Facing Right & Holding Treasure IMMEDIATELY)
             if(servitor) {
-                // Ensure visibility
                 servitor.style.opacity = '1';
                 servitor.style.removeProperty('transform');
                 void servitor.offsetWidth;
                 
-                // IMPORTANT: Set state to holding treasure BEFORE animation starts
                 setIsCarryingTreasure(true);
-                // IMPORTANT: Set orientation to RIGHT for the jump out
                 setRigAnimation(config.movementType === 'fly' ? 'anim-fly-right' : 'anim-walk-right'); 
 
-                // Trigger Animation
                 servitor.style.animation = 'jump-out-of-void 0.8s forwards ease-in-out';
             }
             await wait(800); 
 
-            // 5. WALK BACK (Already facing right and holding treasure)
-            // Just reconfirm animation state incase jump changed anything
+            // 5. WALK BACK
             setRigAnimation(config.movementType === 'fly' ? 'anim-fly-right' : 'anim-walk-right');
             
             // RIGHT STOP
@@ -621,7 +617,6 @@ export default function ServitorWildUnknown() {
             return renderPart(idx, asset, partKey, z, 'static');
         };
 
-        // NEW: Select separate global default depending on view mode
         const gUser = config.offsets.global;
         const baseMap = DIRECTIONAL_OFFSETS.facingRight;
         const gBase = isPreview ? baseMap.globalUI : baseMap.globalGame;
@@ -694,7 +689,7 @@ export default function ServitorWildUnknown() {
                 .ornate-btn {
                     background-color: #000;
                     border: 2px solid #FFD700;
-                    border-radius: 8px; /* Slightly curved corners */
+                    border-radius: 8px; 
                     box-shadow: 0 0 5px #FFD700, inset 0 0 10px #FFD700aa;
                     font-family: 'MedievalSharp', serif;
                     color: #FFD700;
@@ -714,10 +709,15 @@ export default function ServitorWildUnknown() {
                 @keyframes rotate-l { 0% { transform: rotate(-5deg); } 50% { transform: rotate(5deg); } 100% { transform: rotate(-5deg); } }
                 @keyframes rotate-r { 0% { transform: rotate(5deg); } 50% { transform: rotate(-5deg); } 100% { transform: rotate(5deg); } }
                 
-                /* Feeding Wave Animation - SYNCHRONIZED ARMS UP/DOWN */
-                @keyframes feed-wave {
+                /* FEEDING WAVE: Hands moving UP (towards mouth) TOGETHER */
+                @keyframes feed-lift-left {
                     0% { transform: rotate(0deg); }
-                    50% { transform: rotate(-45deg); } 
+                    50% { transform: rotate(45deg); } /* Lifts left hand up/back */
+                    100% { transform: rotate(0deg); }
+                }
+                @keyframes feed-lift-right {
+                    0% { transform: rotate(0deg); }
+                    50% { transform: rotate(-45deg); } /* Lifts right hand up/back */
                     100% { transform: rotate(0deg); }
                 }
 
@@ -751,11 +751,7 @@ export default function ServitorWildUnknown() {
                 .anim-walk-left .arm-left-joint { animation: rotate-r 1.2s infinite ease-in-out; }
                 .anim-walk-left .arm-right-joint { animation: rotate-l 1.2s infinite ease-in-out; }
                 .anim-walk-left .tool-hand-anim { animation: rotate-l 1.2s infinite ease-in-out; }
-                
-                /* NEW: Treasure Animation Synchronized with Left Hand */
                 .anim-walk-left .carry-hand-anim { animation: rotate-r 1.2s infinite ease-in-out; }
-                .anim-walk-right .carry-hand-anim { animation: rotate-l 1.2s infinite ease-in-out; }
-                .anim-feed .carry-hand-anim { animation: feed-wave 0.8s infinite ease-in-out; }
 
                 .anim-walk-right .servitor-rig { animation: bounce 0.6s infinite; }
                 .anim-walk-right .leg-left-joint { animation: rotate-r 1.2s infinite ease-in-out; }
@@ -763,13 +759,13 @@ export default function ServitorWildUnknown() {
                 .anim-walk-right .arm-left-joint { animation: rotate-l 1.2s infinite ease-in-out; }
                 .anim-walk-right .arm-right-joint { animation: rotate-r 1.2s infinite ease-in-out; }
                 .anim-walk-right .tool-hand-anim { animation: rotate-r 1.2s infinite ease-in-out; }
+                .anim-walk-right .carry-hand-anim { animation: rotate-l 1.2s infinite ease-in-out; }
 
-                /* Feeding Animation Overrides - SYNCHRONIZED ARMS (Moving together) */
-                .anim-feed .arm-left-joint,
-                .anim-feed .arm-right-joint,
-                .anim-feed .tool-hand-anim { 
-                    animation: feed-wave 0.8s infinite ease-in-out; 
-                }
+                /* Feeding Animation Overrides - SYNCHRONIZED ARMS (Moving UP together) */
+                .anim-feed .arm-left-joint { animation: feed-lift-left 0.8s infinite ease-in-out; }
+                .anim-feed .arm-right-joint { animation: feed-lift-right 0.8s infinite ease-in-out; }
+                .anim-feed .tool-hand-anim { animation: feed-lift-right 0.8s infinite ease-in-out; }
+                .anim-feed .carry-hand-anim { animation: feed-lift-left 0.8s infinite ease-in-out; }
 
                 /* Enhanced Glow Effects */
                 .pulse-glow-void { animation: pulse-void 1s infinite alternate; }
@@ -781,6 +777,31 @@ export default function ServitorWildUnknown() {
             `}</style>
 
             <button onClick={() => hasUnsavedChanges ? setShowExitWarning(true) : router.push('/spell-room')} className="absolute top-4 right-4 z-60 text-gray-400 hover:text-white"><X /></button>
+            
+            {/* INFO BUTTON */}
+            <button onClick={() => setShowInfoModal(true)} className="absolute top-4 left-4 z-60 text-gray-400 hover:text-white"><Info /></button>
+
+            {/* INFO MODAL */}
+            {showInfoModal && (
+                <div className="fixed inset-0 z-500 flex items-center justify-center bg-black/80 p-6 animate-in fade-in">
+                    <div className="bg-[#1a1528] border border-amber-600 p-8 rounded text-center max-w-sm relative">
+                        <h2 className="text-[#FFD700] magick-font text-2xl mb-4">The Servitor</h2>
+                        <div className="text-gray-300 text-sm space-y-4 mb-6 text-left font-sans">
+                            <p>A Servitor is a created spirit entity, designed to perform a specific task or fulfill a specific purpose for its creator.</p>
+                            <p><strong>Instructions:</strong></p>
+                            <ul className="list-disc pl-4 space-y-1">
+                                <li>Customize your spirit's appearance.</li>
+                                <li>Name it and define its purpose.</li>
+                                <li>Hold "Awaken" to bring it to life.</li>
+                                <li>Watch it gather wealth/energy for you.</li>
+                                <li>Feed it when it gets hungry to maintain the bond.</li>
+                                <li>Bind it to your grimoire to save it.</li>
+                            </ul>
+                        </div>
+                        <button onClick={() => setShowInfoModal(false)} className="w-full bg-amber-900/50 border border-amber-600 py-2 uppercase text-amber-100">Close</button>
+                    </div>
+                </div>
+            )}
 
             {/* STAGE */}
             <div className="absolute inset-0 z-0 bg-cover bg-center" style={{ backgroundImage: `url('${ASSET_PATH}${ASSETS.BG_MAIN}')` }}>
@@ -789,6 +810,15 @@ export default function ServitorWildUnknown() {
 
             {/* GAME WORLD */}
             <div className="relative w-full h-full z-10 pointer-events-none">
+                {/* GAMEPLAY HUD: Name & Purpose */}
+                {isRunning && !isFeedingActive && (
+                    <div className="fixed top-[20px] left-1/2 -translate-x-1/2 z-50 bg-indigo-900/90 border-double border-4 border-cyan-300 shadow-[0_0_15px_#4FD1C5] px-8 py-2 rounded-lg text-center min-w-[240px] pointer-events-auto">
+                        <p className="text-[#FFD700] font-bold uppercase text-sm font-serif tracking-wider drop-shadow-md">
+                            {sName || "Spirit"}: {sPurpose || "Serve"}
+                        </p>
+                    </div>
+                )}
+
                 <div id="game-mound" className="absolute bottom-[15vh] left-[10%] w-40 h-[100px] z-20 bg-contain bg-no-repeat bg-bottom transition-all duration-500"
                      style={{ backgroundImage: `url('${ASSET_PATH}${ASSETS.MOUND}')`, ...getGameObjectStyle('mound') }} />
 
@@ -968,9 +998,10 @@ export default function ServitorWildUnknown() {
                         <div className="flex flex-col items-center">
                             {!isFeeding && <p className="text-[#FFD700] mb-8 animate-pulse text-xl font-serif">{sName} requires sustenance...</p>}
                             <button onMouseDown={() => startHold('feed')} onMouseUp={stopHold} onMouseLeave={stopHold} onTouchStart={() => startHold('feed')} onTouchEnd={stopHold}
-                                className={`w-40 h-40 rounded-full border-4 border-[#FFD700] flex items-center justify-center relative overflow-hidden bg-black shadow-[0_0_50px_#FFD700] transition-opacity duration-300 active:transform-none ${isFeeding ? 'opacity-90' : 'opacity-100'}`}>
-                                <div className="absolute bottom-0 left-0 w-full bg-[#FFD700]/50 transition-all duration-75 z-20" style={{height: `${feedProgress}%`}}></div>
-                                <div className="w-20 h-20 relative z-30" style={getSpriteStyle(config.foodIndex, ASSETS.FOOD)} />
+                                style={{ transform: 'none' }} // Force no movement inline
+                                className={`w-40 h-40 rounded-full border-4 border-[#FFD700] flex items-center justify-center relative overflow-hidden bg-black shadow-[0_0_50px_#FFD700] transition-opacity duration-300 active:scale-100 transform-none ${isFeeding ? 'opacity-90' : 'opacity-100'}`}>
+                                <div className="absolute bottom-0 left-0 w-full bg-[#FFD700] z-10 transition-all duration-75" style={{height: `${feedProgress}%`}}></div>
+                                <div className="w-20 h-20 relative z-20" style={getSpriteStyle(config.foodIndex, ASSETS.FOOD)} />
                             </button>
                         </div>
                     )}
