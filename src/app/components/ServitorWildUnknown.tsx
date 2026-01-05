@@ -35,8 +35,8 @@ const BACKGROUND_OPTIONS = [
     'Magick_Forest.jpg',
     'Treasure_Cave.jpg',
     'Enchanted_Island.jpg',
-    'Love_Planet.jpg',
-    'Sparkle_Land.jpg'
+    'love_planet.jpg',
+    'sparkle_land.jpg'
 ];
 
 // --- 2. CONFIGURATION SECTION ---
