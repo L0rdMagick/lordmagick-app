@@ -68,10 +68,10 @@ const DIRECTIONAL_OFFSETS = {
     }
 };
 
-// UPDATED: Scale reduced further and shifted up higher to clear buttons
+// UPDATED: Scale reduced further (0.70) and lifted UP (-30) to prevent overlap
 const UI_PREVIEW_SETTINGS = {
-    scale: 0.75, 
-    y: -20 
+    scale: 0.70, 
+    y: -30 
 };
 
 const LAYER_ORDER_CONFIG = {
@@ -336,14 +336,11 @@ export default function ServitorWildUnknown() {
             await moveTo(15, id); 
             if(!runningRef.current) break;
 
-            // 2. Enter Void (Jump Animation RESTORED & FORCED)
+            // 2. Enter Void (Jump Animation FORCE FIX)
             if(servitor) {
-                // 1. HARD RESET: Remove transition and force browser to paint
-                servitor.style.transition = 'none'; 
-                servitor.style.transform = 'none'; // Reset any transforms from movement
-                // 2. FORCE REFLOW: Critical for browser to accept animation start
+                // FORCE REFLOW: Critical for browser to accept animation start
                 void servitor.offsetWidth; 
-                // 3. Apply animation
+                // Apply animation
                 servitor.classList.add('anim-jump-into-void');
             }
             await wait(800); // Wait for jump to finish
@@ -658,11 +655,11 @@ export default function ServitorWildUnknown() {
                 }
                 .anim-floating { animation: float-bob 3s ease-in-out infinite; }
                 
-                /* JUMP INTO VOID ANIMATION RESTORED */
+                /* JUMP INTO VOID ANIMATION RESTORED & FORCED VIA !IMPORTANT */
                 @keyframes jump-into-void {
-                    0% { transform: translateY(0) scale(1); opacity: 1; }
-                    50% { transform: translateY(-100px) scale(1); opacity: 1; } /* Jump Peak */
-                    100% { transform: translateY(20px) scale(0); opacity: 0; } /* Dive into Mound */
+                    0% { transform: translateY(0) scale(1) !important; opacity: 1 !important; }
+                    50% { transform: translateY(-100px) scale(1) !important; opacity: 1 !important; } /* Jump Peak */
+                    100% { transform: translateY(20px) scale(0) !important; opacity: 0 !important; } /* Dive into Mound */
                 }
 
                 .anim-jump-into-void {
@@ -743,8 +740,8 @@ export default function ServitorWildUnknown() {
             {/* MASTER UI PANEL - Unified Container */}
             <div className={`fixed inset-0 z-50 flex items-center justify-center transition-all duration-500 ${isRunning ? 'opacity-0 pointer-events-none transform scale-95' : 'opacity-100 pointer-events-auto transform scale-100'} p-0 md:p-4`}>
                 
-                {/* PARCHMENT FRAME - RESPONSIVE LAYOUT UPDATED */}
-                <div className="relative w-full h-[95dvh] md:w-[600px] md:h-auto md:max-h-[90vh] md:aspect-[3/4] flex flex-col px-6 pt-12 pb-12 md:px-16 md:pt-24 md:pb-24 box-border"
+                {/* PARCHMENT FRAME - LAYOUT TIGHTENED (px-6 pt-12 pb-8 md:px-16 md:pt-16 md:pb-12) */}
+                <div className="relative w-full h-[95dvh] md:w-[600px] md:h-auto md:max-h-[90vh] md:aspect-[3/4] flex flex-col px-6 pt-12 pb-8 md:px-16 md:pt-16 md:pb-12 box-border"
                     style={{ 
                         backgroundImage: `url('${ASSET_PATH}${ASSETS.UI_PANEL}')`,
                         backgroundSize: '100% 100%',
@@ -761,14 +758,14 @@ export default function ServitorWildUnknown() {
                             placeholder="Purpose" />
                     </div>
 
-                    {/* 2. PREVIEW AREA - Scalable Height - Z-INDEX 30 */}
-                    <div className="relative shrink-0 h-48 md:h-64 w-full flex justify-center items-end border-b border-[#5d4037]/30 mb-2 overflow-visible z-30">
+                    {/* 2. PREVIEW AREA - REDUCED HEIGHT (h-48 md:h-56) & Z-INDEX 30 */}
+                    <div className="relative shrink-0 h-48 md:h-56 w-full flex justify-center items-end border-b border-[#5d4037]/30 mb-2 overflow-visible z-30">
                         <div className="w-full h-full flex items-end justify-center pb-4">
                             <ServitorRig idPrefix="preview-rig" isPreview={true} />
                         </div>
                     </div>
 
-                    {/* 3. SCROLLABLE GRID - FLEX SIZING FIX */}
+                    {/* 3. SCROLLABLE GRID - UPDATED MIN-HEIGHT FOR VISIBILITY */}
                     <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar bg-[#eaddcf]/60 rounded p-2 z-20 relative border border-[#8d6e63]/30">
                         {!activeCategory ? (
                             <div className="grid grid-cols-4 gap-2">
