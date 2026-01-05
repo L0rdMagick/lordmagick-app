@@ -39,7 +39,7 @@ const DIRECTIONAL_OFFSETS = {
         clothes: { x: -1, y: 10, s: 0.55, f: false },
         sigil:   { x: 3, y: 2, s: 0.2, f: false },
         tool:    { x: 28, y: 17, s: 0.5, f: false },
-        carryTreasure: { x: 28, y: 17, s: 0.5, f: false }, 
+        carryTreasure: { x: 53, y: 23, s: 0.5, f: false }, 
         
         armRight: { x: 2, y: 15, s: 0.6, f: false },
         armLeft:  { x: 25, y: 19, s: 0.6, f: false }, 
