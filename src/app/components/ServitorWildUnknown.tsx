@@ -19,8 +19,8 @@ const ASSETS = {
     HEAD: 'Servitor_Headgear_Master_Sheet.png',
     TOOLS: 'Servitor_Magickal_Tools_Sheet.png',
     VESSELS: 'Ritual_Vessels_Master_Sheet.png',
-    TREASURES: 'Chest_Sigils_And_Treasures_Sheet.png', // Background/Chest elements
-    CARRY_TREASURE: 'treasures.png', // NEW: The specific loot sprites
+    TREASURES: 'Chest_Sigils_And_Treasures_Sheet.png',
+    CARRY_TREASURE: 'treasures.png',
     FOOD: 'Servitor_Sustenance_Food_Sheet.png',
     MOUND: 'mound_into_the_void.png',
     UI_PANEL: 'Parchment_And_Oak_Responsive_Panels.png',
@@ -39,7 +39,7 @@ const DIRECTIONAL_OFFSETS = {
         clothes: { x: -1, y: 10, s: 0.55, f: false },
         sigil:   { x: 3, y: 2, s: 0.2, f: false },
         tool:    { x: 28, y: 17, s: 0.5, f: false },
-        carryTreasure: { x: 28, y: 17, s: 0.5, f: false }, // NEW: Default near hand
+        carryTreasure: { x: 28, y: 17, s: 0.5, f: false }, 
         
         armRight: { x: 2, y: 15, s: 0.6, f: false },
         armLeft:  { x: 25, y: 19, s: 0.6, f: false }, 
@@ -57,7 +57,7 @@ const DIRECTIONAL_OFFSETS = {
         clothes: { x: 1, y: 0, s: 0 },
         wing: { x: 0, y: 0, s: 0 },
         tool: { x: -75, y: 2, s: 0 },
-        carryTreasure: { x: -75, y: 2, s: 0 }, // Mirrored position
+        carryTreasure: { x: -75, y: 2, s: 0 },
         sigil: { x: -8, y: 0, s: 0 },
         
         armRight: { x: -23, y: 3, s: 0 },
@@ -88,7 +88,7 @@ const LAYER_ORDER_CONFIG = {
         armRight: 60, 
         legRight: 70,  
         tool: 80,
-        carryTreasure: 85, // On top of tool/hand
+        carryTreasure: 85, 
         head: 90       
     },
     facingLeft: {
@@ -139,7 +139,7 @@ const CATEGORIES: CategoryItem[] = [
     { id: 'leg', label: 'LEGS', asset: ASSETS.LEGS, indexKey: 'legIndex', offsetKey: 'leg', canFlip: false, canSpread: true },
     { id: 'arm', label: 'ARMS', asset: ASSETS.ARMS, indexKey: 'limbIndex', offsetKey: 'arm', canFlip: false, canSpread: true },
     { id: 'tool', label: 'TOOLS', asset: ASSETS.TOOLS, indexKey: 'toolIndex', offsetKey: 'tool', canFlip: true },
-    { id: 'treasure', label: 'TREASURE', asset: ASSETS.CARRY_TREASURE, indexKey: 'carryTreasureIndex', offsetKey: 'carryTreasure', canFlip: true }, // NEW BUTTON
+    { id: 'treasure', label: 'TREASURE', asset: ASSETS.CARRY_TREASURE, indexKey: 'carryTreasureIndex', offsetKey: 'carryTreasure', canFlip: true },
     { id: 'clothes', label: 'ROBES', asset: ASSETS.CLOTHES, indexKey: 'clothingIndex', offsetKey: 'clothes', canFlip: true },
     { id: 'wing', label: 'WINGS', asset: ASSETS.BACK, indexKey: 'wingIndex', offsetKey: 'wing', canFlip: true },
     { id: 'sigil', label: 'SIGILS', asset: ASSETS.TREASURES, indexKey: 'sigilIndex', offsetKey: 'sigil', canFlip: true },
@@ -182,7 +182,7 @@ export default function ServitorWildUnknown() {
     const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
     const [rigAnimation, setRigAnimation] = useState('anim-idle');
-    const [isCarryingTreasure, setIsCarryingTreasure] = useState(false); // Controls visibility during walk
+    const [isCarryingTreasure, setIsCarryingTreasure] = useState(false);
 
     const runningRef = useRef(false); 
     const loopIdRef = useRef(0);
@@ -201,14 +201,13 @@ export default function ServitorWildUnknown() {
         baseIndex: 0, limbIndex: 0, legIndex: 0, toolIndex: 0,
         hatIndex: 0, wingIndex: 0, vesselIndex: 0, clothingIndex: 0,
         sigilIndex: 0, foodIndex: 0, treasureIndex: 0,
-        carryTreasureIndex: 0, // NEW CONFIG
+        carryTreasureIndex: 0,
         
         movementType: "walk", 
         feedFreq: 5,
         offsets: JSON.parse(JSON.stringify(DEFAULT_OFFSETS))
     });
 
-    // Treasure Pile State
     const [treasurePile, setTreasurePile] = useState<{id: number, x: number, y: number, r: number, index: number}[]>([]);
 
     const [depositCount, setDepositCount] = useState(0);
@@ -331,7 +330,6 @@ export default function ServitorWildUnknown() {
     };
 
     const mainLoop = async (id: number) => {
-        // RACE CONDITION FIX: Wait for DOM element to mount
         let retries = 0;
         let servitor = document.getElementById('servitor-container');
         while (!servitor && retries < 20 && runningRef.current) {
@@ -353,7 +351,7 @@ export default function ServitorWildUnknown() {
                 servitor.style.animation = 'none'; 
                 servitor.style.removeProperty('transform');
             }
-            setIsCarryingTreasure(false); // Reset carry state
+            setIsCarryingTreasure(false); 
             setRigAnimation(config.movementType === 'fly' ? 'anim-fly-left' : 'anim-walk-left');
             
             // LEFT STOP
@@ -391,10 +389,10 @@ export default function ServitorWildUnknown() {
                 void servitor.offsetWidth;
                 servitor.style.animation = 'jump-out-of-void 0.8s forwards ease-in-out';
             }
-            await wait(800); // Wait for landing
+            await wait(800); 
 
             // 5. TURN & WALK BACK (HOLDING TREASURE)
-            setIsCarryingTreasure(true); // Pick up treasure
+            setIsCarryingTreasure(true); 
             setRigAnimation(config.movementType === 'fly' ? 'anim-fly-right' : 'anim-walk-right');
             
             // RIGHT STOP
@@ -406,14 +404,13 @@ export default function ServitorWildUnknown() {
 
             // 6. Deposit
             setRigAnimation('anim-idle');
-            setIsCarryingTreasure(false); // Drop treasure
+            setIsCarryingTreasure(false); 
 
-            // Add to pile visual
             setTreasurePile(prev => [...prev, {
                 id: Math.random(),
-                x: (Math.random() * 50) - 25, // Random stacking X
-                y: (Math.random() * -20) - 10, // Random stacking Y
-                r: (Math.random() * 60) - 30, // Random rotation
+                x: (Math.random() * 50) - 25, 
+                y: (Math.random() * -20) - 10, 
+                r: (Math.random() * 60) - 30, 
                 index: config.carryTreasureIndex
             }]);
 
@@ -455,10 +452,9 @@ export default function ServitorWildUnknown() {
                         mainLoop(loopIdRef.current);
                     }, 100);
                 } else {
-                    // Feeding complete, clear pile, resume
                     setIsFeeding(false); 
                     setHungerState('fed');
-                    setTreasurePile([]); // Clear pile on feed
+                    setTreasurePile([]); 
                 }
             }
             // Food Logic
@@ -547,7 +543,6 @@ export default function ServitorWildUnknown() {
         };
 
         const renderPart = (idx: number, asset: string, partKey: string, z: number, partType: 'limb' | 'static', specificLimb?: 'armLeft' | 'armRight' | 'legLeft' | 'legRight') => {
-            // Special check for treasure visibility
             if (partKey === 'carryTreasure' && !isPreview && !showCarriedTreasure) return null;
 
             const userCfg = (config.offsets as any)[partKey];
@@ -595,8 +590,10 @@ export default function ServitorWildUnknown() {
                 if (specificLimb === 'legRight') jointClass = 'leg-right-joint';
             }
             
-            if (partKey === 'tool' || partKey === 'carryTreasure') {
+            if (partKey === 'tool') {
                  jointClass = 'tool-hand-anim';
+            } else if (partKey === 'carryTreasure') {
+                 jointClass = 'carry-hand-anim';
             }
 
             return (
@@ -619,7 +616,6 @@ export default function ServitorWildUnknown() {
         const finalGs = gBase.s + gUser.s;
         const finalGf = gBase.f !== gUser.f; 
 
-        // CRITICAL FIX: Bobbing animation applied to outer wrapper to prevent position reset on flip
         const flyClass = isFlying ? 'anim-floating' : '';
 
         const globalTransform = `translate(${finalGx}%, ${finalGy}%) scale(${finalGs}) ${finalGf ? 'scaleX(-1)' : ''}`;
@@ -627,9 +623,7 @@ export default function ServitorWildUnknown() {
 
         return (
             <div id={idPrefix} className="relative w-32 h-32" style={{ transform: previewStyle }}>
-                {/* Floating Wrapper - Persists across state changes to prevent gltich */}
                 <div className={`w-full h-full ${flyClass}`} style={{ transformStyle: 'preserve-3d' }}>
-                    {/* The Actual Rig - Handles offsets/flipping */}
                     <div className={`servitor-rig relative w-full h-full ${rigAnimation} ${wrapperClass}`} 
                         style={{ 
                             transform: globalTransform,
@@ -741,6 +735,11 @@ export default function ServitorWildUnknown() {
                 .anim-walk-left .arm-right-joint { animation: rotate-l 1.2s infinite ease-in-out; }
                 .anim-walk-left .tool-hand-anim { animation: rotate-l 1.2s infinite ease-in-out; }
                 
+                /* NEW: Treasure Animation Synchronized with Left Hand */
+                .anim-walk-left .carry-hand-anim { animation: rotate-r 1.2s infinite ease-in-out; }
+                .anim-walk-right .carry-hand-anim { animation: rotate-l 1.2s infinite ease-in-out; }
+                .anim-feed .carry-hand-anim { animation: feed-wave 0.8s infinite ease-in-out; }
+
                 .anim-walk-right .servitor-rig { animation: bounce 0.6s infinite; }
                 .anim-walk-right .leg-left-joint { animation: rotate-r 1.2s infinite ease-in-out; }
                 .anim-walk-right .leg-right-joint { animation: rotate-l 1.2s infinite ease-in-out; }
