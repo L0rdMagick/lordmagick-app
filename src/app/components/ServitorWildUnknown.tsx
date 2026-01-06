@@ -2,10 +2,8 @@
 
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { X, Lock, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Plus, Minus, RefreshCw, Move, Eye, EyeOff, Settings, User, ArrowLeftRight, Info, Globe } from 'lucide-react';
+import { X, Lock, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Plus, Minus, RefreshCw, Move, Eye, EyeOff, Settings, User, ArrowLeftRight, Info, Globe, Save, Coins, FolderOpen, ChevronRight } from 'lucide-react';
 import { createBrowserClient } from '@supabase/ssr';
-import { checkAndSpendCredits, COST_BIND_SERVITOR } from '@/lib/economy';
-import { saveServitorToGrimoire, getMyServitors } from '@/lib/services/spellService';
 
 // --- 1. ASSET CONFIGURATION ---
 const ASSET_PATH = '/images/Servitor_images/';
@@ -35,7 +33,7 @@ const AUDIO_PATHS = {
     FEED_COMPLETE: '/audio/sfx-chaos-hold.mp3',     
     MOUND_JUMP_IN: '/audio/sfx-searching-2.mp3',    
     MOUND_JUMP_OUT: '/audio/sfx-finding-something-1.mp3',
-    THUNDER_LOOP: '/audio/searching-a-bag-415807.mp3' // NEW AUDIO
+    THUNDER_LOOP: '/audio/searching-a-bag-415807.mp3'
 };
 
 const BACKGROUND_OPTIONS = [
@@ -116,27 +114,6 @@ const DEFAULT_OFFSETS = {
     mound:   { x: 0, y: 0, s: 0.0, f: false, v: true, spread: 0 },
 };
 
-// ... Helper Functions ...
-const getSpriteStyle = (index: number, filename: string, isSingleImage = false) => {
-    if (isSingleImage) {
-        return {
-            backgroundImage: `url('${ASSET_PATH}${filename}')`,
-            backgroundSize: 'contain',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat'
-        };
-    }
-    const safeIndex = Math.max(0, Math.min(15, index));
-    const col = safeIndex % 4;
-    const row = Math.floor(safeIndex / 4);
-    return {
-        backgroundImage: `url('${ASSET_PATH}${filename}')`,
-        backgroundSize: '400% 400%',
-        backgroundPosition: `${col * 33.333}% ${row * 33.333}%`,
-        backgroundRepeat: 'no-repeat'
-    };
-};
-
 // --- EXTRACTED SERVITOR RIG COMPONENT ---
 const ServitorRig = React.memo(({ 
     idPrefix, 
@@ -158,9 +135,8 @@ const ServitorRig = React.memo(({
     let animationClass = rigAnimation;
     if (isFeeding) animationClass = 'anim-feed';
     
-    // Determine class for the wrapper (Floating or Happy Jump)
     let wrapperClass = config.movementType === 'fly' || rigAnimation.includes('fly') ? 'anim-floating' : '';
-    if (isHappy) wrapperClass = 'anim-happy-jump'; // Override with jump if happy
+    if (isHappy) wrapperClass = 'anim-happy-jump'; 
 
     const isFacingLeft = rigAnimation.includes('left');
 
@@ -220,6 +196,26 @@ const ServitorRig = React.memo(({
         if (partKey === 'tool') jointClass = 'tool-hand-anim';
         else if (partKey === 'carryTreasure') jointClass = 'carry-hand-anim';
 
+        const getSpriteStyle = (index: number, filename: string, isSingleImage = false) => {
+             if (isSingleImage) {
+                 return {
+                     backgroundImage: `url('${ASSET_PATH}${filename}')`,
+                     backgroundSize: 'contain',
+                     backgroundPosition: 'center',
+                     backgroundRepeat: 'no-repeat'
+                 };
+             }
+             const safeIndex = Math.max(0, Math.min(15, index));
+             const col = safeIndex % 4;
+             const row = Math.floor(safeIndex / 4);
+             return {
+                 backgroundImage: `url('${ASSET_PATH}${filename}')`,
+                 backgroundSize: '400% 400%',
+                 backgroundPosition: `${col * 33.333}% ${row * 33.333}%`,
+                 backgroundRepeat: 'no-repeat'
+             };
+         };
+
         return (
             <div className={`joint absolute w-full h-full top-0 left-0 ${jointClass}`} 
                     style={{ zIndex: z, transformOrigin: `${originX} ${originY}` }}>
@@ -247,14 +243,12 @@ const ServitorRig = React.memo(({
 
     return (
         <div id={idPrefix} className="relative w-32 h-32" style={{ transform: previewStyle }}>
-            {/* SPARKLE OVER HEAD WHEN HAPPY */}
             {isHappy && (
                 <div className="absolute -top-16 left-1/2 -translate-x-1/2 z-[200] text-4xl animate-pulse filter drop-shadow-[0_0_10px_gold]">
                     ✨
                 </div>
             )}
             
-            {/* WRAPPER HANDLES JUMP ANIMATION */}
             <div className={`w-full h-full ${wrapperClass}`} style={{ transformStyle: 'preserve-3d' }}>
                 <div className={`servitor-rig relative w-full h-full ${animationClass}`} 
                     style={{ 
@@ -308,11 +302,13 @@ export default function ServitorWildUnknown() {
 
     const [sName, setSName] = useState("");
     const [sPurpose, setSPurpose] = useState("");
-    const [uName, setUName] = useState("");
     const [user, setUser] = useState<any>(null);
+    const [credits, setCredits] = useState<number | null>(null);
+    const [savedServitors, setSavedServitors] = useState<any[]>([]);
     
     // --- CATEGORIES DEFINITION ---
     const CATEGORIES = useMemo(() => [
+        { id: 'saved', label: 'SAVED', asset: null, indexKey: null, offsetKey: null }, // NEW SAVED BUTTON
         { id: 'global', label: 'WHOLE', asset: null, indexKey: null, offsetKey: 'global', canFlip: true },
         { id: 'worlds', label: 'WORLDS', asset: null, indexKey: 'bgIndex', offsetKey: null }, 
         { id: 'settings', label: 'BEHAVIOR', asset: null, indexKey: null, offsetKey: null },
@@ -353,8 +349,10 @@ export default function ServitorWildUnknown() {
     const [fallingFood, setFallingFood] = useState<{id: number, left: number, top: number, spriteIndex: number}[]>([]);
 
     const [showCreditModal, setShowCreditModal] = useState(false);
+    const [showConfirmSave, setShowConfirmSave] = useState(false);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const [showExitWarning, setShowExitWarning] = useState(false);
+    const SAVE_COST = 10;
 
     useEffect(() => {
         const imageUrls = Object.values(ASSETS);
@@ -372,10 +370,29 @@ export default function ServitorWildUnknown() {
 
         const initUser = async () => {
             const { data: { user } } = await supabase.auth.getUser();
-            setUser(user);
+            if (user) {
+                setUser(user);
+                fetchCredits(user.id);
+                fetchSavedServitors(user.id);
+            }
         };
         initUser();
-    }, []);
+    }, [supabase]);
+
+    const fetchCredits = async (userId: string) => {
+        const { data } = await supabase.from('profiles').select('credits').eq('id', userId).single();
+        if (data) setCredits(data.credits);
+    };
+
+    const fetchSavedServitors = async (userId: string) => {
+        const { data } = await supabase
+            .from('spells')
+            .select('*')
+            .eq('user_id', userId)
+            .eq('tradition', 'SERVITOR')
+            .order('created_at', { ascending: false });
+        if (data) setSavedServitors(data);
+    };
 
     const updateOffset = (part: string, field: 'x'|'y'|'s'|'f'|'v'|'spread', value: number | boolean) => {
         setConfig(prev => ({
@@ -385,6 +402,7 @@ export default function ServitorWildUnknown() {
                 [part]: { ...(prev.offsets as any)[part], [field]: value }
             }
         }));
+        setHasUnsavedChanges(true);
     };
 
     const handleOffsetStart = (part: string, field: 'x'|'y'|'s'|'spread', change: number) => {
@@ -403,6 +421,7 @@ export default function ServitorWildUnknown() {
                     }
                 };
             });
+            setHasUnsavedChanges(true);
         }, 100);
     };
 
@@ -430,15 +449,61 @@ export default function ServitorWildUnknown() {
         }
     };
 
-    const handleBind = async () => {
-        playAudio(AUDIO_PATHS.BIND_ACTIVATE);
+    // --- SAVING LOGIC (UPDATED) ---
+    const handleSaveClick = () => {
+        if (!user) return alert("Please log in to save.");
+        if (!sName) return alert("Name your Servitor before saving.");
+        setShowConfirmSave(true);
+    };
 
-        if (!user || !sName) return alert("Name & Login required.");
-        const afford = await checkAndSpendCredits(user.id, COST_BIND_SERVITOR);
-        if (!afford) { setShowCreditModal(true); return; }
-        await saveServitorToGrimoire(user.id, { name: sName, master_name: uName, purpose: sPurpose, config });
-        setHasUnsavedChanges(false);
-        alert("Bound!");
+    const confirmSave = async () => {
+        if (!user || credits === null) return;
+
+        if (credits < SAVE_COST) {
+            setShowConfirmSave(false);
+            setShowCreditModal(true);
+            return;
+        }
+
+        // Deduct Credits
+        const newBalance = credits - SAVE_COST;
+        const { error: creditError } = await supabase.from('profiles').update({ credits: newBalance }).eq('id', user.id);
+        
+        if (creditError) {
+            alert("Transaction failed. The Aether rejects this.");
+            return;
+        }
+
+        setCredits(newBalance);
+
+        // Save Spell
+        const { error: saveError } = await supabase.from('spells').insert({
+            user_id: user.id,
+            name: sName,
+            intention: sPurpose,
+            tradition: 'SERVITOR',
+            ritual_data: config
+        });
+
+        if (saveError) {
+            console.error(saveError);
+            alert("Failed to bind spirit to grimoire.");
+        } else {
+            playAudio(AUDIO_PATHS.BIND_ACTIVATE);
+            alert("Bound to Grimoire!");
+            setHasUnsavedChanges(false);
+            setShowConfirmSave(false);
+            fetchSavedServitors(user.id);
+        }
+    };
+
+    const loadServitor = (servitor: any) => {
+        setSName(servitor.name);
+        setSPurpose(servitor.intention);
+        if (servitor.ritual_data) {
+            setConfig(servitor.ritual_data);
+        }
+        setActiveCategory(null);
     };
 
     const wait = (ms: number) => new Promise(r => setTimeout(r, ms));
@@ -478,7 +543,6 @@ export default function ServitorWildUnknown() {
 
         while(runningRef.current && loopIdRef.current === id) {
             
-            // 1. Walk to Mound (Left) - Empty Handed
             if(servitor) { 
                 servitor.style.opacity = '1'; 
                 servitor.style.transform = 'scale(1)'; 
@@ -488,11 +552,9 @@ export default function ServitorWildUnknown() {
             setIsCarryingTreasure(false); 
             setRigAnimation(config.movementType === 'fly' ? 'anim-fly-left' : 'anim-walk-left');
             
-            // LEFT STOP
             await moveTo(15, id); 
             if(!runningRef.current) break;
             
-            // 2. STOP & JUMP IN (Stay Facing Left)
             setRigAnimation('anim-idle-left'); 
             await wait(200);
 
@@ -501,34 +563,28 @@ export default function ServitorWildUnknown() {
                 servitor.style.removeProperty('transform');
                 void servitor.offsetWidth; 
                 
-                // AUDIO: Jump In
                 playAudio(AUDIO_PATHS.MOUND_JUMP_IN);
                 
                 servitor.style.animation = 'jump-into-void 0.8s forwards ease-in-out';
             }
             await wait(800); 
 
-            // Hide
             if(servitor) {
                 servitor.style.opacity = '0';
                 servitor.style.animation = 'none'; 
             }
             
-            // 3. Search Pulse (Random Time + Rumble)
             if(moundInner) moundInner.classList.add('anim-searching');
             
-            // AUDIO: Thunder Loop Start
             playAudio(AUDIO_PATHS.THUNDER_LOOP, true);
 
             const searchDuration = Math.random() * 7000 + 3000;
             await wait(searchDuration); 
 
-            // AUDIO: Thunder Loop Stop
             stopAudio(AUDIO_PATHS.THUNDER_LOOP);
             
             if(moundInner) moundInner.classList.remove('anim-searching');
 
-            // 4. JUMP OUT (Change to Facing Right & Holding Treasure IMMEDIATELY)
             if(servitor) {
                 servitor.style.opacity = '1';
                 servitor.style.removeProperty('transform');
@@ -537,24 +593,20 @@ export default function ServitorWildUnknown() {
                 setIsCarryingTreasure(true);
                 setRigAnimation(config.movementType === 'fly' ? 'anim-fly-right' : 'anim-walk-right'); 
 
-                // AUDIO: Jump Out / Find
                 playAudio(AUDIO_PATHS.MOUND_JUMP_OUT);
 
                 servitor.style.animation = 'jump-out-of-void 0.8s forwards ease-in-out';
             }
             await wait(800); 
 
-            // 5. WALK BACK
             setRigAnimation(config.movementType === 'fly' ? 'anim-fly-right' : 'anim-walk-right');
             
-            // RIGHT STOP
             const isMobile = window.innerWidth < 768;
             const rightDestination = isMobile ? 60 : 72;
             
             await moveTo(rightDestination, id);
             if(!runningRef.current) break;
 
-            // 6. Deposit
             setRigAnimation('anim-idle');
             setIsCarryingTreasure(false); 
 
@@ -566,10 +618,8 @@ export default function ServitorWildUnknown() {
                 index: config.carryTreasureIndex
             }]);
 
-            // AUDIO: Deposit
             playAudio(AUDIO_PATHS.DEPOSIT);
 
-            // ANIM: Vessel Shake & Grow (Apply to State/Class)
             setIsDepositing(true);
             setTimeout(() => setIsDepositing(false), 500);
 
@@ -659,12 +709,10 @@ export default function ServitorWildUnknown() {
     };
 
     const handleResume = () => {
-        // 1. Play Resume Sound
         playAudio(AUDIO_PATHS.DEPOSIT);
 
-        // 2. Trigger Happiness Animation (Jump + Sparkle)
         setIsHappy(true);
-        setTimeout(() => setIsHappy(false), 1200); // Allow time for 2 jumps (0.6s * 2)
+        setTimeout(() => setIsHappy(false), 1200);
 
         setHungerState('sated'); 
         depositRef.current = 0; 
@@ -672,7 +720,6 @@ export default function ServitorWildUnknown() {
         runningRef.current = true; 
         loopIdRef.current++; 
         
-        // Wait for jump to finish before starting walk loop
         setTimeout(() => mainLoop(loopIdRef.current), 1300);
     };
 
@@ -727,6 +774,26 @@ export default function ServitorWildUnknown() {
         );
     };
 
+    const getSpriteStyle = (index: number, filename: string, isSingleImage = false) => {
+        if (isSingleImage) {
+            return {
+                backgroundImage: `url('${ASSET_PATH}${filename}')`,
+                backgroundSize: 'contain',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat'
+            };
+        }
+        const safeIndex = Math.max(0, Math.min(15, index));
+        const col = safeIndex % 4;
+        const row = Math.floor(safeIndex / 4);
+        return {
+            backgroundImage: `url('${ASSET_PATH}${filename}')`,
+            backgroundSize: '400% 400%',
+            backgroundPosition: `${col * 33.333}% ${row * 33.333}%`,
+            backgroundRepeat: 'no-repeat'
+        };
+    };
+
     if (!assetsLoaded) return (
         <div className="fixed inset-0 bg-black flex flex-col items-center justify-center z-200">
             <div className="w-32 h-32 animate-spin" style={getSpriteStyle(0, ASSETS.TREASURES)}></div>
@@ -776,21 +843,15 @@ export default function ServitorWildUnknown() {
                 
                 @keyframes bounce { 0% { top: 0; } 50% { top: -5px; } }
                 
-                /* Rotation for walking limbs */
                 @keyframes rotate-l { 0% { transform: rotate(-5deg); } 50% { transform: rotate(5deg); } 100% { transform: rotate(-5deg); } }
                 @keyframes rotate-r { 0% { transform: rotate(5deg); } 50% { transform: rotate(-5deg); } 100% { transform: rotate(5deg); } }
                 
-                /* 
-                   UPDATED FEEDING WAVE: SYNCHRONIZED, REDUCED RANGE 
-                   -12deg provides a subtle "lift" motion similar to walking scale.
-                */
                 @keyframes feed-wave-sync {
                     0% { transform: rotate(0deg); }
-                    50% { transform: rotate(-12deg); } /* Lifts both arms slightly */
+                    50% { transform: rotate(-12deg); }
                     100% { transform: rotate(0deg); }
                 }
 
-                /* Flying Bob */
                 @keyframes float-bob {
                     0% { transform: translateY(-60px); }
                     50% { transform: translateY(-90px); }
@@ -798,26 +859,23 @@ export default function ServitorWildUnknown() {
                 }
                 .anim-floating { animation: float-bob 3s ease-in-out infinite; }
                 
-                /* JUMP INTO VOID ANIMATION */
                 @keyframes jump-into-void {
                     0% { transform: translateY(0) scale(1); opacity: 1; }
-                    50% { transform: translateY(-100px) scale(1); opacity: 1; } /* Jump Peak */
-                    100% { transform: translateY(20px) scale(0); opacity: 0; } /* Dive into Mound */
+                    50% { transform: translateY(-100px) scale(1); opacity: 1; }
+                    100% { transform: translateY(20px) scale(0); opacity: 0; }
                 }
 
-                /* JUMP OUT OF VOID ANIMATION */
                 @keyframes jump-out-of-void {
-                    0% { transform: translateY(20px) scale(0); opacity: 1; } /* Start inside mound */
-                    50% { transform: translateY(-100px) scale(1); opacity: 1; } /* Jump Peak */
-                    100% { transform: translateY(0) scale(1); opacity: 1; } /* Land */
+                    0% { transform: translateY(20px) scale(0); opacity: 1; } 
+                    50% { transform: translateY(-100px) scale(1); opacity: 1; }
+                    100% { transform: translateY(0) scale(1); opacity: 1; }
                 }
 
-                /* NEW SEARCH ANIMATION */
                 @keyframes rumble-search {
                     0% { transform: scale(1) translate(0, 0); }
-                    25% { transform: scale(1.05) translate(-1px, 1px); } /* Pulse up + Left */
-                    50% { transform: scale(1.1) translate(1px, -1px); }  /* Pulse max + Right */
-                    75% { transform: scale(1.05) translate(-1px, 1px); } /* Pulse down + Left */
+                    25% { transform: scale(1.05) translate(-1px, 1px); }
+                    50% { transform: scale(1.1) translate(1px, -1px); }
+                    75% { transform: scale(1.05) translate(-1px, 1px); }
                     100% { transform: scale(1) translate(0, 0); }
                 }
                 
@@ -826,7 +884,6 @@ export default function ServitorWildUnknown() {
                     filter: drop-shadow(0 0 20px #8a2be2) !important;
                 }
 
-                /* NEW VESSEL ANIMATION (Grow & Shrink only, no shake) */
                 @keyframes vessel-pulse-grow {
                     0% { transform: scale(1); }
                     50% { transform: scale(1.1); }
@@ -836,7 +893,6 @@ export default function ServitorWildUnknown() {
                     animation: vessel-pulse-grow 0.5s ease-in-out;
                 }
 
-                /* NEW HAPPY JUMP ANIMATION */
                 @keyframes jump-celebrate {
                     0% { transform: translateY(0); }
                     50% { transform: translateY(-20px); }
@@ -846,23 +902,33 @@ export default function ServitorWildUnknown() {
                     animation: jump-celebrate 0.6s ease-in-out infinite;
                 }
 
-                /* CSS STARFIELD */
+                /* UPDATED CSS STARFIELD - 5x Size, 3x Density */
                 .stars-container { position: absolute; top:0; left:0; width:100%; height:100%; overflow:hidden; pointer-events:none; z-index: 5; }
                 .stars-1 {
-                    width: 1px; height: 1px; background: transparent;
-                    box-shadow: 10vw 10vh #FFF, 20vw 80vh #FFF, 80vw 10vh #FFF, 90vw 90vh #FFF, 50vw 50vh #FFF, 30vw 30vh #FFF, 60vw 20vh #FFF, 10vw 90vh #FFF;
+                    width: 5px; height: 5px; background: transparent;
+                    /* Increased density of box-shadows */
+                    box-shadow: 
+                        10vw 10vh #FFF, 20vw 80vh #FFF, 80vw 10vh #FFF, 90vw 90vh #FFF, 50vw 50vh #FFF, 30vw 30vh #FFF, 60vw 20vh #FFF, 10vw 90vh #FFF,
+                        15vw 40vh #FFF, 25vw 60vh #FFF, 70vw 30vh #FFF, 85vw 70vh #FFF, 40vw 40vh #FFF, 05vw 20vh #FFF, 95vw 10vh #FFF, 35vw 75vh #FFF,
+                        55vw 10vh #FFF, 12vw 88vh #FFF, 65vw 55vh #FFF, 75vw 05vh #FFF, 45vw 95vh #FFF, 22vw 33vh #FFF, 88vw 44vh #FFF, 02vw 50vh #FFF;
                     animation: twinkle 4s infinite alternate;
                 }
                 .stars-2 {
-                    width: 2px; height: 2px; background: transparent;
-                    box-shadow: 15vw 15vh #FFD700, 25vw 85vh #FFD700, 85vw 15vh #FFD700, 95vw 95vh #FFD700, 55vw 55vh #FFD700;
+                    width: 10px; height: 10px; background: transparent;
+                    box-shadow: 
+                        15vw 15vh #FFD700, 25vw 85vh #FFD700, 85vw 15vh #FFD700, 95vw 95vh #FFD700, 55vw 55vh #FFD700,
+                        35vw 35vh #FFD700, 45vw 75vh #FFD700, 65vw 25vh #FFD700, 75vw 65vh #FFD700, 05vw 95vh #FFD700,
+                        20vw 50vh #FFD700, 80vw 40vh #FFD700, 10vw 30vh #FFD700, 90vw 60vh #FFD700, 60vw 90vh #FFD700;
                     animation: twinkle 6s infinite alternate-reverse;
                 }
                 .stars-3 {
-                    width: 3px; height: 3px; background: transparent;
-                    box-shadow: 5vw 50vh #FFF, 90vw 20vh #FFF, 40vw 80vh #FFF;
+                    width: 15px; height: 15px; background: transparent;
+                    box-shadow: 
+                        5vw 50vh #FFF, 90vw 20vh #FFF, 40vw 80vh #FFF,
+                        20vw 20vh #FFF, 70vw 70vh #FFF, 30vw 90vh #FFF,
+                        10vw 60vh #FFF, 80vw 10vh #FFF, 60vw 40vh #FFF;
                     animation: twinkle 8s infinite alternate;
-                    filter: blur(1px);
+                    filter: blur(2px);
                 }
                 @keyframes twinkle { from { opacity: 0.3; } to { opacity: 1; } }
 
@@ -884,17 +950,11 @@ export default function ServitorWildUnknown() {
                 .anim-walk-right .tool-hand-anim { animation: rotate-r 1.2s infinite ease-in-out; }
                 .anim-walk-right .carry-hand-anim { animation: rotate-l 1.2s infinite ease-in-out; }
 
-                /* 
-                   FEEDING ANIMATION OVERRIDES
-                   Using feed-wave-sync for ALL arm/hand components ensuring synchronization.
-                   Strict !important used to override walking anims.
-                */
                 .anim-feed .arm-left-joint { animation: feed-wave-sync 0.6s infinite ease-in-out !important; }
                 .anim-feed .arm-right-joint { animation: feed-wave-sync 0.6s infinite ease-in-out !important; }
                 .anim-feed .tool-hand-anim { animation: feed-wave-sync 0.6s infinite ease-in-out !important; }
                 .anim-feed .carry-hand-anim { animation: feed-wave-sync 0.6s infinite ease-in-out !important; }
 
-                /* Enhanced Glow Effects */
                 .pulse-glow-void { animation: pulse-void 1s infinite alternate; }
                 @keyframes pulse-void { from { filter: drop-shadow(0 0 10px #4b0082); } to { filter: drop-shadow(0 0 40px #8a2be2); } }
                 .pulse-glow-gold { animation: pulse-gold 0.5s infinite alternate; }
@@ -906,7 +966,6 @@ export default function ServitorWildUnknown() {
 
             <button onClick={() => hasUnsavedChanges ? setShowExitWarning(true) : router.push('/spell-room')} className="absolute top-5 right-4 z-60 text-gray-400 hover:text-white"><X /></button>
             
-            {/* INFO BUTTON */}
             <button onClick={() => setShowInfoModal(true)} className="absolute top-4 left-4 z-60 text-gray-400 hover:text-white"><Info /></button>
 
             {/* INFO MODAL */}
@@ -932,7 +991,6 @@ export default function ServitorWildUnknown() {
             )}
 
             {/* STAGE */}
-            {/* UPDATED BACKGROUND LOGIC */}
             <div className="absolute inset-0 z-0 bg-cover bg-center transition-all duration-700" 
                  style={{ backgroundImage: `url('${ASSET_PATH}${BACKGROUND_OPTIONS[config.bgIndex]}')` }}>
                 <div className="absolute inset-0 bg-black/40" />
@@ -958,14 +1016,12 @@ export default function ServitorWildUnknown() {
                     </div>
                 )}
 
-                {/* REFACTORED MOUND WRAPPER FOR SEPARATE ANIMATION */}
                 <div id="mound-wrapper" className="absolute bottom-[15vh] left-[10%] w-40 h-[100px] z-20 transition-all duration-500" 
                      style={{ ...getGameObjectStyle('mound') }}>
                     <div id="game-mound-inner" className="w-full h-full bg-contain bg-no-repeat bg-bottom" 
                          style={{ backgroundImage: `url('${ASSET_PATH}${ASSETS.MOUND}')` }} />
                 </div>
 
-                {/* VISIBILITY LOGIC FIXED: Only show game servitor if running */}
                 {isRunning && (
                     <div id="servitor-container" className="absolute bottom-[18vh] left-[20%] w-32 h-32 z-100 pointer-events-auto origin-bottom">
                         <ServitorRig 
@@ -974,20 +1030,18 @@ export default function ServitorWildUnknown() {
                             rigAnimation={rigAnimation} 
                             isFeeding={isFeeding} 
                             showCarriedTreasure={isCarryingTreasure} 
-                            isHappy={isHappy} // Pass Happy State
+                            isHappy={isHappy} 
                         />
                     </div>
                 )}
 
                 <div className="absolute bottom-[20vh] right-[10%] w-32 h-32 z-20 flex flex-col items-center">
-                    {/* VESSEL WRAPPER STRUCTURE for Scaling Animation without moving position */}
                     {config.offsets.vessel.v && (
                         <div id="vessel-wrapper" className="w-full h-full relative transition-all duration-500"
                              style={getGameObjectStyle('vessel')}>
                             <div id="game-vessel-inner" 
                                  className={`w-full h-full ${isDepositing ? 'anim-vessel-deposit' : ''}`}
                                  style={{ ...getSpriteStyle(config.vesselIndex, ASSETS.VESSELS) }}>
-                                 {/* TREASURE PILE */}
                                  {treasurePile.map(t => (
                                      <div key={t.id} className="absolute w-8 h-8 opacity-90" 
                                           style={{
@@ -1018,11 +1072,9 @@ export default function ServitorWildUnknown() {
                 </div>
             )}
 
-            {/* MASTER UI PANEL - Unified Container */}
+            {/* MASTER UI PANEL */}
             <div className={`fixed inset-0 z-50 flex items-center justify-center transition-all duration-500 ${isRunning ? 'opacity-0 pointer-events-none transform scale-95' : 'opacity-100 pointer-events-auto transform scale-100'} p-0 md:p-0`}>
                 
-                {/* PARCHMENT FRAME - OPTIMIZED PADDING & SIZING */}
-                {/* UPDATED: h-[calc(100vh-24px)] ensures 12px top/bottom margin on large screens */}
                 <div className="relative w-full h-[95dvh] md:w-[600px] md:h-[calc(100vh-24px)] flex flex-col px-6 pt-12 pb-6 md:px-16 md:pt-14 md:pb-8 box-border"
                     style={{ 
                         backgroundImage: `url('${ASSET_PATH}${ASSETS.UI_PANEL}')`,
@@ -1030,25 +1082,24 @@ export default function ServitorWildUnknown() {
                         backgroundRepeat: 'no-repeat'
                     }}>
                     
-                    {/* 1. HEADER: Inputs - Padded from top for mobile */}
+                    {/* INPUTS */}
                     <div className="flex flex-col md:flex-row gap-2 shrink-0 mb-4 pt-4 md:pt-2 w-full max-w-[90%] mx-auto z-20">
-                        <input type="text" value={sName} onChange={e => setSName(e.target.value)} 
+                        <input type="text" value={sName} onChange={e => { setSName(e.target.value); setHasUnsavedChanges(true); }}
                             className="flex-1 bg-[#f0e6d2] shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border-2 border-[#3e2723] p-2 h-10 md:h-auto text-sm text-black rounded magick-font placeholder-gray-600 px-3 min-w-0" 
                             placeholder="Spirit Name" />
-                        <input type="text" value={sPurpose} onChange={e => setSPurpose(e.target.value)} 
+                        <input type="text" value={sPurpose} onChange={e => { setSPurpose(e.target.value); setHasUnsavedChanges(true); }}
                             className="flex-1 bg-[#f0e6d2] shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border-2 border-[#3e2723] p-2 h-10 md:h-auto text-sm text-black rounded magick-font placeholder-gray-600 px-3 min-w-0" 
                             placeholder="Purpose" />
                     </div>
 
-                    {/* 2. PREVIEW AREA - REDUCED HEIGHT (h-44 md:h-48) */}
+                    {/* PREVIEW */}
                     <div className="relative shrink-0 h-44 md:h-48 w-full flex justify-center items-end border-b border-[#5d4037]/30 mb-2 overflow-visible z-30">
                         <div className="w-full h-full flex items-end justify-center pb-4">
-                            {/* Always show selected treasure in preview */}
                             <ServitorRig idPrefix="preview-rig" config={config} rigAnimation="anim-idle" isPreview={true} showCarriedTreasure={true} />
                         </div>
                     </div>
 
-                    {/* 3. SCROLLABLE GRID - ENFORCED MIN-HEIGHT */}
+                    {/* GRID */}
                     <div className="flex-1 min-h-40 overflow-y-auto custom-scrollbar bg-[#eaddcf]/60 rounded p-2 z-20 relative border border-[#8d6e63]/30">
                         {!activeCategory ? (
                             <div className="grid grid-cols-4 gap-2">
@@ -1059,8 +1110,10 @@ export default function ServitorWildUnknown() {
                                         <button key={cat.id} onClick={() => setActiveCategory(cat.id)}
                                             className="flex flex-col items-center gap-1 group bg-[#eaddcf] p-2 border border-[#8d6e63] rounded shadow-sm hover:border-[#3e2723]">
                                             <div className="w-12 h-12 flex items-center justify-center relative overflow-hidden">
-                                                {/* CONDITIONAL RENDER FOR SPECIAL CATEGORIES */}
-                                                {cat.asset ? (
+                                                {/* CONDITIONAL RENDER */}
+                                                {cat.id === 'saved' ? (
+                                                    <FolderOpen size={24} className="text-[#3e2723]" />
+                                                ) : cat.asset ? (
                                                     <div className="w-full h-full transform scale-90" style={getSpriteStyle(currentIdx, cat.asset, isSingle)} />
                                                 ) : cat.id === 'global' ? (
                                                     <User size={24} className="text-[#3e2723]" />
@@ -1075,8 +1128,32 @@ export default function ServitorWildUnknown() {
                                     );
                                 })}
                             </div>
+                        ) : activeCategory === 'saved' ? (
+                            // SAVED SERVITOR LIST
+                            <div className="flex flex-col gap-2 h-full">
+                                <div className="flex justify-between items-center mb-2 border-b border-[#3e2723] pb-1 sticky top-0 bg-[#eaddcf] z-30 pt-1">
+                                    <h3 className="text-[#3e2723] font-bold uppercase">Grimoire</h3>
+                                    <button onClick={() => setActiveCategory(null)}><X size={20} className="text-[#3e2723]"/></button>
+                                </div>
+                                {savedServitors.length === 0 ? (
+                                    <div className="text-center text-[#3e2723] opacity-60 mt-10 text-sm">No spirits bound yet.</div>
+                                ) : (
+                                    savedServitors.map(servitor => (
+                                        <button key={servitor.id} onClick={() => loadServitor(servitor)}
+                                            className="flex items-center justify-between p-3 bg-[#f0e6d2] border border-[#8d6e63] rounded hover:bg-[#fff8e7] transition-colors text-left group">
+                                            <div>
+                                                <div className="text-[#3e2723] font-bold text-sm font-serif">{servitor.name}</div>
+                                                <div className="text-[#5d4037] text-xs italic">
+                                                    {servitor.intention?.length > 21 ? servitor.intention.substring(0, 21) + '...' : servitor.intention}
+                                                </div>
+                                            </div>
+                                            <ChevronRight size={16} className="text-[#8d6e63] group-hover:text-[#3e2723]" />
+                                        </button>
+                                    ))
+                                )}
+                            </div>
                         ) : (
-                            // POPUP CONTROLS INSIDE GRID AREA
+                            // STANDARD CONTROLS
                             <div className="w-full h-full flex flex-col">
                                 <div className="flex justify-between items-center mb-2 border-b border-[#3e2723] pb-1 sticky top-0 bg-[#eaddcf] z-30 pt-1">
                                     <h3 className="text-[#3e2723] font-bold uppercase">{CATEGORIES.find(c => c.id === activeCategory)?.label}</h3>
@@ -1099,7 +1176,6 @@ export default function ServitorWildUnknown() {
                                         </div>
                                     ) : (
                                         <>
-                                            {/* Controls (DPad) */}
                                             {CATEGORIES.find(c => c.id === activeCategory)?.offsetKey && (
                                                 <div className="mb-4">
                                                     <DPad 
@@ -1110,14 +1186,12 @@ export default function ServitorWildUnknown() {
                                                 </div>
                                             )}
                                             
-                                            {/* Grid */}
                                             {CATEGORIES.find(c => c.id === activeCategory)?.indexKey && (
                                                 <div className={`grid ${activeCategory === 'worlds' ? 'grid-cols-2' : 'grid-cols-4'} gap-2 mb-4 pb-2`}>
-                                                    {/* SPECIAL RENDER LOOP FOR WORLDS vs STANDARD SPRITES */}
                                                     {activeCategory === 'worlds' ? (
                                                         BACKGROUND_OPTIONS.map((bgName, i) => (
                                                             <button key={i} 
-                                                                onClick={() => setConfig({...config, bgIndex: i})}
+                                                                onClick={() => { setConfig({...config, bgIndex: i}); setHasUnsavedChanges(true); }}
                                                                 className={`w-full aspect-video border-2 rounded overflow-hidden relative ${(config as any).bgIndex === i ? 'border-[#3e2723] ring-1 ring-[#3e2723]' : 'border-transparent'}`}>
                                                                 <div className="w-full h-full bg-cover bg-center" style={{ backgroundImage: `url('${ASSET_PATH}${bgName}')` }} />
                                                                 <div className="absolute bottom-0 left-0 w-full bg-black/50 text-[8px] text-white text-center py-1 truncate px-1">
@@ -1128,7 +1202,7 @@ export default function ServitorWildUnknown() {
                                                     ) : (
                                                         GENERIC_LIST.map((_, i) => (
                                                             <button key={i} 
-                                                                onClick={() => setConfig({...config, [(CATEGORIES.find(c => c.id === activeCategory)?.indexKey as string)]: i})}
+                                                                onClick={() => { setConfig({...config, [(CATEGORIES.find(c => c.id === activeCategory)?.indexKey as string)]: i}); setHasUnsavedChanges(true); }}
                                                                 className={`w-full aspect-square border-2 rounded overflow-hidden bg-white/50 ${(config as any)[CATEGORIES.find(c => c.id === activeCategory)?.indexKey as string] === i ? 'border-[#3e2723] ring-1 ring-[#3e2723]' : 'border-transparent'}`}>
                                                                 <div className="w-full h-full transform scale-75" 
                                                                      style={getSpriteStyle(i, (CATEGORIES.find(c => c.id === activeCategory)?.asset as string), CATEGORIES.find(c => c.id === activeCategory)?.single)} />
@@ -1144,16 +1218,12 @@ export default function ServitorWildUnknown() {
                         )}
                     </div>
 
-                    {/* 4. FOOTER: Action Buttons (UPDATED STYLE) */}
+                    {/* FOOTER */}
                     <div className="mt-2 shrink-0 flex gap-2 w-full z-20">
-                        {/* 
-                           POINTER EVENTS IMPLEMENTED FOR MOBILE/TOUCH STABILITY
-                           Using onPointerDown/Up instead of Mouse/Touch events prevents conflict and ghost clicks.
-                        */}
                         <button 
                             onPointerDown={(e) => {
                                 e.preventDefault();
-                                e.currentTarget.setPointerCapture(e.pointerId); // LOCKS BUTTON TO FINGER
+                                e.currentTarget.setPointerCapture(e.pointerId);
                                 startHold('awaken');
                             }}
                             onPointerUp={(e) => {
@@ -1163,20 +1233,77 @@ export default function ServitorWildUnknown() {
                             }}
                             onPointerCancel={(e) => stopHold()}
                             className="ornate-btn flex-1 py-3 text-sm font-bold tracking-widest relative overflow-hidden"
-                            style={{ touchAction: 'none' }} // Prevents scrolling while holding
+                            style={{ touchAction: 'none' }}
                         >
                             <div className="absolute top-0 left-0 h-full bg-[#FFD700]/30 transition-all duration-75 ease-linear" style={{width: `${awakenProgress}%`}}></div>
                             <span className="relative z-10 text-center w-full block">{isAwakening ? "Awakening..." : "Hold to Awaken"}</span>
                         </button>
-                        <button onClick={handleBind} className="ornate-btn flex-1 py-3 text-sm font-bold">
-                            Bind/Save ({COST_BIND_SERVITOR})
+                        <button onClick={handleSaveClick} className="ornate-btn flex-1 py-3 text-sm font-bold flex items-center justify-center gap-2">
+                           <Save size={16} /> Bind ({SAVE_COST})
                         </button>
                     </div>
 
                 </div>
             </div>
 
-            {/* FEEDING MODAL - RELOCATED TO TOP */}
+            {/* CONFIRMATION SAVE MODAL */}
+            {showConfirmSave && (
+                <div className="fixed inset-0 z-500 flex items-center justify-center bg-black/90 p-6 animate-in fade-in">
+                    <div className="bg-[#1a1528] border border-amber-600 p-8 rounded text-center max-w-sm w-full shadow-[0_0_50px_rgba(251,191,36,0.2)]">
+                        <Save size={48} className="mx-auto mb-4 text-amber-500" />
+                        <h2 className="text-[#FFD700] magick-font text-2xl mb-2">Bind Spirit</h2>
+                        <p className="text-gray-300 text-sm mb-6">
+                            Saving "{sName}" to your Grimoire requires energy.
+                        </p>
+                        
+                        <div className="bg-black/30 p-4 rounded mb-6 text-sm">
+                            <div className="flex justify-between text-gray-400 mb-2">
+                                <span>Current Aether:</span>
+                                <span className="text-white font-bold">{credits}</span>
+                            </div>
+                            <div className="flex justify-between text-amber-400 font-bold border-t border-gray-700 pt-2">
+                                <span>Cost:</span>
+                                <span>-{SAVE_COST}</span>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col gap-3">
+                            <button onClick={confirmSave} className="w-full bg-amber-700 hover:bg-amber-600 text-white font-bold py-3 rounded uppercase tracking-wider transition-colors">
+                                Confirm & Bind
+                            </button>
+                            <button onClick={() => setShowConfirmSave(false)} className="text-gray-500 hover:text-white text-sm underline">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* INSUFFICIENT FUNDS MODAL */}
+            {showCreditModal && (
+                 <div className="fixed inset-0 z-500 flex items-center justify-center bg-black/90 p-6 animate-in fade-in">
+                    <div className="bg-[#1a1528] border border-red-500 p-8 rounded text-center max-w-sm w-full">
+                        <Lock className="mx-auto mb-4 text-red-500 w-12 h-12" />
+                        <h2 className="text-red-100 magick-font text-xl mb-2">Insufficient Aether</h2>
+                        <p className="text-gray-400 text-sm mb-6">
+                            You require more energy to bind this spirit to your Grimoire.
+                        </p>
+                        <div className="flex flex-col gap-3">
+                            <button 
+                                onClick={() => router.push('/store?redirect=/spell-room/servitor-app')} 
+                                className="w-full bg-amber-600 hover:bg-amber-500 text-black font-bold py-3 rounded uppercase tracking-wider flex items-center justify-center gap-2"
+                            >
+                                <Coins size={16} /> Acquire Aether
+                            </button>
+                            <button onClick={() => setShowCreditModal(false)} className="text-gray-500 hover:text-white text-sm underline">
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* FEEDING MODAL */}
             {isFeedingActive && (
                 <div className={`absolute inset-0 z-200 flex flex-col items-center justify-start pt-[50px] transition-colors duration-300 ${isFeeding ? 'bg-black/0' : 'bg-black/80'}`}>
                     {hungerState === 'fed' ? (
@@ -1186,19 +1313,13 @@ export default function ServitorWildUnknown() {
                         </div>
                     ) : (
                         <div className="flex flex-col items-center justify-center min-h-60">
-                            {/* FIXED TEXT CONTAINER to prevent layout shift */}
                             <div className="h-8 mb-8 flex items-center justify-center w-full">
                                 <p className="text-[#FFD700] text-xl font-serif animate-pulse text-center whitespace-nowrap">
                                     {isFeeding ? "Feeding your Servitor..." : `${sName || 'Spirit'} requires sustenance...`}
                                 </p>
                             </div>
                             
-                            {/* BUTTON WRAPPER */}
                             <div className="w-40 h-40 flex items-center justify-center">
-                                {/* 
-                                   POINTER EVENTS FOR FEEDING BUTTON
-                                   This ensures smooth filling even if finger moves slightly.
-                                */}
                                 <button 
                                     onPointerDown={(e) => {
                                         e.preventDefault();
@@ -1226,14 +1347,6 @@ export default function ServitorWildUnknown() {
                             </div>
                         </div>
                     )}
-                </div>
-            )}
-            {showCreditModal && (
-                 <div className="fixed inset-0 z-500 flex items-center justify-center bg-black/80 p-6">
-                    <div className="bg-[#1a1528] border border-amber-600 p-8 rounded text-center max-w-sm">
-                        <Lock className="mx-auto mb-4 text-amber-500" /><p className="text-gray-300 mb-6">Insufficient Aether.</p>
-                        <button onClick={() => setShowCreditModal(false)} className="w-full bg-amber-900/50 border border-amber-600 py-2 uppercase text-amber-100">Close</button>
-                    </div>
                 </div>
             )}
         </div>
