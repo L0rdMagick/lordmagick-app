@@ -24,7 +24,7 @@ const ASSETS = {
     TREASURES: 'Chest_Sigils_And_Treasures_Sheet.png',
     CARRY_TREASURE: 'treasures.png',
     FOOD: 'Servitor_Sustenance_Food_Sheet.png',
-    MOUND: 'mound_into_the_void.png',
+    MOUND: 'mounds.png', // UPDATED to sprite sheet
     UI_PANEL: 'Parchment_And_Oak_Responsive_Panels.png',
     UI_BUTTONS: 'Runic_Glass_Button_Set.png'
 };
@@ -41,13 +41,6 @@ const AUDIO_PATHS = {
 };
 
 const BACKGROUND_OPTIONS = [
-    'Circkon.jpg',
-    'Candaveous.jpg',
-    'Horndanos.jpg',
-    'Chrysandis.jpg',
-    'Glitzandia.jpg',
-    'Miztinzia.jpg',
-    'Zizipae.jpg',
     'Crystal_Cave.jpg',
     'Magick_Forest.jpg',
     'Treasure_Cave.jpg',
@@ -335,7 +328,7 @@ export default function ServitorWildUnknown() {
         { id: 'clothes', label: 'ROBES', asset: ASSETS.CLOTHES, indexKey: 'clothingIndex', offsetKey: 'clothes', canFlip: true },
         { id: 'wing', label: 'WINGS', asset: ASSETS.BACK, indexKey: 'wingIndex', offsetKey: 'wing', canFlip: true },
         { id: 'sigil', label: 'SIGILS', asset: ASSETS.TREASURES, indexKey: 'sigilIndex', offsetKey: 'sigil', canFlip: true },
-        { id: 'mound', label: 'MOUNDS', asset: ASSETS.MOUND, indexKey: null, offsetKey: 'mound', single: true, canFlip: true },
+        { id: 'mound', label: 'MOUNDS', asset: ASSETS.MOUND, indexKey: 'moundIndex', offsetKey: 'mound', canFlip: true }, // UPDATED
         { id: 'vessel', label: 'VESSELS', asset: ASSETS.VESSELS, indexKey: 'vesselIndex', offsetKey: 'vessel', canFlip: true },
         { id: 'food', label: 'FOOD', asset: ASSETS.FOOD, indexKey: 'foodIndex', offsetKey: null }
     ], []);
@@ -344,7 +337,7 @@ export default function ServitorWildUnknown() {
         baseIndex: 0, limbIndex: 0, legIndex: 0, toolIndex: 0,
         hatIndex: 0, wingIndex: 0, vesselIndex: 0, clothingIndex: 0,
         sigilIndex: 0, foodIndex: 0, treasureIndex: 0,
-        carryTreasureIndex: 0,
+        carryTreasureIndex: 0, moundIndex: 0, // ADDED
         bgIndex: 0,
         movementType: "walk", 
         feedFreq: 5,
@@ -530,10 +523,9 @@ export default function ServitorWildUnknown() {
         if (error) {
             alert("Failed to release servitor.");
         } else {
-            // Local update
             setSavedServitors(prev => prev.filter(s => s.id !== showDeleteConfirm));
             setShowDeleteConfirm(null);
-            playAudio(AUDIO_PATHS.FEED_COMPLETE); // Reuse sound for effect
+            playAudio(AUDIO_PATHS.FEED_COMPLETE); 
         }
     };
 
@@ -566,6 +558,26 @@ export default function ServitorWildUnknown() {
 
             setTimeout(() => { if(runningRef.current && loopIdRef.current === id) resolve(); }, time);
         });
+    };
+
+    const getSpriteStyle = (index: number, filename: string, isSingleImage = false) => {
+        if (isSingleImage) {
+            return {
+                backgroundImage: `url('${ASSET_PATH}${filename}')`,
+                backgroundSize: 'contain',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat'
+            };
+        }
+        const safeIndex = Math.max(0, Math.min(15, index));
+        const col = safeIndex % 4;
+        const row = Math.floor(safeIndex / 4);
+        return {
+            backgroundImage: `url('${ASSET_PATH}${filename}')`,
+            backgroundSize: '400% 400%',
+            backgroundPosition: `${col * 33.333}% ${row * 33.333}%`,
+            backgroundRepeat: 'no-repeat'
+        };
     };
 
     const mainLoop = async (id: number) => {
@@ -812,26 +824,6 @@ export default function ServitorWildUnknown() {
                 </div>
             </div>
         );
-    };
-
-    const getSpriteStyle = (index: number, filename: string, isSingleImage = false) => {
-        if (isSingleImage) {
-            return {
-                backgroundImage: `url('${ASSET_PATH}${filename}')`,
-                backgroundSize: 'contain',
-                backgroundPosition: 'center',
-                backgroundRepeat: 'no-repeat'
-            };
-        }
-        const safeIndex = Math.max(0, Math.min(15, index));
-        const col = safeIndex % 4;
-        const row = Math.floor(safeIndex / 4);
-        return {
-            backgroundImage: `url('${ASSET_PATH}${filename}')`,
-            backgroundSize: '400% 400%',
-            backgroundPosition: `${col * 33.333}% ${row * 33.333}%`,
-            backgroundRepeat: 'no-repeat'
-        };
     };
 
     if (!assetsLoaded) return (
@@ -1081,8 +1073,9 @@ export default function ServitorWildUnknown() {
 
                 <div id="mound-wrapper" className="absolute bottom-[15vh] left-[10%] w-40 h-[100px] z-20 transition-all duration-500" 
                      style={{ ...getGameObjectStyle('mound') }}>
-                    <div id="game-mound-inner" className="w-full h-full bg-contain bg-no-repeat bg-bottom" 
-                         style={{ backgroundImage: `url('${ASSET_PATH}${ASSETS.MOUND}')` }} />
+                    {/* UPDATED MOUND RENDERING */}
+                    <div id="game-mound-inner" className="w-full h-full" 
+                         style={{ ...getSpriteStyle(config.moundIndex, ASSETS.MOUND) }} />
                 </div>
 
                 {isRunning && (
@@ -1353,16 +1346,16 @@ export default function ServitorWildUnknown() {
             {/* CONFIRM DELETE MODAL */}
             {showDeleteConfirm && (
                 <div className="fixed inset-0 z-500 flex items-center justify-center bg-black/90 p-6 animate-in fade-in">
-                    <div className="bg-[#1a1528] border border-red-500/50 p-8 rounded text-center max-w-sm w-full">
+                    <div className="bg-[#1a1528] border border-red-500/50 p-8 rounded text-center max-w-sm w-full shadow-[0_0_50px_rgba(220,38,38,0.2)]">
                         <AlertTriangle className="mx-auto mb-4 text-red-500 w-12 h-12" />
-                        <h2 className="text-red-100 magick-font text-xl mb-2">Release Servitor?</h2>
+                        <h2 className="text-red-100 magick-font text-xl mb-2">Release Spirit?</h2>
                         <p className="text-gray-400 text-sm mb-6">
-                            Are you sure you want to delete this spirit? This action cannot be undone.
+                            Are you sure you want to unbind this servitor? This action cannot be undone.
                         </p>
                         <div className="flex flex-col gap-3">
                             <button 
                                 onClick={confirmDelete} 
-                                className="w-full bg-red-900/50 hover:bg-red-800/50 border border-red-500 text-red-100 font-bold py-3 rounded uppercase tracking-wider transition-colors"
+                                className="w-full bg-red-900/60 hover:bg-red-800/60 border border-red-500 text-red-100 font-bold py-3 rounded uppercase tracking-wider transition-colors"
                             >
                                 Release
                             </button>
