@@ -42,12 +42,12 @@ const AUDIO_PATHS = {
 
 const BACKGROUND_OPTIONS = [
     'Circkon.jpg',
+    'Candaveous.jpg',
+    'Horndanos.jpg',
     'Chrysandis.jpg',
     'Glitzandia.jpg',
-    'Horndanos.jpg',
     'Miztinzia.jpg',
     'Zizipae.jpg',
-    'Candaveous.jpg',
     'Crystal_Cave.jpg',
     'Magick_Forest.jpg',
     'Treasure_Cave.jpg',
