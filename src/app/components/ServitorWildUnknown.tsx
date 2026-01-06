@@ -24,7 +24,7 @@ const ASSETS = {
     TREASURES: 'Chest_Sigils_And_Treasures_Sheet.png',
     CARRY_TREASURE: 'treasures.png',
     FOOD: 'Servitor_Sustenance_Food_Sheet.png',
-    MOUND: 'mounds.png', // UPDATED to sprite sheet
+    MOUND: 'mounds.png', 
     UI_PANEL: 'Parchment_And_Oak_Responsive_Panels.png',
     UI_BUTTONS: 'Runic_Glass_Button_Set.png'
 };
@@ -40,6 +40,7 @@ const AUDIO_PATHS = {
     THUNDER_LOOP: '/audio/searching-a-bag-415807.mp3'
 };
 
+// --- UPDATED BACKGROUND LIST ---
 const BACKGROUND_OPTIONS = [
     'Circkon.jpg',
     'Candaveous.jpg',
@@ -55,6 +56,19 @@ const BACKGROUND_OPTIONS = [
     'Love_Planet.jpg',
     'Sparkle_Land.jpg'
 ];
+
+// --- TYPE DEFINITIONS ---
+// This interface fixes the TS2339 error by making properties optional
+interface CategoryDef {
+    id: string;
+    label: string;
+    asset: string | null;
+    indexKey: string | null;
+    offsetKey: string | null;
+    canFlip?: boolean;
+    canSpread?: boolean;
+    single?: boolean; 
+}
 
 // --- 2. CONFIGURATION SECTION ---
 
@@ -255,6 +269,7 @@ const ServitorRig = React.memo(({
     return (
         <div id={idPrefix} className="relative w-32 h-32" style={{ transform: previewStyle }}>
             {isHappy && (
+                // Fixed z-index syntax
                 <div className="absolute -top-16 left-1/2 -translate-x-1/2 z-[200] text-4xl animate-pulse filter drop-shadow-[0_0_10px_gold]">
                     ✨
                 </div>
@@ -318,10 +333,11 @@ export default function ServitorWildUnknown() {
     const [savedServitors, setSavedServitors] = useState<any[]>([]);
     
     // Deletion State
-    const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null); // holds ID of servitor to delete
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null); 
 
     // --- CATEGORIES DEFINITION ---
-    const CATEGORIES = useMemo(() => [
+    // Applying CategoryDef interface to array to prevent TS errors
+    const CATEGORIES: CategoryDef[] = useMemo(() => [
         { id: 'saved', label: 'SAVED', asset: null, indexKey: null, offsetKey: null },
         { id: 'global', label: 'WHOLE', asset: null, indexKey: null, offsetKey: 'global', canFlip: true },
         { id: 'worlds', label: 'WORLDS', asset: null, indexKey: 'bgIndex', offsetKey: null }, 
@@ -335,7 +351,7 @@ export default function ServitorWildUnknown() {
         { id: 'clothes', label: 'ROBES', asset: ASSETS.CLOTHES, indexKey: 'clothingIndex', offsetKey: 'clothes', canFlip: true },
         { id: 'wing', label: 'WINGS', asset: ASSETS.BACK, indexKey: 'wingIndex', offsetKey: 'wing', canFlip: true },
         { id: 'sigil', label: 'SIGILS', asset: ASSETS.TREASURES, indexKey: 'sigilIndex', offsetKey: 'sigil', canFlip: true },
-        { id: 'mound', label: 'MOUNDS', asset: ASSETS.MOUND, indexKey: 'moundIndex', offsetKey: 'mound', canFlip: true }, // UPDATED
+        { id: 'mound', label: 'MOUNDS', asset: ASSETS.MOUND, indexKey: 'moundIndex', offsetKey: 'mound', canFlip: true }, 
         { id: 'vessel', label: 'VESSELS', asset: ASSETS.VESSELS, indexKey: 'vesselIndex', offsetKey: 'vessel', canFlip: true },
         { id: 'food', label: 'FOOD', asset: ASSETS.FOOD, indexKey: 'foodIndex', offsetKey: null }
     ], []);
@@ -344,7 +360,7 @@ export default function ServitorWildUnknown() {
         baseIndex: 0, limbIndex: 0, legIndex: 0, toolIndex: 0,
         hatIndex: 0, wingIndex: 0, vesselIndex: 0, clothingIndex: 0,
         sigilIndex: 0, foodIndex: 0, treasureIndex: 0,
-        carryTreasureIndex: 0, moundIndex: 0, // ADDED
+        carryTreasureIndex: 0, moundIndex: 0, 
         bgIndex: 0,
         movementType: "walk", 
         feedFreq: 5,
