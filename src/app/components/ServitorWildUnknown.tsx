@@ -308,7 +308,7 @@ export default function ServitorWildUnknown() {
     
     // --- CATEGORIES DEFINITION ---
     const CATEGORIES = useMemo(() => [
-        { id: 'saved', label: 'SAVED', asset: null, indexKey: null, offsetKey: null }, // NEW SAVED BUTTON
+        { id: 'saved', label: 'SAVED', asset: null, indexKey: null, offsetKey: null },
         { id: 'global', label: 'WHOLE', asset: null, indexKey: null, offsetKey: 'global', canFlip: true },
         { id: 'worlds', label: 'WORLDS', asset: null, indexKey: 'bgIndex', offsetKey: null }, 
         { id: 'settings', label: 'BEHAVIOR', asset: null, indexKey: null, offsetKey: null },
@@ -385,11 +385,12 @@ export default function ServitorWildUnknown() {
     };
 
     const fetchSavedServitors = async (userId: string) => {
+        // Updated to filter by element = 'Servitor' since tradition column doesn't exist
         const { data } = await supabase
             .from('spells')
             .select('*')
             .eq('user_id', userId)
-            .eq('tradition', 'SERVITOR')
+            .eq('element', 'Servitor') 
             .order('created_at', { ascending: false });
         if (data) setSavedServitors(data);
     };
@@ -449,7 +450,7 @@ export default function ServitorWildUnknown() {
         }
     };
 
-    // --- SAVING LOGIC (UPDATED) ---
+    // --- SAVING LOGIC (FIXED) ---
     const handleSaveClick = () => {
         if (!user) return alert("Please log in to save.");
         if (!sName) return alert("Name your Servitor before saving.");
@@ -465,7 +466,6 @@ export default function ServitorWildUnknown() {
             return;
         }
 
-        // Deduct Credits
         const newBalance = credits - SAVE_COST;
         const { error: creditError } = await supabase.from('profiles').update({ credits: newBalance }).eq('id', user.id);
         
@@ -476,18 +476,22 @@ export default function ServitorWildUnknown() {
 
         setCredits(newBalance);
 
-        // Save Spell
+        // Updated insert to match schema: No 'tradition', 'incantation' provided, 'element' used for tag
         const { error: saveError } = await supabase.from('spells').insert({
             user_id: user.id,
             name: sName,
             intention: sPurpose,
-            tradition: 'SERVITOR',
-            ritual_data: config
+            element: 'Servitor', // Use element column to tag it as a servitor
+            incantation: `I bind the spirit ${sName} to the task: ${sPurpose}`, // Required by schema (Not Null)
+            ritual_data: {
+                ...config,
+                type: 'SERVITOR' // Store type in JSONB as well
+            }
         });
 
         if (saveError) {
             console.error(saveError);
-            alert("Failed to bind spirit to grimoire.");
+            alert("Failed to bind spirit to grimoire. " + saveError.message);
         } else {
             playAudio(AUDIO_PATHS.BIND_ACTIVATE);
             alert("Bound to Grimoire!");
