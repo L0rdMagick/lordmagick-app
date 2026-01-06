@@ -34,7 +34,8 @@ const AUDIO_PATHS = {
     DEPOSIT: '/audio/old-sfx-library-portal.mp3',   
     FEED_COMPLETE: '/audio/sfx-chaos-hold.mp3',     
     MOUND_JUMP_IN: '/audio/sfx-searching-2.mp3',    
-    MOUND_JUMP_OUT: '/audio/sfx-finding-something-1.mp3' 
+    MOUND_JUMP_OUT: '/audio/sfx-finding-something-1.mp3',
+    THUNDER_LOOP: '/audio/thunder-sound-effect-380391.mp3' // NEW AUDIO
 };
 
 const BACKGROUND_OPTIONS = [
@@ -144,7 +145,7 @@ const ServitorRig = React.memo(({
     isFeeding = false,
     isPreview = false, 
     showCarriedTreasure = false,
-    isHappy = false // NEW PROP
+    isHappy = false 
 }: { 
     idPrefix: string, 
     config: any, 
@@ -154,13 +155,14 @@ const ServitorRig = React.memo(({
     showCarriedTreasure?: boolean,
     isHappy?: boolean 
 }) => {
-    // If feeding, override animation class. If Happy, override to happy jump.
     let animationClass = rigAnimation;
     if (isFeeding) animationClass = 'anim-feed';
-    if (isHappy) animationClass = 'anim-happy-jump';
     
+    // Determine class for the wrapper (Floating or Happy Jump)
+    let wrapperClass = config.movementType === 'fly' || rigAnimation.includes('fly') ? 'anim-floating' : '';
+    if (isHappy) wrapperClass = 'anim-happy-jump'; // Override with jump if happy
+
     const isFacingLeft = rigAnimation.includes('left');
-    const isFlying = config.movementType === 'fly' || rigAnimation.includes('fly');
 
     const getZ = (key: keyof typeof LAYER_ORDER_CONFIG.facingRight) => {
         const map = isFacingLeft ? LAYER_ORDER_CONFIG.facingLeft : LAYER_ORDER_CONFIG.facingRight;
@@ -240,8 +242,6 @@ const ServitorRig = React.memo(({
     const finalGs = gBase.s + gUser.s;
     const finalGf = gBase.f !== gUser.f; 
 
-    const flyClass = isFlying ? 'anim-floating' : '';
-
     const globalTransform = `translate(${finalGx}%, ${finalGy}%) scale(${finalGs}) ${finalGf ? 'scaleX(-1)' : ''}`;
     const previewStyle = isPreview ? `translateY(${UI_PREVIEW_SETTINGS.y}%) scale(${UI_PREVIEW_SETTINGS.scale})` : '';
 
@@ -254,7 +254,8 @@ const ServitorRig = React.memo(({
                 </div>
             )}
             
-            <div className={`w-full h-full ${flyClass}`} style={{ transformStyle: 'preserve-3d' }}>
+            {/* WRAPPER HANDLES JUMP ANIMATION */}
+            <div className={`w-full h-full ${wrapperClass}`} style={{ transformStyle: 'preserve-3d' }}>
                 <div className={`servitor-rig relative w-full h-full ${animationClass}`} 
                     style={{ 
                         transform: globalTransform,
@@ -293,7 +294,8 @@ export default function ServitorWildUnknown() {
 
     const [rigAnimation, setRigAnimation] = useState('anim-idle');
     const [isCarryingTreasure, setIsCarryingTreasure] = useState(false);
-    const [isHappy, setIsHappy] = useState(false); // NEW STATE FOR JUMP
+    const [isHappy, setIsHappy] = useState(false);
+    const [isDepositing, setIsDepositing] = useState(false);
 
     const runningRef = useRef(false); 
     const loopIdRef = useRef(0);
@@ -515,8 +517,14 @@ export default function ServitorWildUnknown() {
             // 3. Search Pulse (Random Time + Rumble)
             if(moundInner) moundInner.classList.add('anim-searching');
             
+            // AUDIO: Thunder Loop Start
+            playAudio(AUDIO_PATHS.THUNDER_LOOP, true);
+
             const searchDuration = Math.random() * 7000 + 3000;
             await wait(searchDuration); 
+
+            // AUDIO: Thunder Loop Stop
+            stopAudio(AUDIO_PATHS.THUNDER_LOOP);
             
             if(moundInner) moundInner.classList.remove('anim-searching');
 
@@ -561,12 +569,10 @@ export default function ServitorWildUnknown() {
             // AUDIO: Deposit
             playAudio(AUDIO_PATHS.DEPOSIT);
 
-            // ANIM: Vessel Shake & Pulse
-            if(vessel) {
-                vessel.classList.add('anim-vessel-deposit');
-                setTimeout(() => vessel.classList.remove('anim-vessel-deposit'), 500);
-            }
-            
+            // ANIM: Vessel Shake & Grow (Apply to State/Class)
+            setIsDepositing(true);
+            setTimeout(() => setIsDepositing(false), 500);
+
             if(shine) { shine.style.opacity = '1'; setTimeout(() => shine.style.opacity = '0', 1000); }
             await wait(1000);
 
@@ -658,7 +664,7 @@ export default function ServitorWildUnknown() {
 
         // 2. Trigger Happiness Animation (Jump + Sparkle)
         setIsHappy(true);
-        setTimeout(() => setIsHappy(false), 1200);
+        setTimeout(() => setIsHappy(false), 1200); // Allow time for 2 jumps (0.6s * 2)
 
         setHungerState('sated'); 
         depositRef.current = 0; 
@@ -666,7 +672,7 @@ export default function ServitorWildUnknown() {
         runningRef.current = true; 
         loopIdRef.current++; 
         
-        // Short delay to let jump finish before walking again
+        // Wait for jump to finish before starting walk loop
         setTimeout(() => mainLoop(loopIdRef.current), 1300);
     };
 
@@ -820,17 +826,14 @@ export default function ServitorWildUnknown() {
                     filter: drop-shadow(0 0 20px #8a2be2) !important;
                 }
 
-                /* NEW VESSEL ANIMATION (Shake & Pulse Once) */
-                @keyframes vessel-shake-pulse {
-                    0% { transform: scale(1) translate(0,0); }
-                    20% { transform: scale(1.1) translate(-2px, 0); }
-                    40% { transform: scale(1.05) translate(2px, 0); }
-                    60% { transform: scale(1.1) translate(-2px, 0); }
-                    80% { transform: scale(1.05) translate(2px, 0); }
-                    100% { transform: scale(1) translate(0,0); }
+                /* NEW VESSEL ANIMATION (Grow & Shrink only, no shake) */
+                @keyframes vessel-pulse-grow {
+                    0% { transform: scale(1); }
+                    50% { transform: scale(1.1); }
+                    100% { transform: scale(1); }
                 }
                 .anim-vessel-deposit {
-                    animation: vessel-shake-pulse 0.5s ease-in-out;
+                    animation: vessel-pulse-grow 0.5s ease-in-out;
                 }
 
                 /* NEW HAPPY JUMP ANIMATION */
@@ -839,7 +842,7 @@ export default function ServitorWildUnknown() {
                     50% { transform: translateY(-20px); }
                     100% { transform: translateY(0); }
                 }
-                .anim-happy-jump .servitor-rig {
+                .anim-happy-jump {
                     animation: jump-celebrate 0.6s ease-in-out infinite;
                 }
 
@@ -977,20 +980,25 @@ export default function ServitorWildUnknown() {
                 )}
 
                 <div className="absolute bottom-[20vh] right-[10%] w-32 h-32 z-20 flex flex-col items-center">
+                    {/* VESSEL WRAPPER STRUCTURE for Scaling Animation without moving position */}
                     {config.offsets.vessel.v && (
-                        <div id="game-vessel" className="w-full h-full relative transition-all duration-500" 
-                             style={{ ...getSpriteStyle(config.vesselIndex, ASSETS.VESSELS), ...getGameObjectStyle('vessel') }}>
-                             {/* TREASURE PILE */}
-                             {treasurePile.map(t => (
-                                 <div key={t.id} className="absolute w-8 h-8 opacity-90" 
-                                      style={{
-                                          left: `calc(50% + ${t.x}px)`,
-                                          bottom: `calc(30% + ${t.y}px)`,
-                                          transform: `rotate(${t.r}deg)`,
-                                          ...getSpriteStyle(t.index, ASSETS.CARRY_TREASURE)
-                                      }}
-                                 />
-                             ))}
+                        <div id="vessel-wrapper" className="w-full h-full relative transition-all duration-500"
+                             style={getGameObjectStyle('vessel')}>
+                            <div id="game-vessel-inner" 
+                                 className={`w-full h-full ${isDepositing ? 'anim-vessel-deposit' : ''}`}
+                                 style={{ ...getSpriteStyle(config.vesselIndex, ASSETS.VESSELS) }}>
+                                 {/* TREASURE PILE */}
+                                 {treasurePile.map(t => (
+                                     <div key={t.id} className="absolute w-8 h-8 opacity-90" 
+                                          style={{
+                                              left: `calc(50% + ${t.x}px)`,
+                                              bottom: `calc(30% + ${t.y}px)`,
+                                              transform: `rotate(${t.r}deg)`,
+                                              ...getSpriteStyle(t.index, ASSETS.CARRY_TREASURE)
+                                          }}
+                                     />
+                                 ))}
+                            </div>
                         </div>
                     )}
                     <div id="vessel-shine" className="absolute top-0 text-4xl opacity-0 transition-opacity duration-500">✨</div>
