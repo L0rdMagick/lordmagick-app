@@ -35,7 +35,7 @@ const AUDIO_PATHS = {
     FEED_COMPLETE: '/audio/sfx-chaos-hold.mp3',     
     MOUND_JUMP_IN: '/audio/sfx-searching-2.mp3',    
     MOUND_JUMP_OUT: '/audio/sfx-finding-something-1.mp3',
-    THUNDER_LOOP: '/audio/thunder-sound-effect-380391.mp3' // NEW AUDIO
+    THUNDER_LOOP: '/audio/searching-a-bag-415807.mp3' // NEW AUDIO
 };
 
 const BACKGROUND_OPTIONS = [
