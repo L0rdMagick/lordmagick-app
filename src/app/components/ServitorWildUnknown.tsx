@@ -2,7 +2,11 @@
 
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { X, Lock, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Plus, Minus, RefreshCw, Move, Eye, EyeOff, Settings, User, ArrowLeftRight, Info, Globe, Save, Coins, FolderOpen, ChevronRight } from 'lucide-react';
+import { 
+    X, Lock, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Plus, Minus, 
+    RefreshCw, Move, Eye, EyeOff, Settings, User, ArrowLeftRight, Info, 
+    Globe, Save, Coins, FolderOpen, ChevronRight, Trash2, AlertTriangle 
+} from 'lucide-react';
 import { createBrowserClient } from '@supabase/ssr';
 
 // --- 1. ASSET CONFIGURATION ---
@@ -306,6 +310,9 @@ export default function ServitorWildUnknown() {
     const [credits, setCredits] = useState<number | null>(null);
     const [savedServitors, setSavedServitors] = useState<any[]>([]);
     
+    // Deletion State
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null); // holds ID of servitor to delete
+
     // --- CATEGORIES DEFINITION ---
     const CATEGORIES = useMemo(() => [
         { id: 'saved', label: 'SAVED', asset: null, indexKey: null, offsetKey: null },
@@ -385,7 +392,6 @@ export default function ServitorWildUnknown() {
     };
 
     const fetchSavedServitors = async (userId: string) => {
-        // Updated to filter by element = 'Servitor' since tradition column doesn't exist
         const { data } = await supabase
             .from('spells')
             .select('*')
@@ -450,7 +456,7 @@ export default function ServitorWildUnknown() {
         }
     };
 
-    // --- SAVING LOGIC (FIXED) ---
+    // --- SAVING & DELETION LOGIC ---
     const handleSaveClick = () => {
         if (!user) return alert("Please log in to save.");
         if (!sName) return alert("Name your Servitor before saving.");
@@ -476,16 +482,15 @@ export default function ServitorWildUnknown() {
 
         setCredits(newBalance);
 
-        // Updated insert to match schema: No 'tradition', 'incantation' provided, 'element' used for tag
         const { error: saveError } = await supabase.from('spells').insert({
             user_id: user.id,
             name: sName,
             intention: sPurpose,
-            element: 'Servitor', // Use element column to tag it as a servitor
-            incantation: `I bind the spirit ${sName} to the task: ${sPurpose}`, // Required by schema (Not Null)
+            element: 'Servitor',
+            incantation: `I bind the spirit ${sName} to the task: ${sPurpose}`,
             ritual_data: {
                 ...config,
-                type: 'SERVITOR' // Store type in JSONB as well
+                type: 'SERVITOR'
             }
         });
 
@@ -498,6 +503,30 @@ export default function ServitorWildUnknown() {
             setHasUnsavedChanges(false);
             setShowConfirmSave(false);
             fetchSavedServitors(user.id);
+        }
+    };
+
+    const handleDeleteClick = (e: React.MouseEvent, id: string) => {
+        e.stopPropagation();
+        setShowDeleteConfirm(id);
+    };
+
+    const confirmDelete = async () => {
+        if (!showDeleteConfirm || !user) return;
+        
+        const { error } = await supabase
+            .from('spells')
+            .delete()
+            .eq('id', showDeleteConfirm)
+            .eq('user_id', user.id);
+
+        if (error) {
+            alert("Failed to release servitor.");
+        } else {
+            // Local update
+            setSavedServitors(prev => prev.filter(s => s.id !== showDeleteConfirm));
+            setShowDeleteConfirm(null);
+            playAudio(AUDIO_PATHS.FEED_COMPLETE); // Reuse sound for effect
         }
     };
 
@@ -906,35 +935,58 @@ export default function ServitorWildUnknown() {
                     animation: jump-celebrate 0.6s ease-in-out infinite;
                 }
 
-                /* UPDATED CSS STARFIELD - 5x Size, 3x Density */
-                .stars-container { position: absolute; top:0; left:0; width:100%; height:100%; overflow:hidden; pointer-events:none; z-index: 5; }
-                .stars-1 {
-                    width: 5px; height: 5px; background: transparent;
-                    /* Increased density of box-shadows */
-                    box-shadow: 
+                /* --- NEW STAR FIELD IMPLEMENTATION USING TEXT-SHADOW --- */
+                .stars-container { 
+                    position: absolute; top:0; left:0; width:100%; height:100%; 
+                    overflow:hidden; pointer-events:none; z-index: 5; 
+                }
+                .stars-container div {
+                    position: absolute; top: 0; left: 0; width: 1px; height: 1px;
+                    background: transparent;
+                    color: transparent; 
+                    font-family: serif; /* Ensures clean star glyph */
+                }
+                
+                .stars-container div::after {
+                    position: absolute;
+                    content: "✦"; 
+                    color: white;
+                }
+
+                .stars-1::after {
+                    font-size: 10px; /* Base Size */
+                    /* Text-shadow replicates the glyph at these coordinates */
+                    text-shadow: 
                         10vw 10vh #FFF, 20vw 80vh #FFF, 80vw 10vh #FFF, 90vw 90vh #FFF, 50vw 50vh #FFF, 30vw 30vh #FFF, 60vw 20vh #FFF, 10vw 90vh #FFF,
                         15vw 40vh #FFF, 25vw 60vh #FFF, 70vw 30vh #FFF, 85vw 70vh #FFF, 40vw 40vh #FFF, 05vw 20vh #FFF, 95vw 10vh #FFF, 35vw 75vh #FFF,
                         55vw 10vh #FFF, 12vw 88vh #FFF, 65vw 55vh #FFF, 75vw 05vh #FFF, 45vw 95vh #FFF, 22vw 33vh #FFF, 88vw 44vh #FFF, 02vw 50vh #FFF;
                     animation: twinkle 4s infinite alternate;
                 }
-                .stars-2 {
-                    width: 10px; height: 10px; background: transparent;
-                    box-shadow: 
+
+                .stars-2::after {
+                    font-size: 16px; /* Medium Size */
+                    color: #FFD700;
+                    text-shadow: 
                         15vw 15vh #FFD700, 25vw 85vh #FFD700, 85vw 15vh #FFD700, 95vw 95vh #FFD700, 55vw 55vh #FFD700,
                         35vw 35vh #FFD700, 45vw 75vh #FFD700, 65vw 25vh #FFD700, 75vw 65vh #FFD700, 05vw 95vh #FFD700,
                         20vw 50vh #FFD700, 80vw 40vh #FFD700, 10vw 30vh #FFD700, 90vw 60vh #FFD700, 60vw 90vh #FFD700;
                     animation: twinkle 6s infinite alternate-reverse;
                 }
-                .stars-3 {
-                    width: 15px; height: 15px; background: transparent;
-                    box-shadow: 
+
+                .stars-3::after {
+                    font-size: 24px; /* Large Size */
+                    opacity: 0.8;
+                    text-shadow: 
                         5vw 50vh #FFF, 90vw 20vh #FFF, 40vw 80vh #FFF,
                         20vw 20vh #FFF, 70vw 70vh #FFF, 30vw 90vh #FFF,
                         10vw 60vh #FFF, 80vw 10vh #FFF, 60vw 40vh #FFF;
                     animation: twinkle 8s infinite alternate;
-                    filter: blur(2px);
                 }
-                @keyframes twinkle { from { opacity: 0.3; } to { opacity: 1; } }
+
+                @keyframes twinkle { 
+                    0% { opacity: 0.4; transform: scale(0.9); } 
+                    100% { opacity: 1; transform: scale(1.1); filter: drop-shadow(0 0 5px white); } 
+                }
 
                 @keyframes fall { from { top: -10%; opacity: 1; } to { top: 100%; opacity: 0; } }
 
@@ -1143,16 +1195,24 @@ export default function ServitorWildUnknown() {
                                     <div className="text-center text-[#3e2723] opacity-60 mt-10 text-sm">No spirits bound yet.</div>
                                 ) : (
                                     savedServitors.map(servitor => (
-                                        <button key={servitor.id} onClick={() => loadServitor(servitor)}
-                                            className="flex items-center justify-between p-3 bg-[#f0e6d2] border border-[#8d6e63] rounded hover:bg-[#fff8e7] transition-colors text-left group">
-                                            <div>
-                                                <div className="text-[#3e2723] font-bold text-sm font-serif">{servitor.name}</div>
-                                                <div className="text-[#5d4037] text-xs italic">
-                                                    {servitor.intention?.length > 21 ? servitor.intention.substring(0, 21) + '...' : servitor.intention}
+                                        <div key={servitor.id} className="flex gap-2">
+                                            <button onClick={() => loadServitor(servitor)}
+                                                className="flex-1 flex items-center justify-between p-3 bg-[#f0e6d2] border border-[#8d6e63] rounded hover:bg-[#fff8e7] transition-colors text-left group">
+                                                <div>
+                                                    <div className="text-[#3e2723] font-bold text-sm font-serif">{servitor.name}</div>
+                                                    <div className="text-[#5d4037] text-xs italic">
+                                                        {servitor.intention?.length > 21 ? servitor.intention.substring(0, 21) + '...' : servitor.intention}
+                                                    </div>
                                                 </div>
-                                            </div>
-                                            <ChevronRight size={16} className="text-[#8d6e63] group-hover:text-[#3e2723]" />
-                                        </button>
+                                                <ChevronRight size={16} className="text-[#8d6e63] group-hover:text-[#3e2723]" />
+                                            </button>
+                                            <button 
+                                                onClick={(e) => handleDeleteClick(e, servitor.id)}
+                                                className="bg-red-900/10 border border-red-800/20 p-3 rounded hover:bg-red-900/30 transition-colors flex items-center justify-center text-red-800"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
                                     ))
                                 )}
                             </div>
@@ -1276,6 +1336,30 @@ export default function ServitorWildUnknown() {
                                 Confirm & Bind
                             </button>
                             <button onClick={() => setShowConfirmSave(false)} className="text-gray-500 hover:text-white text-sm underline">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* CONFIRM DELETE MODAL */}
+            {showDeleteConfirm && (
+                <div className="fixed inset-0 z-500 flex items-center justify-center bg-black/90 p-6 animate-in fade-in">
+                    <div className="bg-[#1a1528] border border-red-500/50 p-8 rounded text-center max-w-sm w-full">
+                        <AlertTriangle className="mx-auto mb-4 text-red-500 w-12 h-12" />
+                        <h2 className="text-red-100 magick-font text-xl mb-2">Release Servitor?</h2>
+                        <p className="text-gray-400 text-sm mb-6">
+                            Are you sure you want to delete this spirit? This action cannot be undone.
+                        </p>
+                        <div className="flex flex-col gap-3">
+                            <button 
+                                onClick={confirmDelete} 
+                                className="w-full bg-red-900/50 hover:bg-red-800/50 border border-red-500 text-red-100 font-bold py-3 rounded uppercase tracking-wider transition-colors"
+                            >
+                                Release
+                            </button>
+                            <button onClick={() => setShowDeleteConfirm(null)} className="text-gray-500 hover:text-white text-sm underline">
                                 Cancel
                             </button>
                         </div>
