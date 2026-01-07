@@ -1,5 +1,3 @@
-// --- START OF FILE supabase/functions/generate-wiccan-spell/index.ts ---
-
 import { GoogleAuth } from "npm:google-auth-library";
 import { corsHeaders } from '../_shared/cors.ts';
 
@@ -17,6 +15,20 @@ const AVAILABLE_INGREDIENTS = [
     "Rosemary", "Sage", "Basil", "Lavender", "Bay Leaf", "Mint", "Thyme", "Cinnamon", "Cloves", "Ginger", "Lemongrass", "Chamomile", "Mugwort", "Rowan Branch",
     // Crystals
     "Clear Quartz", "Amethyst", "Rose Quartz", "Citrine", "Black Tourmaline", "Obsidian", "Selenite", "Labradorite", "Carnelian", "Jade", "Lapis Lazuli", "Onyx", "Tiger's Eye"
+];
+
+// STRICT LIST of Deities we have icons for
+const AVAILABLE_DEITIES = [
+    "The Triple Goddess", "The Horned God", "Universal Spirit",
+    // Deity Icons 1
+    "Owl (Athena)", "Stag (Cernunnos)", "Sun Wheel (Apollo)", "Triskele", "Ankh (Isis)", 
+    "Lightning Bolt (Zeus/Thor)", "Crescent Moon (Selene/Diana)", "Raven (Morrigan)", "Hammer (Thor)", 
+    "Snake (Hecate)", "Dove (Aphrodite)", "Cornucopia (Abundantia)", "Skull (Hades)",
+    // Deity Icons 2
+    "Abundantia", "Lakshmi", "Plutus", "Cernunnos", 
+    "Hecate", "Odin", "Freya", "Bastet",
+    "Osiris", "Isis", "Ganesha", "Thoth",
+    "Demeter", "Persephone", "Hades", "Zeus"
 ];
 
 Deno.serve(async (req: Request) => {
@@ -54,7 +66,8 @@ Deno.serve(async (req: Request) => {
                3. "invocation": A 2-line rhyme to welcome the deity.
                4. "closing": A 2-line rhyme to open the circle/end the ritual.
           - "elemental_chants": An object containing 5 short (2-line) rhyming incantations to call the quarters. Keys: "Spirit", "Air", "Fire", "Earth", "Water".
-          - "suggested_deities": An array of 3 objects (Deity Suggestions) relevant to the intention. Keys: "name" (e.g., "Aphrodite"), "title", "pantheon", "description" (1 sentence).
+          - "suggested_deities": An array of 3 objects (Deity Suggestions) relevant to the intention. Keys: "name", "title", "pantheon", "description" (1 sentence).
+             **IMPORTANT**: You MUST choose "name" ONLY from this list: [${AVAILABLE_DEITIES.map(d => `"${d}"`).join(", ")}]. Do not invent names.
           - "symbolic_ingredients": An array of EXACTLY FIVE objects. For each:
              - "name": Choose from [${AVAILABLE_INGREDIENTS.map(i => `"${i}"`).join(", ")}]. Prioritize colored candles and specific oils over generic tools.
              - "incantation": A 1-sentence command for this item.

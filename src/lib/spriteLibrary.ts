@@ -172,6 +172,17 @@ const deity_icons1 = generateGrid(4, 4, 512, 512,
     Array(16).fill("I invoke thee.")
 );
 
+// NEW SHEET: deity_icons2 (For Prosperity, specific gods etc)
+const deity_icons2 = generateGrid(4, 4, 512, 512,
+    [
+        "Abundantia", "Lakshmi", "Plutus", "Cernunnos", 
+        "Hecate", "Odin", "Freya", "Bastet",
+        "Osiris", "Isis", "Ganesha", "Thoth",
+        "Demeter", "Persephone", "Hades", "Zeus"
+    ],
+    Array(16).fill("I call upon your ancient power.")
+);
+
 const candles_colored = generateGrid(4, 4, 256, 256,
     [ 
         "Red Candle", "Green Candle", "Black Candle", "White Candle", 
@@ -208,8 +219,8 @@ export const spriteLibrary: Record<string, SpriteSheet> = {
   
   // New (Wicca High Ritual)
   ritual_framework1: { path: '/images/sprite-sheets/ritual_framework1.png', spriteSize: SIZE_256, sheetSize: SHEET_SIZE_1024, items: ritual_framework1 },
-  // UPDATED: .jpeg extension and 2048x2048 sheet size
   deity_icons1: { path: '/images/sprite-sheets/deity_icons1.jpeg', spriteSize: { width: 512, height: 512 }, sheetSize: { width: 2048, height: 2048 }, items: deity_icons1 },
+  deity_icons2: { path: '/images/sprite-sheets/deity_icons2.jpeg', spriteSize: { width: 512, height: 512 }, sheetSize: { width: 2048, height: 2048 }, items: deity_icons2 },
   candles_colored: { path: '/images/sprite-sheets/candles_colored.png', spriteSize: SIZE_256, sheetSize: SHEET_SIZE_1024, items: candles_colored },
   oils_resins: { path: '/images/sprite-sheets/oils_resins.png', spriteSize: SIZE_256, sheetSize: SHEET_SIZE_1024, items: oils_resins },
   fx_sprites1: { path: '/images/sprite-sheets/fx_sprites1.png', spriteSize: SIZE_256, sheetSize: {width: 512, height: 512}, items: fx_sprites1 },
