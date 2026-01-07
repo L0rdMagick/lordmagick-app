@@ -1,3 +1,4 @@
+// --- START OF FILE src/lib/types.ts ---
 import type { Session } from '@supabase/supabase-js';
 
 export interface FormData {
@@ -85,13 +86,26 @@ export interface WiccanIngredient {
   incantation?: string;      
 }
 
+// NEW: Interfaces for High Ritual
+export interface WiccanDeity {
+  name: string;
+  title: string;
+  pantheon: string;
+  description: string;
+}
+
+export interface TransitionalIncantations {
+  sanctification: string;
+  circle_casting: string;
+  invocation: string;
+  closing: string;
+}
+
 export interface GeneratedWiccanSpell {
   title: string;
-  incantation?: string; 
-  symbolic_ingredients: WiccanIngredient[];
   central_chant: string;
   affirmation: string;
-  // NEW: Add this optional field
+  symbolic_ingredients: WiccanIngredient[];
   elemental_chants?: {
     Spirit: string;
     Air: string;
@@ -99,9 +113,12 @@ export interface GeneratedWiccanSpell {
     Water: string;
     Earth: string;
   };
+  // NEW: Fields for High Ritual
+  transitional_incantations?: TransitionalIncantations;
+  suggested_deities?: WiccanDeity[];
 }
 
-// --- Love Spell Types (MOVED HERE) ---
+// --- Love Spell Types ---
 export interface GeneratedLoveSpell {
     incantation: string[];
     ingredients: Array<{
@@ -112,7 +129,7 @@ export interface GeneratedLoveSpell {
     }>;
 }
 
-// --- Electric Magick Types (MOVED HERE) ---
+// --- Electric Magick Types ---
 export interface NeuralLinkResult {
     incantation1: string;
     incantation2: string;
@@ -161,3 +178,4 @@ export type AppView =
   | { type: 'spell_room' };
 
 export type { Session };
+// --- END OF FILE src/lib/types.ts ---
