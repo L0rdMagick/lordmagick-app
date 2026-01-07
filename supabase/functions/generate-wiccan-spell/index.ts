@@ -7,22 +7,16 @@ const GCP_PROJECT_ID = 'arcane-tools';
 const GCP_REGION = 'us-central1';
 
 const AVAILABLE_INGREDIENTS = [
-    // tools1
-    "Athame", "Wand", "Chalice", "Cauldron", "Pentacle", "Bell", "Candle", 
-    "Mortar & Pestle", "Bowl", "Staff", "Altar", "Besom", "Grimoire", 
-    "Cord", "Mirror", "Lantern",
-    // herbs1
-    "Rosemary", "Sage", "Basil", "Lavender", "Bay Leaf", "Mint", "Thyme", 
-    "Cinnamon", "Cloves", "Ginger", "Lemongrass", "Chamomile", "Mugwort", 
-    "Frankincense", "Myrrh", "Rowan Branch",
-    // crystals1
-    "Clear Quartz", "Amethyst", "Rose Quartz", "Citrine", "Black Tourmaline", 
-    "Obsidian", "Selenite", "Labradorite", "Carnelian", "Jade", "Quartz Crystal", 
-    "Lapis Lazuli", "Onyx", "Tiger's Eye", "Smoky Quartz", "Aventurine",
-    // offerings2
-    "Nuts", "Herbs Offering", "Rice", "Tobacco", "Salt", "Sugar", "Grain", 
-    "Bread Loaf", "Candle Cluster", "Crystal Offering", "Shell", "Bowl of Fire", 
-    "Sacred Stone", "Bonsai", "Coin Pile"
+    // Standard Tools
+    "Athame", "Wand", "Chalice", "Cauldron", "Pentacle", "Bell", 
+    // New Candles
+    "Red Candle", "Green Candle", "Black Candle", "White Candle", "Pink Candle", "Blue Candle", "Yellow Candle", "Purple Candle", "Orange Candle", "Gold Candle", "Silver Candle", 
+    // New Oils/Resins
+    "Dragon's Blood", "Frankincense Resin", "Myrrh Resin", "Moon Water", "Patchouli Oil", "Rose Oil", "Sandalwood", "Salt Water", "Graveyard Dirt", "Black Salt", "Red Brick Dust", "Florida Water", "Van Van Oil", "Crown of Success", "Come to Me", "Protection Oil",
+    // Standard Herbs
+    "Rosemary", "Sage", "Basil", "Lavender", "Bay Leaf", "Mint", "Thyme", "Cinnamon", "Cloves", "Ginger", "Lemongrass", "Chamomile", "Mugwort", "Rowan Branch",
+    // Crystals
+    "Clear Quartz", "Amethyst", "Rose Quartz", "Citrine", "Black Tourmaline", "Obsidian", "Selenite", "Labradorite", "Carnelian", "Jade", "Lapis Lazuli", "Onyx", "Tiger's Eye"
 ];
 
 Deno.serve(async (req: Request) => {
@@ -46,20 +40,26 @@ Deno.serve(async (req: Request) => {
         const apiUrl = `https://${GCP_REGION}-aiplatform.googleapis.com/v1/projects/${GCP_PROJECT_ID}/locations/${GCP_REGION}/publishers/google/models/gemini-2.5-flash:generateContent`;
         
         const prompt = `
-          You are designing a self-contained, DIGITAL Wiccan ritual.
+          You are designing a High Ritual Wiccan ceremony.
           User Intention: "${intention}".
-          Situation Context: "${situation || 'General'}"
+          Situation: "${situation || 'General'}"
           Focal Point: "${focalPoint}".
           Moon Phase: "${moonPhase}".
 
           Generate a valid JSON object with the following keys:
           - "title": A poetic name for the ritual.
-          - "elemental_chants": An object containing 5 short (2-line) rhyming incantations to call the quarters, specifically tailored to the intention. Keys must be exactly: "Spirit", "Air", "Fire", "Earth", "Water".
-          - "symbolic_ingredients": An array of EXACTLY FIVE objects. For each object:
-             - "name": Choose from [${AVAILABLE_INGREDIENTS.map(i => `"${i}"`).join(", ")}].
-             - "incantation": A specific 1-sentence command telling this item what to do for the spell.
-          - "central_chant": A short, 4-line rhyming chant to speak at the climax.
-          - "affirmation": A single, powerful sentence to seal the spell.
+          - "transitional_incantations": An object with 4 keys:
+               1. "sanctification": A 2-line rhyme to purify the user before starting.
+               2. "circle_casting": A 2-line rhyme to invoke while tracing the circle.
+               3. "invocation": A 2-line rhyme to welcome the deity.
+               4. "closing": A 2-line rhyme to open the circle/end the ritual.
+          - "elemental_chants": An object containing 5 short (2-line) rhyming incantations to call the quarters. Keys: "Spirit", "Air", "Fire", "Earth", "Water".
+          - "suggested_deities": An array of 3 objects (Deity Suggestions) relevant to the intention. Keys: "name" (e.g., "Aphrodite"), "title", "pantheon", "description" (1 sentence).
+          - "symbolic_ingredients": An array of EXACTLY FIVE objects. For each:
+             - "name": Choose from [${AVAILABLE_INGREDIENTS.map(i => `"${i}"`).join(", ")}]. Prioritize colored candles and specific oils over generic tools.
+             - "incantation": A 1-sentence command for this item.
+          - "central_chant": A 4-line rhyming chant for the climax.
+          - "affirmation": A single sentence to seal the spell.
           
           Do not include markdown formatting. Return only the raw JSON.
         `;

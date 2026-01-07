@@ -34,6 +34,8 @@ const generateGrid = (rows: number, cols: number, spriteWidth: number, spriteHei
 const SIZE_256 = { width: 256, height: 256 };
 const SHEET_SIZE_1024 = { width: 1024, height: 1024 };
 
+// --- EXISTING LISTS (PRESERVED) ---
+
 const herbs1 = generateGrid(4, 4, 256, 256, 
     [ "Rosemary", "Sage", "Basil", "Lavender", "Bay Leaf", "Mint", "Thyme", "Cinnamon", "Cloves", "Ginger", "Lemongrass", "Chamomile", "Mugwort", "Frankincense", "Myrrh", "Rowan Branch" ],
     [
@@ -129,7 +131,7 @@ const hoodooMateria1 = generateGrid(4, 4, 256, 256,
         "Goofer Dust", "Salt", "Sulfur", "Brick Dust",
         "Lavender", "Cinnamon Stick", "Personal Concern (Hair)", "Snake Shed"
     ],
-    Array(16).fill("The work is grounded.") // Placeholder incantations
+    Array(16).fill("The work is grounded.") 
 );
 
 const voodooOfferings1 = generateGrid(4, 4, 256, 256,
@@ -139,16 +141,76 @@ const voodooOfferings1 = generateGrid(4, 4, 256, 256,
         "Machete (mini)", "Iron Nail", "Red Candle", "Coconut",
         "White Egg", "White Cloth", "Snake Icon", "Top Hat"
     ],
-    Array(16).fill("A gift is given.") // Placeholder incantations
+    Array(16).fill("A gift is given.") 
+);
+
+// --- NEW LISTS (FOR WICCA HIGH RITUAL) ---
+
+const ritual_framework1 = generateGrid(4, 4, 256, 256,
+    [ 
+        "Air Sigil", "Fire Sigil", "Water Sigil", "Earth Sigil", 
+        "Spirit Sigil", "Grounding Roots", "Pentagram Seal", "Circle Glyph", 
+        "Salt Bowl", "Water Bowl", "Incense", "Candle Flame", 
+        "Moon", "Sun", "Void", "Spark" 
+    ],
+    [
+        "Hail, Watchtower of the East.", "Hail, Watchtower of the South.", "Hail, Watchtower of the West.", "Hail, Watchtower of the North.", 
+        "Spirit of the Center, be here.", "Roots of the Earth, hold this power.", "Seal of protection.", "The Circle is cast.",
+        "Salt of Earth.", "Water of Life.", "Air of Mind.", "Fire of Will.", 
+        "Grandmother Moon.", "Grandfather Sun.", "The Great Void.", "Spark of Life."
+    ]
+);
+
+const deity_icons1 = generateGrid(4, 4, 256, 256,
+    [ 
+        "Triple Moon", "Horned God", "Pink Heart", "Owl", 
+        "Stag", "Sun Wheel", "Triskele", "Ankh", 
+        "Lightning Bolt", "Crescent Moon", "Raven", "Hammer", 
+        "Snake", "Dove", "Cornucopia", "Skull" 
+    ],
+    Array(16).fill("I invoke thee.")
+);
+
+const candles_colored = generateGrid(4, 4, 256, 256,
+    [ 
+        "Red Candle", "Green Candle", "Black Candle", "White Candle", 
+        "Pink Candle", "Blue Candle", "Yellow Candle", "Purple Candle", 
+        "Orange Candle", "Gold Candle", "Silver Candle", "Brown Candle", 
+        "Grey Candle", "Beeswax Candle", "Twisted Candle", "Chime Candle" 
+    ],
+    Array(16).fill("I light this flame.")
+);
+
+const oils_resins = generateGrid(4, 4, 256, 256,
+    [ 
+        "Dragon's Blood", "Frankincense Resin", "Myrrh Resin", "Moon Water", 
+        "Patchouli Oil", "Rose Oil", "Sandalwood", "Salt Water", 
+        "Graveyard Dirt", "Black Salt", "Red Brick Dust", "Florida Water", 
+        "Van Van Oil", "Crown of Success", "Come to Me", "Protection Oil" 
+    ],
+    Array(16).fill("I anoint this work.")
+);
+
+const fx_sprites1 = generateGrid(2, 2, 256, 256,
+    [ "Blue Sparkle", "White Glow", "Gold Particle", "Shadow Mist" ],
+    Array(4).fill("Manifest.")
 );
 
 export const spriteLibrary: Record<string, SpriteSheet> = {
+  // Existing
   herbs1: { path: '/images/sprite-sheets/herbs1.png', spriteSize: SIZE_256, sheetSize: SHEET_SIZE_1024, items: herbs1 },
   crystals1: { path: '/images/sprite-sheets/crystals1.png', spriteSize: SIZE_256, sheetSize: SHEET_SIZE_1024, items: crystals1 },
   tools1: { path: '/images/sprite-sheets/tools1.png', spriteSize: SIZE_256, sheetSize: SHEET_SIZE_1024, items: tools1 },
   offerings2: { path: '/images/sprite-sheets/offerings2.png', spriteSize: SIZE_256, sheetSize: SHEET_SIZE_1024, items: offerings2 },
   hoodooMateria1: { path: '/images/sprite-sheets/hoodoo-materia-spritesheet.png', spriteSize: SIZE_256, sheetSize: SHEET_SIZE_1024, items: hoodooMateria1 },
   voodooOfferings1: { path: '/images/sprite-sheets/voodoo-offering-spritesheet.png', spriteSize: SIZE_256, sheetSize: SHEET_SIZE_1024, items: voodooOfferings1 },
+  
+  // New (Wicca High Ritual)
+  ritual_framework1: { path: '/images/sprite-sheets/ritual_framework1.png', spriteSize: SIZE_256, sheetSize: SHEET_SIZE_1024, items: ritual_framework1 },
+  deity_icons1: { path: '/images/sprite-sheets/deity_icons1.png', spriteSize: SIZE_256, sheetSize: SHEET_SIZE_1024, items: deity_icons1 },
+  candles_colored: { path: '/images/sprite-sheets/candles_colored.png', spriteSize: SIZE_256, sheetSize: SHEET_SIZE_1024, items: candles_colored },
+  oils_resins: { path: '/images/sprite-sheets/oils_resins.png', spriteSize: SIZE_256, sheetSize: SHEET_SIZE_1024, items: oils_resins },
+  fx_sprites1: { path: '/images/sprite-sheets/fx_sprites1.png', spriteSize: SIZE_256, sheetSize: {width: 512, height: 512}, items: fx_sprites1 },
 };
 
 export const findSprite = (itemName: string): { sheet: SpriteSheet; itemInfo: SpriteInfo; } | null => {
@@ -162,6 +224,14 @@ export const findSprite = (itemName: string): { sheet: SpriteSheet; itemInfo: Sp
       };
     }
   }
+
+  // Fallback for colored candles if exact match fails
+  if (itemName.includes("Candle")) {
+       const sheet = spriteLibrary.candles_colored;
+       // Fallback to white candle if specific color not found
+       if(sheet.items['white-candle']) return { sheet, itemInfo: sheet.items['white-candle'] };
+  }
+
   console.warn(`Sprite item "${itemName}" not found in any sheet.`);
   return null;
 };

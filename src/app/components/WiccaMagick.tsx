@@ -1,11 +1,10 @@
-// --- START OF FILE src/app/components/WiccaMagick.tsx ---
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSearchParams } from 'next/navigation';
-import type { Session, GeneratedWiccanSpell } from '@/lib/types';
+import type { Session, GeneratedWiccanSpell, WiccanDeitySuggestion } from '@/lib/types';
 import Link from 'next/link';
 
 // Services
@@ -23,26 +22,37 @@ import LoadingSpinner from './LoadingSpinner';
 import { PentagramIcon } from './icons';
 import { Sprite } from './Sprite';
 import { findSprite } from '@/lib/spriteLibrary';
-import { Book, Wand2, Sparkles, Save, Check, RotateCcw, AlertTriangle, BookOpen, Coins } from 'lucide-react';
+import { Book, Wand2, Sparkles, Save, Check, AlertTriangle, BookOpen, Coins } from 'lucide-react';
 
 // --- Configuration ---
 const ASSET_PATH = "/images/Spells/Wicca Tradition General";
-const CHARGE_DURATION_ELEMENT = 7000;
-const CHARGE_DURATION_INGREDIENT = 7000;
+const CHARGE_DURATION_ELEMENT = 5000;
+const CHARGE_DURATION_INGREDIENT = 6000;
 const CAST_DURATION = 13000;
 const SENDING_DURATION = 4000;
 const SERVICE_SLUG = 'ai_wicca_magick'; 
 
-// --- Standard Ritual Data (Free Tier) ---
+// --- Standard Ritual Data ---
 const STANDARD_WICCAN_SPELL: GeneratedWiccanSpell = {
     title: "Circle of Elemental Balance",
+    transitional_incantations: {
+        sanctification: "By my will and by my word,\nLet this sacred space be heard.",
+        circle_casting: "I cast this Circle, a shield deep and wide,\nTo keep the magick safe inside.",
+        invocation: "Lord and Lady, spirits near,\nWelcome to this circle here.",
+        closing: "The Circle is Open, but Unbroken,\nPeace and love be the token."
+    },
     central_chant: "Eko Eko Azarak, Eko Eko Zomelak.\nBy Earth and Water, Fire and Air,\nI cast this spell with love and care.",
-    affirmation: "The Circle is Open, but Unbroken.",
+    affirmation: "So mote it be.",
+    suggested_deities: [
+        { name: "The Triple Goddess", title: "Mother of All", pantheon: "Wiccan", description: "The Maiden, Mother, and Crone." },
+        { name: "The Horned God", title: "Lord of the Wild", pantheon: "Wiccan", description: "The protector of nature and cycle." },
+        { name: "Universal Spirit", title: "The Source", pantheon: "Universal", description: "Pure energy of the cosmos." }
+    ],
     symbolic_ingredients: [
         { name: "Salt", incantation: "Salt of Earth, purify this space." },
         { name: "Chalice", incantation: "Water of Life, cleanse my spirit." },
         { name: "Athame", incantation: "Air of Intellect, direct my will." },
-        { name: "Candle", incantation: "Fire of Passion, ignite my soul." },
+        { name: "White Candle", incantation: "Fire of Passion, ignite my soul." },
         { name: "Pentacle", incantation: "Spirit of All, bind this work." }
     ],
     elemental_chants: {
@@ -72,1018 +82,664 @@ const playSound = (src: string, volume: number = 0.5, loop: boolean = false): { 
     return { play, stop };
 };
 
-// --- Type Definitions ---
-interface WiccaMagickProps {
-    session: Session;
-    isSubscribed: boolean;
-    onBack?: () => void;
-}
+// --- Helper Components for Physics/Animation ---
 
-interface RitualButtonProps {
-    onClick: () => void;
-    children: React.ReactNode;
-    className?: string;
-    disabled?: boolean;
-    type?: "button" | "submit" | "reset";
-}
+// Restored: SVG Ring Animation for holding items
+const InteractionRing = ({ isHolding, isComplete, duration }: { isHolding: boolean, isComplete: boolean, duration: number }) => {
+    return (
+        <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg) scale(1.2)' }}>
+            {/* Background Track */}
+            <circle cx="50" cy="50" r="48" stroke="rgba(255,255,255,0.1)" strokeWidth="4" fill="transparent" />
+            
+            {/* Filling Ring */}
+            <motion.circle
+                cx="50" cy="50" r="48"
+                stroke="rgba(168, 85, 247, 1)" // Purple-500
+                strokeWidth="4"
+                fill="transparent"
+                strokeLinecap="round"
+                pathLength="1"
+                strokeDasharray="1"
+                initial={{ strokeDashoffset: 1 }}
+                animate={{ strokeDashoffset: isComplete ? 0 : (isHolding ? 0 : 1) }}
+                transition={{ duration: isComplete ? 0 : duration / 1000, ease: 'linear' }}
+                className="drop-shadow-[0_0_8px_rgba(168,85,247,0.8)]"
+            />
+        </svg>
+    );
+};
 
-interface StepContainerProps {
-    stageTitle?: string;
-    stageSubtitle?: string;
-    instruction?: string;
-    children: React.ReactNode;
-    button?: React.ReactNode;
-}
-
-interface StepProps {
-    onNext: () => void;
-}
-
-interface Step1Props extends StepProps {
-    intention: string;
-    setIntention: (val: string) => void;
-    situation: string;
-    setSituation: (val: string) => void;
-    onBegin: (mode: 'standard' | 'ai' | 'replay') => void;
-    isReplay: boolean;
-    cost: number;
-}
-
-interface Step2Props extends StepProps {
-    chargedElements: string[];
-    onChargeComplete: (name: string) => void;
-    spell: GeneratedWiccanSpell | null; 
-}
-
-interface Step3Props extends StepProps {
-    selectedDeities: string[];
-    onToggle: (name: string) => void;
-}
-
-interface SpellStepProps extends StepProps {
-    spell: GeneratedWiccanSpell;
-}
-
-interface Step5Props extends StepProps {
-    spell: GeneratedWiccanSpell;
-    chargingIndex: number;
-}
-
-interface Step9Props {
-    spell: GeneratedWiccanSpell;
-    onSave: () => void;
-    isSaving: boolean;
-    isSaved: boolean;
-    onReturn: () => void;
-}
-
-type SpriteData = NonNullable<ReturnType<typeof findSprite>>;
-
-interface ChargingElementProps {
-    name: string;
-    isCharged: boolean;
-    onChargeComplete: (name: string) => void;
-    style: React.CSSProperties;
-    spriteData: SpriteData;
-    soundSrc: string;
-    onHoldStart: () => void;
-    onHoldEnd: () => void;
-}
-
-interface IngredientChargerProps {
-    children: React.ReactNode;
-    onChargeComplete: () => void;
-    isComplete: boolean;
-    onHoldStart: () => void;
-    onHoldEnd: () => void;
-    isHolding: boolean;
-}
+// New: Speak First Overlay
+const IncantationOverlay = ({ text, onConfirm, isVisible }: { text: string, onConfirm: () => void, isVisible: boolean }) => (
+    <AnimatePresence>
+        {isVisible && (
+            <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.5 }}
+                className="absolute inset-0 z-50 bg-black/90 backdrop-blur-sm flex items-center justify-center p-6"
+            >
+                <motion.div 
+                    initial={{ scale: 0.95, y: 10 }}
+                    animate={{ scale: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="relative max-w-md w-full aspect-[3/4]"
+                >
+                    <Image src={`${ASSET_PATH}/wicca_incantation_scroll.png`} alt="Incantation" layout="fill" objectFit="contain" priority />
+                    <div className="absolute inset-0 flex flex-col items-center justify-center p-12 text-center">
+                        <h3 className="font-serif text-[#4a2e1c]/70 text-sm mb-6 uppercase tracking-widest">Spoken Word</h3>
+                        <p className="font-serif text-[#4a2e1c] text-xl md:text-2xl leading-relaxed whitespace-pre-line drop-shadow-sm">
+                            {text}
+                        </p>
+                        <button 
+                            onClick={() => { playSound('/audio/sfx-chaos-activate.mp3', 0.3).play(); onConfirm(); }}
+                            className="mt-10 px-8 py-2 border-y-2 border-[#4a2e1c] text-[#4a2e1c] hover:bg-[#4a2e1c]/10 font-serif font-bold uppercase tracking-widest transition-all scale-100 hover:scale-105"
+                        >
+                            So Mote It Be
+                        </button>
+                    </div>
+                </motion.div>
+            </motion.div>
+        )}
+    </AnimatePresence>
+);
 
 // --- Main Component ---
-const WiccaMagick: React.FC<WiccaMagickProps> = ({ session, onBack }) => {
+const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: boolean, onBack?: () => void }) => {
     const searchParams = useSearchParams();
     const loadId = searchParams.get('loadId');
 
+    // 0:Intro -> 1:Intention -> 2:Circle -> 3:Quarters -> 4:Deities -> 5:Ingredients -> 6:Cone -> 7:Sending -> 8:Closing -> 9:Result
     const [ritualStep, setRitualStep] = useState(0);
+    const [subStep, setSubStep] = useState<'incantation' | 'action'>('action'); // Default to action for Intro/Intention steps
+
     const [loading, setLoading] = useState(false);
     const [loadingMessage, setLoadingMessage] = useState('');
     const [error, setError] = useState<string | null>(null);
     
-    const { 
-        cost, 
-        spendAether, 
-        paymentError, 
-        clearPaymentError, 
-        showStoreLink, 
-        isProcessingPayment 
-    } = useAetherEconomy(SERVICE_SLUG);
-
+    const { cost, spendAether, paymentError, clearPaymentError } = useAetherEconomy(SERVICE_SLUG);
     const [showSlotModal, setShowSlotModal] = useState(false);
-    const [slotLoading, setSlotLoading] = useState(false);
 
     // Data State
     const [intention, setIntention] = useState('');
     const [situation, setSituation] = useState('');
-    const [chargedElements, setChargedElements] = useState<string[]>([]);
-    const [selectedDeities, setSelectedDeities] = useState<string[]>([]);
     const [generatedSpell, setGeneratedSpell] = useState<GeneratedWiccanSpell | null>(null);
+    
+    // Ritual State
+    const [chargedElements, setChargedElements] = useState<string[]>([]);
+    const [selectedDeity, setSelectedDeity] = useState<WiccanDeitySuggestion | null>(null);
     const [chargingIndex, setChargingIndex] = useState(0);
     const [isSaving, setIsSaving] = useState(false);
     const [isSaved, setIsSaved] = useState(false);
     const [isReplayMode, setIsReplayMode] = useState(false);
 
-    // --- REPLAY / HYDRATION LOGIC ---
+    // --- Hydration ---
     useEffect(() => {
         if (loadId) {
-            const loadSpell = async () => {
+            const load = async () => {
                 setLoading(true);
-                setLoadingMessage("Opening the Book of Shadows...");
+                setLoadingMessage("Consulting the Grimoire...");
                 try {
-                    const spell = await getSpellById(loadId);
-                    if (spell) {
-                        const data = typeof spell.ritual_data === 'string' ? JSON.parse(spell.ritual_data) : spell.ritual_data;
-                        
-                        setIntention(spell.intention);
-                        setSituation(data.situation || '');
-                        setSelectedDeities(data.selectedDeities || []);
-                        setGeneratedSpell(data.spell || STANDARD_WICCAN_SPELL);
-                        
+                    const s = await getSpellById(loadId);
+                    if (s) {
+                        const d = typeof s.ritual_data === 'string' ? JSON.parse(s.ritual_data) : s.ritual_data;
+                        setIntention(s.intention);
+                        setSituation(d.situation || '');
+                        setSelectedDeity(d.selectedDeity || null);
+                        setGeneratedSpell(d.spell || STANDARD_WICCAN_SPELL);
                         setIsReplayMode(true);
                         setIsSaved(true);
-                        
-                        // FIX: Start at Step 1 (Intention) so user sees the scroll first
-                        setRitualStep(1); 
+                        setRitualStep(1);
                     }
-                } catch (e) {
-                    console.error("Failed to load spell", e);
-                    setError("Could not retrieve spell data from the Grimoire.");
-                } finally {
-                    setLoading(false);
-                }
+                } catch { setError("Spell not found."); } finally { setLoading(false); }
             };
-            loadSpell();
+            load();
         }
     }, [loadId]);
 
+    const handleBegin = async (mode: 'standard' | 'ai') => {
+        if (!intention) { setError("Intention is required."); return; }
+        setError(null); clearPaymentError();
 
-    const handleBeginRitual = async (mode: 'standard' | 'ai' | 'replay') => {
-        // Replay Bypass
-        if (mode === 'replay' || isReplayMode) {
-             setRitualStep(2); // Move from Intention (1) to Elements (2)
-             return;
-        }
-
-        if (!intention) { setError("An intention must be inscribed to proceed."); return; }
-        setError(null);
-        clearPaymentError();
-        
         if (mode === 'standard') {
             setGeneratedSpell(STANDARD_WICCAN_SPELL);
-            setRitualStep(2); 
+            setRitualStep(2);
+            setSubStep('incantation');
         } else {
-            // AI Mode
-            if (!session?.user?.id) {
-                setError("You must be logged in to perform High Rituals.");
-                return;
-            }
-
-            // 1. Charge User
+            if (!session?.user?.id) { setError("Sign in required."); return; }
             const paid = await spendAether(session.user.id);
             if (!paid) return;
-
+            
             setLoading(true);
-            setLoadingMessage("Communing with the Divine...");
+            setLoadingMessage("Weaving the Spell...");
             try {
-                const focalPoint = selectedDeities.length > 0 ? selectedDeities.join(', ') : 'The Divine';
-                const spell = await generateWiccanSpell({ 
-                    intention, 
-                    focalPoint, 
-                    moonPhase: 'Current',
-                    situation: situation 
-                });
+                const s = await generateWiccanSpell({ intention, focalPoint: 'The Divine', moonPhase: 'Current', situation });
+                // Fallbacks
+                if (!s.transitional_incantations) s.transitional_incantations = STANDARD_WICCAN_SPELL.transitional_incantations;
+                if (!s.elemental_chants) s.elemental_chants = STANDARD_WICCAN_SPELL.elemental_chants;
+                if (!s.suggested_deities) s.suggested_deities = STANDARD_WICCAN_SPELL.suggested_deities;
                 
-                if (!spell.elemental_chants) {
-                    spell.elemental_chants = STANDARD_WICCAN_SPELL.elemental_chants;
-                }
-                
-                setGeneratedSpell(spell);
+                setGeneratedSpell(s);
                 setRitualStep(2);
-            } catch (err: any) {
-                setError(err.message || "The spirits are silent. Please try again.");
-            } finally {
-                setLoading(false);
-            }
+                setSubStep('incantation');
+            } catch (e: any) { setError(e.message); } finally { setLoading(false); }
         }
     };
 
-    const handleElementChargeComplete = (elementName: string) => {
-        if (!chargedElements.includes(elementName)) {
-            setChargedElements(prev => [...prev, elementName]);
-            playSound('/audio/sfx-chaos-activate.mp3', 0.4).play();
-        }
-    };
-    
-    const handleDeityToggle = (deityName: string) => {
-        playSound('/audio/sfx-library-portal.mp3', 0.2).play();
-        setSelectedDeities(prev => 
-            prev.includes(deityName) 
-                ? [] 
-                : [deityName]
-        );
+    const nextStep = () => {
+        const next = ritualStep + 1;
+        setRitualStep(next);
+        // Steps 7 (Sending) and 9 (Result) have no incantation overlay. Step 6 (Cone) has intrinsic chant.
+        if ([6, 7, 9].includes(next)) setSubStep('action');
+        else setSubStep('incantation');
     };
 
-    const handleAdvanceAfterCharge = () => {
-        playSound('/audio/sfx-spell-room-portal.mp3', 0.2).play();
+    const handleIncantationConfirm = () => setSubStep('action');
+
+    // --- Complex Interaction Handlers ---
+
+    const handleElementCharge = (name: string) => {
+        if (!chargedElements.includes(name)) {
+            setChargedElements(prev => [...prev, name]);
+            playSound('/audio/sfx-chaos-activate.mp3', 0.5).play();
+        }
+    };
+
+    const handleIngredientComplete = () => {
+        playSound('/audio/sfx-spell-room-portal.mp3', 0.3).play();
         if (generatedSpell && chargingIndex < generatedSpell.symbolic_ingredients.length - 1) {
             setChargingIndex(prev => prev + 1);
+            setSubStep('incantation'); // Trigger speak for next item
         } else {
-            setRitualStep(6);
+            nextStep();
         }
     };
 
-    const handleSaveToGrimoire = async () => {
+    const handleSave = async () => {
         if (!generatedSpell || isSaved) return;
         setIsSaving(true);
-        setError(null);
-        
         try {
-             const ritualData = {
-                 intention,
-                 situation,
-                 selectedDeities,
-                 spell: generatedSpell,
-                 timestamp: new Date().toISOString()
-             };
-
-             await saveSpell(session?.user?.id || 'anon', {
-                 name: `Wiccan Spell: ${intention.substring(0, 30)}...`,
-                 intention: intention,
-                 incantation: generatedSpell.central_chant,
-                 element: "Spirit",
-                 tradition: 'WICCA',
-                 ritual_data: ritualData
-             });
-
-             setIsSaved(true);
-             playSound('/audio/sfx-chaos-activate.mp3', 0.5).play();
+            await saveSpell(session?.user?.id || 'anon', {
+                name: `Wicca: ${intention.substring(0,20)}`,
+                intention,
+                incantation: generatedSpell.central_chant,
+                tradition: 'WICCA',
+                ritual_data: { intention, situation, selectedDeity, spell: generatedSpell }
+            });
+            setIsSaved(true);
+            playSound('/audio/sfx-chaos-activate.mp3', 0.5).play();
         } catch (e: any) {
-            console.error(e);
-            if (e.message === 'GRIMOIRE_FULL') {
-                setShowSlotModal(true);
-            } else {
-                setError("Failed to scribe into Grimoire.");
-            }
-        } finally {
-            setIsSaving(false);
+            if (e.message === 'GRIMOIRE_FULL') setShowSlotModal(true);
+            else setError("Failed to save.");
+        } finally { setIsSaving(false); }
+    };
+
+    // --- View Resolver ---
+    const getCurrentIncantation = () => {
+        if (!generatedSpell) return "";
+        const trans = generatedSpell.transitional_incantations || STANDARD_WICCAN_SPELL.transitional_incantations;
+        switch (ritualStep) {
+            case 2: return trans?.sanctification || "By my will, I begin.";
+            case 3: return "Guardians of the Watchtowers,\nHail and Welcome!";
+            case 4: return trans?.invocation || "Spirits of Light, draw near.";
+            case 5: return generatedSpell.symbolic_ingredients[chargingIndex]?.incantation || "I charge this item.";
+            case 8: return trans?.closing || "The Circle is open.";
+            default: return "";
         }
     };
 
-    const handleBuySlots = async () => {
-        if (!session?.user?.id) return;
-        setSlotLoading(true);
-        const success = await buySpellSlots(session.user.id);
-        setSlotLoading(false);
-        if (success) {
-            setShowSlotModal(false);
-            handleSaveToGrimoire();
-        } else {
-            setError("Insufficient Aether to expand Grimoire.");
-            setShowSlotModal(false);
+    const renderContent = () => {
+        if (loading) return <LoadingSpinner title={loadingMessage} />;
+        if (error || paymentError) return <div className="text-center p-8 text-red-300">{error || paymentError} <button onClick={() => { setError(null); clearPaymentError(); }} className="block mx-auto mt-4 underline">Dismiss</button></div>;
+
+        if (subStep === 'incantation' && generatedSpell) {
+            return <IncantationOverlay text={getCurrentIncantation()} onConfirm={handleIncantationConfirm} isVisible={true} />;
         }
-    };
-    
-    const resetState = () => {
-        setRitualStep(0);
-        setIntention('');
-        setSituation('');
-        setChargedElements([]);
-        setSelectedDeities([]);
-        setGeneratedSpell(null);
-        setChargingIndex(0);
-        setIsSaved(false);
-        setIsReplayMode(false);
-        setError(null);
-        clearPaymentError();
-
-        if (typeof window !== 'undefined') {
-            const url = new URL(window.location.href);
-            url.searchParams.delete('loadId');
-            window.history.replaceState({}, '', url.toString());
-        }
-    };
-
-    const renderError = () => {
-        const msg = paymentError || error;
-        const reset = paymentError ? clearPaymentError : () => setError(null);
-
-        return (
-            <div className="flex items-center justify-center h-full animate-in fade-in zoom-in">
-                <div className="text-center text-red-400 p-6 bg-red-900/50 rounded-lg max-w-sm border border-red-500/50 shadow-xl">
-                    <div className="flex justify-center mb-2"><AlertTriangle size={32} /></div>
-                    <p className="font-bold text-lg mb-2 uppercase tracking-wider">Ritual Interrupted</p>
-                    <p className="mb-6 text-sm text-red-200">{msg}</p>
-                    
-                    {showStoreLink ? (
-                        <div className="flex flex-col gap-3">
-                            <Link href="/store" className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-amber-600 hover:bg-amber-500 text-black font-bold rounded transition-colors uppercase tracking-wider text-xs">
-                                <Coins size={16} /> Purchase Aether
-                            </Link>
-                            <button onClick={reset} className="text-xs text-red-300 hover:text-white underline">
-                                Dismiss
-                            </button>
-                        </div>
-                    ) : (
-                        <button onClick={reset} className="px-6 py-2 border border-red-500 rounded hover:bg-red-900/50 transition-colors uppercase tracking-widest text-xs">
-                            Try Again
-                        </button>
-                    )}
-                </div>
-            </div>
-        );
-    };
-    
-    const renderStep = () => {
-        if (loading || isProcessingPayment) return <div className="flex items-center justify-center h-full"><LoadingSpinner title={isProcessingPayment ? "Offering Aether..." : loadingMessage} /></div>;
-        if (paymentError || error) return renderError();
 
         switch (ritualStep) {
             case 0: return <Step0_Intro onNext={() => setRitualStep(1)} />;
-            case 1: return <Step1_Intention intention={intention} setIntention={setIntention} situation={situation} setSituation={setSituation} onBegin={handleBeginRitual} onNext={() => {}} isReplay={isReplayMode} cost={cost} />;
-            case 2: return <Step2_Elements chargedElements={chargedElements} onChargeComplete={handleElementChargeComplete} onNext={() => setRitualStep(3)} spell={generatedSpell} />;
-            case 3: return <Step3_Deities selectedDeities={selectedDeities} onToggle={handleDeityToggle} onNext={() => setRitualStep(4)} />;
-            case 4: return generatedSpell && <Step4_Components spell={generatedSpell} onNext={() => setRitualStep(5)} />;
-            case 5: return generatedSpell && <Step5_ChargeComponent key={`charge-${chargingIndex}`} spell={generatedSpell} chargingIndex={chargingIndex} onNext={handleAdvanceAfterCharge} />;
-            case 6: return generatedSpell && <Step6_Incantation spell={generatedSpell} onNext={() => setRitualStep(7)} />;
-            case 7: return generatedSpell && <Step7_Cast spell={generatedSpell} onNext={() => setRitualStep(8)} />;
-            case 8: return <Step8_Sending onNext={() => setRitualStep(9)} />;
-            case 9: return generatedSpell && <Step9_Manifestation spell={generatedSpell} onSave={handleSaveToGrimoire} isSaving={isSaving} isSaved={isSaved} onReturn={resetState} />;
-            default: return <Step0_Intro onNext={() => setRitualStep(1)} />;
+            case 1: return <Step1_Intention intention={intention} setIntention={setIntention} situation={situation} setSituation={setSituation} onBegin={handleBegin} isReplay={isReplayMode} cost={cost} />;
+            case 2: return <Step2_CastCircle onComplete={nextStep} />;
+            case 3: return <Step3_Quarters charged={chargedElements} onCharge={handleElementCharge} onNext={nextStep} />;
+            case 4: return <Step4_Deities suggestions={generatedSpell?.suggested_deities || []} onSelect={(d) => { setSelectedDeity(d); nextStep(); }} />;
+            case 5: return <Step5_Ingredients spell={generatedSpell!} index={chargingIndex} onComplete={handleIngredientComplete} />;
+            case 6: return <Step6_Cone spell={generatedSpell!} onNext={nextStep} />;
+            case 7: return <Step7_Sending onNext={nextStep} />;
+            case 8: return <Step8_Closing onComplete={nextStep} />;
+            case 9: return <Step9_Result spell={generatedSpell!} onSave={handleSave} isSaving={isSaving} isSaved={isSaved} onReset={() => window.location.reload()} />;
+            default: return null;
         }
     };
 
     return (
-        <main className="relative h-screen w-screen bg-black bg-cover bg-center flex flex-col" style={{ backgroundImage: "url('/images/spell-room/spell-room-background.png')" }}>
-            <div className="absolute inset-0 bg-black/50" />
-            
-            <SlotPurchaseModal 
-                isOpen={showSlotModal} 
-                onClose={() => setShowSlotModal(false)}
-                onPurchase={handleBuySlots}
-                isProcessing={slotLoading}
-            />
+        <main className="relative h-screen w-screen bg-black overflow-hidden flex flex-col font-sans select-none">
+            <div className="absolute inset-0 z-0">
+                <Image src="/images/spell-room/spell-room-background.png" layout="fill" objectFit="cover" alt="Background" className="opacity-50" priority />
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
+            </div>
 
-            <header className="relative z-20 w-full p-4 md:p-6 shrink-0">
-                <div className="flex justify-between items-center flex-wrap w-full max-w-7xl mx-auto">
-                    <div className="order-1"><MagickalBackLink href="/spell-room" text="All Traditions" /></div>
-                    <div className="order-2 md:order-3"><RoomsButton /></div>
-                    <h1 className="w-full text-center order-3 md:w-auto md:order-2 text-4xl md:text-5xl font-serif text-purple-300 mt-2 md:mt-0" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
-                        Wicca Magick
-                    </h1>
-                </div>
+            <header className="relative z-20 w-full p-4 flex justify-between items-center text-purple-200">
+                <MagickalBackLink href="/spell-room" text="Exit" />
+                <h1 className="font-serif text-xl md:text-3xl text-purple-300 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] tracking-wide">Wicca Magick</h1>
+                <RoomsButton />
             </header>
-            <div className="relative z-10 grow w-full flex flex-col overflow-hidden p-4">
+
+            <div className="relative z-10 grow w-full flex flex-col p-4">
                 <AnimatePresence mode="wait">
                     <motion.div
-                        key={ritualStep}
-                        initial={{ opacity: 0, scale: 0.95 }}
+                        key={ritualStep + subStep}
+                        initial={{ opacity: 0, scale: 0.98 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.95 }}
-                        transition={{ duration: 0.7, ease: 'easeInOut' }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.5 }}
                         className="w-full h-full"
                     >
-                        {renderStep()}
+                        {renderContent()}
                     </motion.div>
                 </AnimatePresence>
             </div>
+            
+            {showSlotModal && <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/90">Grimoire Full. Purchase slots logic goes here.</div>}
         </main>
     );
 };
 
-// --- Step Building Blocks ---
+// --- STEP COMPONENTS ---
 
-const RitualButton: React.FC<RitualButtonProps> = ({ onClick, children, className, disabled, type="button" }) => (
-    <button type={type} onClick={onClick} disabled={disabled} className={`px-8 py-3 bg-black/40 text-white font-serif rounded-lg border-2 border-purple-400/50 backdrop-blur-sm hover:bg-purple-900/50 hover:border-purple-300 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${className}`}>
-        {children}
-    </button>
+const Step0_Intro = ({ onNext }: { onNext: () => void }) => (
+    <div className="flex flex-col items-center justify-center h-full gap-8 text-center animate-in fade-in duration-1000">
+        <div className="relative w-72 h-72 md:w-96 md:h-96">
+            <Image src={`${ASSET_PATH}/wicca_intro_instructions.png`} layout="fill" objectFit="contain" alt="Intro" priority />
+        </div>
+        <div>
+            <h2 className="text-3xl md:text-4xl font-serif text-purple-100 mb-3 drop-shadow-lg">The High Ritual</h2>
+            <p className="text-purple-300/80 max-w-sm mx-auto font-serif italic text-lg">
+                "Speak the words to unlock the path.<br/>Trace the signs to bind the will."
+            </p>
+        </div>
+        <button onClick={onNext} className="px-10 py-4 bg-purple-900/40 border border-purple-400/50 rounded-full text-purple-100 hover:bg-purple-800/60 transition-all font-serif uppercase tracking-widest backdrop-blur-md shadow-[0_0_20px_rgba(168,85,247,0.3)] hover:shadow-[0_0_30px_rgba(168,85,247,0.5)]">
+            Enter the Circle
+        </button>
+    </div>
 );
 
-const StepContainer: React.FC<StepContainerProps> = ({ stageTitle, stageSubtitle, instruction, children, button }) => (
-    <div className="w-full h-full flex flex-col items-center justify-between gap-2 py-1">
-        <div className="shrink-0 flex flex-col items-center justify-center text-center px-4 min-h-24 h-auto py-2 z-20 relative">
-             {stageTitle && <h2 className="text-3xl font-serif text-amber-200/90">{stageTitle}</h2>}
-             {stageSubtitle && <h3 className="text-xl font-serif text-amber-100/80 mt-1">{stageSubtitle}</h3>}
-             {instruction && <p className="text-base text-purple-200/80 mt-2 italic font-light max-w-2xl leading-tight whitespace-pre-line" style={{textShadow: '1px 1px 2px rgba(0,0,0,0.7)'}}>{instruction}</p>}
+const Step1_Intention = ({ intention, setIntention, situation, setSituation, onBegin, isReplay, cost }: any) => (
+    <div className="flex flex-col items-center justify-center h-full gap-4">
+        <h2 className="text-2xl font-serif text-amber-100/90">Inscribe Your Will</h2>
+        <div className="relative w-full max-w-md aspect-square">
+            <Image src={`${ASSET_PATH}/wicca_scroll_intention.png`} layout="fill" objectFit="contain" alt="Scroll" priority />
+            <div className="absolute inset-0 flex flex-col items-center justify-center p-14 gap-4">
+                <input 
+                    value={intention} onChange={e => setIntention(e.target.value)}
+                    placeholder="My Intention..." readOnly={isReplay}
+                    className="w-full bg-transparent border-b-2 border-[#4a2e1c]/50 text-center text-[#4a2e1c] placeholder-[#4a2e1c]/40 font-serif text-xl outline-none py-2 focus:border-[#4a2e1c] transition-colors"
+                />
+                <textarea 
+                    value={situation} onChange={e => setSituation(e.target.value)}
+                    placeholder="Describe the situation (Optional)..." readOnly={isReplay}
+                    className="w-full h-24 bg-transparent text-center text-[#4a2e1c] placeholder-[#4a2e1c]/40 font-serif text-sm outline-none resize-none pt-2"
+                />
+            </div>
         </div>
-        <div className="w-full grow min-h-0 relative flex items-center justify-center z-10">
-            {children}
-        </div>
-        <div className="h-[60px] shrink-0 flex items-center justify-center z-20">
-            {button}
+        <div className="flex gap-4 mt-2">
+             <button onClick={() => onBegin('standard')} className="px-6 py-3 bg-slate-800/80 border border-slate-600 rounded-lg text-slate-300 font-serif hover:bg-slate-700">Standard (Free)</button>
+             <button onClick={() => onBegin('ai')} className="px-6 py-3 bg-purple-900/80 border border-purple-500 rounded-lg text-purple-100 font-serif hover:bg-purple-800 shadow-[0_0_15px_rgba(168,85,247,0.3)]">High Ritual ({cost} Aether)</button>
         </div>
     </div>
 );
 
-// --- Individual Step Components ---
-
-const Step0_Intro: React.FC<StepProps> = ({ onNext }) => (
-    <StepContainer instruction="Cross the threshold and begin your journey into the craft." button={<RitualButton onClick={onNext}>Begin</RitualButton>}>
-        <div className="relative w-full h-full max-w-md aspect-square @container mx-auto">
-            <Image src={`${ASSET_PATH}/wicca_intro_instructions.png`} alt="Instructions" layout="fill" objectFit="contain" priority />
-            <div 
-                className="absolute flex flex-col items-center justify-center text-center pointer-events-none gap-2 p-2"
-                style={{ left: '29.7%', top: '14.8%', width: '42.2%', height: '68.8%' }}
-            >
-                <h3 className="font-serif text-gray-200" style={{ textShadow: '0 0 8px black', fontSize: 'clamp(0.8rem, 6cqw, 2.25rem)' }}>
-                    Wiccan Spellcraft
-                </h3>
-                <p className="text-gray-300 leading-relaxed" style={{ fontSize: 'clamp(0.6rem, 3.5cqw, 1.1rem)' }}>
-                    Enter this realm to do a Wicca-influenced magick spell.
-                </p>
-            </div>
-        </div>
-    </StepContainer>
-);
-
-const Step1_Intention: React.FC<Step1Props> = ({ intention, setIntention, situation, setSituation, onBegin, isReplay, cost }) => (
-    <StepContainer 
-        stageTitle="State Your True Will" 
-        instruction="Inscribe your deepest desire. For High Rituals, describe your situation to guide the spirits."
-    >
-        <div className="relative w-full h-full max-w-md mx-auto flex flex-col items-center justify-center gap-4">
-            <div className="relative w-full aspect-square @container">
-                <Image src={`${ASSET_PATH}/wicca_scroll_intention.png`} alt="Inscribe your intention" layout="fill" objectFit="contain" />
-                <div 
-                    className="absolute p-4 flex flex-col gap-2"
-                    style={{ left: '19.5%', top: '25.9%', width: '59.8%', height: '55.0%' }}
-                >
-                    <input 
-                        value={intention} 
-                        onChange={(e) => setIntention(e.target.value)} 
-                        readOnly={isReplay}
-                        placeholder="Intention (e.g. Find Peace)" 
-                        className={`w-full bg-transparent border-b border-[#4a2e1c]/50 text-center text-[#4a2e1c] font-serif focus:outline-none placeholder:text-[#4a2e1c]/50 ${isReplay ? 'cursor-not-allowed opacity-80' : ''}`}
-                    />
-                    <textarea 
-                        value={situation} 
-                        onChange={(e) => setSituation(e.target.value)} 
-                        readOnly={isReplay}
-                        placeholder="Details (Optional for Standard, Required for AI)" 
-                        className={`w-full grow bg-transparent text-center text-[#4a2e1c] font-serif focus:outline-none resize-none text-sm placeholder:text-[#4a2e1c]/50 ${isReplay ? 'cursor-not-allowed opacity-80' : ''}`}
-                    />
-                </div>
-            </div>
-            
-            <div className="flex flex-col gap-3 w-full max-w-xs">
-                {isReplay ? (
-                     <button type="button" onClick={() => onBegin('replay')} className="flex items-center justify-center gap-3 p-4 bg-purple-900 border border-purple-500 rounded-lg hover:bg-purple-800 text-white shadow-lg animate-pulse">
-                        <RotateCcw className="w-5 h-5" />
-                        <div className="font-serif tracking-widest text-sm uppercase">Begin Ritual (Saved)</div>
-                    </button>
-                ) : (
-                    <>
-                        <button type="button" onClick={() => onBegin('standard')} disabled={!intention} className="flex items-center gap-3 p-3 bg-slate-800/80 border border-slate-600 rounded-lg hover:bg-slate-700 disabled:opacity-50 text-slate-200">
-                            <Book className="w-5 h-5 text-slate-300" />
-                            <div className="text-left">
-                                <div className="text-amber-100 font-serif">Standard Ritual</div>
-                                <div className="text-xs text-slate-400">Traditional components. Free.</div>
-                            </div>
-                        </button>
-                        
-                        <button type="button" onClick={() => onBegin('ai')} disabled={!intention} className="flex items-center gap-3 p-3 bg-purple-900/60 border border-purple-500 rounded-lg hover:bg-purple-800 disabled:opacity-50 relative overflow-hidden group text-purple-100">
-                             <div className="absolute inset-0 bg-purple-500/10 animate-pulse group-hover:bg-purple-500/20"></div>
-                            <Wand2 className="w-5 h-5 text-purple-300" />
-                            <div className="text-left relative z-10">
-                                <div className="text-purple-100 font-serif flex items-center gap-2">High Ritual <Sparkles size={12}/></div>
-                                <div className="text-xs text-purple-300">AI-woven spellcraft. {cost} Credits.</div>
-                            </div>
-                        </button>
-                    </>
-                )}
-            </div>
-        </div>
-    </StepContainer>
-);
-
-const Step2_Elements: React.FC<Step2Props> = ({ chargedElements, onChargeComplete, onNext, spell }) => {
-    // Determine which chants to use: Custom or Standard
-    const chants = spell?.elemental_chants || STANDARD_WICCAN_SPELL.elemental_chants;
-    
-    // Safety check
-    const getChant = (el: string) => {
-        if (chants && el in chants) {
-            // @ts-ignore
-            return chants[el];
-        }
-        return "Calling the element...";
-    };
-
-    const elementsData = useMemo(() => [
-        { name: 'Spirit', spriteName: 'Wand', sound: '/audio/spirit.mp3', incantation: getChant("Spirit") },
-        { name: 'Air', spriteName: 'Athame', sound: '/audio/air.mp3', incantation: getChant("Air") },
-        { name: 'Fire', spriteName: 'Bowl of Fire', sound: '/audio/fire.mp3', incantation: getChant("Fire") },
-        { name: 'Earth', spriteName: 'Sacred Stone', sound: '/audio/earth.mp3', incantation: getChant("Earth") },
-        { name: 'Water', spriteName: 'Amethyst', sound: '/audio/water.mp3', incantation: getChant("Water") },
-    ], [chants]);
-
-    const [activeIncantation, setActiveIncantation] = useState<string | null>(null);
-
-    const getInstructionText = () => {
-        const defaultInstruction = "Summon the ancient guardians. Press, hold, and speak the incantation to awaken each sigil's power.";
-        const finalInstruction = "The circle is cast. The guardians have answered your call.";
-
-        if (activeIncantation) return activeIncantation;
-        if (chargedElements.length === 5) return finalInstruction;
-        
-        if (chargedElements.length > 0) {
-            const lastChargedName = chargedElements[chargedElements.length - 1];
-            const lastChargedElementData = elementsData.find(el => el.name === lastChargedName);
-            return lastChargedElementData?.incantation || defaultInstruction;
-        }
-        return defaultInstruction;
-    };
-
-    return (
-        <StepContainer stageTitle="Call the Elemental Guardians" instruction={getInstructionText()} button={chargedElements.length === 5 ? <RitualButton onClick={onNext} className="animate-pulse">Continue</RitualButton> : <div/>}>
-            <div className="relative w-full h-full flex items-center justify-center p-2">
-                <div className="relative h-full aspect-square max-w-full">
-                    {elementsData.map((el, i) => {
-                        const spriteData = findSprite(el.spriteName);
-                        if (!spriteData) return <div key={el.name} className="absolute text-xs text-red-400">Missing: {el.spriteName}</div>;
-                        const positions = [ { top: '10%', left: '50%'}, { top: '45%', left: '90%'}, { top: '90%', left: '75%'},  { top: '90%', left: '25%'}, { top: '45%', left: '10%'} ];
-                        return ( <ChargingElement 
-                                    key={el.name} 
-                                    name={el.name} 
-                                    isCharged={chargedElements.includes(el.name)} 
-                                    onChargeComplete={onChargeComplete} 
-                                    style={{...positions[i], transform: 'translate(-50%, -50%)'}} 
-                                    spriteData={spriteData} 
-                                    soundSrc={el.sound} 
-                                    onHoldStart={() => setActiveIncantation(el.incantation)}
-                                    onHoldEnd={() => setActiveIncantation(null)}
-                                /> );
-                    })}
-                </div>
-            </div>
-        </StepContainer>
-    );
-};
-
-const Step3_Deities: React.FC<Step3Props> = ({ selectedDeities, onToggle, onNext }) => (
-    <StepContainer 
-        stageTitle="Invoke a Guiding Deity or Force"
-        instruction="Choose a divine presence to guide your work, or proceed with the universal energies."
-        button={
-            <div className="flex flex-col sm:flex-row gap-4">
-                <RitualButton onClick={onNext}>Confirm Invocation</RitualButton>
-                <RitualButton onClick={onNext} className="bg-black/20 border-gray-600/50 hover:bg-gray-800/50">Continue without Deity</RitualButton>
-            </div>
-        }
-    >
-        <div className="w-full max-w-4xl flex flex-col md:flex-row items-center justify-around gap-4 overflow-y-auto max-h-full py-4">
-            {[{ name: 'Triple Goddess', img: 'wicca_deity_triple_goddess.png' }, { name: 'Horned God', img: 'wicca_deity_horned_god.png' }, { name: 'Divine Source', img: 'wicca_deity_divine_source.png' }].map(deity => {
-                const isSelected = selectedDeities.includes(deity.name);
-                return (
-                    <div key={deity.name} onClick={() => onToggle(deity.name)} className="text-center cursor-pointer group p-2 flex flex-col items-center shrink-0">
-                        <div className={`relative w-28 h-28 md:w-36 md:h-36 lg:w-48 lg:h-48 transition-all duration-300 transform ${isSelected ? 'scale-110' : 'group-hover:scale-105'}`}>
-                            <Image src={`${ASSET_PATH}/${deity.img}`} layout="fill" objectFit="contain" alt={deity.name} className={`transition-all duration-300 ${isSelected ? 'brightness-125 drop-shadow-[0_0_10px_rgba(255,255,255,0.7)]' : 'brightness-75 group-hover:brightness-100'}`} />
-                        </div>
-                        <p className={`mt-2 text-lg font-serif transition-colors duration-300 ${isSelected ? 'text-purple-300' : 'text-gray-400 group-hover:text-white'}`}>{deity.name}</p>
-                    </div>
-                );
-            })}
-        </div>
-    </StepContainer>
-);
-
-const Step4_Components: React.FC<SpellStepProps> = ({ spell, onNext }) => (
-    <StepContainer 
-        stageTitle="The Fated Components" 
-        instruction="The universe provides. These are the catalysts for your magick."
-        button={<RitualButton onClick={onNext}>Prepare Components</RitualButton>}
-    >
-        <div className='text-center'>
-            <p className="text-gray-300 mb-6">These items have been chosen for your intention.</p>
-            <div className="grid grid-cols-5 gap-2 sm:gap-4 bg-black/30 p-4 rounded-lg">
-                {spell.symbolic_ingredients.map(ingredient => {
-                    const spriteData = findSprite(ingredient.name);
-                    if (!spriteData) return <div key={ingredient.name} className="w-16 h-16 sm:w-24 sm:h-24 border border-dashed border-gray-600 rounded-md flex items-center justify-center text-xs text-center text-gray-400">Missing:<br/>{ingredient.name}</div>;
-                    return (
-                        <div key={ingredient.name} className="flex flex-col items-center gap-2">
-                            <div className="w-16 h-16 sm:w-24 sm:h-24 bg-white/5 rounded-lg p-1"><Sprite sheetPath={spriteData.sheet.path} x={spriteData.itemInfo.x} y={spriteData.itemInfo.y} spriteWidth={spriteData.sheet.spriteSize.width} spriteHeight={spriteData.sheet.spriteSize.height} sheetWidth={spriteData.sheet.sheetSize.width} sheetHeight={spriteData.sheet.sheetSize.height} /></div>
-                            <p className="text-xs sm:text-sm text-center font-semibold text-purple-300">{ingredient.name}</p>
-                        </div>
-                    );
-                })}
-            </div>
-        </div>
-    </StepContainer>
-);
-
-const Step5_ChargeComponent: React.FC<Step5Props> = ({ spell, chargingIndex, onNext }) => {
-    const [isComplete, setIsComplete] = useState(false);
+const Step2_CastCircle = ({ onComplete }: { onComplete: () => void }) => {
+    const [progress, setProgress] = useState(0);
     const [isHolding, setIsHolding] = useState(false);
-
-    const handleChargeComplete = () => {
-        setIsComplete(true);
-        setIsHolding(false); 
-    };
-
-    const currentIngredient = spell.symbolic_ingredients[chargingIndex];
-    const spriteData = findSprite(currentIngredient.name);
-
-    const getInstruction = () => {
-        const incantation = currentIngredient.incantation || spriteData?.itemInfo.incantation || "Charge this item.";
-        if (isComplete) return "Charged. " + incantation;
-        if (isHolding) return incantation;
-        return `Press, hold, and speak the incantation to imbue the ${currentIngredient.name} with your will.`;
-    };
-
-    return (
-        <StepContainer 
-            stageTitle="Imbue with Aether"
-            instruction={getInstruction()}
-            button={isComplete ? <RitualButton onClick={onNext} className="animate-pulse">{chargingIndex < spell.symbolic_ingredients.length - 1 ? "Charge Next Component" : "Continue to Incantation"}</RitualButton> : <div/>}
-        >
-            <div className="relative w-full h-full max-w-lg aspect-square mx-auto">
-                <Image src={`${ASSET_PATH}/wicca_charge_ingredient_template.png`} alt="Charge Component" layout="fill" objectFit="contain" />
-                 <IngredientCharger 
-                    onChargeComplete={handleChargeComplete} 
-                    isComplete={isComplete}
-                    onHoldStart={() => setIsHolding(true)}
-                    onHoldEnd={() => setIsHolding(false)}
-                    isHolding={isHolding}
-                >
-                    {spriteData && (
-                        <div className="w-40 h-40">
-                            <Sprite sheetPath={spriteData.sheet.path} x={spriteData.itemInfo.x} y={spriteData.itemInfo.y} spriteWidth={spriteData.sheet.spriteSize.width} spriteHeight={spriteData.sheet.spriteSize.height} sheetWidth={spriteData.sheet.sheetSize.width} sheetHeight={spriteData.sheet.sheetSize.height} />
-                        </div>
-                    )}
-                </IngredientCharger>
-            </div>
-        </StepContainer>
-    );
-};
-
-const Step6_Incantation: React.FC<SpellStepProps> = ({ spell, onNext }) => (
-    <StepContainer 
-        stageTitle="Speak the Words of Power" 
-        instruction="Read aloud or in your heart. Let these words resonate with your soul's intent."
-        button={<RitualButton onClick={onNext}>Ready to Cast</RitualButton>}
-    >
-        <div className="relative w-full h-full max-w-md aspect-square @container mx-auto">
-            <Image src={`${ASSET_PATH}/wicca_incantation_scroll.png`} alt="Incantation Scroll" layout="fill" objectFit="contain" />
-            <div 
-                className="absolute flex items-center justify-center p-4"
-                style={{ left: '19.5%', top: '25.9%', width: '59.8%', height: '55.0%' }}
-            >
-                <p className="font-serif text-[#4a2e1c] text-center whitespace-pre-line leading-relaxed" style={{fontSize: 'clamp(0.6rem, 4cqw, 1.75rem)'}}>{spell.central_chant}</p>
-            </div>
-        </div>
-    </StepContainer>
-);
-
-const Step7_Cast: React.FC<SpellStepProps> = ({ spell, onNext }) => {
-    const [isCasting, setIsCasting] = useState(false);
-    const [count, setCount] = useState(0);
-    const castSoundRef = useRef<any>(null);
+    const soundRef = useRef<any>(null);
 
     useEffect(() => {
-        let timer: NodeJS.Timeout;
-        let counter: NodeJS.Timeout;
-        if (isCasting) {
-            castSoundRef.current = playSound('/audio/sfx-chaos-hold.mp3', 0.4, true);
-            setCount(1);
-            counter = setInterval(() => setCount(prev => prev < 13 ? prev + 1 : 13), 1000);
-            timer = setTimeout(() => {
-                onNext();
-            }, CAST_DURATION);
+        let interval: NodeJS.Timeout;
+        if (isHolding && progress < 100) {
+            soundRef.current = playSound('/audio/sfx-chaos-hold.mp3', 0.3, true);
+            interval = setInterval(() => {
+                setProgress(p => {
+                    const newP = p + 1.5;
+                    if (newP >= 100) {
+                        if(soundRef.current) soundRef.current.stop();
+                        playSound('/audio/sfx-spell-room-portal.mp3', 0.5).play();
+                        onComplete();
+                        return 100;
+                    }
+                    return newP;
+                });
+            }, 20);
+        } else {
+             if(soundRef.current) soundRef.current.stop();
         }
-        return () => {
-            clearTimeout(timer);
-            clearInterval(counter);
-            setCount(0);
-            if(castSoundRef.current) castSoundRef.current.stop();
-        };
-    }, [isCasting, onNext]);
-
-    const interactionStyle: React.CSSProperties = {
-        WebkitTouchCallout: 'none',
-    };
+        return () => { clearInterval(interval); if(soundRef.current) soundRef.current.stop(); };
+    }, [isHolding, progress, onComplete]);
 
     return (
-        <StepContainer 
-            stageTitle="Unleash the Magick" 
-            instruction="The moment is now. Gather your will and release the spell into the aether."
-            button={<div/>}
-        >
-            <div className="relative w-full max-w-2xl h-full flex items-center justify-center">
-                <div 
-                    onMouseDown={() => setIsCasting(true)} 
-                    onMouseUp={() => setIsCasting(false)} 
-                    onMouseLeave={() => setIsCasting(false)} 
-                    onTouchStart={() => setIsCasting(true)} 
-                    onTouchEnd={() => setIsCasting(false)} 
-                    onContextMenu={(e) => e.preventDefault()}
-                    style={interactionStyle}
-                    className="relative w-full max-w-full max-h-full aspect-square cursor-pointer select-none"
-                >
-                    <Image src={`${ASSET_PATH}/wicca_pentagram_ready_to_cast.png`} layout="fill" objectFit="contain" alt="Cast the Spell" />
-                    <PentagramIcon className="absolute w-full h-full text-white pointer-events-none" isTracing={isCasting} />
-                    {spell.symbolic_ingredients.map((ing, i) => {
-                        const spriteData = findSprite(ing.name);
-                        if(!spriteData) return null;
-                        const positions = [ { top: '0%', left: '50%'}, { top: '34.5%', left: '97.5%'}, { top: '90.4%', left: '79.3%'}, { top: '90.4%', left: '20.6%'}, { top: '34.5%', left: '2.5%'} ];
-                        return <div key={i} className="absolute w-16 h-16 pointer-events-none" style={{...positions[i], transform: 'translate(-50%, -50%)'}}> <Sprite sheetPath={spriteData.sheet.path} x={spriteData.itemInfo.x} y={spriteData.itemInfo.y} spriteWidth={spriteData.sheet.spriteSize.width} spriteHeight={spriteData.sheet.spriteSize.height} sheetWidth={spriteData.sheet.sheetSize.width} sheetHeight={spriteData.sheet.sheetSize.height} /> </div>
-                    })}
-                    
-                    <AnimatePresence>
-                    {isCasting && count > 0 ? (
-                        <motion.div 
-                            key="counter"
-                            initial={{ opacity: 0, scale: 0.5 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.5 }}
-                            className="absolute inset-0 flex items-center justify-center pointer-events-none"
-                        >
-                            <span className="font-serif text-8xl text-white" style={{ textShadow: '0 0 15px rgba(255, 255, 255, 0.8), 0 0 25px rgba(192, 132, 252, 0.6)' }}>
-                                {count}
-                            </span>
-                        </motion.div>
-                    ) : (
-                        <p className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 font-serif text-2xl pointer-events-none text-center text-white" style={{ textShadow: '0 0 10px black' }}>Hold to Focus Your Will and<br/>Cast the Spell</p>
-                    )}
-                    </AnimatePresence>
-                </div>
+        <div className="flex flex-col items-center justify-center h-full gap-8">
+            <div className="text-center">
+                <h2 className="text-3xl font-serif text-purple-100 drop-shadow-md">Cast the Circle</h2>
+                <p className="text-purple-300/60 italic mt-2">Hold to trace the boundary between worlds.</p>
             </div>
-        </StepContainer>
-    );
-};
-
-const Step8_Sending: React.FC<StepProps> = ({ onNext }) => {
-    useEffect(() => {
-        playSound('/audio/sfx-chaos-explosion.mp3', 0.5);
-        const timer = setTimeout(onNext, SENDING_DURATION);
-        return () => clearTimeout(timer);
-    }, [onNext]);
-
-    const particles = useMemo(() => Array.from({ length: 150 }).map((_, i) => {
-        const angle = Math.random() * 2 * Math.PI;
-        const radius = 300 + Math.random() * 400;
-        const duration = 2 + Math.random() * 2;
-        const delay = Math.random() * 1;
-        const size = 3 + Math.random() * 4;
-        const colors = ['#FFFFFF', '#FFD700', '#C0C0C0'];
-        const color = colors[Math.floor(Math.random() * colors.length)];
-
-        return {
-            id: i,
-            x: radius * Math.cos(angle),
-            y: radius * Math.sin(angle),
-            size,
-            duration,
-            delay,
-            color,
-            rotate: Math.random() * 360,
-        };
-    }), []);
-
-    return (
-        <StepContainer>
-            <div className="relative w-full h-full flex items-center justify-center overflow-hidden">
-                <motion.p
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: [0, 1, 1, 0], y: 0 }}
-                    transition={{ duration: SENDING_DURATION / 1000, times: [0, 0.2, 0.8, 1] }}
-                    className="text-3xl font-serif text-amber-200/90 z-10"
-                >
-                    The Spell is Sent
-                </motion.p>
-                {particles.map(p => (
-                    <motion.div
-                        key={p.id}
-                        className="absolute rounded-full"
-                        style={{
-                            width: p.size,
-                            height: p.size,
-                            backgroundColor: p.color,
-                            boxShadow: `0 0 ${p.size * 2}px ${p.color}`,
-                        }}
-                        initial={{ opacity: 0, scale: 0.5, x: 0, y: 0 }}
-                        animate={{
-                            opacity: [0, 1, 1, 0],
-                            scale: [0.5, 1, 0.8, 0],
-                            x: [0, p.x * 0.3, p.x],
-                            y: [0, p.y * 0.5, p.y],
-                            rotate: p.rotate,
-                        }}
-                        transition={{
-                            duration: p.duration,
-                            delay: p.delay,
-                            ease: "easeOut",
-                        }}
-                    />
-                ))}
-            </div>
-        </StepContainer>
-    );
-};
-
-const Step9_Manifestation: React.FC<Step9Props & { onReturn: () => void }> = ({ spell, onSave, isSaving, isSaved, onReturn }) => (
-     <StepContainer 
-        stageTitle="Witness the Manifestation" 
-        instruction="So mote it be. Your will is in motion. Trust in the magick you have woven."
-    >
-        <div className="relative w-full h-full max-w-2xl aspect-square @container mx-auto flex flex-col items-center">
-            <div className="relative w-full grow">
-                 <Image src={`${ASSET_PATH}/wicca_spell_manifestation.png`} alt="Spell Manifestation" layout="fill" objectFit="contain" />
-                <div 
-                    className="absolute flex items-center justify-center p-4"
-                    style={{ left: '31.8%', top: '28.0%', width: '36.4%', height: '58.0%' }}
-                >
-                    <p className="text-center text-white font-serif" style={{fontSize: 'clamp(0.5rem, 2.5cqw, 2rem)'}}>{spell.affirmation}</p>
-                </div>
-            </div>
-
-            <div className="flex flex-col gap-3 mt-4 w-full max-w-xs">
-                <button onClick={onSave} disabled={isSaved || isSaving} className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-indigo-900/60 border border-indigo-400 text-indigo-100 font-serif rounded hover:bg-indigo-800 disabled:opacity-50 transition-colors">
-                    {isSaved ? <Check size={18} /> : <Save size={18} />}
-                    {isSaved ? "Saved to Grimoire" : isSaving ? "Saving..." : "Save to Grimoire (1 Credit)"}
-                </button>
-                <RitualButton onClick={onReturn} className="w-full">
-                    Return to Altar
-                </RitualButton>
-            </div>
-        </div>
-    </StepContainer>
-);
-
-// --- Helper components for complex interactions ---
-
-const IngredientCharger: React.FC<IngredientChargerProps> = ({ children, onChargeComplete, isComplete, onHoldStart, onHoldEnd, isHolding }) => {
-    const chargeSoundRef = useRef<any>(null);
-
-    useEffect(() => {
-        let timer: NodeJS.Timeout;
-        if(isHolding && !isComplete) {
-            chargeSoundRef.current = playSound('/audio/sfx-chaos-hold.mp3', 0.3, true);
-            timer = setTimeout(() => {
-                onChargeComplete();
-            }, CHARGE_DURATION_INGREDIENT)
-        }
-        return () => {
-            clearTimeout(timer);
-            if(chargeSoundRef.current) chargeSoundRef.current.stop(); 
-        }
-    }, [isHolding, isComplete, onChargeComplete]);
-    
-    const interactionStyle: React.CSSProperties = { WebkitTouchCallout: 'none' };
-    const circleVariants = { hidden: { strokeDashoffset: 1 }, visible: { strokeDashoffset: 0 } };
-
-    return (
-        <div 
-            onMouseDown={onHoldStart} 
-            onMouseUp={onHoldEnd} 
-            onMouseLeave={onHoldEnd} 
-            onTouchStart={onHoldStart} 
-            onTouchEnd={onHoldEnd} 
-            onContextMenu={(e) => e.preventDefault()}
-            style={interactionStyle}
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[40%] grid place-items-center cursor-pointer select-none"
-        >
-            <div className={`relative transition-transform duration-300 ${isHolding || isComplete ? 'scale-110' : 'scale-100'}`}>
-                {children}
-                <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg) scale(1.2)' }}>
-                    <motion.circle
-                        cx="50" cy="50" r="48"
-                        stroke="rgba(255, 255, 255, 1)"
+            <div className="relative w-80 h-80 md:w-96 md:h-96 flex items-center justify-center">
+                {/* Visual Circle */}
+                <svg className="absolute w-full h-full rotate-[-90deg]" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="45" fill="none" stroke="#333" strokeWidth="2" strokeDasharray="4 2" />
+                    <motion.circle 
+                        cx="50" cy="50" r="45" 
+                        fill="none" 
+                        stroke="#a855f7" 
                         strokeWidth="4"
-                        fill="transparent"
                         strokeLinecap="round"
-                        pathLength="1"
-                        strokeDasharray="1"
-                        variants={circleVariants}
-                        initial="hidden"
-                        animate={isComplete || (isHolding && !isComplete) ? "visible" : "hidden"}
-                        transition={{ duration: isComplete ? 0 : CHARGE_DURATION_INGREDIENT / 1000, ease: 'linear' }}
+                        strokeDasharray="283"
+                        strokeDashoffset={283 - (283 * progress) / 100}
+                        className="drop-shadow-[0_0_15px_rgba(168,85,247,0.8)]"
                     />
                 </svg>
-                {isComplete && <div className="absolute inset-0 rounded-full bg-purple-900/30 animate-pulse" />}
+                {/* Interaction Button */}
+                <button
+                    onMouseDown={() => setIsHolding(true)}
+                    onMouseUp={() => setIsHolding(false)}
+                    onMouseLeave={() => setIsHolding(false)}
+                    onTouchStart={() => setIsHolding(true)}
+                    onTouchEnd={() => setIsHolding(false)}
+                    className="absolute z-10 w-28 h-28 rounded-full bg-purple-900/20 border border-purple-500/50 backdrop-blur-sm flex flex-col items-center justify-center text-purple-200 animate-pulse active:scale-95 transition-transform hover:bg-purple-900/40"
+                >
+                    <Wand2 size={32} className="mb-1 text-purple-300" />
+                    <span className="text-[10px] uppercase tracking-widest font-bold text-purple-100">Cast</span>
+                </button>
             </div>
         </div>
     );
 };
 
-const ChargingElement: React.FC<ChargingElementProps> = ({ name, isCharged, onChargeComplete, style, spriteData, soundSrc, onHoldStart, onHoldEnd }) => {
+const Step3_Quarters = ({ charged, onCharge, onNext }: { charged: string[], onCharge: (n: string) => void, onNext: () => void }) => {
+    // We restore the "Hold to Charge" logic individually for each quarter
+    const quarters = [
+        { name: "Air", sprite: "Air Sigil", pos: { top: '15%', left: '50%' } },
+        { name: "Fire", sprite: "Fire Sigil", pos: { top: '40%', left: '85%' } },
+        { name: "Water", sprite: "Water Sigil", pos: { top: '85%', left: '75%' } },
+        { name: "Earth", sprite: "Earth Sigil", pos: { top: '85%', left: '25%' } },
+        { name: "Spirit", sprite: "Spirit Sigil", pos: { top: '40%', left: '15%' } }
+    ];
+
+    return (
+        <div className="flex flex-col items-center justify-center h-full relative">
+            <h2 className="absolute top-4 text-2xl font-serif text-purple-200 text-center w-full">Call the Guardians</h2>
+            <div className="relative w-full max-w-md aspect-square mt-8">
+                {quarters.map(q => (
+                    <div key={q.name} className="absolute transform -translate-x-1/2 -translate-y-1/2" style={q.pos}>
+                         <RestoredChargingSigil 
+                            name={q.name} 
+                            spriteName={q.sprite} 
+                            isCharged={charged.includes(q.name)} 
+                            onComplete={() => onCharge(q.name)} 
+                        />
+                    </div>
+                ))}
+            </div>
+            {charged.length === 5 && (
+                <button onClick={onNext} className="absolute bottom-10 px-10 py-3 bg-amber-600 hover:bg-amber-500 text-black font-bold rounded-lg animate-bounce shadow-[0_0_20px_orange]">
+                    Seal the Quarters
+                </button>
+            )}
+        </div>
+    );
+};
+
+const RestoredChargingSigil = ({ name, spriteName, isCharged, onComplete }: any) => {
     const [isHolding, setIsHolding] = useState(false);
-    const chargeSoundRef = useRef<any>(null);
+    const soundRef = useRef<any>(null);
+    const sprite = findSprite(spriteName);
 
     useEffect(() => {
         let timer: NodeJS.Timeout;
         if (isHolding && !isCharged) {
-            chargeSoundRef.current = playSound(soundSrc, 0.4, true);
-            timer = setTimeout(() => {
-                onChargeComplete(name);
-            }, CHARGE_DURATION_ELEMENT);
+            soundRef.current = playSound('/audio/sfx-chaos-hold.mp3', 0.3, true);
+            timer = setTimeout(onComplete, CHARGE_DURATION_ELEMENT);
         }
-        return () => {
-            clearTimeout(timer);
-            if(chargeSoundRef.current) chargeSoundRef.current.stop(); 
-        };
-    }, [isHolding, isCharged, name, onChargeComplete, soundSrc]);
+        return () => { clearTimeout(timer); if(soundRef.current) soundRef.current.stop(); };
+    }, [isHolding, isCharged, onComplete]);
 
-    const { sheet, itemInfo } = spriteData;
-    const containerSize = 96; 
-    const scale = containerSize / sheet.spriteSize.width;
-
-    const spriteStyle: React.CSSProperties = {
-        backgroundImage: `url(${sheet.path})`,
-        backgroundSize: `${sheet.sheetSize.width * scale}px ${sheet.sheetSize.height * scale}px`,
-        backgroundPosition: `${itemInfo.x * scale}px ${itemInfo.y * scale}px`,
-        WebkitTouchCallout: 'none',
-    };
-
-    const circleVariants = {
-        hidden: { strokeDashoffset: 1 },
-        visible: { strokeDashoffset: 0 }
-    };
-
-    const handlePress = () => {
-        if (!isCharged) {
-            setIsHolding(true);
-            onHoldStart();
-        }
-    };
-
-    const handleRelease = () => {
-        if (isHolding) {
-            setIsHolding(false);
-            onHoldEnd();
-        }
-    };
+    if (!sprite) return null;
 
     return (
-        <div className="absolute grid place-items-center" style={style}>
-            <div
-                onMouseDown={handlePress}
-                onMouseUp={handleRelease}
-                onMouseLeave={handleRelease}
-                onTouchStart={(e) => { e.preventDefault(); handlePress(); }}
-                onTouchEnd={handleRelease}
-                onContextMenu={(e) => e.preventDefault()}
-                aria-label={`Charge ${name}`}
-                role="button"
-                aria-pressed={isHolding}
-                style={spriteStyle}
-                className={`relative w-24 h-24 cursor-pointer transition-all duration-500 group overflow-hidden rounded-full select-none ${isCharged ? 'pointer-events-none' : ''}`}
-            >
-                {/* Overlay for brightness/saturation effects */}
-                <div className={`absolute inset-0 w-full h-full transition-all duration-500 ${isCharged ? 'brightness-125 saturate-150' : 'brightness-75 group-hover:brightness-100'}`} />
+        <div 
+            className="w-24 h-24 relative"
+            onMouseDown={() => setIsHolding(true)}
+            onMouseUp={() => setIsHolding(false)}
+            onMouseLeave={() => setIsHolding(false)}
+            onTouchStart={() => setIsHolding(true)}
+            onTouchEnd={() => setIsHolding(false)}
+        >
+             <div className={`w-full h-full transition-all duration-500 ${isCharged ? 'scale-110 brightness-150 saturate-150' : 'grayscale brightness-75'} ${isHolding ? 'scale-105' : ''}`}>
+                 <Sprite sheetPath={sprite.sheet.path} x={sprite.itemInfo.x} y={sprite.itemInfo.y} spriteWidth={sprite.sheet.spriteSize.width} spriteHeight={sprite.sheet.spriteSize.height} sheetWidth={sprite.sheet.sheetSize.width} sheetHeight={sprite.sheet.sheetSize.height} />
+             </div>
+             {/* The Restored Ring Animation */}
+             <InteractionRing isHolding={isHolding} isComplete={isCharged} duration={CHARGE_DURATION_ELEMENT} />
+        </div>
+    );
+};
+
+
+const Step4_Deities = ({ suggestions, onSelect }: { suggestions: WiccanDeitySuggestion[], onSelect: (d: WiccanDeitySuggestion) => void }) => (
+    <div className="flex flex-col items-center justify-center h-full gap-6">
+        <h2 className="text-2xl font-serif text-purple-200">Invoke the Divine</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full max-w-5xl px-4">
+            {suggestions.map((deity, i) => {
+                let icon = "Triple Moon";
+                if (deity.name.includes("Horned") || deity.name.includes("Pan")) icon = "Horned God";
+                if (deity.name.includes("Aphrodite") || deity.name.includes("Love")) icon = "Pink Heart";
+                if (deity.name.includes("Zeus") || deity.name.includes("Thor")) icon = "Lightning Bolt";
+                const sprite = findSprite(icon) || findSprite("Triple Moon")!;
+
+                return (
+                    <button key={i} onClick={() => onSelect(deity)} className="bg-black/40 border border-purple-500/30 p-6 rounded-xl flex flex-col items-center hover:bg-purple-900/20 hover:border-purple-400 transition-all group hover:-translate-y-1 duration-300">
+                        <div className="w-24 h-24 mb-4 opacity-70 group-hover:opacity-100 transition-opacity drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">
+                             <Sprite sheetPath={sprite.sheet.path} x={sprite.itemInfo.x} y={sprite.itemInfo.y} spriteWidth={sprite.sheet.spriteSize.width} spriteHeight={sprite.sheet.spriteSize.height} sheetWidth={sprite.sheet.sheetSize.width} sheetHeight={sprite.sheet.sheetSize.height} />
+                        </div>
+                        <h3 className="text-xl font-serif text-amber-100">{deity.name}</h3>
+                        <p className="text-xs text-purple-300 uppercase tracking-wider mb-3">{deity.title}</p>
+                        <p className="text-sm text-gray-400 text-center italic leading-relaxed">"{deity.description}"</p>
+                    </button>
+                );
+            })}
+        </div>
+    </div>
+);
+
+const Step5_Ingredients = ({ spell, index, onComplete }: { spell: GeneratedWiccanSpell, index: number, onComplete: () => void }) => {
+    const item = spell.symbolic_ingredients[index];
+    const sprite = findSprite(item.name) || findSprite("White Candle")!;
+    const [holding, setHolding] = useState(false);
+    const [complete, setComplete] = useState(false);
+    const soundRef = useRef<any>(null);
+
+    // Restored complex charge logic
+    useEffect(() => {
+        let timer: NodeJS.Timeout;
+        if (holding && !complete) {
+            soundRef.current = playSound('/audio/sfx-chaos-hold.mp3', 0.3, true);
+            timer = setTimeout(() => {
+                setComplete(true);
+                setTimeout(onComplete, 500); // Slight delay after completion to show effect
+            }, CHARGE_DURATION_INGREDIENT);
+        }
+        return () => { clearTimeout(timer); if(soundRef.current) soundRef.current.stop(); };
+    }, [holding, complete, onComplete]);
+
+    return (
+        <div className="flex flex-col items-center justify-center h-full gap-8">
+            <h2 className="text-2xl font-serif text-purple-200">Consecrate the Components</h2>
+            <div className="relative w-64 h-64 flex items-center justify-center">
+                 {/* Main Ingredient Sprite */}
+                <div 
+                    onMouseDown={() => setHolding(true)}
+                    onMouseUp={() => setHolding(false)}
+                    onTouchStart={() => setHolding(true)}
+                    onTouchEnd={() => setHolding(false)}
+                    className={`relative z-10 w-48 h-48 transition-all duration-300 ${holding ? 'scale-105' : 'scale-100'} cursor-pointer`}
+                >
+                     <Sprite sheetPath={sprite.sheet.path} x={sprite.itemInfo.x} y={sprite.itemInfo.y} spriteWidth={sprite.sheet.spriteSize.width} spriteHeight={sprite.sheet.spriteSize.height} sheetWidth={sprite.sheet.sheetSize.width} sheetHeight={sprite.sheet.sheetSize.height} />
+                </div>
                 
-                {/* SVG on top for tracing animation */}
-                <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)' }}>
-                    <circle cx="50" cy="50" r="48" stroke="rgba(255,255,255,0.15)" strokeWidth="3" fill="transparent" />
+                {/* Restored Interaction Ring */}
+                <svg className="absolute inset-0 w-full h-full pointer-events-none z-20" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg) scale(1.1)' }}>
+                    <circle cx="50" cy="50" r="48" stroke="rgba(255,255,255,0.1)" strokeWidth="2" fill="transparent" />
                     <motion.circle
                         cx="50" cy="50" r="48"
-                        stroke="rgba(255, 255, 255, 1)"
-                        strokeWidth="4"
+                        stroke="rgba(168, 85, 247, 1)"
+                        strokeWidth="3"
                         fill="transparent"
                         strokeLinecap="round"
                         pathLength="1"
                         strokeDasharray="1"
-                        variants={circleVariants}
-                        initial="hidden"
-                        animate={isCharged || isHolding ? "visible" : "hidden"}
-                        transition={{ duration: isCharged ? 0 : CHARGE_DURATION_ELEMENT / 1000, ease: 'linear' }}
+                        initial={{ strokeDashoffset: 1 }}
+                        animate={{ strokeDashoffset: complete ? 0 : (holding ? 0 : 1) }}
+                        transition={{ duration: complete ? 0 : CHARGE_DURATION_INGREDIENT / 1000, ease: 'linear' }}
+                        className="drop-shadow-[0_0_15px_rgba(168,85,247,0.8)]"
                     />
                 </svg>
-
-                {isCharged && <div className="absolute inset-0 rounded-full bg-purple-900/30 animate-pulse" />}
+                {complete && <div className="absolute inset-0 bg-purple-500/30 rounded-full animate-ping z-0" />}
+            </div>
+            
+            <div className="text-center space-y-2">
+                <p className="text-purple-300 text-xl font-serif">{item.name}</p>
+                <p className="text-gray-400 text-sm animate-pulse">Hold to imbue with your will.</p>
             </div>
         </div>
     );
 };
 
-const SlotPurchaseModal = ({ isOpen, onClose, onPurchase, isProcessing }: { isOpen: boolean, onClose: () => void, onPurchase: () => void, isProcessing: boolean }) => {
-    if (!isOpen) return null;
+const Step6_Cone = ({ spell, onNext }: { spell: GeneratedWiccanSpell, onNext: () => void }) => {
+    const [castProgress, setCastProgress] = useState(0);
+    const [isCasting, setIsCasting] = useState(false);
+    const soundRef = useRef<any>(null);
+
+    useEffect(() => {
+        let interval: NodeJS.Timeout;
+        if (isCasting) {
+             soundRef.current = playSound('/audio/sfx-chaos-hold.mp3', 0.4, true);
+            interval = setInterval(() => {
+                setCastProgress(p => {
+                    if (p >= 100) {
+                        if(soundRef.current) soundRef.current.stop();
+                        playSound('/audio/sfx-chaos-explosion.mp3', 0.6).play();
+                        onNext();
+                        return 100;
+                    }
+                    return p + (100 / (CAST_DURATION / 50)); 
+                });
+            }, 50);
+        } else {
+            if(soundRef.current) soundRef.current.stop();
+        }
+        return () => { clearInterval(interval); if(soundRef.current) soundRef.current.stop(); };
+    }, [isCasting, onNext]);
+
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-6 animate-in fade-in">
-            <div className="bg-[#1a1a2e] border border-amber-500/50 rounded-xl p-8 max-w-sm w-full text-center shadow-[0_0_50px_rgba(251,191,36,0.2)]">
-                <BookOpen size={48} className="text-amber-400 mx-auto mb-4" />
-                <h3 className="text-xl font-serif text-amber-100 mb-2">Grimoire Full</h3>
-                <p className="text-gray-400 text-sm mb-6">
-                    Your book of shadows has reached its capacity. Expand your grimoire by 5 slots to continue saving your workings.
+        <div className="flex flex-col items-center justify-center h-full relative">
+            {/* Background Chant */}
+            <div className="absolute inset-0 flex items-center justify-center opacity-40 pointer-events-none select-none">
+                 <p className="text-center font-serif text-3xl md:text-5xl text-purple-500/50 leading-loose whitespace-pre-line px-8 blur-[1px]">
+                     {spell.central_chant}
+                 </p>
+            </div>
+            
+            <div 
+                className="relative z-10 w-64 h-64 md:w-80 md:h-80 cursor-pointer active:scale-95 transition-transform"
+                onMouseDown={() => setIsCasting(true)}
+                onMouseUp={() => setIsCasting(false)}
+                onTouchStart={() => setIsCasting(true)}
+                onTouchEnd={() => setIsCasting(false)}
+            >
+                <PentagramIcon className={`w-full h-full ${isCasting ? 'text-amber-400 drop-shadow-[0_0_25px_gold]' : 'text-purple-900'} transition-colors duration-1000`} isTracing={isCasting} />
+                
+                {/* Visual Feedback for Power Building */}
+                {isCasting && (
+                    <motion.div 
+                        initial={{ opacity: 0, scale: 0.5 }}
+                        animate={{ opacity: 1, scale: 1.2 }}
+                        className="absolute inset-0 bg-amber-500/20 rounded-full blur-2xl animate-pulse"
+                    />
+                )}
+            </div>
+            
+            <div className="mt-12 text-center relative z-20">
+                <p className="text-2xl text-amber-100 font-serif mb-2">
+                    {isCasting ? "RAISING THE CONE OF POWER..." : "Hold the Pentagram"}
                 </p>
-                <div className="flex flex-col gap-3">
-                    <button onClick={onPurchase} disabled={isProcessing} className="w-full flex items-center justify-center gap-2 py-3 bg-amber-700 hover:bg-amber-600 text-white font-bold rounded uppercase tracking-wider text-xs transition-colors disabled:opacity-50">
-                        {isProcessing ? "Expanding..." : "Expand Storage (-10 Aether)"}
-                    </button>
-                    <button onClick={onClose} className="text-gray-500 hover:text-white text-xs underline">Cancel</button>
-                </div>
+                <p className="text-sm text-purple-300">Channel your energy into the center.</p>
             </div>
         </div>
     );
 };
 
+const Step7_Sending = ({ onNext }: { onNext: () => void }) => {
+    useEffect(() => {
+        const timer = setTimeout(onNext, SENDING_DURATION);
+        return () => clearTimeout(timer);
+    }, [onNext]);
+    
+    return (
+        <div className="w-full h-full flex items-center justify-center bg-white/5 relative overflow-hidden">
+             {/* Simple Particle Effect Mockup */}
+             {[...Array(20)].map((_, i) => (
+                 <motion.div 
+                    key={i}
+                    initial={{ x: 0, y: 0, opacity: 1, scale: 0 }}
+                    animate={{ 
+                        x: (Math.random() - 0.5) * 800, 
+                        y: (Math.random() - 0.5) * 800, 
+                        opacity: 0, 
+                        scale: Math.random() * 2 
+                    }}
+                    transition={{ duration: 1.5, ease: "easeOut" }}
+                    className="absolute w-4 h-4 bg-amber-200 rounded-full blur-sm"
+                 />
+             ))}
+            <h1 className="text-4xl md:text-7xl font-serif text-transparent bg-clip-text bg-gradient-to-r from-amber-100 to-purple-300 animate-pulse drop-shadow-[0_0_30px_rgba(251,191,36,0.6)]">
+                RELEASED
+            </h1>
+        </div>
+    );
+};
+
+const Step8_Closing = ({ onComplete }: { onComplete: () => void }) => {
+    const sprite = findSprite("Grounding Roots");
+    return (
+        <div className="flex flex-col items-center justify-center h-full gap-8">
+            <h2 className="text-2xl font-serif text-purple-200">Ground the Energy</h2>
+            <button onClick={() => { playSound('/audio/earth.mp3', 0.5).play(); onComplete(); }} className="w-64 h-64 relative group cursor-pointer">
+                <div className="absolute inset-0 bg-green-900/20 rounded-full blur-2xl group-hover:bg-green-800/40 transition-colors duration-700" />
+                <div className="relative w-full h-full opacity-80 group-hover:opacity-100 transition-opacity duration-500 scale-100 group-hover:scale-105">
+                     {sprite ? (
+                         <Sprite sheetPath={sprite.sheet.path} x={sprite.itemInfo.x} y={sprite.itemInfo.y} spriteWidth={sprite.sheet.spriteSize.width} spriteHeight={sprite.sheet.spriteSize.height} sheetWidth={sprite.sheet.sheetSize.width} sheetHeight={sprite.sheet.sheetSize.height} />
+                     ) : (
+                        <div className="w-full h-full flex items-center justify-center"><Sparkles size={64} className="text-green-500" /></div>
+                     )}
+                </div>
+            </button>
+            <p className="text-gray-400 font-serif italic text-lg">Touch the Earth to open the circle.</p>
+        </div>
+    );
+};
+
+const Step9_Result = ({ spell, onSave, isSaving, isSaved, onReset }: any) => (
+    <div className="flex flex-col items-center justify-center h-full gap-8 text-center max-w-lg mx-auto animate-in fade-in zoom-in duration-700">
+        <BookOpen size={64} className="text-amber-200 mb-4 drop-shadow-[0_0_15px_gold]" />
+        <h2 className="text-3xl md:text-4xl font-serif text-amber-100 leading-tight drop-shadow-md">{spell.affirmation}</h2>
+        <p className="text-purple-300 text-lg">The ritual is woven into the tapestry of fate.</p>
+        <div className="flex flex-col gap-4 w-full px-8 mt-4">
+            <button onClick={onSave} disabled={isSaved || isSaving} className="w-full py-4 bg-indigo-900/80 border border-indigo-500 rounded-lg text-indigo-100 flex items-center justify-center gap-3 hover:bg-indigo-800 transition-colors font-serif text-lg">
+                {isSaved ? <Check /> : <Save />} {isSaved ? "Recorded in Grimoire" : "Save Record (1 Credit)"}
+            </button>
+            <button onClick={onReset} className="w-full py-4 bg-gray-800/60 border border-gray-600 rounded-lg text-gray-300 hover:bg-gray-700 transition-colors font-serif">
+                Return to Altar
+            </button>
+        </div>
+    </div>
+);
 
 export default WiccaMagick;
-// --- END OF FILE src/app/components/WiccaMagick.tsx ---

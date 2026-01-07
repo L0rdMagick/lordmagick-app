@@ -1,3 +1,5 @@
+// --- START OF FILE src/lib/types.ts ---
+
 import type { Session } from '@supabase/supabase-js';
 
 export interface FormData {
@@ -85,13 +87,27 @@ export interface WiccanIngredient {
   incantation?: string;      
 }
 
+// NEW: Helper types for High Rituals
+export interface WiccanDeitySuggestion {
+    name: string;
+    title: string;
+    pantheon: string;
+    description: string;
+}
+
+export interface TransitionalIncantations {
+    sanctification: string;
+    circle_casting: string;
+    invocation: string;
+    closing: string;
+}
+
 export interface GeneratedWiccanSpell {
   title: string;
   incantation?: string; 
   symbolic_ingredients: WiccanIngredient[];
   central_chant: string;
   affirmation: string;
-  // NEW: Add this optional field
   elemental_chants?: {
     Spirit: string;
     Air: string;
@@ -99,6 +115,9 @@ export interface GeneratedWiccanSpell {
     Water: string;
     Earth: string;
   };
+  // NEW: Optional fields for High Ritual (AI Generated)
+  transitional_incantations?: TransitionalIncantations;
+  suggested_deities?: WiccanDeitySuggestion[];
 }
 
 // --- Love Spell Types (MOVED HERE) ---
