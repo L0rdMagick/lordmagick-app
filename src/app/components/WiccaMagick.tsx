@@ -1,11 +1,10 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSearchParams } from 'next/navigation';
 import type { Session, GeneratedWiccanSpell, WiccanDeitySuggestion } from '@/lib/types';
-import Link from 'next/link';
 
 // Services
 import { generateWiccanSpell, saveSpell } from '@/lib/services/geminiService';
@@ -22,17 +21,17 @@ import LoadingSpinner from './LoadingSpinner';
 import { PentagramIcon } from './icons';
 import { Sprite } from './Sprite';
 import { findSprite } from '@/lib/spriteLibrary';
-import { Book, Wand2, Sparkles, Save, Check, AlertTriangle, BookOpen, Coins } from 'lucide-react';
+import { Wand2, Save, Check, BookOpen, ArrowRight } from 'lucide-react';
 
 // --- Configuration ---
 const ASSET_PATH = "/images/Spells/Wicca Tradition General";
-const CHARGE_DURATION_ELEMENT = 5000;
+const CHARGE_DURATION_ELEMENT = 7000; // Time to hold element
 const CHARGE_DURATION_INGREDIENT = 6000;
-const CAST_DURATION = 13000;
+const CAST_DURATION = 13000; // Matches the 13 count
 const SENDING_DURATION = 4000;
 const SERVICE_SLUG = 'ai_wicca_magick'; 
 
-// --- Standard Ritual Data ---
+// --- Standard Ritual Data (Free Tier) ---
 const STANDARD_WICCAN_SPELL: GeneratedWiccanSpell = {
     title: "Circle of Elemental Balance",
     transitional_incantations: {
@@ -68,73 +67,54 @@ const STANDARD_WICCAN_SPELL: GeneratedWiccanSpell = {
 const playSound = (src: string, volume: number = 0.5, loop: boolean = false): { play: () => void; stop: () => void; } => {
     const win = (globalThis as any).window;
     if (typeof win === 'undefined') return { play: () => {}, stop: () => {} };
-    
     const AudioCtor = win.Audio;
     const audio = new AudioCtor(src);
     audio.volume = volume;
     audio.loop = loop;
-    
-    const play = () => audio.play().catch((e: any) => console.error(`Failed to play sound: ${src}`, e));
-    const stop = () => { 
-        audio.pause(); 
-        audio.currentTime = 0; 
-    };
+    const play = () => audio.play().catch((e: any) => console.error(`Failed to play: ${src}`, e));
+    const stop = () => { audio.pause(); audio.currentTime = 0; };
     return { play, stop };
 };
 
-// --- Helper Components for Physics/Animation ---
+// --- Helper Components ---
 
-// Restored: SVG Ring Animation for holding items
-const InteractionRing = ({ isHolding, isComplete, duration }: { isHolding: boolean, isComplete: boolean, duration: number }) => {
-    return (
-        <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg) scale(1.2)' }}>
-            {/* Background Track */}
-            <circle cx="50" cy="50" r="48" stroke="rgba(255,255,255,0.1)" strokeWidth="4" fill="transparent" />
-            
-            {/* Filling Ring */}
-            <motion.circle
-                cx="50" cy="50" r="48"
-                stroke="rgba(168, 85, 247, 1)" // Purple-500
-                strokeWidth="4"
-                fill="transparent"
-                strokeLinecap="round"
-                pathLength="1"
-                strokeDasharray="1"
-                initial={{ strokeDashoffset: 1 }}
-                animate={{ strokeDashoffset: isComplete ? 0 : (isHolding ? 0 : 1) }}
-                transition={{ duration: isComplete ? 0 : duration / 1000, ease: 'linear' }}
-                className="drop-shadow-[0_0_8px_rgba(168,85,247,0.8)]"
-            />
-        </svg>
-    );
-};
+const InteractionRing = ({ isHolding, isComplete, duration }: { isHolding: boolean, isComplete: boolean, duration: number }) => (
+    <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg) scale(1.2)' }}>
+        <circle cx="50" cy="50" r="48" stroke="rgba(255,255,255,0.1)" strokeWidth="4" fill="transparent" />
+        <motion.circle
+            cx="50" cy="50" r="48"
+            stroke="rgba(168, 85, 247, 1)"
+            strokeWidth="4"
+            fill="transparent"
+            strokeLinecap="round"
+            pathLength="1"
+            strokeDasharray="1"
+            initial={{ strokeDashoffset: 1 }}
+            animate={{ strokeDashoffset: isComplete ? 0 : (isHolding ? 0 : 1) }}
+            transition={{ duration: isComplete ? 0 : duration / 1000, ease: 'linear' }}
+            className="drop-shadow-[0_0_8px_rgba(168,85,247,0.8)]"
+        />
+    </svg>
+);
 
-// New: Speak First Overlay
 const IncantationOverlay = ({ text, onConfirm, isVisible }: { text: string, onConfirm: () => void, isVisible: boolean }) => (
     <AnimatePresence>
         {isVisible && (
             <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.5 }}
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                 className="absolute inset-0 z-50 bg-black/90 backdrop-blur-sm flex items-center justify-center p-6"
             >
                 <motion.div 
-                    initial={{ scale: 0.95, y: 10 }}
-                    animate={{ scale: 1, y: 0 }}
-                    transition={{ delay: 0.2 }}
+                    initial={{ scale: 0.95, y: 10 }} animate={{ scale: 1, y: 0 }}
                     className="relative max-w-md w-full aspect-[3/4]"
                 >
                     <Image src={`${ASSET_PATH}/wicca_incantation_scroll.png`} alt="Incantation" layout="fill" objectFit="contain" priority />
                     <div className="absolute inset-0 flex flex-col items-center justify-center p-12 text-center">
                         <h3 className="font-serif text-[#4a2e1c]/70 text-sm mb-6 uppercase tracking-widest">Spoken Word</h3>
-                        <p className="font-serif text-[#4a2e1c] text-xl md:text-2xl leading-relaxed whitespace-pre-line drop-shadow-sm">
-                            {text}
-                        </p>
+                        <p className="font-serif text-[#4a2e1c] text-xl md:text-2xl leading-relaxed whitespace-pre-line drop-shadow-sm">{text}</p>
                         <button 
                             onClick={() => { playSound('/audio/sfx-chaos-activate.mp3', 0.3).play(); onConfirm(); }}
-                            className="mt-10 px-8 py-2 border-y-2 border-[#4a2e1c] text-[#4a2e1c] hover:bg-[#4a2e1c]/10 font-serif font-bold uppercase tracking-widest transition-all scale-100 hover:scale-105"
+                            className="mt-10 px-8 py-2 border-y-2 border-[#4a2e1c] text-[#4a2e1c] hover:bg-[#4a2e1c]/10 font-serif font-bold uppercase tracking-widest transition-all hover:scale-105"
                         >
                             So Mote It Be
                         </button>
@@ -150,9 +130,9 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
     const searchParams = useSearchParams();
     const loadId = searchParams.get('loadId');
 
-    // 0:Intro -> 1:Intention -> 2:Circle -> 3:Quarters -> 4:Deities -> 5:Ingredients -> 6:Cone -> 7:Sending -> 8:Closing -> 9:Result
+    // Steps: 0:Intro -> 1:Intention -> 2:Circle -> 3:Quarters -> 4:Deities -> 5:Summary -> 6:Ingredients -> 7:Cone -> 8:Sending -> 9:Closing -> 10:Result
     const [ritualStep, setRitualStep] = useState(0);
-    const [subStep, setSubStep] = useState<'incantation' | 'action'>('action'); // Default to action for Intro/Intention steps
+    const [subStep, setSubStep] = useState<'incantation' | 'action'>('action'); 
 
     const [loading, setLoading] = useState(false);
     const [loadingMessage, setLoadingMessage] = useState('');
@@ -174,15 +154,16 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
     const [isSaved, setIsSaved] = useState(false);
     const [isReplayMode, setIsReplayMode] = useState(false);
 
-    // --- Hydration ---
+    // --- Hydration (Load from Grimoire) ---
     useEffect(() => {
         if (loadId) {
             const load = async () => {
                 setLoading(true);
-                setLoadingMessage("Consulting the Grimoire...");
+                setLoadingMessage("Opening the Book of Shadows...");
                 try {
                     const s = await getSpellById(loadId);
                     if (s) {
+                        // Reconstruct full spell object from DB
                         const d = typeof s.ritual_data === 'string' ? JSON.parse(s.ritual_data) : s.ritual_data;
                         setIntention(s.intention);
                         setSituation(d.situation || '');
@@ -192,7 +173,7 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
                         setIsSaved(true);
                         setRitualStep(1);
                     }
-                } catch { setError("Spell not found."); } finally { setLoading(false); }
+                } catch { setError("Spell not found in Grimoire."); } finally { setLoading(false); }
             };
             load();
         }
@@ -207,15 +188,16 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
             setRitualStep(2);
             setSubStep('incantation');
         } else {
+            // AI Mode
             if (!session?.user?.id) { setError("Sign in required."); return; }
             const paid = await spendAether(session.user.id);
             if (!paid) return;
             
             setLoading(true);
-            setLoadingMessage("Weaving the Spell...");
+            setLoadingMessage("Communing with the Spirits...");
             try {
                 const s = await generateWiccanSpell({ intention, focalPoint: 'The Divine', moonPhase: 'Current', situation });
-                // Fallbacks
+                // Fallbacks to ensure app doesn't crash if AI misses a field
                 if (!s.transitional_incantations) s.transitional_incantations = STANDARD_WICCAN_SPELL.transitional_incantations;
                 if (!s.elemental_chants) s.elemental_chants = STANDARD_WICCAN_SPELL.elemental_chants;
                 if (!s.suggested_deities) s.suggested_deities = STANDARD_WICCAN_SPELL.suggested_deities;
@@ -230,15 +212,15 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
     const nextStep = () => {
         const next = ritualStep + 1;
         setRitualStep(next);
-        // Steps 7 (Sending) and 9 (Result) have no incantation overlay. Step 6 (Cone) has intrinsic chant.
-        if ([6, 7, 9].includes(next)) setSubStep('action');
+        // Steps that DON'T need the scroll overlay:
+        // 5 (Summary), 7 (Cone - handled internally), 8 (Sending), 10 (Result)
+        if ([5, 7, 8, 10].includes(next)) setSubStep('action');
         else setSubStep('incantation');
     };
 
     const handleIncantationConfirm = () => setSubStep('action');
 
-    // --- Complex Interaction Handlers ---
-
+    // --- Handlers ---
     const handleElementCharge = (name: string) => {
         if (!chargedElements.includes(name)) {
             setChargedElements(prev => [...prev, name]);
@@ -260,22 +242,29 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
         if (!generatedSpell || isSaved) return;
         setIsSaving(true);
         try {
+            // Save the ENTIRE spell object to ritual_data so replay works 100% locally
+            const ritualData = { 
+                intention, 
+                situation, 
+                selectedDeity, 
+                spell: generatedSpell // This contains all generated text/ingredients
+            };
+
             await saveSpell(session?.user?.id || 'anon', {
                 name: `Wicca: ${intention.substring(0,20)}`,
                 intention,
                 incantation: generatedSpell.central_chant,
                 tradition: 'WICCA',
-                ritual_data: { intention, situation, selectedDeity, spell: generatedSpell }
+                ritual_data: ritualData 
             });
             setIsSaved(true);
             playSound('/audio/sfx-chaos-activate.mp3', 0.5).play();
         } catch (e: any) {
             if (e.message === 'GRIMOIRE_FULL') setShowSlotModal(true);
-            else setError("Failed to save.");
+            else setError("Failed to scribe into Grimoire.");
         } finally { setIsSaving(false); }
     };
 
-    // --- View Resolver ---
     const getCurrentIncantation = () => {
         if (!generatedSpell) return "";
         const trans = generatedSpell.transitional_incantations || STANDARD_WICCAN_SPELL.transitional_incantations;
@@ -283,8 +272,8 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
             case 2: return trans?.sanctification || "By my will, I begin.";
             case 3: return "Guardians of the Watchtowers,\nHail and Welcome!";
             case 4: return trans?.invocation || "Spirits of Light, draw near.";
-            case 5: return generatedSpell.symbolic_ingredients[chargingIndex]?.incantation || "I charge this item.";
-            case 8: return trans?.closing || "The Circle is open.";
+            case 6: return generatedSpell.symbolic_ingredients[chargingIndex]?.incantation || "I charge this item.";
+            case 9: return trans?.closing || "The Circle is open.";
             default: return "";
         }
     };
@@ -301,13 +290,14 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
             case 0: return <Step0_Intro onNext={() => setRitualStep(1)} />;
             case 1: return <Step1_Intention intention={intention} setIntention={setIntention} situation={situation} setSituation={setSituation} onBegin={handleBegin} isReplay={isReplayMode} cost={cost} />;
             case 2: return <Step2_CastCircle onComplete={nextStep} />;
-            case 3: return <Step3_Quarters charged={chargedElements} onCharge={handleElementCharge} onNext={nextStep} />;
+            case 3: return <Step3_Quarters spell={generatedSpell} charged={chargedElements} onCharge={handleElementCharge} onNext={nextStep} />;
             case 4: return <Step4_Deities suggestions={generatedSpell?.suggested_deities || []} onSelect={(d) => { setSelectedDeity(d); nextStep(); }} />;
-            case 5: return <Step5_Ingredients spell={generatedSpell!} index={chargingIndex} onComplete={handleIngredientComplete} />;
-            case 6: return <Step6_Cone spell={generatedSpell!} onNext={nextStep} />;
-            case 7: return <Step7_Sending onNext={nextStep} />;
-            case 8: return <Step8_Closing onComplete={nextStep} />;
-            case 9: return <Step9_Result spell={generatedSpell!} onSave={handleSave} isSaving={isSaving} isSaved={isSaved} onReset={() => window.location.reload()} />;
+            case 5: return <Step5_Summary spell={generatedSpell!} onNext={nextStep} />;
+            case 6: return <Step6_Ingredients spell={generatedSpell!} index={chargingIndex} onComplete={handleIngredientComplete} />;
+            case 7: return <Step7_Cone spell={generatedSpell!} onNext={nextStep} />;
+            case 8: return <Step8_Sending onNext={nextStep} />;
+            case 9: return <Step9_Closing onComplete={nextStep} />;
+            case 10: return <Step10_Result spell={generatedSpell!} onSave={handleSave} isSaving={isSaving} isSaved={isSaved} onReset={() => window.location.reload()} />;
             default: return null;
         }
     };
@@ -354,13 +344,9 @@ const Step0_Intro = ({ onNext }: { onNext: () => void }) => (
         </div>
         <div>
             <h2 className="text-3xl md:text-4xl font-serif text-purple-100 mb-3 drop-shadow-lg">The High Ritual</h2>
-            <p className="text-purple-300/80 max-w-sm mx-auto font-serif italic text-lg">
-                "Speak the words to unlock the path.<br/>Trace the signs to bind the will."
-            </p>
+            <p className="text-purple-300/80 max-w-sm mx-auto font-serif italic text-lg">"Speak the words to unlock the path.<br/>Trace the signs to bind the will."</p>
         </div>
-        <button onClick={onNext} className="px-10 py-4 bg-purple-900/40 border border-purple-400/50 rounded-full text-purple-100 hover:bg-purple-800/60 transition-all font-serif uppercase tracking-widest backdrop-blur-md shadow-[0_0_20px_rgba(168,85,247,0.3)] hover:shadow-[0_0_30px_rgba(168,85,247,0.5)]">
-            Enter the Circle
-        </button>
+        <button onClick={onNext} className="px-10 py-4 bg-purple-900/40 border border-purple-400/50 rounded-full text-purple-100 hover:bg-purple-800/60 transition-all font-serif uppercase tracking-widest backdrop-blur-md shadow-[0_0_20px_rgba(168,85,247,0.3)]">Enter the Circle</button>
     </div>
 );
 
@@ -373,19 +359,24 @@ const Step1_Intention = ({ intention, setIntention, situation, setSituation, onB
                 <input 
                     value={intention} onChange={e => setIntention(e.target.value)}
                     placeholder="My Intention..." readOnly={isReplay}
-                    className="w-full bg-transparent border-b-2 border-[#4a2e1c]/50 text-center text-[#4a2e1c] placeholder-[#4a2e1c]/40 font-serif text-xl outline-none py-2 focus:border-[#4a2e1c] transition-colors"
+                    className="w-full bg-transparent border-b-2 border-[#4a2e1c]/50 text-center text-[#4a2e1c] placeholder-[#4a2e1c]/40 font-serif text-xl outline-none py-2"
                 />
                 <textarea 
                     value={situation} onChange={e => setSituation(e.target.value)}
-                    placeholder="Describe the situation (Optional)..." readOnly={isReplay}
+                    placeholder="Describe the situation..." readOnly={isReplay}
                     className="w-full h-24 bg-transparent text-center text-[#4a2e1c] placeholder-[#4a2e1c]/40 font-serif text-sm outline-none resize-none pt-2"
                 />
             </div>
         </div>
-        <div className="flex gap-4 mt-2">
-             <button onClick={() => onBegin('standard')} className="px-6 py-3 bg-slate-800/80 border border-slate-600 rounded-lg text-slate-300 font-serif hover:bg-slate-700">Standard (Free)</button>
-             <button onClick={() => onBegin('ai')} className="px-6 py-3 bg-purple-900/80 border border-purple-500 rounded-lg text-purple-100 font-serif hover:bg-purple-800 shadow-[0_0_15px_rgba(168,85,247,0.3)]">High Ritual ({cost} Aether)</button>
-        </div>
+        {!isReplay && (
+            <div className="flex gap-4 mt-2">
+                 <button onClick={() => onBegin('standard')} className="px-6 py-3 bg-slate-800/80 border border-slate-600 rounded-lg text-slate-300 font-serif">Standard (Free)</button>
+                 <button onClick={() => onBegin('ai')} className="px-6 py-3 bg-purple-900/80 border border-purple-500 rounded-lg text-purple-100 font-serif shadow-[0_0_15px_rgba(168,85,247,0.3)]">High Ritual ({cost} Aether)</button>
+            </div>
+        )}
+        {isReplay && (
+            <button onClick={() => onBegin('standard')} className="px-6 py-3 bg-purple-900/80 border border-purple-500 rounded-lg text-purple-100 font-serif">Begin Saved Ritual</button>
+        )}
     </div>
 );
 
@@ -394,13 +385,14 @@ const Step2_CastCircle = ({ onComplete }: { onComplete: () => void }) => {
     const [isHolding, setIsHolding] = useState(false);
     const soundRef = useRef<any>(null);
 
+    // Trace Logic
     useEffect(() => {
         let interval: NodeJS.Timeout;
         if (isHolding && progress < 100) {
             soundRef.current = playSound('/audio/sfx-chaos-hold.mp3', 0.3, true);
             interval = setInterval(() => {
                 setProgress(p => {
-                    const newP = p + 1.5;
+                    const newP = p + 1.2; // Speed of trace
                     if (newP >= 100) {
                         if(soundRef.current) soundRef.current.stop();
                         playSound('/audio/sfx-spell-room-portal.mp3', 0.5).play();
@@ -420,9 +412,16 @@ const Step2_CastCircle = ({ onComplete }: { onComplete: () => void }) => {
         <div className="flex flex-col items-center justify-center h-full gap-8">
             <div className="text-center">
                 <h2 className="text-3xl font-serif text-purple-100 drop-shadow-md">Cast the Circle</h2>
-                <p className="text-purple-300/60 italic mt-2">Hold to trace the boundary between worlds.</p>
+                <p className="text-purple-300/60 italic mt-2">Touch and hold to trace the sacred boundary.</p>
             </div>
-            <div className="relative w-80 h-80 md:w-96 md:h-96 flex items-center justify-center">
+            <div 
+                className="relative w-80 h-80 md:w-96 md:h-96 flex items-center justify-center cursor-pointer select-none"
+                onMouseDown={() => setIsHolding(true)}
+                onMouseUp={() => setIsHolding(false)}
+                onMouseLeave={() => setIsHolding(false)}
+                onTouchStart={() => setIsHolding(true)}
+                onTouchEnd={() => setIsHolding(false)}
+            >
                 {/* Visual Circle */}
                 <svg className="absolute w-full h-full rotate-[-90deg]" viewBox="0 0 100 100">
                     <circle cx="50" cy="50" r="45" fill="none" stroke="#333" strokeWidth="2" strokeDasharray="4 2" />
@@ -437,36 +436,43 @@ const Step2_CastCircle = ({ onComplete }: { onComplete: () => void }) => {
                         className="drop-shadow-[0_0_15px_rgba(168,85,247,0.8)]"
                     />
                 </svg>
-                {/* Interaction Button */}
-                <button
-                    onMouseDown={() => setIsHolding(true)}
-                    onMouseUp={() => setIsHolding(false)}
-                    onMouseLeave={() => setIsHolding(false)}
-                    onTouchStart={() => setIsHolding(true)}
-                    onTouchEnd={() => setIsHolding(false)}
-                    className="absolute z-10 w-28 h-28 rounded-full bg-purple-900/20 border border-purple-500/50 backdrop-blur-sm flex flex-col items-center justify-center text-purple-200 animate-pulse active:scale-95 transition-transform hover:bg-purple-900/40"
-                >
-                    <Wand2 size={32} className="mb-1 text-purple-300" />
-                    <span className="text-[10px] uppercase tracking-widest font-bold text-purple-100">Cast</span>
-                </button>
+                {/* Prompt in center */}
+                {!isHolding && progress < 100 && <Wand2 className="text-purple-500/50 animate-pulse" size={48} />}
             </div>
         </div>
     );
 };
 
-const Step3_Quarters = ({ charged, onCharge, onNext }: { charged: string[], onCharge: (n: string) => void, onNext: () => void }) => {
-    // We restore the "Hold to Charge" logic individually for each quarter
+const Step3_Quarters = ({ spell, charged, onCharge, onNext }: { spell: GeneratedWiccanSpell | null, charged: string[], onCharge: (n: string) => void, onNext: () => void }) => {
+    // We display the SPECIFIC text for each element when holding
+    const [activeElement, setActiveElement] = useState<string | null>(null);
+
     const quarters = [
-        { name: "Air", sprite: "Air Sigil", pos: { top: '15%', left: '50%' } },
-        { name: "Fire", sprite: "Fire Sigil", pos: { top: '40%', left: '85%' } },
-        { name: "Water", sprite: "Water Sigil", pos: { top: '85%', left: '75%' } },
-        { name: "Earth", sprite: "Earth Sigil", pos: { top: '85%', left: '25%' } },
-        { name: "Spirit", sprite: "Spirit Sigil", pos: { top: '40%', left: '15%' } }
+        { name: "Air", sprite: "Air Sigil", pos: { top: '15%', left: '50%' }, chant: spell?.elemental_chants?.Air },
+        { name: "Fire", sprite: "Fire Sigil", pos: { top: '40%', left: '85%' }, chant: spell?.elemental_chants?.Fire },
+        { name: "Water", sprite: "Water Sigil", pos: { top: '85%', left: '75%' }, chant: spell?.elemental_chants?.Water },
+        { name: "Earth", sprite: "Earth Sigil", pos: { top: '85%', left: '25%' }, chant: spell?.elemental_chants?.Earth },
+        { name: "Spirit", sprite: "Spirit Sigil", pos: { top: '40%', left: '15%' }, chant: spell?.elemental_chants?.Spirit }
     ];
 
     return (
         <div className="flex flex-col items-center justify-center h-full relative">
-            <h2 className="absolute top-4 text-2xl font-serif text-purple-200 text-center w-full">Call the Guardians</h2>
+            <h2 className="absolute top-4 text-2xl font-serif text-purple-200 text-center w-full">
+                {activeElement ? activeElement : "Call the Guardians"}
+            </h2>
+            
+            {/* The Specific Incantation Text Displayed While Holding */}
+            <div className="absolute top-16 w-full text-center px-4 h-12 flex items-center justify-center z-20 pointer-events-none">
+                 {activeElement && (
+                    <motion.p 
+                        initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                        className="text-amber-200 font-serif italic text-sm md:text-lg drop-shadow-md whitespace-pre-line"
+                    >
+                        {quarters.find(q => q.name === activeElement)?.chant || `Hail, Watchtower of the ${activeElement}!`}
+                    </motion.p>
+                 )}
+            </div>
+
             <div className="relative w-full max-w-md aspect-square mt-8">
                 {quarters.map(q => (
                     <div key={q.name} className="absolute transform -translate-x-1/2 -translate-y-1/2" style={q.pos}>
@@ -475,6 +481,8 @@ const Step3_Quarters = ({ charged, onCharge, onNext }: { charged: string[], onCh
                             spriteName={q.sprite} 
                             isCharged={charged.includes(q.name)} 
                             onComplete={() => onCharge(q.name)} 
+                            onStartHold={() => setActiveElement(q.name)}
+                            onEndHold={() => setActiveElement(null)}
                         />
                     </div>
                 ))}
@@ -488,35 +496,35 @@ const Step3_Quarters = ({ charged, onCharge, onNext }: { charged: string[], onCh
     );
 };
 
-const RestoredChargingSigil = ({ name, spriteName, isCharged, onComplete }: any) => {
+const RestoredChargingSigil = ({ name, spriteName, isCharged, onComplete, onStartHold, onEndHold }: any) => {
     const [isHolding, setIsHolding] = useState(false);
     const soundRef = useRef<any>(null);
     const sprite = findSprite(spriteName);
+    const soundFile = `/audio/${name.toLowerCase()}.mp3`; // Maps to air.mp3, fire.mp3 etc.
 
     useEffect(() => {
         let timer: NodeJS.Timeout;
         if (isHolding && !isCharged) {
-            soundRef.current = playSound('/audio/sfx-chaos-hold.mp3', 0.3, true);
+            soundRef.current = playSound(soundFile, 0.4, true); // Play elemental drone
             timer = setTimeout(onComplete, CHARGE_DURATION_ELEMENT);
         }
         return () => { clearTimeout(timer); if(soundRef.current) soundRef.current.stop(); };
-    }, [isHolding, isCharged, onComplete]);
+    }, [isHolding, isCharged, onComplete, soundFile]);
+
+    const handleDown = () => { setIsHolding(true); onStartHold(); };
+    const handleUp = () => { setIsHolding(false); onEndHold(); };
 
     if (!sprite) return null;
 
     return (
         <div 
             className="w-24 h-24 relative"
-            onMouseDown={() => setIsHolding(true)}
-            onMouseUp={() => setIsHolding(false)}
-            onMouseLeave={() => setIsHolding(false)}
-            onTouchStart={() => setIsHolding(true)}
-            onTouchEnd={() => setIsHolding(false)}
+            onMouseDown={handleDown} onMouseUp={handleUp} onMouseLeave={handleUp}
+            onTouchStart={handleDown} onTouchEnd={handleUp}
         >
              <div className={`w-full h-full transition-all duration-500 ${isCharged ? 'scale-110 brightness-150 saturate-150' : 'grayscale brightness-75'} ${isHolding ? 'scale-105' : ''}`}>
                  <Sprite sheetPath={sprite.sheet.path} x={sprite.itemInfo.x} y={sprite.itemInfo.y} spriteWidth={sprite.sheet.spriteSize.width} spriteHeight={sprite.sheet.spriteSize.height} sheetWidth={sprite.sheet.sheetSize.width} sheetHeight={sprite.sheet.sheetSize.height} />
              </div>
-             {/* The Restored Ring Animation */}
              <InteractionRing isHolding={isHolding} isComplete={isCharged} duration={CHARGE_DURATION_ELEMENT} />
         </div>
     );
@@ -549,21 +557,44 @@ const Step4_Deities = ({ suggestions, onSelect }: { suggestions: WiccanDeitySugg
     </div>
 );
 
-const Step5_Ingredients = ({ spell, index, onComplete }: { spell: GeneratedWiccanSpell, index: number, onComplete: () => void }) => {
+// --- NEW Step: Ingredient Summary ---
+const Step5_Summary = ({ spell, onNext }: { spell: GeneratedWiccanSpell, onNext: () => void }) => (
+    <div className="flex flex-col items-center justify-center h-full gap-6 max-w-2xl mx-auto">
+        <h2 className="text-3xl font-serif text-purple-100 mb-4">The Workings</h2>
+        <p className="text-purple-300 text-center mb-6">Gather these items in your mind's eye.</p>
+        <div className="grid grid-cols-5 gap-4">
+            {spell.symbolic_ingredients.map((ing, i) => {
+                const sprite = findSprite(ing.name) || findSprite("White Candle")!;
+                return (
+                    <div key={i} className="flex flex-col items-center gap-2">
+                        <div className="w-16 h-16 bg-white/5 rounded-lg p-2 border border-white/10">
+                            <Sprite sheetPath={sprite.sheet.path} x={sprite.itemInfo.x} y={sprite.itemInfo.y} spriteWidth={sprite.sheet.spriteSize.width} spriteHeight={sprite.sheet.spriteSize.height} sheetWidth={sprite.sheet.sheetSize.width} sheetHeight={sprite.sheet.sheetSize.height} />
+                        </div>
+                        <p className="text-[10px] text-center text-gray-400 font-serif">{ing.name}</p>
+                    </div>
+                )
+            })}
+        </div>
+        <button onClick={onNext} className="mt-8 flex items-center gap-2 px-8 py-3 bg-purple-900 border border-purple-500 rounded text-purple-100 hover:bg-purple-800 transition-colors font-serif uppercase tracking-widest">
+            Proceed <ArrowRight size={16} />
+        </button>
+    </div>
+);
+
+const Step6_Ingredients = ({ spell, index, onComplete }: { spell: GeneratedWiccanSpell, index: number, onComplete: () => void }) => {
     const item = spell.symbolic_ingredients[index];
     const sprite = findSprite(item.name) || findSprite("White Candle")!;
     const [holding, setHolding] = useState(false);
     const [complete, setComplete] = useState(false);
     const soundRef = useRef<any>(null);
 
-    // Restored complex charge logic
     useEffect(() => {
         let timer: NodeJS.Timeout;
         if (holding && !complete) {
             soundRef.current = playSound('/audio/sfx-chaos-hold.mp3', 0.3, true);
             timer = setTimeout(() => {
                 setComplete(true);
-                setTimeout(onComplete, 500); // Slight delay after completion to show effect
+                setTimeout(onComplete, 500); 
             }, CHARGE_DURATION_INGREDIENT);
         }
         return () => { clearTimeout(timer); if(soundRef.current) soundRef.current.stop(); };
@@ -573,28 +604,19 @@ const Step5_Ingredients = ({ spell, index, onComplete }: { spell: GeneratedWicca
         <div className="flex flex-col items-center justify-center h-full gap-8">
             <h2 className="text-2xl font-serif text-purple-200">Consecrate the Components</h2>
             <div className="relative w-64 h-64 flex items-center justify-center">
-                 {/* Main Ingredient Sprite */}
                 <div 
-                    onMouseDown={() => setHolding(true)}
-                    onMouseUp={() => setHolding(false)}
-                    onTouchStart={() => setHolding(true)}
-                    onTouchEnd={() => setHolding(false)}
+                    onMouseDown={() => setHolding(true)} onMouseUp={() => setHolding(false)}
+                    onTouchStart={() => setHolding(true)} onTouchEnd={() => setHolding(false)}
                     className={`relative z-10 w-48 h-48 transition-all duration-300 ${holding ? 'scale-105' : 'scale-100'} cursor-pointer`}
                 >
                      <Sprite sheetPath={sprite.sheet.path} x={sprite.itemInfo.x} y={sprite.itemInfo.y} spriteWidth={sprite.sheet.spriteSize.width} spriteHeight={sprite.sheet.spriteSize.height} sheetWidth={sprite.sheet.sheetSize.width} sheetHeight={sprite.sheet.sheetSize.height} />
                 </div>
-                
-                {/* Restored Interaction Ring */}
                 <svg className="absolute inset-0 w-full h-full pointer-events-none z-20" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg) scale(1.1)' }}>
                     <circle cx="50" cy="50" r="48" stroke="rgba(255,255,255,0.1)" strokeWidth="2" fill="transparent" />
                     <motion.circle
                         cx="50" cy="50" r="48"
-                        stroke="rgba(168, 85, 247, 1)"
-                        strokeWidth="3"
-                        fill="transparent"
-                        strokeLinecap="round"
-                        pathLength="1"
-                        strokeDasharray="1"
+                        stroke="rgba(168, 85, 247, 1)" strokeWidth="3" fill="transparent" strokeLinecap="round"
+                        pathLength="1" strokeDasharray="1"
                         initial={{ strokeDashoffset: 1 }}
                         animate={{ strokeDashoffset: complete ? 0 : (holding ? 0 : 1) }}
                         transition={{ duration: complete ? 0 : CHARGE_DURATION_INGREDIENT / 1000, ease: 'linear' }}
@@ -603,7 +625,6 @@ const Step5_Ingredients = ({ spell, index, onComplete }: { spell: GeneratedWicca
                 </svg>
                 {complete && <div className="absolute inset-0 bg-purple-500/30 rounded-full animate-ping z-0" />}
             </div>
-            
             <div className="text-center space-y-2">
                 <p className="text-purple-300 text-xl font-serif">{item.name}</p>
                 <p className="text-gray-400 text-sm animate-pulse">Hold to imbue with your will.</p>
@@ -612,10 +633,13 @@ const Step5_Ingredients = ({ spell, index, onComplete }: { spell: GeneratedWicca
     );
 };
 
-const Step6_Cone = ({ spell, onNext }: { spell: GeneratedWiccanSpell, onNext: () => void }) => {
+const Step7_Cone = ({ spell, onNext }: { spell: GeneratedWiccanSpell, onNext: () => void }) => {
     const [castProgress, setCastProgress] = useState(0);
     const [isCasting, setIsCasting] = useState(false);
     const soundRef = useRef<any>(null);
+
+    // Calculate count 1-13 based on progress (0-100)
+    const count = Math.min(13, Math.ceil((castProgress / 100) * 13));
 
     useEffect(() => {
         let interval: NodeJS.Timeout;
@@ -648,65 +672,47 @@ const Step6_Cone = ({ spell, onNext }: { spell: GeneratedWiccanSpell, onNext: ()
             </div>
             
             <div 
-                className="relative z-10 w-64 h-64 md:w-80 md:h-80 cursor-pointer active:scale-95 transition-transform"
-                onMouseDown={() => setIsCasting(true)}
-                onMouseUp={() => setIsCasting(false)}
-                onTouchStart={() => setIsCasting(true)}
-                onTouchEnd={() => setIsCasting(false)}
+                className="relative z-10 w-64 h-64 md:w-80 md:h-80 cursor-pointer active:scale-95 transition-transform flex items-center justify-center"
+                onMouseDown={() => setIsCasting(true)} onMouseUp={() => setIsCasting(false)}
+                onTouchStart={() => setIsCasting(true)} onTouchEnd={() => setIsCasting(false)}
             >
-                <PentagramIcon className={`w-full h-full ${isCasting ? 'text-amber-400 drop-shadow-[0_0_25px_gold]' : 'text-purple-900'} transition-colors duration-1000`} isTracing={isCasting} />
+                <PentagramIcon className={`absolute inset-0 w-full h-full ${isCasting ? 'text-amber-400 drop-shadow-[0_0_25px_gold]' : 'text-purple-900'} transition-colors duration-1000`} isTracing={isCasting} />
                 
-                {/* Visual Feedback for Power Building */}
-                {isCasting && (
-                    <motion.div 
-                        initial={{ opacity: 0, scale: 0.5 }}
-                        animate={{ opacity: 1, scale: 1.2 }}
-                        className="absolute inset-0 bg-amber-500/20 rounded-full blur-2xl animate-pulse"
-                    />
+                {/* 1-13 Counter */}
+                {isCasting && count > 0 && (
+                    <div className="relative z-20 text-8xl font-serif text-white font-bold drop-shadow-[0_0_15px_black] animate-pulse">
+                        {count}
+                    </div>
                 )}
             </div>
             
             <div className="mt-12 text-center relative z-20">
                 <p className="text-2xl text-amber-100 font-serif mb-2">
-                    {isCasting ? "RAISING THE CONE OF POWER..." : "Hold the Pentagram"}
+                    {isCasting ? "RAISING POWER..." : "Hold the Pentagram"}
                 </p>
-                <p className="text-sm text-purple-300">Channel your energy into the center.</p>
             </div>
         </div>
     );
 };
 
-const Step7_Sending = ({ onNext }: { onNext: () => void }) => {
-    useEffect(() => {
-        const timer = setTimeout(onNext, SENDING_DURATION);
-        return () => clearTimeout(timer);
-    }, [onNext]);
-    
+const Step8_Sending = ({ onNext }: { onNext: () => void }) => {
+    useEffect(() => { const timer = setTimeout(onNext, SENDING_DURATION); return () => clearTimeout(timer); }, [onNext]);
     return (
         <div className="w-full h-full flex items-center justify-center bg-white/5 relative overflow-hidden">
-             {/* Simple Particle Effect Mockup */}
              {[...Array(20)].map((_, i) => (
-                 <motion.div 
-                    key={i}
+                 <motion.div key={i}
                     initial={{ x: 0, y: 0, opacity: 1, scale: 0 }}
-                    animate={{ 
-                        x: (Math.random() - 0.5) * 800, 
-                        y: (Math.random() - 0.5) * 800, 
-                        opacity: 0, 
-                        scale: Math.random() * 2 
-                    }}
+                    animate={{ x: (Math.random() - 0.5) * 800, y: (Math.random() - 0.5) * 800, opacity: 0, scale: Math.random() * 2 }}
                     transition={{ duration: 1.5, ease: "easeOut" }}
                     className="absolute w-4 h-4 bg-amber-200 rounded-full blur-sm"
                  />
              ))}
-            <h1 className="text-4xl md:text-7xl font-serif text-transparent bg-clip-text bg-gradient-to-r from-amber-100 to-purple-300 animate-pulse drop-shadow-[0_0_30px_rgba(251,191,36,0.6)]">
-                RELEASED
-            </h1>
+            <h1 className="text-4xl md:text-7xl font-serif text-transparent bg-clip-text bg-gradient-to-r from-amber-100 to-purple-300 animate-pulse drop-shadow-[0_0_30px_rgba(251,191,36,0.6)]">RELEASED</h1>
         </div>
     );
 };
 
-const Step8_Closing = ({ onComplete }: { onComplete: () => void }) => {
+const Step9_Closing = ({ onComplete }: { onComplete: () => void }) => {
     const sprite = findSprite("Grounding Roots");
     return (
         <div className="flex flex-col items-center justify-center h-full gap-8">
@@ -716,9 +722,7 @@ const Step8_Closing = ({ onComplete }: { onComplete: () => void }) => {
                 <div className="relative w-full h-full opacity-80 group-hover:opacity-100 transition-opacity duration-500 scale-100 group-hover:scale-105">
                      {sprite ? (
                          <Sprite sheetPath={sprite.sheet.path} x={sprite.itemInfo.x} y={sprite.itemInfo.y} spriteWidth={sprite.sheet.spriteSize.width} spriteHeight={sprite.sheet.spriteSize.height} sheetWidth={sprite.sheet.sheetSize.width} sheetHeight={sprite.sheet.sheetSize.height} />
-                     ) : (
-                        <div className="w-full h-full flex items-center justify-center"><Sparkles size={64} className="text-green-500" /></div>
-                     )}
+                     ) : <div className="w-full h-full bg-green-500/50 rounded-full" />}
                 </div>
             </button>
             <p className="text-gray-400 font-serif italic text-lg">Touch the Earth to open the circle.</p>
@@ -726,7 +730,7 @@ const Step8_Closing = ({ onComplete }: { onComplete: () => void }) => {
     );
 };
 
-const Step9_Result = ({ spell, onSave, isSaving, isSaved, onReset }: any) => (
+const Step10_Result = ({ spell, onSave, isSaving, isSaved, onReset }: any) => (
     <div className="flex flex-col items-center justify-center h-full gap-8 text-center max-w-lg mx-auto animate-in fade-in zoom-in duration-700">
         <BookOpen size={64} className="text-amber-200 mb-4 drop-shadow-[0_0_15px_gold]" />
         <h2 className="text-3xl md:text-4xl font-serif text-amber-100 leading-tight drop-shadow-md">{spell.affirmation}</h2>
@@ -735,9 +739,7 @@ const Step9_Result = ({ spell, onSave, isSaving, isSaved, onReset }: any) => (
             <button onClick={onSave} disabled={isSaved || isSaving} className="w-full py-4 bg-indigo-900/80 border border-indigo-500 rounded-lg text-indigo-100 flex items-center justify-center gap-3 hover:bg-indigo-800 transition-colors font-serif text-lg">
                 {isSaved ? <Check /> : <Save />} {isSaved ? "Recorded in Grimoire" : "Save Record (1 Credit)"}
             </button>
-            <button onClick={onReset} className="w-full py-4 bg-gray-800/60 border border-gray-600 rounded-lg text-gray-300 hover:bg-gray-700 transition-colors font-serif">
-                Return to Altar
-            </button>
+            <button onClick={onReset} className="w-full py-4 bg-gray-800/60 border border-gray-600 rounded-lg text-gray-300 hover:bg-gray-700 transition-colors font-serif">Return to Altar</button>
         </div>
     </div>
 );
