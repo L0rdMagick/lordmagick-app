@@ -19,7 +19,7 @@ const generateGrid = (rows: number, cols: number, spriteWidth: number, spriteHei
     for (let c = 0; c < cols; c++) {
       const index = r * cols + c;
       if (index < names.length) {
-        const key = names[index].toLowerCase().replace(/ & /g, '-').replace(/ /g, '-').replace(/\(|\)/g, ''); // Added replace for parenthesis
+        const key = names[index].toLowerCase().replace(/ & /g, '-').replace(/ /g, '-').replace(/\(|\)/g, '');
         items[key] = { 
             x: -c * spriteWidth, 
             y: -r * spriteHeight,
@@ -33,6 +33,8 @@ const generateGrid = (rows: number, cols: number, spriteWidth: number, spriteHei
 
 const SIZE_256 = { width: 256, height: 256 };
 const SHEET_SIZE_1024 = { width: 1024, height: 1024 };
+
+// --- EXISTING LISTS (PRESERVED) ---
 
 const herbs1 = generateGrid(4, 4, 256, 256, 
     [ "Rosemary", "Sage", "Basil", "Lavender", "Bay Leaf", "Mint", "Thyme", "Cinnamon", "Cloves", "Ginger", "Lemongrass", "Chamomile", "Mugwort", "Frankincense", "Myrrh", "Rowan Branch" ],
@@ -129,7 +131,7 @@ const hoodooMateria1 = generateGrid(4, 4, 256, 256,
         "Goofer Dust", "Salt", "Sulfur", "Brick Dust",
         "Lavender", "Cinnamon Stick", "Personal Concern (Hair)", "Snake Shed"
     ],
-    Array(16).fill("The work is grounded.") // Placeholder incantations
+    Array(16).fill("The work is grounded.") 
 );
 
 const voodooOfferings1 = generateGrid(4, 4, 256, 256,
@@ -139,10 +141,10 @@ const voodooOfferings1 = generateGrid(4, 4, 256, 256,
         "Machete (mini)", "Iron Nail", "Red Candle", "Coconut",
         "White Egg", "White Cloth", "Snake Icon", "Top Hat"
     ],
-    Array(16).fill("A gift is given.") // Placeholder incantations
+    Array(16).fill("A gift is given.") 
 );
 
-// --- NEW ASSETS (WICCA HIGH RITUAL) ---
+// --- NEW LISTS (FOR WICCA HIGH RITUAL) ---
 
 const ritual_framework1 = generateGrid(4, 4, 256, 256,
     [ 
@@ -159,22 +161,13 @@ const ritual_framework1 = generateGrid(4, 4, 256, 256,
     ]
 );
 
+// Updated for 2048x2048 Sheet (512px sprites)
 const deity_icons1 = generateGrid(4, 4, 512, 512,
     [ 
-        "Triple Moon", "Horned God", "Aphrodite", "Athena", 
-        "Stag", "Apollo", "Morrigan", "Isis", 
-        "Zeus", "Selene", "Raven", "Thor", 
-        "Hecate", "Dove", "Gaia", "Hades" 
-    ],
-    Array(16).fill("I invoke thee.")
-);
-
-const deity_icons2 = generateGrid(4, 4, 512, 512,
-    [ 
-        "Abundantia", "Lakshmi", "Plutus", "Cernunnos", 
-        "Brigid", "Odin", "Freya", "Pan", 
-        "Diana", "Osiris", "Bastet", "Anubis", 
-        "Thoth", "Kali", "Ganesh", "Shiva" 
+        "Triple Moon", "Horned God", "Pink Heart", "Owl", 
+        "Stag", "Sun Wheel", "Triskele", "Ankh", 
+        "Lightning Bolt", "Crescent Moon", "Raven", "Hammer", 
+        "Snake", "Dove", "Cornucopia", "Skull" 
     ],
     Array(16).fill("I invoke thee.")
 );
@@ -205,6 +198,7 @@ const fx_sprites1 = generateGrid(2, 2, 256, 256,
 );
 
 export const spriteLibrary: Record<string, SpriteSheet> = {
+  // Existing
   herbs1: { path: '/images/sprite-sheets/herbs1.png', spriteSize: SIZE_256, sheetSize: SHEET_SIZE_1024, items: herbs1 },
   crystals1: { path: '/images/sprite-sheets/crystals1.png', spriteSize: SIZE_256, sheetSize: SHEET_SIZE_1024, items: crystals1 },
   tools1: { path: '/images/sprite-sheets/tools1.png', spriteSize: SIZE_256, sheetSize: SHEET_SIZE_1024, items: tools1 },
@@ -212,10 +206,10 @@ export const spriteLibrary: Record<string, SpriteSheet> = {
   hoodooMateria1: { path: '/images/sprite-sheets/hoodoo-materia-spritesheet.png', spriteSize: SIZE_256, sheetSize: SHEET_SIZE_1024, items: hoodooMateria1 },
   voodooOfferings1: { path: '/images/sprite-sheets/voodoo-offering-spritesheet.png', spriteSize: SIZE_256, sheetSize: SHEET_SIZE_1024, items: voodooOfferings1 },
   
-  // NEW ASSETS
+  // New (Wicca High Ritual)
   ritual_framework1: { path: '/images/sprite-sheets/ritual_framework1.png', spriteSize: SIZE_256, sheetSize: SHEET_SIZE_1024, items: ritual_framework1 },
+  // UPDATED: .jpeg extension and 2048x2048 sheet size
   deity_icons1: { path: '/images/sprite-sheets/deity_icons1.jpeg', spriteSize: { width: 512, height: 512 }, sheetSize: { width: 2048, height: 2048 }, items: deity_icons1 },
-  deity_icons2: { path: '/images/sprite-sheets/deity_icons2.jpeg', spriteSize: { width: 512, height: 512 }, sheetSize: { width: 2048, height: 2048 }, items: deity_icons2 },
   candles_colored: { path: '/images/sprite-sheets/candles_colored.png', spriteSize: SIZE_256, sheetSize: SHEET_SIZE_1024, items: candles_colored },
   oils_resins: { path: '/images/sprite-sheets/oils_resins.png', spriteSize: SIZE_256, sheetSize: SHEET_SIZE_1024, items: oils_resins },
   fx_sprites1: { path: '/images/sprite-sheets/fx_sprites1.png', spriteSize: SIZE_256, sheetSize: {width: 512, height: 512}, items: fx_sprites1 },
@@ -232,10 +226,15 @@ export const findSprite = (itemName: string): { sheet: SpriteSheet; itemInfo: Sp
       };
     }
   }
+
+  // Fallback for colored candles if exact match fails
   if (itemName.includes("Candle")) {
        const sheet = spriteLibrary.candles_colored;
+       // Fallback to white candle if specific color not found
        if(sheet.items['white-candle']) return { sheet, itemInfo: sheet.items['white-candle'] };
   }
+
+  console.warn(`Sprite item "${itemName}" not found in any sheet.`);
   return null;
 };
 // --- END OF FILE src/lib/spriteLibrary.ts ---
