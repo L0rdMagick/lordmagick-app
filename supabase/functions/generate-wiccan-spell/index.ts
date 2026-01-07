@@ -17,18 +17,18 @@ const AVAILABLE_INGREDIENTS = [
     "Clear Quartz", "Amethyst", "Rose Quartz", "Citrine", "Black Tourmaline", "Obsidian", "Selenite", "Labradorite", "Carnelian", "Jade", "Lapis Lazuli", "Onyx", "Tiger's Eye"
 ];
 
-// STRICT LIST of Deities we have icons for
+// STRICT LIST of Deities we have icons for (Deity Icons 1 & 2)
 const AVAILABLE_DEITIES = [
     "The Triple Goddess", "The Horned God", "Universal Spirit",
     // Deity Icons 1
     "Owl (Athena)", "Stag (Cernunnos)", "Sun Wheel (Apollo)", "Triskele", "Ankh (Isis)", 
     "Lightning Bolt (Zeus/Thor)", "Crescent Moon (Selene/Diana)", "Raven (Morrigan)", "Hammer (Thor)", 
     "Snake (Hecate)", "Dove (Aphrodite)", "Cornucopia (Abundantia)", "Skull (Hades)",
-    // Deity Icons 2
-    "Abundantia", "Lakshmi", "Plutus", "Cernunnos", 
-    "Hecate", "Odin", "Freya", "Bastet",
-    "Osiris", "Isis", "Ganesha", "Thoth",
-    "Demeter", "Persephone", "Hades", "Zeus"
+    // Deity Icons 2 (New)
+    "Hecate", "Cernunnos", "Aphrodite", "Thor", 
+    "Brigid", "Ganesha", "Pan", "Isis", 
+    "Odin", "Freya", "Morrigan", "Gaia", 
+    "Apollo", "Selene", "Lakshmi", "Thoth"
 ];
 
 Deno.serve(async (req: Request) => {

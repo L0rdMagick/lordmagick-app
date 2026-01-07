@@ -172,13 +172,13 @@ const deity_icons1 = generateGrid(4, 4, 512, 512,
     Array(16).fill("I invoke thee.")
 );
 
-// NEW SHEET: deity_icons2 (For Prosperity, specific gods etc)
+// NEW SHEET: deity_icons2 (Diverse Wiccan/Eclectic Deities)
 const deity_icons2 = generateGrid(4, 4, 512, 512,
     [
-        "Abundantia", "Lakshmi", "Plutus", "Cernunnos", 
-        "Hecate", "Odin", "Freya", "Bastet",
-        "Osiris", "Isis", "Ganesha", "Thoth",
-        "Demeter", "Persephone", "Hades", "Zeus"
+        "Hecate", "Cernunnos", "Aphrodite", "Thor", 
+        "Brigid", "Ganesha", "Pan", "Isis", 
+        "Odin", "Freya", "Morrigan", "Gaia", 
+        "Apollo", "Selene", "Lakshmi", "Thoth" 
     ],
     Array(16).fill("I call upon your ancient power.")
 );
