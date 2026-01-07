@@ -1,4 +1,4 @@
-// --- START OF  FILE src/app/components/WiccaMagick.tsx ---
+// --- START OF FILE src/app/components/WiccaMagick.tsx ---
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -106,7 +106,8 @@ const IncantationOverlay = ({ text, onConfirm, isVisible }: { text: string, onCo
             >
                 <motion.div 
                     initial={{ scale: 0.95, y: 10 }} animate={{ scale: 1, y: 0 }}
-                    className="relative max-w-md w-full aspect-[3/4]"
+                    // Adjusted aspect ratio for 958x860 image
+                    className="relative max-w-md w-full aspect-[958/860]"
                 >
                     <Image src={`${ASSET_PATH}/wicca_incantation_scroll.png`} alt="Incantation" layout="fill" objectFit="contain" priority />
                     <div className="absolute inset-0 flex flex-col items-center justify-center p-12 text-center">
@@ -168,18 +169,13 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
                         setIntention(s.intention);
                         setSituation(d.situation || '');
                         
-                        // Strict Restore: Use the saved deity. 
-                        // If one exists, the Step4 component will detect it and lock the UI.
                         if (d.selectedDeity) {
                             setSelectedDeity(d.selectedDeity);
                         }
 
-                        // Strict Restore: Use the saved spell object exactly.
-                        // Do not merge with Standard here, assume saved data is the source of truth.
                         if (d.spell) {
                             setGeneratedSpell(d.spell);
                         } else {
-                            // Only fallback if data is corrupted/missing
                             setGeneratedSpell(STANDARD_WICCAN_SPELL);
                         }
                         
@@ -203,6 +199,8 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
             setSubStep('incantation');
         } else {
             if (!session?.user?.id) { setError("Sign in required."); return; }
+            
+            // CHARGE CREDIT FOR GENERATION
             const paid = await spendAether(session.user.id);
             if (!paid) return;
             
@@ -211,23 +209,20 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
             try {
                 const s = await generateWiccanSpell({ intention, focalPoint: 'The Divine', moonPhase: 'Current', situation });
                 
-                // Construct the spell object CAREFULLY.
+                // Construct the spell object CAREFULLY using logical fallbacks
                 const mergedSpell: GeneratedWiccanSpell = {
                     title: s.title || STANDARD_WICCAN_SPELL.title,
                     central_chant: s.central_chant || STANDARD_WICCAN_SPELL.central_chant,
                     affirmation: s.affirmation || STANDARD_WICCAN_SPELL.affirmation,
                     
-                    // Critical: Use AI ingredients list if it exists and has items. Don't merge with default.
                     symbolic_ingredients: (s.symbolic_ingredients && s.symbolic_ingredients.length > 0) 
                         ? s.symbolic_ingredients 
                         : STANDARD_WICCAN_SPELL.symbolic_ingredients,
                     
-                    // Critical: Use AI deities list if it exists.
                     suggested_deities: (s.suggested_deities && s.suggested_deities.length > 0)
                         ? s.suggested_deities
                         : STANDARD_WICCAN_SPELL.suggested_deities,
 
-                    // Critical: Use logical OR fallback instead of spread merge to maintain object structure
                     transitional_incantations: s.transitional_incantations || STANDARD_WICCAN_SPELL.transitional_incantations,
                     elemental_chants: s.elemental_chants || STANDARD_WICCAN_SPELL.elemental_chants,
                 };
@@ -268,14 +263,20 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
 
     const handleSave = async () => {
         if (!generatedSpell || isSaved) return;
+        
+        // CHARGE CREDIT FOR SAVING
+        if (session?.user?.id) {
+            const paid = await spendAether(session.user.id);
+            if (!paid) return;
+        }
+
         setIsSaving(true);
         try {
-            // STRICT SAVE: We save exactly what is in 'generatedSpell'.
             const ritualData = { 
                 intention, 
                 situation, 
                 selectedDeity, 
-                spell: generatedSpell // Save the full text/ingredients object
+                spell: generatedSpell 
             };
 
             await saveSpell(session?.user?.id || 'anon', {
@@ -334,7 +335,7 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
         <main className="relative h-screen w-screen bg-black overflow-hidden flex flex-col font-sans select-none">
             <div className="absolute inset-0 z-0">
                 <Image src="/images/spell-room/spell-room-background.png" layout="fill" objectFit="cover" alt="Background" className="opacity-50" priority />
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
+                <div className="absolute inset-0 bg-linear-to-t from-black via-black/50 to-transparent" />
             </div>
             <header className="relative z-20 w-full p-4 flex justify-between items-center text-purple-200">
                 <MagickalBackLink href="/spell-room" text="Exit" />
@@ -378,7 +379,7 @@ const Step0_Intro = ({ onNext }: { onNext: () => void }) => (
 const Step1_Intention = ({ intention, setIntention, situation, setSituation, onBegin, isReplay, cost }: any) => (
     <div className="flex flex-col items-center justify-center h-full gap-4">
         <h2 className="text-2xl font-serif text-amber-100/90">Inscribe Your Will</h2>
-        <div className="relative w-full max-w-md aspect-square">
+        <div className="relative w-full max-w-md aspect-[958/860]">
             <Image src={`${ASSET_PATH}/wicca_scroll_intention.png`} layout="fill" objectFit="contain" alt="Scroll" priority />
             <div className="absolute inset-0 flex flex-col items-center justify-center p-14 gap-4">
                 <input 
@@ -765,7 +766,7 @@ const Step8_Sending = ({ onNext }: { onNext: () => void }) => {
                     className="absolute w-4 h-4 bg-amber-200 rounded-full blur-sm"
                  />
              ))}
-            <h1 className="text-4xl md:text-7xl font-serif text-transparent bg-clip-text bg-gradient-to-r from-amber-100 to-purple-300 animate-pulse drop-shadow-[0_0_30px_rgba(251,191,36,0.6)]">RELEASED</h1>
+            <h1 className="text-4xl md:text-7xl font-serif text-transparent bg-clip-text bg-linear-to-r from-amber-100 to-purple-300 animate-pulse drop-shadow-[0_0_30px_rgba(251,191,36,0.6)]">RELEASED</h1>
         </div>
     );
 };
@@ -803,3 +804,4 @@ const Step10_Result = ({ spell, onSave, isSaving, isSaved, onReset }: any) => (
 );
 
 export default WiccaMagick;
+// --- END OF FILE src/app/components/WiccaMagick.tsx ---

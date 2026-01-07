@@ -19,7 +19,7 @@ const generateGrid = (rows: number, cols: number, spriteWidth: number, spriteHei
     for (let c = 0; c < cols; c++) {
       const index = r * cols + c;
       if (index < names.length) {
-        const key = names[index].toLowerCase().replace(/ & /g, '-').replace(/ /g, '-').replace(/\(|\)/g, ''); // Added replace for parenthesis
+        const key = names[index].toLowerCase().replace(/ & /g, '-').replace(/ /g, '-').replace(/\(|\)/g, '');
         items[key] = { 
             x: -c * spriteWidth, 
             y: -r * spriteHeight,
@@ -161,7 +161,8 @@ const ritual_framework1 = generateGrid(4, 4, 256, 256,
     ]
 );
 
-const deity_icons1 = generateGrid(4, 4, 256, 256,
+// Updated for 2048x2048 Sheet (512px sprites)
+const deity_icons1 = generateGrid(4, 4, 512, 512,
     [ 
         "Triple Moon", "Horned God", "Pink Heart", "Owl", 
         "Stag", "Sun Wheel", "Triskele", "Ankh", 
@@ -207,7 +208,8 @@ export const spriteLibrary: Record<string, SpriteSheet> = {
   
   // New (Wicca High Ritual)
   ritual_framework1: { path: '/images/sprite-sheets/ritual_framework1.png', spriteSize: SIZE_256, sheetSize: SHEET_SIZE_1024, items: ritual_framework1 },
-  deity_icons1: { path: '/images/sprite-sheets/deity_icons1.png', spriteSize: SIZE_256, sheetSize: SHEET_SIZE_1024, items: deity_icons1 },
+  // UPDATED: .jpeg extension and 2048x2048 sheet size
+  deity_icons1: { path: '/images/sprite-sheets/deity_icons1.jpeg', spriteSize: { width: 512, height: 512 }, sheetSize: { width: 2048, height: 2048 }, items: deity_icons1 },
   candles_colored: { path: '/images/sprite-sheets/candles_colored.png', spriteSize: SIZE_256, sheetSize: SHEET_SIZE_1024, items: candles_colored },
   oils_resins: { path: '/images/sprite-sheets/oils_resins.png', spriteSize: SIZE_256, sheetSize: SHEET_SIZE_1024, items: oils_resins },
   fx_sprites1: { path: '/images/sprite-sheets/fx_sprites1.png', spriteSize: SIZE_256, sheetSize: {width: 512, height: 512}, items: fx_sprites1 },
@@ -235,4 +237,4 @@ export const findSprite = (itemName: string): { sheet: SpriteSheet; itemInfo: Sp
   console.warn(`Sprite item "${itemName}" not found in any sheet.`);
   return null;
 };
-// --- END OF FILE ---
+// --- END OF FILE src/lib/spriteLibrary.ts ---
