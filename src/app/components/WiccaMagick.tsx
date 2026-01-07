@@ -1,4 +1,4 @@
-// --- START OF FILE src/app/components/WiccaMagick.tsx ---
+// --- START OF  FILE src/app/components/WiccaMagick.tsx ---
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
