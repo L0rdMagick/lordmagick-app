@@ -161,32 +161,19 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
                 try {
                     const s = await getSpellById(loadId);
                     if (s) {
-                        // Ensure we extract the FULL data object
                         const d = typeof s.ritual_data === 'string' ? JSON.parse(s.ritual_data) : s.ritual_data;
                         
-                        // RESTORE STATE EXACTLY
+                        // Strict Restore: Use saved data, fallback to standard only if missing
                         setIntention(s.intention);
                         setSituation(d.situation || '');
-                        
-                        // Crucial: Load the specific deity chosen before
-                        if (d.selectedDeity) {
-                            setSelectedDeity(d.selectedDeity);
-                        }
-
-                        // Crucial: Load the exact generated spell (ingredients, chants, etc.)
-                        const restoredSpell = d.spell || STANDARD_WICCAN_SPELL;
-                        setGeneratedSpell(restoredSpell);
+                        setSelectedDeity(d.selectedDeity || null);
+                        setGeneratedSpell(d.spell || STANDARD_WICCAN_SPELL);
                         
                         setIsReplayMode(true);
                         setIsSaved(true);
                         setRitualStep(1);
                     }
-                } catch (e) { 
-                    console.error(e);
-                    setError("Could not restore the ritual from the Grimoire."); 
-                } finally { 
-                    setLoading(false); 
-                }
+                } catch { setError("Could not restore ritual."); } finally { setLoading(false); }
             };
             load();
         }
@@ -209,12 +196,16 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
             setLoadingMessage("Communing with the Spirits...");
             try {
                 const s = await generateWiccanSpell({ intention, focalPoint: 'The Divine', moonPhase: 'Current', situation });
-                // Fallbacks
-                if (!s.transitional_incantations) s.transitional_incantations = STANDARD_WICCAN_SPELL.transitional_incantations;
-                if (!s.elemental_chants) s.elemental_chants = STANDARD_WICCAN_SPELL.elemental_chants;
-                if (!s.suggested_deities) s.suggested_deities = STANDARD_WICCAN_SPELL.suggested_deities;
                 
-                setGeneratedSpell(s);
+                // Merge with standard to ensure we have valid objects even if AI omits some
+                const mergedSpell: GeneratedWiccanSpell = {
+                    ...STANDARD_WICCAN_SPELL,
+                    ...s,
+                    transitional_incantations: { ...STANDARD_WICCAN_SPELL.transitional_incantations, ...s.transitional_incantations },
+                    elemental_chants: { ...STANDARD_WICCAN_SPELL.elemental_chants, ...s.elemental_chants },
+                };
+                
+                setGeneratedSpell(mergedSpell);
                 setRitualStep(2);
                 setSubStep('incantation');
             } catch (e: any) { setError(e.message); } finally { setLoading(false); }
@@ -224,7 +215,6 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
     const nextStep = () => {
         const next = ritualStep + 1;
         setRitualStep(next);
-        // Steps 5, 7, 8, 10 skip overlay
         if ([5, 7, 8, 10].includes(next)) setSubStep('action');
         else setSubStep('incantation');
     };
@@ -253,18 +243,23 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
         if (!generatedSpell || isSaved) return;
         setIsSaving(true);
         try {
-            // Snapshot the EXACT state including the chosen deity
+            // Force merge logic again just to be safe before saving
+            const spellToSave = {
+                ...STANDARD_WICCAN_SPELL,
+                ...generatedSpell,
+            };
+
             const ritualData = { 
                 intention, 
                 situation, 
-                selectedDeity, // THIS must be saved to lock it in replay
-                spell: generatedSpell 
+                selectedDeity, 
+                spell: spellToSave 
             };
 
             await saveSpell(session?.user?.id || 'anon', {
                 name: `Wicca: ${intention.substring(0,20)}`,
                 intention,
-                incantation: generatedSpell.central_chant,
+                incantation: spellToSave.central_chant,
                 tradition: 'WICCA',
                 ritual_data: ritualData 
             });
@@ -387,18 +382,16 @@ const Step1_Intention = ({ intention, setIntention, situation, setSituation, onB
     </div>
 );
 
-// --- NEW TRACING COMPONENT ---
+// --- NEW TRUE TRACING COMPONENT (No Holding) ---
 const Step2_CastCircle = ({ onComplete }: { onComplete: () => void }) => {
-    const [angle, setAngle] = useState(0);
-    const [completedLoops, setCompletedLoops] = useState(0);
+    const [lastAngle, setLastAngle] = useState<number | null>(null);
+    const [totalRotation, setTotalRotation] = useState(0);
     const containerRef = useRef<HTMLDivElement>(null);
     const soundRef = useRef<any>(null);
 
-    // Track user gesture
     const handleMove = (e: React.MouseEvent | React.TouchEvent) => {
         if (!containerRef.current) return;
         
-        // Get coordinates
         const rect = containerRef.current.getBoundingClientRect();
         const centerX = rect.left + rect.width / 2;
         const centerY = rect.top + rect.height / 2;
@@ -406,39 +399,37 @@ const Step2_CastCircle = ({ onComplete }: { onComplete: () => void }) => {
         const clientX = 'touches' in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX;
         const clientY = 'touches' in e ? e.touches[0].clientY : (e as React.MouseEvent).clientY;
 
-        // Calculate angle in degrees (0-360, starting from top)
         const deltaX = clientX - centerX;
         const deltaY = clientY - centerY;
+        // Calculate angle (0 = top/noon)
         let deg = Math.atan2(deltaY, deltaX) * (180 / Math.PI) + 90; 
         if (deg < 0) deg += 360;
 
-        // Trace logic: prevent jumping. Must move generally clockwise.
-        // We calculate delta from last angle.
-        let diff = deg - angle;
-        // Handle wrap-around (350 -> 10)
-        if (diff < -300) diff += 360;
-        // Handle reverse wrap (10 -> 350)
-        if (diff > 300) diff -= 360;
+        if (lastAngle !== null) {
+            let diff = deg - lastAngle;
+            // Handle wrap-around
+            if (diff < -300) diff += 360; 
+            if (diff > 300) diff -= 360;
 
-        // Only allow forward movement (clockwise) to build charge
-        if (diff > 0 && diff < 50) {
-            const newAngle = angle + diff;
-            setAngle(newAngle);
+            // Only clockwise movement counts positive
+            if (diff > 0) {
+                const newTotal = totalRotation + diff;
+                setTotalRotation(newTotal);
 
-            // Play sound while moving
-            if (!soundRef.current) {
-                soundRef.current = playSound('/audio/sfx-chaos-hold.mp3', 0.2, true);
-                soundRef.current.play();
-            }
+                // Play sound while moving
+                if (!soundRef.current) {
+                    soundRef.current = playSound('/audio/sfx-chaos-hold.mp3', 0.2, true);
+                    soundRef.current.play();
+                }
 
-            // Check completion (360 degrees = 1 loop)
-            if (newAngle >= 360 && completedLoops === 0) {
-                setCompletedLoops(1);
-                if(soundRef.current) soundRef.current.stop();
-                playSound('/audio/sfx-spell-room-portal.mp3', 0.5).play();
-                onComplete();
+                if (newTotal >= 360) {
+                    if(soundRef.current) soundRef.current.stop();
+                    playSound('/audio/sfx-spell-room-portal.mp3', 0.5).play();
+                    onComplete();
+                }
             }
         }
+        setLastAngle(deg);
     };
 
     const handleEnd = () => {
@@ -446,22 +437,23 @@ const Step2_CastCircle = ({ onComplete }: { onComplete: () => void }) => {
              soundRef.current.stop();
              soundRef.current = null;
          }
+         setLastAngle(null); // Reset tracking to prevent jumps
     };
 
     return (
         <div className="flex flex-col items-center justify-center h-full gap-8">
             <div className="text-center">
                 <h2 className="text-3xl font-serif text-purple-100 drop-shadow-md">Cast the Circle</h2>
-                <p className="text-purple-300/60 italic mt-2">Use your finger to trace the circle clockwise.</p>
+                <p className="text-purple-300/60 italic mt-2">Physically trace the circle clockwise to seal the space.</p>
             </div>
             
             <div 
                 ref={containerRef}
-                className="relative w-80 h-80 md:w-96 md:h-96 flex items-center justify-center touch-none select-none"
+                className="relative w-80 h-80 md:w-96 md:h-96 flex items-center justify-center touch-none select-none cursor-crosshair"
                 onMouseMove={handleMove} onTouchMove={handleMove}
                 onMouseUp={handleEnd} onMouseLeave={handleEnd} onTouchEnd={handleEnd}
             >
-                {/* Dotted Guide */}
+                {/* Guide Circle */}
                 <svg className="absolute w-full h-full rotate-[-90deg]" viewBox="0 0 100 100">
                     <circle cx="50" cy="50" r="45" fill="none" stroke="#333" strokeWidth="2" strokeDasharray="4 2" />
                     
@@ -473,16 +465,16 @@ const Step2_CastCircle = ({ onComplete }: { onComplete: () => void }) => {
                         strokeWidth="6"
                         strokeLinecap="round"
                         strokeDasharray="283"
-                        // Convert total angle to dash offset
-                        strokeDashoffset={283 - (Math.min(angle, 360) / 360) * 283}
+                        strokeDashoffset={283 - (Math.min(totalRotation, 360) / 360) * 283}
                         className="drop-shadow-[0_0_15px_rgba(168,85,247,0.8)]"
                     />
                 </svg>
-
-                {/* Helper Icon in Center */}
-                <div className="absolute pointer-events-none opacity-50">
-                    <Wand2 size={32} className="text-purple-500 animate-pulse" />
-                </div>
+                {/* Visual Hint */}
+                {totalRotation < 10 && (
+                    <div className="absolute top-2 left-1/2 -translate-x-1/2 text-purple-500/50 animate-bounce">
+                        <ArrowRight className="rotate-90" />
+                    </div>
+                )}
             </div>
         </div>
     );
@@ -561,12 +553,11 @@ const RestoredChargingSigil = ({ name, spriteName, isCharged, onComplete, onStar
 };
 
 
-// --- UPDATED DEITY STEP WITH REPLAY LOCKING ---
+// --- STEP 4 WITH STRICT REPLAY LOCKING ---
 const Step4_Deities = ({ suggestions, onSelect, isReplay, savedDeity }: { suggestions: WiccanDeitySuggestion[], onSelect: (d: WiccanDeitySuggestion) => void, isReplay: boolean, savedDeity: WiccanDeitySuggestion | null }) => {
-    
     // If Replay Mode and we have a saved deity, force that choice
     if (isReplay && savedDeity) {
-        let icon = "Triple Moon"; // Re-derive icon logic
+        let icon = "Triple Moon"; 
         if (savedDeity.name.includes("Horned") || savedDeity.name.includes("Pan")) icon = "Horned God";
         if (savedDeity.name.includes("Aphrodite") || savedDeity.name.includes("Love")) icon = "Pink Heart";
         if (savedDeity.name.includes("Zeus") || savedDeity.name.includes("Thor")) icon = "Lightning Bolt";
@@ -575,7 +566,7 @@ const Step4_Deities = ({ suggestions, onSelect, isReplay, savedDeity }: { sugges
         return (
             <div className="flex flex-col items-center justify-center h-full gap-8 animate-in fade-in">
                 <div className="flex items-center gap-2 text-amber-500 bg-amber-900/20 px-4 py-1 rounded-full border border-amber-500/50">
-                    <Lock size={14} /> <span className="text-xs uppercase tracking-widest">Replay Mode: Deity Locked</span>
+                    <Lock size={14} /> <span className="text-xs uppercase tracking-widest">Ritual Lock Active</span>
                 </div>
                 <h2 className="text-2xl font-serif text-purple-200">Invoking {savedDeity.name}</h2>
                 <div className="bg-black/40 border border-purple-500/30 p-8 rounded-xl flex flex-col items-center">
