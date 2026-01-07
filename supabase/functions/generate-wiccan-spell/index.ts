@@ -18,12 +18,13 @@ const AVAILABLE_INGREDIENTS = [
 ];
 
 // STRICT LIST of Deities we have icons for (Deity Icons 1 & 2)
+// REMOVED GENERIC NAMES to force image match
 const AVAILABLE_DEITIES = [
-    "The Triple Goddess", "The Horned God", "Universal Spirit",
     // Deity Icons 1
-    "Owl (Athena)", "Stag (Cernunnos)", "Sun Wheel (Apollo)", "Triskele", "Ankh (Isis)", 
-    "Lightning Bolt (Zeus/Thor)", "Crescent Moon (Selene/Diana)", "Raven (Morrigan)", "Hammer (Thor)", 
-    "Snake (Hecate)", "Dove (Aphrodite)", "Cornucopia (Abundantia)", "Skull (Hades)",
+    "Triple Moon", "Horned God", "Pink Heart", "Owl", "Stag", "Sun Wheel", "Triskele", "Ankh", 
+    "Lightning Bolt", "Crescent Moon", "Raven", "Hammer", 
+    "Snake", "Dove", "Cornucopia", "Skull",
+    
     // Deity Icons 2 (New)
     "Hecate", "Cernunnos", "Aphrodite", "Thor", 
     "Brigid", "Ganesha", "Pan", "Isis", 
@@ -67,7 +68,7 @@ Deno.serve(async (req: Request) => {
                4. "closing": A 2-line rhyme to open the circle/end the ritual.
           - "elemental_chants": An object containing 5 short (2-line) rhyming incantations to call the quarters. Keys: "Spirit", "Air", "Fire", "Earth", "Water".
           - "suggested_deities": An array of 3 objects (Deity Suggestions) relevant to the intention. Keys: "name", "title", "pantheon", "description" (1 sentence).
-             **IMPORTANT**: You MUST choose "name" ONLY from this list: [${AVAILABLE_DEITIES.map(d => `"${d}"`).join(", ")}]. Do not invent names.
+             **IMPORTANT**: You MUST choose "name" ONLY from this list: [${AVAILABLE_DEITIES.map(d => `"${d}"`).join(", ")}]. Do not invent names or use generic titles.
           - "symbolic_ingredients": An array of EXACTLY FIVE objects. For each:
              - "name": Choose from [${AVAILABLE_INGREDIENTS.map(i => `"${i}"`).join(", ")}]. Prioritize colored candles and specific oils over generic tools.
              - "incantation": A 1-sentence command for this item.
