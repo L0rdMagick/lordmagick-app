@@ -1,3 +1,4 @@
+// --- START OF FILE src/app/components/WiccaMagick.tsx ---
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -30,7 +31,7 @@ const CAST_DURATION = 13000;
 const SENDING_DURATION = 4000;
 const SERVICE_SLUG = 'ai_wicca_magick'; 
 
-// --- Standard Ritual Data ---
+// --- Standard Ritual Data (Fallback Only) ---
 const STANDARD_WICCAN_SPELL: GeneratedWiccanSpell = {
     title: "Circle of Elemental Balance",
     transitional_incantations: {
@@ -152,7 +153,7 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
     const [isSaved, setIsSaved] = useState(false);
     const [isReplayMode, setIsReplayMode] = useState(false);
 
-    // --- Hydration ---
+    // --- Hydration (Restore Exact State) ---
     useEffect(() => {
         if (loadId) {
             const load = async () => {
@@ -163,11 +164,24 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
                     if (s) {
                         const d = typeof s.ritual_data === 'string' ? JSON.parse(s.ritual_data) : s.ritual_data;
                         
-                        // Strict Restore: Use saved data, fallback to standard only if missing
+                        // RESTORE STATE EXACTLY AS SAVED
                         setIntention(s.intention);
                         setSituation(d.situation || '');
-                        setSelectedDeity(d.selectedDeity || null);
-                        setGeneratedSpell(d.spell || STANDARD_WICCAN_SPELL);
+                        
+                        // Strict Restore: Use the saved deity. 
+                        // If one exists, the Step4 component will detect it and lock the UI.
+                        if (d.selectedDeity) {
+                            setSelectedDeity(d.selectedDeity);
+                        }
+
+                        // Strict Restore: Use the saved spell object exactly.
+                        // Do not merge with Standard here, assume saved data is the source of truth.
+                        if (d.spell) {
+                            setGeneratedSpell(d.spell);
+                        } else {
+                            // Only fallback if data is corrupted/missing
+                            setGeneratedSpell(STANDARD_WICCAN_SPELL);
+                        }
                         
                         setIsReplayMode(true);
                         setIsSaved(true);
@@ -197,12 +211,25 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
             try {
                 const s = await generateWiccanSpell({ intention, focalPoint: 'The Divine', moonPhase: 'Current', situation });
                 
-                // Merge with standard to ensure we have valid objects even if AI omits some
+                // Construct the spell object CAREFULLY.
                 const mergedSpell: GeneratedWiccanSpell = {
-                    ...STANDARD_WICCAN_SPELL,
-                    ...s,
-                    transitional_incantations: { ...STANDARD_WICCAN_SPELL.transitional_incantations, ...s.transitional_incantations },
-                    elemental_chants: { ...STANDARD_WICCAN_SPELL.elemental_chants, ...s.elemental_chants },
+                    title: s.title || STANDARD_WICCAN_SPELL.title,
+                    central_chant: s.central_chant || STANDARD_WICCAN_SPELL.central_chant,
+                    affirmation: s.affirmation || STANDARD_WICCAN_SPELL.affirmation,
+                    
+                    // Critical: Use AI ingredients list if it exists and has items. Don't merge with default.
+                    symbolic_ingredients: (s.symbolic_ingredients && s.symbolic_ingredients.length > 0) 
+                        ? s.symbolic_ingredients 
+                        : STANDARD_WICCAN_SPELL.symbolic_ingredients,
+                    
+                    // Critical: Use AI deities list if it exists.
+                    suggested_deities: (s.suggested_deities && s.suggested_deities.length > 0)
+                        ? s.suggested_deities
+                        : STANDARD_WICCAN_SPELL.suggested_deities,
+
+                    // Critical: Use logical OR fallback instead of spread merge to maintain object structure
+                    transitional_incantations: s.transitional_incantations || STANDARD_WICCAN_SPELL.transitional_incantations,
+                    elemental_chants: s.elemental_chants || STANDARD_WICCAN_SPELL.elemental_chants,
                 };
                 
                 setGeneratedSpell(mergedSpell);
@@ -243,23 +270,18 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
         if (!generatedSpell || isSaved) return;
         setIsSaving(true);
         try {
-            // Force merge logic again just to be safe before saving
-            const spellToSave = {
-                ...STANDARD_WICCAN_SPELL,
-                ...generatedSpell,
-            };
-
+            // STRICT SAVE: We save exactly what is in 'generatedSpell'.
             const ritualData = { 
                 intention, 
                 situation, 
                 selectedDeity, 
-                spell: spellToSave 
+                spell: generatedSpell // Save the full text/ingredients object
             };
 
             await saveSpell(session?.user?.id || 'anon', {
                 name: `Wicca: ${intention.substring(0,20)}`,
                 intention,
-                incantation: spellToSave.central_chant,
+                incantation: generatedSpell.central_chant,
                 tradition: 'WICCA',
                 ritual_data: ritualData 
             });
@@ -382,7 +404,7 @@ const Step1_Intention = ({ intention, setIntention, situation, setSituation, onB
     </div>
 );
 
-// --- NEW TRUE TRACING COMPONENT (No Holding) ---
+// --- TRUE TRACING COMPONENT (No Holding) ---
 const Step2_CastCircle = ({ onComplete }: { onComplete: () => void }) => {
     const [lastAngle, setLastAngle] = useState<number | null>(null);
     const [totalRotation, setTotalRotation] = useState(0);
@@ -401,22 +423,18 @@ const Step2_CastCircle = ({ onComplete }: { onComplete: () => void }) => {
 
         const deltaX = clientX - centerX;
         const deltaY = clientY - centerY;
-        // Calculate angle (0 = top/noon)
         let deg = Math.atan2(deltaY, deltaX) * (180 / Math.PI) + 90; 
         if (deg < 0) deg += 360;
 
         if (lastAngle !== null) {
             let diff = deg - lastAngle;
-            // Handle wrap-around
             if (diff < -300) diff += 360; 
             if (diff > 300) diff -= 360;
 
-            // Only clockwise movement counts positive
             if (diff > 0) {
                 const newTotal = totalRotation + diff;
                 setTotalRotation(newTotal);
 
-                // Play sound while moving
                 if (!soundRef.current) {
                     soundRef.current = playSound('/audio/sfx-chaos-hold.mp3', 0.2, true);
                     soundRef.current.play();
@@ -437,7 +455,7 @@ const Step2_CastCircle = ({ onComplete }: { onComplete: () => void }) => {
              soundRef.current.stop();
              soundRef.current = null;
          }
-         setLastAngle(null); // Reset tracking to prevent jumps
+         setLastAngle(null);
     };
 
     return (
@@ -453,11 +471,8 @@ const Step2_CastCircle = ({ onComplete }: { onComplete: () => void }) => {
                 onMouseMove={handleMove} onTouchMove={handleMove}
                 onMouseUp={handleEnd} onMouseLeave={handleEnd} onTouchEnd={handleEnd}
             >
-                {/* Guide Circle */}
-                <svg className="absolute w-full h-full rotate-[-90deg]" viewBox="0 0 100 100">
+                <svg className="absolute w-full h-full -rotate-90" viewBox="0 0 100 100">
                     <circle cx="50" cy="50" r="45" fill="none" stroke="#333" strokeWidth="2" strokeDasharray="4 2" />
-                    
-                    {/* Traced Path */}
                     <motion.circle 
                         cx="50" cy="50" r="45" 
                         fill="none" 
@@ -469,7 +484,6 @@ const Step2_CastCircle = ({ onComplete }: { onComplete: () => void }) => {
                         className="drop-shadow-[0_0_15px_rgba(168,85,247,0.8)]"
                     />
                 </svg>
-                {/* Visual Hint */}
                 {totalRotation < 10 && (
                     <div className="absolute top-2 left-1/2 -translate-x-1/2 text-purple-500/50 animate-bounce">
                         <ArrowRight className="rotate-90" />
@@ -555,7 +569,7 @@ const RestoredChargingSigil = ({ name, spriteName, isCharged, onComplete, onStar
 
 // --- STEP 4 WITH STRICT REPLAY LOCKING ---
 const Step4_Deities = ({ suggestions, onSelect, isReplay, savedDeity }: { suggestions: WiccanDeitySuggestion[], onSelect: (d: WiccanDeitySuggestion) => void, isReplay: boolean, savedDeity: WiccanDeitySuggestion | null }) => {
-    // If Replay Mode and we have a saved deity, force that choice
+    // Replay Mode: Locked to saved deity
     if (isReplay && savedDeity) {
         let icon = "Triple Moon"; 
         if (savedDeity.name.includes("Horned") || savedDeity.name.includes("Pan")) icon = "Horned God";
