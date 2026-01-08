@@ -78,9 +78,11 @@ const playSound = (src: string, volume: number = 0.5, loop: boolean = false): { 
 
 // --- Helper Components ---
 
+// Local Pentagram for Perfect Timing Control
 const PentagramSVG = ({ isTracing, duration }: { isTracing: boolean, duration: number }) => {
     return (
         <svg viewBox="0 0 100 100" className={`absolute inset-0 w-full h-full ${isTracing ? 'text-amber-400 drop-shadow-[0_0_25px_gold]' : 'text-purple-900'} transition-colors duration-1000 overflow-visible`}>
+             {/* Background Static Path */}
              <path 
                 d="M 50 5 L 63 40 L 98 40 L 70 60 L 80 95 L 50 75 L 20 95 L 30 60 L 2 40 L 37 40 Z"
                 fill="none" 
@@ -88,6 +90,8 @@ const PentagramSVG = ({ isTracing, duration }: { isTracing: boolean, duration: n
                 strokeWidth="1" 
                 className="opacity-20"
              />
+             
+             {/* Animated Tracing Path */}
              <motion.path
                 d="M 50 5 L 80 95 L 2 40 L 98 40 L 20 95 L 50 5"
                 fill="none"
@@ -96,9 +100,9 @@ const PentagramSVG = ({ isTracing, duration }: { isTracing: boolean, duration: n
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 initial={{ pathLength: 0 }}
+                // Animate to 1 slightly faster than the full duration to ensure it looks complete
                 animate={{ pathLength: isTracing ? 1 : 0 }}
-                // Finish 1 second early so it aligns with the user's perception of 13s countdown ending
-                transition={{ duration: isTracing ? (duration / 1000) : 0, ease: "linear" }}
+                transition={{ duration: isTracing ? (duration - 1000) / 1000 : 0, ease: "linear" }}
              />
         </svg>
     );
@@ -138,33 +142,32 @@ const IncantationOverlay = ({ text, onConfirm, isVisible, ingredient }: OverlayP
             {isVisible && (
                 <motion.div 
                     initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                    className="absolute inset-0 z-50 flex items-center justify-center p-4"
+                    className="absolute inset-0 z-50 flex items-center justify-center p-2"
                 >
                     <motion.div 
                         initial={{ scale: 0.95, y: 10 }} animate={{ scale: 1, y: 0 }}
-                        // Responsive aspect ratio to fit content
-                        className="relative w-full max-w-md aspect-[958/860] flex flex-col items-center justify-center filter drop-shadow-2xl"
+                        className="relative w-full max-w-md h-auto aspect-[958/860] flex flex-col items-center justify-center filter drop-shadow-2xl"
                     >
                         <Image src={`${ASSET_PATH}/wicca_incantation_scroll.png`} alt="Incantation" layout="fill" objectFit="contain" priority />
                         
-                        <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center">
-                            <h3 className="font-serif text-[#4a2e1c]/70 text-xs mb-1 uppercase tracking-widest mt-6 md:mt-4">Spoken Word</h3>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center p-8 md:p-12 text-center">
+                            <h3 className="font-serif text-[#4a2e1c]/70 text-[10px] md:text-xs mb-1 uppercase tracking-widest mt-2">Spoken Word</h3>
                             
                             {ingredient && sprite && (
-                                <div className="w-12 h-12 md:w-16 md:h-16 my-1 opacity-90">
+                                <div className="w-10 h-10 md:w-14 md:h-14 my-1 opacity-90 shrink-0">
                                      <Sprite sheetPath={sprite.sheet.path} x={sprite.itemInfo.x} y={sprite.itemInfo.y} spriteWidth={sprite.sheet.spriteSize.width} spriteHeight={sprite.sheet.spriteSize.height} sheetWidth={sprite.sheet.sheetSize.width} sheetHeight={sprite.sheet.sheetSize.height} />
                                 </div>
                             )}
 
-                            <div className="w-full px-4 flex items-center justify-center grow max-h-[140px] md:max-h-[200px] overflow-y-auto scrollbar-hide">
-                                <p className="font-serif text-[#4a2e1c] text-base md:text-xl leading-snug whitespace-pre-line drop-shadow-xs">
+                            <div className="w-full px-4 flex items-center justify-center grow overflow-y-auto scrollbar-hide py-2">
+                                <p className="font-serif text-[#4a2e1c] text-lg md:text-xl leading-tight whitespace-pre-line drop-shadow-xs">
                                     {text}
                                 </p>
                             </div>
 
                             <button 
                                 onClick={() => { playSound('/audio/sfx-chaos-activate.mp3', 0.3).play(); onConfirm(); }}
-                                className="mt-2 px-6 py-2 border-y-2 border-[#4a2e1c] text-[#4a2e1c] hover:bg-[#4a2e1c]/10 font-serif font-bold uppercase tracking-widest transition-all hover:scale-105 text-xs md:text-base mb-4 md:mb-6"
+                                className="mt-2 px-6 py-2 border-y-2 border-[#4a2e1c] text-[#4a2e1c] hover:bg-[#4a2e1c]/10 font-serif font-bold uppercase tracking-widest transition-all hover:scale-105 text-xs md:text-sm mb-4"
                             >
                                 So Mote It Be
                             </button>
@@ -420,20 +423,19 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
                 </div>
             )}
             
-            {/* Header: Strict 3 columns, no overlap */}
-            <header className="relative z-20 w-full p-2 md:p-4 grid grid-cols-[auto_1fr_auto] gap-2 items-center text-purple-200 shrink-0 bg-black/20 backdrop-blur-sm">
+            <header className="relative z-20 w-full p-2 grid grid-cols-[auto_1fr_auto] items-center text-purple-200 shrink-0 gap-2">
                 <div className="justify-self-start">
                     <MagickalBackLink href="/spell-room" text="Exit" />
                 </div>
                 <h1 className="font-serif text-lg md:text-3xl text-purple-300 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] tracking-wide text-center truncate px-2">
                     Wicca Magick
                 </h1>
-                <div className="justify-self-end">
+                <div className="justify-self-end shrink min-w-0">
                     <RoomsButton />
                 </div>
             </header>
             
-            <div className="relative z-10 grow w-full flex flex-col p-2 md:p-4 overflow-hidden">
+            <div className="relative z-10 grow w-full flex flex-col px-4 pb-4 overflow-hidden min-h-0">
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={ritualStep + subStep}
@@ -441,7 +443,7 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.5 }}
-                        className="w-full h-full flex flex-col"
+                        className="w-full h-full flex flex-col min-h-0"
                     >
                         {renderContent()}
                     </motion.div>
@@ -461,32 +463,28 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
 // --- STEP COMPONENTS ---
 
 const Step0_Intro = ({ onNext }: { onNext: () => void }) => (
-    <div className="flex flex-col items-center justify-between h-full py-4 text-center animate-in fade-in duration-1000">
-        <div className="grow flex items-center justify-center">
-            <div className="relative w-48 h-48 md:w-80 md:h-80 shrink-0">
-                <Image src={`${ASSET_PATH}/wicca_intro_instructions.png`} layout="fill" objectFit="contain" alt="Intro" priority />
-            </div>
+    <div className="flex flex-col items-center justify-center h-full gap-4 text-center animate-in fade-in duration-1000 min-h-0">
+        <div className="relative w-40 h-40 md:w-80 md:h-80 shrink-0">
+            <Image src={`${ASSET_PATH}/wicca_intro_instructions.png`} layout="fill" objectFit="contain" alt="Intro" priority />
         </div>
-        <div className="shrink-0 mb-4">
-            <h2 className="text-2xl md:text-4xl font-serif text-purple-100 mb-2 drop-shadow-lg">The High Ritual</h2>
-            <p className="text-purple-300/80 max-w-xs md:max-w-sm mx-auto font-serif italic text-sm md:text-lg">"Speak the words to unlock the path.<br/>Trace the signs to bind the will."</p>
+        <div>
+            <h2 className="text-xl md:text-4xl font-serif text-purple-100 mb-1 drop-shadow-lg">The High Ritual</h2>
+            <p className="text-purple-300/80 max-w-xs md:max-w-sm mx-auto font-serif italic text-xs md:text-lg">"Speak the words to unlock the path.<br/>Trace the signs to bind the will."</p>
         </div>
-        {/* Padding bottom 20px (pb-5) minimum */}
-        <div className="shrink-0 pb-5">
-            <button onClick={onNext} className="px-10 py-4 bg-purple-900/40 border border-purple-400/50 rounded-full text-purple-100 hover:bg-purple-800/60 transition-all font-serif uppercase tracking-widest backdrop-blur-md shadow-[0_0_20px_rgba(168,85,247,0.3)]">Enter the Circle</button>
+        <div className="mb-2">
+            <button onClick={onNext} className="px-8 py-3 bg-purple-900/40 border border-purple-400/50 rounded-full text-purple-100 hover:bg-purple-800/60 transition-all font-serif uppercase tracking-widest backdrop-blur-md shadow-[0_0_20px_rgba(168,85,247,0.3)] text-sm">Enter the Circle</button>
         </div>
     </div>
 );
 
 const Step1_Intention = ({ intention, setIntention, situation, setSituation, onBegin, isReplay, cost }: any) => (
-    <div className="flex flex-col items-center justify-between h-full py-2">
-        <h2 className="text-xl md:text-2xl font-serif text-amber-100/90 drop-shadow-md shrink-0 mb-2">Inscribe Your Will</h2>
+    <div className="flex flex-col items-center justify-between h-full py-1 min-h-0">
+        <h2 className="text-xl font-serif text-amber-100/90 drop-shadow-md shrink-0 mb-1">Inscribe Your Will</h2>
         
-        {/* Centered Scroll Area */}
-        <div className="relative w-full max-w-md grow flex items-center justify-center min-h-0">
-            <div className="relative w-full h-full aspect-[958/860] max-h-[55vh]">
+        <div className="relative w-full max-w-md grow shrink min-h-0 flex items-center justify-center -my-2">
+            <div className="relative w-full h-full aspect-[958/860] max-h-[60vh]">
                 <Image src={`${ASSET_PATH}/wicca_scroll_intention.png`} layout="fill" objectFit="contain" alt="Scroll" priority />
-                <div className="absolute inset-0 flex flex-col items-center justify-center p-[15%] gap-2 md:gap-4">
+                <div className="absolute inset-0 flex flex-col items-center justify-center p-[15%] gap-2">
                     <input 
                         value={intention} onChange={e => setIntention(e.target.value)}
                         placeholder="My Intention..." readOnly={isReplay}
@@ -501,14 +499,14 @@ const Step1_Intention = ({ intention, setIntention, situation, setSituation, onB
             </div>
         </div>
         
-        <div className="pb-4 shrink-0 mt-4">
+        <div className="pb-4 shrink-0 mt-1">
             {!isReplay ? (
-                <div className="flex flex-col md:flex-row gap-4">
-                     <button onClick={() => onBegin('standard')} className="px-6 py-3 bg-slate-800/80 border border-slate-600 rounded-lg text-slate-300 font-serif">Standard (Free)</button>
-                     <button onClick={() => onBegin('ai')} className="px-6 py-3 bg-purple-900/80 border border-purple-500 rounded-lg text-purple-100 font-serif shadow-[0_0_15px_rgba(168,85,247,0.3)]">High Ritual ({cost} Aether)</button>
+                <div className="flex flex-col md:flex-row gap-2">
+                     <button onClick={() => onBegin('standard')} className="px-6 py-2 bg-slate-800/80 border border-slate-600 rounded-lg text-slate-300 font-serif text-sm">Standard (Free)</button>
+                     <button onClick={() => onBegin('ai')} className="px-6 py-2 bg-purple-900/80 border border-purple-500 rounded-lg text-purple-100 font-serif shadow-[0_0_15px_rgba(168,85,247,0.3)] text-sm">High Ritual ({cost} Aether)</button>
                 </div>
             ) : (
-                 <button onClick={() => onBegin('standard')} className="px-8 py-3 bg-purple-900/90 border border-purple-400 rounded-lg text-purple-100 font-serif shadow-[0_0_15px_rgba(168,85,247,0.6)] animate-pulse">Begin Saved Ritual</button>
+                 <button onClick={() => onBegin('standard')} className="px-8 py-2 bg-purple-900/90 border border-purple-400 rounded-lg text-purple-100 font-serif shadow-[0_0_15px_rgba(168,85,247,0.6)] animate-pulse text-sm">Begin Saved Ritual</button>
             )}
         </div>
     </div>
@@ -520,13 +518,10 @@ const Step2_CastCircle = ({ onComplete }: { onComplete: () => void }) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const soundRef = useRef<any>(null);
 
-    // Cleanup sound on unmount strictly
+    // Cleanup audio when component unmounts (e.g. moving to next step)
     useEffect(() => {
         return () => {
-            if (soundRef.current) {
-                soundRef.current.stop();
-                soundRef.current = null;
-            }
+            if (soundRef.current) soundRef.current.stop();
         };
     }, []);
 
@@ -548,11 +543,13 @@ const Step2_CastCircle = ({ onComplete }: { onComplete: () => void }) => {
             if (diff > 0) {
                 const newTotal = totalRotation + (diff * 0.35); 
                 setTotalRotation(newTotal);
-                if (!soundRef.current) { soundRef.current = playSound('/audio/sfx-chaos-hold.mp3', 0.2, true); soundRef.current.play(); }
+                if (!soundRef.current) { 
+                    soundRef.current = playSound('/audio/sfx-chaos-hold.mp3', 0.2, true); 
+                    soundRef.current.play(); 
+                }
                 
                 if (newTotal >= 360) {
-                    // Stop trace sound, play complete sound
-                    if(soundRef.current) { soundRef.current.stop(); soundRef.current = null; }
+                    if(soundRef.current) soundRef.current.stop();
                     playSound('/audio/sfx-spell-room-portal.mp3', 0.5).play();
                     onComplete();
                 }
@@ -561,16 +558,22 @@ const Step2_CastCircle = ({ onComplete }: { onComplete: () => void }) => {
         setLastAngle(deg);
     };
 
-    const handleEnd = () => { if (soundRef.current) { soundRef.current.stop(); soundRef.current = null; } setLastAngle(null); };
+    const handleEnd = () => { 
+        if (soundRef.current) { 
+            soundRef.current.stop(); 
+            soundRef.current = null; 
+        } 
+        setLastAngle(null); 
+    };
 
     return (
-        <div className="flex flex-col items-center justify-center h-full gap-8">
+        <div className="flex flex-col items-center justify-center h-full gap-4">
             <div className="text-center">
-                <h2 className="text-3xl font-serif text-purple-100 drop-shadow-md">Cast the Circle</h2>
-                <p className="text-purple-300/60 italic mt-2">Trace the circle clockwise slowly with intent.</p>
+                <h2 className="text-2xl font-serif text-purple-100 drop-shadow-md">Cast the Circle</h2>
+                <p className="text-purple-300/60 italic text-sm mt-1">Trace the circle clockwise.</p>
             </div>
             <div 
-                ref={containerRef} className="relative w-80 h-80 md:w-96 md:h-96 flex items-center justify-center touch-none select-none cursor-crosshair"
+                ref={containerRef} className="relative w-72 h-72 md:w-96 md:h-96 flex items-center justify-center touch-none select-none cursor-crosshair"
                 onMouseMove={handleMove} onTouchMove={handleMove} onMouseUp={handleEnd} onMouseLeave={handleEnd} onTouchEnd={handleEnd}
             >
                 <svg className="absolute w-full h-full -rotate-90" viewBox="0 0 100 100">
@@ -587,32 +590,28 @@ const Step2_CastCircle = ({ onComplete }: { onComplete: () => void }) => {
 const Step3_Quarters = ({ spell, charged, onCharge, onNext }: { spell: GeneratedWiccanSpell | null, charged: string[], onCharge: (n: string) => void, onNext: () => void }) => {
     const [activeElement, setActiveElement] = useState<string | null>(null);
     
-    // Regular Pentagon Coordinates (approximate for visual balance)
-    // Top (Earth): 50%, 10%
-    // Top Right (Air): 88%, 38%
-    // Bottom Right (Fire): 74%, 81%
-    // Bottom Left (Spirit): 26%, 81%
-    // Top Left (Water): 12%, 38%
+    // Regular Pentagon coordinates relative to a square container (Top Center is 50%, 5%)
+    // Top: Spirit
+    // Upper Right: Air
+    // Lower Right: Fire
+    // Lower Left: Earth
+    // Upper Left: Water
     const quarters = [
-        { name: "Earth", sprite: "Earth Sigil", pos: { top: '10%', left: '50%' }, color: "shadow-[0_0_50px_rgba(34,197,94,0.9)]", chant: spell?.elemental_chants?.Earth }, 
-        { name: "Water", sprite: "Water Sigil", pos: { top: '38%', left: '12%' }, color: "shadow-[0_0_50px_rgba(59,130,246,0.9)]", chant: spell?.elemental_chants?.Water },
-        { name: "Air", sprite: "Air Sigil", pos: { top: '38%', left: '88%' }, color: "shadow-[0_0_50px_rgba(234,179,8,0.9)]", chant: spell?.elemental_chants?.Air },
-        { name: "Spirit", sprite: "Spirit Sigil", pos: { top: '81%', left: '26%' }, color: "shadow-[0_0_50px_rgba(168,85,247,0.9)]", chant: spell?.elemental_chants?.Spirit },
-        { name: "Fire", sprite: "Fire Sigil", pos: { top: '81%', left: '74%' }, color: "shadow-[0_0_50px_rgba(239,68,68,0.9)]", chant: spell?.elemental_chants?.Fire },
+        { name: "Spirit", sprite: "Spirit Sigil", pos: { top: '5%', left: '50%' }, color: "shadow-[0_0_50px_rgba(168,85,247,0.9)]", chant: spell?.elemental_chants?.Spirit },
+        { name: "Air", sprite: "Air Sigil", pos: { top: '35%', left: '90%' }, color: "shadow-[0_0_50px_rgba(234,179,8,0.9)]", chant: spell?.elemental_chants?.Air },
+        { name: "Fire", sprite: "Fire Sigil", pos: { top: '85%', left: '75%' }, color: "shadow-[0_0_50px_rgba(239,68,68,0.9)]", chant: spell?.elemental_chants?.Fire },
+        { name: "Earth", sprite: "Earth Sigil", pos: { top: '85%', left: '25%' }, color: "shadow-[0_0_50px_rgba(34,197,94,0.9)]", chant: spell?.elemental_chants?.Earth }, 
+        { name: "Water", sprite: "Water Sigil", pos: { top: '35%', left: '10%' }, color: "shadow-[0_0_50px_rgba(59,130,246,0.9)]", chant: spell?.elemental_chants?.Water },
     ];
 
     return (
-        <div className="flex flex-col items-center h-full w-full relative">
-            {/* Minimal Spacing Header */}
-            <h2 className="text-xl md:text-2xl font-serif text-purple-200 text-center w-full mt-0 shrink-0 relative z-20">
-                {activeElement ? activeElement : "Call the Guardians"}
-            </h2>
+        <div className="flex flex-col items-center h-full w-full relative min-h-0">
+            <h2 className="text-xl font-serif text-purple-200 text-center w-full shrink-0 relative z-20 mt-1">{activeElement ? activeElement : "Call the Guardians"}</h2>
             
-            {/* Incantation Text - Strict positioning to avoid circle overlap */}
-            {/* Using absolute positioning relative to top to ensure exact max-10px gap to top circle */}
-            <div className="w-full text-center px-4 h-16 flex items-center justify-center z-20 pointer-events-none shrink-0 mb-1">
+            {/* Incantation Text Container */}
+            <div className="w-full text-center px-4 min-h-[3rem] flex items-center justify-center z-20 pointer-events-none shrink-0 mb-2">
                  {activeElement ? (
-                    <motion.p initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} className="text-amber-200 font-serif italic text-xs md:text-lg drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] whitespace-pre-line bg-black/60 p-2 rounded-lg backdrop-blur-md border border-amber-500/20 leading-tight">
+                    <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-amber-200 font-serif italic text-sm md:text-lg drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] whitespace-pre-line bg-black/60 p-2 rounded-lg backdrop-blur-md border border-amber-500/20">
                         {quarters.find(q => q.name === activeElement)?.chant || `Hail, Watchtower of the ${activeElement}!`}
                     </motion.p>
                  ) : (
@@ -620,8 +619,8 @@ const Step3_Quarters = ({ spell, charged, onCharge, onNext }: { spell: Generated
                  )}
             </div>
 
-            {/* Sigil Map Container - Flexible height */}
-            <div className="relative w-full max-w-md aspect-square grow shrink min-h-0 flex items-center justify-center mt-1 mb-12 overflow-visible">
+            {/* Sigil Map Container */}
+            <div className="relative w-full max-w-sm aspect-square grow shrink min-h-0 flex items-center justify-center mb-2 overflow-visible">
                 {quarters.map(q => (
                     <div key={q.name} className="absolute transform -translate-x-1/2 -translate-y-1/2 z-10" style={q.pos}>
                          <RestoredChargingSigil 
@@ -632,10 +631,9 @@ const Step3_Quarters = ({ spell, charged, onCharge, onNext }: { spell: Generated
                 ))}
             </div>
 
-            {/* Fixed bottom space for button */}
-            <div className="absolute bottom-4 left-0 right-0 flex justify-center z-30 pointer-events-none">
+            <div className="w-full h-12 flex items-center justify-center shrink-0 mb-2">
                  {charged.length === 5 && (
-                    <button onClick={onNext} className="pointer-events-auto px-10 py-3 bg-amber-600 hover:bg-amber-500 text-black font-bold rounded-lg animate-bounce shadow-[0_0_20px_orange]">
+                    <button onClick={onNext} className="px-10 py-3 bg-amber-600 hover:bg-amber-500 text-black font-bold rounded-lg animate-bounce shadow-[0_0_20px_orange] z-30 relative text-sm uppercase">
                         Seal the Quarters
                     </button>
                 )}
@@ -677,39 +675,42 @@ const RestoredChargingSigil = ({ name, spriteName, isCharged, glowColor, onCompl
 
     if (!sprite) return null;
 
+    // Fill style for inner glow transparency
     const fillStyle = isCharged 
         ? `radial-gradient(circle, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 70%)` 
         : (isHolding ? `radial-gradient(circle, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 70%)` : 'none');
 
+    // Visual size is approx 80px (w-20). The wrapper should match to prevent overlap.
+    
     return (
-        // Hitbox: w-24 h-24 (Smaller to prevent overlap)
+        // Tight wrapper to prevent overlap
         <div 
-            className="w-24 h-24 relative flex items-center justify-center cursor-pointer select-none touch-none z-10"
-            onMouseDown={handleDown} onMouseUp={handleUp} onMouseLeave={handleUp} 
-            onTouchStart={handleDown} onTouchEnd={handleUp} onTouchCancel={handleUp}
+            className="w-24 h-24 relative flex items-center justify-center cursor-pointer select-none touch-none overflow-visible"
         >
-             {/* Visual Circle - Absolute & Larger than hitbox to show glow */}
-             <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-visible">
-                 <div 
-                    className={`w-20 h-20 relative transition-all duration-700 rounded-full flex items-center justify-center overflow-hidden 
-                        ${isCharged ? `scale-110 brightness-125 saturate-150 animate-pulse ${glowColor}` : 'grayscale brightness-75'} 
-                        ${isHolding ? 'scale-105 brightness-110' : ''}`}
-                 >
-                     <Sprite sheetPath={sprite.sheet.path} x={sprite.itemInfo.x} y={sprite.itemInfo.y} spriteWidth={sprite.sheet.spriteSize.width} spriteHeight={sprite.sheet.spriteSize.height} sheetWidth={sprite.sheet.sheetSize.width} sheetHeight={sprite.sheet.sheetSize.height} />
-                     
-                     {(isCharged || isHolding) && (
-                         <div 
-                            className="absolute inset-0 rounded-full mix-blend-overlay"
-                            style={{ 
-                                background: fillStyle,
-                                boxShadow: isCharged ? 'inset 0 0 20px rgba(255,255,255,0.8)' : 'none'
-                            }} 
-                         />
-                     )}
-                 </div>
+             {/* Inner circle absorbs the clicks to ensure accuracy */}
+             <div 
+                onMouseDown={handleDown} onMouseUp={handleUp} onMouseLeave={handleUp} 
+                onTouchStart={handleDown} onTouchEnd={handleUp} onTouchCancel={handleUp}
+                className={`w-20 h-20 relative transition-all duration-700 rounded-full flex items-center justify-center overflow-hidden 
+                    ${isCharged ? `scale-110 brightness-125 saturate-150 animate-pulse ${glowColor}` : 'grayscale brightness-75'} 
+                    ${isHolding ? 'scale-105 brightness-110' : ''}`}
+             >
+                 {/* Sprite Image */}
+                 <Sprite sheetPath={sprite.sheet.path} x={sprite.itemInfo.x} y={sprite.itemInfo.y} spriteWidth={sprite.sheet.spriteSize.width} spriteHeight={sprite.sheet.spriteSize.height} sheetWidth={sprite.sheet.sheetSize.width} sheetHeight={sprite.sheet.sheetSize.height} />
+                 
+                 {/* Inner Glow Overlay */}
+                 {(isCharged || isHolding) && (
+                     <div 
+                        className="absolute inset-0 rounded-full pointer-events-none mix-blend-overlay"
+                        style={{ 
+                            background: fillStyle,
+                            boxShadow: isCharged ? 'inset 0 0 20px rgba(255,255,255,0.8)' : 'none'
+                        }} 
+                     />
+                 )}
              </div>
              
-             {/* Ring Overlay */}
+             {/* Ring Overlay - Pointer events none */}
              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                  <div className="w-24 h-24 relative">
                     <InteractionRing isHolding={isHolding} isComplete={isCharged} duration={CHARGE_DURATION_ELEMENT} />
@@ -742,7 +743,6 @@ const Step4_Deities = ({ suggestions, onSelect, isReplay, savedDeity }: { sugges
             "Odin", "Freya", "Morrigan", "Gaia", "Apollo", "Selene", "Lakshmi", "Thoth"
         ];
         if (knownDeities.includes(n)) return n;
-        
         const lower = n.toLowerCase();
         if (lower.includes("hecate")) return "Hecate";
         if (lower.includes("cernunnos")) return "Cernunnos";
@@ -768,38 +768,37 @@ const Step4_Deities = ({ suggestions, onSelect, isReplay, savedDeity }: { sugges
         const iconName = getDeityIcon(savedDeity.name);
         const sprite = findSprite(iconName) || findSprite("Triple Moon")!;
         return (
-            <div className="flex flex-col items-center justify-center h-full gap-8 animate-in fade-in">
+            <div className="flex flex-col items-center justify-center h-full gap-4 animate-in fade-in min-h-0">
                 <div className="flex items-center gap-2 text-amber-500 bg-amber-900/20 px-4 py-1 rounded-full border border-amber-500/50">
                     <Lock size={14} /> <span className="text-xs uppercase tracking-widest">Ritual Lock Active</span>
                 </div>
-                <h2 className="text-2xl font-serif text-purple-200">Invoking {savedDeity.name}</h2>
-                <div className="bg-black/40 border border-purple-500/30 p-8 rounded-xl flex flex-col items-center">
-                    <div className="w-32 h-32 mb-6 drop-shadow-[0_0_20px_rgba(255,255,255,0.4)]">
+                <h2 className="text-xl font-serif text-purple-200">Invoking {savedDeity.name}</h2>
+                <div className="bg-black/40 border border-purple-500/30 p-6 rounded-xl flex flex-col items-center">
+                    <div className="w-24 h-24 mb-4 drop-shadow-[0_0_20px_rgba(255,255,255,0.4)]">
                         <Sprite sheetPath={sprite.sheet.path} x={sprite.itemInfo.x} y={sprite.itemInfo.y} spriteWidth={sprite.sheet.spriteSize.width} spriteHeight={sprite.sheet.spriteSize.height} sheetWidth={sprite.sheet.sheetSize.width} sheetHeight={sprite.sheet.sheetSize.height} />
                     </div>
-                    <p className="text-gray-300 italic text-center max-w-sm">"{savedDeity.description}"</p>
+                    <p className="text-gray-300 italic text-center max-w-sm text-sm">"{savedDeity.description}"</p>
                 </div>
-                <button onClick={() => onSelect(savedDeity)} className="px-8 py-3 bg-purple-700 hover:bg-purple-600 text-white rounded shadow-lg font-serif">Proceed with Invocation</button>
+                <button onClick={() => onSelect(savedDeity)} className="px-8 py-3 bg-purple-700 hover:bg-purple-600 text-white rounded shadow-lg font-serif text-sm">Proceed with Invocation</button>
             </div>
         );
     }
 
     return (
-        <div className="flex flex-col items-center justify-center h-full gap-6 py-4">
-            <h2 className="text-2xl font-serif text-purple-200">Invoke the Divine</h2>
-            {/* Added pt-6 pb-6 to grid container to allow hover lifts without clipping */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full max-w-5xl px-4 py-6 overflow-y-auto scrollbar-hide">
+        <div className="flex flex-col items-center justify-center h-full gap-4 py-2 min-h-0">
+            <h2 className="text-xl font-serif text-purple-200">Invoke the Divine</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 w-full max-w-5xl px-2 py-2 overflow-y-auto scrollbar-hide min-h-0">
                 {displaySuggestions.map((deity, i) => {
                     const iconName = getDeityIcon(deity.name);
                     const sprite = findSprite(iconName) || findSprite("Triple Moon")!;
                     return (
-                        <button key={i} onClick={() => onSelect(deity)} className="bg-black/40 border border-purple-500/30 p-6 rounded-xl flex flex-col items-center hover:bg-purple-900/20 hover:border-purple-400 transition-all group hover:-translate-y-2 duration-300">
-                            <div className="w-24 h-24 mb-4 opacity-70 group-hover:opacity-100 transition-opacity drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">
+                        <button key={i} onClick={() => onSelect(deity)} className="bg-black/40 border border-purple-500/30 p-4 rounded-xl flex flex-col items-center hover:bg-purple-900/20 hover:border-purple-400 transition-all group hover:-translate-y-1 duration-300">
+                            <div className="w-16 h-16 mb-2 opacity-70 group-hover:opacity-100 transition-opacity drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">
                                 <Sprite sheetPath={sprite.sheet.path} x={sprite.itemInfo.x} y={sprite.itemInfo.y} spriteWidth={sprite.sheet.spriteSize.width} spriteHeight={sprite.sheet.spriteSize.height} sheetWidth={sprite.sheet.sheetSize.width} sheetHeight={sprite.sheet.sheetSize.height} />
                             </div>
-                            <h3 className="text-xl font-serif text-amber-100">{deity.name}</h3>
-                            <p className="text-xs text-purple-300 uppercase tracking-wider mb-3">{deity.title}</p>
-                            <p className="text-sm text-gray-400 text-center italic leading-relaxed">"{deity.description}"</p>
+                            <h3 className="text-lg font-serif text-amber-100">{deity.name}</h3>
+                            <p className="text-[10px] text-purple-300 uppercase tracking-wider mb-2">{deity.title}</p>
+                            <p className="text-xs text-gray-400 text-center italic leading-relaxed line-clamp-2">"{deity.description}"</p>
                         </button>
                     );
                 })}
@@ -809,23 +808,23 @@ const Step4_Deities = ({ suggestions, onSelect, isReplay, savedDeity }: { sugges
 };
 
 const Step5_Summary = ({ spell, onNext }: { spell: GeneratedWiccanSpell, onNext: () => void }) => (
-    <div className="flex flex-col items-center justify-center h-full gap-4 md:gap-6 max-w-2xl mx-auto">
-        <h2 className="text-2xl md:text-3xl font-serif text-purple-100 mb-2">The Workings</h2>
-        <p className="text-purple-300 text-center mb-4">Gather these items in your mind's eye.</p>
-        <div className="grid grid-cols-5 gap-4">
+    <div className="flex flex-col items-center justify-center h-full gap-4 max-w-2xl mx-auto min-h-0">
+        <h2 className="text-2xl font-serif text-purple-100">The Workings</h2>
+        <p className="text-purple-300 text-center text-sm">Gather these items in your mind's eye.</p>
+        <div className="grid grid-cols-5 gap-2 md:gap-4">
             {spell.symbolic_ingredients.map((ing, i) => {
                 const sprite = findSprite(ing.name) || findSprite("White Candle")!;
                 return (
-                    <div key={i} className="flex flex-col items-center gap-2">
-                        <div className="w-16 h-16 bg-white/5 rounded-lg p-2 border border-white/10">
+                    <div key={i} className="flex flex-col items-center gap-1">
+                        <div className="w-12 h-12 bg-white/5 rounded-lg p-2 border border-white/10">
                             <Sprite sheetPath={sprite.sheet.path} x={sprite.itemInfo.x} y={sprite.itemInfo.y} spriteWidth={sprite.sheet.spriteSize.width} spriteHeight={sprite.sheet.spriteSize.height} sheetWidth={sprite.sheet.sheetSize.width} sheetHeight={sprite.sheet.sheetSize.height} />
                         </div>
-                        <p className="text-[10px] text-center text-gray-400 font-serif">{ing.name}</p>
+                        <p className="text-[9px] text-center text-gray-400 font-serif">{ing.name}</p>
                     </div>
                 )
             })}
         </div>
-        <button onClick={onNext} className="mt-8 flex items-center gap-2 px-8 py-3 bg-purple-900 border border-purple-500 rounded text-purple-100 hover:bg-purple-800 transition-colors font-serif uppercase tracking-widest">
+        <button onClick={onNext} className="mt-4 flex items-center gap-2 px-8 py-3 bg-purple-900 border border-purple-500 rounded text-purple-100 hover:bg-purple-800 transition-colors font-serif uppercase tracking-widest text-sm">
             Proceed <ArrowRight size={16} />
         </button>
     </div>
@@ -851,13 +850,13 @@ const Step6_Ingredients = ({ spell, index, onComplete }: { spell: GeneratedWicca
     }, [holding, complete, onComplete]);
 
     return (
-        <div className="flex flex-col items-center justify-center h-full gap-2 md:gap-8">
-            <h2 className="text-2xl font-serif text-purple-200 mt-2">Consecrate</h2>
-            <div className="relative w-64 h-64 flex items-center justify-center">
+        <div className="flex flex-col items-center justify-center h-full gap-4 min-h-0">
+            <h2 className="text-xl font-serif text-purple-200">Consecrate the Components</h2>
+            <div className="relative w-56 h-56 flex items-center justify-center">
                 <div 
                     onMouseDown={() => setHolding(true)} onMouseUp={() => setHolding(false)}
                     onTouchStart={() => setHolding(true)} onTouchEnd={() => setHolding(false)}
-                    className={`relative z-10 w-48 h-48 transition-all duration-300 ${holding ? 'scale-105' : 'scale-100'} cursor-pointer`}
+                    className={`relative z-10 w-40 h-40 transition-all duration-300 ${holding ? 'scale-105' : 'scale-100'} cursor-pointer`}
                 >
                      <Sprite sheetPath={sprite.sheet.path} x={sprite.itemInfo.x} y={sprite.itemInfo.y} spriteWidth={sprite.sheet.spriteSize.width} spriteHeight={sprite.sheet.spriteSize.height} sheetWidth={sprite.sheet.sheetSize.width} sheetHeight={sprite.sheet.sheetSize.height} />
                 </div>
@@ -875,9 +874,9 @@ const Step6_Ingredients = ({ spell, index, onComplete }: { spell: GeneratedWicca
                 </svg>
                 {complete && <div className="absolute inset-0 bg-purple-500/30 rounded-full animate-ping z-0" />}
             </div>
-            <div className="text-center space-y-2 mb-8">
-                <p className="text-purple-300 text-xl font-serif">{item.name}</p>
-                <p className="text-gray-400 text-sm animate-pulse">Hold to imbue with your will.</p>
+            <div className="text-center space-y-1">
+                <p className="text-purple-300 text-lg font-serif">{item.name}</p>
+                <p className="text-gray-400 text-xs animate-pulse">Hold to imbue with your will.</p>
             </div>
         </div>
     );
@@ -902,6 +901,7 @@ const Step7_Cone = ({ spell, onNext }: { spell: GeneratedWiccanSpell, onNext: ()
                         onNext();
                         return 100;
                     }
+                    // Sync count with duration
                     return p + (100 / (CAST_DURATION / 50)); 
                 });
             }, 50);
@@ -913,30 +913,28 @@ const Step7_Cone = ({ spell, onNext }: { spell: GeneratedWiccanSpell, onNext: ()
 
     return (
         <div className="flex flex-col items-center justify-center h-full relative">
-            {/* INSTRUCTION TEXT MOVED TO TOP Z-INDEX */}
-            <div className="absolute top-10 text-center z-30 p-2 rounded bg-black/40 backdrop-blur-sm pointer-events-none">
-                <p className="text-2xl text-amber-100 font-serif">
+            {/* Instruction moved to top to avoid overlap */}
+            <div className="absolute top-4 left-0 right-0 text-center z-30 pointer-events-none">
+                <p className="text-xl text-amber-100 font-serif drop-shadow-md">
                     {isCasting ? "RAISING POWER..." : "Hold the Pentagram"}
                 </p>
             </div>
 
-            {/* Background Chant - Lower Opacity */}
-            <div className="absolute inset-0 flex items-center justify-center opacity-40 pointer-events-none select-none z-0">
-                 <p className="text-center font-serif text-3xl md:text-5xl text-amber-200/90 drop-shadow-[0_0_10px_rgba(251,191,36,0.8)] leading-loose whitespace-pre-line px-8 blur-[2px]">
+            <div className="absolute inset-0 flex items-center justify-center opacity-40 pointer-events-none select-none z-0 mt-8">
+                 <p className="text-center font-serif text-2xl md:text-5xl text-amber-200/90 drop-shadow-[0_0_10px_rgba(251,191,36,0.8)] leading-loose whitespace-pre-line px-8 blur-[2px]">
                      {spell.central_chant}
                  </p>
             </div>
             
             <div 
-                className="relative z-10 w-64 h-64 md:w-80 md:h-80 cursor-pointer active:scale-95 transition-transform flex items-center justify-center"
+                className="relative z-10 w-64 h-64 md:w-80 md:h-80 cursor-pointer active:scale-95 transition-transform flex items-center justify-center mt-8"
                 onMouseDown={() => setIsCasting(true)} onMouseUp={() => setIsCasting(false)}
                 onTouchStart={() => setIsCasting(true)} onTouchEnd={() => setIsCasting(false)}
             >
-                {/* Duration set to duration - 1s to finish trace before countdown */}
-                <PentagramSVG isTracing={isCasting} duration={CAST_DURATION - 1000} />
+                <PentagramSVG isTracing={isCasting} duration={CAST_DURATION} />
                 
                 {isCasting && count > 0 && (
-                    <div className="relative z-20 text-8xl font-serif text-white font-bold drop-shadow-[0_0_15px_black] animate-pulse">
+                    <div className="relative z-20 text-7xl md:text-8xl font-serif text-white font-bold drop-shadow-[0_0_15px_black] animate-pulse">
                         {count}
                     </div>
                 )}
@@ -964,9 +962,9 @@ const Step8_Sending = ({ onNext }: { onNext: () => void }) => {
 
 const Step9_Closing = ({ onComplete }: { onComplete: () => void }) => {
     return (
-        <div className="flex flex-col items-center justify-center h-full gap-8">
-            <h2 className="text-2xl font-serif text-purple-200">Ground the Energy</h2>
-            <button onClick={() => { playSound('/audio/earth.mp3', 0.5).play(); onComplete(); }} className="w-64 h-64 relative group cursor-pointer rounded-full overflow-hidden border-4 border-transparent hover:border-green-500/50 transition-all">
+        <div className="flex flex-col items-center justify-center h-full gap-6">
+            <h2 className="text-xl font-serif text-purple-200">Ground the Energy</h2>
+            <button onClick={() => { playSound('/audio/earth.mp3', 0.5).play(); onComplete(); }} className="w-56 h-56 relative group cursor-pointer rounded-full overflow-hidden border-4 border-transparent hover:border-green-500/50 transition-all">
                 <div className="absolute inset-0 bg-green-900/20 rounded-full blur-2xl group-hover:bg-green-800/40 transition-colors duration-700" />
                 <div className="relative w-full h-full opacity-80 group-hover:opacity-100 transition-opacity duration-500 scale-100 group-hover:scale-105">
                      <Image 
@@ -977,24 +975,24 @@ const Step9_Closing = ({ onComplete }: { onComplete: () => void }) => {
                      />
                 </div>
             </button>
-            <p className="text-gray-400 font-serif italic text-lg">Touch the Earth to open the circle.</p>
+            <p className="text-gray-400 font-serif italic text-base">Touch the Earth to open the circle.</p>
         </div>
     );
 };
 
 const Step10_Result = ({ spell, onSave, isSaving, isSaved, onReset }: any) => (
-    <div className="flex flex-col items-center justify-center h-full gap-8 text-center max-w-lg mx-auto animate-in fade-in zoom-in duration-700 relative">
-        <div className="relative z-10 bg-black/40 p-8 rounded-xl backdrop-blur-md border border-purple-500/30 shadow-[0_0_30px_rgba(0,0,0,0.5)]">
-            <BookOpen size={64} className="text-amber-200 mb-4 drop-shadow-[0_0_15px_gold] mx-auto" />
-            <h2 className="text-3xl md:text-4xl font-serif text-amber-100 leading-tight drop-shadow-md">{spell.affirmation}</h2>
-            <p className="text-purple-300 text-lg mt-4">The ritual is woven into the tapestry of fate.</p>
+    <div className="flex flex-col items-center justify-center h-full gap-6 text-center max-w-lg mx-auto animate-in fade-in zoom-in duration-700 relative min-h-0">
+        <div className="relative z-10 bg-black/40 p-6 rounded-xl backdrop-blur-md border border-purple-500/30 shadow-[0_0_30px_rgba(0,0,0,0.5)]">
+            <BookOpen size={48} className="text-amber-200 mb-2 drop-shadow-[0_0_15px_gold] mx-auto" />
+            <h2 className="text-2xl md:text-3xl font-serif text-amber-100 leading-tight drop-shadow-md">{spell.affirmation}</h2>
+            <p className="text-purple-300 text-sm mt-2">The ritual is woven into the tapestry of fate.</p>
         </div>
 
-        <div className="flex flex-col gap-4 w-full px-8 mt-4 relative z-10 pb-4 mb-4">
-            <button onClick={onSave} disabled={isSaved || isSaving} className="w-full py-4 bg-indigo-900/80 border border-indigo-500 rounded-lg text-indigo-100 flex items-center justify-center gap-3 hover:bg-indigo-800 transition-colors font-serif text-lg backdrop-blur-sm">
+        <div className="flex flex-col gap-2 w-full px-8 relative z-10 pb-4">
+            <button onClick={onSave} disabled={isSaved || isSaving} className="w-full py-3 bg-indigo-900/80 border border-indigo-500 rounded-lg text-indigo-100 flex items-center justify-center gap-3 hover:bg-indigo-800 transition-colors font-serif text-base backdrop-blur-sm">
                 {isSaved ? <Check /> : <Save />} {isSaved ? "Recorded in Grimoire" : "Save Spell to Grimoire"}
             </button>
-            <button onClick={onReset} className="w-full py-4 bg-gray-800/60 border border-gray-600 rounded-lg text-gray-300 hover:bg-gray-700 transition-colors font-serif backdrop-blur-sm">Return to Altar</button>
+            <button onClick={onReset} className="w-full py-3 bg-gray-800/60 border border-gray-600 rounded-lg text-gray-300 hover:bg-gray-700 transition-colors font-serif backdrop-blur-sm text-sm">Return to Altar</button>
         </div>
     </div>
 );
