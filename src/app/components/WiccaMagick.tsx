@@ -19,7 +19,7 @@ import { useAetherEconomy } from '@/hooks/useAetherEconomy';
 import MagickalBackLink from './MagickalBackLink';
 import RoomsButton from './RoomsButton';
 import LoadingSpinner from './LoadingSpinner';
-import { PentagramIcon } from './icons';
+// Replaced PentagramIcon import with local PentagramSVG for control
 import { Sprite } from './Sprite';
 import { findSprite } from '@/lib/spriteLibrary';
 import { Save, Check, BookOpen, ArrowRight, Lock } from 'lucide-react';
@@ -79,13 +79,42 @@ const playSound = (src: string, volume: number = 0.5, loop: boolean = false): { 
 
 // --- Helper Components ---
 
+// Local Pentagram for Perfect Timing Control
+const PentagramSVG = ({ isTracing, duration }: { isTracing: boolean, duration: number }) => {
+    return (
+        <svg viewBox="0 0 100 100" className={`absolute inset-0 w-full h-full ${isTracing ? 'text-amber-400 drop-shadow-[0_0_25px_gold]' : 'text-purple-900'} transition-colors duration-1000 overflow-visible`}>
+             {/* Background Static Path */}
+             <path 
+                d="M 50 5 L 63 40 L 98 40 L 70 60 L 80 95 L 50 75 L 20 95 L 30 60 L 2 40 L 37 40 Z"
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="1" 
+                className="opacity-20"
+             />
+             
+             {/* Animated Tracing Path */}
+             <motion.path
+                d="M 50 5 L 80 95 L 2 40 L 98 40 L 20 95 L 50 5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                initial={{ pathLength: 0 }}
+                animate={{ pathLength: isTracing ? 1 : 0 }}
+                transition={{ duration: isTracing ? duration / 1000 : 0, ease: "linear" }}
+             />
+        </svg>
+    );
+};
+
 const InteractionRing = ({ isHolding, isComplete, duration }: { isHolding: boolean, isComplete: boolean, duration: number }) => (
-    <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg) scale(1.2)' }}>
-        <circle cx="50" cy="50" r="48" stroke="rgba(255,255,255,0.1)" strokeWidth="4" fill="transparent" />
+    <svg className="absolute inset-0 w-full h-full pointer-events-none overflow-visible" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg) scale(1.0)' }}>
+        <circle cx="50" cy="50" r="46" stroke="rgba(255,255,255,0.1)" strokeWidth="3" fill="transparent" />
         <motion.circle
-            cx="50" cy="50" r="48"
+            cx="50" cy="50" r="46"
             stroke="rgba(168, 85, 247, 1)"
-            strokeWidth="4"
+            strokeWidth="3"
             fill="transparent"
             strokeLinecap="round"
             pathLength="1"
@@ -441,7 +470,8 @@ const Step0_Intro = ({ onNext }: { onNext: () => void }) => (
             <h2 className="text-2xl md:text-4xl font-serif text-purple-100 mb-2 drop-shadow-lg">The High Ritual</h2>
             <p className="text-purple-300/80 max-w-xs md:max-w-sm mx-auto font-serif italic text-sm md:text-lg">"Speak the words to unlock the path.<br/>Trace the signs to bind the will."</p>
         </div>
-        <div className="mb-4">
+        {/* Added pb-6 to ensure padding at bottom */}
+        <div className="mb-4 pb-6">
             <button onClick={onNext} className="px-10 py-4 bg-purple-900/40 border border-purple-400/50 rounded-full text-purple-100 hover:bg-purple-800/60 transition-all font-serif uppercase tracking-widest backdrop-blur-md shadow-[0_0_20px_rgba(168,85,247,0.3)]">Enter the Circle</button>
         </div>
     </div>
@@ -469,7 +499,7 @@ const Step1_Intention = ({ intention, setIntention, situation, setSituation, onB
             </div>
         </div>
         
-        <div className="pb-4 shrink-0">
+        <div className="pb-6 shrink-0">
             {!isReplay ? (
                 <div className="flex flex-col md:flex-row gap-4 mt-2">
                      <button onClick={() => onBegin('standard')} className="px-6 py-3 bg-slate-800/80 border border-slate-600 rounded-lg text-slate-300 font-serif">Standard (Free)</button>
@@ -544,21 +574,21 @@ const Step2_CastCircle = ({ onComplete }: { onComplete: () => void }) => {
 const Step3_Quarters = ({ spell, charged, onCharge, onNext }: { spell: GeneratedWiccanSpell | null, charged: string[], onCharge: (n: string) => void, onNext: () => void }) => {
     const [activeElement, setActiveElement] = useState<string | null>(null);
     
-    // UPDATED POSITIONS: Adjusted for true Pentagon shape and screen distribution
+    // Adjusted Coordinates to unsquash pentagon and reduce bottom padding
+    // Top circle moved down to 15% to clear text. Bottom circles up to 80%.
     const quarters = [
-        { name: "Earth", sprite: "Earth Sigil", pos: { top: '5%', left: '50%' }, color: "shadow-[0_0_50px_rgba(34,197,94,0.9)]", chant: spell?.elemental_chants?.Earth }, // Top
-        { name: "Water", sprite: "Water Sigil", pos: { top: '38%', left: '10%' }, color: "shadow-[0_0_50px_rgba(59,130,246,0.9)]", chant: spell?.elemental_chants?.Water }, // Top Left
-        { name: "Air", sprite: "Air Sigil", pos: { top: '38%', left: '90%' }, color: "shadow-[0_0_50px_rgba(234,179,8,0.9)]", chant: spell?.elemental_chants?.Air },   // Top Right
-        { name: "Spirit", sprite: "Spirit Sigil", pos: { top: '90%', left: '25%' }, color: "shadow-[0_0_50px_rgba(168,85,247,0.9)]", chant: spell?.elemental_chants?.Spirit }, // Bottom Left
-        { name: "Fire", sprite: "Fire Sigil", pos: { top: '90%', left: '75%' }, color: "shadow-[0_0_50px_rgba(239,68,68,0.9)]", chant: spell?.elemental_chants?.Fire },   // Bottom Right
+        { name: "Earth", sprite: "Earth Sigil", pos: { top: '15%', left: '50%' }, color: "shadow-[0_0_50px_rgba(34,197,94,0.9)]", chant: spell?.elemental_chants?.Earth }, 
+        { name: "Water", sprite: "Water Sigil", pos: { top: '45%', left: '10%' }, color: "shadow-[0_0_50px_rgba(59,130,246,0.9)]", chant: spell?.elemental_chants?.Water },
+        { name: "Air", sprite: "Air Sigil", pos: { top: '45%', left: '90%' }, color: "shadow-[0_0_50px_rgba(234,179,8,0.9)]", chant: spell?.elemental_chants?.Air },
+        { name: "Spirit", sprite: "Spirit Sigil", pos: { top: '80%', left: '25%' }, color: "shadow-[0_0_50px_rgba(168,85,247,0.9)]", chant: spell?.elemental_chants?.Spirit },
+        { name: "Fire", sprite: "Fire Sigil", pos: { top: '80%', left: '75%' }, color: "shadow-[0_0_50px_rgba(239,68,68,0.9)]", chant: spell?.elemental_chants?.Fire },
     ];
 
     return (
         <div className="flex flex-col items-center h-full w-full relative">
-            {/* Raised Title and Text significantly by reducing top margins */}
-            <h2 className="text-2xl font-serif text-purple-200 text-center w-full -mt-2 shrink-0 relative z-20">{activeElement ? activeElement : "Call the Guardians"}</h2>
+            <h2 className="text-2xl font-serif text-purple-200 text-center w-full mt-2 shrink-0 relative z-20">{activeElement ? activeElement : "Call the Guardians"}</h2>
             
-            {/* Fixed Incantation Container - Moved up close to title to avoid top circle */}
+            {/* Incantation Text Container - Positioned to not overlap Earth (at 15%) */}
             <div className="w-full text-center px-4 h-20 flex items-center justify-center z-20 pointer-events-none shrink-0 mb-4">
                  {activeElement ? (
                     <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-amber-200 font-serif italic text-sm md:text-lg drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] whitespace-pre-line bg-black/60 p-2 rounded-lg backdrop-blur-md border border-amber-500/20">
@@ -569,10 +599,10 @@ const Step3_Quarters = ({ spell, charged, onCharge, onNext }: { spell: Generated
                  )}
             </div>
 
-            {/* Sigil Map Container - Flexible height */}
-            <div className="relative w-full max-w-md aspect-square grow shrink min-h-0 flex items-center justify-center mt-2 mb-12">
+            {/* Sigil Map Container - Overflow Visible to show large glows */}
+            <div className="relative w-full max-w-md aspect-square grow shrink min-h-0 flex items-center justify-center mt-2 mb-2 overflow-visible">
                 {quarters.map(q => (
-                    <div key={q.name} className="absolute transform -translate-x-1/2 -translate-y-1/2" style={q.pos}>
+                    <div key={q.name} className="absolute transform -translate-x-1/2 -translate-y-1/2 z-10" style={q.pos}>
                          <RestoredChargingSigil 
                             name={q.name} spriteName={q.sprite} isCharged={charged.includes(q.name)} glowColor={q.color}
                             onComplete={() => onCharge(q.name)} onStartHold={() => setActiveElement(q.name)} onEndHold={() => setActiveElement(null)}
@@ -581,8 +611,7 @@ const Step3_Quarters = ({ spell, charged, onCharge, onNext }: { spell: Generated
                 ))}
             </div>
 
-            {/* Fixed bottom space for button */}
-            <div className="w-full h-16 flex items-center justify-center shrink-0 mb-4">
+            <div className="w-full h-16 flex items-center justify-center shrink-0 mb-6">
                  {charged.length === 5 && (
                     <button onClick={onNext} className="px-10 py-3 bg-amber-600 hover:bg-amber-500 text-black font-bold rounded-lg animate-bounce shadow-[0_0_20px_orange] z-30 relative">
                         Seal the Quarters
@@ -626,29 +655,43 @@ const RestoredChargingSigil = ({ name, spriteName, isCharged, glowColor, onCompl
 
     if (!sprite) return null;
 
-    // Define background/glow logic
-    // We want the circle to FILL with light.
+    // Fill style for inner glow transparency
     const fillStyle = isCharged 
         ? `radial-gradient(circle, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 70%)` 
         : (isHolding ? `radial-gradient(circle, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 70%)` : 'none');
 
-    const baseClasses = `w-20 h-20 transition-all duration-700 rounded-full flex items-center justify-center`;
-    const chargeClasses = isCharged ? `scale-110 brightness-125 saturate-150 animate-pulse ${glowColor} bg-current` : 'grayscale brightness-75';
+    // Outer glow is handled via shadow class in `glowColor`
+    // Inner glow is handled via Overlay Div with mix-blend mode + inset shadow
     
     return (
-        // Wrapper MUST BE overflow-visible to show outer glow
+        // Wrapper: w-40 h-40 to prevent shadow clipping (80px circle in 160px box)
         <div 
-            className="w-32 h-32 relative flex items-center justify-center cursor-pointer select-none touch-none overflow-visible z-10"
+            className="w-40 h-40 relative flex items-center justify-center cursor-pointer select-none touch-none overflow-visible"
             onMouseDown={handleDown} onMouseUp={handleUp} onMouseLeave={handleUp} 
             onTouchStart={handleDown} onTouchEnd={handleUp} onTouchCancel={handleUp}
         >
+             {/* Main Circle */}
              <div 
-                className={`${baseClasses} ${chargeClasses} ${isHolding ? 'scale-105 brightness-110' : ''}`}
-                style={{ background: fillStyle }}
+                className={`w-20 h-20 relative transition-all duration-700 rounded-full flex items-center justify-center overflow-hidden 
+                    ${isCharged ? `scale-110 brightness-125 saturate-150 animate-pulse ${glowColor}` : 'grayscale brightness-75'} 
+                    ${isHolding ? 'scale-105 brightness-110' : ''}`}
              >
+                 {/* Sprite Image */}
                  <Sprite sheetPath={sprite.sheet.path} x={sprite.itemInfo.x} y={sprite.itemInfo.y} spriteWidth={sprite.sheet.spriteSize.width} spriteHeight={sprite.sheet.spriteSize.height} sheetWidth={sprite.sheet.sheetSize.width} sheetHeight={sprite.sheet.sheetSize.height} />
+                 
+                 {/* Inner Glow Overlay - Fills the interior */}
+                 {(isCharged || isHolding) && (
+                     <div 
+                        className="absolute inset-0 rounded-full pointer-events-none mix-blend-overlay"
+                        style={{ 
+                            background: fillStyle,
+                            boxShadow: isCharged ? 'inset 0 0 20px rgba(255,255,255,0.8)' : 'none'
+                        }} 
+                     />
+                 )}
              </div>
              
+             {/* Ring Overlay */}
              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                  <div className="w-24 h-24 relative">
                     <InteractionRing isHolding={isHolding} isComplete={isCharged} duration={CHARGE_DURATION_ELEMENT} />
@@ -673,19 +716,15 @@ const Step4_Deities = ({ suggestions, onSelect, isReplay, savedDeity }: { sugges
     }, [suggestions, isReplay, savedDeity]);
 
     const getDeityIcon = (name: string) => {
-        const n = name.trim(); // Exact case-sensitive match preferred, or check known keys
-        
-        // Exact matches for Deity Icons 1 & 2
+        const n = name.trim(); 
         const knownDeities = [
             "Triple Moon", "Horned God", "Pink Heart", "Owl", "Stag", "Sun Wheel", "Triskele", "Ankh",
             "Lightning Bolt", "Crescent Moon", "Raven", "Hammer", "Snake", "Dove", "Cornucopia", "Skull",
             "Hecate", "Cernunnos", "Aphrodite", "Thor", "Brigid", "Ganesha", "Pan", "Isis", 
             "Odin", "Freya", "Morrigan", "Gaia", "Apollo", "Selene", "Lakshmi", "Thoth"
         ];
-
         if (knownDeities.includes(n)) return n;
         
-        // Fallback checks for variations if strict match fails
         const lower = n.toLowerCase();
         if (lower.includes("hecate")) return "Hecate";
         if (lower.includes("cernunnos")) return "Cernunnos";
@@ -704,15 +743,12 @@ const Step4_Deities = ({ suggestions, onSelect, isReplay, savedDeity }: { sugges
         if (lower.includes("lakshmi") || lower.includes("abundance")) return "Lakshmi";
         if (lower.includes("thoth")) return "Thoth";
         if (lower.includes("horned")) return "Horned God";
-        
-        // Default
         return "Triple Moon"; 
     };
 
     if (isReplay && savedDeity) {
         const iconName = getDeityIcon(savedDeity.name);
         const sprite = findSprite(iconName) || findSprite("Triple Moon")!;
-
         return (
             <div className="flex flex-col items-center justify-center h-full gap-8 animate-in fade-in">
                 <div className="flex items-center gap-2 text-amber-500 bg-amber-900/20 px-4 py-1 rounded-full border border-amber-500/50">
@@ -733,12 +769,13 @@ const Step4_Deities = ({ suggestions, onSelect, isReplay, savedDeity }: { sugges
     return (
         <div className="flex flex-col items-center justify-center h-full gap-6 py-4">
             <h2 className="text-2xl font-serif text-purple-200">Invoke the Divine</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full max-w-5xl px-4 pb-8 overflow-y-auto">
+            {/* Added pt-6 pb-6 to grid container to allow hover lifts without clipping */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full max-w-5xl px-4 py-6 overflow-y-auto scrollbar-hide">
                 {displaySuggestions.map((deity, i) => {
                     const iconName = getDeityIcon(deity.name);
                     const sprite = findSprite(iconName) || findSprite("Triple Moon")!;
                     return (
-                        <button key={i} onClick={() => onSelect(deity)} className="bg-black/40 border border-purple-500/30 p-6 rounded-xl flex flex-col items-center hover:bg-purple-900/20 hover:border-purple-400 transition-all group hover:-translate-y-1 duration-300">
+                        <button key={i} onClick={() => onSelect(deity)} className="bg-black/40 border border-purple-500/30 p-6 rounded-xl flex flex-col items-center hover:bg-purple-900/20 hover:border-purple-400 transition-all group hover:-translate-y-2 duration-300">
                             <div className="w-24 h-24 mb-4 opacity-70 group-hover:opacity-100 transition-opacity drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">
                                 <Sprite sheetPath={sprite.sheet.path} x={sprite.itemInfo.x} y={sprite.itemInfo.y} spriteWidth={sprite.sheet.spriteSize.width} spriteHeight={sprite.sheet.spriteSize.height} sheetWidth={sprite.sheet.sheetSize.width} sheetHeight={sprite.sheet.sheetSize.height} />
                             </div>
@@ -838,6 +875,7 @@ const Step7_Cone = ({ spell, onNext }: { spell: GeneratedWiccanSpell, onNext: ()
         let interval: NodeJS.Timeout;
         if (isCasting) {
              soundRef.current = playSound('/audio/sfx-chaos-hold.mp3', 0.4, true);
+            // Count up logic
             interval = setInterval(() => {
                 setCastProgress(p => {
                     if (p >= 100) {
@@ -846,11 +884,15 @@ const Step7_Cone = ({ spell, onNext }: { spell: GeneratedWiccanSpell, onNext: ()
                         onNext();
                         return 100;
                     }
+                    // Sync count with duration
                     return p + (100 / (CAST_DURATION / 50)); 
                 });
             }, 50);
         } else {
             if(soundRef.current) soundRef.current.stop();
+            // Optional: reset progress if release? Or keep?
+            // User requested: tracing not completed until 13s. Implies if they let go, it stops/pauses.
+            // Current logic pauses.
         }
         return () => { clearInterval(interval); if(soundRef.current) soundRef.current.stop(); };
     }, [isCasting, onNext]);
@@ -867,7 +909,9 @@ const Step7_Cone = ({ spell, onNext }: { spell: GeneratedWiccanSpell, onNext: ()
                 onMouseDown={() => setIsCasting(true)} onMouseUp={() => setIsCasting(false)}
                 onTouchStart={() => setIsCasting(true)} onTouchEnd={() => setIsCasting(false)}
             >
-                <PentagramIcon className={`absolute inset-0 w-full h-full ${isCasting ? 'text-amber-400 drop-shadow-[0_0_25px_gold]' : 'text-purple-900'} transition-colors duration-1000`} isTracing={isCasting} />
+                {/* Replaced Icon with SVG that takes duration */}
+                <PentagramSVG isTracing={isCasting} duration={CAST_DURATION} />
+                
                 {isCasting && count > 0 && (
                     <div className="relative z-20 text-8xl font-serif text-white font-bold drop-shadow-[0_0_15px_black] animate-pulse">
                         {count}
@@ -928,8 +972,7 @@ const Step10_Result = ({ spell, onSave, isSaving, isSaved, onReset }: any) => (
             <p className="text-purple-300 text-lg mt-4">The ritual is woven into the tapestry of fate.</p>
         </div>
 
-        {/* Added extra bottom padding to wrapper to prevent cutoff */}
-        <div className="flex flex-col gap-4 w-full px-8 mt-4 relative z-10 pb-10">
+        <div className="flex flex-col gap-4 w-full px-8 mt-4 relative z-10 pb-10 mb-4">
             <button onClick={onSave} disabled={isSaved || isSaving} className="w-full py-4 bg-indigo-900/80 border border-indigo-500 rounded-lg text-indigo-100 flex items-center justify-center gap-3 hover:bg-indigo-800 transition-colors font-serif text-lg backdrop-blur-sm">
                 {isSaved ? <Check /> : <Save />} {isSaved ? "Recorded in Grimoire" : "Save Spell to Grimoire"}
             </button>
