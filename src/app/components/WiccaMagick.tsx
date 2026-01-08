@@ -500,21 +500,23 @@ const Step0_Intro = ({ onNext }: { onNext: () => void }) => (
 );
 
 const Step1_Intention = ({ intention, setIntention, situation, setSituation, onBegin, isReplay, cost }: any) => (
-    <div className="flex flex-col items-center h-full min-h-0">
+    <div className="flex flex-col items-center h-full min-h-0 w-full">
         <h2 className="text-lg font-serif text-amber-100/90 drop-shadow-md shrink-0 mb-1 mt-1">Inscribe Your Will</h2>
         
-        {/* Flexible container for scroll to ensure it fits available height */}
-        <div className="relative w-full max-w-md flex-1 min-h-0 my-1 flex items-center justify-center">
-            {/* Use aspect ratio box to maintain scroll shape within flexible area */}
-            <div className="relative aspect-[958/860] h-auto max-h-full w-auto">
+        {/* Flexible container that ensures content fits within view */}
+        <div className="flex-1 min-h-0 w-full flex items-center justify-center p-2">
+             {/* Wrapper using aspect-ratio of the original scroll to maintain shape, but constrained by max-w/max-h */}
+            <div className="relative max-w-full max-h-full aspect-[958/860]">
                 <Image 
                     src={`${ASSET_PATH}/wicca_scroll_intention.png`} 
-                    layout="fill" 
-                    objectFit="contain" 
+                    width={958}
+                    height={860}
                     alt="Scroll" 
-                    priority 
+                    priority
+                    className="w-auto h-auto max-w-full max-h-full object-contain drop-shadow-xl"
                 />
-                {/* Inputs positioned absolutely within the container, using percentages to align with scroll art */}
+                
+                {/* Inputs absolutely positioned over the scroll image */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center p-[18%] gap-1 z-10">
                     <input 
                         value={intention} onChange={e => setIntention(e.target.value)}
