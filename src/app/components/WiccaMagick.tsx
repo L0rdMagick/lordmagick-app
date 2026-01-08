@@ -437,20 +437,20 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
                 </div>
             )}
             
-            {/* Header with Absolute Center Title */}
-            <header className="relative z-20 w-full px-2 h-12 md:h-16 shrink-0 flex items-center justify-between mt-1">
+            {/* Header with Absolute Center Title and Top Padding for Desktop */}
+            <header className="relative z-20 w-full px-4 h-16 md:h-24 shrink-0 flex items-center justify-between pt-2 md:pt-4">
                 <div className="relative z-30 w-16 flex justify-start">
                     <MagickalBackLink href="/spell-room" text="Exit" />
                 </div>
                 
                 {/* Title Absolute Centered to Viewport */}
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20 pt-2 md:pt-4">
                     <h1 className="font-serif text-base md:text-3xl text-purple-300 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] tracking-wide text-center">
                         Wicca Magick
                     </h1>
                 </div>
 
-                {/* Rooms Button with Significant scaling for small screens */}
+                {/* Rooms Button with Scaling for small screens */}
                 <div className="relative z-30 w-16 flex justify-end origin-right transform scale-50 md:scale-100">
                     <RoomsButton />
                 </div>
@@ -485,16 +485,23 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
 // --- STEP COMPONENTS ---
 
 const Step0_Intro = ({ onNext }: { onNext: () => void }) => (
-    <div className="flex flex-col items-center justify-center h-full gap-4 text-center animate-in fade-in duration-1000 min-h-0 py-2">
-        <div className="relative w-40 h-40 md:w-80 md:h-80 shrink-0">
+    <div className="flex flex-col items-center justify-between h-full text-center animate-in fade-in duration-1000 min-h-0 py-6 md:py-8 md:justify-center md:gap-8">
+        {/* Title area */}
+        <div className="shrink-0 space-y-1 md:space-y-4">
+             <h2 className="text-3xl md:text-5xl font-serif text-purple-100 drop-shadow-lg leading-tight">The High Ritual</h2>
+             <p className="text-purple-300/80 font-serif italic text-sm md:text-xl">"Speak the words to unlock the path."</p>
+        </div>
+
+        {/* Large Image Area - grows to fill available space without pushing content */}
+        <div className="relative w-full max-w-lg flex-1 min-h-[150px] my-2">
             <Image src={`${ASSET_PATH}/wicca_intro_instructions.png`} layout="fill" objectFit="contain" alt="Intro" priority />
         </div>
-        <div className="shrink-0">
-            <h2 className="text-xl md:text-4xl font-serif text-purple-100 mb-1 drop-shadow-lg">The High Ritual</h2>
-            <p className="text-purple-300/80 max-w-xs md:max-w-sm mx-auto font-serif italic text-xs md:text-lg">"Speak the words to unlock the path.<br/>Trace the signs to bind the will."</p>
-        </div>
-        <div className="mb-2 shrink-0">
-            <button onClick={onNext} className="px-8 py-3 bg-purple-900/40 border border-purple-400/50 rounded-full text-purple-100 hover:bg-purple-800/60 transition-all font-serif uppercase tracking-widest backdrop-blur-md shadow-[0_0_20px_rgba(168,85,247,0.3)] text-sm">Enter the Circle</button>
+
+        {/* Button Area */}
+        <div className="shrink-0 mb-2 md:mb-6">
+            <button onClick={onNext} className="px-10 py-4 bg-purple-900/40 border border-purple-400/50 rounded-full text-purple-100 hover:bg-purple-800/60 transition-all font-serif uppercase tracking-widest backdrop-blur-md shadow-[0_0_20px_rgba(168,85,247,0.3)] text-lg md:text-xl">
+                Enter the Circle
+            </button>
         </div>
     </div>
 );
