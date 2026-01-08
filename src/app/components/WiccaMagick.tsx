@@ -401,7 +401,7 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
     };
 
     return (
-        <main className="relative h-screen w-screen bg-black flex flex-col font-sans select-none overflow-hidden">
+        <main className="relative h-[100dvh] w-screen bg-black flex flex-col font-sans select-none overflow-hidden">
             {/* Custom scrollbar styles */}
             <style jsx global>{`
                 .custom-scrollbar::-webkit-scrollbar {
@@ -438,20 +438,20 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
             )}
             
             {/* Header with Absolute Center Title */}
-            <header className="relative z-20 w-full px-4 h-14 md:h-16 shrink-0 flex items-center justify-between">
+            <header className="relative z-20 w-full px-2 h-12 md:h-16 shrink-0 flex items-center justify-between mt-1">
                 <div className="relative z-30 w-16 flex justify-start">
                     <MagickalBackLink href="/spell-room" text="Exit" />
                 </div>
                 
                 {/* Title Absolute Centered to Viewport */}
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
-                    <h1 className="font-serif text-xl md:text-3xl text-purple-300 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] tracking-wide text-center">
+                    <h1 className="font-serif text-base md:text-3xl text-purple-300 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] tracking-wide text-center">
                         Wicca Magick
                     </h1>
                 </div>
 
-                {/* Rooms Button with Scaling for small screens */}
-                <div className="relative z-30 w-16 flex justify-end origin-right transform scale-75 md:scale-100">
+                {/* Rooms Button with Significant scaling for small screens */}
+                <div className="relative z-30 w-16 flex justify-end origin-right transform scale-50 md:scale-100">
                     <RoomsButton />
                 </div>
             </header>
@@ -501,11 +501,12 @@ const Step0_Intro = ({ onNext }: { onNext: () => void }) => (
 
 const Step1_Intention = ({ intention, setIntention, situation, setSituation, onBegin, isReplay, cost }: any) => (
     <div className="flex flex-col items-center h-full min-h-0">
-        <h2 className="text-xl font-serif text-amber-100/90 drop-shadow-md shrink-0 mb-1 mt-1">Inscribe Your Will</h2>
+        <h2 className="text-lg font-serif text-amber-100/90 drop-shadow-md shrink-0 mb-1 mt-1">Inscribe Your Will</h2>
         
         {/* Flexible container for scroll to ensure it fits available height */}
-        <div className="relative w-full max-w-md flex-1 min-h-0 my-1">
-            <div className="relative w-full h-full">
+        <div className="relative w-full max-w-md flex-1 min-h-0 my-1 flex items-center justify-center">
+            {/* Use aspect ratio box to maintain scroll shape within flexible area */}
+            <div className="relative aspect-[958/860] h-auto max-h-full w-auto">
                 <Image 
                     src={`${ASSET_PATH}/wicca_scroll_intention.png`} 
                     layout="fill" 
@@ -514,29 +515,29 @@ const Step1_Intention = ({ intention, setIntention, situation, setSituation, onB
                     priority 
                 />
                 {/* Inputs positioned absolutely within the container, using percentages to align with scroll art */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center p-[15%] gap-2 z-10">
+                <div className="absolute inset-0 flex flex-col items-center justify-center p-[18%] gap-1 z-10">
                     <input 
                         value={intention} onChange={e => setIntention(e.target.value)}
                         placeholder="My Intention..." readOnly={isReplay}
-                        className="w-full bg-transparent border-b-2 border-[#4a2e1c]/50 text-center text-[#4a2e1c] placeholder-[#4a2e1c]/40 font-serif text-lg md:text-xl outline-none py-1"
+                        className="w-full bg-transparent border-b border-[#4a2e1c]/50 text-center text-[#4a2e1c] placeholder-[#4a2e1c]/40 font-serif text-base md:text-xl outline-none py-0.5"
                     />
                     <textarea 
                         value={situation} onChange={e => setSituation(e.target.value)}
                         placeholder="Describe the situation..." readOnly={isReplay}
-                        className="w-full h-16 md:h-24 bg-transparent text-center text-[#4a2e1c] placeholder-[#4a2e1c]/40 font-serif text-xs md:text-sm outline-none resize-none pt-1 scrollbar-hide"
+                        className="w-full h-12 md:h-24 bg-transparent text-center text-[#4a2e1c] placeholder-[#4a2e1c]/40 font-serif text-[10px] md:text-sm outline-none resize-none pt-1 scrollbar-hide leading-tight"
                     />
                 </div>
             </div>
         </div>
         
-        <div className="pb-2 shrink-0 mt-1">
+        <div className="pb-4 shrink-0 mt-1">
             {!isReplay ? (
                 <div className="flex flex-col md:flex-row gap-2">
-                     <button onClick={() => onBegin('standard')} className="px-6 py-2 bg-slate-800/80 border border-slate-600 rounded-lg text-slate-300 font-serif text-sm">Standard (Free)</button>
-                     <button onClick={() => onBegin('ai')} className="px-6 py-2 bg-purple-900/80 border border-purple-500 rounded-lg text-purple-100 font-serif shadow-[0_0_15px_rgba(168,85,247,0.3)] text-sm">High Ritual ({cost} Aether)</button>
+                     <button onClick={() => onBegin('standard')} className="px-6 py-2 bg-slate-800/80 border border-slate-600 rounded-lg text-slate-300 font-serif text-xs">Standard (Free)</button>
+                     <button onClick={() => onBegin('ai')} className="px-6 py-2 bg-purple-900/80 border border-purple-500 rounded-lg text-purple-100 font-serif shadow-[0_0_15px_rgba(168,85,247,0.3)] text-xs">High Ritual ({cost} Aether)</button>
                 </div>
             ) : (
-                 <button onClick={() => onBegin('standard')} className="px-8 py-2 bg-purple-900/90 border border-purple-400 rounded-lg text-purple-100 font-serif shadow-[0_0_15px_rgba(168,85,247,0.6)] animate-pulse text-sm">Begin Saved Ritual</button>
+                 <button onClick={() => onBegin('standard')} className="px-8 py-2 bg-purple-900/90 border border-purple-400 rounded-lg text-purple-100 font-serif shadow-[0_0_15px_rgba(168,85,247,0.6)] animate-pulse text-xs">Begin Saved Ritual</button>
             )}
         </div>
     </div>
