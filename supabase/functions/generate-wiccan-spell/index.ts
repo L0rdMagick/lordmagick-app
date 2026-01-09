@@ -57,23 +57,26 @@ Deno.serve(async (req: Request) => {
           Focal Point: "${focalPoint}".
           Moon Phase: "${moonPhase}".
 
+          CRITICAL INSTRUCTION: Every single rhyme and incantation generated MUST explicitly reference the User's Intention ("${intention}") or the specific outcome they desire. Do not use generic text. If they want Love, mention Love. If they want Money, mention Wealth.
+
           Generate a valid JSON object with the following keys:
           - "title": A poetic name for the ritual.
           - "transitional_incantations": An object with 4 keys:
-               1. "sanctification": A 2-line rhyme to purify the user before starting.
-               2. "circle_casting": A 2-line rhyme to invoke while tracing the circle.
+               1. "sanctification": A 2-line rhyme to purify the user before starting. MUST mention the intention/desire.
+               2. "circle_casting": A 2-line rhyme to invoke while tracing the circle. MUST mention protecting the specific desire.
                3. "invocation": A 2-line rhyme to welcome the deity.
-               4. "closing": A 2-line rhyme to open the circle/end the ritual.
+               4. "closing": A 2-line rhyme to open the circle. MUST mention the specific desire is now released.
+          - "tool_consecration": A 2-line rhyming incantation to speak before using the tools. It must specifically state that these tools are being used to bring about the User's Intention.
           - "elemental_chants": An object containing 5 short (2-line) rhyming incantations to call the quarters. Keys: "Spirit", "Air", "Fire", "Earth", "Water".
           - "suggested_deities": An array of 3 objects (Deity Suggestions) relevant to the intention. Keys: 
              - "name": Choose from [${AVAILABLE_DEITIES.map(d => `"${d}"`).join(", ")}].
              - "title": A short title.
              - "pantheon": The origin.
              - "description": 1 sentence description.
-             - "invocation": A specific 2-line rhyming invocation/prayer to call this specific deity for help.
+             - "invocation": A specific 2-line rhyming invocation/prayer to call this specific deity to help with the "${intention}".
           - "symbolic_ingredients": An array of EXACTLY FIVE objects. For each:
              - "name": Choose from [${AVAILABLE_INGREDIENTS.map(i => `"${i}"`).join(", ")}].
-             - "incantation": A 1-sentence command for this item.
+             - "incantation": A 1-sentence command for this item relating to "${intention}".
           - "central_chant": A 4-line rhyming chant for the climax.
           - "affirmation": A single sentence to seal the spell.
           
