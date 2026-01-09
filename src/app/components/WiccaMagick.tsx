@@ -31,8 +31,18 @@ const CAST_DURATION = 13000;
 const SENDING_DURATION = 4000;
 const SERVICE_SLUG = 'ai_wicca_magick'; 
 
+// --- Data Types Extended ---
+// Extending the type locally to include invocation for this file
+interface ExtendedWiccanDeitySuggestion extends WiccanDeitySuggestion {
+    invocation?: string;
+}
+
+interface ExtendedGeneratedWiccanSpell extends GeneratedWiccanSpell {
+    suggested_deities: ExtendedWiccanDeitySuggestion[];
+}
+
 // --- Standard Ritual Data ---
-const STANDARD_WICCAN_SPELL: GeneratedWiccanSpell = {
+const STANDARD_WICCAN_SPELL: ExtendedGeneratedWiccanSpell = {
     title: "Circle of Elemental Balance",
     transitional_incantations: {
         sanctification: "By my will and by my word,\nLet this sacred space be heard.",
@@ -43,9 +53,27 @@ const STANDARD_WICCAN_SPELL: GeneratedWiccanSpell = {
     central_chant: "Eko Eko Azarak, Eko Eko Zomelak.\nBy Earth and Water, Fire and Air,\nI cast this spell with love and care.",
     affirmation: "So mote it be.",
     suggested_deities: [
-        { name: "Triple Moon", title: "Mother of All", pantheon: "Wiccan", description: "The Maiden, Mother, and Crone." },
-        { name: "Horned God", title: "Lord of the Wild", pantheon: "Wiccan", description: "The protector of nature and cycle." },
-        { name: "Hecate", title: "Queen of Witches", pantheon: "Greek", description: "Goddess of magic, crossroads, and ghosts." }
+        { 
+            name: "Triple Moon", 
+            title: "Mother of All", 
+            pantheon: "Wiccan", 
+            description: "The Maiden, Mother, and Crone.",
+            invocation: "Maiden, Mother, Crone so bright,\nBless this circle with your light."
+        },
+        { 
+            name: "Horned God", 
+            title: "Lord of the Wild", 
+            pantheon: "Wiccan", 
+            description: "The protector of nature and cycle.",
+            invocation: "Stag and Hunter, Lord of Green,\nWalk among us, unseen."
+        },
+        { 
+            name: "Hecate", 
+            title: "Queen of Witches", 
+            pantheon: "Greek", 
+            description: "Goddess of magic, crossroads, and ghosts.",
+            invocation: "Queen of Shadows, Torch in hand,\nGuide us through the spirit land."
+        }
     ],
     symbolic_ingredients: [
         { name: "Salt", incantation: "Salt of Earth, purify this space." },
@@ -219,11 +247,11 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
     // Data State
     const [intention, setIntention] = useState('');
     const [situation, setSituation] = useState('');
-    const [generatedSpell, setGeneratedSpell] = useState<GeneratedWiccanSpell | null>(null);
+    const [generatedSpell, setGeneratedSpell] = useState<ExtendedGeneratedWiccanSpell | null>(null);
     
     // Ritual State
     const [chargedElements, setChargedElements] = useState<string[]>([]);
-    const [selectedDeity, setSelectedDeity] = useState<WiccanDeitySuggestion | null>(null);
+    const [selectedDeity, setSelectedDeity] = useState<ExtendedWiccanDeitySuggestion | null>(null);
     const [chargingIndex, setChargingIndex] = useState(0);
     const [isSaving, setIsSaving] = useState(false);
     const [isSaved, setIsSaved] = useState(false);
@@ -271,9 +299,9 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
             setLoading(true);
             setLoadingMessage("Communing with the Spirits...");
             try {
-                const s = await generateWiccanSpell({ intention, focalPoint: 'The Divine', moonPhase: 'Current', situation });
+                const s: any = await generateWiccanSpell({ intention, focalPoint: 'The Divine', moonPhase: 'Current', situation });
                 
-                const mergedSpell: GeneratedWiccanSpell = {
+                const mergedSpell: ExtendedGeneratedWiccanSpell = {
                     title: s.title || STANDARD_WICCAN_SPELL.title,
                     central_chant: s.central_chant || STANDARD_WICCAN_SPELL.central_chant,
                     affirmation: s.affirmation || STANDARD_WICCAN_SPELL.affirmation,
@@ -293,7 +321,14 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
     const nextStep = () => {
         const next = ritualStep + 1;
         setRitualStep(next);
-        if ([5, 7, 8, 10].includes(next)) setSubStep('action');
+        // Step 5 (Candles) doesn't have an incantation overlay substep before it, 
+        // but Step 6 (Summary) is passive. 
+        // Steps requiring "action" subStep: 
+        // 5 (Candles) is action only.
+        // 7 (Ingredients) is incantation first.
+        // 8 (Pentagram) is action.
+        // 10 (Sending) is auto action.
+        if ([5, 8, 9, 11].includes(next)) setSubStep('action');
         else setSubStep('incantation');
     };
 
@@ -363,14 +398,15 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
             case 2: return trans?.sanctification || "By my will, I begin.";
             case 3: return "Guardians of the Watchtowers,\nHail and Welcome!";
             case 4: return trans?.invocation || "Spirits of Light, draw near.";
-            case 6: return generatedSpell.symbolic_ingredients[chargingIndex]?.incantation || "I charge this item.";
-            case 9: return trans?.closing || "The Circle is open.";
+            // Step 5 is Candles, handled inside component
+            case 7: return generatedSpell.symbolic_ingredients[chargingIndex]?.incantation || "I charge this item.";
+            case 10: return trans?.closing || "The Circle is open.";
             default: return "";
         }
     };
 
     const getCurrentIngredient = () => {
-        if (ritualStep === 6 && generatedSpell) {
+        if (ritualStep === 7 && generatedSpell) {
             return generatedSpell.symbolic_ingredients[chargingIndex];
         }
         return undefined;
@@ -390,12 +426,13 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
             case 2: return <Step2_CastCircle onComplete={nextStep} />;
             case 3: return <Step3_Quarters spell={generatedSpell} charged={chargedElements} onCharge={handleElementCharge} onNext={nextStep} />;
             case 4: return <Step4_Deities suggestions={generatedSpell?.suggested_deities || []} onSelect={(d) => { setSelectedDeity(d); nextStep(); }} isReplay={isReplayMode} savedDeity={selectedDeity} />;
-            case 5: return <Step5_Summary spell={generatedSpell!} onNext={nextStep} />;
-            case 6: return <Step6_Ingredients spell={generatedSpell!} index={chargingIndex} onComplete={handleIngredientComplete} />;
-            case 7: return <Step7_Cone spell={generatedSpell!} onNext={nextStep} />;
-            case 8: return <Step8_Sending onNext={nextStep} />;
-            case 9: return <Step9_Closing onComplete={nextStep} />;
-            case 10: return <Step10_Result spell={generatedSpell!} onSave={handleSave} isSaving={isSaving} isSaved={isSaved} onReset={() => window.location.reload()} />;
+            case 5: return <Step5_DeityCandles deity={selectedDeity} onComplete={nextStep} />;
+            case 6: return <Step6_Summary spell={generatedSpell!} onNext={nextStep} />;
+            case 7: return <Step7_Ingredients spell={generatedSpell!} index={chargingIndex} onComplete={handleIngredientComplete} />;
+            case 8: return <Step8_Cone spell={generatedSpell!} onNext={nextStep} />;
+            case 9: return <Step9_Sending onNext={nextStep} />;
+            case 10: return <Step10_Closing onComplete={nextStep} />;
+            case 11: return <Step11_Result spell={generatedSpell!} onSave={handleSave} isSaving={isSaving} isSaved={isSaved} onReset={() => window.location.reload()} />;
             default: return null;
         }
     };
@@ -416,14 +453,14 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
                 }
             `}</style>
 
-            {ritualStep === 10 && (
+            {ritualStep === 11 && (
                  <div className="absolute inset-0 z-0 animate-in fade-in duration-1000">
                     <Image src={`${ASSET_PATH}/wicca_spell_manifestation.png`} layout="fill" objectFit="cover" alt="Manifestation" />
                     <div className="absolute inset-0 bg-black/40" />
                  </div>
             )}
             
-            {ritualStep !== 10 && (
+            {ritualStep !== 11 && (
                 <div className="absolute inset-0 z-0">
                     <Image 
                         src="/images/spell-room/spell-room-background.png" 
@@ -486,18 +523,13 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
 
 const Step0_Intro = ({ onNext }: { onNext: () => void }) => (
     <div className="flex flex-col items-center justify-between h-full text-center animate-in fade-in duration-1000 min-h-0 py-6 md:py-8 md:justify-center md:gap-8">
-        {/* Title area */}
         <div className="shrink-0 space-y-1 md:space-y-4">
              <h2 className="text-3xl md:text-5xl font-serif text-purple-100 drop-shadow-lg leading-tight">The High Ritual</h2>
              <p className="text-purple-300/80 font-serif italic text-sm md:text-xl">"Speak the words to unlock the path."</p>
         </div>
-
-        {/* Large Image Area - grows to fill available space without pushing content */}
         <div className="relative w-full max-w-lg flex-1 min-h-[150px] my-2">
             <Image src={`${ASSET_PATH}/wicca_intro_instructions.png`} layout="fill" objectFit="contain" alt="Intro" priority />
         </div>
-
-        {/* Button Area */}
         <div className="shrink-0 mb-2 md:mb-6">
             <button onClick={onNext} className="px-10 py-4 bg-purple-900/40 border border-purple-400/50 rounded-full text-purple-100 hover:bg-purple-800/60 transition-all font-serif uppercase tracking-widest backdrop-blur-md shadow-[0_0_20px_rgba(168,85,247,0.3)] text-lg md:text-xl">
                 Enter the Circle
@@ -510,9 +542,8 @@ const Step1_Intention = ({ intention, setIntention, situation, setSituation, onB
     <div className="flex flex-col items-center justify-between h-full min-h-0 w-full py-2 md:justify-center md:gap-8">
         <h2 className="text-xl md:text-3xl font-serif text-amber-100/90 drop-shadow-md shrink-0 text-center">Inscribe Your Will</h2>
         
-        {/* Scroll Image Container - Matches IncantationOverlay sizing style */}
+        {/* Scroll Image Container */}
         <div className="relative w-full max-w-md aspect-[958/860] shrink-1 min-h-0 flex items-center justify-center">
-            {/* The image fills this container */}
             <Image 
                 src={`${ASSET_PATH}/wicca_scroll_intention.png`} 
                 layout="fill"
@@ -521,8 +552,8 @@ const Step1_Intention = ({ intention, setIntention, situation, setSituation, onB
                 priority
                 className="drop-shadow-xl"
             />
-            {/* Inputs */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center p-[18%] gap-3 z-10">
+            {/* Inputs - Added more padding (25% x, 18% y) to prevent text running off scroll */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center px-[25%] py-[18%] gap-3 z-10">
                 <input 
                     value={intention} onChange={e => setIntention(e.target.value)}
                     placeholder="My Intention..." readOnly={isReplay}
@@ -531,13 +562,11 @@ const Step1_Intention = ({ intention, setIntention, situation, setSituation, onB
                 <textarea 
                     value={situation} onChange={e => setSituation(e.target.value)}
                     placeholder="Describe the situation..." readOnly={isReplay}
-                    // Updated font size to match intention input
                     className="w-full h-20 md:h-32 bg-transparent text-center text-[#4a2e1c] placeholder-[#4a2e1c]/40 font-serif text-lg md:text-2xl outline-none resize-none pt-1 scrollbar-hide leading-snug"
                 />
             </div>
         </div>
         
-        {/* Buttons - Stacked on mobile for larger touch targets */}
         <div className="shrink-0 w-full max-w-md px-2 pb-2">
             {!isReplay ? (
                 <div className="flex flex-col gap-3">
@@ -610,7 +639,6 @@ const Step2_CastCircle = ({ onComplete }: { onComplete: () => void }) => {
                 <h2 className="text-2xl font-serif text-purple-100 drop-shadow-md">Cast the Circle</h2>
                 <p className="text-purple-300/60 italic text-sm mt-1">Trace the circle clockwise.</p>
             </div>
-            {/* Aspect Square to keep circle shape, max-w to not overflow */}
             <div 
                 ref={containerRef} className="relative w-full max-w-[300px] aspect-square flex items-center justify-center touch-none select-none cursor-crosshair shrink-0"
                 onMouseMove={handleMove} onTouchMove={handleMove} onMouseUp={handleEnd} onMouseLeave={handleEnd} onTouchEnd={handleEnd}
@@ -642,7 +670,6 @@ const Step3_Quarters = ({ spell, charged, onCharge, onNext }: { spell: Generated
         <div className="flex flex-col items-center h-full w-full relative min-h-0">
             <h2 className="text-xl font-serif text-purple-200 text-center w-full shrink-0 relative z-20 mt-1">{activeElement ? activeElement : "Call the Guardians"}</h2>
             
-            {/* Chant Text Container: Fixed height h-24 ensures layout stability and prevents shift/overlap */}
             <div className="w-full h-24 shrink-0 flex items-center justify-center z-20 pointer-events-none px-4 mb-0">
                  {activeElement ? (
                     <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-amber-200 font-serif italic text-sm md:text-lg drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] whitespace-pre-line bg-black/60 p-2 rounded-lg backdrop-blur-md border border-amber-500/20">
@@ -653,7 +680,6 @@ const Step3_Quarters = ({ spell, charged, onCharge, onNext }: { spell: Generated
                  )}
             </div>
 
-            {/* Sigil Map Container - Flexible */}
             <div className="relative w-full max-w-sm flex-1 min-h-0 aspect-square flex items-center justify-center overflow-visible my-0">
                 <div className="relative w-full h-full">
                     {quarters.map(q => (
@@ -667,7 +693,6 @@ const Step3_Quarters = ({ spell, charged, onCharge, onNext }: { spell: Generated
                 </div>
             </div>
 
-            {/* Button Container - Compact */}
             <div className="w-full h-10 flex items-center justify-center shrink-0 mb-1">
                  {charged.length === 5 && (
                     <button onClick={onNext} className="px-8 py-2 bg-amber-600 hover:bg-amber-500 text-black font-bold rounded-lg animate-bounce shadow-[0_0_20px_orange] z-30 relative text-xs md:text-sm uppercase">
@@ -747,7 +772,37 @@ const RestoredChargingSigil = ({ name, spriteName, isCharged, glowColor, onCompl
     );
 };
 
-const Step4_Deities = ({ suggestions, onSelect, isReplay, savedDeity }: { suggestions: WiccanDeitySuggestion[], onSelect: (d: WiccanDeitySuggestion) => void, isReplay: boolean, savedDeity: WiccanDeitySuggestion | null }) => {
+const getDeityIconName = (name: string) => {
+    const n = name.trim(); 
+    const knownDeities = [
+        "Triple Moon", "Horned God", "Pink Heart", "Owl", "Stag", "Sun Wheel", "Triskele", "Ankh",
+        "Lightning Bolt", "Crescent Moon", "Raven", "Hammer", "Snake", "Dove", "Cornucopia", "Skull",
+        "Hecate", "Cernunnos", "Aphrodite", "Thor", "Brigid", "Ganesha", "Pan", "Isis", 
+        "Odin", "Freya", "Morrigan", "Gaia", "Apollo", "Selene", "Lakshmi", "Thoth"
+    ];
+    if (knownDeities.includes(n)) return n;
+    const lower = n.toLowerCase();
+    if (lower.includes("hecate")) return "Hecate";
+    if (lower.includes("cernunnos")) return "Cernunnos";
+    if (lower.includes("aphrodite") || lower.includes("love")) return "Aphrodite";
+    if (lower.includes("thor")) return "Thor";
+    if (lower.includes("brigid")) return "Brigid";
+    if (lower.includes("ganesha")) return "Ganesha";
+    if (lower.includes("pan")) return "Pan";
+    if (lower.includes("isis")) return "Isis";
+    if (lower.includes("odin")) return "Odin";
+    if (lower.includes("freya")) return "Freya";
+    if (lower.includes("morrigan")) return "Morrigan";
+    if (lower.includes("gaia")) return "Gaia";
+    if (lower.includes("apollo") || lower.includes("sun")) return "Apollo";
+    if (lower.includes("selene") || lower.includes("moon")) return "Selene";
+    if (lower.includes("lakshmi") || lower.includes("abundance")) return "Lakshmi";
+    if (lower.includes("thoth")) return "Thoth";
+    if (lower.includes("horned")) return "Horned God";
+    return "Triple Moon"; 
+};
+
+const Step4_Deities = ({ suggestions, onSelect, isReplay, savedDeity }: { suggestions: ExtendedWiccanDeitySuggestion[], onSelect: (d: ExtendedWiccanDeitySuggestion) => void, isReplay: boolean, savedDeity: ExtendedWiccanDeitySuggestion | null }) => {
     
     const displaySuggestions = useMemo(() => {
         if (isReplay && savedDeity) return [savedDeity];
@@ -761,38 +816,8 @@ const Step4_Deities = ({ suggestions, onSelect, isReplay, savedDeity }: { sugges
         return combined.slice(0, 3);
     }, [suggestions, isReplay, savedDeity]);
 
-    const getDeityIcon = (name: string) => {
-        const n = name.trim(); 
-        const knownDeities = [
-            "Triple Moon", "Horned God", "Pink Heart", "Owl", "Stag", "Sun Wheel", "Triskele", "Ankh",
-            "Lightning Bolt", "Crescent Moon", "Raven", "Hammer", "Snake", "Dove", "Cornucopia", "Skull",
-            "Hecate", "Cernunnos", "Aphrodite", "Thor", "Brigid", "Ganesha", "Pan", "Isis", 
-            "Odin", "Freya", "Morrigan", "Gaia", "Apollo", "Selene", "Lakshmi", "Thoth"
-        ];
-        if (knownDeities.includes(n)) return n;
-        const lower = n.toLowerCase();
-        if (lower.includes("hecate")) return "Hecate";
-        if (lower.includes("cernunnos")) return "Cernunnos";
-        if (lower.includes("aphrodite") || lower.includes("love")) return "Aphrodite";
-        if (lower.includes("thor")) return "Thor";
-        if (lower.includes("brigid")) return "Brigid";
-        if (lower.includes("ganesha")) return "Ganesha";
-        if (lower.includes("pan")) return "Pan";
-        if (lower.includes("isis")) return "Isis";
-        if (lower.includes("odin")) return "Odin";
-        if (lower.includes("freya")) return "Freya";
-        if (lower.includes("morrigan")) return "Morrigan";
-        if (lower.includes("gaia")) return "Gaia";
-        if (lower.includes("apollo") || lower.includes("sun")) return "Apollo";
-        if (lower.includes("selene") || lower.includes("moon")) return "Selene";
-        if (lower.includes("lakshmi") || lower.includes("abundance")) return "Lakshmi";
-        if (lower.includes("thoth")) return "Thoth";
-        if (lower.includes("horned")) return "Horned God";
-        return "Triple Moon"; 
-    };
-
     if (isReplay && savedDeity) {
-        const iconName = getDeityIcon(savedDeity.name);
+        const iconName = getDeityIconName(savedDeity.name);
         const sprite = findSprite(iconName) || findSprite("Triple Moon")!;
         return (
             <div className="flex flex-col items-center justify-center h-full gap-4 animate-in fade-in min-h-0">
@@ -801,7 +826,7 @@ const Step4_Deities = ({ suggestions, onSelect, isReplay, savedDeity }: { sugges
                 </div>
                 <h2 className="text-xl font-serif text-purple-200">Invoking {savedDeity.name}</h2>
                 <div className="bg-black/40 border border-purple-500/30 p-6 rounded-xl flex flex-col items-center">
-                    <div className="w-24 h-24 mb-4 drop-shadow-[0_0_20px_rgba(255,255,255,0.4)]">
+                    <div className="w-32 h-32 mb-4 drop-shadow-[0_0_20px_rgba(255,255,255,0.4)]">
                         <Sprite sheetPath={sprite.sheet.path} x={sprite.itemInfo.x} y={sprite.itemInfo.y} spriteWidth={sprite.sheet.spriteSize.width} spriteHeight={sprite.sheet.spriteSize.height} sheetWidth={sprite.sheet.sheetSize.width} sheetHeight={sprite.sheet.sheetSize.height} />
                     </div>
                     <p className="text-gray-300 italic text-center max-w-sm text-sm">"{savedDeity.description}"</p>
@@ -813,16 +838,19 @@ const Step4_Deities = ({ suggestions, onSelect, isReplay, savedDeity }: { sugges
 
     return (
         <div className="flex flex-col items-center h-full gap-4 py-2 min-h-0">
-            <h2 className="text-xl font-serif text-purple-200 shrink-0">Invoke the Divine</h2>
+            <h2 className="text-xl font-serif text-purple-200 shrink-0">Choose a Deity to Invoke</h2>
             {/* Scrollable container for deity cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 w-full max-w-5xl px-2 overflow-y-auto custom-scrollbar min-h-0 pb-2">
                 {displaySuggestions.map((deity, i) => {
-                    const iconName = getDeityIcon(deity.name);
+                    const iconName = getDeityIconName(deity.name);
                     const sprite = findSprite(iconName) || findSprite("Triple Moon")!;
                     return (
                         <button key={i} onClick={() => onSelect(deity)} className="bg-black/40 border border-purple-500/30 p-4 rounded-xl flex flex-col items-center hover:bg-purple-900/20 hover:border-purple-400 transition-all group hover:-translate-y-1 duration-300">
-                            <div className="w-16 h-16 mb-2 opacity-70 group-hover:opacity-100 transition-opacity drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">
-                                <Sprite sheetPath={sprite.sheet.path} x={sprite.itemInfo.x} y={sprite.itemInfo.y} spriteWidth={sprite.sheet.spriteSize.width} spriteHeight={sprite.sheet.spriteSize.height} sheetWidth={sprite.sheet.sheetSize.width} sheetHeight={sprite.sheet.sheetSize.height} />
+                            {/* Images take up 80% of width */}
+                            <div className="w-[80%] aspect-square mb-4 opacity-70 group-hover:opacity-100 transition-opacity drop-shadow-[0_0_10px_rgba(255,255,255,0.2)] flex items-center justify-center">
+                                <div className="relative w-full h-full">
+                                     <Sprite sheetPath={sprite.sheet.path} x={sprite.itemInfo.x} y={sprite.itemInfo.y} spriteWidth={sprite.sheet.spriteSize.width} spriteHeight={sprite.sheet.spriteSize.height} sheetWidth={sprite.sheet.sheetSize.width} sheetHeight={sprite.sheet.sheetSize.height} />
+                                </div>
                             </div>
                             <h3 className="text-lg font-serif text-amber-100">{deity.name}</h3>
                             <p className="text-[10px] text-purple-300 uppercase tracking-wider mb-2">{deity.title}</p>
@@ -835,7 +863,76 @@ const Step4_Deities = ({ suggestions, onSelect, isReplay, savedDeity }: { sugges
     );
 };
 
-const Step5_Summary = ({ spell, onNext }: { spell: GeneratedWiccanSpell, onNext: () => void }) => (
+// NEW STEP 5: Candle Invocation
+const Step5_DeityCandles = ({ deity, onComplete }: { deity: ExtendedWiccanDeitySuggestion | null, onComplete: () => void }) => {
+    const [litCandles, setLitCandles] = useState<boolean[]>(Array(7).fill(false));
+    const candleSprite = findSprite("White Candle");
+    const iconName = deity ? getDeityIconName(deity.name) : "Triple Moon";
+    const deitySprite = findSprite(iconName) || findSprite("Triple Moon")!;
+
+    const handleLight = (index: number) => {
+        if (!litCandles[index]) {
+            const newLit = [...litCandles];
+            newLit[index] = true;
+            setLitCandles(newLit);
+            playSound('/audio/sfx-chaos-activate.mp3', 0.4).play();
+            
+            if (newLit.every(Boolean)) {
+                setTimeout(() => {
+                    playSound('/audio/sfx-spell-room-portal.mp3', 0.5).play();
+                    onComplete();
+                }, 1000);
+            }
+        }
+    };
+
+    return (
+        <div className="flex flex-col items-center justify-between h-full min-h-0 py-2 w-full max-w-lg mx-auto">
+            {/* Top: Deity Image */}
+            <div className="shrink-0 flex flex-col items-center gap-2 mt-2">
+                <h2 className="text-xl font-serif text-purple-200">Invoke {deity?.name}</h2>
+                <div className="w-32 h-32 md:w-48 md:h-48 drop-shadow-[0_0_30px_rgba(168,85,247,0.4)]">
+                     <Sprite sheetPath={deitySprite.sheet.path} x={deitySprite.itemInfo.x} y={deitySprite.itemInfo.y} spriteWidth={deitySprite.sheet.spriteSize.width} spriteHeight={deitySprite.sheet.spriteSize.height} sheetWidth={deitySprite.sheet.sheetSize.width} sheetHeight={deitySprite.sheet.sheetSize.height} />
+                </div>
+            </div>
+
+            {/* Middle: Incantation Text */}
+            <div className="flex-1 flex items-center justify-center p-4">
+                <p className="text-center font-serif text-amber-100 text-lg md:text-2xl leading-relaxed whitespace-pre-line drop-shadow-md">
+                    {deity?.invocation || "Ancient spirit, hear my call,\nGrant me strength to rise and not fall."}
+                </p>
+                <p className="fixed bottom-24 text-xs text-purple-400/50 animate-pulse pointer-events-none">Touch each wick to light the path.</p>
+            </div>
+
+            {/* Bottom: 7 Candles */}
+            <div className="shrink-0 w-full flex justify-center gap-2 md:gap-4 mb-4 h-24 items-end px-2">
+                {litCandles.map((isLit, i) => (
+                    <div 
+                        key={i} 
+                        onClick={() => handleLight(i)}
+                        className={`relative w-10 h-24 md:w-12 md:h-32 cursor-pointer transition-all duration-500 ${isLit ? 'brightness-125' : 'brightness-[0.4] grayscale'}`}
+                    >
+                        {/* Candle Sprite */}
+                        {candleSprite && (
+                            <div className="w-full h-full relative">
+                                <Sprite sheetPath={candleSprite.sheet.path} x={candleSprite.itemInfo.x} y={candleSprite.itemInfo.y} spriteWidth={candleSprite.sheet.spriteSize.width} spriteHeight={candleSprite.sheet.spriteSize.height} sheetWidth={candleSprite.sheet.sheetSize.width} sheetHeight={candleSprite.sheet.sheetSize.height} />
+                            </div>
+                        )}
+                        
+                        {/* Flame Effect Overlay */}
+                        {isLit && (
+                            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-6 bg-orange-400 rounded-full blur-[2px] animate-pulse shadow-[0_0_20px_orange]">
+                                <div className="absolute inset-0 bg-yellow-200 rounded-full blur-[1px] scale-50 animate-ping" />
+                            </div>
+                        )}
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+const Step6_Summary = ({ spell, onNext }: { spell: GeneratedWiccanSpell, onNext: () => void }) => (
     <div className="flex flex-col items-center justify-center h-full gap-4 max-w-2xl mx-auto min-h-0 py-2">
         <h2 className="text-2xl font-serif text-purple-100">The Workings</h2>
         <p className="text-purple-300 text-center text-sm">Gather these items in your mind's eye.</p>
@@ -858,7 +955,7 @@ const Step5_Summary = ({ spell, onNext }: { spell: GeneratedWiccanSpell, onNext:
     </div>
 );
 
-const Step6_Ingredients = ({ spell, index, onComplete }: { spell: GeneratedWiccanSpell, index: number, onComplete: () => void }) => {
+const Step7_Ingredients = ({ spell, index, onComplete }: { spell: GeneratedWiccanSpell, index: number, onComplete: () => void }) => {
     const item = spell.symbolic_ingredients[index];
     const sprite = findSprite(item.name) || findSprite("White Candle")!;
     const [holding, setHolding] = useState(false);
@@ -910,7 +1007,7 @@ const Step6_Ingredients = ({ spell, index, onComplete }: { spell: GeneratedWicca
     );
 };
 
-const Step7_Cone = ({ spell, onNext }: { spell: GeneratedWiccanSpell, onNext: () => void }) => {
+const Step8_Cone = ({ spell, onNext }: { spell: GeneratedWiccanSpell, onNext: () => void }) => {
     const [castProgress, setCastProgress] = useState(0);
     const [isCasting, setIsCasting] = useState(false);
     const soundRef = useRef<any>(null);
@@ -970,7 +1067,7 @@ const Step7_Cone = ({ spell, onNext }: { spell: GeneratedWiccanSpell, onNext: ()
     );
 };
 
-const Step8_Sending = ({ onNext }: { onNext: () => void }) => {
+const Step9_Sending = ({ onNext }: { onNext: () => void }) => {
     useEffect(() => { const timer = setTimeout(onNext, SENDING_DURATION); return () => clearTimeout(timer); }, [onNext]);
     return (
         <div className="w-full h-full flex items-center justify-center bg-white/5 relative overflow-hidden">
@@ -987,7 +1084,7 @@ const Step8_Sending = ({ onNext }: { onNext: () => void }) => {
     );
 };
 
-const Step9_Closing = ({ onComplete }: { onComplete: () => void }) => {
+const Step10_Closing = ({ onComplete }: { onComplete: () => void }) => {
     return (
         <div className="flex flex-col items-center justify-center h-full gap-6 min-h-0">
             <h2 className="text-xl font-serif text-purple-200">Ground the Energy</h2>
@@ -1007,7 +1104,7 @@ const Step9_Closing = ({ onComplete }: { onComplete: () => void }) => {
     );
 };
 
-const Step10_Result = ({ spell, onSave, isSaving, isSaved, onReset }: any) => (
+const Step11_Result = ({ spell, onSave, isSaving, isSaved, onReset }: any) => (
     <div className="flex flex-col items-center justify-center h-full gap-6 text-center max-w-lg mx-auto animate-in fade-in zoom-in duration-700 relative min-h-0">
         <div className="relative z-10 bg-black/40 p-6 rounded-xl backdrop-blur-md border border-purple-500/30 shadow-[0_0_30px_rgba(0,0,0,0.5)]">
             <BookOpen size={48} className="text-amber-200 mb-2 drop-shadow-[0_0_15px_gold] mx-auto" />

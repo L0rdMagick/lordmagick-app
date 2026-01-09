@@ -1,3 +1,5 @@
+// --- START OF FILE index.ts ---
+
 import { GoogleAuth } from "npm:google-auth-library";
 import { corsHeaders } from '../_shared/cors.ts';
 
@@ -17,15 +19,11 @@ const AVAILABLE_INGREDIENTS = [
     "Clear Quartz", "Amethyst", "Rose Quartz", "Citrine", "Black Tourmaline", "Obsidian", "Selenite", "Labradorite", "Carnelian", "Jade", "Lapis Lazuli", "Onyx", "Tiger's Eye"
 ];
 
-// STRICT LIST of Deities we have icons for (Deity Icons 1 & 2)
-// REMOVED GENERIC NAMES to force image match
+// STRICT LIST of Deities we have icons for
 const AVAILABLE_DEITIES = [
-    // Deity Icons 1
     "Triple Moon", "Horned God", "Pink Heart", "Owl", "Stag", "Sun Wheel", "Triskele", "Ankh", 
     "Lightning Bolt", "Crescent Moon", "Raven", "Hammer", 
     "Snake", "Dove", "Cornucopia", "Skull",
-    
-    // Deity Icons 2 (New)
     "Hecate", "Cernunnos", "Aphrodite", "Thor", 
     "Brigid", "Ganesha", "Pan", "Isis", 
     "Odin", "Freya", "Morrigan", "Gaia", 
@@ -67,10 +65,14 @@ Deno.serve(async (req: Request) => {
                3. "invocation": A 2-line rhyme to welcome the deity.
                4. "closing": A 2-line rhyme to open the circle/end the ritual.
           - "elemental_chants": An object containing 5 short (2-line) rhyming incantations to call the quarters. Keys: "Spirit", "Air", "Fire", "Earth", "Water".
-          - "suggested_deities": An array of 3 objects (Deity Suggestions) relevant to the intention. Keys: "name", "title", "pantheon", "description" (1 sentence).
-             **IMPORTANT**: You MUST choose "name" ONLY from this list: [${AVAILABLE_DEITIES.map(d => `"${d}"`).join(", ")}]. Do not invent names or use generic titles.
+          - "suggested_deities": An array of 3 objects (Deity Suggestions) relevant to the intention. Keys: 
+             - "name": Choose from [${AVAILABLE_DEITIES.map(d => `"${d}"`).join(", ")}].
+             - "title": A short title.
+             - "pantheon": The origin.
+             - "description": 1 sentence description.
+             - "invocation": A specific 2-line rhyming invocation/prayer to call this specific deity for help.
           - "symbolic_ingredients": An array of EXACTLY FIVE objects. For each:
-             - "name": Choose from [${AVAILABLE_INGREDIENTS.map(i => `"${i}"`).join(", ")}]. Prioritize colored candles and specific oils over generic tools.
+             - "name": Choose from [${AVAILABLE_INGREDIENTS.map(i => `"${i}"`).join(", ")}].
              - "incantation": A 1-sentence command for this item.
           - "central_chant": A 4-line rhyming chant for the climax.
           - "affirmation": A single sentence to seal the spell.
