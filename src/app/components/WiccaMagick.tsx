@@ -38,7 +38,7 @@ interface ExtendedWiccanDeitySuggestion extends WiccanDeitySuggestion {
 
 interface ExtendedGeneratedWiccanSpell extends GeneratedWiccanSpell {
     suggested_deities: ExtendedWiccanDeitySuggestion[];
-    tool_consecration?: string; // New field for Step 6
+    tool_consecration?: string;
 }
 
 // --- Standard Ritual Data ---
@@ -436,6 +436,16 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
     return (
         <main className="relative h-[100dvh] w-screen bg-black flex flex-col font-sans select-none overflow-hidden">
             <style jsx global>{`
+                /* Hide scrollbar for Chrome, Safari and Opera */
+                .no-scrollbar::-webkit-scrollbar {
+                    display: none;
+                }
+                /* Hide scrollbar for IE, Edge and Firefox */
+                .no-scrollbar {
+                    -ms-overflow-style: none;  /* IE and Edge */
+                    scrollbar-width: none;  /* Firefox */
+                }
+                
                 .custom-scrollbar::-webkit-scrollbar {
                     width: 6px;
                 }
@@ -546,8 +556,8 @@ const Step1_Intention = ({ intention, setIntention, situation, setSituation, onB
                 <textarea 
                     value={situation} onChange={e => setSituation(e.target.value)}
                     placeholder="Describe the situation..." readOnly={isReplay}
-                    // overflow-y-auto to only show scrollbar when needed
-                    className="w-full h-20 md:h-32 bg-transparent text-center text-[#4a2e1c] placeholder-[#4a2e1c]/40 font-serif text-lg md:text-2xl outline-none resize-none pt-1 overflow-y-auto scrollbar-thin"
+                    // Applied no-scrollbar class to strictly hide scrollbar
+                    className="w-full h-20 md:h-32 bg-transparent text-center text-[#4a2e1c] placeholder-[#4a2e1c]/40 font-serif text-lg md:text-2xl outline-none resize-none pt-1 overflow-y-auto no-scrollbar"
                 />
             </div>
         </div>
@@ -623,8 +633,11 @@ const Step2_CastCircle = ({ onComplete }: { onComplete: () => void }) => {
                 <h2 className="text-2xl font-serif text-purple-100 drop-shadow-md">Cast the Circle</h2>
                 <p className="text-purple-300/60 italic text-sm mt-1">Trace the circle clockwise.</p>
             </div>
+            {/* Added bg-transparent and specific style to remove tap highlight background on mobile */}
             <div 
-                ref={containerRef} className="relative w-full max-w-[300px] aspect-square flex items-center justify-center touch-none select-none cursor-crosshair shrink-0"
+                ref={containerRef} 
+                className="relative w-full max-w-[300px] aspect-square flex items-center justify-center touch-none select-none cursor-crosshair shrink-0 bg-transparent"
+                style={{ WebkitTapHighlightColor: 'transparent' }}
                 onMouseMove={handleMove} onTouchMove={handleMove} onMouseUp={handleEnd} onMouseLeave={handleEnd} onTouchEnd={handleEnd}
             >
                 <svg className="absolute w-full h-full -rotate-90" viewBox="0 0 100 100">
@@ -640,8 +653,6 @@ const Step2_CastCircle = ({ onComplete }: { onComplete: () => void }) => {
 
 const Step3_Quarters = ({ spell, charged, onCharge, onNext }: { spell: GeneratedWiccanSpell | null, charged: string[], onCharge: (n: string) => void, onNext: () => void }) => {
     const [displayChant, setDisplayChant] = useState<string | null>(null);
-    
-    // Adjusted Pentagon coordinates: Spirit (top) lowered to 15%, Air/Water lowered to 40%
     const quarters = [
         { name: "Spirit", sprite: "Spirit Sigil", pos: { top: '15%', left: '50%' }, color: "shadow-[0_0_50px_rgba(168,85,247,0.9)]", chant: spell?.elemental_chants?.Spirit },
         { name: "Air", sprite: "Air Sigil", pos: { top: '40%', left: '90%' }, color: "shadow-[0_0_50px_rgba(234,179,8,0.9)]", chant: spell?.elemental_chants?.Air },
@@ -665,18 +676,17 @@ const Step3_Quarters = ({ spell, charged, onCharge, onNext }: { spell: Generated
         <div className="flex flex-col items-center h-full w-full relative min-h-0">
             <h2 className="text-xl font-serif text-purple-200 text-center w-full shrink-0 relative z-20 mt-1">Call the Guardians</h2>
             
-            {/* Chant Text Container: Fixed height h-24 ensures layout stability */}
             <div className="w-full h-24 shrink-0 flex items-center justify-center z-20 pointer-events-none px-4 mb-0">
                  {displayChant ? (
                     <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-amber-200 font-serif italic text-sm md:text-lg drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] whitespace-pre-line bg-black/60 p-2 rounded-lg backdrop-blur-md border border-amber-500/20">
                         {displayChant}
                     </motion.p>
                  ) : (
-                    <p className="text-purple-300/40 text-xs italic font-serif">Hold each seal to invoke its power.</p>
+                    // Updated font to match chants
+                    <p className="text-amber-200 font-serif italic text-sm md:text-lg opacity-70">Hold each seal to invoke its power.</p>
                  )}
             </div>
 
-            {/* Sigil Map Container */}
             <div className="relative w-full max-w-sm flex-1 min-h-0 aspect-square flex items-center justify-center overflow-visible my-0">
                 <div className="relative w-full h-full">
                     {quarters.map(q => (
@@ -692,7 +702,6 @@ const Step3_Quarters = ({ spell, charged, onCharge, onNext }: { spell: Generated
                 </div>
             </div>
 
-            {/* Button Container */}
             <div className="w-full h-10 flex items-center justify-center shrink-0 mb-1">
                  {charged.length === 5 && (
                     <button onClick={onNext} className="px-8 py-2 bg-amber-600 hover:bg-amber-500 text-black font-bold rounded-lg animate-bounce shadow-[0_0_20px_orange] z-30 relative text-xs md:text-sm uppercase">
@@ -839,7 +848,8 @@ const Step4_Deities = ({ suggestions, onSelect, isReplay, savedDeity }: { sugges
     return (
         <div className="flex flex-col items-center h-full gap-4 py-2 min-h-0">
             <h2 className="text-xl font-serif text-purple-200 shrink-0">Choose a Deity to Invoke</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 w-full max-w-5xl px-2 overflow-y-auto custom-scrollbar min-h-0 pb-2">
+            {/* Added py-6 to container to allow cards to lift on hover without clipping */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 w-full max-w-5xl px-2 py-6 overflow-y-auto custom-scrollbar min-h-0 pb-2">
                 {displaySuggestions.map((deity, i) => {
                     const iconName = getDeityIconName(deity.name);
                     const sprite = findSprite(iconName) || findSprite("Triple Moon")!;
@@ -1043,9 +1053,27 @@ const Step8_Cone = ({ spell, onNext }: { spell: GeneratedWiccanSpell, onNext: ()
             </div>
 
             <div className="absolute inset-0 flex items-center justify-center opacity-40 pointer-events-none select-none z-0 mt-8">
-                 <p className="text-center font-serif text-2xl md:text-5xl text-amber-200/90 drop-shadow-[0_0_10px_rgba(251,191,36,0.8)] leading-loose whitespace-pre-line px-8 blur-[2px]">
-                     {spell.central_chant}
-                 </p>
+                 {/* Star Wars Style Scrolling Text Effect */}
+                 {isCasting && (
+                     <div className="absolute inset-0 z-0 flex justify-center items-end overflow-hidden" style={{ perspective: '400px' }}>
+                        <motion.div
+                            initial={{ top: '100%', opacity: 0 }}
+                            animate={{
+                                top: `${80 - castProgress}%`, // Scrolls up as progress increases
+                                opacity: Math.min(1, castProgress / 20) // Fades in quickly
+                            }}
+                            className="text-center font-serif text-amber-200 text-3xl md:text-5xl leading-loose whitespace-pre-line px-8 drop-shadow-[0_0_10px_rgba(251,191,36,0.8)]"
+                            style={{ 
+                                position: 'absolute',
+                                transform: 'rotateX(25deg)', // The Star Wars tilt
+                                transformOrigin: 'bottom',
+                                width: '100%'
+                            }}
+                        >
+                            {spell.central_chant}
+                        </motion.div>
+                     </div>
+                 )}
             </div>
             
             <div 
