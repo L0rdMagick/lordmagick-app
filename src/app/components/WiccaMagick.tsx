@@ -531,7 +531,8 @@ const Step1_Intention = ({ intention, setIntention, situation, setSituation, onB
                 <textarea 
                     value={situation} onChange={e => setSituation(e.target.value)}
                     placeholder="Describe the situation..." readOnly={isReplay}
-                    className="w-full h-20 md:h-32 bg-transparent text-center text-[#4a2e1c] placeholder-[#4a2e1c]/40 font-serif text-sm md:text-lg outline-none resize-none pt-1 scrollbar-hide leading-snug"
+                    // Updated font size to match intention input
+                    className="w-full h-20 md:h-32 bg-transparent text-center text-[#4a2e1c] placeholder-[#4a2e1c]/40 font-serif text-lg md:text-2xl outline-none resize-none pt-1 scrollbar-hide leading-snug"
                 />
             </div>
         </div>
@@ -628,21 +629,21 @@ const Step2_CastCircle = ({ onComplete }: { onComplete: () => void }) => {
 const Step3_Quarters = ({ spell, charged, onCharge, onNext }: { spell: GeneratedWiccanSpell | null, charged: string[], onCharge: (n: string) => void, onNext: () => void }) => {
     const [activeElement, setActiveElement] = useState<string | null>(null);
     
-    // Regular Pentagon coordinates relative to a square container
+    // Adjusted Pentagon coordinates: Spirit (top) lowered to 15%, Air/Water lowered to 40%
     const quarters = [
-        { name: "Spirit", sprite: "Spirit Sigil", pos: { top: '5%', left: '50%' }, color: "shadow-[0_0_50px_rgba(168,85,247,0.9)]", chant: spell?.elemental_chants?.Spirit },
-        { name: "Air", sprite: "Air Sigil", pos: { top: '35%', left: '90%' }, color: "shadow-[0_0_50px_rgba(234,179,8,0.9)]", chant: spell?.elemental_chants?.Air },
+        { name: "Spirit", sprite: "Spirit Sigil", pos: { top: '15%', left: '50%' }, color: "shadow-[0_0_50px_rgba(168,85,247,0.9)]", chant: spell?.elemental_chants?.Spirit },
+        { name: "Air", sprite: "Air Sigil", pos: { top: '40%', left: '90%' }, color: "shadow-[0_0_50px_rgba(234,179,8,0.9)]", chant: spell?.elemental_chants?.Air },
         { name: "Fire", sprite: "Fire Sigil", pos: { top: '85%', left: '75%' }, color: "shadow-[0_0_50px_rgba(239,68,68,0.9)]", chant: spell?.elemental_chants?.Fire },
         { name: "Earth", sprite: "Earth Sigil", pos: { top: '85%', left: '25%' }, color: "shadow-[0_0_50px_rgba(34,197,94,0.9)]", chant: spell?.elemental_chants?.Earth }, 
-        { name: "Water", sprite: "Water Sigil", pos: { top: '35%', left: '10%' }, color: "shadow-[0_0_50px_rgba(59,130,246,0.9)]", chant: spell?.elemental_chants?.Water },
+        { name: "Water", sprite: "Water Sigil", pos: { top: '40%', left: '10%' }, color: "shadow-[0_0_50px_rgba(59,130,246,0.9)]", chant: spell?.elemental_chants?.Water },
     ];
 
     return (
         <div className="flex flex-col items-center h-full w-full relative min-h-0">
             <h2 className="text-xl font-serif text-purple-200 text-center w-full shrink-0 relative z-20 mt-1">{activeElement ? activeElement : "Call the Guardians"}</h2>
             
-            {/* Incantation Text Container */}
-            <div className="w-full text-center px-4 min-h-[3rem] flex items-center justify-center z-20 pointer-events-none shrink-0 mb-2">
+            {/* Chant Text Container: Fixed height h-24 ensures layout stability and prevents shift/overlap */}
+            <div className="w-full h-24 shrink-0 flex items-center justify-center z-20 pointer-events-none px-4 mb-0">
                  {activeElement ? (
                     <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-amber-200 font-serif italic text-sm md:text-lg drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] whitespace-pre-line bg-black/60 p-2 rounded-lg backdrop-blur-md border border-amber-500/20">
                         {quarters.find(q => q.name === activeElement)?.chant || `Hail, Watchtower of the ${activeElement}!`}
@@ -653,7 +654,7 @@ const Step3_Quarters = ({ spell, charged, onCharge, onNext }: { spell: Generated
             </div>
 
             {/* Sigil Map Container - Flexible */}
-            <div className="relative w-full max-w-sm flex-1 min-h-0 aspect-square flex items-center justify-center mb-2 overflow-visible">
+            <div className="relative w-full max-w-sm flex-1 min-h-0 aspect-square flex items-center justify-center overflow-visible my-0">
                 <div className="relative w-full h-full">
                     {quarters.map(q => (
                         <div key={q.name} className="absolute transform -translate-x-1/2 -translate-y-1/2 z-10" style={q.pos}>
@@ -666,9 +667,10 @@ const Step3_Quarters = ({ spell, charged, onCharge, onNext }: { spell: Generated
                 </div>
             </div>
 
-            <div className="w-full h-12 flex items-center justify-center shrink-0 mb-2">
+            {/* Button Container - Compact */}
+            <div className="w-full h-10 flex items-center justify-center shrink-0 mb-1">
                  {charged.length === 5 && (
-                    <button onClick={onNext} className="px-10 py-3 bg-amber-600 hover:bg-amber-500 text-black font-bold rounded-lg animate-bounce shadow-[0_0_20px_orange] z-30 relative text-sm uppercase">
+                    <button onClick={onNext} className="px-8 py-2 bg-amber-600 hover:bg-amber-500 text-black font-bold rounded-lg animate-bounce shadow-[0_0_20px_orange] z-30 relative text-xs md:text-sm uppercase">
                         Seal the Quarters
                     </button>
                 )}
