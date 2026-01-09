@@ -507,46 +507,44 @@ const Step0_Intro = ({ onNext }: { onNext: () => void }) => (
 );
 
 const Step1_Intention = ({ intention, setIntention, situation, setSituation, onBegin, isReplay, cost }: any) => (
-    <div className="flex flex-col items-center h-full min-h-0 w-full">
-        <h2 className="text-lg font-serif text-amber-100/90 drop-shadow-md shrink-0 mb-1 mt-1">Inscribe Your Will</h2>
+    <div className="flex flex-col items-center justify-between h-full min-h-0 w-full py-2 md:justify-center md:gap-8">
+        <h2 className="text-xl md:text-3xl font-serif text-amber-100/90 drop-shadow-md shrink-0 text-center">Inscribe Your Will</h2>
         
-        {/* Flexible container that ensures content fits within view */}
-        <div className="flex-1 min-h-0 w-full flex items-center justify-center p-2">
-             {/* Wrapper using aspect-ratio of the original scroll to maintain shape, but constrained by max-w/max-h */}
-            <div className="relative max-w-full max-h-full aspect-[958/860]">
-                <Image 
-                    src={`${ASSET_PATH}/wicca_scroll_intention.png`} 
-                    width={958}
-                    height={860}
-                    alt="Scroll" 
-                    priority
-                    className="w-auto h-auto max-w-full max-h-full object-contain drop-shadow-xl"
+        {/* Scroll Image Container - Matches IncantationOverlay sizing style */}
+        <div className="relative w-full max-w-md aspect-[958/860] shrink-1 min-h-0 flex items-center justify-center">
+            {/* The image fills this container */}
+            <Image 
+                src={`${ASSET_PATH}/wicca_scroll_intention.png`} 
+                layout="fill"
+                objectFit="contain"
+                alt="Scroll" 
+                priority
+                className="drop-shadow-xl"
+            />
+            {/* Inputs */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center p-[18%] gap-3 z-10">
+                <input 
+                    value={intention} onChange={e => setIntention(e.target.value)}
+                    placeholder="My Intention..." readOnly={isReplay}
+                    className="w-full bg-transparent border-b-2 border-[#4a2e1c]/50 text-center text-[#4a2e1c] placeholder-[#4a2e1c]/40 font-serif text-lg md:text-2xl outline-none py-1"
                 />
-                
-                {/* Inputs absolutely positioned over the scroll image */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center p-[18%] gap-1 z-10">
-                    <input 
-                        value={intention} onChange={e => setIntention(e.target.value)}
-                        placeholder="My Intention..." readOnly={isReplay}
-                        className="w-full bg-transparent border-b border-[#4a2e1c]/50 text-center text-[#4a2e1c] placeholder-[#4a2e1c]/40 font-serif text-base md:text-xl outline-none py-0.5"
-                    />
-                    <textarea 
-                        value={situation} onChange={e => setSituation(e.target.value)}
-                        placeholder="Describe the situation..." readOnly={isReplay}
-                        className="w-full h-12 md:h-24 bg-transparent text-center text-[#4a2e1c] placeholder-[#4a2e1c]/40 font-serif text-[10px] md:text-sm outline-none resize-none pt-1 scrollbar-hide leading-tight"
-                    />
-                </div>
+                <textarea 
+                    value={situation} onChange={e => setSituation(e.target.value)}
+                    placeholder="Describe the situation..." readOnly={isReplay}
+                    className="w-full h-20 md:h-32 bg-transparent text-center text-[#4a2e1c] placeholder-[#4a2e1c]/40 font-serif text-sm md:text-lg outline-none resize-none pt-1 scrollbar-hide leading-snug"
+                />
             </div>
         </div>
         
-        <div className="pb-4 shrink-0 mt-1">
+        {/* Buttons - Stacked on mobile for larger touch targets */}
+        <div className="shrink-0 w-full max-w-md px-2 pb-2">
             {!isReplay ? (
-                <div className="flex flex-col md:flex-row gap-2">
-                     <button onClick={() => onBegin('standard')} className="px-6 py-2 bg-slate-800/80 border border-slate-600 rounded-lg text-slate-300 font-serif text-xs">Standard (Free)</button>
-                     <button onClick={() => onBegin('ai')} className="px-6 py-2 bg-purple-900/80 border border-purple-500 rounded-lg text-purple-100 font-serif shadow-[0_0_15px_rgba(168,85,247,0.3)] text-xs">High Ritual ({cost} Aether)</button>
+                <div className="flex flex-col gap-3">
+                     <button onClick={() => onBegin('standard')} className="w-full py-4 bg-slate-800/80 border border-slate-600 rounded-xl text-slate-300 font-serif text-base font-bold uppercase tracking-widest shadow-lg active:scale-95 transition-transform">Standard (Free)</button>
+                     <button onClick={() => onBegin('ai')} className="w-full py-4 bg-purple-900/80 border border-purple-500 rounded-xl text-purple-100 font-serif shadow-[0_0_15px_rgba(168,85,247,0.3)] text-base font-bold uppercase tracking-widest active:scale-95 transition-transform">High Ritual ({cost} Aether)</button>
                 </div>
             ) : (
-                 <button onClick={() => onBegin('standard')} className="px-8 py-2 bg-purple-900/90 border border-purple-400 rounded-lg text-purple-100 font-serif shadow-[0_0_15px_rgba(168,85,247,0.6)] animate-pulse text-xs">Begin Saved Ritual</button>
+                 <button onClick={() => onBegin('standard')} className="w-full py-4 bg-purple-900/90 border border-purple-400 rounded-xl text-purple-100 font-serif shadow-[0_0_15px_rgba(168,85,247,0.6)] animate-pulse text-lg font-bold uppercase tracking-widest">Begin Saved Ritual</button>
             )}
         </div>
     </div>
