@@ -32,7 +32,6 @@ const SENDING_DURATION = 4000;
 const SERVICE_SLUG = 'ai_wicca_magick'; 
 
 // --- Data Types Extended ---
-// Extending the type locally to include invocation for this file
 interface ExtendedWiccanDeitySuggestion extends WiccanDeitySuggestion {
     invocation?: string;
 }
@@ -106,11 +105,9 @@ const playSound = (src: string, volume: number = 0.5, loop: boolean = false): { 
 
 // --- Helper Components ---
 
-// Local Pentagram for Perfect Timing Control
 const PentagramSVG = ({ isTracing, duration }: { isTracing: boolean, duration: number }) => {
     return (
         <svg viewBox="0 0 100 100" className={`absolute inset-0 w-full h-full ${isTracing ? 'text-amber-400 drop-shadow-[0_0_25px_gold]' : 'text-purple-900'} transition-colors duration-1000 overflow-visible`}>
-             {/* Background Static Path */}
              <path 
                 d="M 50 5 L 63 40 L 98 40 L 70 60 L 80 95 L 50 75 L 20 95 L 30 60 L 2 40 L 37 40 Z"
                 fill="none" 
@@ -118,8 +115,6 @@ const PentagramSVG = ({ isTracing, duration }: { isTracing: boolean, duration: n
                 strokeWidth="1" 
                 className="opacity-20"
              />
-             
-             {/* Animated Tracing Path */}
              <motion.path
                 d="M 50 5 L 80 95 L 2 40 L 98 40 L 20 95 L 50 5"
                 fill="none"
@@ -128,7 +123,6 @@ const PentagramSVG = ({ isTracing, duration }: { isTracing: boolean, duration: n
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 initial={{ pathLength: 0 }}
-                // Animate to 1 slightly faster than the full duration to ensure it looks complete
                 animate={{ pathLength: isTracing ? 1 : 0 }}
                 transition={{ duration: isTracing ? (duration - 1000) / 1000 : 0, ease: "linear" }}
              />
@@ -321,13 +315,7 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
     const nextStep = () => {
         const next = ritualStep + 1;
         setRitualStep(next);
-        // Step 5 (Candles) doesn't have an incantation overlay substep before it, 
-        // but Step 6 (Summary) is passive. 
-        // Steps requiring "action" subStep: 
-        // 5 (Candles) is action only.
-        // 7 (Ingredients) is incantation first.
-        // 8 (Pentagram) is action.
-        // 10 (Sending) is auto action.
+        // Steps 5 (Candles), 8 (Pentagram), 9 (Sending), 11 (Result) are action-first
         if ([5, 8, 9, 11].includes(next)) setSubStep('action');
         else setSubStep('incantation');
     };
@@ -398,7 +386,9 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
             case 2: return trans?.sanctification || "By my will, I begin.";
             case 3: return "Guardians of the Watchtowers,\nHail and Welcome!";
             case 4: return trans?.invocation || "Spirits of Light, draw near.";
-            // Step 5 is Candles, handled inside component
+            // Step 5 is Candles (handled inside component)
+            // Step 6 is Summary/Working - Restored Scroll Text Here
+            case 6: return "With these tools and sacred art,\nI weave the magic from my heart.";
             case 7: return generatedSpell.symbolic_ingredients[chargingIndex]?.incantation || "I charge this item.";
             case 10: return trans?.closing || "The Circle is open.";
             default: return "";
@@ -439,7 +429,6 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
 
     return (
         <main className="relative h-[100dvh] w-screen bg-black flex flex-col font-sans select-none overflow-hidden">
-            {/* Custom scrollbar styles */}
             <style jsx global>{`
                 .custom-scrollbar::-webkit-scrollbar {
                     width: 6px;
@@ -474,26 +463,20 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
                 </div>
             )}
             
-            {/* Header with Absolute Center Title and Top Padding for Desktop */}
             <header className="relative z-20 w-full px-4 h-16 md:h-24 shrink-0 flex items-center justify-between pt-2 md:pt-4">
                 <div className="relative z-30 w-16 flex justify-start">
                     <MagickalBackLink href="/spell-room" text="Exit" />
                 </div>
-                
-                {/* Title Absolute Centered to Viewport */}
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20 pt-2 md:pt-4">
                     <h1 className="font-serif text-base md:text-3xl text-purple-300 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] tracking-wide text-center">
                         Wicca Magick
                     </h1>
                 </div>
-
-                {/* Rooms Button with Scaling for small screens */}
                 <div className="relative z-30 w-16 flex justify-end origin-right transform scale-50 md:scale-100">
                     <RoomsButton />
                 </div>
             </header>
             
-            {/* Main Content Area - Flexible height, scrollbar only if needed */}
             <div className="relative z-10 grow w-full flex flex-col px-4 pb-2 min-h-0 overflow-y-auto custom-scrollbar">
                 <AnimatePresence mode="wait">
                     <motion.div
@@ -519,8 +502,6 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
     );
 };
 
-// --- STEP COMPONENTS ---
-
 const Step0_Intro = ({ onNext }: { onNext: () => void }) => (
     <div className="flex flex-col items-center justify-between h-full text-center animate-in fade-in duration-1000 min-h-0 py-6 md:py-8 md:justify-center md:gap-8">
         <div className="shrink-0 space-y-1 md:space-y-4">
@@ -541,8 +522,6 @@ const Step0_Intro = ({ onNext }: { onNext: () => void }) => (
 const Step1_Intention = ({ intention, setIntention, situation, setSituation, onBegin, isReplay, cost }: any) => (
     <div className="flex flex-col items-center justify-between h-full min-h-0 w-full py-2 md:justify-center md:gap-8">
         <h2 className="text-xl md:text-3xl font-serif text-amber-100/90 drop-shadow-md shrink-0 text-center">Inscribe Your Will</h2>
-        
-        {/* Scroll Image Container */}
         <div className="relative w-full max-w-md aspect-[958/860] shrink-1 min-h-0 flex items-center justify-center">
             <Image 
                 src={`${ASSET_PATH}/wicca_scroll_intention.png`} 
@@ -552,7 +531,6 @@ const Step1_Intention = ({ intention, setIntention, situation, setSituation, onB
                 priority
                 className="drop-shadow-xl"
             />
-            {/* Inputs - Added more padding (25% x, 18% y) to prevent text running off scroll */}
             <div className="absolute inset-0 flex flex-col items-center justify-center px-[25%] py-[18%] gap-3 z-10">
                 <input 
                     value={intention} onChange={e => setIntention(e.target.value)}
@@ -562,11 +540,10 @@ const Step1_Intention = ({ intention, setIntention, situation, setSituation, onB
                 <textarea 
                     value={situation} onChange={e => setSituation(e.target.value)}
                     placeholder="Describe the situation..." readOnly={isReplay}
-                    className="w-full h-20 md:h-32 bg-transparent text-center text-[#4a2e1c] placeholder-[#4a2e1c]/40 font-serif text-lg md:text-2xl outline-none resize-none pt-1 scrollbar-hide leading-snug"
+                    className="w-full h-20 md:h-32 bg-transparent text-center text-[#4a2e1c] placeholder-[#4a2e1c]/40 font-serif text-lg md:text-2xl outline-none resize-none pt-1 overflow-y-auto scrollbar-thin"
                 />
             </div>
         </div>
-        
         <div className="shrink-0 w-full max-w-md px-2 pb-2">
             {!isReplay ? (
                 <div className="flex flex-col gap-3">
@@ -656,8 +633,6 @@ const Step2_CastCircle = ({ onComplete }: { onComplete: () => void }) => {
 
 const Step3_Quarters = ({ spell, charged, onCharge, onNext }: { spell: GeneratedWiccanSpell | null, charged: string[], onCharge: (n: string) => void, onNext: () => void }) => {
     const [activeElement, setActiveElement] = useState<string | null>(null);
-    
-    // Adjusted Pentagon coordinates: Spirit (top) lowered to 15%, Air/Water lowered to 40%
     const quarters = [
         { name: "Spirit", sprite: "Spirit Sigil", pos: { top: '15%', left: '50%' }, color: "shadow-[0_0_50px_rgba(168,85,247,0.9)]", chant: spell?.elemental_chants?.Spirit },
         { name: "Air", sprite: "Air Sigil", pos: { top: '40%', left: '90%' }, color: "shadow-[0_0_50px_rgba(234,179,8,0.9)]", chant: spell?.elemental_chants?.Air },
@@ -669,7 +644,6 @@ const Step3_Quarters = ({ spell, charged, onCharge, onNext }: { spell: Generated
     return (
         <div className="flex flex-col items-center h-full w-full relative min-h-0">
             <h2 className="text-xl font-serif text-purple-200 text-center w-full shrink-0 relative z-20 mt-1">{activeElement ? activeElement : "Call the Guardians"}</h2>
-            
             <div className="w-full h-24 shrink-0 flex items-center justify-center z-20 pointer-events-none px-4 mb-0">
                  {activeElement ? (
                     <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-amber-200 font-serif italic text-sm md:text-lg drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] whitespace-pre-line bg-black/60 p-2 rounded-lg backdrop-blur-md border border-amber-500/20">
@@ -679,7 +653,6 @@ const Step3_Quarters = ({ spell, charged, onCharge, onNext }: { spell: Generated
                     <p className="text-purple-300/40 text-xs italic">Hold each seal to invoke its power.</p>
                  )}
             </div>
-
             <div className="relative w-full max-w-sm flex-1 min-h-0 aspect-square flex items-center justify-center overflow-visible my-0">
                 <div className="relative w-full h-full">
                     {quarters.map(q => (
@@ -692,7 +665,6 @@ const Step3_Quarters = ({ spell, charged, onCharge, onNext }: { spell: Generated
                     ))}
                 </div>
             </div>
-
             <div className="w-full h-10 flex items-center justify-center shrink-0 mb-1">
                  {charged.length === 5 && (
                     <button onClick={onNext} className="px-8 py-2 bg-amber-600 hover:bg-amber-500 text-black font-bold rounded-lg animate-bounce shadow-[0_0_20px_orange] z-30 relative text-xs md:text-sm uppercase">
@@ -839,14 +811,12 @@ const Step4_Deities = ({ suggestions, onSelect, isReplay, savedDeity }: { sugges
     return (
         <div className="flex flex-col items-center h-full gap-4 py-2 min-h-0">
             <h2 className="text-xl font-serif text-purple-200 shrink-0">Choose a Deity to Invoke</h2>
-            {/* Scrollable container for deity cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 w-full max-w-5xl px-2 overflow-y-auto custom-scrollbar min-h-0 pb-2">
                 {displaySuggestions.map((deity, i) => {
                     const iconName = getDeityIconName(deity.name);
                     const sprite = findSprite(iconName) || findSprite("Triple Moon")!;
                     return (
                         <button key={i} onClick={() => onSelect(deity)} className="bg-black/40 border border-purple-500/30 p-4 rounded-xl flex flex-col items-center hover:bg-purple-900/20 hover:border-purple-400 transition-all group hover:-translate-y-1 duration-300">
-                            {/* Images take up 80% of width */}
                             <div className="w-[80%] aspect-square mb-4 opacity-70 group-hover:opacity-100 transition-opacity drop-shadow-[0_0_10px_rgba(255,255,255,0.2)] flex items-center justify-center">
                                 <div className="relative w-full h-full">
                                      <Sprite sheetPath={sprite.sheet.path} x={sprite.itemInfo.x} y={sprite.itemInfo.y} spriteWidth={sprite.sheet.spriteSize.width} spriteHeight={sprite.sheet.spriteSize.height} sheetWidth={sprite.sheet.sheetSize.width} sheetHeight={sprite.sheet.sheetSize.height} />
@@ -863,7 +833,6 @@ const Step4_Deities = ({ suggestions, onSelect, isReplay, savedDeity }: { sugges
     );
 };
 
-// NEW STEP 5: Candle Invocation
 const Step5_DeityCandles = ({ deity, onComplete }: { deity: ExtendedWiccanDeitySuggestion | null, onComplete: () => void }) => {
     const [litCandles, setLitCandles] = useState<boolean[]>(Array(7).fill(false));
     const candleSprite = findSprite("White Candle");
@@ -889,44 +858,44 @@ const Step5_DeityCandles = ({ deity, onComplete }: { deity: ExtendedWiccanDeityS
     return (
         <div className="flex flex-col items-center justify-between h-full min-h-0 py-2 w-full max-w-lg mx-auto">
             {/* Top: Deity Image */}
-            <div className="shrink-0 flex flex-col items-center gap-2 mt-2">
+            <div className="shrink-0 flex flex-col items-center gap-2 mt-2 w-full">
                 <h2 className="text-xl font-serif text-purple-200">Invoke {deity?.name}</h2>
-                <div className="w-32 h-32 md:w-48 md:h-48 drop-shadow-[0_0_30px_rgba(168,85,247,0.4)]">
+                {/* 50% width relative to max-w-lg container */}
+                <div className="w-1/2 aspect-square drop-shadow-[0_0_30px_rgba(168,85,247,0.4)] relative">
                      <Sprite sheetPath={deitySprite.sheet.path} x={deitySprite.itemInfo.x} y={deitySprite.itemInfo.y} spriteWidth={deitySprite.sheet.spriteSize.width} spriteHeight={deitySprite.sheet.spriteSize.height} sheetWidth={deitySprite.sheet.sheetSize.width} sheetHeight={deitySprite.sheet.sheetSize.height} />
                 </div>
             </div>
 
             {/* Middle: Incantation Text */}
-            <div className="flex-1 flex items-center justify-center p-4">
+            <div className="flex-1 flex flex-col items-center justify-center p-4">
                 <p className="text-center font-serif text-amber-100 text-lg md:text-2xl leading-relaxed whitespace-pre-line drop-shadow-md">
                     {deity?.invocation || "Ancient spirit, hear my call,\nGrant me strength to rise and not fall."}
                 </p>
-                <p className="fixed bottom-24 text-xs text-purple-400/50 animate-pulse pointer-events-none">Touch each wick to light the path.</p>
             </div>
 
-            {/* Bottom: 7 Candles */}
-            <div className="shrink-0 w-full flex justify-center gap-2 md:gap-4 mb-4 h-24 items-end px-2">
-                {litCandles.map((isLit, i) => (
-                    <div 
-                        key={i} 
-                        onClick={() => handleLight(i)}
-                        className={`relative w-10 h-24 md:w-12 md:h-32 cursor-pointer transition-all duration-500 ${isLit ? 'brightness-125' : 'brightness-[0.4] grayscale'}`}
-                    >
-                        {/* Candle Sprite */}
-                        {candleSprite && (
-                            <div className="w-full h-full relative">
-                                <Sprite sheetPath={candleSprite.sheet.path} x={candleSprite.itemInfo.x} y={candleSprite.itemInfo.y} spriteWidth={candleSprite.sheet.spriteSize.width} spriteHeight={candleSprite.sheet.spriteSize.height} sheetWidth={candleSprite.sheet.sheetSize.width} sheetHeight={candleSprite.sheet.sheetSize.height} />
-                            </div>
-                        )}
-                        
-                        {/* Flame Effect Overlay */}
-                        {isLit && (
-                            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-6 bg-orange-400 rounded-full blur-[2px] animate-pulse shadow-[0_0_20px_orange]">
-                                <div className="absolute inset-0 bg-yellow-200 rounded-full blur-[1px] scale-50 animate-ping" />
-                            </div>
-                        )}
-                    </div>
-                ))}
+            {/* Bottom: Instruction & 7 Candles */}
+            <div className="shrink-0 w-full flex flex-col items-center">
+                <p className="text-xs text-purple-400/50 animate-pulse pointer-events-none mb-4">Touch each wick to light the path.</p>
+                <div className="flex justify-center gap-2 md:gap-4 mb-4 h-24 items-end px-2">
+                    {litCandles.map((isLit, i) => (
+                        <div 
+                            key={i} 
+                            onClick={() => handleLight(i)}
+                            className={`relative w-10 h-24 md:w-12 md:h-32 cursor-pointer transition-all duration-500 ${isLit ? 'brightness-125' : 'brightness-[0.4] grayscale'}`}
+                        >
+                            {candleSprite && (
+                                <div className="w-full h-full relative">
+                                    <Sprite sheetPath={candleSprite.sheet.path} x={candleSprite.itemInfo.x} y={candleSprite.itemInfo.y} spriteWidth={candleSprite.sheet.spriteSize.width} spriteHeight={candleSprite.sheet.spriteSize.height} sheetWidth={candleSprite.sheet.sheetSize.width} sheetHeight={candleSprite.sheet.sheetSize.height} />
+                                </div>
+                            )}
+                            {isLit && (
+                                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-6 bg-orange-400 rounded-full blur-[2px] animate-pulse shadow-[0_0_20px_orange]">
+                                    <div className="absolute inset-0 bg-yellow-200 rounded-full blur-[1px] scale-50 animate-ping" />
+                                </div>
+                            )}
+                        </div>
+                    ))}
+                </div>
             </div>
         </div>
     );
