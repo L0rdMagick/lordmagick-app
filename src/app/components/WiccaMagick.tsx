@@ -358,7 +358,7 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
     const handleElementCharge = (name: string) => {
         if (!chargedElements.includes(name)) {
             setChargedElements(prev => [...prev, name]);
-            playSound(AUDIO.BELL, 0.4).play();
+            playSound('/audio/sfx-chaos-activate.mp3', 0.5).play();
         }
     };
 
@@ -627,6 +627,7 @@ const Step2_CastCircle = ({ onComplete }: { onComplete: () => void }) => {
             if (diff > 0) {
                 const newTotal = totalRotation + (diff * 0.35); 
                 setTotalRotation(newTotal);
+                // Trigger sound on movement
                 if (!soundRef.current) { 
                     soundRef.current = playSound(AUDIO.HUM, 0.3, true); 
                     soundRef.current.play(); 
@@ -739,29 +740,35 @@ const RestoredChargingSigil = ({ name, sound, spriteName, isCharged, glowColor, 
     const sprite = findSprite(spriteName);
     const holdTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-    useEffect(() => {
-        let timer: NodeJS.Timeout;
-        if (isHolding && !isCharged) {
-            // Updated sound prop
-            soundRef.current = playSound(sound, 0.4, true); 
-            timer = setTimeout(onComplete, CHARGE_DURATION_ELEMENT);
-        }
-        return () => { clearTimeout(timer); if(soundRef.current) soundRef.current.stop(); };
-    }, [isHolding, isCharged, onComplete, sound]);
-
+    // Use direct event handlers instead of useEffect for reliable audio triggering
     const handleDown = (e: React.SyntheticEvent) => { 
         e.preventDefault(); 
-        if(holdTimeoutRef.current) clearTimeout(holdTimeoutRef.current);
+        if (isCharged) return;
+
         setIsHolding(true); 
-        onStartHold(); 
+        onStartHold();
+        
+        // Direct Audio Play
+        soundRef.current = playSound(sound, 0.4, true); 
+        soundRef.current.play();
+
+        // Start Timer
+        holdTimeoutRef.current = setTimeout(() => {
+            if(soundRef.current) soundRef.current.stop();
+            onComplete();
+        }, CHARGE_DURATION_ELEMENT);
     };
     
     const handleUp = (e: React.SyntheticEvent) => { 
         e.preventDefault();
-        holdTimeoutRef.current = setTimeout(() => {
-             setIsHolding(false); 
-             onEndHold(); 
-        }, 100);
+        if (isCharged) return;
+
+        setIsHolding(false); 
+        onEndHold();
+        
+        // Direct Audio Stop
+        if(soundRef.current) soundRef.current.stop();
+        if(holdTimeoutRef.current) clearTimeout(holdTimeoutRef.current);
     };
 
     if (!sprite) return null;
@@ -980,26 +987,36 @@ const Step7_Ingredients = ({ spell, index, onComplete }: { spell: GeneratedWicca
     const [holding, setHolding] = useState(false);
     const [complete, setComplete] = useState(false);
     const soundRef = useRef<any>(null);
+    const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-    useEffect(() => {
-        let timer: NodeJS.Timeout;
-        if (holding && !complete) {
-            soundRef.current = playSound(AUDIO.SHIMMER, 0.3, true);
-            timer = setTimeout(() => {
-                setComplete(true);
-                setTimeout(onComplete, 500); 
-            }, CHARGE_DURATION_INGREDIENT);
-        }
-        return () => { clearTimeout(timer); if(soundRef.current) soundRef.current.stop(); };
-    }, [holding, complete, onComplete]);
+    // Direct event handlers for audio reliability
+    const handleDown = () => {
+        if (complete) return;
+        setHolding(true);
+        soundRef.current = playSound(AUDIO.SHIMMER, 0.3, true);
+        soundRef.current.play();
+        
+        timerRef.current = setTimeout(() => {
+            setComplete(true);
+            if(soundRef.current) soundRef.current.stop();
+            setTimeout(onComplete, 500); 
+        }, CHARGE_DURATION_INGREDIENT);
+    };
+
+    const handleUp = () => {
+        if (complete) return;
+        setHolding(false);
+        if(soundRef.current) soundRef.current.stop();
+        if(timerRef.current) clearTimeout(timerRef.current);
+    };
 
     return (
         <div className="flex flex-col items-center justify-center h-full gap-4 min-h-0">
             <h2 className="text-xl font-serif text-purple-200">Consecrate the Components</h2>
             <div className="relative w-56 h-56 flex items-center justify-center">
                 <div 
-                    onMouseDown={() => setHolding(true)} onMouseUp={() => setHolding(false)}
-                    onTouchStart={() => setHolding(true)} onTouchEnd={() => setHolding(false)}
+                    onMouseDown={handleDown} onMouseUp={handleUp} onMouseLeave={handleUp}
+                    onTouchStart={(e) => { e.preventDefault(); handleDown(); }} onTouchEnd={(e) => { e.preventDefault(); handleUp(); }}
                     className={`relative z-10 w-40 h-40 transition-all duration-300 ${holding ? 'scale-105' : 'scale-100'} cursor-pointer`}
                 >
                      <Sprite sheetPath={sprite.sheet.path} x={sprite.itemInfo.x} y={sprite.itemInfo.y} spriteWidth={sprite.sheet.spriteSize.width} spriteHeight={sprite.sheet.spriteSize.height} sheetWidth={sprite.sheet.sheetSize.width} sheetHeight={sprite.sheet.sheetSize.height} />
@@ -1030,30 +1047,34 @@ const Step8_Cone = ({ spell, onNext }: { spell: GeneratedWiccanSpell, onNext: ()
     const [castProgress, setCastProgress] = useState(0);
     const [isCasting, setIsCasting] = useState(false);
     const soundRef = useRef<any>(null);
+    const intervalRef = useRef<NodeJS.Timeout | null>(null);
     const count = Math.min(13, Math.ceil((castProgress / 100) * 13));
 
-    useEffect(() => {
-        let interval: NodeJS.Timeout;
-        if (isCasting) {
-             soundRef.current = playSound(AUDIO.RISER, 0.4, true);
-            // Count up logic
-            interval = setInterval(() => {
-                setCastProgress(p => {
-                    if (p >= 100) {
-                        if(soundRef.current) soundRef.current.stop();
-                        playSound(AUDIO.WHOOSH, 0.6).play();
-                        onNext();
-                        return 100;
-                    }
-                    // Sync count with duration
-                    return p + (100 / (CAST_DURATION / 50)); 
-                });
-            }, 50);
-        } else {
-            if(soundRef.current) soundRef.current.stop();
-        }
-        return () => { clearInterval(interval); if(soundRef.current) soundRef.current.stop(); };
-    }, [isCasting, onNext]);
+    const handleDown = () => {
+        setIsCasting(true);
+        soundRef.current = playSound(AUDIO.RISER, 0.4, true);
+        soundRef.current.play();
+
+        intervalRef.current = setInterval(() => {
+            setCastProgress(p => {
+                if (p >= 100) {
+                    if(soundRef.current) soundRef.current.stop();
+                    if(intervalRef.current) clearInterval(intervalRef.current);
+                    playSound(AUDIO.WHOOSH, 0.6).play();
+                    onNext();
+                    return 100;
+                }
+                return p + (100 / (CAST_DURATION / 50)); 
+            });
+        }, 50);
+    };
+
+    const handleUp = () => {
+        setIsCasting(false);
+        if(soundRef.current) soundRef.current.stop();
+        if(intervalRef.current) clearInterval(intervalRef.current);
+        // Note: Progress does not reset, allowing user to resume
+    };
 
     return (
         <div className="flex flex-col items-center justify-center h-full relative min-h-0">
@@ -1089,8 +1110,8 @@ const Step8_Cone = ({ spell, onNext }: { spell: GeneratedWiccanSpell, onNext: ()
             
             <div 
                 className="relative z-10 w-64 h-64 md:w-80 md:h-80 cursor-pointer active:scale-95 transition-transform flex items-center justify-center mt-8"
-                onMouseDown={() => setIsCasting(true)} onMouseUp={() => setIsCasting(false)}
-                onTouchStart={() => setIsCasting(true)} onTouchEnd={() => setIsCasting(false)}
+                onMouseDown={handleDown} onMouseUp={handleUp} onMouseLeave={handleUp}
+                onTouchStart={(e) => { e.preventDefault(); handleDown(); }} onTouchEnd={(e) => { e.preventDefault(); handleUp(); }}
             >
                 <PentagramSVG isTracing={isCasting} duration={CAST_DURATION} />
                 
