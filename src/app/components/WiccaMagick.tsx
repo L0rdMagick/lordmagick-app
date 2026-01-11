@@ -65,9 +65,9 @@ const AUDIO_CONFIG: Record<AudioKey, { vol: number; loop: boolean; note: string 
     WATER:       { vol: 5,  loop: true,  note: "Step 3: While holding Water sigil." },
     MATCH:       { vol: 6,  loop: false, note: "Step 5: Lighting candles." },
     SHIMMER:     { vol: 5,  loop: true,  note: "Step 7: While charging ingredients." },
-    RISER:       { vol: 6,  loop: true,  note: "Step 8: While charging the Pentagram cone." },
+    RISER:       { vol: 4,  loop: true,  note: "Step 8: While charging the Pentagram cone." },
     WHOOSH:      { vol: 7,  loop: false, note: "Step 8: When Pentagram is released." },
-    THUNDER:     { vol: 7,  loop: false, note: "Step 10: Grounding/Closing the circle." },
+    THUNDER:     { vol: 10,  loop: false, note: "Step 10: Grounding/Closing the circle." },
 };
 
 // --- CONSTANTS ---
@@ -244,24 +244,24 @@ const IncantationOverlay = ({ text, onConfirm, isVisible, ingredient }: OverlayP
                     >
                         <Image src={`${ASSET_PATH}/wicca_incantation_scroll.png`} alt="Incantation" layout="fill" objectFit="contain" priority />
                         
-                        <div className="absolute inset-0 flex flex-col items-center justify-center p-8 md:p-12 text-center">
-                            <h3 className="font-serif text-[#4a2e1c]/70 text-[10px] md:text-xs mb-2 uppercase tracking-widest mt-6">Spoken Word</h3>
+                        <div className="absolute inset-0 flex flex-col items-center py-[16%] px-12 md:px-16 text-center z-10">
+                            <h3 className="shrink-0 font-serif text-[#4a2e1c]/70 text-[10px] md:text-xs mb-2 uppercase tracking-widest mt-1">Spoken Word</h3>
                             
                             {ingredient && sprite && (
-                                <div className="w-14 h-14 md:w-20 md:h-20 my-2 opacity-90 shrink-0">
+                                <div className="shrink-0 w-14 h-14 md:w-20 md:h-20 my-2 opacity-90">
                                      <Sprite sheetPath={sprite.sheet.path} x={sprite.itemInfo.x} y={sprite.itemInfo.y} spriteWidth={sprite.sheet.spriteSize.width} spriteHeight={sprite.sheet.spriteSize.height} sheetWidth={sprite.sheet.sheetSize.width} sheetHeight={sprite.sheet.sheetSize.height} />
                                 </div>
                             )}
 
-                            <div className="w-full px-4 flex items-center justify-center grow overflow-y-auto scrollbar-hide py-2">
-                                <p className="font-serif text-[#4a2e1c] text-lg md:text-xl leading-tight whitespace-pre-line drop-shadow-xs">
+                            <div className="w-full flex-1 overflow-y-auto scrollbar-hide flex flex-col min-h-0">
+                                <p className="font-serif text-[#4a2e1c] text-lg md:text-xl leading-tight whitespace-pre-line drop-shadow-xs my-auto pb-2">
                                     {text}
                                 </p>
                             </div>
 
                             <button 
                                 onClick={() => { playAudio('THUD').play(); onConfirm(); }}
-                                className="mt-2 px-6 py-2 border-y-2 border-[#4a2e1c] text-[#4a2e1c] hover:bg-[#4a2e1c]/10 font-serif font-bold uppercase tracking-widest transition-all hover:scale-105 text-xs md:text-sm mb-4"
+                                className="shrink-0 mt-2 px-6 py-2 border-y-2 border-[#4a2e1c] text-[#4a2e1c] hover:bg-[#4a2e1c]/10 font-serif font-bold uppercase tracking-widest transition-all hover:scale-105 text-xs md:text-sm mb-1"
                             >
                                 So Mote It Be
                             </button>
