@@ -61,13 +61,13 @@ const AUDIO_CONFIG: Record<AudioKey, { vol: number; loop: boolean; note: string 
     SPIRIT:      { vol: 5,  loop: true,  note: "Step 3: While holding Spirit sigil." },
     AIR:         { vol: 5,  loop: true,  note: "Step 3: While holding Air sigil." },
     FIRE:        { vol: 5,  loop: true,  note: "Step 3: While holding Fire sigil." },
-    EARTH:       { vol: 5,  loop: true,  note: "Step 3: While holding Earth sigil. Step 10: Grounding." },
-    WATER:     { vol: 5,  loop: true,  note: "Step 3: While holding Water sigil." },
-    MATCH:     { vol: 6,  loop: false, note: "Step 5: Lighting candles." },
-    SHIMMER:   { vol: 5,  loop: true,  note: "Step 7: While charging ingredients." },
-    RISER:     { vol: 6,  loop: true,  note: "Step 8: While charging the Pentagram cone." },
-    WHOOSH:    { vol: 7,  loop: false, note: "Step 8: When Pentagram is released." },
-    THUNDER:   { vol: 7,  loop: false, note: "Step 10: Grounding/Closing the circle." },
+    EARTH:       { vol: 5,  loop: true,  note: "Step 3: While holding Earth sigil." },
+    WATER:       { vol: 5,  loop: true,  note: "Step 3: While holding Water sigil." },
+    MATCH:       { vol: 6,  loop: false, note: "Step 5: Lighting candles." },
+    SHIMMER:     { vol: 5,  loop: true,  note: "Step 7: While charging ingredients." },
+    RISER:       { vol: 6,  loop: true,  note: "Step 8: While charging the Pentagram cone." },
+    WHOOSH:      { vol: 7,  loop: false, note: "Step 8: When Pentagram is released." },
+    THUNDER:     { vol: 7,  loop: false, note: "Step 10: Grounding/Closing the circle." },
 };
 
 // --- CONSTANTS ---
@@ -166,14 +166,13 @@ const playAudio = (key: AudioKey, forceLoop?: boolean): { play: () => void; stop
 
 const PentagramSVG = ({ isTracing, progress }: { isTracing: boolean, progress: number }) => {
     return (
-        <svg viewBox="0 0 100 100" className={`absolute inset-0 w-full h-full ${isTracing ? 'text-amber-400 drop-shadow-[0_0_25px_gold]' : 'text-purple-500'} transition-colors duration-1000 overflow-visible`}>
-             {/* Guide Path - Increased brightness/opacity for better visibility before tracing */}
+        <svg viewBox="0 0 100 100" className={`absolute inset-0 w-full h-full ${isTracing ? 'text-amber-400 drop-shadow-[0_0_25px_gold]' : 'text-purple-900'} transition-colors duration-1000 overflow-visible`}>
              <path 
                 d="M 50 5 L 63 40 L 98 40 L 70 60 L 80 95 L 50 75 L 20 95 L 30 60 L 2 40 L 37 40 Z"
                 fill="none" 
                 stroke="currentColor" 
                 strokeWidth="1" 
-                className="opacity-30"
+                className="opacity-20"
              />
              <motion.path
                 d="M 50 5 L 80 95 L 2 40 L 98 40 L 20 95 L 50 5"
@@ -237,21 +236,16 @@ const IncantationOverlay = ({ text, onConfirm, isVisible, ingredient }: OverlayP
             {isVisible && (
                 <motion.div 
                     initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                    className="absolute inset-0 z-50 flex items-center justify-center p-4"
+                    className="absolute inset-0 z-50 flex items-center justify-center p-2"
                 >
                     <motion.div 
                         initial={{ scale: 0.95, y: 10 }} animate={{ scale: 1, y: 0 }}
-                        className="relative w-full max-w-md h-[80vh] flex flex-col items-center justify-center filter drop-shadow-2xl"
+                        className="relative w-full max-w-md h-auto aspect-958/860 flex flex-col items-center justify-center filter drop-shadow-2xl"
                     >
                         <Image src={`${ASSET_PATH}/wicca_incantation_scroll.png`} alt="Incantation" layout="fill" objectFit="contain" priority />
                         
-                        {/* 
-                           Layout Fix:
-                           - Added py-16 to clear the scroll curls at top and bottom.
-                           - Added min-h-0 to the text container to allow shrinking and scrolling.
-                        */}
-                        <div className="absolute inset-0 flex flex-col items-center justify-center px-12 py-16 text-center">
-                            <h3 className="font-serif text-[#4a2e1c]/70 text-[10px] md:text-xs mb-2 uppercase tracking-widest mt-4 shrink-0">Spoken Word</h3>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center p-8 md:p-12 text-center">
+                            <h3 className="font-serif text-[#4a2e1c]/70 text-[10px] md:text-xs mb-2 uppercase tracking-widest mt-6">Spoken Word</h3>
                             
                             {ingredient && sprite && (
                                 <div className="w-14 h-14 md:w-20 md:h-20 my-2 opacity-90 shrink-0">
@@ -259,17 +253,15 @@ const IncantationOverlay = ({ text, onConfirm, isVisible, ingredient }: OverlayP
                                 </div>
                             )}
 
-                            <div className="w-full flex-1 min-h-0 px-2 flex flex-col">
-                                <div className="overflow-y-auto scrollbar-hide flex items-center justify-center min-h-full">
-                                    <p className="font-serif text-[#4a2e1c] text-lg md:text-xl leading-tight whitespace-pre-line drop-shadow-xs py-2">
-                                        {text}
-                                    </p>
-                                </div>
+                            <div className="w-full px-4 flex items-center justify-center grow overflow-y-auto scrollbar-hide py-2">
+                                <p className="font-serif text-[#4a2e1c] text-lg md:text-xl leading-tight whitespace-pre-line drop-shadow-xs">
+                                    {text}
+                                </p>
                             </div>
 
                             <button 
                                 onClick={() => { playAudio('THUD').play(); onConfirm(); }}
-                                className="mt-4 px-6 py-2 border-y-2 border-[#4a2e1c] text-[#4a2e1c] hover:bg-[#4a2e1c]/10 font-serif font-bold uppercase tracking-widest transition-all hover:scale-105 text-xs md:text-sm shrink-0 mb-2"
+                                className="mt-2 px-6 py-2 border-y-2 border-[#4a2e1c] text-[#4a2e1c] hover:bg-[#4a2e1c]/10 font-serif font-bold uppercase tracking-widest transition-all hover:scale-105 text-xs md:text-sm mb-4"
                             >
                                 So Mote It Be
                             </button>
