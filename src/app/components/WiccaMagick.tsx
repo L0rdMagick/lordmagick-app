@@ -33,7 +33,8 @@ const AUDIO_SOURCES = {
     EARTH: '/audio/sfx-element-earth.mp3',
     WATER: '/audio/sfx-element-water.mp3',
     SPIRIT: '/audio/sfx-element-spirit.mp3',
-    WHOOSH: '/audio/thunder-sound-effect-380391.mp3',
+    WHOOSH: '/audio/sfx-oracle-room-portal.mp3', // Updated per request
+    THUNDER: '/audio/thunder-sound-effect-380391.mp3', // Added for Step 10
     SCRIBING: '/audio/sfx-scribing.mp3',
     SHIMMER: '/audio/sfx-shimmer.mp3',
     HUM: '/audio/sfx-energy-hum.mp3',
@@ -59,13 +60,14 @@ const AUDIO_CONFIG: Record<AudioKey, { vol: number; loop: boolean; note: string 
     CHAOS:       { vol: 5,  loop: false, note: "Step 3: When a Quarter is successfully charged." },
     SPIRIT:      { vol: 5,  loop: true,  note: "Step 3: While holding Spirit sigil." },
     AIR:         { vol: 5,  loop: true,  note: "Step 3: While holding Air sigil." },
-    FIRE:      { vol: 5,  loop: true,  note: "Step 3: While holding Fire sigil." },
-    EARTH:     { vol: 5,  loop: true,  note: "Step 3: While holding Earth sigil. Step 10: Grounding." },
-    WATER:     { vol: 5,  loop: true,  note: "Step 3: While holding Water sigil." },
-    MATCH:     { vol: 6,  loop: false, note: "Step 5: Lighting candles." },
-    SHIMMER:   { vol: 5,  loop: true,  note: "Step 7: While charging ingredients." },
-    RISER:     { vol: 6,  loop: true,  note: "Step 8: While charging the Pentagram cone." },
-    WHOOSH:    { vol: 4,  loop: false, note: "Step 8: When Pentagram is released." },
+    FIRE:        { vol: 5,  loop: true,  note: "Step 3: While holding Fire sigil." },
+    EARTH:       { vol: 5,  loop: true,  note: "Step 3: While holding Earth sigil." },
+    WATER:       { vol: 5,  loop: true,  note: "Step 3: While holding Water sigil." },
+    MATCH:       { vol: 6,  loop: false, note: "Step 5: Lighting candles." },
+    SHIMMER:     { vol: 5,  loop: true,  note: "Step 7: While charging ingredients." },
+    RISER:       { vol: 6,  loop: true,  note: "Step 8: While charging the Pentagram cone." },
+    WHOOSH:      { vol: 7,  loop: false, note: "Step 8: When Pentagram is released." },
+    THUNDER:     { vol: 7,  loop: false, note: "Step 10: Grounding/Closing the circle." },
 };
 
 // --- CONSTANTS ---
@@ -1401,7 +1403,7 @@ const Step10_Closing = ({ onComplete }: { onComplete: () => void }) => {
     return (
         <div className="flex flex-col items-center justify-center h-full gap-6 min-h-0">
             <h2 className="text-xl font-serif text-purple-200">Ground the Energy</h2>
-            <button onClick={() => { playAudio('EARTH').play(); onComplete(); }} className="w-56 h-56 relative group cursor-pointer rounded-full overflow-hidden border-4 border-transparent hover:border-green-500/50 transition-all">
+            <button onClick={() => { playAudio('THUNDER').play(); onComplete(); }} className="w-56 h-56 relative group cursor-pointer rounded-full overflow-hidden border-4 border-transparent hover:border-green-500/50 transition-all">
                 <div className="absolute inset-0 bg-green-900/20 rounded-full blur-2xl group-hover:bg-green-800/40 transition-colors duration-700" />
                 <div className="relative w-full h-full opacity-80 group-hover:opacity-100 transition-opacity duration-500 scale-100 group-hover:scale-105">
                      <Image 
