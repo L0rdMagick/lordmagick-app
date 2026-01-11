@@ -33,8 +33,8 @@ const AUDIO_SOURCES = {
     EARTH: '/audio/sfx-element-earth.mp3',
     WATER: '/audio/sfx-element-water.mp3',
     SPIRIT: '/audio/sfx-element-spirit.mp3',
-    WHOOSH: '/audio/sfx-oracle-room-portal.mp3', // Updated per request
-    THUNDER: '/audio/thunder-sound-effect-380391.mp3', // Added for Step 10
+    WHOOSH: '/audio/sfx-oracle-room-portal.mp3',
+    THUNDER: '/audio/thunder-sound-effect-380391.mp3',
     SCRIBING: '/audio/sfx-scribing.mp3',
     SHIMMER: '/audio/sfx-shimmer.mp3',
     HUM: '/audio/sfx-energy-hum.mp3',
@@ -53,7 +53,7 @@ const AUDIO_CONFIG: Record<AudioKey, { vol: number; loop: boolean; note: string 
     AMBIENCE:    { vol: 3,  loop: true,  note: "Starts on mount. Background drone." },
     THUD:        { vol: 2,  loop: false, note: "UI Interactions: Buttons, Deities, Transitions." },
     PARCHMENT:   { vol: 5,  loop: false, note: "Incantation Overlay appearance." },
-    SCRIBING:    { vol: 8,  loop: true,  note: "Step 1: While typing intention/situation." },
+    SCRIBING:    { vol: 8,  loop: true,  note: "Step 1: Typing. Step 11: Saving (approx 2 loops)." },
     HUM:         { vol: 4,  loop: true,  note: "Step 2 (Circle Trace)." },
     DEITY_PULSE: { vol: 5,  loop: false, note: "Step 5: When all candles are lit and deity pulses." },
     BELL:        { vol: 4,  loop: false, note: "Step 2 (Complete), Step 5 (Complete), Step 7 (Complete)." },
@@ -471,11 +471,20 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
 
     const handleSave = async () => {
         if (!generatedSpell || isSaved) return;
-        playAudio('SCRIBING').play();
+        
+        // Start scribing sound with loop enabled
+        const scribing = playAudio('SCRIBING', true);
+        scribing.play();
+        
+        // Stop audio after ~2 loops (approx 3.5 seconds) to prevent infinite playing
+        setTimeout(() => scribing.stop(), 3500);
         
         if (session?.user?.id && !isReplayMode) {
              const paid = await spendAether(session.user.id);
-             if (!paid) return;
+             if (!paid) {
+                 scribing.stop(); // Ensure stop if payment fails
+                 return;
+             }
         }
 
         setIsSaving(true);
