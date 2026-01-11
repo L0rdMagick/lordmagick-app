@@ -244,24 +244,29 @@ const IncantationOverlay = ({ text, onConfirm, isVisible, ingredient }: OverlayP
                     >
                         <Image src={`${ASSET_PATH}/wicca_incantation_scroll.png`} alt="Incantation" layout="fill" objectFit="contain" priority />
                         
-                        <div className="absolute inset-0 flex flex-col items-center py-[16%] px-12 md:px-16 text-center z-10">
-                            <h3 className="shrink-0 font-serif text-[#4a2e1c]/70 text-[10px] md:text-xs mb-2 uppercase tracking-widest mt-1">Spoken Word</h3>
+                        {/* Changed container to use proper flex column structure for scrolling */}
+                        <div className="absolute inset-0 flex flex-col items-center p-8 md:p-12 text-center">
                             
-                            {ingredient && sprite && (
-                                <div className="shrink-0 w-14 h-14 md:w-20 md:h-20 my-2 opacity-90">
-                                     <Sprite sheetPath={sprite.sheet.path} x={sprite.itemInfo.x} y={sprite.itemInfo.y} spriteWidth={sprite.sheet.spriteSize.width} spriteHeight={sprite.sheet.spriteSize.height} sheetWidth={sprite.sheet.sheetSize.width} sheetHeight={sprite.sheet.sheetSize.height} />
-                                </div>
-                            )}
-
-                            <div className="w-full flex-1 overflow-y-auto scrollbar-hide flex flex-col min-h-0">
-                                <p className="font-serif text-[#4a2e1c] text-lg md:text-xl leading-tight whitespace-pre-line drop-shadow-xs my-auto pb-2">
+                            {/* Header (Fixed) */}
+                            <h3 className="font-serif text-[#4a2e1c]/70 text-[10px] md:text-xs mb-2 uppercase tracking-widest mt-6 shrink-0">Spoken Word</h3>
+                            
+                            {/* Scrollable Content Area */}
+                            <div className="w-full px-4 flex-1 flex flex-col items-center overflow-y-auto no-scrollbar py-2 min-h-0">
+                                {ingredient && sprite && (
+                                    <div className="w-14 h-14 md:w-20 md:h-20 my-2 opacity-90 shrink-0">
+                                         <Sprite sheetPath={sprite.sheet.path} x={sprite.itemInfo.x} y={sprite.itemInfo.y} spriteWidth={sprite.sheet.spriteSize.width} spriteHeight={sprite.sheet.spriteSize.height} sheetWidth={sprite.sheet.sheetSize.width} sheetHeight={sprite.sheet.sheetSize.height} />
+                                    </div>
+                                )}
+                                
+                                <p className="font-serif text-[#4a2e1c] text-lg md:text-xl leading-tight whitespace-pre-line drop-shadow-xs my-auto">
                                     {text}
                                 </p>
                             </div>
 
+                            {/* Footer (Fixed) */}
                             <button 
                                 onClick={() => { playAudio('THUD').play(); onConfirm(); }}
-                                className="shrink-0 mt-2 px-6 py-2 border-y-2 border-[#4a2e1c] text-[#4a2e1c] hover:bg-[#4a2e1c]/10 font-serif font-bold uppercase tracking-widest transition-all hover:scale-105 text-xs md:text-sm mb-1"
+                                className="mt-2 px-6 py-2 border-y-2 border-[#4a2e1c] text-[#4a2e1c] hover:bg-[#4a2e1c]/10 font-serif font-bold uppercase tracking-widest transition-all hover:scale-105 text-xs md:text-sm mb-4 shrink-0"
                             >
                                 So Mote It Be
                             </button>
@@ -472,7 +477,7 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
     const handleSave = async () => {
         if (!generatedSpell || isSaved) return;
         
-        // Start scribing sound with loop enabled
+        // Start scribing sound with loop enabled (via true arg)
         const scribing = playAudio('SCRIBING', true);
         scribing.play();
         
