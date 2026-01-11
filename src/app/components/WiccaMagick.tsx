@@ -22,24 +22,18 @@ import { Sprite } from './Sprite';
 import { findSprite } from '@/lib/spriteLibrary';
 import { Save, Check, BookOpen, ArrowRight, Lock } from 'lucide-react';
 
-// --- Configuration ---
-const ASSET_PATH = "/images/Spells/Wicca Tradition General";
-const CHARGE_DURATION_ELEMENT = 7000;
-const CHARGE_DURATION_INGREDIENT = 6000;
-const CAST_DURATION = 13000; 
-const SENDING_DURATION = 4000;
-const SERVICE_SLUG = 'ai_wicca_magick'; 
-const LS_AUTOSAVE_KEY = 'wicca_spell_pending_save';
+// --- CONFIGURATION: AUDIO SETTINGS ---
+// Adjust volumes here (0 = Silent, 10 = Max/Original File Volume)
+// Notes indicate where the sound is triggered and if it loops by default.
 
-// --- Audio Paths ---
-const AUDIO = {
+const AUDIO_SOURCES = {
     AMBIENCE: '/audio/bg-ritual-ambience.mp3',
     FIRE: '/audio/sfx-element-fire.mp3',
     AIR: '/audio/sfx-element-air.mp3',
     EARTH: '/audio/sfx-element-earth.mp3',
     WATER: '/audio/sfx-element-water.mp3',
     SPIRIT: '/audio/sfx-element-spirit.mp3',
-    WHOOSH: '/audio/sfx-energy-whoosh.mp3',
+    WHOOSH: '/audio/thunder-sound-effect-380391.mp3',
     SCRIBING: '/audio/sfx-scribing.mp3',
     SHIMMER: '/audio/sfx-shimmer.mp3',
     HUM: '/audio/sfx-energy-hum.mp3',
@@ -48,7 +42,38 @@ const AUDIO = {
     THUD: '/audio/sfx-stone-thud.mp3',
     BELL: '/audio/sfx-ritual-bell.mp3',
     RISER: '/audio/sfx-power-riser.mp3',
+    CHAOS: '/audio/sfx-chaos-activate.mp3',
+} as const;
+
+type AudioKey = keyof typeof AUDIO_SOURCES;
+
+const AUDIO_CONFIG: Record<AudioKey, { vol: number; loop: boolean; note: string }> = {
+    AMBIENCE:  { vol: 2,  loop: true,  note: "Starts on mount. Background drone." },
+    THUD:      { vol: 5,  loop: false, note: "UI Interactions: Buttons, Deities, Transitions." },
+    PARCHMENT: { vol: 5,  loop: false, note: "Incantation Overlay appearance." },
+    SCRIBING:  { vol: 6,  loop: true,  note: "Step 1: While typing intention/situation." },
+    HUM:       { vol: 4,  loop: true,  note: "Step 2 (Circle Trace) & Step 5 (Deity Pulse)." },
+    BELL:      { vol: 5,  loop: false, note: "Step 2 (Complete), Step 5 (Complete), Step 7 (Complete)." },
+    CHAOS:     { vol: 5,  loop: false, note: "Step 3: When a Quarter is successfully charged." },
+    SPIRIT:    { vol: 5,  loop: true,  note: "Step 3: While holding Spirit sigil." },
+    AIR:       { vol: 5,  loop: true,  note: "Step 3: While holding Air sigil." },
+    FIRE:      { vol: 5,  loop: true,  note: "Step 3: While holding Fire sigil." },
+    EARTH:     { vol: 5,  loop: true,  note: "Step 3: While holding Earth sigil. Step 10: Grounding." },
+    WATER:     { vol: 5,  loop: true,  note: "Step 3: While holding Water sigil." },
+    MATCH:     { vol: 6,  loop: false, note: "Step 5: Lighting candles." },
+    SHIMMER:   { vol: 5,  loop: true,  note: "Step 7: While charging ingredients." },
+    RISER:     { vol: 6,  loop: true,  note: "Step 8: While charging the Pentagram cone." },
+    WHOOSH:    { vol: 4,  loop: false, note: "Step 8: When Pentagram is released." },
 };
+
+// --- CONSTANTS ---
+const ASSET_PATH = "/images/Spells/Wicca Tradition General";
+const CHARGE_DURATION_ELEMENT = 7000;
+const CHARGE_DURATION_INGREDIENT = 6000;
+const CAST_DURATION = 13000; 
+const SENDING_DURATION = 4000;
+const SERVICE_SLUG = 'ai_wicca_magick'; 
+const LS_AUTOSAVE_KEY = 'wicca_spell_pending_save';
 
 // --- Data Types Extended ---
 interface ExtendedWiccanDeitySuggestion extends WiccanDeitySuggestion {
@@ -112,13 +137,22 @@ const STANDARD_WICCAN_SPELL: ExtendedGeneratedWiccanSpell = {
 };
 
 // --- Sound Utility ---
-const playSound = (src: string, volume: number = 0.5, loop: boolean = false): { play: () => void; stop: () => void; } => {
+const playAudio = (key: AudioKey, forceLoop?: boolean): { play: () => void; stop: () => void; } => {
     const win = (globalThis as any).window;
     if (typeof win === 'undefined') return { play: () => {}, stop: () => {} };
+    
+    const config = AUDIO_CONFIG[key];
+    const src = AUDIO_SOURCES[key];
+    
     const AudioCtor = win.Audio;
     const audio = new AudioCtor(src);
-    audio.volume = volume;
-    audio.loop = loop;
+    
+    // Normalize 0-10 to 0.0-1.0
+    audio.volume = config.vol / 10;
+    
+    // Use config loop unless forced otherwise
+    audio.loop = forceLoop !== undefined ? forceLoop : config.loop;
+    
     const play = () => audio.play().catch((e: any) => console.error(`Failed to play: ${src}`, e));
     const stop = () => { audio.pause(); audio.currentTime = 0; };
     return { play, stop };
@@ -190,7 +224,7 @@ const IncantationOverlay = ({ text, onConfirm, isVisible, ingredient }: OverlayP
     const sprite = ingredient ? (findSprite(spriteName) || findSprite("White Candle")) : null;
 
     useEffect(() => {
-        if(isVisible) playSound(AUDIO.PARCHMENT, 0.5).play();
+        if(isVisible) playAudio('PARCHMENT').play();
     }, [isVisible]);
 
     return (
@@ -222,7 +256,7 @@ const IncantationOverlay = ({ text, onConfirm, isVisible, ingredient }: OverlayP
                             </div>
 
                             <button 
-                                onClick={() => { playSound(AUDIO.THUD, 0.6).play(); onConfirm(); }}
+                                onClick={() => { playAudio('THUD').play(); onConfirm(); }}
                                 className="mt-2 px-6 py-2 border-y-2 border-[#4a2e1c] text-[#4a2e1c] hover:bg-[#4a2e1c]/10 font-serif font-bold uppercase tracking-widest transition-all hover:scale-105 text-xs md:text-sm mb-4"
                             >
                                 So Mote It Be
@@ -288,7 +322,7 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
 
     // Ambience
     useEffect(() => {
-        const ambience = playSound(AUDIO.AMBIENCE, 0.2, true);
+        const ambience = playAudio('AMBIENCE');
         ambience.play();
         return () => ambience.stop();
     }, []);
@@ -355,7 +389,7 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
     const handleBegin = async (mode: 'standard' | 'ai') => {
         if (!intention) { setError("Intention is required."); return; }
         setError(null); clearPaymentError();
-        playSound(AUDIO.THUD, 0.5).play();
+        playAudio('THUD').play();
 
         if (mode === 'standard') {
             // HYDRATION FIX: Only reset to Standard defaults if NOT replaying a saved spell
@@ -417,12 +451,12 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
     const handleElementCharge = (name: string) => {
         if (!chargedElements.includes(name)) {
             setChargedElements(prev => [...prev, name]);
-            playSound('/audio/sfx-chaos-activate.mp3', 0.5).play();
+            playAudio('CHAOS').play();
         }
     };
 
     const handleIngredientComplete = () => {
-        playSound(AUDIO.BELL, 0.4).play();
+        playAudio('BELL').play();
         if (generatedSpell && chargingIndex < generatedSpell.symbolic_ingredients.length - 1) {
             setChargingIndex(prev => prev + 1);
             setSubStep('incantation');
@@ -433,7 +467,7 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
 
     const handleSave = async () => {
         if (!generatedSpell || isSaved) return;
-        playSound(AUDIO.SCRIBING, 0.5).play();
+        playAudio('SCRIBING').play();
         
         if (session?.user?.id && !isReplayMode) {
              const paid = await spendAether(session.user.id);
@@ -458,7 +492,7 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
                 ritual_data: ritualData 
             });
             setIsSaved(true);
-            playSound(AUDIO.BELL, 0.6).play();
+            playAudio('BELL').play();
             // Clear pending save if we successfully saved
             localStorage.removeItem(LS_AUTOSAVE_KEY);
         } catch (e: any) {
@@ -524,18 +558,18 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
         }
 
         switch (ritualStep) {
-            case 0: return <Step0_Intro onNext={() => { playSound(AUDIO.THUD, 0.5).play(); setRitualStep(1); }} />;
+            case 0: return <Step0_Intro onNext={() => { playAudio('THUD').play(); setRitualStep(1); }} />;
             case 1: return <Step1_Intention intention={intention} setIntention={setIntention} situation={situation} setSituation={setSituation} onBegin={handleBegin} isReplay={isReplayMode} cost={cost} />;
             case 2: return <Step2_CastCircle onComplete={nextStep} />;
             case 3: return <Step3_Quarters spell={generatedSpell} charged={chargedElements} onCharge={handleElementCharge} onNext={nextStep} />;
-            case 4: return <Step4_Deities suggestions={generatedSpell?.suggested_deities || []} onSelect={(d) => { playSound(AUDIO.THUD, 0.5).play(); setSelectedDeity(d); nextStep(); }} isReplay={isReplayMode} savedDeity={selectedDeity} />;
+            case 4: return <Step4_Deities suggestions={generatedSpell?.suggested_deities || []} onSelect={(d) => { playAudio('THUD').play(); setSelectedDeity(d); nextStep(); }} isReplay={isReplayMode} savedDeity={selectedDeity} />;
             case 5: return <Step5_DeityCandles deity={selectedDeity} onComplete={nextStep} />;
-            case 6: return <Step6_Summary spell={generatedSpell!} onNext={() => { playSound(AUDIO.THUD, 0.5).play(); nextStep(); }} />;
+            case 6: return <Step6_Summary spell={generatedSpell!} onNext={() => { playAudio('THUD').play(); nextStep(); }} />;
             case 7: return <Step7_Ingredients spell={generatedSpell!} index={chargingIndex} onComplete={handleIngredientComplete} />;
             case 8: return <Step8_Cone spell={generatedSpell!} onNext={nextStep} />;
             case 9: return <Step9_Sending onNext={nextStep} />;
             case 10: return <Step10_Closing onComplete={nextStep} />;
-            case 11: return <Step11_Result spell={generatedSpell!} onSave={handleSave} isSaving={isSaving} isSaved={isSaved} onReset={() => { playSound(AUDIO.THUD, 0.5).play(); window.location.reload(); }} />;
+            case 11: return <Step11_Result spell={generatedSpell!} onSave={handleSave} isSaving={isSaving} isSaved={isSaved} onReset={() => { playAudio('THUD').play(); window.location.reload(); }} />;
             default: return null;
         }
     };
@@ -663,7 +697,7 @@ const Step1_Intention = ({ intention, setIntention, situation, setSituation, onB
 
         // Start playing if not already
         if (!scribeAudio.current) {
-            scribeAudio.current = playSound(AUDIO.SCRIBING, 0.4, true);
+            scribeAudio.current = playAudio('SCRIBING', true);
             scribeAudio.current.play();
         }
 
@@ -749,13 +783,13 @@ const Step2_CastCircle = ({ onComplete }: { onComplete: () => void }) => {
                 const newTotal = totalRotation + (diff * 0.35); 
                 setTotalRotation(newTotal);
                 if (!soundRef.current) { 
-                    soundRef.current = playSound(AUDIO.HUM, 0.3, true); 
+                    soundRef.current = playAudio('HUM'); 
                     soundRef.current.play(); 
                 }
                 
                 if (newTotal >= 360) {
                     if(soundRef.current) soundRef.current.stop();
-                    playSound(AUDIO.BELL, 0.5).play();
+                    playAudio('BELL').play();
                     onComplete();
                 }
             }
@@ -813,11 +847,11 @@ const Step2_CastCircle = ({ onComplete }: { onComplete: () => void }) => {
 const Step3_Quarters = ({ spell, charged, onCharge, onNext }: { spell: GeneratedWiccanSpell | null, charged: string[], onCharge: (n: string) => void, onNext: () => void }) => {
     const [displayChant, setDisplayChant] = useState<string | null>(null);
     const quarters = [
-        { name: "Spirit", sound: AUDIO.SPIRIT, sprite: "Spirit Sigil", pos: { top: '15%', left: '50%' }, color: "shadow-[0_0_50px_rgba(168,85,247,0.9)]", chant: spell?.elemental_chants?.Spirit },
-        { name: "Air", sound: AUDIO.AIR, sprite: "Air Sigil", pos: { top: '40%', left: '90%' }, color: "shadow-[0_0_50px_rgba(234,179,8,0.9)]", chant: spell?.elemental_chants?.Air },
-        { name: "Fire", sound: AUDIO.FIRE, sprite: "Fire Sigil", pos: { top: '85%', left: '75%' }, color: "shadow-[0_0_50px_rgba(239,68,68,0.9)]", chant: spell?.elemental_chants?.Fire },
-        { name: "Earth", sound: AUDIO.EARTH, sprite: "Earth Sigil", pos: { top: '85%', left: '25%' }, color: "shadow-[0_0_50px_rgba(34,197,94,0.9)]", chant: spell?.elemental_chants?.Earth }, 
-        { name: "Water", sound: AUDIO.WATER, sprite: "Water Sigil", pos: { top: '40%', left: '10%' }, color: "shadow-[0_0_50px_rgba(59,130,246,0.9)]", chant: spell?.elemental_chants?.Water },
+        { name: "Spirit", sound: 'SPIRIT', sprite: "Spirit Sigil", pos: { top: '15%', left: '50%' }, color: "shadow-[0_0_50px_rgba(168,85,247,0.9)]", chant: spell?.elemental_chants?.Spirit },
+        { name: "Air", sound: 'AIR', sprite: "Air Sigil", pos: { top: '40%', left: '90%' }, color: "shadow-[0_0_50px_rgba(234,179,8,0.9)]", chant: spell?.elemental_chants?.Air },
+        { name: "Fire", sound: 'FIRE', sprite: "Fire Sigil", pos: { top: '85%', left: '75%' }, color: "shadow-[0_0_50px_rgba(239,68,68,0.9)]", chant: spell?.elemental_chants?.Fire },
+        { name: "Earth", sound: 'EARTH', sprite: "Earth Sigil", pos: { top: '85%', left: '25%' }, color: "shadow-[0_0_50px_rgba(34,197,94,0.9)]", chant: spell?.elemental_chants?.Earth }, 
+        { name: "Water", sound: 'WATER', sprite: "Water Sigil", pos: { top: '40%', left: '10%' }, color: "shadow-[0_0_50px_rgba(59,130,246,0.9)]", chant: spell?.elemental_chants?.Water },
     ];
 
     useEffect(() => {
@@ -861,7 +895,7 @@ const Step3_Quarters = ({ spell, charged, onCharge, onNext }: { spell: Generated
 
             <div className="w-full h-10 flex items-center justify-center shrink-0 mb-1">
                  {charged.length === 5 && (
-                    <button onClick={() => { playSound(AUDIO.THUD, 0.5).play(); onNext(); }} className="px-8 py-2 bg-amber-600 hover:bg-amber-500 text-black font-bold rounded-lg animate-bounce shadow-[0_0_20px_orange] z-30 relative text-xs md:text-sm uppercase">
+                    <button onClick={() => { playAudio('THUD').play(); onNext(); }} className="px-8 py-2 bg-amber-600 hover:bg-amber-500 text-black font-bold rounded-lg animate-bounce shadow-[0_0_20px_orange] z-30 relative text-xs md:text-sm uppercase">
                         Seal the Quarters
                     </button>
                 )}
@@ -883,7 +917,7 @@ const RestoredChargingSigil = ({ name, sound, spriteName, isCharged, glowColor, 
         setIsHolding(true); 
         onStartHold();
         
-        soundRef.current = playSound(sound, 0.4, true); 
+        soundRef.current = playAudio(sound, true); 
         soundRef.current.play();
 
         holdTimeoutRef.current = setTimeout(() => {
@@ -1036,15 +1070,15 @@ const Step5_DeityCandles = ({ deity, onComplete }: { deity: ExtendedWiccanDeityS
             const newLit = [...litCandles];
             newLit[index] = true;
             setLitCandles(newLit);
-            playSound(AUDIO.MATCH, 0.6).play();
+            playAudio('MATCH').play();
             
             if (newLit.every(Boolean)) {
                 setTimeout(() => {
                     setIsPulsing(true);
-                    playSound(AUDIO.HUM, 0.4).play();
+                    playAudio('HUM').play();
                     
                     setTimeout(() => {
-                         playSound(AUDIO.BELL, 0.5).play();
+                         playAudio('BELL').play();
                          onComplete();
                     }, 3000);
                 }, 500);
@@ -1162,7 +1196,7 @@ const Step7_Ingredients = ({ spell, index, onComplete }: { spell: GeneratedWicca
     const handleDown = () => {
         if (complete) return;
         setHolding(true);
-        soundRef.current = playSound(AUDIO.SHIMMER, 0.3, true);
+        soundRef.current = playAudio('SHIMMER', true);
         soundRef.current.play();
         
         timerRef.current = setTimeout(() => {
@@ -1264,7 +1298,7 @@ const Step8_Cone = ({ spell, onNext }: { spell: GeneratedWiccanSpell, onNext: ()
             setIsCasting(false);
             setHasCompleted(true); // Flag completion
             if(soundRef.current) soundRef.current.stop();
-            playSound(AUDIO.WHOOSH, 0.6).play();
+            playAudio('WHOOSH').play();
             // Small delay before moving on
             setTimeout(onNext, 800);
         }
@@ -1273,7 +1307,7 @@ const Step8_Cone = ({ spell, onNext }: { spell: GeneratedWiccanSpell, onNext: ()
     const handleDown = () => {
         if (isCasting || progress >= 1) return;
         setIsCasting(true);
-        soundRef.current = playSound(AUDIO.RISER, 0.4, true);
+        soundRef.current = playAudio('RISER', true);
         soundRef.current.play();
         
         // Resume logic
@@ -1365,7 +1399,7 @@ const Step10_Closing = ({ onComplete }: { onComplete: () => void }) => {
     return (
         <div className="flex flex-col items-center justify-center h-full gap-6 min-h-0">
             <h2 className="text-xl font-serif text-purple-200">Ground the Energy</h2>
-            <button onClick={() => { playSound(AUDIO.EARTH, 0.5).play(); onComplete(); }} className="w-56 h-56 relative group cursor-pointer rounded-full overflow-hidden border-4 border-transparent hover:border-green-500/50 transition-all">
+            <button onClick={() => { playAudio('EARTH').play(); onComplete(); }} className="w-56 h-56 relative group cursor-pointer rounded-full overflow-hidden border-4 border-transparent hover:border-green-500/50 transition-all">
                 <div className="absolute inset-0 bg-green-900/20 rounded-full blur-2xl group-hover:bg-green-800/40 transition-colors duration-700" />
                 <div className="relative w-full h-full opacity-80 group-hover:opacity-100 transition-opacity duration-500 scale-100 group-hover:scale-105">
                      <Image 
