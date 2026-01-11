@@ -872,18 +872,24 @@ const Step3_Quarters = ({ spell, charged, onCharge, onNext }: { spell: Generated
         { name: "Water", sound: 'WATER', sprite: "Water Sigil", pos: { top: '40%', left: '10%' }, color: "shadow-[0_0_50px_rgba(59,130,246,0.9)]", chant: spell?.elemental_chants?.Water },
     ];
 
-    useEffect(() => {
-        if (charged.length === 5) {
-            setDisplayChant("The Guardians have been Called!");
-        }
-    }, [charged]);
-
     const handleStartHold = (name: string, chant: string | undefined) => {
         setDisplayChant(chant || `Hail, Watchtower of the ${name}!`);
     };
 
     return (
         <div className="flex flex-col items-center h-full w-full relative min-h-0">
+            {charged.length === 5 && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-50">
+                     <motion.h2 
+                         initial={{ opacity: 0, scale: 0.8 }}
+                         animate={{ opacity: 1, scale: 1 }}
+                         className="text-4xl md:text-6xl font-serif text-slate-300 font-bold text-center drop-shadow-[0_0_20px_rgba(226,232,240,0.8)] tracking-widest uppercase"
+                     >
+                         The Guardians have been Called
+                     </motion.h2>
+                </div>
+            )}
+            
             <h2 className="text-xl font-serif text-purple-200 text-center w-full shrink-0 relative z-20 mt-1">Call the Guardians</h2>
             
             <div className="w-full h-24 shrink-0 flex items-center justify-center z-20 pointer-events-none px-4 mb-0">
