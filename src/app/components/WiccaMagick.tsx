@@ -622,7 +622,7 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
     );
 };
 
-// ... (Step0 and Step1 remain unchanged) ...
+// ... (Step0) ...
 
 const Step0_Intro = ({ onNext }: { onNext: () => void }) => (
     <div className="flex flex-col items-center justify-between h-full text-center animate-in fade-in duration-1000 min-h-0 py-6 md:py-8 md:justify-center md:gap-8">
@@ -641,44 +641,82 @@ const Step0_Intro = ({ onNext }: { onNext: () => void }) => (
     </div>
 );
 
-const Step1_Intention = ({ intention, setIntention, situation, setSituation, onBegin, isReplay, cost }: any) => (
-    <div className="flex flex-col items-center justify-between h-full min-h-0 w-full py-2 md:justify-center md:gap-8">
-        <h2 className="text-xl md:text-3xl font-serif text-amber-100/90 drop-shadow-md shrink-0 text-center">Inscribe Your Will</h2>
-        <div className="relative w-full max-w-md aspect-958/860 shrink min-h-0 flex items-center justify-center">
-            <Image 
-                src={`${ASSET_PATH}/wicca_scroll_intention.png`} 
-                layout="fill"
-                objectFit="contain"
-                alt="Scroll" 
-                priority
-                className="drop-shadow-xl"
-            />
-            <div className="absolute inset-0 flex flex-col items-center justify-center px-[25%] py-[18%] gap-3 z-10">
-                <input 
-                    value={intention} onChange={e => setIntention(e.target.value)}
-                    placeholder="My Intention..." readOnly={isReplay}
-                    className="w-full bg-transparent border-b-2 border-[#4a2e1c]/50 text-center text-[#4a2e1c] placeholder-[#4a2e1c]/40 font-serif text-lg md:text-2xl outline-none py-1"
+const Step1_Intention = ({ intention, setIntention, situation, setSituation, onBegin, isReplay, cost }: any) => {
+    // Scribing Sound Logic
+    const scribeAudio = useRef<any>(null);
+    const typingTimeout = useRef<NodeJS.Timeout | null>(null);
+
+    // Clean up audio on unmount
+    useEffect(() => {
+        return () => {
+            if (scribeAudio.current) {
+                scribeAudio.current.stop();
+                scribeAudio.current = null;
+            }
+            if (typingTimeout.current) clearTimeout(typingTimeout.current);
+        };
+    }, []);
+
+    const handleInput = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, setter: (val: string) => void) => {
+        setter(e.target.value);
+        if (isReplay) return; // No sound needed if replay (readonly)
+
+        // Start playing if not already
+        if (!scribeAudio.current) {
+            scribeAudio.current = playSound(AUDIO.SCRIBING, 0.4, true);
+            scribeAudio.current.play();
+        }
+
+        // Debounce stop
+        if (typingTimeout.current) clearTimeout(typingTimeout.current);
+        typingTimeout.current = setTimeout(() => {
+            if (scribeAudio.current) {
+                scribeAudio.current.stop();
+                scribeAudio.current = null;
+            }
+        }, 300); // Stop after 300ms pause
+    };
+
+    return (
+        <div className="flex flex-col items-center justify-between h-full min-h-0 w-full py-2 md:justify-center md:gap-8">
+            <h2 className="text-xl md:text-3xl font-serif text-amber-100/90 drop-shadow-md shrink-0 text-center">Inscribe Your Will</h2>
+            <div className="relative w-full max-w-md aspect-958/860 shrink min-h-0 flex items-center justify-center">
+                <Image 
+                    src={`${ASSET_PATH}/wicca_scroll_intention.png`} 
+                    layout="fill"
+                    objectFit="contain"
+                    alt="Scroll" 
+                    priority
+                    className="drop-shadow-xl"
                 />
-                <textarea 
-                    value={situation} onChange={e => setSituation(e.target.value)}
-                    placeholder="Describe the situation..." readOnly={isReplay}
-                    // Applied no-scrollbar class here specifically
-                    className="w-full h-20 md:h-32 bg-transparent text-center text-[#4a2e1c] placeholder-[#4a2e1c]/40 font-serif text-lg md:text-2xl outline-none resize-none pt-1 overflow-y-auto no-scrollbar"
-                />
+                <div className="absolute inset-0 flex flex-col items-center justify-center px-[25%] py-[18%] gap-3 z-10">
+                    <input 
+                        value={intention} 
+                        onChange={(e) => handleInput(e, setIntention)}
+                        placeholder="My Intention..." readOnly={isReplay}
+                        className="w-full bg-transparent border-b-2 border-[#4a2e1c]/50 text-center text-[#4a2e1c] placeholder-[#4a2e1c]/40 font-serif text-lg md:text-2xl outline-none py-1"
+                    />
+                    <textarea 
+                        value={situation} 
+                        onChange={(e) => handleInput(e, setSituation)}
+                        placeholder="Describe the situation..." readOnly={isReplay}
+                        className="w-full h-20 md:h-32 bg-transparent text-center text-[#4a2e1c] placeholder-[#4a2e1c]/40 font-serif text-lg md:text-2xl outline-none resize-none pt-1 overflow-y-auto no-scrollbar"
+                    />
+                </div>
+            </div>
+            <div className="shrink-0 w-full max-w-md px-2 pb-2">
+                {!isReplay ? (
+                    <div className="flex flex-col gap-3">
+                         <button onClick={() => onBegin('standard')} className="w-full py-4 bg-slate-800/80 border border-slate-600 rounded-xl text-slate-300 font-serif text-base font-bold uppercase tracking-widest shadow-lg active:scale-95 transition-transform">Standard (Free)</button>
+                         <button onClick={() => onBegin('ai')} className="w-full py-4 bg-purple-900/80 border border-purple-500 rounded-xl text-purple-100 font-serif shadow-[0_0_15px_rgba(168,85,247,0.3)] text-base font-bold uppercase tracking-widest active:scale-95 transition-transform">High Ritual ({cost} Aether)</button>
+                    </div>
+                ) : (
+                     <button onClick={() => onBegin('standard')} className="w-full py-4 bg-purple-900/90 border border-purple-400 rounded-xl text-purple-100 font-serif shadow-[0_0_15px_rgba(168,85,247,0.6)] animate-pulse text-lg font-bold uppercase tracking-widest">Begin Saved Ritual</button>
+                )}
             </div>
         </div>
-        <div className="shrink-0 w-full max-w-md px-2 pb-2">
-            {!isReplay ? (
-                <div className="flex flex-col gap-3">
-                     <button onClick={() => onBegin('standard')} className="w-full py-4 bg-slate-800/80 border border-slate-600 rounded-xl text-slate-300 font-serif text-base font-bold uppercase tracking-widest shadow-lg active:scale-95 transition-transform">Standard (Free)</button>
-                     <button onClick={() => onBegin('ai')} className="w-full py-4 bg-purple-900/80 border border-purple-500 rounded-xl text-purple-100 font-serif shadow-[0_0_15px_rgba(168,85,247,0.3)] text-base font-bold uppercase tracking-widest active:scale-95 transition-transform">High Ritual ({cost} Aether)</button>
-                </div>
-            ) : (
-                 <button onClick={() => onBegin('standard')} className="w-full py-4 bg-purple-900/90 border border-purple-400 rounded-xl text-purple-100 font-serif shadow-[0_0_15px_rgba(168,85,247,0.6)] animate-pulse text-lg font-bold uppercase tracking-widest">Begin Saved Ritual</button>
-            )}
-        </div>
-    </div>
-);
+    );
+};
 
 const Step2_CastCircle = ({ onComplete }: { onComplete: () => void }) => {
     const [lastAngle, setLastAngle] = useState<number | null>(null);
@@ -748,8 +786,21 @@ const Step2_CastCircle = ({ onComplete }: { onComplete: () => void }) => {
             >
                 <svg className="absolute w-full h-full -rotate-90 overflow-visible" viewBox="0 0 100 100">
                     <circle cx="50" cy="50" r="45" fill="none" stroke="#333" strokeWidth="2" strokeDasharray="4 2" />
+                    
+                    {/* Glow Layer (Blur) */}
+                    <motion.circle cx="50" cy="50" r="45" fill="none" stroke="#a855f7" strokeWidth="12" strokeLinecap="round" strokeDasharray="283"
+                        strokeDashoffset={283 - (Math.min(totalRotation, 360) / 360) * 283} className="opacity-50 blur-md" />
+                        
+                    {/* Inner Fill Layer (Filling as we trace) */}
+                    <motion.circle cx="50" cy="50" r="45" 
+                        fill="#a855f7" stroke="none" 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: Math.min(totalRotation, 360) / 800 }} // Slowly fills up to ~0.45 opacity
+                    />
+
+                    {/* Main Stroke */}
                     <motion.circle cx="50" cy="50" r="45" fill="none" stroke="#a855f7" strokeWidth="6" strokeLinecap="round" strokeDasharray="283"
-                        strokeDashoffset={283 - (Math.min(totalRotation, 360) / 360) * 283} className="drop-shadow-[0_0_15px_rgba(168,85,247,0.8)]" />
+                        strokeDashoffset={283 - (Math.min(totalRotation, 360) / 360) * 283} className="drop-shadow-[0_0_10px_rgba(168,85,247,1)]" />
                 </svg>
                 {totalRotation < 10 && <div className="absolute top-2 left-1/2 -translate-x-1/2 text-purple-500/50 animate-bounce"><ArrowRight className="rotate-90" /></div>}
             </div>
@@ -1183,7 +1234,6 @@ const Step7_Ingredients = ({ spell, index, onComplete }: { spell: GeneratedWicca
 };
 
 const Step8_Cone = ({ spell, onNext }: { spell: GeneratedWiccanSpell, onNext: () => void }) => {
-    // REWRITTEN LOGIC: Synchronized Countup and Tracing
     const [isCasting, setIsCasting] = useState(false);
     const [progress, setProgress] = useState(0); // 0 to 1
     const [chargeCount, setChargeCount] = useState(0); // 0 to 13
@@ -1212,10 +1262,10 @@ const Step8_Cone = ({ spell, onNext }: { spell: GeneratedWiccanSpell, onNext: ()
         } else {
             // COMPLETE
             setIsCasting(false);
-            setHasCompleted(true); // Flag to hide text
+            setHasCompleted(true); // Flag completion
             if(soundRef.current) soundRef.current.stop();
             playSound(AUDIO.WHOOSH, 0.6).play();
-            // Small delay to show the "13" before moving on
+            // Small delay before moving on
             setTimeout(onNext, 800);
         }
     };
@@ -1226,9 +1276,7 @@ const Step8_Cone = ({ spell, onNext }: { spell: GeneratedWiccanSpell, onNext: ()
         soundRef.current = playSound(AUDIO.RISER, 0.4, true);
         soundRef.current.play();
         
-        // Resume from where we left off (if pause functionality was desired, but here we usually reset or resume)
-        // For simplicity with this hook structure, let's treat it as resume-able or reset-based.
-        // Current implementation is resume-able logic.
+        // Resume logic
         const startOffset = progress * DURATION_MS;
         startTimeRef.current = performance.now() - startOffset;
         
@@ -1256,9 +1304,9 @@ const Step8_Cone = ({ spell, onNext }: { spell: GeneratedWiccanSpell, onNext: ()
                     <motion.div
                         initial={{ top: '100%', opacity: 0 }}
                         animate={{
-                            // Scroll based on progress
-                            top: isCasting ? '-150%' : '100%', 
-                            // Fade in when casting starts, hide when completed or reset
+                            // Lock at top if completed, otherwise follow casting state
+                            top: hasCompleted ? '-150%' : (isCasting ? '-150%' : '100%'), 
+                            // Force opacity to 0 if completed
                             opacity: (isCasting && !hasCompleted) ? 1 : 0
                         }}
                         transition={{ 
