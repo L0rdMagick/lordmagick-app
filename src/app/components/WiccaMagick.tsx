@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import type { Session, GeneratedWiccanSpell, WiccanDeitySuggestion, WiccanIngredient } from '@/lib/types';
 
 // Services
@@ -27,9 +27,10 @@ import { Save, Check, BookOpen, ArrowRight, Lock } from 'lucide-react';
 const ASSET_PATH = "/images/Spells/Wicca Tradition General";
 const CHARGE_DURATION_ELEMENT = 7000;
 const CHARGE_DURATION_INGREDIENT = 6000;
-const CAST_DURATION = 13000; // Fallback duration, will be overridden by text length
+const CAST_DURATION = 13000; // Fallback duration
 const SENDING_DURATION = 4000;
 const SERVICE_SLUG = 'ai_wicca_magick'; 
+const LS_AUTOSAVE_KEY = 'wicca_spell_pending_save';
 
 // --- Audio Paths ---
 const AUDIO = {
@@ -60,7 +61,7 @@ interface ExtendedGeneratedWiccanSpell extends GeneratedWiccanSpell {
     tool_consecration?: string;
 }
 
-// --- Standard Ritual Data ---
+// --- Standard Ritual Data (Defaults) ---
 const STANDARD_WICCAN_SPELL: ExtendedGeneratedWiccanSpell = {
     title: "Circle of Elemental Balance",
     transitional_incantations: {
@@ -178,12 +179,10 @@ interface OverlayProps {
 }
 
 const IncantationOverlay = ({ text, onConfirm, isVisible, ingredient }: OverlayProps) => {
-    // Determine sprite for ingredient, handling candle colors if needed
-    let spriteName = "White Candle"; // Default
+    let spriteName = "White Candle"; 
     if (ingredient) {
         spriteName = ingredient.name;
         if (ingredient.name.toLowerCase().includes("candle")) {
-             // Basic color extraction for candles
              const colors = ["Red", "Blue", "Green", "Yellow", "Purple", "Black", "Pink", "Orange"];
              const foundColor = colors.find(c => ingredient.name.toLowerCase().includes(c.toLowerCase()));
              if (foundColor) spriteName = `${foundColor} Candle`;
@@ -262,6 +261,7 @@ const SlotPurchaseModal = ({ isOpen, onClose, onPurchase, isProcessing }: { isOp
 // --- Main Component ---
 const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: boolean, onBack?: () => void }) => {
     const searchParams = useSearchParams();
+    const router = useRouter();
     const loadId = searchParams.get('loadId');
 
     const [ritualStep, setRitualStep] = useState(0);
@@ -295,10 +295,35 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
         return () => ambience.stop();
     }, []);
 
-    // --- Hydration ---
+    // --- Autosave Recovery & Hydration ---
     useEffect(() => {
-        if (loadId) {
-            const load = async () => {
+        const checkRecovery = async () => {
+            // 1. Check for Pending Autosave (Returning from Store)
+            const pendingSave = localStorage.getItem(LS_AUTOSAVE_KEY);
+            if (pendingSave) {
+                try {
+                    const savedState = JSON.parse(pendingSave);
+                    setIntention(savedState.intention);
+                    setSituation(savedState.situation);
+                    setSelectedDeity(savedState.selectedDeity);
+                    setGeneratedSpell(savedState.spell);
+                    
+                    // Restore to result screen
+                    setIsReplayMode(false); // It's still a new spell essentially
+                    setRitualStep(11);
+                    setSubStep('action');
+                    
+                    // Clear the pending save so we don't loop
+                    localStorage.removeItem(LS_AUTOSAVE_KEY);
+                    return; 
+                } catch (e) {
+                    console.error("Failed to restore pending save", e);
+                    localStorage.removeItem(LS_AUTOSAVE_KEY);
+                }
+            }
+
+            // 2. Check for Load ID (Replaying from Grimoire)
+            if (loadId) {
                 setLoading(true);
                 setLoadingMessage("Restoring the Ritual...");
                 try {
@@ -308,17 +333,24 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
                         setIntention(s.intention);
                         setSituation(d.situation || '');
                         if (d.selectedDeity) setSelectedDeity(d.selectedDeity);
-                        if (d.spell) setGeneratedSpell(d.spell);
-                        else setGeneratedSpell(STANDARD_WICCAN_SPELL);
+                        
+                        // STRICT HYDRATION: Prefer saved spell data over defaults
+                        if (d.spell) {
+                            setGeneratedSpell(d.spell);
+                        } else {
+                            // Fallback only if absolutely corrupted
+                            setGeneratedSpell(STANDARD_WICCAN_SPELL);
+                        }
                         
                         setIsReplayMode(true);
                         setIsSaved(true);
                         setRitualStep(1);
                     }
                 } catch { setError("Could not restore ritual."); } finally { setLoading(false); }
-            };
-            load();
-        }
+            }
+        };
+
+        checkRecovery();
     }, [loadId]);
 
     const handleBegin = async (mode: 'standard' | 'ai') => {
@@ -340,11 +372,7 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
             try {
                 const s: any = await generateWiccanSpell({ intention, focalPoint: 'The Divine', moonPhase: 'Current', situation });
                 
-                // Merge with defaults to ensure all fields exist
-                // Using non-null assertions (!) for standard defaults because they are defined in the constant above
-                const defaultTrans = STANDARD_WICCAN_SPELL.transitional_incantations!;
-                const defaultElem = STANDARD_WICCAN_SPELL.elemental_chants!;
-
+                // Strict mapping to ensure AI text is prioritized
                 const mergedSpell: ExtendedGeneratedWiccanSpell = {
                     title: s.title || STANDARD_WICCAN_SPELL.title,
                     central_chant: s.central_chant || STANDARD_WICCAN_SPELL.central_chant,
@@ -352,17 +380,17 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
                     symbolic_ingredients: (s.symbolic_ingredients && s.symbolic_ingredients.length > 0) ? s.symbolic_ingredients : STANDARD_WICCAN_SPELL.symbolic_ingredients,
                     suggested_deities: (s.suggested_deities && s.suggested_deities.length > 0) ? s.suggested_deities : STANDARD_WICCAN_SPELL.suggested_deities,
                     transitional_incantations: {
-                        sanctification: s.transitional_incantations?.sanctification || defaultTrans.sanctification,
-                        circle_casting: s.transitional_incantations?.circle_casting || defaultTrans.circle_casting,
-                        invocation: s.transitional_incantations?.invocation || defaultTrans.invocation,
-                        closing: s.transitional_incantations?.closing || defaultTrans.closing,
+                        sanctification: s.transitional_incantations?.sanctification || STANDARD_WICCAN_SPELL.transitional_incantations!.sanctification,
+                        circle_casting: s.transitional_incantations?.circle_casting || STANDARD_WICCAN_SPELL.transitional_incantations!.circle_casting,
+                        invocation: s.transitional_incantations?.invocation || STANDARD_WICCAN_SPELL.transitional_incantations!.invocation,
+                        closing: s.transitional_incantations?.closing || STANDARD_WICCAN_SPELL.transitional_incantations!.closing,
                     },
                     elemental_chants: {
-                         Spirit: s.elemental_chants?.Spirit || defaultElem.Spirit,
-                         Air: s.elemental_chants?.Air || defaultElem.Air,
-                         Fire: s.elemental_chants?.Fire || defaultElem.Fire,
-                         Earth: s.elemental_chants?.Earth || defaultElem.Earth,
-                         Water: s.elemental_chants?.Water || defaultElem.Water,
+                         Spirit: s.elemental_chants?.Spirit || STANDARD_WICCAN_SPELL.elemental_chants!.Spirit,
+                         Air: s.elemental_chants?.Air || STANDARD_WICCAN_SPELL.elemental_chants!.Air,
+                         Fire: s.elemental_chants?.Fire || STANDARD_WICCAN_SPELL.elemental_chants!.Fire,
+                         Earth: s.elemental_chants?.Earth || STANDARD_WICCAN_SPELL.elemental_chants!.Earth,
+                         Water: s.elemental_chants?.Water || STANDARD_WICCAN_SPELL.elemental_chants!.Water,
                     },
                     tool_consecration: s.tool_consecration || STANDARD_WICCAN_SPELL.tool_consecration
                 };
@@ -411,12 +439,12 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
 
         setIsSaving(true);
         try {
-            // Save the exact state of generatedSpell to ensure re-runs have all AI text
+            // Save complete state to ensure full fidelity on replay
             const ritualData = { 
                 intention, 
                 situation, 
                 selectedDeity, 
-                spell: generatedSpell // This object includes all chants and incantations
+                spell: generatedSpell 
             };
             
             await saveSpell(session?.user?.id || 'anon', {
@@ -428,6 +456,8 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
             });
             setIsSaved(true);
             playSound(AUDIO.BELL, 0.6).play();
+            // Clear pending save if we successfully saved
+            localStorage.removeItem(LS_AUTOSAVE_KEY);
         } catch (e: any) {
             if (e.message === 'GRIMOIRE_FULL') setShowSlotModal(true);
             else setError("Failed to scribe.");
@@ -439,25 +469,37 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
         setSlotLoading(true);
         const success = await buySpellSlots(session.user.id);
         setSlotLoading(false);
+        
         if (success) {
             setShowSlotModal(false);
             handleSave();
         } else {
-            setError("Insufficient Aether to expand Grimoire.");
-            setShowSlotModal(false);
+            // Insufficient Aether Logic
+            // 1. Save state to LS
+            const currentState = {
+                intention,
+                situation,
+                selectedDeity,
+                spell: generatedSpell
+            };
+            localStorage.setItem(LS_AUTOSAVE_KEY, JSON.stringify(currentState));
+            
+            // 2. Redirect to Store
+            router.push('/store');
         }
     };
 
     const getCurrentIncantation = () => {
         if (!generatedSpell) return "";
-        const trans = generatedSpell.transitional_incantations || STANDARD_WICCAN_SPELL.transitional_incantations;
+        const trans = generatedSpell.transitional_incantations || STANDARD_WICCAN_SPELL.transitional_incantations!;
         switch (ritualStep) {
-            case 2: return trans?.sanctification || "By my will, I begin.";
-            case 3: return "Guardians of the Watchtowers,\nHail and Welcome!";
-            case 4: return trans?.invocation || "Spirits of Light, draw near.";
+            case 2: return trans.sanctification || "By my will, I begin.";
+            // UPDATED: Using AI text for Guardian Welcome instead of hardcoded default
+            case 3: return trans.invocation || "Spirits of Light, draw near."; 
+            case 4: return trans.invocation || "Spirits of Light, draw near.";
             case 6: return generatedSpell.tool_consecration || "With these tools and sacred art,\nI weave the magic from my heart.";
             case 7: return generatedSpell.symbolic_ingredients[chargingIndex]?.incantation || "I charge this item.";
-            case 10: return trans?.closing || "The Circle is open.";
+            case 10: return trans.closing || "The Circle is open.";
             default: return "";
         }
     };
@@ -576,6 +618,8 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
     );
 };
 
+// ... (Step0 and Step1 remain unchanged) ...
+
 const Step0_Intro = ({ onNext }: { onNext: () => void }) => (
     <div className="flex flex-col items-center justify-between h-full text-center animate-in fade-in duration-1000 min-h-0 py-6 md:py-8 md:justify-center md:gap-8">
         <div className="shrink-0 space-y-1 md:space-y-4">
@@ -662,7 +706,6 @@ const Step2_CastCircle = ({ onComplete }: { onComplete: () => void }) => {
             if (diff > 0) {
                 const newTotal = totalRotation + (diff * 0.35); 
                 setTotalRotation(newTotal);
-                // Trigger sound on movement
                 if (!soundRef.current) { 
                     soundRef.current = playSound(AUDIO.HUM, 0.3, true); 
                     soundRef.current.play(); 
@@ -692,11 +735,11 @@ const Step2_CastCircle = ({ onComplete }: { onComplete: () => void }) => {
                 <h2 className="text-2xl font-serif text-purple-100 drop-shadow-md">Cast the Circle</h2>
                 <p className="text-purple-300/60 italic text-sm mt-1">Trace the circle clockwise.</p>
             </div>
-            {/* Removed all backgrounds and borders to ensure invisibility during tracing */}
+            {/* Added extra classes to enforce transparency */}
             <div 
                 ref={containerRef} 
-                className="relative w-full max-w-[300px] aspect-square flex items-center justify-center touch-none select-none cursor-crosshair shrink-0 outline-none border-none shadow-none bg-transparent"
-                style={{ WebkitTapHighlightColor: 'transparent' }}
+                className="relative w-full max-w-[300px] aspect-square flex items-center justify-center touch-none select-none cursor-crosshair shrink-0 outline-none border-none shadow-none !bg-transparent !border-0"
+                style={{ WebkitTapHighlightColor: 'transparent', backgroundColor: 'transparent' }}
                 onMouseMove={handleMove} onTouchMove={handleMove} onMouseUp={handleEnd} onMouseLeave={handleEnd} onTouchEnd={handleEnd}
             >
                 <svg className="absolute w-full h-full -rotate-90" viewBox="0 0 100 100">
@@ -709,6 +752,8 @@ const Step2_CastCircle = ({ onComplete }: { onComplete: () => void }) => {
         </div>
     );
 };
+
+// ... (Steps 3, 4, 5, 6, 7 remain largely unchanged, just ensure they pass data correctly) ...
 
 const Step3_Quarters = ({ spell, charged, onCharge, onNext }: { spell: GeneratedWiccanSpell | null, charged: string[], onCharge: (n: string) => void, onNext: () => void }) => {
     const [displayChant, setDisplayChant] = useState<string | null>(null);
@@ -776,7 +821,6 @@ const RestoredChargingSigil = ({ name, sound, spriteName, isCharged, glowColor, 
     const sprite = findSprite(spriteName);
     const holdTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-    // Use direct event handlers instead of useEffect for reliable audio triggering
     const handleDown = (e: React.SyntheticEvent) => { 
         e.preventDefault(); 
         if (isCharged) return;
@@ -784,11 +828,9 @@ const RestoredChargingSigil = ({ name, sound, spriteName, isCharged, glowColor, 
         setIsHolding(true); 
         onStartHold();
         
-        // Direct Audio Play
         soundRef.current = playSound(sound, 0.4, true); 
         soundRef.current.play();
 
-        // Start Timer
         holdTimeoutRef.current = setTimeout(() => {
             if(soundRef.current) soundRef.current.stop();
             onComplete();
@@ -802,7 +844,6 @@ const RestoredChargingSigil = ({ name, sound, spriteName, isCharged, glowColor, 
         setIsHolding(false); 
         onEndHold();
         
-        // Direct Audio Stop
         if(soundRef.current) soundRef.current.stop();
         if(holdTimeoutRef.current) clearTimeout(holdTimeoutRef.current);
     };
@@ -835,6 +876,8 @@ const RestoredChargingSigil = ({ name, sound, spriteName, isCharged, glowColor, 
         </div>
     );
 };
+
+// ... (getDeityIconName, Step4_Deities, Step5_DeityCandles, Step6_Summary, Step7_Ingredients remain unchanged) ...
 
 const getDeityIconName = (name: string) => {
     const n = name.trim(); 
@@ -929,8 +972,6 @@ const Step5_DeityCandles = ({ deity, onComplete }: { deity: ExtendedWiccanDeityS
     const [litCandles, setLitCandles] = useState<boolean[]>(Array(7).fill(false));
     const [isPulsing, setIsPulsing] = useState(false);
     
-    // Map colors to available sprites if needed, otherwise default to white
-    // Assuming candle sprite contains flame, so we manipulate appearance for "unlit"
     const candleSprite = findSprite("White Candle");
     const iconName = deity ? getDeityIconName(deity.name) : "Triple Moon";
     const deitySprite = findSprite(iconName) || findSprite("Triple Moon")!;
@@ -943,12 +984,10 @@ const Step5_DeityCandles = ({ deity, onComplete }: { deity: ExtendedWiccanDeityS
             playSound(AUDIO.MATCH, 0.6).play();
             
             if (newLit.every(Boolean)) {
-                // All lit, trigger pulsing phase
                 setTimeout(() => {
                     setIsPulsing(true);
                     playSound(AUDIO.HUM, 0.4).play();
                     
-                    // After 3 pulses (1s each, total 3s), complete
                     setTimeout(() => {
                          playSound(AUDIO.BELL, 0.5).play();
                          onComplete();
@@ -960,12 +999,6 @@ const Step5_DeityCandles = ({ deity, onComplete }: { deity: ExtendedWiccanDeityS
 
     return (
         <div className="flex flex-col items-center justify-between h-full min-h-0 py-2 w-full max-w-lg mx-auto">
-            {/* 
-               Modified Layout based on user request:
-               Title -> Instructions -> Image -> Incantation -> Candles
-               Ensuring no overlap and compact fit
-            */}
-            
             {/* Top: Title & Instructions */}
             <div className="shrink-0 flex flex-col items-center gap-1 mt-2 w-full">
                 <h2 className="text-xl font-serif text-purple-200">Invoke {deity?.name}</h2>
@@ -999,14 +1032,12 @@ const Step5_DeityCandles = ({ deity, onComplete }: { deity: ExtendedWiccanDeityS
                             onClick={() => handleLight(i)}
                             className={`relative w-10 h-24 md:w-12 md:h-32 cursor-pointer transition-all duration-500`}
                         >
-                            {/* Candle Appearance Logic: Dark/Grayscale when unlit, Normal when lit */}
                             <div className={`w-full h-full relative transition-all duration-700 ${isLit ? 'brightness-110 filter-none' : 'brightness-[0.4] grayscale sepia-[0.5]'}`}>
                                 {candleSprite && (
                                     <Sprite sheetPath={candleSprite.sheet.path} x={candleSprite.itemInfo.x} y={candleSprite.itemInfo.y} spriteWidth={candleSprite.sheet.spriteSize.width} spriteHeight={candleSprite.sheet.spriteSize.height} sheetWidth={candleSprite.sheet.sheetSize.width} sheetHeight={candleSprite.sheet.sheetSize.height} />
                                 )}
                             </div>
                             
-                            {/* Extra Flame Glow on Top when Lit */}
                             {isLit && (
                                 <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-6 bg-orange-400 rounded-full blur-[2px] animate-pulse shadow-[0_0_20px_orange]">
                                     <div className="absolute inset-0 bg-yellow-200 rounded-full blur-[1px] scale-50 animate-ping" />
@@ -1026,7 +1057,6 @@ const Step6_Summary = ({ spell, onNext }: { spell: GeneratedWiccanSpell, onNext:
         <p className="text-purple-300 text-center text-sm">Gather these items in your mind's eye.</p>
         <div className="grid grid-cols-5 gap-2 md:gap-4 shrink-0">
             {spell.symbolic_ingredients.map((ing, i) => {
-                // Determine sprite based on name/color same as Step 7 logic
                 let spriteName = ing.name;
                 const colors = ["Red", "Blue", "Green", "Yellow", "Purple", "Black", "Pink", "Orange"];
                 if (ing.name.toLowerCase().includes("candle")) {
@@ -1055,7 +1085,6 @@ const Step6_Summary = ({ spell, onNext }: { spell: GeneratedWiccanSpell, onNext:
 const Step7_Ingredients = ({ spell, index, onComplete }: { spell: GeneratedWiccanSpell, index: number, onComplete: () => void }) => {
     const item = spell.symbolic_ingredients[index];
     
-    // Logic to determine sprite based on name (checking for colors)
     let spriteName = item.name;
     const isCandle = item.name.toLowerCase().includes("candle");
     
@@ -1073,7 +1102,6 @@ const Step7_Ingredients = ({ spell, index, onComplete }: { spell: GeneratedWicca
     const soundRef = useRef<any>(null);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-    // Direct event handlers for audio reliability
     const handleDown = () => {
         if (complete) return;
         setHolding(true);
@@ -1100,7 +1128,6 @@ const Step7_Ingredients = ({ spell, index, onComplete }: { spell: GeneratedWicca
             
             <div className="relative w-56 h-56 flex items-center justify-center">
                 
-                {/* Glowing Energy Background Expanding from Center */}
                 <motion.div
                     initial={{ scale: 0, opacity: 0 }}
                     animate={{ 
@@ -1121,7 +1148,6 @@ const Step7_Ingredients = ({ spell, index, onComplete }: { spell: GeneratedWicca
                         <Sprite sheetPath={sprite.sheet.path} x={sprite.itemInfo.x} y={sprite.itemInfo.y} spriteWidth={sprite.sheet.spriteSize.width} spriteHeight={sprite.sheet.spriteSize.height} sheetWidth={sprite.sheet.sheetSize.width} sheetHeight={sprite.sheet.sheetSize.height} />
                      </div>
                      
-                     {/* Flame overlay if it is a candle and we are lighting it */}
                      {(isCandle && (holding || complete)) && (
                         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-8 bg-orange-400/50 rounded-full blur-md animate-pulse pointer-events-none" />
                      )}
@@ -1151,31 +1177,54 @@ const Step7_Ingredients = ({ spell, index, onComplete }: { spell: GeneratedWicca
 };
 
 const Step8_Cone = ({ spell, onNext }: { spell: GeneratedWiccanSpell, onNext: () => void }) => {
-    // Calculate scroll duration based on text length (1 second per line approximation)
-    const lineCount = spell.central_chant.split('\n').length + (spell.central_chant.length / 40); // Estimate wrap
-    const scrollDuration = Math.max(CAST_DURATION / 1000, lineCount * 1); // 1 sec per line, min 13s
+    // Scroll Text Logic
+    const lineCount = spell.central_chant.split('\n').length + (spell.central_chant.length / 40);
+    const scrollDuration = Math.max(CAST_DURATION / 1000, lineCount * 1.5); 
 
     const [isCasting, setIsCasting] = useState(false);
+    // Separate state for the number count
+    const [chargeCount, setChargeCount] = useState(0);
+
     const soundRef = useRef<any>(null);
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const countIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
     const handleDown = () => {
         setIsCasting(true);
+        setChargeCount(0); // Reset count on start
         soundRef.current = playSound(AUDIO.RISER, 0.4, true);
         soundRef.current.play();
 
-        // Finish after duration
+        // 1. Completion Timer
         timeoutRef.current = setTimeout(() => {
             if(soundRef.current) soundRef.current.stop();
+            if(countIntervalRef.current) clearInterval(countIntervalRef.current);
             playSound(AUDIO.WHOOSH, 0.6).play();
             onNext();
         }, scrollDuration * 1000);
+
+        // 2. Visual Counter Timer (independent of text scroll)
+        const totalSteps = 13;
+        const stepTime = (scrollDuration * 1000) / totalSteps;
+        let stepsTaken = 0;
+        
+        countIntervalRef.current = setInterval(() => {
+            setChargeCount(prev => {
+                if (prev >= 13) return 13;
+                return prev + 1;
+            });
+            stepsTaken++;
+            if (stepsTaken >= 13 && countIntervalRef.current) {
+                clearInterval(countIntervalRef.current);
+            }
+        }, stepTime);
     };
 
     const handleUp = () => {
         setIsCasting(false);
         if(soundRef.current) soundRef.current.stop();
         if(timeoutRef.current) clearTimeout(timeoutRef.current);
+        if(countIntervalRef.current) clearInterval(countIntervalRef.current);
     };
 
     return (
@@ -1187,17 +1236,20 @@ const Step8_Cone = ({ spell, onNext }: { spell: GeneratedWiccanSpell, onNext: ()
             </div>
 
             <div className="absolute inset-0 flex items-center justify-center opacity-40 pointer-events-none select-none z-0 mt-8">
-                 {/* Star Wars Style Scrolling Text Effect - Constant Speed */}
+                 {/* Star Wars Style Scrolling Text Effect - Constant Speed, Fade In */}
                  <div className="absolute inset-0 z-0 flex justify-center items-end overflow-hidden" style={{ perspective: '400px' }}>
                     <motion.div
-                        initial={{ top: '100%' }}
+                        initial={{ top: '100%', opacity: 0 }}
                         animate={{
                             top: isCasting ? '-150%' : '100%', 
+                            // Fade in over 2 seconds if casting, otherwise visible or hidden based on state
                             opacity: isCasting ? 1 : 0
                         }}
                         transition={{ 
-                            duration: scrollDuration, 
-                            ease: "linear" // Ensures constant speed without skipping
+                            // Text Movement
+                            top: { duration: scrollDuration, ease: "linear" },
+                            // Fade In
+                            opacity: { duration: 2, ease: "easeIn" }
                         }}
                         className="text-center font-serif text-amber-200 text-3xl md:text-5xl leading-loose whitespace-pre-line px-8 drop-shadow-[0_0_10px_rgba(251,191,36,0.8)]"
                         style={{ 
@@ -1218,10 +1270,19 @@ const Step8_Cone = ({ spell, onNext }: { spell: GeneratedWiccanSpell, onNext: ()
                 onTouchStart={(e) => { e.preventDefault(); handleDown(); }} onTouchEnd={(e) => { e.preventDefault(); handleUp(); }}
             >
                 <PentagramSVG isTracing={isCasting} duration={scrollDuration * 1000} />
+                
+                {/* Visual Count Up Display */}
+                {isCasting && chargeCount > 0 && (
+                    <div className="absolute z-50 text-7xl md:text-8xl font-serif text-white font-bold drop-shadow-[0_0_15px_black] animate-pulse pointer-events-none">
+                        {chargeCount}
+                    </div>
+                )}
             </div>
         </div>
     );
 };
+
+// ... (Step9_Sending, Step10_Closing, Step11_Result remain unchanged) ...
 
 const Step9_Sending = ({ onNext }: { onNext: () => void }) => {
     useEffect(() => { const timer = setTimeout(onNext, SENDING_DURATION); return () => clearTimeout(timer); }, [onNext]);
