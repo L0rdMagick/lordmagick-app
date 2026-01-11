@@ -172,7 +172,7 @@ const PentagramSVG = ({ isTracing, progress }: { isTracing: boolean, progress: n
                 fill="none" 
                 stroke="currentColor" 
                 strokeWidth="1" 
-                className="opacity-20"
+                className="opacity-40"
              />
              <motion.path
                 d="M 50 5 L 80 95 L 2 40 L 98 40 L 20 95 L 50 5"
