@@ -37,6 +37,7 @@ const AUDIO_SOURCES = {
     SCRIBING: '/audio/sfx-scribing.mp3',
     SHIMMER: '/audio/sfx-shimmer.mp3',
     HUM: '/audio/sfx-energy-hum.mp3',
+    DEITY_PULSE: '/audio/deity-pulse.mp3',
     PARCHMENT: '/audio/sfx-parchment-open.mp3',
     MATCH: '/audio/sfx-match-strike.mp3',
     THUD: '/audio/sfx-stone-thud.mp3',
@@ -48,15 +49,16 @@ const AUDIO_SOURCES = {
 type AudioKey = keyof typeof AUDIO_SOURCES;
 
 const AUDIO_CONFIG: Record<AudioKey, { vol: number; loop: boolean; note: string }> = {
-    AMBIENCE:  { vol: 2,  loop: true,  note: "Starts on mount. Background drone." },
-    THUD:      { vol: 5,  loop: false, note: "UI Interactions: Buttons, Deities, Transitions." },
-    PARCHMENT: { vol: 5,  loop: false, note: "Incantation Overlay appearance." },
-    SCRIBING:  { vol: 6,  loop: true,  note: "Step 1: While typing intention/situation." },
-    HUM:       { vol: 4,  loop: true,  note: "Step 2 (Circle Trace) & Step 5 (Deity Pulse)." },
-    BELL:      { vol: 5,  loop: false, note: "Step 2 (Complete), Step 5 (Complete), Step 7 (Complete)." },
-    CHAOS:     { vol: 5,  loop: false, note: "Step 3: When a Quarter is successfully charged." },
-    SPIRIT:    { vol: 5,  loop: true,  note: "Step 3: While holding Spirit sigil." },
-    AIR:       { vol: 5,  loop: true,  note: "Step 3: While holding Air sigil." },
+    AMBIENCE:    { vol: 3,  loop: true,  note: "Starts on mount. Background drone." },
+    THUD:        { vol: 3,  loop: false, note: "UI Interactions: Buttons, Deities, Transitions." },
+    PARCHMENT:   { vol: 5,  loop: false, note: "Incantation Overlay appearance." },
+    SCRIBING:    { vol: 8,  loop: true,  note: "Step 1: While typing intention/situation." },
+    HUM:         { vol: 4,  loop: true,  note: "Step 2 (Circle Trace)." },
+    DEITY_PULSE: { vol: 5,  loop: false, note: "Step 5: When all candles are lit and deity pulses." },
+    BELL:        { vol: 4,  loop: false, note: "Step 2 (Complete), Step 5 (Complete), Step 7 (Complete)." },
+    CHAOS:       { vol: 5,  loop: false, note: "Step 3: When a Quarter is successfully charged." },
+    SPIRIT:      { vol: 5,  loop: true,  note: "Step 3: While holding Spirit sigil." },
+    AIR:         { vol: 5,  loop: true,  note: "Step 3: While holding Air sigil." },
     FIRE:      { vol: 5,  loop: true,  note: "Step 3: While holding Fire sigil." },
     EARTH:     { vol: 5,  loop: true,  note: "Step 3: While holding Earth sigil. Step 10: Grounding." },
     WATER:     { vol: 5,  loop: true,  note: "Step 3: While holding Water sigil." },
@@ -1075,7 +1077,7 @@ const Step5_DeityCandles = ({ deity, onComplete }: { deity: ExtendedWiccanDeityS
             if (newLit.every(Boolean)) {
                 setTimeout(() => {
                     setIsPulsing(true);
-                    playAudio('HUM').play();
+                    playAudio('DEITY_PULSE').play();
                     
                     setTimeout(() => {
                          playAudio('BELL').play();
