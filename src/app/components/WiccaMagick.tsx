@@ -50,7 +50,7 @@ type AudioKey = keyof typeof AUDIO_SOURCES;
 
 const AUDIO_CONFIG: Record<AudioKey, { vol: number; loop: boolean; note: string }> = {
     AMBIENCE:    { vol: 3,  loop: true,  note: "Starts on mount. Background drone." },
-    THUD:        { vol: 3,  loop: false, note: "UI Interactions: Buttons, Deities, Transitions." },
+    THUD:        { vol: 2,  loop: false, note: "UI Interactions: Buttons, Deities, Transitions." },
     PARCHMENT:   { vol: 5,  loop: false, note: "Incantation Overlay appearance." },
     SCRIBING:    { vol: 8,  loop: true,  note: "Step 1: While typing intention/situation." },
     HUM:         { vol: 4,  loop: true,  note: "Step 2 (Circle Trace)." },
