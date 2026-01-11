@@ -1,4 +1,3 @@
-// --- START OF FILE src/app/components/WiccaMagick.tsx ---
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
@@ -144,8 +143,8 @@ const PentagramSVG = ({ isTracing, progress }: { isTracing: boolean, progress: n
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                // Map path length: Finish drawing at 90% progress so it's done before count reaches 13
-                style={{ pathLength: Math.min(1, progress * 1.1) }} 
+                initial={{ pathLength: 0 }}
+                animate={{ pathLength: isTracing ? Math.min(1, progress * 1.1) : 0 }}
              />
         </svg>
     );
@@ -338,6 +337,7 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
                         if (d.spell) {
                             setGeneratedSpell(d.spell);
                         } else {
+                            // Fallback if spell data missing in JSON
                             setGeneratedSpell(STANDARD_WICCAN_SPELL);
                         }
                         
@@ -358,7 +358,11 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
         playSound(AUDIO.THUD, 0.5).play();
 
         if (mode === 'standard') {
-            setGeneratedSpell(STANDARD_WICCAN_SPELL);
+            // HYDRATION FIX: Only reset to Standard defaults if NOT replaying a saved spell
+            if (!isReplayMode) {
+                setGeneratedSpell(STANDARD_WICCAN_SPELL);
+            }
+            // If replaying, we keep the spell loaded from useEffect above
             setRitualStep(2);
             setSubStep('incantation');
         } else {
@@ -998,39 +1002,41 @@ const Step5_DeityCandles = ({ deity, onComplete }: { deity: ExtendedWiccanDeityS
     };
 
     return (
-        <div className="flex flex-col items-center justify-between h-full min-h-0 py-2 w-full max-w-lg mx-auto">
+        <div className="flex flex-col items-center h-full min-h-0 py-2 w-full max-w-lg mx-auto overflow-hidden">
             {/* Top: Title & Instructions */}
-            <div className="shrink-0 flex flex-col items-center gap-1 mt-2 w-full">
+            <div className="shrink-0 flex flex-col items-center gap-1 mt-2 w-full z-10">
                 <h2 className="text-xl font-serif text-purple-200">Invoke {deity?.name}</h2>
                 <p className="text-xs text-purple-400/70 animate-pulse mb-1">Touch each wick to light the path.</p>
             </div>
 
-            {/* Middle Upper: Deity Image with Heartbeat Pulse */}
-            <div className="shrink-0 w-full flex justify-center py-2">
+            {/* Middle Upper: Deity Image with Heartbeat Pulse - INCREASED SIZE */}
+            <div className="shrink-0 w-full flex justify-center py-2 relative z-0">
                 <motion.div 
                     animate={isPulsing ? { scale: [1, 1.15, 1] } : { scale: 1 }}
                     transition={isPulsing ? { duration: 1, repeat: 2, ease: "easeInOut" } : {}}
-                    className="w-1/3 aspect-square drop-shadow-[0_0_30px_rgba(168,85,247,0.4)] relative"
+                    className="w-48 md:w-64 aspect-square drop-shadow-[0_0_30px_rgba(168,85,247,0.4)] relative"
                 >
                      <Sprite sheetPath={deitySprite.sheet.path} x={deitySprite.itemInfo.x} y={deitySprite.itemInfo.y} spriteWidth={deitySprite.sheet.spriteSize.width} spriteHeight={deitySprite.sheet.spriteSize.height} sheetWidth={deitySprite.sheet.sheetSize.width} sheetHeight={deitySprite.sheet.sheetSize.height} />
                 </motion.div>
             </div>
 
-            {/* Middle Lower: Incantation Text */}
-            <div className="flex-1 flex flex-col items-center justify-center px-4 py-2 min-h-0 overflow-y-auto no-scrollbar">
-                <p className="text-center font-serif text-amber-100 text-lg md:text-xl leading-relaxed whitespace-pre-line drop-shadow-md">
-                    {deity?.invocation || "Ancient spirit, hear my call,\nGrant me strength to rise and not fall."}
-                </p>
+            {/* Middle Lower: Incantation Text - FLEX 1 to take remaining space but prevent overlap */}
+            <div className="flex-1 flex flex-col items-center justify-center px-4 py-1 min-h-0 w-full overflow-hidden">
+                <div className="overflow-y-auto no-scrollbar w-full flex items-center justify-center">
+                    <p className="text-center font-serif text-amber-100 text-sm md:text-xl leading-relaxed whitespace-pre-line drop-shadow-md">
+                        {deity?.invocation || "Ancient spirit, hear my call,\nGrant me strength to rise and not fall."}
+                    </p>
+                </div>
             </div>
 
             {/* Bottom: 7 Candles */}
-            <div className="shrink-0 w-full flex flex-col items-center pb-2">
+            <div className="shrink-0 w-full flex flex-col items-center pb-2 z-10">
                 <div className="flex justify-center gap-2 md:gap-4 h-20 items-end px-2">
                     {litCandles.map((isLit, i) => (
                         <div 
                             key={i} 
                             onClick={() => handleLight(i)}
-                            className={`relative w-10 h-24 md:w-12 md:h-32 cursor-pointer transition-all duration-500`}
+                            className={`relative w-8 h-20 md:w-12 md:h-32 cursor-pointer transition-all duration-500`}
                         >
                             <div className={`w-full h-full relative transition-all duration-700 ${isLit ? 'brightness-110 filter-none' : 'brightness-[0.4] grayscale sepia-[0.5]'}`}>
                                 {candleSprite && (
@@ -1181,6 +1187,7 @@ const Step8_Cone = ({ spell, onNext }: { spell: GeneratedWiccanSpell, onNext: ()
     const [isCasting, setIsCasting] = useState(false);
     const [progress, setProgress] = useState(0); // 0 to 1
     const [chargeCount, setChargeCount] = useState(0); // 0 to 13
+    const [hasCompleted, setHasCompleted] = useState(false);
 
     const startTimeRef = useRef<number | null>(null);
     const reqRef = useRef<number | null>(null);
@@ -1205,6 +1212,7 @@ const Step8_Cone = ({ spell, onNext }: { spell: GeneratedWiccanSpell, onNext: ()
         } else {
             // COMPLETE
             setIsCasting(false);
+            setHasCompleted(true); // Flag to hide text
             if(soundRef.current) soundRef.current.stop();
             playSound(AUDIO.WHOOSH, 0.6).play();
             // Small delay to show the "13" before moving on
@@ -1250,12 +1258,12 @@ const Step8_Cone = ({ spell, onNext }: { spell: GeneratedWiccanSpell, onNext: ()
                         animate={{
                             // Scroll based on progress
                             top: isCasting ? '-150%' : '100%', 
-                            // Fade in when casting starts
-                            opacity: isCasting ? 1 : 0
+                            // Fade in when casting starts, hide when completed or reset
+                            opacity: (isCasting && !hasCompleted) ? 1 : 0
                         }}
                         transition={{ 
                             top: { duration: (DURATION_MS / 1000) * (1 - progress), ease: "linear" }, // Time remaining
-                            opacity: { duration: 2, ease: "easeIn" }
+                            opacity: { duration: 0.5, ease: "easeIn" }
                         }}
                         className="text-center font-serif text-amber-200 text-3xl md:text-5xl leading-loose whitespace-pre-line px-8 drop-shadow-[0_0_10px_rgba(251,191,36,0.8)]"
                         style={{ 
@@ -1343,4 +1351,3 @@ const Step11_Result = ({ spell, onSave, isSaving, isSaved, onReset }: any) => (
 );
 
 export default WiccaMagick;
-// --- END OF FILE src/app/components/WiccaMagick.tsx ---
