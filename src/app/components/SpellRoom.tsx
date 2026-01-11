@@ -32,10 +32,7 @@ const traditions: TraditionInfo[] = [
   },
   {
       name: "Servitors of the Wild Unknown",
-      // Using the Servitor base sheet as the button image since a specific button wasn't provided, 
-      // or you can upload a new button image and reference it here.
-      // For now, I'll assume a placeholder or reuse an existing one if specific art isn't ready.
-      image: "/images/Servitor_images/Servitor_Bases_Master_Sheet.jpg", 
+      image: "/images/spell-room/servitors-of-the-wild-unknown.png", 
       isAvailable: true,
       customHref: "/spell-room/servitors-of-the-wild-unknown"
   },
