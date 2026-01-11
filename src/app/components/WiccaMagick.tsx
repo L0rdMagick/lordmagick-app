@@ -34,7 +34,7 @@ const AUDIO_SOURCES = {
     WATER: '/audio/sfx-element-water.mp3',
     SPIRIT: '/audio/sfx-element-spirit.mp3',
     WHOOSH: '/audio/sfx-oracle-room-portal.mp3',
-    THUNDER: '/audio/thunder-sound-effect-380391.mp3',
+    THUNDER: '/audio/sfx-energy-whoosh.mp3',
     SCRIBING: '/audio/sfx-scribing.mp3',
     SHIMMER: '/audio/sfx-shimmer.mp3',
     HUM: '/audio/sfx-energy-hum.mp3',
