@@ -27,7 +27,7 @@ import { Save, Check, BookOpen, ArrowRight, Lock } from 'lucide-react';
 const ASSET_PATH = "/images/Spells/Wicca Tradition General";
 const CHARGE_DURATION_ELEMENT = 7000;
 const CHARGE_DURATION_INGREDIENT = 6000;
-const CAST_DURATION = 13000;
+const CAST_DURATION = 13000; // Fallback duration, will be overridden by text length
 const SENDING_DURATION = 4000;
 const SERVICE_SLUG = 'ai_wicca_magick'; 
 
@@ -178,7 +178,19 @@ interface OverlayProps {
 }
 
 const IncantationOverlay = ({ text, onConfirm, isVisible, ingredient }: OverlayProps) => {
-    const sprite = ingredient ? (findSprite(ingredient.name) || findSprite("White Candle")) : null;
+    // Determine sprite for ingredient, handling candle colors if needed
+    let spriteName = "White Candle"; // Default
+    if (ingredient) {
+        spriteName = ingredient.name;
+        if (ingredient.name.toLowerCase().includes("candle")) {
+             // Basic color extraction for candles
+             const colors = ["Red", "Blue", "Green", "Yellow", "Purple", "Black", "Pink", "Orange"];
+             const foundColor = colors.find(c => ingredient.name.toLowerCase().includes(c.toLowerCase()));
+             if (foundColor) spriteName = `${foundColor} Candle`;
+        }
+    }
+    
+    const sprite = ingredient ? (findSprite(spriteName) || findSprite("White Candle")) : null;
 
     useEffect(() => {
         if(isVisible) playSound(AUDIO.PARCHMENT, 0.5).play();
@@ -193,7 +205,7 @@ const IncantationOverlay = ({ text, onConfirm, isVisible, ingredient }: OverlayP
                 >
                     <motion.div 
                         initial={{ scale: 0.95, y: 10 }} animate={{ scale: 1, y: 0 }}
-                        className="relative w-full max-w-md h-auto aspect-[958/860] flex flex-col items-center justify-center filter drop-shadow-2xl"
+                        className="relative w-full max-w-md h-auto aspect-958/860 flex flex-col items-center justify-center filter drop-shadow-2xl"
                     >
                         <Image src={`${ASSET_PATH}/wicca_incantation_scroll.png`} alt="Incantation" layout="fill" objectFit="contain" priority />
                         
@@ -328,14 +340,30 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
             try {
                 const s: any = await generateWiccanSpell({ intention, focalPoint: 'The Divine', moonPhase: 'Current', situation });
                 
+                // Merge with defaults to ensure all fields exist
+                // Using non-null assertions (!) for standard defaults because they are defined in the constant above
+                const defaultTrans = STANDARD_WICCAN_SPELL.transitional_incantations!;
+                const defaultElem = STANDARD_WICCAN_SPELL.elemental_chants!;
+
                 const mergedSpell: ExtendedGeneratedWiccanSpell = {
                     title: s.title || STANDARD_WICCAN_SPELL.title,
                     central_chant: s.central_chant || STANDARD_WICCAN_SPELL.central_chant,
                     affirmation: s.affirmation || STANDARD_WICCAN_SPELL.affirmation,
                     symbolic_ingredients: (s.symbolic_ingredients && s.symbolic_ingredients.length > 0) ? s.symbolic_ingredients : STANDARD_WICCAN_SPELL.symbolic_ingredients,
                     suggested_deities: (s.suggested_deities && s.suggested_deities.length > 0) ? s.suggested_deities : STANDARD_WICCAN_SPELL.suggested_deities,
-                    transitional_incantations: s.transitional_incantations || STANDARD_WICCAN_SPELL.transitional_incantations,
-                    elemental_chants: s.elemental_chants || STANDARD_WICCAN_SPELL.elemental_chants,
+                    transitional_incantations: {
+                        sanctification: s.transitional_incantations?.sanctification || defaultTrans.sanctification,
+                        circle_casting: s.transitional_incantations?.circle_casting || defaultTrans.circle_casting,
+                        invocation: s.transitional_incantations?.invocation || defaultTrans.invocation,
+                        closing: s.transitional_incantations?.closing || defaultTrans.closing,
+                    },
+                    elemental_chants: {
+                         Spirit: s.elemental_chants?.Spirit || defaultElem.Spirit,
+                         Air: s.elemental_chants?.Air || defaultElem.Air,
+                         Fire: s.elemental_chants?.Fire || defaultElem.Fire,
+                         Earth: s.elemental_chants?.Earth || defaultElem.Earth,
+                         Water: s.elemental_chants?.Water || defaultElem.Water,
+                    },
                     tool_consecration: s.tool_consecration || STANDARD_WICCAN_SPELL.tool_consecration
                 };
                 
@@ -383,7 +411,14 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
 
         setIsSaving(true);
         try {
-            const ritualData = { intention, situation, selectedDeity, spell: generatedSpell };
+            // Save the exact state of generatedSpell to ensure re-runs have all AI text
+            const ritualData = { 
+                intention, 
+                situation, 
+                selectedDeity, 
+                spell: generatedSpell // This object includes all chants and incantations
+            };
+            
             await saveSpell(session?.user?.id || 'anon', {
                 name: `Wicca: ${intention.substring(0,20)}`,
                 intention,
@@ -460,7 +495,7 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
     };
 
     return (
-        <main className="relative h-[100dvh] w-screen bg-black flex flex-col font-sans select-none overflow-hidden">
+        <main className="relative h-dvh w-screen bg-black flex flex-col font-sans select-none overflow-hidden">
             <style jsx global>{`
                 .no-scrollbar::-webkit-scrollbar {
                     display: none;
@@ -561,7 +596,7 @@ const Step0_Intro = ({ onNext }: { onNext: () => void }) => (
 const Step1_Intention = ({ intention, setIntention, situation, setSituation, onBegin, isReplay, cost }: any) => (
     <div className="flex flex-col items-center justify-between h-full min-h-0 w-full py-2 md:justify-center md:gap-8">
         <h2 className="text-xl md:text-3xl font-serif text-amber-100/90 drop-shadow-md shrink-0 text-center">Inscribe Your Will</h2>
-        <div className="relative w-full max-w-md aspect-[958/860] shrink-1 min-h-0 flex items-center justify-center">
+        <div className="relative w-full max-w-md aspect-958/860 shrink min-h-0 flex items-center justify-center">
             <Image 
                 src={`${ASSET_PATH}/wicca_scroll_intention.png`} 
                 layout="fill"
@@ -657,9 +692,10 @@ const Step2_CastCircle = ({ onComplete }: { onComplete: () => void }) => {
                 <h2 className="text-2xl font-serif text-purple-100 drop-shadow-md">Cast the Circle</h2>
                 <p className="text-purple-300/60 italic text-sm mt-1">Trace the circle clockwise.</p>
             </div>
+            {/* Removed all backgrounds and borders to ensure invisibility during tracing */}
             <div 
                 ref={containerRef} 
-                className="relative w-full max-w-[300px] aspect-square flex items-center justify-center touch-none select-none cursor-crosshair shrink-0 bg-transparent"
+                className="relative w-full max-w-[300px] aspect-square flex items-center justify-center touch-none select-none cursor-crosshair shrink-0 outline-none border-none shadow-none bg-transparent"
                 style={{ WebkitTapHighlightColor: 'transparent' }}
                 onMouseMove={handleMove} onTouchMove={handleMove} onMouseUp={handleEnd} onMouseLeave={handleEnd} onTouchEnd={handleEnd}
             >
@@ -891,6 +927,10 @@ const Step4_Deities = ({ suggestions, onSelect, isReplay, savedDeity }: { sugges
 
 const Step5_DeityCandles = ({ deity, onComplete }: { deity: ExtendedWiccanDeitySuggestion | null, onComplete: () => void }) => {
     const [litCandles, setLitCandles] = useState<boolean[]>(Array(7).fill(false));
+    const [isPulsing, setIsPulsing] = useState(false);
+    
+    // Map colors to available sprites if needed, otherwise default to white
+    // Assuming candle sprite contains flame, so we manipulate appearance for "unlit"
     const candleSprite = findSprite("White Candle");
     const iconName = deity ? getDeityIconName(deity.name) : "Triple Moon";
     const deitySprite = findSprite(iconName) || findSprite("Triple Moon")!;
@@ -903,48 +943,70 @@ const Step5_DeityCandles = ({ deity, onComplete }: { deity: ExtendedWiccanDeityS
             playSound(AUDIO.MATCH, 0.6).play();
             
             if (newLit.every(Boolean)) {
+                // All lit, trigger pulsing phase
                 setTimeout(() => {
-                    playSound(AUDIO.BELL, 0.5).play();
-                    onComplete();
-                }, 1000);
+                    setIsPulsing(true);
+                    playSound(AUDIO.HUM, 0.4).play();
+                    
+                    // After 3 pulses (1s each, total 3s), complete
+                    setTimeout(() => {
+                         playSound(AUDIO.BELL, 0.5).play();
+                         onComplete();
+                    }, 3000);
+                }, 500);
             }
         }
     };
 
     return (
         <div className="flex flex-col items-center justify-between h-full min-h-0 py-2 w-full max-w-lg mx-auto">
-            {/* Top: Deity Image - 50% width */}
-            <div className="shrink-0 flex flex-col items-center gap-2 mt-2 w-full">
+            {/* 
+               Modified Layout based on user request:
+               Title -> Instructions -> Image -> Incantation -> Candles
+               Ensuring no overlap and compact fit
+            */}
+            
+            {/* Top: Title & Instructions */}
+            <div className="shrink-0 flex flex-col items-center gap-1 mt-2 w-full">
                 <h2 className="text-xl font-serif text-purple-200">Invoke {deity?.name}</h2>
-                <div className="w-1/2 aspect-square drop-shadow-[0_0_30px_rgba(168,85,247,0.4)] relative">
-                     <Sprite sheetPath={deitySprite.sheet.path} x={deitySprite.itemInfo.x} y={deitySprite.itemInfo.y} spriteWidth={deitySprite.sheet.spriteSize.width} spriteHeight={deitySprite.sheet.spriteSize.height} sheetWidth={deitySprite.sheet.sheetSize.width} sheetHeight={deitySprite.sheet.sheetSize.height} />
-                </div>
+                <p className="text-xs text-purple-400/70 animate-pulse mb-1">Touch each wick to light the path.</p>
             </div>
 
-            {/* Middle: Incantation Text */}
-            <div className="flex-1 flex flex-col items-center justify-center p-4">
-                <p className="text-center font-serif text-amber-100 text-lg md:text-2xl leading-relaxed whitespace-pre-line drop-shadow-md">
+            {/* Middle Upper: Deity Image with Heartbeat Pulse */}
+            <div className="shrink-0 w-full flex justify-center py-2">
+                <motion.div 
+                    animate={isPulsing ? { scale: [1, 1.15, 1] } : { scale: 1 }}
+                    transition={isPulsing ? { duration: 1, repeat: 2, ease: "easeInOut" } : {}}
+                    className="w-1/3 aspect-square drop-shadow-[0_0_30px_rgba(168,85,247,0.4)] relative"
+                >
+                     <Sprite sheetPath={deitySprite.sheet.path} x={deitySprite.itemInfo.x} y={deitySprite.itemInfo.y} spriteWidth={deitySprite.sheet.spriteSize.width} spriteHeight={deitySprite.sheet.spriteSize.height} sheetWidth={deitySprite.sheet.sheetSize.width} sheetHeight={deitySprite.sheet.sheetSize.height} />
+                </motion.div>
+            </div>
+
+            {/* Middle Lower: Incantation Text */}
+            <div className="flex-1 flex flex-col items-center justify-center px-4 py-2 min-h-0 overflow-y-auto no-scrollbar">
+                <p className="text-center font-serif text-amber-100 text-lg md:text-xl leading-relaxed whitespace-pre-line drop-shadow-md">
                     {deity?.invocation || "Ancient spirit, hear my call,\nGrant me strength to rise and not fall."}
                 </p>
             </div>
 
-            {/* Bottom: Instruction & 7 Candles */}
-            <div className="shrink-0 w-full flex flex-col items-center">
-                {/* Instruction above candles */}
-                <p className="text-xs text-purple-400/50 animate-pulse pointer-events-none mb-2">Touch each wick to light the path.</p>
-                
-                <div className="flex justify-center gap-2 md:gap-4 mb-4 h-24 items-end px-2">
+            {/* Bottom: 7 Candles */}
+            <div className="shrink-0 w-full flex flex-col items-center pb-2">
+                <div className="flex justify-center gap-2 md:gap-4 h-20 items-end px-2">
                     {litCandles.map((isLit, i) => (
                         <div 
                             key={i} 
                             onClick={() => handleLight(i)}
-                            className={`relative w-10 h-24 md:w-12 md:h-32 cursor-pointer transition-all duration-500 ${isLit ? 'brightness-125' : 'brightness-[0.4] grayscale'}`}
+                            className={`relative w-10 h-24 md:w-12 md:h-32 cursor-pointer transition-all duration-500`}
                         >
-                            {candleSprite && (
-                                <div className="w-full h-full relative">
+                            {/* Candle Appearance Logic: Dark/Grayscale when unlit, Normal when lit */}
+                            <div className={`w-full h-full relative transition-all duration-700 ${isLit ? 'brightness-110 filter-none' : 'brightness-[0.4] grayscale sepia-[0.5]'}`}>
+                                {candleSprite && (
                                     <Sprite sheetPath={candleSprite.sheet.path} x={candleSprite.itemInfo.x} y={candleSprite.itemInfo.y} spriteWidth={candleSprite.sheet.spriteSize.width} spriteHeight={candleSprite.sheet.spriteSize.height} sheetWidth={candleSprite.sheet.sheetSize.width} sheetHeight={candleSprite.sheet.sheetSize.height} />
-                                </div>
-                            )}
+                                )}
+                            </div>
+                            
+                            {/* Extra Flame Glow on Top when Lit */}
                             {isLit && (
                                 <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-6 bg-orange-400 rounded-full blur-[2px] animate-pulse shadow-[0_0_20px_orange]">
                                     <div className="absolute inset-0 bg-yellow-200 rounded-full blur-[1px] scale-50 animate-ping" />
@@ -964,7 +1026,16 @@ const Step6_Summary = ({ spell, onNext }: { spell: GeneratedWiccanSpell, onNext:
         <p className="text-purple-300 text-center text-sm">Gather these items in your mind's eye.</p>
         <div className="grid grid-cols-5 gap-2 md:gap-4 shrink-0">
             {spell.symbolic_ingredients.map((ing, i) => {
-                const sprite = findSprite(ing.name) || findSprite("White Candle")!;
+                // Determine sprite based on name/color same as Step 7 logic
+                let spriteName = ing.name;
+                const colors = ["Red", "Blue", "Green", "Yellow", "Purple", "Black", "Pink", "Orange"];
+                if (ing.name.toLowerCase().includes("candle")) {
+                    const foundColor = colors.find(c => ing.name.toLowerCase().includes(c.toLowerCase()));
+                    if (foundColor) spriteName = `${foundColor} Candle`;
+                    else spriteName = "White Candle";
+                }
+                const sprite = findSprite(spriteName) || findSprite("White Candle")!;
+                
                 return (
                     <div key={i} className="flex flex-col items-center gap-1">
                         <div className="w-12 h-12 bg-white/5 rounded-lg p-2 border border-white/10">
@@ -983,7 +1054,20 @@ const Step6_Summary = ({ spell, onNext }: { spell: GeneratedWiccanSpell, onNext:
 
 const Step7_Ingredients = ({ spell, index, onComplete }: { spell: GeneratedWiccanSpell, index: number, onComplete: () => void }) => {
     const item = spell.symbolic_ingredients[index];
-    const sprite = findSprite(item.name) || findSprite("White Candle")!;
+    
+    // Logic to determine sprite based on name (checking for colors)
+    let spriteName = item.name;
+    const isCandle = item.name.toLowerCase().includes("candle");
+    
+    if (isCandle) {
+         const colors = ["Red", "Blue", "Green", "Yellow", "Purple", "Black", "Pink", "Orange"];
+         const foundColor = colors.find(c => item.name.toLowerCase().includes(c.toLowerCase()));
+         if (foundColor) spriteName = `${foundColor} Candle`;
+         else spriteName = "White Candle";
+    }
+
+    const sprite = findSprite(spriteName) || findSprite("White Candle")!;
+    
     const [holding, setHolding] = useState(false);
     const [complete, setComplete] = useState(false);
     const soundRef = useRef<any>(null);
@@ -1013,14 +1097,36 @@ const Step7_Ingredients = ({ spell, index, onComplete }: { spell: GeneratedWicca
     return (
         <div className="flex flex-col items-center justify-center h-full gap-4 min-h-0">
             <h2 className="text-xl font-serif text-purple-200">Consecrate the Components</h2>
+            
             <div className="relative w-56 h-56 flex items-center justify-center">
+                
+                {/* Glowing Energy Background Expanding from Center */}
+                <motion.div
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ 
+                        scale: holding ? 1.5 : 0, 
+                        opacity: holding ? 0.6 : 0 
+                    }}
+                    transition={{ duration: 0.5, ease: "easeOut" }}
+                    className="absolute z-0 w-32 h-32 rounded-full bg-radial-gradient from-purple-400 via-amber-300 to-transparent blur-xl"
+                    style={{ background: 'radial-gradient(circle, rgba(168,85,247,0.8) 0%, rgba(251,191,36,0.5) 50%, rgba(0,0,0,0) 80%)' }}
+                />
+
                 <div 
                     onMouseDown={handleDown} onMouseUp={handleUp} onMouseLeave={handleUp}
                     onTouchStart={(e) => { e.preventDefault(); handleDown(); }} onTouchEnd={(e) => { e.preventDefault(); handleUp(); }}
                     className={`relative z-10 w-40 h-40 transition-all duration-300 ${holding ? 'scale-105' : 'scale-100'} cursor-pointer`}
                 >
-                     <Sprite sheetPath={sprite.sheet.path} x={sprite.itemInfo.x} y={sprite.itemInfo.y} spriteWidth={sprite.sheet.spriteSize.width} spriteHeight={sprite.sheet.spriteSize.height} sheetWidth={sprite.sheet.sheetSize.width} sheetHeight={sprite.sheet.sheetSize.height} />
+                     <div className={`w-full h-full transition-all duration-700 ${isCandle && !holding && !complete ? 'brightness-[0.4] grayscale sepia-[0.5]' : 'brightness-110 filter-none'}`}>
+                        <Sprite sheetPath={sprite.sheet.path} x={sprite.itemInfo.x} y={sprite.itemInfo.y} spriteWidth={sprite.sheet.spriteSize.width} spriteHeight={sprite.sheet.spriteSize.height} sheetWidth={sprite.sheet.sheetSize.width} sheetHeight={sprite.sheet.sheetSize.height} />
+                     </div>
+                     
+                     {/* Flame overlay if it is a candle and we are lighting it */}
+                     {(isCandle && (holding || complete)) && (
+                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-8 bg-orange-400/50 rounded-full blur-md animate-pulse pointer-events-none" />
+                     )}
                 </div>
+
                 <svg className="absolute inset-0 w-full h-full pointer-events-none z-20" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg) scale(1.1)' }}>
                     <circle cx="50" cy="50" r="48" stroke="rgba(255,255,255,0.1)" strokeWidth="2" fill="transparent" />
                     <motion.circle
@@ -1035,6 +1141,7 @@ const Step7_Ingredients = ({ spell, index, onComplete }: { spell: GeneratedWicca
                 </svg>
                 {complete && <div className="absolute inset-0 bg-purple-500/30 rounded-full animate-ping z-0" />}
             </div>
+            
             <div className="text-center space-y-1">
                 <p className="text-purple-300 text-lg font-serif">{item.name}</p>
                 <p className="text-gray-400 text-xs animate-pulse">Hold to imbue with your will.</p>
@@ -1044,36 +1151,31 @@ const Step7_Ingredients = ({ spell, index, onComplete }: { spell: GeneratedWicca
 };
 
 const Step8_Cone = ({ spell, onNext }: { spell: GeneratedWiccanSpell, onNext: () => void }) => {
-    const [castProgress, setCastProgress] = useState(0);
+    // Calculate scroll duration based on text length (1 second per line approximation)
+    const lineCount = spell.central_chant.split('\n').length + (spell.central_chant.length / 40); // Estimate wrap
+    const scrollDuration = Math.max(CAST_DURATION / 1000, lineCount * 1); // 1 sec per line, min 13s
+
     const [isCasting, setIsCasting] = useState(false);
     const soundRef = useRef<any>(null);
-    const intervalRef = useRef<NodeJS.Timeout | null>(null);
-    const count = Math.min(13, Math.ceil((castProgress / 100) * 13));
+    const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     const handleDown = () => {
         setIsCasting(true);
         soundRef.current = playSound(AUDIO.RISER, 0.4, true);
         soundRef.current.play();
 
-        intervalRef.current = setInterval(() => {
-            setCastProgress(p => {
-                if (p >= 100) {
-                    if(soundRef.current) soundRef.current.stop();
-                    if(intervalRef.current) clearInterval(intervalRef.current);
-                    playSound(AUDIO.WHOOSH, 0.6).play();
-                    onNext();
-                    return 100;
-                }
-                return p + (100 / (CAST_DURATION / 50)); 
-            });
-        }, 50);
+        // Finish after duration
+        timeoutRef.current = setTimeout(() => {
+            if(soundRef.current) soundRef.current.stop();
+            playSound(AUDIO.WHOOSH, 0.6).play();
+            onNext();
+        }, scrollDuration * 1000);
     };
 
     const handleUp = () => {
         setIsCasting(false);
         if(soundRef.current) soundRef.current.stop();
-        if(intervalRef.current) clearInterval(intervalRef.current);
-        // Note: Progress does not reset, allowing user to resume
+        if(timeoutRef.current) clearTimeout(timeoutRef.current);
     };
 
     return (
@@ -1085,27 +1187,29 @@ const Step8_Cone = ({ spell, onNext }: { spell: GeneratedWiccanSpell, onNext: ()
             </div>
 
             <div className="absolute inset-0 flex items-center justify-center opacity-40 pointer-events-none select-none z-0 mt-8">
-                 {/* Star Wars Style Scrolling Text Effect */}
-                 {isCasting && (
-                     <div className="absolute inset-0 z-0 flex justify-center items-end overflow-hidden" style={{ perspective: '400px' }}>
-                        <motion.div
-                            initial={{ top: '100%', opacity: 0 }}
-                            animate={{
-                                top: `${80 - castProgress}%`, // Scrolls up as progress increases
-                                opacity: Math.min(1, castProgress / 20) // Fades in quickly
-                            }}
-                            className="text-center font-serif text-amber-200 text-3xl md:text-5xl leading-loose whitespace-pre-line px-8 drop-shadow-[0_0_10px_rgba(251,191,36,0.8)]"
-                            style={{ 
-                                position: 'absolute',
-                                transform: 'rotateX(25deg)', // The Star Wars tilt
-                                transformOrigin: 'bottom',
-                                width: '100%'
-                            }}
-                        >
-                            {spell.central_chant}
-                        </motion.div>
-                     </div>
-                 )}
+                 {/* Star Wars Style Scrolling Text Effect - Constant Speed */}
+                 <div className="absolute inset-0 z-0 flex justify-center items-end overflow-hidden" style={{ perspective: '400px' }}>
+                    <motion.div
+                        initial={{ top: '100%' }}
+                        animate={{
+                            top: isCasting ? '-150%' : '100%', 
+                            opacity: isCasting ? 1 : 0
+                        }}
+                        transition={{ 
+                            duration: scrollDuration, 
+                            ease: "linear" // Ensures constant speed without skipping
+                        }}
+                        className="text-center font-serif text-amber-200 text-3xl md:text-5xl leading-loose whitespace-pre-line px-8 drop-shadow-[0_0_10px_rgba(251,191,36,0.8)]"
+                        style={{ 
+                            position: 'absolute',
+                            transform: 'rotateX(25deg)', // The Star Wars tilt
+                            transformOrigin: 'bottom',
+                            width: '100%'
+                        }}
+                    >
+                        {spell.central_chant}
+                    </motion.div>
+                 </div>
             </div>
             
             <div 
@@ -1113,13 +1217,7 @@ const Step8_Cone = ({ spell, onNext }: { spell: GeneratedWiccanSpell, onNext: ()
                 onMouseDown={handleDown} onMouseUp={handleUp} onMouseLeave={handleUp}
                 onTouchStart={(e) => { e.preventDefault(); handleDown(); }} onTouchEnd={(e) => { e.preventDefault(); handleUp(); }}
             >
-                <PentagramSVG isTracing={isCasting} duration={CAST_DURATION} />
-                
-                {isCasting && count > 0 && (
-                    <div className="relative z-20 text-7xl md:text-8xl font-serif text-white font-bold drop-shadow-[0_0_15px_black] animate-pulse">
-                        {count}
-                    </div>
-                )}
+                <PentagramSVG isTracing={isCasting} duration={scrollDuration * 1000} />
             </div>
         </div>
     );
