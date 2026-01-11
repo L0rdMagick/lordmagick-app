@@ -27,7 +27,7 @@ import { Save, Check, BookOpen, ArrowRight, Lock } from 'lucide-react';
 const ASSET_PATH = "/images/Spells/Wicca Tradition General";
 const CHARGE_DURATION_ELEMENT = 7000;
 const CHARGE_DURATION_INGREDIENT = 6000;
-const CAST_DURATION = 13000; // Fallback duration
+const CAST_DURATION = 13000; 
 const SENDING_DURATION = 4000;
 const SERVICE_SLUG = 'ai_wicca_magick'; 
 const LS_AUTOSAVE_KEY = 'wicca_spell_pending_save';
@@ -127,7 +127,7 @@ const playSound = (src: string, volume: number = 0.5, loop: boolean = false): { 
 
 // --- Helper Components ---
 
-const PentagramSVG = ({ isTracing, duration }: { isTracing: boolean, duration: number }) => {
+const PentagramSVG = ({ isTracing, progress }: { isTracing: boolean, progress: number }) => {
     return (
         <svg viewBox="0 0 100 100" className={`absolute inset-0 w-full h-full ${isTracing ? 'text-amber-400 drop-shadow-[0_0_25px_gold]' : 'text-purple-900'} transition-colors duration-1000 overflow-visible`}>
              <path 
@@ -144,9 +144,8 @@ const PentagramSVG = ({ isTracing, duration }: { isTracing: boolean, duration: n
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                initial={{ pathLength: 0 }}
-                animate={{ pathLength: isTracing ? 1 : 0 }}
-                transition={{ duration: isTracing ? (duration - 1000) / 1000 : 0, ease: "linear" }}
+                // Map path length: Finish drawing at 90% progress so it's done before count reaches 13
+                style={{ pathLength: Math.min(1, progress * 1.1) }} 
              />
         </svg>
     );
@@ -183,7 +182,7 @@ const IncantationOverlay = ({ text, onConfirm, isVisible, ingredient }: OverlayP
     if (ingredient) {
         spriteName = ingredient.name;
         if (ingredient.name.toLowerCase().includes("candle")) {
-             const colors = ["Red", "Blue", "Green", "Yellow", "Purple", "Black", "Pink", "Orange"];
+             const colors = ["Red", "Blue", "Green", "Yellow", "Purple", "Black", "Pink", "Orange", "Gold", "Silver"];
              const foundColor = colors.find(c => ingredient.name.toLowerCase().includes(c.toLowerCase()));
              if (foundColor) spriteName = `${foundColor} Candle`;
         }
@@ -332,13 +331,13 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
                         const d = typeof s.ritual_data === 'string' ? JSON.parse(s.ritual_data) : s.ritual_data;
                         setIntention(s.intention);
                         setSituation(d.situation || '');
+                        
                         if (d.selectedDeity) setSelectedDeity(d.selectedDeity);
                         
                         // STRICT HYDRATION: Prefer saved spell data over defaults
                         if (d.spell) {
                             setGeneratedSpell(d.spell);
                         } else {
-                            // Fallback only if absolutely corrupted
                             setGeneratedSpell(STANDARD_WICCAN_SPELL);
                         }
                         
@@ -491,6 +490,7 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
 
     const getCurrentIncantation = () => {
         if (!generatedSpell) return "";
+        // Use generated spell props primarily; fallback only if missing (which shouldn't happen in valid AI/Replay states)
         const trans = generatedSpell.transitional_incantations || STANDARD_WICCAN_SPELL.transitional_incantations!;
         switch (ritualStep) {
             case 2: return trans.sanctification || "By my will, I begin.";
@@ -735,14 +735,14 @@ const Step2_CastCircle = ({ onComplete }: { onComplete: () => void }) => {
                 <h2 className="text-2xl font-serif text-purple-100 drop-shadow-md">Cast the Circle</h2>
                 <p className="text-purple-300/60 italic text-sm mt-1">Trace the circle clockwise.</p>
             </div>
-            {/* Added extra classes to enforce transparency */}
+            {/* Added extra classes to enforce transparency and allow overflow for glow effects */}
             <div 
                 ref={containerRef} 
-                className="relative w-full max-w-[300px] aspect-square flex items-center justify-center touch-none select-none cursor-crosshair shrink-0 outline-none border-none shadow-none !bg-transparent !border-0"
+                className="relative w-full max-w-[300px] aspect-square flex items-center justify-center touch-none select-none cursor-crosshair shrink-0 outline-none border-none shadow-none !bg-transparent !border-0 overflow-visible"
                 style={{ WebkitTapHighlightColor: 'transparent', backgroundColor: 'transparent' }}
                 onMouseMove={handleMove} onTouchMove={handleMove} onMouseUp={handleEnd} onMouseLeave={handleEnd} onTouchEnd={handleEnd}
             >
-                <svg className="absolute w-full h-full -rotate-90" viewBox="0 0 100 100">
+                <svg className="absolute w-full h-full -rotate-90 overflow-visible" viewBox="0 0 100 100">
                     <circle cx="50" cy="50" r="45" fill="none" stroke="#333" strokeWidth="2" strokeDasharray="4 2" />
                     <motion.circle cx="50" cy="50" r="45" fill="none" stroke="#a855f7" strokeWidth="6" strokeLinecap="round" strokeDasharray="283"
                         strokeDashoffset={283 - (Math.min(totalRotation, 360) / 360) * 283} className="drop-shadow-[0_0_15px_rgba(168,85,247,0.8)]" />
@@ -753,7 +753,7 @@ const Step2_CastCircle = ({ onComplete }: { onComplete: () => void }) => {
     );
 };
 
-// ... (Steps 3, 4, 5, 6, 7 remain largely unchanged, just ensure they pass data correctly) ...
+// ... (Steps 3, 4, 5, 6, 7 remain largely unchanged) ...
 
 const Step3_Quarters = ({ spell, charged, onCharge, onNext }: { spell: GeneratedWiccanSpell | null, charged: string[], onCharge: (n: string) => void, onNext: () => void }) => {
     const [displayChant, setDisplayChant] = useState<string | null>(null);
@@ -1177,54 +1177,61 @@ const Step7_Ingredients = ({ spell, index, onComplete }: { spell: GeneratedWicca
 };
 
 const Step8_Cone = ({ spell, onNext }: { spell: GeneratedWiccanSpell, onNext: () => void }) => {
-    // Scroll Text Logic
-    const lineCount = spell.central_chant.split('\n').length + (spell.central_chant.length / 40);
-    const scrollDuration = Math.max(CAST_DURATION / 1000, lineCount * 1.5); 
-
+    // REWRITTEN LOGIC: Synchronized Countup and Tracing
     const [isCasting, setIsCasting] = useState(false);
-    // Separate state for the number count
-    const [chargeCount, setChargeCount] = useState(0);
+    const [progress, setProgress] = useState(0); // 0 to 1
+    const [chargeCount, setChargeCount] = useState(0); // 0 to 13
 
+    const startTimeRef = useRef<number | null>(null);
+    const reqRef = useRef<number | null>(null);
     const soundRef = useRef<any>(null);
-    const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-    const countIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+    const DURATION_MS = CAST_DURATION;
+
+    const animate = (timestamp: number) => {
+        if (!startTimeRef.current) startTimeRef.current = timestamp;
+        const elapsed = timestamp - startTimeRef.current;
+        const rawProgress = Math.min(elapsed / DURATION_MS, 1);
+
+        setProgress(rawProgress);
+        
+        // Calculate Count: 0 to 13
+        const newCount = Math.floor(rawProgress * 13);
+        // Ensure we show 13 at the very end
+        setChargeCount(rawProgress >= 1 ? 13 : newCount + 1);
+
+        if (rawProgress < 1) {
+            reqRef.current = requestAnimationFrame(animate);
+        } else {
+            // COMPLETE
+            setIsCasting(false);
+            if(soundRef.current) soundRef.current.stop();
+            playSound(AUDIO.WHOOSH, 0.6).play();
+            // Small delay to show the "13" before moving on
+            setTimeout(onNext, 800);
+        }
+    };
 
     const handleDown = () => {
+        if (isCasting || progress >= 1) return;
         setIsCasting(true);
-        setChargeCount(0); // Reset count on start
         soundRef.current = playSound(AUDIO.RISER, 0.4, true);
         soundRef.current.play();
-
-        // 1. Completion Timer
-        timeoutRef.current = setTimeout(() => {
-            if(soundRef.current) soundRef.current.stop();
-            if(countIntervalRef.current) clearInterval(countIntervalRef.current);
-            playSound(AUDIO.WHOOSH, 0.6).play();
-            onNext();
-        }, scrollDuration * 1000);
-
-        // 2. Visual Counter Timer (independent of text scroll)
-        const totalSteps = 13;
-        const stepTime = (scrollDuration * 1000) / totalSteps;
-        let stepsTaken = 0;
         
-        countIntervalRef.current = setInterval(() => {
-            setChargeCount(prev => {
-                if (prev >= 13) return 13;
-                return prev + 1;
-            });
-            stepsTaken++;
-            if (stepsTaken >= 13 && countIntervalRef.current) {
-                clearInterval(countIntervalRef.current);
-            }
-        }, stepTime);
+        // Resume from where we left off (if pause functionality was desired, but here we usually reset or resume)
+        // For simplicity with this hook structure, let's treat it as resume-able or reset-based.
+        // Current implementation is resume-able logic.
+        const startOffset = progress * DURATION_MS;
+        startTimeRef.current = performance.now() - startOffset;
+        
+        reqRef.current = requestAnimationFrame(animate);
     };
 
     const handleUp = () => {
         setIsCasting(false);
         if(soundRef.current) soundRef.current.stop();
-        if(timeoutRef.current) clearTimeout(timeoutRef.current);
-        if(countIntervalRef.current) clearInterval(countIntervalRef.current);
+        if (reqRef.current) cancelAnimationFrame(reqRef.current);
+        startTimeRef.current = null;
     };
 
     return (
@@ -1236,25 +1243,24 @@ const Step8_Cone = ({ spell, onNext }: { spell: GeneratedWiccanSpell, onNext: ()
             </div>
 
             <div className="absolute inset-0 flex items-center justify-center opacity-40 pointer-events-none select-none z-0 mt-8">
-                 {/* Star Wars Style Scrolling Text Effect - Constant Speed, Fade In */}
+                 {/* Star Wars Style Scrolling Text Effect */}
                  <div className="absolute inset-0 z-0 flex justify-center items-end overflow-hidden" style={{ perspective: '400px' }}>
                     <motion.div
                         initial={{ top: '100%', opacity: 0 }}
                         animate={{
+                            // Scroll based on progress
                             top: isCasting ? '-150%' : '100%', 
-                            // Fade in over 2 seconds if casting, otherwise visible or hidden based on state
+                            // Fade in when casting starts
                             opacity: isCasting ? 1 : 0
                         }}
                         transition={{ 
-                            // Text Movement
-                            top: { duration: scrollDuration, ease: "linear" },
-                            // Fade In
+                            top: { duration: (DURATION_MS / 1000) * (1 - progress), ease: "linear" }, // Time remaining
                             opacity: { duration: 2, ease: "easeIn" }
                         }}
                         className="text-center font-serif text-amber-200 text-3xl md:text-5xl leading-loose whitespace-pre-line px-8 drop-shadow-[0_0_10px_rgba(251,191,36,0.8)]"
                         style={{ 
                             position: 'absolute',
-                            transform: 'rotateX(25deg)', // The Star Wars tilt
+                            transform: 'rotateX(25deg)', 
                             transformOrigin: 'bottom',
                             width: '100%'
                         }}
@@ -1269,9 +1275,9 @@ const Step8_Cone = ({ spell, onNext }: { spell: GeneratedWiccanSpell, onNext: ()
                 onMouseDown={handleDown} onMouseUp={handleUp} onMouseLeave={handleUp}
                 onTouchStart={(e) => { e.preventDefault(); handleDown(); }} onTouchEnd={(e) => { e.preventDefault(); handleUp(); }}
             >
-                <PentagramSVG isTracing={isCasting} duration={scrollDuration * 1000} />
+                <PentagramSVG isTracing={isCasting} progress={progress} />
                 
-                {/* Visual Count Up Display */}
+                {/* Visual Count Up Display - Only shows when actively casting/progressing */}
                 {isCasting && chargeCount > 0 && (
                     <div className="absolute z-50 text-7xl md:text-8xl font-serif text-white font-bold drop-shadow-[0_0_15px_black] animate-pulse pointer-events-none">
                         {chargeCount}
@@ -1281,8 +1287,6 @@ const Step8_Cone = ({ spell, onNext }: { spell: GeneratedWiccanSpell, onNext: ()
         </div>
     );
 };
-
-// ... (Step9_Sending, Step10_Closing, Step11_Result remain unchanged) ...
 
 const Step9_Sending = ({ onNext }: { onNext: () => void }) => {
     useEffect(() => { const timer = setTimeout(onNext, SENDING_DURATION); return () => clearTimeout(timer); }, [onNext]);
