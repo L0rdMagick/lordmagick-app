@@ -1,3 +1,5 @@
+--- START OF FILE WiccaMagick.tsx ---
+
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
@@ -593,7 +595,10 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
     };
 
     return (
-        <main className="relative h-dvh w-screen bg-black flex flex-col font-sans select-none overflow-hidden">
+        <main 
+            onContextMenu={(e) => e.preventDefault()}
+            className="relative h-dvh w-screen bg-black flex flex-col font-sans select-none overflow-hidden"
+        >
             <style jsx global>{`
                 .no-scrollbar::-webkit-scrollbar {
                     display: none;
@@ -611,6 +616,11 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
                 .custom-scrollbar::-webkit-scrollbar-thumb {
                     background-color: rgba(168, 85, 247, 0.3);
                     border-radius: 20px;
+                }
+                body, html, * {
+                    -webkit-touch-callout: none;
+                    -webkit-user-select: none;
+                    user-select: none;
                 }
             `}</style>
 
@@ -827,7 +837,7 @@ const Step2_CastCircle = ({ onComplete }: { onComplete: () => void }) => {
         <div className="flex flex-col items-center justify-center h-full gap-4 min-h-0">
             <div className="text-center shrink-0">
                 <h2 className="text-2xl font-serif text-purple-100 drop-shadow-md">Cast the Circle</h2>
-                <p className="text-purple-300/60 italic text-sm mt-1">Trace the circle clockwise.</p>
+                <p className="text-purple-300/60 italic text-sm mt-1">Trace the circular clockwise in a spiraling motion</p>
             </div>
             {/* Added extra classes to enforce transparency and allow overflow for glow effects */}
             <div 
@@ -864,6 +874,8 @@ const Step2_CastCircle = ({ onComplete }: { onComplete: () => void }) => {
 
 const Step3_Quarters = ({ spell, charged, onCharge, onNext }: { spell: GeneratedWiccanSpell | null, charged: string[], onCharge: (n: string) => void, onNext: () => void }) => {
     const [displayChant, setDisplayChant] = useState<string | null>(null);
+    const [activeElement, setActiveElement] = useState<string | null>(null);
+
     const quarters = [
         { name: "Spirit", sound: 'SPIRIT', sprite: "Spirit Sigil", pos: { top: '15%', left: '50%' }, color: "shadow-[0_0_50px_rgba(168,85,247,0.9)]", chant: spell?.elemental_chants?.Spirit },
         { name: "Air", sound: 'AIR', sprite: "Air Sigil", pos: { top: '40%', left: '90%' }, color: "shadow-[0_0_50px_rgba(234,179,8,0.9)]", chant: spell?.elemental_chants?.Air },
@@ -874,6 +886,7 @@ const Step3_Quarters = ({ spell, charged, onCharge, onNext }: { spell: Generated
 
     const handleStartHold = (name: string, chant: string | undefined) => {
         setDisplayChant(chant || `Hail, Watchtower of the ${name}!`);
+        setActiveElement(name);
     };
 
     return (
@@ -903,7 +916,19 @@ const Step3_Quarters = ({ spell, charged, onCharge, onNext }: { spell: Generated
             </div>
 
             <div className="relative w-full max-w-sm flex-1 min-h-0 aspect-square flex items-center justify-center overflow-visible my-0">
-                <div className="relative w-full h-full">
+                
+                {/* Center Video Container */}
+                {activeElement && (
+                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[30%] aspect-square rounded-full overflow-hidden border-2 border-white/10 shadow-[0_0_30px_rgba(255,255,255,0.15)] z-0 pointer-events-none">
+                        <video
+                            src={`/videos/${activeElement.toLowerCase()}.mp4`}
+                            autoPlay loop muted playsInline
+                            className="w-full h-full object-cover"
+                        />
+                    </div>
+                )}
+                
+                <div className="relative w-full h-full z-10">
                     {quarters.map(q => (
                         <div key={q.name} className="absolute transform -translate-x-1/2 -translate-y-1/2 z-10" style={q.pos}>
                              <RestoredChargingSigil 
