@@ -1,5 +1,3 @@
---- START OF FILE WiccaMagick.tsx ---
-
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
