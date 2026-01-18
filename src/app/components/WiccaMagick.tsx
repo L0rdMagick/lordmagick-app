@@ -280,22 +280,51 @@ const IncantationOverlay = ({ text, onConfirm, isVisible, ingredient }: OverlayP
     );
 };
 
-const SlotPurchaseModal = ({ isOpen, onClose, onPurchase, isProcessing }: { isOpen: boolean, onClose: () => void, onPurchase: () => void, isProcessing: boolean }) => {
+const SlotPurchaseModal = ({ isOpen, onClose, onPurchase, isProcessing, showAetherWarning, onGoToStore }: { isOpen: boolean, onClose: () => void, onPurchase: () => void, isProcessing: boolean, showAetherWarning: boolean, onGoToStore: () => void }) => {
     if (!isOpen) return null;
     return (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 backdrop-blur-md p-6 animate-in fade-in">
             <div className="bg-[#1a1a2e] border border-amber-500/50 rounded-xl p-8 max-w-sm w-full text-center shadow-[0_0_50px_rgba(251,191,36,0.2)]">
-                <BookOpen size={48} className="text-amber-400 mx-auto mb-4" />
-                <h3 className="text-xl font-serif text-amber-100 mb-2">Grimoire Full</h3>
-                <p className="text-gray-400 text-sm mb-6">
-                    Your book of shadows has reached its capacity. Expand your grimoire by 5 slots to continue saving your workings.
-                </p>
-                <div className="flex flex-col gap-3">
-                    <button onClick={onPurchase} disabled={isProcessing} className="w-full flex items-center justify-center gap-2 py-3 bg-amber-700 hover:bg-amber-600 text-white font-bold rounded uppercase tracking-wider text-xs transition-colors disabled:opacity-50">
-                        {isProcessing ? "Expanding..." : "Expand Storage (-10 Aether)"}
-                    </button>
-                    <button onClick={onClose} className="text-gray-500 hover:text-white text-xs underline">Cancel</button>
-                </div>
+                {showAetherWarning ? (
+                    <>
+                        <div className="w-16 h-16 mx-auto mb-4 relative drop-shadow-[0_0_15px_rgba(251,191,36,0.6)] animate-pulse">
+                            <Image src="/images/faestones.png" alt="Faestone" layout="fill" objectFit="contain" />
+                        </div>
+                        <h3 className="text-xl font-serif text-amber-100 mb-2">Your pouch is empty…</h3>
+                        <p className="text-purple-200 text-sm mb-6 leading-relaxed">
+                            To expand your grimoire, more Faestones are required. Manifest more?
+                        </p>
+                        <div className="flex flex-col gap-3">
+                            <button onClick={onGoToStore} className="w-full flex items-center justify-center gap-2 py-3 bg-amber-700 hover:bg-amber-600 text-white font-bold rounded uppercase tracking-wider text-xs transition-colors shadow-[0_0_15px_rgba(180,83,9,0.4)]">
+                                <div className="w-4 h-4 relative">
+                                    <Image src="/images/faestones.png" alt="Token" layout="fill" objectFit="contain" />
+                                </div> 
+                                Manifest Faestones
+                            </button>
+                            <button onClick={onClose} className="text-gray-400 hover:text-white text-xs font-serif italic tracking-wide">
+                                Return to Altar
+                            </button>
+                        </div>
+                    </>
+                ) : (
+                    <>
+                        <BookOpen size={48} className="text-purple-400 mx-auto mb-4 drop-shadow-[0_0_10px_purple]" />
+                        <h3 className="text-xl font-serif text-purple-100 mb-2">Grimoire at Capacity</h3>
+                        <p className="text-purple-200/80 text-sm mb-6 leading-relaxed">
+                            Your Book of Shadows is filled with your workings. Expand your spiritual storage to preserve this ritual.
+                        </p>
+                        <div className="flex flex-col gap-3">
+                            <button onClick={onPurchase} disabled={isProcessing} className="w-full flex items-center justify-center gap-2 py-3 bg-purple-900 border border-purple-500 hover:bg-purple-800 text-purple-100 font-bold rounded uppercase tracking-wider text-xs transition-all disabled:opacity-50 shadow-[0_0_20px_rgba(88,28,135,0.4)]">
+                                {isProcessing ? "Weaving Space..." : (
+                                    <span className="flex items-center gap-2">Expand Grimoire (10 <div className="w-3 h-3 relative inline-block align-middle"><Image src="/images/faestones.png" alt="FS" layout="fill" objectFit="contain" /></div>)</span>
+                                )}
+                            </button>
+                            <button onClick={onClose} className="text-gray-500 hover:text-gray-300 text-xs font-serif italic">
+                                Return for now
+                            </button>
+                        </div>
+                    </>
+                )}
             </div>
         </div>
     );
@@ -335,6 +364,7 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
 
     const [showSlotModal, setShowSlotModal] = useState(false);
     const [slotLoading, setSlotLoading] = useState(false);
+    const [showAetherWarning, setShowAetherWarning] = useState(false);
     // Persistence
     const [isHydrated, setIsHydrated] = useState(false);
 
@@ -558,23 +588,25 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
         
         if (success) {
             setShowSlotModal(false);
-            // Optionally retry save logic or let user click
-            // handleSave(); - Better to let user click since it costs credits (though slots cost handled separately)
+            setShowAetherWarning(false);
+            // Success sound or toast could go here
         } else {
-            // Insufficient Aether - Enhanced flow
-            setShowSlotModal(false);
-            
-            // 1. Force Save Current State
-            const state = {
-                 intention, situation, selectedDeity, spell: generatedSpell,
-                 ritualStep, subStep, chargedElements, chargingIndex,
-                 timestamp: Date.now()
-            };
-            localStorage.setItem(LS_AUTOSAVE_KEY, JSON.stringify(state));
-            
-            // 2. Redirect with Action param to trigger return flow
-            router.push(`/store?redirect=${encodeURIComponent('/spell-room/wicca-magick-spells-app?action=expand_slots')}`);
+            // Insufficient Aether: Show Warning State within modal
+            setShowAetherWarning(true);
         }
+    };
+
+    const handleGoToStore = () => {
+        // 1. Force Save Current State
+        const state = {
+             intention, situation, selectedDeity, spell: generatedSpell,
+             ritualStep, subStep, chargedElements, chargingIndex,
+             timestamp: Date.now()
+        };
+        localStorage.setItem(LS_AUTOSAVE_KEY, JSON.stringify(state));
+        
+        // 2. Redirect with Action param
+        router.push(`/store?redirect=${encodeURIComponent('/spell-room/wicca-magick-spells-app?action=expand_slots')}`);
     };
 
     const getCurrentIncantation = () => {
@@ -609,20 +641,25 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
         }
 
         // Render Error/Economy Dialogs
+        // Render Error/Economy Dialogs
         if (genError || savePaymentError) {
              const msg = genError || savePaymentError;
+             const isAetherError = msg?.toLowerCase().includes("credit") || msg?.toLowerCase().includes("aether");
+             
              return (
                 <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-6">
                     <div className="bg-[#1a1a2e] border border-red-500/50 rounded-xl p-8 max-w-sm w-full text-center shadow-[0_0_50px_rgba(220,38,38,0.2)]">
-                        <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+                        <div className="w-12 h-12 mx-auto mb-4 relative opacity-80">
+                            <Image src="/images/faestones.png" alt="Faestone" layout="fill" objectFit="contain" />
+                        </div>
                         <h3 className="text-xl font-magical text-red-100 mb-2">Ritual Interrupted</h3>
-                        <p className="text-gray-400 text-sm mb-6">{msg}</p>
+                        <p className="text-gray-400 text-sm mb-6">{msg?.replace("credits", "Faestones").replace("Aether", "Faestones")}</p>
                         <div className="flex flex-col gap-3">
                             <Link 
                               href={`/store?redirect=${encodeURIComponent('/spell-room/wicca-magick-spells-app')}`}
                               className="w-full bg-amber-600 hover:bg-amber-500 text-black py-3 uppercase tracking-widest font-magical text-xs rounded transition-colors flex items-center justify-center gap-2"
                             >
-                                <Coins size={14} /> Get Aether
+                                <div className="w-4 h-4 relative"><Image src="/images/faestones.png" alt="Faestone" layout="fill" objectFit="contain" /></div> Get Faestones
                             </Link>
                             <button onClick={() => { clearGenError(); clearSaveError(); }} className="w-full border border-red-500/50 text-red-300 py-3 uppercase tracking-widest font-magical text-xs hover:bg-red-900/20 transition-colors">
                                 Dismiss
@@ -728,15 +765,17 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
                         {renderContent()}
                     </motion.div>
                 </AnimatePresence>
-            </div>
-
+            {/* Overlays */}
             <SlotPurchaseModal 
                 isOpen={showSlotModal} 
-                onClose={() => setShowSlotModal(false)}
-                onPurchase={handleBuySlots}
+                onClose={() => { setShowSlotModal(false); setShowAetherWarning(false); }} 
+                onPurchase={handleBuySlots} 
                 isProcessing={slotLoading}
+                showAetherWarning={showAetherWarning}
+                onGoToStore={handleGoToStore}
             />
-        </main>
+        </div>
+    </main>
     );
 };
 
@@ -1530,7 +1569,7 @@ const Step11_Result = ({ spell, onSave, isSaving, isSaved, onReset, saveCost = 5
 
         <div className="flex flex-col gap-2 w-full px-8 relative z-10 pb-4">
             <button onClick={onSave} disabled={isSaved || isSaving} className="w-full py-3 bg-indigo-900/80 border border-indigo-500 rounded-lg text-indigo-100 flex items-center justify-center gap-3 hover:bg-indigo-800 transition-colors font-serif text-base backdrop-blur-sm disabled:opacity-50">
-                {isSaving ? "Scribing..." : (isSaved ? <><Check /> Recorded in Grimoire</> : <><Save /> Save to Grimoire ({saveCost} Credits)</>)}
+                {isSaving ? "Scribing..." : (isSaved ? <><Check /> Recorded in Grimoire</> : <><Save /> Save to Grimoire ({saveCost} <div className="w-4 h-4 relative inline-block"><Image src="/images/faestones.png" alt="Faestones" layout="fill" objectFit="contain" /></div>)</>)}
             </button>
             <button onClick={onReset} className="w-full py-3 bg-gray-800/60 border border-gray-600 rounded-lg text-gray-300 hover:bg-gray-700 transition-colors font-serif backdrop-blur-sm text-sm">Return to Altar</button>
         </div>
