@@ -602,7 +602,7 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
 
     const renderContent = () => {
         if (loading) return <LoadingSpinner title={loadingMessage} />;
-        if (error || paymentError) return <div className="text-center p-8 text-red-300">{error || paymentError} <button onClick={() => { setError(null); clearPaymentError(); }} className="block mx-auto mt-4 underline">Dismiss</button></div>;
+        if (error) return <div className="text-center p-8 text-red-300">{error} <button onClick={() => setError(null)} className="block mx-auto mt-4 underline">Dismiss</button></div>;
 
         if (subStep === 'incantation' && generatedSpell) {
             return <IncantationOverlay text={getCurrentIncantation()} onConfirm={handleIncantationConfirm} isVisible={true} ingredient={getCurrentIngredient()} />;
