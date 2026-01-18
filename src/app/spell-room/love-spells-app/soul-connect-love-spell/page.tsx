@@ -480,13 +480,10 @@ const MagickPopup = ({ message, buttonText = "Continue", onContinue }: { message
 // --- COMPONENT: FINAL MODAL ---
 const FinalPopup = ({ onExit, onSave, isSaving, isSaved, saveCost }: { onExit: () => void, onSave: () => void, isSaving: boolean, isSaved: boolean, saveCost: number }) => {
   const router = typeof window !== 'undefined' ? (window as any).location : { reload: () => {} };
-  const [hasSaved, setHasSaved] = useState(false);
-
   const handleSave = () => {
-    if (hasSaved || isSaved) return;
+    if (isSaved || isSaving) return;
     audio.playClick('magick');
     onSave();
-    setHasSaved(true);
   };
   
   return (
