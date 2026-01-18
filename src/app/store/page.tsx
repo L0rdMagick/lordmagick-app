@@ -52,6 +52,25 @@ function StoreContent() {
     const haptics = useHaptics();
     const [loadingId, setLoadingId] = useState<string | null>(null);
     const [showSuccess, setShowSuccess] = useState(false);
+    const [returnPath, setReturnPath] = useState<string | null>(null);
+
+    // --- NEW: Handle Redirect Logic ---
+    useEffect(() => {
+        // 1. Capture incoming redirect/action
+        const redirectParam = searchParams.get('redirect');
+        
+        if (redirectParam) {
+            // Save for post-purchase
+            localStorage.setItem('aether_return_path', redirectParam);
+            setReturnPath(redirectParam);
+        } else {
+            // Check if we already have one pending (e.g. from before checkout)
+            // But only if we are NOT in a fresh session? 
+            // Actually, keep it simple: if 'success' is present, check LS.
+            const saved = localStorage.getItem('aether_return_path');
+            if (saved) setReturnPath(saved);
+        }
+    }, [searchParams]);
 
     const supabase = createBrowserClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -78,7 +97,9 @@ function StoreContent() {
         try {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) {
-                router.push('/login?redirect=/store');
+                // Determine current full path for redirect
+                const currentPath = window.location.pathname + window.location.search;
+                router.push(`/login?redirect=${encodeURIComponent(currentPath)}`);
                 return;
             }
 
@@ -201,10 +222,20 @@ function StoreContent() {
                                 Your Aether has been replenished. The cosmos awaits your command.
                             </p>
                             <button 
-                                onClick={() => setShowSuccess(false)}
+                                onClick={() => {
+                                    setShowSuccess(false);
+                                    if (returnPath) {
+                                        // Clear and Redirect
+                                        localStorage.removeItem('aether_return_path');
+                                        router.replace(returnPath);
+                                    } else {
+                                        // Default behavior
+                                        router.replace('/store'); // Clears success param
+                                    }
+                                }}
                                 className="w-full py-3 bg-amber-600 hover:bg-amber-500 text-black font-bold uppercase tracking-widest text-xs rounded transition-colors"
                             >
-                                Return to Hall
+                                {returnPath ? "Return to Ritual" : "Return to Hall"}
                             </button>
                         </div>
                     </div>

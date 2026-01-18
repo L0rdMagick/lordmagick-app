@@ -522,7 +522,7 @@ const FinalPopup = ({ onExit, onSave, isSaving, isSaved, saveCost }: { onExit: (
                 </button>
                 <Link 
                     href="/spell-room/love-spells-app"
-                    onClick={() => audio.playClick('medium')}
+                    onClick={() => { audio.playClick('medium'); localStorage.removeItem('soul_connect_local_save'); }}
                     className="w-full flex items-center justify-center gap-2 bg-slate-900/50 border border-slate-600/50 text-slate-300 py-3 uppercase tracking-widest font-magical text-xs hover:bg-slate-800/50 transition-colors"
                 >
                     <LogOut size={14} /> Exit Room
@@ -605,9 +605,60 @@ function SoulConnectContent() {
 
   const [showSlotModal, setShowSlotModal] = useState(false);
   const [slotLoading, setSlotLoading] = useState(false);
+  const [isHydrated, setIsHydrated] = useState(false); // NEW: Prevent save on mount
   
   const searchParams = useSearchParams();
   const loadId = searchParams.get('loadId');
+  const actionParam = searchParams.get('action');
+
+  // --- LOCAL STORAGE PERSISTENCE ---
+  const LS_KEY = 'soul_connect_local_save';
+
+  // 1. Save State on Change
+  useEffect(() => {
+      // Only save if we have finished initial hydration check
+      if (isHydrated && !loadId && !isReplayMode && step > 0) {
+          const state = {
+              names, intention, isForSelf, step, activeIngredients,
+              addedIngredients, generatedChant, stepChants, isAI,
+              timestamp: Date.now()
+          };
+          localStorage.setItem(LS_KEY, JSON.stringify(state));
+      }
+  }, [names, intention, isForSelf, step, activeIngredients, addedIngredients, generatedChant, stepChants, isAI, loadId, isReplayMode, isHydrated]);
+
+  // 2. Hydrate State on Mount
+  useEffect(() => {
+      if (!loadId) {
+          const saved = localStorage.getItem(LS_KEY);
+          if (saved) {
+              try {
+                  const data = JSON.parse(saved);
+                  // Basic validity check (e.g. 24h expiry could be added here)
+                  setNames(data.names || { user: '', target: '' });
+                  setIntention(data.intention || '');
+                  setIsForSelf(data.isForSelf ?? true);
+                  setStep(data.step || 1);
+                  setActiveIngredients(data.activeIngredients || []);
+                  setAddedIngredients(data.addedIngredients || []);
+                  setGeneratedChant(data.generatedChant || []);
+                  setStepChants(data.stepChants || {});
+                  setIsAI(data.isAI || false);
+                  if (data.step > 0) setStarted(true);
+              } catch (e) {
+                  console.error("LS Parse error", e);
+              }
+          }
+      }
+      
+      // Auto-open slot modal if returning from store for that purpose
+      if (actionParam === 'expand_slots') {
+          setTimeout(() => setShowSlotModal(true), 500); // Small delay for UI settlement
+      }
+      
+      setIsHydrated(true); // Allow saving from now on
+  }, [loadId, actionParam]);
+
 
   // Fetch Balance
   useEffect(() => {
@@ -746,10 +797,20 @@ function SoulConnectContent() {
         setSlotLoading(false);
         if (success) {
             setShowSlotModal(false);
-            saveToGrimoire(); // Retry save
+            setAetherBalance(prev => (prev !== null ? prev - 10 : null)); // Visual update
+            // Ideally we re-attempt save, but user might want to click manually
+            setAppError(null); 
+            // saveToGrimoire(); // Let user click save again to be safe/clear
         } else {
-            setAppError("Insufficient Aether to expand Grimoire.");
+            // FAILED (Likely Funds)
             setShowSlotModal(false);
+            // Construct redirect URL
+            const currentPath = window.location.pathname;
+            const redirectUrl = `${currentPath}?action=expand_slots`; // Return with action param
+            
+            // Set error that guides to store
+            setAppError("Insufficient Aether to expand storage.");
+            // We'll let the error UI handle the link, but we need to ensure the link includes params
         }
     };
 
@@ -806,6 +867,8 @@ function SoulConnectContent() {
 
          setIsSaved(true);
          audio.playClick('magick');
+         // Clear Storage on Success
+         localStorage.removeItem(LS_KEY);
      } catch (e: any) {
          console.error("Failed to save", e);
          if (e.message === 'GRIMOIRE_FULL') {
@@ -816,6 +879,11 @@ function SoulConnectContent() {
      } finally {
          setIsSaving(false);
      }
+  };
+
+  const clearStorageAndExit = () => {
+    localStorage.removeItem(LS_KEY);
+    // Navigate home or refresh
   };
 
   // Error Rendering
@@ -832,7 +900,10 @@ function SoulConnectContent() {
                     <p className="text-gray-400 text-sm mb-6">{errorMsg}</p>
                     <div className="flex flex-col gap-3">
                         {showLink && (
-                            <Link href="/store" className="w-full bg-amber-600 hover:bg-amber-500 text-black py-3 uppercase tracking-widest font-magical text-xs rounded transition-colors flex items-center justify-center gap-2">
+                            <Link 
+                              href={`/store?redirect=${encodeURIComponent('/spell-room/love-spells-app/soul-connect-love-spell' + (showSlotModal ? '?action=expand_slots' : ''))}`}
+                              className="w-full bg-amber-600 hover:bg-amber-500 text-black py-3 uppercase tracking-widest font-magical text-xs rounded transition-colors flex items-center justify-center gap-2"
+                            >
                                 <Coins size={14} /> Get Aether
                             </Link>
                         )}
@@ -851,7 +922,7 @@ function SoulConnectContent() {
         <GlobalStyles />
         <StarField />
         
-        <Link href="/spell-room/love-spells-app" className="absolute top-6 left-6 text-amber-500/50 hover:text-amber-200 z-50 transition-colors flex items-center gap-2 font-sans text-xs uppercase tracking-wider font-bold">
+        <Link href="/spell-room/love-spells-app" onClick={clearStorageAndExit} className="absolute top-6 left-6 text-amber-500/50 hover:text-amber-200 z-50 transition-colors flex items-center gap-2 font-sans text-xs uppercase tracking-wider font-bold">
             &larr; Exit
         </Link>
 
@@ -885,7 +956,7 @@ function SoulConnectContent() {
 
       {/* Navbar */}
       <div className="flex justify-between items-center p-4 z-50 shrink-0 h-16">
-        <Link href="/spell-room/love-spells-app" onClick={() => audio.playClick('medium')} className="text-amber-500/50 hover:text-amber-200 text-xs font-bold uppercase tracking-wider flex items-center gap-1">
+        <Link href="/spell-room/love-spells-app" onClick={() => { audio.playClick('medium'); clearStorageAndExit(); }} className="text-amber-500/50 hover:text-amber-200 text-xs font-bold uppercase tracking-wider flex items-center gap-1">
           &larr; Exit
         </Link>
         <div className="flex items-center gap-4">
