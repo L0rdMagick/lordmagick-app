@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Image from 'next/image';
 import { Coins, Sparkles, Gem, Check, AlertTriangle, Loader2 } from 'lucide-react';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
 import RoomsButton from '@/app/components/RoomsButton';
@@ -134,7 +135,7 @@ function StoreContent() {
                 </div>
                 <div className="flex items-center gap-4">
                     <h1 className="text-xl md:text-2xl font-serif text-amber-500 tracking-widest uppercase hidden md:block">
-                        Aether Exchange
+                        Faestone Exchange
                     </h1>
                     <RoomsButton />
                 </div>
@@ -148,10 +149,10 @@ function StoreContent() {
                         Transmute Wealth into Will
                     </p>
                     <h2 className="text-4xl md:text-5xl font-serif text-white mb-6 text-shadow-lg">
-                        Acquire Aether
+                        Acquire Faestones
                     </h2>
                     <p className="text-gray-400 font-serif text-lg leading-relaxed">
-                        Credits power your spells, readings, and bindings. Choose your vessel wisely.
+                        Faestones power your spells, readings, and bindings. Choose your vessel wisely.
                     </p>
                 </div>
 
@@ -174,11 +175,13 @@ function StoreContent() {
                                 </div>
                             )}
 
-                            <pkg.icon size={48} className={`${pkg.color} mb-6 group-hover:animate-pulse transition-transform duration-500 group-hover:rotate-12`} />
+                            <div className="relative w-16 h-16 mb-6 group-hover:scale-110 transition-transform duration-500">
+                                <Image src="/images/faestones.png" alt="Faestones" layout="fill" objectFit="contain" />
+                            </div>
                             
                             <h3 className="text-xl font-serif text-white mb-2">{pkg.name}</h3>
                             <div className="text-3xl font-bold font-mono text-white mb-4">
-                                {pkg.credits} <span className="text-sm text-gray-500 font-normal">AETHER</span>
+                                {pkg.credits} <span className="text-sm text-gray-500 font-normal">FAESTONES</span>
                             </div>
                             
                             <p className="text-xs text-gray-400 mb-8 min-h-8">{pkg.desc}</p>
@@ -215,11 +218,11 @@ function StoreContent() {
                         <div className="absolute inset-0 bg-amber-500/10 animate-pulse" />
                         <div className="relative z-10">
                             <div className="w-20 h-20 bg-amber-500/20 rounded-full flex items-center justify-center mx-auto mb-6 border border-amber-500">
-                                <Check size={40} className="text-amber-400" />
+                                <div className="w-12 h-12 relative animate-pulse"><Image src="/images/faestones.png" alt="Faestones" layout="fill" objectFit="contain" /></div>
                             </div>
                             <h2 className="text-2xl font-serif text-white mb-2">Transmutation Complete</h2>
                             <p className="text-gray-400 text-sm mb-8">
-                                Your Aether has been replenished. The cosmos awaits your command.
+                                Your Faestones have been replenished. The cosmos awaits your command.
                             </p>
                             <button 
                                 onClick={() => {
