@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSearchParams, useRouter } from 'next/navigation';
 import type { Session, GeneratedWiccanSpell, WiccanDeitySuggestion, WiccanIngredient } from '@/lib/types';
@@ -20,7 +21,7 @@ import RoomsButton from './RoomsButton';
 import LoadingSpinner from './LoadingSpinner';
 import { Sprite } from './Sprite';
 import { findSprite } from '@/lib/spriteLibrary';
-import { Save, Check, BookOpen, ArrowRight, Lock } from 'lucide-react';
+import { Save, Check, BookOpen, ArrowRight, Lock, Coins, AlertTriangle } from 'lucide-react';
 
 // --- CONFIGURATION: AUDIO SETTINGS ---
 // Adjust volumes here (0 = Silent, 10 = Max/Original File Volume)
@@ -76,7 +77,8 @@ const CHARGE_DURATION_ELEMENT = 7000;
 const CHARGE_DURATION_INGREDIENT = 6000;
 const CAST_DURATION = 13000; 
 const SENDING_DURATION = 4000;
-const SERVICE_SLUG = 'ai_wicca_magick'; 
+const SERVICE_SLUG_GEN = 'ai_wicca_magick'; 
+const SERVICE_SLUG_SAVE = 'save_spell_wicca';
 const LS_AUTOSAVE_KEY = 'wicca_spell_pending_save';
 
 // --- Data Types Extended ---
@@ -281,7 +283,7 @@ const IncantationOverlay = ({ text, onConfirm, isVisible, ingredient }: OverlayP
 const SlotPurchaseModal = ({ isOpen, onClose, onPurchase, isProcessing }: { isOpen: boolean, onClose: () => void, onPurchase: () => void, isProcessing: boolean }) => {
     if (!isOpen) return null;
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-6 animate-in fade-in">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 backdrop-blur-md p-6 animate-in fade-in">
             <div className="bg-[#1a1a2e] border border-amber-500/50 rounded-xl p-8 max-w-sm w-full text-center shadow-[0_0_50px_rgba(251,191,36,0.2)]">
                 <BookOpen size={48} className="text-amber-400 mx-auto mb-4" />
                 <h3 className="text-xl font-serif text-amber-100 mb-2">Grimoire Full</h3>
@@ -304,6 +306,7 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
     const searchParams = useSearchParams();
     const router = useRouter();
     const loadId = searchParams.get('loadId');
+    const actionParam = searchParams.get('action');
 
     const [ritualStep, setRitualStep] = useState(0);
     const [subStep, setSubStep] = useState<'incantation' | 'action'>('action'); 
@@ -312,9 +315,28 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
     const [loadingMessage, setLoadingMessage] = useState('');
     const [error, setError] = useState<string | null>(null);
     
-    const { cost, spendAether, paymentError, clearPaymentError } = useAetherEconomy(SERVICE_SLUG);
+    // Economy Hooks
+    const { 
+        cost: genCost, 
+        spendAether: spendGenCredits, 
+        paymentError: genError, 
+        clearPaymentError: clearGenError,
+        isProcessingPayment: isGenProcessing
+    } = useAetherEconomy(SERVICE_SLUG_GEN);
+
+    const { 
+        cost: saveCost, 
+        spendAether: spendSaveCredits, 
+        paymentError: savePaymentError, 
+        clearPaymentError: clearSaveError,
+        isProcessingPayment: isSaveProcessing,
+        showStoreLink: showSaveStoreLink
+    } = useAetherEconomy(SERVICE_SLUG_SAVE);
+
     const [showSlotModal, setShowSlotModal] = useState(false);
     const [slotLoading, setSlotLoading] = useState(false);
+    // Persistence
+    const [isHydrated, setIsHydrated] = useState(false);
 
     // Data State
     const [intention, setIntention] = useState('');
@@ -337,34 +359,23 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
     }, []);
 
     // --- Autosave Recovery & Hydration ---
+    // 1. Save State on Change
+    useEffect(() => {
+         if (isHydrated && !loadId && !isReplayMode && ritualStep > 0) {
+             const state = {
+                 intention, situation, selectedDeity, spell: generatedSpell,
+                 ritualStep, subStep, chargedElements, chargingIndex,
+                 timestamp: Date.now()
+             };
+             localStorage.setItem(LS_AUTOSAVE_KEY, JSON.stringify(state));
+         }
+    }, [intention, situation, selectedDeity, generatedSpell, ritualStep, subStep, chargedElements, chargingIndex, isHydrated, loadId, isReplayMode]);
+
+    // 2. Hydrate State on Mount
     useEffect(() => {
         const checkRecovery = async () => {
-            // 1. Check for Pending Autosave (Returning from Store)
-            const pendingSave = localStorage.getItem(LS_AUTOSAVE_KEY);
-            if (pendingSave) {
-                try {
-                    const savedState = JSON.parse(pendingSave);
-                    setIntention(savedState.intention);
-                    setSituation(savedState.situation);
-                    setSelectedDeity(savedState.selectedDeity);
-                    setGeneratedSpell(savedState.spell);
-                    
-                    // Restore to result screen
-                    setIsReplayMode(false); // It's still a new spell essentially
-                    setRitualStep(11);
-                    setSubStep('action');
-                    
-                    // Clear the pending save so we don't loop
-                    localStorage.removeItem(LS_AUTOSAVE_KEY);
-                    return; 
-                } catch (e) {
-                    console.error("Failed to restore pending save", e);
-                    localStorage.removeItem(LS_AUTOSAVE_KEY);
-                }
-            }
-
-            // 2. Check for Load ID (Replaying from Grimoire)
-            if (loadId) {
+             // If loading a saved spell from DB (Replay)
+             if (loadId) {
                 setLoading(true);
                 setLoadingMessage("Restoring the Ritual...");
                 try {
@@ -373,44 +384,67 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
                         const d = typeof s.ritual_data === 'string' ? JSON.parse(s.ritual_data) : s.ritual_data;
                         setIntention(s.intention);
                         setSituation(d.situation || '');
-                        
                         if (d.selectedDeity) setSelectedDeity(d.selectedDeity);
                         
-                        // STRICT HYDRATION: Prefer saved spell data over defaults
-                        if (d.spell) {
-                            setGeneratedSpell(d.spell);
-                        } else {
-                            // Fallback if spell data missing in JSON
-                            setGeneratedSpell(STANDARD_WICCAN_SPELL);
-                        }
+                        if (d.spell) setGeneratedSpell(d.spell);
+                        else setGeneratedSpell(STANDARD_WICCAN_SPELL); // Fallback
                         
                         setIsReplayMode(true);
                         setIsSaved(true);
-                        setRitualStep(1);
+                        setRitualStep(1); // Review intention
                     }
-                } catch { setError("Could not restore ritual."); } finally { setLoading(false); }
-            }
-        };
+                } catch { setError("Could not restore ritual."); } 
+                finally { setLoading(false); setIsHydrated(true); }
+                return;
+             }
 
+             // Otherwise check LocalStorage for recovery
+             const pendingSave = localStorage.getItem(LS_AUTOSAVE_KEY);
+             if (pendingSave) {
+                 try {
+                     const savedState = JSON.parse(pendingSave);
+                     // Basic validity check could go here
+                     setIntention(savedState.intention || '');
+                     setSituation(savedState.situation || '');
+                     if (savedState.selectedDeity) setSelectedDeity(savedState.selectedDeity);
+                     if (savedState.spell) setGeneratedSpell(savedState.spell);
+                     
+                     // Restore progress if valid
+                     if (savedState.ritualStep) {
+                          setRitualStep(savedState.ritualStep);
+                          setSubStep(savedState.subStep || 'action');
+                          setChargedElements(savedState.chargedElements || []);
+                          setChargingIndex(savedState.chargingIndex || 0);
+                     }
+                 } catch (e) {
+                     console.error("LS Parse error", e);
+                 }
+             }
+
+             // Handle "Expand Slots" Action Return
+             if (actionParam === 'expand_slots') {
+                 setTimeout(() => setShowSlotModal(true), 500); 
+             }
+             
+             setIsHydrated(true);
+        };
         checkRecovery();
-    }, [loadId]);
+    }, [loadId, actionParam]);
 
     const handleBegin = async (mode: 'standard' | 'ai') => {
         if (!intention) { setError("Intention is required."); return; }
-        setError(null); clearPaymentError();
+        setError(null); clearGenError(); clearSaveError();
         playAudio('THUD').play();
 
         if (mode === 'standard') {
-            // HYDRATION FIX: Only reset to Standard defaults if NOT replaying a saved spell
             if (!isReplayMode) {
                 setGeneratedSpell(STANDARD_WICCAN_SPELL);
             }
-            // If replaying, we keep the spell loaded from useEffect above
             setRitualStep(2);
             setSubStep('incantation');
         } else {
             if (!session?.user?.id) { setError("Sign in required."); return; }
-            const paid = await spendAether(session.user.id);
+            const paid = await spendGenCredits(session.user.id);
             if (!paid) return;
             
             setLoading(true);
@@ -418,7 +452,6 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
             try {
                 const s: any = await generateWiccanSpell({ intention, focalPoint: 'The Divine', moonPhase: 'Current', situation });
                 
-                // Strict mapping to ensure AI text is prioritized
                 const mergedSpell: ExtendedGeneratedWiccanSpell = {
                     title: s.title || STANDARD_WICCAN_SPELL.title,
                     central_chant: s.central_chant || STANDARD_WICCAN_SPELL.central_chant,
@@ -475,31 +508,26 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
     };
 
     const handleSave = async () => {
-        if (!generatedSpell || isSaved) return;
+        if (!generatedSpell || isSaved || isSaving) return;
         
-        // Start scribing sound with loop enabled (via true arg)
-        const scribing = playAudio('SCRIBING', true);
-        scribing.play();
-        
-        // Stop audio after ~2 loops (approx 3.5 seconds) to prevent infinite playing
-        setTimeout(() => scribing.stop(), 3500);
-        
+        // Economy Check first
         if (session?.user?.id && !isReplayMode) {
-             const paid = await spendAether(session.user.id);
+             const paid = await spendSaveCredits(session.user.id);
              if (!paid) {
-                 scribing.stop(); // Ensure stop if payment fails
-                 return;
+                 return; // Error already handled by hook
              }
         }
+        
+        const scribing = playAudio('SCRIBING', true);
+        scribing.play();
+        setTimeout(() => scribing.stop(), 3500);
 
         setIsSaving(true);
         try {
-            // Save complete state to ensure full fidelity on replay
             const ritualData = { 
-                intention, 
-                situation, 
-                selectedDeity, 
-                spell: generatedSpell 
+                intention, situation, selectedDeity, spell: generatedSpell,
+                // Extra metadata for precise replay visuals
+                chargedElements, chargingIndex
             };
             
             await saveSpell(session?.user?.id || 'anon', {
@@ -511,11 +539,14 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
             });
             setIsSaved(true);
             playAudio('BELL').play();
-            // Clear pending save if we successfully saved
             localStorage.removeItem(LS_AUTOSAVE_KEY);
         } catch (e: any) {
-            if (e.message === 'GRIMOIRE_FULL') setShowSlotModal(true);
-            else setError("Failed to scribe.");
+            if (e.message === 'GRIMOIRE_FULL') {
+                setShowSlotModal(true);
+                // Don't error out, show modal
+            } else {
+                setError("Failed to scribe.");
+            }
         } finally { setIsSaving(false); }
     };
 
@@ -527,20 +558,22 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
         
         if (success) {
             setShowSlotModal(false);
-            handleSave();
+            // Optionally retry save logic or let user click
+            // handleSave(); - Better to let user click since it costs credits (though slots cost handled separately)
         } else {
-            // Insufficient Aether Logic
-            // 1. Save state to LS
-            const currentState = {
-                intention,
-                situation,
-                selectedDeity,
-                spell: generatedSpell
-            };
-            localStorage.setItem(LS_AUTOSAVE_KEY, JSON.stringify(currentState));
+            // Insufficient Aether - Enhanced flow
+            setShowSlotModal(false);
             
-            // 2. Redirect to Store
-            router.push('/store');
+            // 1. Force Save Current State
+            const state = {
+                 intention, situation, selectedDeity, spell: generatedSpell,
+                 ritualStep, subStep, chargedElements, chargingIndex,
+                 timestamp: Date.now()
+            };
+            localStorage.setItem(LS_AUTOSAVE_KEY, JSON.stringify(state));
+            
+            // 2. Redirect with Action param to trigger return flow
+            router.push(`/store?redirect=${encodeURIComponent('/spell-room/wicca-magick?action=expand_slots')}`);
         }
     };
 
@@ -575,9 +608,34 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
             return <IncantationOverlay text={getCurrentIncantation()} onConfirm={handleIncantationConfirm} isVisible={true} ingredient={getCurrentIngredient()} />;
         }
 
+        // Render Error/Economy Dialogs
+        if (genError || savePaymentError) {
+             const msg = genError || savePaymentError;
+             return (
+                <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-6">
+                    <div className="bg-[#1a1a2e] border border-red-500/50 rounded-xl p-8 max-w-sm w-full text-center shadow-[0_0_50px_rgba(220,38,38,0.2)]">
+                        <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+                        <h3 className="text-xl font-magical text-red-100 mb-2">Ritual Interrupted</h3>
+                        <p className="text-gray-400 text-sm mb-6">{msg}</p>
+                        <div className="flex flex-col gap-3">
+                            <Link 
+                              href={`/store?redirect=${encodeURIComponent('/spell-room/wicca-magick')}`}
+                              className="w-full bg-amber-600 hover:bg-amber-500 text-black py-3 uppercase tracking-widest font-magical text-xs rounded transition-colors flex items-center justify-center gap-2"
+                            >
+                                <Coins size={14} /> Get Aether
+                            </Link>
+                            <button onClick={() => { clearGenError(); clearSaveError(); }} className="w-full border border-red-500/50 text-red-300 py-3 uppercase tracking-widest font-magical text-xs hover:bg-red-900/20 transition-colors">
+                                Dismiss
+                            </button>
+                        </div>
+                    </div>
+                </div>
+             );
+        }
+
         switch (ritualStep) {
             case 0: return <Step0_Intro onNext={() => { playAudio('THUD').play(); setRitualStep(1); }} />;
-            case 1: return <Step1_Intention intention={intention} setIntention={setIntention} situation={situation} setSituation={setSituation} onBegin={handleBegin} isReplay={isReplayMode} cost={cost} />;
+            case 1: return <Step1_Intention intention={intention} setIntention={setIntention} situation={situation} setSituation={setSituation} onBegin={handleBegin} isReplay={isReplayMode} cost={genCost} />;
             case 2: return <Step2_CastCircle onComplete={nextStep} />;
             case 3: return <Step3_Quarters spell={generatedSpell} charged={chargedElements} onCharge={handleElementCharge} onNext={nextStep} />;
             case 4: return <Step4_Deities suggestions={generatedSpell?.suggested_deities || []} onSelect={(d) => { playAudio('THUD').play(); setSelectedDeity(d); nextStep(); }} isReplay={isReplayMode} savedDeity={selectedDeity} />;
@@ -1462,7 +1520,7 @@ const Step10_Closing = ({ onComplete }: { onComplete: () => void }) => {
     );
 };
 
-const Step11_Result = ({ spell, onSave, isSaving, isSaved, onReset }: any) => (
+const Step11_Result = ({ spell, onSave, isSaving, isSaved, onReset, saveCost = 5 }: any) => (
     <div className="flex flex-col items-center justify-center h-full gap-6 text-center max-w-lg mx-auto animate-in fade-in zoom-in duration-700 relative min-h-0">
         <div className="relative z-10 bg-black/40 p-6 rounded-xl backdrop-blur-md border border-purple-500/30 shadow-[0_0_30px_rgba(0,0,0,0.5)]">
             <BookOpen size={48} className="text-amber-200 mb-2 drop-shadow-[0_0_15px_gold] mx-auto" />
@@ -1471,8 +1529,8 @@ const Step11_Result = ({ spell, onSave, isSaving, isSaved, onReset }: any) => (
         </div>
 
         <div className="flex flex-col gap-2 w-full px-8 relative z-10 pb-4">
-            <button onClick={onSave} disabled={isSaved || isSaving} className="w-full py-3 bg-indigo-900/80 border border-indigo-500 rounded-lg text-indigo-100 flex items-center justify-center gap-3 hover:bg-indigo-800 transition-colors font-serif text-base backdrop-blur-sm">
-                {isSaved ? <Check /> : <Save />} {isSaved ? "Recorded in Grimoire" : "Save Spell to Grimoire"}
+            <button onClick={onSave} disabled={isSaved || isSaving} className="w-full py-3 bg-indigo-900/80 border border-indigo-500 rounded-lg text-indigo-100 flex items-center justify-center gap-3 hover:bg-indigo-800 transition-colors font-serif text-base backdrop-blur-sm disabled:opacity-50">
+                {isSaving ? "Scribing..." : (isSaved ? <><Check /> Recorded in Grimoire</> : <><Save /> Save to Grimoire ({saveCost} Credits)</>)}
             </button>
             <button onClick={onReset} className="w-full py-3 bg-gray-800/60 border border-gray-600 rounded-lg text-gray-300 hover:bg-gray-700 transition-colors font-serif backdrop-blur-sm text-sm">Return to Altar</button>
         </div>
