@@ -1725,8 +1725,8 @@ const StageFiveMixing = ({ ingredients, names, onComplete, isForSelf, customChan
 
 const StageSixCandle = ({ onComplete, isForSelf, names, customChant }: any) => {
   const [lit, setLit] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(5); 
-  const maxTime = 5;
+  const [timeLeft, setTimeLeft] = useState(142); 
+  const maxTime = 142;
   const [showIntro, setShowIntro] = useState(true);
   
   const formatTime = (s: number) => {
