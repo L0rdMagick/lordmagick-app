@@ -573,7 +573,7 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
             localStorage.setItem(LS_AUTOSAVE_KEY, JSON.stringify(state));
             
             // 2. Redirect with Action param to trigger return flow
-            router.push(`/store?redirect=${encodeURIComponent('/spell-room/wicca-magick?action=expand_slots')}`);
+            router.push(`/store?redirect=${encodeURIComponent('/spell-room/wicca-magick-spells-app?action=expand_slots')}`);
         }
     };
 
@@ -619,7 +619,7 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
                         <p className="text-gray-400 text-sm mb-6">{msg}</p>
                         <div className="flex flex-col gap-3">
                             <Link 
-                              href={`/store?redirect=${encodeURIComponent('/spell-room/wicca-magick')}`}
+                              href={`/store?redirect=${encodeURIComponent('/spell-room/wicca-magick-spells-app')}`}
                               className="w-full bg-amber-600 hover:bg-amber-500 text-black py-3 uppercase tracking-widest font-magical text-xs rounded transition-colors flex items-center justify-center gap-2"
                             >
                                 <Coins size={14} /> Get Aether
