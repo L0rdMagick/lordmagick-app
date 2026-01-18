@@ -538,7 +538,7 @@ const FinalPopup = ({ onExit, onSave, isSaving, isSaved, saveCost }: { onExit: (
 const SlotPurchaseModal = ({ isOpen, onClose, onPurchase, isProcessing }: { isOpen: boolean, onClose: () => void, onPurchase: () => void, isProcessing: boolean }) => {
     if (!isOpen) return null;
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-6 animate-in fade-in">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 backdrop-blur-md p-6 animate-in fade-in">
             <div className="bg-[#1a1a2e] border border-amber-500/50 rounded-xl p-8 max-w-sm w-full text-center shadow-[0_0_50px_rgba(251,191,36,0.2)]">
                 <BookOpen size={48} className="text-amber-400 mx-auto mb-4" />
                 <h3 className="text-xl font-serif text-amber-100 mb-2">Grimoire Full</h3>
