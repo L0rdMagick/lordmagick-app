@@ -15,7 +15,8 @@ export const BlockageErrorOverlay = ({
     error, 
     onDismiss, 
     showStoreLink = true,
-    redirectPath = '/store'
+    redirectPath = '/store',
+    onGoToStore
 }: BlockageErrorOverlayProps) => {
     
     if (!error) return null;
@@ -34,15 +35,27 @@ export const BlockageErrorOverlay = ({
                         </p>
                         <div className="flex flex-col gap-3">
                             {showStoreLink && (
-                                <Link 
-                                    href={`/store?redirect=${encodeURIComponent(redirectPath)}`}
-                                    className="w-full flex items-center justify-center gap-2 py-3 bg-amber-700 hover:bg-amber-600 text-white font-bold rounded uppercase tracking-wider text-xs transition-colors shadow-[0_0_15px_rgba(180,83,9,0.4)]"
-                                >
-                                    <div className="w-4 h-4 relative">
-                                        <Image src="/images/faestones.png" alt="Token" layout="fill" objectFit="contain" />
-                                    </div> 
-                                    Manifest Faestones
-                                </Link>
+                                onGoToStore ? (
+                                    <button 
+                                        onClick={onGoToStore}
+                                        className="w-full flex items-center justify-center gap-2 py-3 bg-amber-700 hover:bg-amber-600 text-white font-bold rounded uppercase tracking-wider text-xs transition-colors shadow-[0_0_15px_rgba(180,83,9,0.4)]"
+                                    >
+                                        <div className="w-4 h-4 relative">
+                                            <Image src="/images/faestones.png" alt="Token" layout="fill" objectFit="contain" />
+                                        </div> 
+                                        Manifest Faestones
+                                    </button>
+                                ) : (
+                                    <Link 
+                                        href={`/store?redirect=${encodeURIComponent(redirectPath)}`}
+                                        className="w-full flex items-center justify-center gap-2 py-3 bg-amber-700 hover:bg-amber-600 text-white font-bold rounded uppercase tracking-wider text-xs transition-colors shadow-[0_0_15px_rgba(180,83,9,0.4)]"
+                                    >
+                                        <div className="w-4 h-4 relative">
+                                            <Image src="/images/faestones.png" alt="Token" layout="fill" objectFit="contain" />
+                                        </div> 
+                                        Manifest Faestones
+                                    </Link>
+                                )
                             )}
                             <button onClick={onDismiss} className="text-gray-400 hover:text-white text-xs font-serif italic tracking-wide">
                                 Close the Portal

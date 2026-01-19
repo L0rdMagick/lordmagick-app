@@ -990,6 +990,10 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
                     error={spellSystem.activeError} 
                     onDismiss={() => spellSystem.clearErrors()} 
                     redirectPath={'/spell-room/hoodoo-rootwork-spells-app'}
+                    onGoToStore={() => spellSystem.goToStoreForSlots(
+                        { step, path, petition, selectedPsalm, selectedLwa, hoodooMateriaSelections, voodooOfferingSelections }, 
+                        'hoodoo_voodoo_autosave'
+                    )}
                 />
             );
         }
@@ -1078,6 +1082,10 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
                     error={spellSystem.activeError} 
                     onDismiss={() => spellSystem.clearErrors()}
                     redirectPath={'/spell-room/hoodoo-rootwork-spells-app'}
+                    onGoToStore={() => spellSystem.goToStoreForSlots(
+                        { step, path, petition, selectedPsalm, selectedLwa, hoodooMateriaSelections, voodooOfferingSelections }, 
+                        'hoodoo_voodoo_autosave'
+                    )}
                 />
             )}
 
