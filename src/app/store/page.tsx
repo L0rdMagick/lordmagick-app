@@ -202,11 +202,11 @@ function StoreContent() {
                     <div className="w-full max-w-6xl mx-auto flex flex-col items-center gap-6 md:gap-8">
                         
                         {/* Title Card */}
-                        <div className="text-center w-full max-w-lg bg-black/60 backdrop-blur-md border border-white/10 p-4 md:p-6 rounded-xl rounded-tl-3xl rounded-br-3xl shadow-2xl shrink-0">
+                        <div className="text-center w-full max-w-lg bg-indigo-950/60 backdrop-blur-md border border-white/10 p-4 md:p-6 rounded-xl rounded-tl-3xl rounded-br-3xl shadow-2xl shrink-0">
                             <p className="text-[10px] md:text-xs font-mono text-purple-300 uppercase tracking-[0.2em] mb-1 md:mb-2">
                                 Transmute Wealth into Will
                             </p>
-                            <h2 className="text-2xl md:text-4xl font-serif text-white mb-2 text-shadow-lg">
+                            <h2 className="text-2xl md:text-4xl font-serif text-amber-400 mb-2 text-shadow-lg">
                                 Acquire Faestones
                             </h2>
                             <p className="text-gray-400 font-serif text-xs md:text-sm leading-relaxed max-w-sm mx-auto">
@@ -238,8 +238,8 @@ function StoreContent() {
                                     <FaestonePile count={pkg.quantity} />
                                 </div>
                                 
-                                <h3 className="text-lg font-serif text-white mb-1">{pkg.name}</h3>
-                                <div className="text-2xl font-bold font-mono text-white mb-2">
+                                <h3 className="text-lg font-serif text-amber-400 mb-1">{pkg.name}</h3>
+                                <div className="text-2xl font-bold font-mono text-amber-400 mb-2">
                                     {pkg.credits} <span className="text-xs text-gray-500 font-normal">FAESTONES</span>
                                 </div>
                                 
@@ -249,8 +249,8 @@ function StoreContent() {
                                     disabled={loadingId !== null}
                                     className={`
                                         w-full py-3 border ${pkg.border} 
-                                        text-white font-mono uppercase tracking-widest text-xs
-                                        hover:bg-white hover:text-black transition-colors
+                                        text-amber-400 font-mono uppercase tracking-widest text-xs
+                                        hover:bg-amber-400 hover:text-black transition-colors
                                         flex items-center justify-center gap-2
                                         rounded-none rounded-tl-lg rounded-br-lg
                                     `}
