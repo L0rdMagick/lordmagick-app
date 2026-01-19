@@ -508,7 +508,7 @@ const FinalPopup = ({ onExit, onSave, isSaving, isSaved, saveCost }: { onExit: (
                     ) : isSaved ? (
                         <><Check size={14} /> Saved</>
                     ) : (
-                        <><Save size={14} /> Save to Grimoire ({saveCost} Credits)</>
+                        <><Save size={14} /> Save to Grimoire ({saveCost} Faestones)</>
                     )}
                 </button>
                 <button 
@@ -537,14 +537,16 @@ const SlotPurchaseModal = ({ isOpen, onClose, onPurchase, isProcessing }: { isOp
     return (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 backdrop-blur-md p-6 animate-in fade-in">
             <div className="bg-[#1a1a2e] border border-amber-500/50 rounded-xl p-8 max-w-sm w-full text-center shadow-[0_0_50px_rgba(251,191,36,0.2)]">
-                <BookOpen size={48} className="text-amber-400 mx-auto mb-4" />
+                <div className="w-16 h-16 mx-auto mb-4 relative drop-shadow-[0_0_10px_rgba(251,191,36,0.5)]">
+                    <Image src="/images/faestones.png" alt="Faestones" layout="fill" objectFit="contain" />
+                </div>
                 <h3 className="text-xl font-serif text-amber-100 mb-2">Grimoire Full</h3>
                 <p className="text-gray-400 text-sm mb-6">
                     Your book of shadows has reached its capacity. Expand your grimoire by 5 slots to continue saving your workings.
                 </p>
                 <div className="flex flex-col gap-3">
                     <button onClick={onPurchase} disabled={isProcessing} className="w-full flex items-center justify-center gap-2 py-3 bg-amber-700 hover:bg-amber-600 text-white font-bold rounded uppercase tracking-wider text-xs transition-colors disabled:opacity-50">
-                        {isProcessing ? "Expanding..." : "Expand Storage (-10 Aether)"}
+                        {isProcessing ? "Expanding..." : "Expand Storage (-10 Faestones)"}
                     </button>
                     <button onClick={onClose} className="text-gray-500 hover:text-white text-xs underline">Cancel</button>
                 </div>
@@ -892,8 +894,10 @@ function SoulConnectContent() {
       return (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-6">
                 <div className="bg-[#1a1a2e] border border-red-500/50 rounded-xl p-8 max-w-sm w-full text-center shadow-[0_0_50px_rgba(220,38,38,0.2)]">
-                    <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-                    <h3 className="text-xl font-magical text-red-100 mb-2">Ritual Interrupted</h3>
+                    <div className="w-16 h-16 mx-auto mb-4 relative drop-shadow-[0_0_10px_rgba(220,38,38,0.5)]">
+                        <Image src="/images/faestones.png" alt="Faestones" layout="fill" objectFit="contain" />
+                    </div>
+                    <h3 className="text-xl font-magical text-red-100 mb-2">A Blockage Found</h3>
                     <p className="text-gray-400 text-sm mb-6">{errorMsg}</p>
                     <div className="flex flex-col gap-3">
                         {showLink && (
@@ -901,11 +905,11 @@ function SoulConnectContent() {
                               href={`/store?redirect=${encodeURIComponent('/spell-room/love-spells-app/soul-connect-love-spell' + (showSlotModal ? '?action=expand_slots' : ''))}`}
                               className="w-full bg-amber-600 hover:bg-amber-500 text-black py-3 uppercase tracking-widest font-magical text-xs rounded transition-colors flex items-center justify-center gap-2"
                             >
-                                <Coins size={14} /> Get Aether
+                                <Coins size={14} /> Manifest More Faestones
                             </Link>
                         )}
                         <button onClick={reset} className="w-full border border-red-500/50 text-red-300 py-3 uppercase tracking-widest font-magical text-xs hover:bg-red-900/20 transition-colors">
-                            Dismiss
+                            Cancel the Ritual
                         </button>
                     </div>
                 </div>
