@@ -19,7 +19,7 @@ const navLinks = [
   { name: "Oracle Room", href: "/oracle-room" },
   { name: "The School", href: "/the-magick-psychic-school" },
   { name: "Magickal Tools", href: "/magickal-tools" },
-  { name: "Aether Store", href: "/store" },
+  { name: "Faestone Store", href: "/store" },
 ];
 
 export default function RoomsMenu() {

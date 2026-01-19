@@ -180,16 +180,16 @@ function StoreContent() {
     };
 
     return (
-        <main className="min-h-screen w-full bg-black bg-[url('/images/grand-hall-bg.png')] bg-cover bg-center flex flex-col relative overflow-hidden font-sans text-gray-200">
-            <div className="absolute inset-0 bg-black/80 backdrop-blur-sm z-0" />
+        <main className="h-screen w-full bg-black bg-[url('/images/grand-hall-bg.png')] bg-cover bg-center flex flex-col relative overflow-hidden font-sans text-gray-200">
+            <div className="absolute inset-0 bg-black/20 z-0" />
             
             {/* Header */}
-            <header className="relative z-10 p-6 flex justify-between items-center border-b border-white/10 bg-black/40">
+            <header className="relative z-10 p-4 shrink-0 flex justify-between items-center border-b border-white/10 bg-black/40 backdrop-blur-md">
                 <div className="flex items-center gap-4">
                     <MagickalBackLink href="/hall" text="Grand Hall" />
                 </div>
                 <div className="flex items-center gap-4">
-                    <h1 className="text-xl md:text-2xl font-serif text-amber-500 tracking-widest uppercase hidden md:block">
+                    <h1 className="text-xl font-serif text-amber-500 tracking-widest uppercase hidden md:block">
                         Faestone Exchange
                     </h1>
                     <RoomsButton />
@@ -197,70 +197,77 @@ function StoreContent() {
             </header>
 
             {/* Content */}
-            <div className="relative z-10 flex-1 flex flex-col items-center justify-center p-4 md:p-8 animate-in fade-in zoom-in duration-500">
-                
-                <div className="text-center mb-12 max-w-2xl">
-                    <p className="text-sm font-mono text-purple-300 uppercase tracking-[0.2em] mb-4">
-                        Transmute Wealth into Will
-                    </p>
-                    <h2 className="text-4xl md:text-5xl font-serif text-white mb-6 text-shadow-lg">
-                        Acquire Faestones
-                    </h2>
-                    <p className="text-gray-400 font-serif text-lg leading-relaxed">
-                        Faestones power your spells, readings, and bindings. Choose your vessel wisely.
-                    </p>
-                </div>
+            <div className="relative z-10 flex-1 flex flex-col items-center justify-center p-4 overflow-y-auto">
+                <div className="w-full max-w-6xl mx-auto flex flex-col items-center justify-center min-h-0">
+                    
+                    {/* Title Card */}
+                    <div className="text-center mb-8 max-w-2xl bg-black/60 backdrop-blur-md border border-white/10 p-6 rounded-xl rounded-tl-3xl rounded-br-3xl shadow-2xl">
+                        <p className="text-xs font-mono text-purple-300 uppercase tracking-[0.2em] mb-2">
+                            Transmute Wealth into Will
+                        </p>
+                        <h2 className="text-3xl md:text-4xl font-serif text-white mb-2 text-shadow-lg">
+                            Acquire Faestones
+                        </h2>
+                        <p className="text-gray-400 font-serif text-sm md:text-base leading-relaxed">
+                            Faestones power your spells, readings, and bindings. Choose your vessel wisely.
+                        </p>
+                    </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-5xl">
-                    {STORE_ITEMS.map((pkg) => (
-                        <div 
-                            key={pkg.id}
-                            onClick={() => handlePurchase(pkg.id)}
-                            className={`
-                                relative group cursor-pointer 
-                                bg-black/60 border-2 ${pkg.border} rounded-xl p-8 
-                                hover:bg-white/5 transition-all duration-300 
-                                hover:scale-105 shadow-2xl hover:${pkg.glow}
-                                flex flex-col items-center text-center
-                            `}
-                        >
-                            {pkg.badge && (
-                                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-white text-black text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest shadow-lg">
-                                    {pkg.badge}
-                                </div>
-                            )}
-
-                            <FaestonePile count={pkg.quantity} />
-                            
-                            <h3 className="text-xl font-serif text-white mb-2">{pkg.name}</h3>
-                            <div className="text-3xl font-bold font-mono text-white mb-4">
-                                {pkg.credits} <span className="text-sm text-gray-500 font-normal">FAESTONES</span>
-                            </div>
-                            
-                            <p className="text-xs text-gray-400 mb-8 min-h-8">{pkg.desc}</p>
-                            
-                            <button 
-                                disabled={loadingId !== null}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
+                        {STORE_ITEMS.map((pkg) => (
+                            <div 
+                                key={pkg.id}
+                                onClick={() => handlePurchase(pkg.id)}
                                 className={`
-                                    w-full py-3 rounded-lg border ${pkg.border} 
-                                    text-white font-mono uppercase tracking-widest text-xs
-                                    group-hover:bg-white group-hover:text-black transition-colors
-                                    flex items-center justify-center gap-2
+                                    relative group cursor-pointer 
+                                    bg-black/80 border-2 ${pkg.border} 
+                                    rounded-none rounded-tl-2xl rounded-br-2xl p-6 
+                                    hover:bg-black/90 transition-all duration-300 
+                                    hover:scale-[1.02] shadow-2xl hover:${pkg.glow}
+                                    flex flex-col items-center text-center
                                 `}
                             >
-                                {loadingId === pkg.id ? (
-                                    <Loader2 className="animate-spin w-4 h-4" />
-                                ) : (
-                                    `Acquire ${pkg.price}`
+                                {pkg.badge && (
+                                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-white text-black text-[10px] font-bold px-3 py-1 rounded-none rounded-tl-lg rounded-br-lg uppercase tracking-widest shadow-lg">
+                                        {pkg.badge}
+                                    </div>
                                 )}
-                            </button>
-                        </div>
-                    ))}
-                </div>
 
-                <div className="mt-16 text-[10px] text-gray-600 font-mono uppercase tracking-widest flex items-center gap-2 opacity-70 hover:opacity-100 transition-opacity">
-                    <AlertTriangle size={12} />
-                    Transactions secured by Stripe. No refunds on digital essence.
+                                <div className="scale-90 origin-center">
+                                    <FaestonePile count={pkg.quantity} />
+                                </div>
+                                
+                                <h3 className="text-lg font-serif text-white mb-1">{pkg.name}</h3>
+                                <div className="text-2xl font-bold font-mono text-white mb-2">
+                                    {pkg.credits} <span className="text-xs text-gray-500 font-normal">FAESTONES</span>
+                                </div>
+                                
+                                <p className="text-[10px] text-gray-400 mb-6 min-h-[20px] uppercase tracking-wide">{pkg.desc}</p>
+                                
+                                <button 
+                                    disabled={loadingId !== null}
+                                    className={`
+                                        w-full py-3 border ${pkg.border} 
+                                        text-white font-mono uppercase tracking-widest text-xs
+                                        hover:bg-white hover:text-black transition-colors
+                                        flex items-center justify-center gap-2
+                                        rounded-none rounded-tl-lg rounded-br-lg
+                                    `}
+                                >
+                                    {loadingId === pkg.id ? (
+                                        <Loader2 className="animate-spin w-4 h-4" />
+                                    ) : (
+                                        `Acquire ${pkg.price}`
+                                    )}
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="mt-8 text-[10px] text-gray-500 font-mono uppercase tracking-widest flex items-center gap-2 opacity-60 hover:opacity-100 transition-opacity bg-black/40 px-4 py-2 rounded-full backdrop-blur-sm">
+                        <AlertTriangle size={12} />
+                        Transactions secured by Stripe. No refunds on digital essence.
+                    </div>
                 </div>
             </div>
 
