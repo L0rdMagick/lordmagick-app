@@ -36,7 +36,7 @@ export const useAetherEconomy = (serviceSlug: string) => {
             const success = await deductUserCredits(userId, cost);
             
             if (!success) {
-                setPaymentError("Insufficient Aether.");
+                setPaymentError("Insufficient Faestones.");
                 setShowStoreLink(true);
                 setIsProcessingPayment(false);
                 return false;
