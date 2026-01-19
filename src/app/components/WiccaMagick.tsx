@@ -302,25 +302,25 @@ const SlotPurchaseModal = ({ isOpen, onClose, onPurchase, isProcessing, showAeth
                                 Manifest Faestones
                             </button>
                             <button onClick={onClose} className="text-gray-400 hover:text-white text-xs font-serif italic tracking-wide">
-                                Return to Altar
+                                Close the Portal
                             </button>
                         </div>
                     </>
                 ) : (
                     <>
                         <BookOpen size={48} className="text-purple-400 mx-auto mb-4 drop-shadow-[0_0_10px_purple]" />
-                        <h3 className="text-xl font-serif text-purple-100 mb-2">Grimoire at Capacity</h3>
+                        <h3 className="text-xl font-serif text-purple-100 mb-2">Your Grimoire is Full…</h3>
                         <p className="text-purple-200/80 text-sm mb-6 leading-relaxed">
-                            Your Book of Shadows is filled with your workings. Expand your spiritual storage to preserve this ritual.
+                            Would you like to bind more pages to your Grimoire?
                         </p>
                         <div className="flex flex-col gap-3">
                             <button onClick={onPurchase} disabled={isProcessing} className="w-full flex items-center justify-center gap-2 py-3 bg-purple-900 border border-purple-500 hover:bg-purple-800 text-purple-100 font-bold rounded uppercase tracking-wider text-xs transition-all disabled:opacity-50 shadow-[0_0_20px_rgba(88,28,135,0.4)]">
-                                {isProcessing ? "Weaving Space..." : (
-                                    <span className="flex items-center gap-2">Expand Grimoire (10 <div className="w-3 h-3 relative inline-block align-middle"><Image src="/images/faestones.png" alt="FS" layout="fill" objectFit="contain" /></div>)</span>
+                                {isProcessing ? "Weaving Pages..." : (
+                                    <span className="flex items-center gap-2">Add Pages (10 <div className="w-3 h-3 relative inline-block align-middle"><Image src="/images/faestones.png" alt="FS" layout="fill" objectFit="contain" /></div>)</span>
                                 )}
                             </button>
                             <button onClick={onClose} className="text-gray-500 hover:text-gray-300 text-xs font-serif italic">
-                                Return for now
+                                Close this Portal
                             </button>
                         </div>
                     </>
@@ -648,21 +648,21 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
              
              return (
                 <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-6">
-                    <div className="bg-[#1a1a2e] border border-red-500/50 rounded-xl p-8 max-w-sm w-full text-center shadow-[0_0_50px_rgba(220,38,38,0.2)]">
-                        <div className="w-12 h-12 mx-auto mb-4 relative opacity-80">
+                     <div className="bg-[#1a1a2e] border border-red-500/50 rounded-xl p-8 max-w-sm w-full text-center shadow-[0_0_50px_rgba(220,38,38,0.2)]">
+                        <div className="w-16 h-16 mx-auto mb-4 relative drop-shadow-[0_0_10px_rgba(220,38,38,0.5)]">
                             <Image src="/images/faestones.png" alt="Faestone" layout="fill" objectFit="contain" />
                         </div>
-                        <h3 className="text-xl font-magical text-red-100 mb-2">Ritual Interrupted</h3>
-                        <p className="text-gray-400 text-sm mb-6">{msg?.replace("credits", "Faestones").replace("Aether", "Faestones")}</p>
+                        <h3 className="text-xl font-magical text-red-100 mb-2">A Blockage Found</h3>
+                        <p className="text-gray-400 text-sm mb-6">More Faestones are required to complete Advanced Spells.</p>
                         <div className="flex flex-col gap-3">
                             <Link 
                               href={`/store?redirect=${encodeURIComponent('/spell-room/wicca-magick-spells-app')}`}
                               className="w-full bg-amber-600 hover:bg-amber-500 text-black py-3 uppercase tracking-widest font-magical text-xs rounded transition-colors flex items-center justify-center gap-2"
                             >
-                                <div className="w-4 h-4 relative"><Image src="/images/faestones.png" alt="Faestone" layout="fill" objectFit="contain" /></div> Get Faestones
+                                <div className="w-4 h-4 relative"><Image src="/images/faestones.png" alt="Faestone" layout="fill" objectFit="contain" /></div> Manifest More Faestones
                             </Link>
                             <button onClick={() => { clearGenError(); clearSaveError(); }} className="w-full border border-red-500/50 text-red-300 py-3 uppercase tracking-widest font-magical text-xs hover:bg-red-900/20 transition-colors">
-                                Dismiss
+                                Cancel the Advanced Spell
                             </button>
                         </div>
                     </div>
