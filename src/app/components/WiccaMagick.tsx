@@ -13,9 +13,11 @@ import { getSpellById } from '@/lib/services/spellService';
 import { buySpellSlots } from '@/lib/services/economyService';
 
 // Hooks
-import { useAetherEconomy } from '@/hooks/useAetherEconomy';
+import { useSpellSystem } from '@/hooks/useSpellSystem';
 
 // UI Components
+import { SlotPurchaseModal } from '@/app/components/economy/SlotPurchaseModal';
+import { BlockageErrorOverlay } from '@/app/components/economy/BlockageErrorOverlay';
 import MagickalBackLink from './MagickalBackLink';
 import RoomsButton from './RoomsButton';
 import LoadingSpinner from './LoadingSpinner';
@@ -280,55 +282,7 @@ const IncantationOverlay = ({ text, onConfirm, isVisible, ingredient }: OverlayP
     );
 };
 
-const SlotPurchaseModal = ({ isOpen, onClose, onPurchase, isProcessing, showAetherWarning, onGoToStore }: { isOpen: boolean, onClose: () => void, onPurchase: () => void, isProcessing: boolean, showAetherWarning: boolean, onGoToStore: () => void }) => {
-    if (!isOpen) return null;
-    return (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 backdrop-blur-md p-6 animate-in fade-in">
-            <div className="bg-[#1a1a2e] border border-amber-500/50 rounded-xl p-8 max-w-sm w-full text-center shadow-[0_0_50px_rgba(251,191,36,0.2)]">
-                {showAetherWarning ? (
-                    <>
-                        <div className="w-16 h-16 mx-auto mb-4 relative drop-shadow-[0_0_15px_rgba(251,191,36,0.6)] animate-pulse">
-                            <Image src="/images/faestones.png" alt="Faestone" layout="fill" objectFit="contain" />
-                        </div>
-                        <h3 className="text-xl font-serif text-amber-100 mb-2">Your pouch is empty…</h3>
-                        <p className="text-purple-200 text-sm mb-6 leading-relaxed">
-                            To expand your grimoire, more Faestones are required. Manifest more?
-                        </p>
-                        <div className="flex flex-col gap-3">
-                            <button onClick={onGoToStore} className="w-full flex items-center justify-center gap-2 py-3 bg-amber-700 hover:bg-amber-600 text-white font-bold rounded uppercase tracking-wider text-xs transition-colors shadow-[0_0_15px_rgba(180,83,9,0.4)]">
-                                <div className="w-4 h-4 relative">
-                                    <Image src="/images/faestones.png" alt="Token" layout="fill" objectFit="contain" />
-                                </div> 
-                                Manifest Faestones
-                            </button>
-                            <button onClick={onClose} className="text-gray-400 hover:text-white text-xs font-serif italic tracking-wide">
-                                Close the Portal
-                            </button>
-                        </div>
-                    </>
-                ) : (
-                    <>
-                        <BookOpen size={48} className="text-purple-400 mx-auto mb-4 drop-shadow-[0_0_10px_purple]" />
-                        <h3 className="text-xl font-serif text-purple-100 mb-2">Your Grimoire is Full…</h3>
-                        <p className="text-purple-200/80 text-sm mb-6 leading-relaxed">
-                            Would you like to bind more pages to your Grimoire?
-                        </p>
-                        <div className="flex flex-col gap-3">
-                            <button onClick={onPurchase} disabled={isProcessing} className="w-full flex items-center justify-center gap-2 py-3 bg-purple-900 border border-purple-500 hover:bg-purple-800 text-purple-100 font-bold rounded uppercase tracking-wider text-xs transition-all disabled:opacity-50 shadow-[0_0_20px_rgba(88,28,135,0.4)]">
-                                {isProcessing ? "Weaving Pages..." : (
-                                    <span className="flex items-center gap-2">Add Pages (10 <div className="w-3 h-3 relative inline-block align-middle"><Image src="/images/faestones.png" alt="FS" layout="fill" objectFit="contain" /></div>)</span>
-                                )}
-                            </button>
-                            <button onClick={onClose} className="text-gray-500 hover:text-gray-300 text-xs font-serif italic">
-                                Close this Portal
-                            </button>
-                        </div>
-                    </>
-                )}
-            </div>
-        </div>
-    );
-};
+
 
 // --- Main Component ---
 const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: boolean, onBack?: () => void }) => {
@@ -344,27 +298,14 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
     const [loadingMessage, setLoadingMessage] = useState('');
     const [error, setError] = useState<string | null>(null);
     
-    // Economy Hooks
-    const { 
-        cost: genCost, 
-        spendAether: spendGenCredits, 
-        paymentError: genError, 
-        clearPaymentError: clearGenError,
-        isProcessingPayment: isGenProcessing
-    } = useAetherEconomy(SERVICE_SLUG_GEN);
+    const spellSystem = useSpellSystem({
+        serviceSlugGen: SERVICE_SLUG_GEN,
+        serviceSlugSave: SERVICE_SLUG_SAVE,
+        baseRedirectPath: '/spell-room/wicca-magick-spells-app'
+    });
 
-    const { 
-        cost: saveCost, 
-        spendAether: spendSaveCredits, 
-        paymentError: savePaymentError, 
-        clearPaymentError: clearSaveError,
-        isProcessingPayment: isSaveProcessing,
-        showStoreLink: showSaveStoreLink
-    } = useAetherEconomy(SERVICE_SLUG_SAVE);
-
-    const [showSlotModal, setShowSlotModal] = useState(false);
-    const [slotLoading, setSlotLoading] = useState(false);
-    const [showAetherWarning, setShowAetherWarning] = useState(false);
+    // Alias for existing code compatibility if needed, but better to use directly
+    // const { genEconomy, saveEconomy, modalState, buySlots, goToStoreForSlots, handleSaveError, activeError, clearErrors } = spellSystem;
     // Persistence
     const [isHydrated, setIsHydrated] = useState(false);
 
@@ -450,20 +391,15 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
                      console.error("LS Parse error", e);
                  }
              }
-
-             // Handle "Expand Slots" Action Return
-             if (actionParam === 'expand_slots') {
-                 setTimeout(() => setShowSlotModal(true), 500); 
-             }
              
              setIsHydrated(true);
         };
         checkRecovery();
-    }, [loadId, actionParam]);
+    }, [loadId]);
 
     const handleBegin = async (mode: 'standard' | 'ai') => {
         if (!intention) { setError("Intention is required."); return; }
-        setError(null); clearGenError(); clearSaveError();
+        setError(null); spellSystem.clearErrors();
         playAudio('THUD').play();
 
         if (mode === 'standard') {
@@ -474,7 +410,7 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
             setSubStep('incantation');
         } else {
             if (!session?.user?.id) { setError("Sign in required."); return; }
-            const paid = await spendGenCredits(session.user.id);
+            const paid = await spellSystem.genEconomy.spendAether(session.user.id);
             if (!paid) return;
             
             setLoading(true);
@@ -542,7 +478,7 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
         
         // Economy Check first
         if (session?.user?.id && !isReplayMode) {
-             const paid = await spendSaveCredits(session.user.id);
+             const paid = await spellSystem.saveEconomy.spendAether(session.user.id);
              if (!paid) {
                  return; // Error already handled by hook
              }
@@ -571,42 +507,23 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
             playAudio('BELL').play();
             localStorage.removeItem(LS_AUTOSAVE_KEY);
         } catch (e: any) {
-            if (e.message === 'GRIMOIRE_FULL') {
-                setShowSlotModal(true);
-                // Don't error out, show modal
-            } else {
+            const handled = spellSystem.handleSaveError(e);
+            if (!handled) {
                 setError("Failed to scribe.");
             }
         } finally { setIsSaving(false); }
     };
 
-    const handleBuySlots = async () => {
-        if (!session?.user?.id) return;
-        setSlotLoading(true);
-        const success = await buySpellSlots(session.user.id);
-        setSlotLoading(false);
-        
-        if (success) {
-            setShowSlotModal(false);
-            setShowAetherWarning(false);
-            // Success sound or toast could go here
-        } else {
-            // Insufficient Aether: Show Warning State within modal
-            setShowAetherWarning(true);
-        }
-    };
+
+
+    // ... (rest of code)
 
     const handleGoToStore = () => {
-        // 1. Force Save Current State
-        const state = {
+        spellSystem.goToStoreForSlots({
              intention, situation, selectedDeity, spell: generatedSpell,
              ritualStep, subStep, chargedElements, chargingIndex,
-             timestamp: Date.now()
-        };
-        localStorage.setItem(LS_AUTOSAVE_KEY, JSON.stringify(state));
-        
-        // 2. Redirect with Action param
-        router.push(`/store?redirect=${encodeURIComponent('/spell-room/wicca-magick-spells-app?action=expand_slots')}`);
+             // No timestamp needed, hook adds it if missing, but we'll let hook handle strict props if typed
+        }, LS_AUTOSAVE_KEY);
     };
 
     const getCurrentIncantation = () => {
@@ -642,37 +559,20 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
 
         // Render Error/Economy Dialogs
         // Render Error/Economy Dialogs
-        if (genError || savePaymentError) {
-             const msg = genError || savePaymentError;
-             const isAetherError = msg?.toLowerCase().includes("credit") || msg?.toLowerCase().includes("aether");
-             
+        // Render Error/Economy Dialogs
+        if (spellSystem.activeError) {
              return (
-                <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-6">
-                     <div className="bg-[#1a1a2e] border border-red-500/50 rounded-xl p-8 max-w-sm w-full text-center shadow-[0_0_50px_rgba(220,38,38,0.2)]">
-                        <div className="w-16 h-16 mx-auto mb-4 relative drop-shadow-[0_0_10px_rgba(220,38,38,0.5)]">
-                            <Image src="/images/faestones.png" alt="Faestone" layout="fill" objectFit="contain" />
-                        </div>
-                        <h3 className="text-xl font-magical text-red-100 mb-2">A Blockage Found</h3>
-                        <p className="text-gray-400 text-sm mb-6">More Faestones are required to complete Advanced Spells.</p>
-                        <div className="flex flex-col gap-3">
-                            <Link 
-                              href={`/store?redirect=${encodeURIComponent('/spell-room/wicca-magick-spells-app')}`}
-                              className="w-full bg-amber-600 hover:bg-amber-500 text-black py-3 uppercase tracking-widest font-magical text-xs rounded transition-colors flex items-center justify-center gap-2"
-                            >
-                                <div className="w-4 h-4 relative"><Image src="/images/faestones.png" alt="Faestone" layout="fill" objectFit="contain" /></div> Manifest More Faestones
-                            </Link>
-                            <button onClick={() => { clearGenError(); clearSaveError(); }} className="w-full border border-red-500/50 text-red-300 py-3 uppercase tracking-widest font-magical text-xs hover:bg-red-900/20 transition-colors">
-                                Cancel the Advanced Spell
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                <BlockageErrorOverlay 
+                    error={spellSystem.activeError}
+                    onDismiss={spellSystem.clearErrors}
+                    redirectPath="/spell-room/wicca-magick-spells-app"
+                />
              );
         }
 
         switch (ritualStep) {
             case 0: return <Step0_Intro onNext={() => { playAudio('THUD').play(); setRitualStep(1); }} />;
-            case 1: return <Step1_Intention intention={intention} setIntention={setIntention} situation={situation} setSituation={setSituation} onBegin={handleBegin} isReplay={isReplayMode} cost={genCost} />;
+            case 1: return <Step1_Intention intention={intention} setIntention={setIntention} situation={situation} setSituation={setSituation} onBegin={handleBegin} isReplay={isReplayMode} cost={spellSystem.genEconomy.cost} />;
             case 2: return <Step2_CastCircle onComplete={nextStep} />;
             case 3: return <Step3_Quarters spell={generatedSpell} charged={chargedElements} onCharge={handleElementCharge} onNext={nextStep} />;
             case 4: return <Step4_Deities suggestions={generatedSpell?.suggested_deities || []} onSelect={(d) => { playAudio('THUD').play(); setSelectedDeity(d); nextStep(); }} isReplay={isReplayMode} savedDeity={selectedDeity} />;
@@ -767,11 +667,12 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
                 </AnimatePresence>
             {/* Overlays */}
             <SlotPurchaseModal 
-                isOpen={showSlotModal} 
-                onClose={() => { setShowSlotModal(false); setShowAetherWarning(false); }} 
-                onPurchase={handleBuySlots} 
-                isProcessing={slotLoading}
-                showAetherWarning={showAetherWarning}
+                isOpen={spellSystem.modalState.isOpen} 
+                onClose={spellSystem.modalState.close} 
+                onPurchase={() => spellSystem.buySlots(session?.user?.id)} 
+                isProcessing={spellSystem.modalState.isLoading}
+                showAetherWarning={spellSystem.modalState.showWarning}
+                showSuccess={spellSystem.modalState.showSuccess}
                 onGoToStore={handleGoToStore}
             />
         </div>

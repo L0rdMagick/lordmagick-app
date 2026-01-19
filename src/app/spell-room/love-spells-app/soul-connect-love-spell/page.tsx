@@ -11,10 +11,13 @@ import { createBrowserClient } from '@supabase/ssr';
 import { generateLoveSpell, saveSpell } from '@/lib/services/geminiService';
 import { getSpellById } from '@/lib/services/spellService';
 import { buySpellSlots } from '@/lib/services/economyService';
-import { useAetherEconomy } from '@/hooks/useAetherEconomy';
+
+import { useSpellSystem } from '@/hooks/useSpellSystem';
 import type { Session } from '@/lib/types';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
 import LoadingSpinner from '@/app/components/LoadingSpinner';
+import { SlotPurchaseModal } from '@/app/components/economy/SlotPurchaseModal';
+import { BlockageErrorOverlay } from '@/app/components/economy/BlockageErrorOverlay';
 
 // --- CONFIGURATION ---
 const SERVICE_SLUG_GEN = 'ai_love_spell';
@@ -532,29 +535,7 @@ const FinalPopup = ({ onExit, onSave, isSaving, isSaved, saveCost }: { onExit: (
   );
 };
 
-// --- COMPONENT: SLOT PURCHASE MODAL ---
-const SlotPurchaseModal = ({ isOpen, onClose, onPurchase, isProcessing }: { isOpen: boolean, onClose: () => void, onPurchase: () => void, isProcessing: boolean }) => {
-    if (!isOpen) return null;
-    return (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 backdrop-blur-md p-6 animate-in fade-in">
-            <div className="bg-[#1a1a2e] border border-amber-500/50 rounded-xl p-8 max-w-sm w-full text-center shadow-[0_0_50px_rgba(251,191,36,0.2)]">
-                <div className="w-16 h-16 mx-auto mb-4 relative drop-shadow-[0_0_10px_rgba(251,191,36,0.5)]">
-                    <Image src="/images/faestones.png" alt="Faestones" layout="fill" objectFit="contain" />
-                </div>
-                <h3 className="text-xl font-serif text-amber-100 mb-2">Grimoire Full</h3>
-                <p className="text-gray-400 text-sm mb-6">
-                    Your book of shadows has reached its capacity. Expand your grimoire by 5 slots to continue saving your workings.
-                </p>
-                <div className="flex flex-col gap-3">
-                    <button onClick={onPurchase} disabled={isProcessing} className="w-full flex items-center justify-center gap-2 py-3 bg-amber-700 hover:bg-amber-600 text-white font-bold rounded uppercase tracking-wider text-xs transition-colors disabled:opacity-50">
-                        {isProcessing ? "Expanding..." : "Expand Storage (-10 Faestones)"}
-                    </button>
-                    <button onClick={onClose} className="text-gray-500 hover:text-white text-xs underline">Cancel</button>
-                </div>
-            </div>
-        </div>
-    );
-};
+
 
 // --- COMPONENT: MAIN PAGE CONTENT ---
 
@@ -585,26 +566,20 @@ function SoulConnectContent() {
   const supabase = createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
 
   // Economy
-  const { 
-    cost: genCost, 
-    spendAether: spendGenCredits, 
-    paymentError: genPaymentError, 
-    clearPaymentError: clearGenError,
-    showStoreLink: showGenStoreLink,
-    isProcessingPayment: isGenProcessing
-  } = useAetherEconomy(SERVICE_SLUG_GEN);
+  // Economy & Spell System
+  const spellSystem = useSpellSystem({
+      serviceSlugGen: SERVICE_SLUG_GEN,
+      serviceSlugSave: SERVICE_SLUG_SAVE,
+      baseRedirectPath: '/spell-room/love-spells-app/soul-connect-love-spell'
+  });
 
-  const {
-      cost: saveCost,
-      spendAether: spendSaveCredits,
-      paymentError: savePaymentError,
-      clearPaymentError: clearSaveError,
-      showStoreLink: showSaveStoreLink,
-      isProcessingPayment: isSaveProcessing
-  } = useAetherEconomy(SERVICE_SLUG_SAVE);
+  // Map Economy Variables for Component Compatibility
+  const genCost = spellSystem.genEconomy.cost;
+  const spendGenCredits = spellSystem.genEconomy.spendAether;
+  const isGenProcessing = spellSystem.genEconomy.isProcessingPayment;
 
-  const [showSlotModal, setShowSlotModal] = useState(false);
-  const [slotLoading, setSlotLoading] = useState(false);
+  const saveCost = spellSystem.saveEconomy.cost;
+  const spendSaveCredits = spellSystem.saveEconomy.spendAether;
   const [isHydrated, setIsHydrated] = useState(false); // NEW: Prevent save on mount
   
   const searchParams = useSearchParams();
@@ -653,7 +628,7 @@ function SoulConnectContent() {
       
       // Auto-open slot modal if returning from store for that purpose
       if (actionParam === 'expand_slots') {
-          setTimeout(() => setShowSlotModal(true), 500); // Small delay for UI settlement
+          setTimeout(() => spellSystem.modalState.setIsOpen(true), 500); // Small delay for UI settlement
       }
       
       setIsHydrated(true); // Allow saving from now on
@@ -785,33 +760,13 @@ function SoulConnectContent() {
     nextStep();
   };
 
-  const handleBuySlots = async () => {
-        const { data: { user } } = await createBrowserClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-        ).auth.getUser();
-
-        if (!user) return;
-        setSlotLoading(true);
-        const success = await buySpellSlots(user.id);
-        setSlotLoading(false);
-        if (success) {
-            setShowSlotModal(false);
-            setAetherBalance(prev => (prev !== null ? prev - 10 : null)); // Visual update
-            // Ideally we re-attempt save, but user might want to click manually
-            setAppError(null); 
-            // saveToGrimoire(); // Let user click save again to be safe/clear
-        } else {
-            // FAILED (Likely Funds)
-            setShowSlotModal(false);
-            // Construct redirect URL
-            const currentPath = window.location.pathname;
-            const redirectUrl = `${currentPath}?action=expand_slots`; // Return with action param
-            
-            // Set error that guides to store
-            setAppError("Insufficient Aether to expand storage.");
-            // We'll let the error UI handle the link, but we need to ensure the link includes params
-        }
+    const handleGoToStore = () => {
+        spellSystem.goToStoreForSlots({
+            // Save state if needed (Love spell has simpler state, depends on requirement)
+            // For now passing empty logic as Love Spell persistence is handled differently in clearStorageAndExit
+            // But if we want to return, we should probably save current state
+            names, intention, activeIngredients, step, generatedChant
+        }, 'soul_connect_local_save');
     };
 
   const saveToGrimoire = async () => {
@@ -830,29 +785,28 @@ function SoulConnectContent() {
 
      setIsSaving(true);
      setAppError(null);
-     clearSaveError();
+     spellSystem.clearErrors();
 
      try {
-         // 1. Deduct Credits using Save Cost
-         const paid = await spendSaveCredits(user.id);
+         // 1. Deduct Credits
+         const paid = await spellSystem.saveEconomy.spendAether(user.id);
          if (!paid) {
              setIsSaving(false);
              return;
          }
 
          // Update local balance display
-         setAetherBalance(prev => (prev !== null ? prev - saveCost : null));
+         setAetherBalance(prev => (prev !== null ? prev - spellSystem.saveEconomy.cost : null));
 
          // 2. Save
          const finalIncantation = generatedChant.join('\n');
          
-         // Store full data for hydration including chants
          const ritualData = {
              ingredients: activeIngredients,
              incantation: generatedChant, 
              names,
              isForSelf,
-             stepChants, // Store extra chants for replay
+             stepChants, 
              timestamp: new Date().toISOString()
          };
 
@@ -861,19 +815,17 @@ function SoulConnectContent() {
              intention: intention,
              incantation: finalIncantation,
              element: "love",
-             tradition: 'LOVE', // Explicitly set to LOVE for Grimoire to identify replay URL
+             tradition: 'LOVE',
              ritual_data: ritualData
          });
 
          setIsSaved(true);
          audio.playClick('magick');
-         // Clear Storage on Success
          localStorage.removeItem(LS_KEY);
      } catch (e: any) {
-         console.error("Failed to save", e);
-         if (e.message === 'GRIMOIRE_FULL') {
-             setShowSlotModal(true);
-         } else {
+         const handled = spellSystem.handleSaveError(e);
+         if (!handled) {
+             console.error("Failed to save", e);
              setAppError("Failed to save to Grimoire.");
          }
      } finally {
@@ -887,34 +839,15 @@ function SoulConnectContent() {
   };
 
   // Error Rendering
-  if (genPaymentError || savePaymentError || appError) {
-      const errorMsg = genPaymentError || savePaymentError || appError;
-      const reset = () => { clearGenError(); clearSaveError(); setAppError(null); };
-      const showLink = showGenStoreLink || showSaveStoreLink;
+  const activeError = spellSystem.activeError || appError;
 
+  if (activeError) {
       return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-6">
-                <div className="bg-[#1a1a2e] border border-red-500/50 rounded-xl p-8 max-w-sm w-full text-center shadow-[0_0_50px_rgba(220,38,38,0.2)]">
-                    <div className="w-16 h-16 mx-auto mb-4 relative drop-shadow-[0_0_10px_rgba(220,38,38,0.5)]">
-                        <Image src="/images/faestones.png" alt="Faestones" layout="fill" objectFit="contain" />
-                    </div>
-                    <h3 className="text-xl font-magical text-red-100 mb-2">A Blockage Found</h3>
-                    <p className="text-gray-400 text-sm mb-6">{errorMsg}</p>
-                    <div className="flex flex-col gap-3">
-                        {showLink && (
-                            <Link 
-                              href={`/store?redirect=${encodeURIComponent('/spell-room/love-spells-app/soul-connect-love-spell' + (showSlotModal ? '?action=expand_slots' : ''))}`}
-                              className="w-full bg-amber-600 hover:bg-amber-500 text-black py-3 uppercase tracking-widest font-magical text-xs rounded transition-colors flex items-center justify-center gap-2"
-                            >
-                                <Coins size={14} /> Manifest More Faestones
-                            </Link>
-                        )}
-                        <button onClick={reset} className="w-full border border-red-500/50 text-red-300 py-3 uppercase tracking-widest font-magical text-xs hover:bg-red-900/20 transition-colors">
-                            Cancel the Ritual
-                        </button>
-                    </div>
-                </div>
-            </div>
+        <BlockageErrorOverlay 
+            error={activeError}
+            onDismiss={() => { spellSystem.clearErrors(); setAppError(null); }}
+            redirectPath="/spell-room/love-spells-app/soul-connect-love-spell"
+        />
       );
   }
 
@@ -949,12 +882,7 @@ function SoulConnectContent() {
       <GlobalStyles />
       <StarField />
       
-      <SlotPurchaseModal 
-            isOpen={showSlotModal} 
-            onClose={() => setShowSlotModal(false)}
-            onPurchase={handleBuySlots}
-            isProcessing={slotLoading}
-      />
+
 
       {/* Navbar */}
       <div className="flex justify-between items-center p-4 z-50 shrink-0 h-16">
@@ -1056,6 +984,39 @@ function SoulConnectContent() {
       </div>
 
       {showSuccess && <MagickPopup message={showSuccess.msg} buttonText={showSuccess.btn} onContinue={nextStep} />}
+
+      {/* Render Economy Overlays */}
+      {spellSystem.activeError && (
+          <BlockageErrorOverlay 
+              error={spellSystem.activeError}
+              onDismiss={spellSystem.clearErrors}
+              redirectPath="/spell-room/love-spells-app/soul-connect-love-spell"
+          />
+      )}
+      
+      <SlotPurchaseModal 
+          isOpen={spellSystem.modalState.isOpen} 
+          onClose={spellSystem.modalState.close} 
+          onPurchase={async () => {
+              const { data: { user } } = await supabase.auth.getUser();
+              if (user) spellSystem.buySlots(user.id);
+          }} 
+                                                        // Currently app structure fetches user locally. 
+                                                        // spellSystem normally needs userId for buySlots.
+                                                        // We should pass userId if we have it in state, but we don't hold it in top state.
+                                                        // `useSpellSystem`'s buySlots handles `supabase.auth.getUser()` if userId is missing? 
+                                                        // Let's check `useSpellSystem`. Checked: It calls `buySpellSlots(userId)`. 
+                                                        // If userId is undefined, `buySpellSlots` service might fail or handle it.
+                                                        // The service expects a userId. 
+                                                        // I should fetch user before calling, or rely on the hook to get it?
+                                                        // The hook `buySlots` signature is `(userId?: string)`.
+                                                        // I will wrap it. But for now, let's just pass null and let the hook fail? No.
+                                                        // I'll make the onClick async and fetch user.
+          isProcessing={spellSystem.modalState.isLoading}
+          showAetherWarning={spellSystem.modalState.showWarning}
+          showSuccess={spellSystem.modalState.showSuccess}
+          onGoToStore={handleGoToStore}
+      />
     </div>
   );
 }
