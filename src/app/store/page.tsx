@@ -197,23 +197,24 @@ function StoreContent() {
             </header>
 
             {/* Content */}
-            <div className="relative z-10 flex-1 flex flex-col items-center justify-center p-4 overflow-y-auto">
-                <div className="w-full max-w-6xl mx-auto flex flex-col items-center justify-center min-h-0">
-                    
-                    {/* Title Card */}
-                    <div className="text-center mb-8 max-w-2xl bg-black/60 backdrop-blur-md border border-white/10 p-6 rounded-xl rounded-tl-3xl rounded-br-3xl shadow-2xl">
-                        <p className="text-xs font-mono text-purple-300 uppercase tracking-[0.2em] mb-2">
-                            Transmute Wealth into Will
-                        </p>
-                        <h2 className="text-3xl md:text-4xl font-serif text-white mb-2 text-shadow-lg">
-                            Acquire Faestones
-                        </h2>
-                        <p className="text-gray-400 font-serif text-sm md:text-base leading-relaxed">
-                            Faestones power your spells, readings, and bindings. Choose your vessel wisely.
-                        </p>
-                    </div>
+            <div className="relative z-10 flex-1 w-full overflow-y-auto overflow-x-hidden">
+                <div className="min-h-full flex flex-col items-center justify-start md:justify-center p-4">
+                    <div className="w-full max-w-6xl mx-auto flex flex-col items-center gap-6 md:gap-8">
+                        
+                        {/* Title Card */}
+                        <div className="text-center w-full max-w-lg bg-black/60 backdrop-blur-md border border-white/10 p-4 md:p-6 rounded-xl rounded-tl-3xl rounded-br-3xl shadow-2xl shrink-0">
+                            <p className="text-[10px] md:text-xs font-mono text-purple-300 uppercase tracking-[0.2em] mb-1 md:mb-2">
+                                Transmute Wealth into Will
+                            </p>
+                            <h2 className="text-2xl md:text-4xl font-serif text-white mb-2 text-shadow-lg">
+                                Acquire Faestones
+                            </h2>
+                            <p className="text-gray-400 font-serif text-xs md:text-sm leading-relaxed max-w-sm mx-auto">
+                                Faestones power your spells, readings, and bindings. Choose your vessel wisely.
+                            </p>
+                        </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 w-full max-w-4xl">
                         {STORE_ITEMS.map((pkg) => (
                             <div 
                                 key={pkg.id}
@@ -270,6 +271,7 @@ function StoreContent() {
                     </div>
                 </div>
             </div>
+        </div>
 
             {/* Success Modal */}
             {showSuccess && (
