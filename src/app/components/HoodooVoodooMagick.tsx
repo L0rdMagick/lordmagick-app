@@ -663,14 +663,27 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
     const actionParam = searchParams.get('action');
 
     // Use initial state to block rendering if we expect to hydrate
-    const [isHydrating, setIsHydrating] = useState(false);
+    // Check localStorage synchronously to prevent flash on browser back
+    const [isHydrating, setIsHydrating] = useState(() => {
+        if (typeof window !== 'undefined') {
+             const saved = localStorage.getItem('hoodoo_voodoo_autosave');
+             if (saved) {
+                 try {
+                     const parsed = JSON.parse(saved);
+                     // Check freshness (1 hour)
+                     if (Date.now() - parsed.timestamp < 1000 * 60 * 60) return true;
+                 } catch {}
+             }
+        }
+        return false;
+    });
     
-    // Immediate check to prevent flicker on first render
+    // Fallback Effect for ensuring hydration triggers
     useEffect(() => {
-        if (actionParam === 'expand_slots') {
+        if (actionParam === 'expand_slots' && !isHydrating) {
              setIsHydrating(true);
         }
-    }, [actionParam]);
+    }, [actionParam, isHydrating]);
 
     const [step, setStep] = useState(0);
     const [path, setPath] = useState<RitualPath>(null);
@@ -749,50 +762,51 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
 
     // --- EFFECT: RESTORE STATE AFTER STORE RETURN ---
     useEffect(() => {
-        if (actionParam === 'expand_slots') {
-             console.log("HoodooVoodooMagick: Attempting hydration...");
-             const savedState = localStorage.getItem('hoodoo_voodoo_autosave');
+        // ALWAYS check for saved state on mount (or if Action present)
+        // This handles Browser Back, Manual Url Entry, and Store Redirects alike
+        const savedState = localStorage.getItem('hoodoo_voodoo_autosave');
              
-             if (savedState) {
-                 try {
-                     const parsed = JSON.parse(savedState);
+        if (savedState) {
+            try {
+                const parsed = JSON.parse(savedState);
+                
+                // Verify if the save is recent (extended to 60 mins) to avoid stale state
+                if (Date.now() - parsed.timestamp < 1000 * 60 * 60) {
+                     console.log("HoodooVoodooMagick: Found fresh state. Restoring logic triggered.");
                      console.log("HoodooVoodooMagick: Found saved state:", parsed);
 
-                     // Verify if the save is recent (extended to 60 mins) to avoid stale state
-                     if (Date.now() - parsed.timestamp < 1000 * 60 * 60) {
-                         console.log("HoodooVoodooMagick: State is fresh. Restoring...");
-                         
-                         if (parsed.path) {
-                             setPath(parsed.path);
-                             console.log("Restored Path:", parsed.path);
-                         }
-                         if (parsed.step !== undefined) {
-                             setStep(parsed.step);
-                             console.log("Restored Step:", parsed.step);
-                         }
-                         if (parsed.petition !== undefined) setPetition(parsed.petition);
-                         if (parsed.selectedPsalm) setSelectedPsalm(parsed.selectedPsalm);
-                         if (parsed.selectedLwa) setSelectedLwa(parsed.selectedLwa);
-                         if (parsed.hoodooMateriaSelections) setHoodooMateriaSelections(parsed.hoodooMateriaSelections);
-                         if (parsed.voodooOfferingSelections) setVoodooOfferingSelections(parsed.voodooOfferingSelections);
-                         
-                         // If we are returning from store, likely we were in AI mode
-                         setMode('ai'); 
-                         
-                         // Note: We do NOT remove the item immediately to prevent React Strict Mode 
-                         // from deleting it on the first (discarded) render effect.
-                     } else {
-                         console.warn("HoodooVoodooMagick: Saved state is stale.", parsed.timestamp);
+                     if (parsed.path) {
+                         setPath(parsed.path);
+                         console.log("Restored Path:", parsed.path);
                      }
-                 } catch (e) {
-                     console.error("Failed to parse saved state", e);
-                 }
-             } else {
-                 console.warn("HoodooVoodooMagick: No saved state found in localStorage.");
-             }
-             // Finish hydration
-             setIsHydrating(false);
+                     if (parsed.step !== undefined) {
+                         setStep(parsed.step);
+                         console.log("Restored Step:", parsed.step);
+                     }
+                     if (parsed.petition !== undefined) setPetition(parsed.petition);
+                     if (parsed.selectedPsalm) setSelectedPsalm(parsed.selectedPsalm);
+                     if (parsed.selectedLwa) setSelectedLwa(parsed.selectedLwa);
+                     if (parsed.hoodooMateriaSelections) setHoodooMateriaSelections(parsed.hoodooMateriaSelections);
+                     if (parsed.voodooOfferingSelections) setVoodooOfferingSelections(parsed.voodooOfferingSelections);
+                     
+                     // If we are returning from store, likely we were in AI mode
+                     setMode('ai'); 
+                     
+                     // Note: We do NOT remove the item immediately.
+                     // It will clear naturally on next overwrite or be ignored by timestamp.
+                } else {
+                     console.warn("HoodooVoodooMagick: Saved state is stale.", parsed.timestamp);
+                }
+            } catch (e) {
+                console.error("Failed to parse saved state", e);
+            }
+        } else {
+            // console.warn("HoodooVoodooMagick: No saved state found in localStorage.");
         }
+        
+        // Finish hydration
+        setIsHydrating(false);
+
     }, [actionParam]);
 
     const handleOpenPsalmReader = (psalm: string) => {

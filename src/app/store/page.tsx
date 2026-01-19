@@ -186,7 +186,10 @@ function StoreContent() {
             {/* Header */}
             <header className="relative z-10 p-4 shrink-0 flex justify-between items-center bg-transparent">
                 <div className="flex items-center gap-4">
-                    <MagickalBackLink href="/hall" text="Grand Hall" />
+                    <MagickalBackLink 
+                        href={returnPath || "/hall"} 
+                        text={returnPath ? "Return to Ritual" : "Grand Hall"} 
+                    />
                 </div>
                 <div className="flex items-center gap-4">
                     <h1 className="text-xl font-serif text-amber-500 tracking-widest uppercase hidden md:block">
