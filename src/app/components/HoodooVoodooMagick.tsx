@@ -660,6 +660,17 @@ const PsalmReader: React.FC<{isOpen: boolean; onClose: () => void; psalmName: st
 const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }> = ({ session }) => {
     const searchParams = useSearchParams();
     const loadId = searchParams.get('loadId');
+    const actionParam = searchParams.get('action');
+
+    // Use initial state to block rendering if we expect to hydrate
+    const [isHydrating, setIsHydrating] = useState(false);
+    
+    // Immediate check to prevent flicker on first render
+    useEffect(() => {
+        if (actionParam === 'expand_slots') {
+             setIsHydrating(true);
+        }
+    }, [actionParam]);
 
     const [step, setStep] = useState(0);
     const [path, setPath] = useState<RitualPath>(null);
@@ -738,16 +749,27 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
 
     // --- EFFECT: RESTORE STATE AFTER STORE RETURN ---
     useEffect(() => {
-        const action = searchParams.get('action');
-        if (action === 'expand_slots') {
+        if (actionParam === 'expand_slots') {
+             console.log("HoodooVoodooMagick: Attempting hydration...");
              const savedState = localStorage.getItem('hoodoo_voodoo_autosave');
+             
              if (savedState) {
                  try {
                      const parsed = JSON.parse(savedState);
+                     console.log("HoodooVoodooMagick: Found saved state:", parsed);
+
                      // Verify if the save is recent (extended to 60 mins) to avoid stale state
                      if (Date.now() - parsed.timestamp < 1000 * 60 * 60) {
-                         if (parsed.path) setPath(parsed.path);
-                         if (parsed.step !== undefined) setStep(parsed.step);
+                         console.log("HoodooVoodooMagick: State is fresh. Restoring...");
+                         
+                         if (parsed.path) {
+                             setPath(parsed.path);
+                             console.log("Restored Path:", parsed.path);
+                         }
+                         if (parsed.step !== undefined) {
+                             setStep(parsed.step);
+                             console.log("Restored Step:", parsed.step);
+                         }
                          if (parsed.petition !== undefined) setPetition(parsed.petition);
                          if (parsed.selectedPsalm) setSelectedPsalm(parsed.selectedPsalm);
                          if (parsed.selectedLwa) setSelectedLwa(parsed.selectedLwa);
@@ -759,14 +781,19 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
                          
                          // Note: We do NOT remove the item immediately to prevent React Strict Mode 
                          // from deleting it on the first (discarded) render effect.
-                         // It will clear naturally on next overwrite or be ignored by timestamp eventually.
+                     } else {
+                         console.warn("HoodooVoodooMagick: Saved state is stale.", parsed.timestamp);
                      }
                  } catch (e) {
                      console.error("Failed to parse saved state", e);
                  }
+             } else {
+                 console.warn("HoodooVoodooMagick: No saved state found in localStorage.");
              }
+             // Finish hydration
+             setIsHydrating(false);
         }
-    }, [searchParams]);
+    }, [actionParam]);
 
     const handleOpenPsalmReader = (psalm: string) => {
         setSelectedPsalm(psalm);
@@ -991,10 +1018,13 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
                     error={spellSystem.activeError} 
                     onDismiss={() => spellSystem.clearErrors()} 
                     redirectPath={'/spell-room/hoodoo-rootwork-spells-app'}
-                    onGoToStore={() => spellSystem.goToStoreForSlots(
+                    onGoToStore={() => {
+                        console.log("HoodooVoodooMagick (RenderError): Saving state...", { step, path, petition });
+                        spellSystem.goToStoreForSlots(
                         { step, path, petition, selectedPsalm, selectedLwa, hoodooMateriaSelections, voodooOfferingSelections }, 
                         'hoodoo_voodoo_autosave'
-                    )}
+                        );
+                    }}
                 />
             );
         }
@@ -1016,6 +1046,7 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
     };
 
     const renderContent = () => {
+        if (isHydrating) return <LoadingSpinner title="Restoring your ritual..." />;
         if (loading || spellSystem.genEconomy.isProcessingPayment) return <div className="flex items-center justify-center h-full"><LoadingSpinner title={spellSystem.genEconomy.isProcessingPayment ? "Offering Faestones..." : loadingMessage || "Consulting the Spirits..."} /></div>;
         if (appError) return renderError();
 
@@ -1071,10 +1102,13 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
                 isProcessing={spellSystem.modalState.isLoading}
                 showAetherWarning={spellSystem.modalState.showWarning}
                 showSuccess={spellSystem.modalState.showSuccess}
-                onGoToStore={() => spellSystem.goToStoreForSlots(
+                onGoToStore={() => {
+                   console.log("HoodooVoodooMagick (Modal): Saving state...", { step, path, petition });
+                   spellSystem.goToStoreForSlots(
                     { step, path, petition, selectedPsalm, selectedLwa, hoodooMateriaSelections, voodooOfferingSelections }, 
                     'hoodoo_voodoo_autosave'
-                )}
+                   );
+                }}
             />
 
             {/* Global Errors (In case rendered outside content flow) */}
@@ -1083,10 +1117,13 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
                     error={spellSystem.activeError} 
                     onDismiss={() => spellSystem.clearErrors()}
                     redirectPath={'/spell-room/hoodoo-rootwork-spells-app'}
-                    onGoToStore={() => spellSystem.goToStoreForSlots(
-                        { step, path, petition, selectedPsalm, selectedLwa, hoodooMateriaSelections, voodooOfferingSelections }, 
-                        'hoodoo_voodoo_autosave'
-                    )}
+                    onGoToStore={() => {
+                        console.log("HoodooVoodooMagick (Overlay): Saving state...", { step, path, petition });
+                        spellSystem.goToStoreForSlots(
+                         { step, path, petition, selectedPsalm, selectedLwa, hoodooMateriaSelections, voodooOfferingSelections }, 
+                         'hoodoo_voodoo_autosave'
+                        );
+                    }}
                 />
             )}
 
