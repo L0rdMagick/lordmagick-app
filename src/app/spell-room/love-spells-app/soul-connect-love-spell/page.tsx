@@ -510,7 +510,7 @@ const FinalPopup = ({ onExit, onSave, isSaving, isSaved, saveCost }: { onExit: (
                     {isSaving ? (
                         <>Saving...</>
                     ) : isSaved ? (
-                        <><Check size={14} /> Saved</>
+                        <><Check size={14} /> Recorded in Grimoire</>
                     ) : (
                         <><Save size={14} /> Save to Grimoire ({saveCost} Faestones)</>
                     )}
