@@ -5,6 +5,7 @@
 import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { Sparkles, Droplets, RotateCw, Hand, Check, Moon, Volume2, VolumeX, Users, User, Flame, LogOut, Repeat, Star, ArrowDown, Scroll, Wand2, Book, Save, Skull, AlertTriangle, BookOpen, RotateCcw, Coins } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 import { generateLoveSpell, saveSpell } from '@/lib/services/geminiService';
