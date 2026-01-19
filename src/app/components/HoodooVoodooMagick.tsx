@@ -958,7 +958,7 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
                 <BlockageErrorOverlay 
                     error={spellSystem.activeError} 
                     onDismiss={() => spellSystem.clearErrors()} 
-                    redirectPath={'/spell-room/witchcraft-app/hoodoo-voodoo-magick'}
+                    redirectPath={'/spell-room/hoodoo-rootwork-spells-app'}
                 />
             );
         }
@@ -1046,7 +1046,7 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
                  <BlockageErrorOverlay 
                     error={spellSystem.activeError} 
                     onDismiss={() => spellSystem.clearErrors()}
-                    redirectPath={'/spell-room/witchcraft-app/hoodoo-voodoo-magick'}
+                    redirectPath={'/spell-room/hoodoo-rootwork-spells-app'}
                 />
             )}
 
