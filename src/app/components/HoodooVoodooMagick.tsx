@@ -9,12 +9,13 @@ import { useSearchParams } from 'next/navigation';
 import type { Session } from '@/lib/types';
 
 // Services
-import { generateHoodooVoodooWork, saveSpell, deductUserCredits } from '@/lib/services/geminiService';
-import { getServiceCost, buySpellSlots } from '@/lib/services/economyService';
+import { generateHoodooVoodooWork, saveSpell } from '@/lib/services/geminiService';
 import { getSpellById } from '@/lib/services/spellService';
 
 // Hooks
-import { useAetherEconomy } from '@/hooks/useAetherEconomy';
+import { useSpellSystem } from '@/hooks/useSpellSystem';
+import { SlotPurchaseModal } from '@/app/components/economy/SlotPurchaseModal';
+import { BlockageErrorOverlay } from '@/app/components/economy/BlockageErrorOverlay';
 
 // Components & Assets
 import MagickalBackLink from './MagickalBackLink';
@@ -650,26 +651,7 @@ const PsalmReader: React.FC<{isOpen: boolean; onClose: () => void; psalmName: st
     );
 };
 
-const SlotPurchaseModal = ({ isOpen, onClose, onPurchase, isProcessing }: { isOpen: boolean, onClose: () => void, onPurchase: () => void, isProcessing: boolean }) => {
-    if (!isOpen) return null;
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-6 animate-in fade-in">
-            <div className="bg-[#1a1a2e] border border-amber-500/50 rounded-xl p-8 max-w-sm w-full text-center shadow-[0_0_50px_rgba(251,191,36,0.2)]">
-                <BookOpen size={48} className="text-amber-400 mx-auto mb-4" />
-                <h3 className="text-xl font-serif text-amber-100 mb-2">Grimoire Full</h3>
-                <p className="text-gray-400 text-sm mb-6">
-                    Your book of shadows has reached its capacity. Expand your grimoire by 5 slots to continue saving your workings.
-                </p>
-                <div className="flex flex-col gap-3">
-                    <button onClick={onPurchase} disabled={isProcessing} className="w-full flex items-center justify-center gap-2 py-3 bg-amber-700 hover:bg-amber-600 text-white font-bold rounded uppercase tracking-wider text-xs transition-colors disabled:opacity-50">
-                        {isProcessing ? "Expanding..." : "Expand Storage (-10 Aether)"}
-                    </button>
-                    <button onClick={onClose} className="text-gray-500 hover:text-white text-xs underline">Cancel</button>
-                </div>
-            </div>
-        </div>
-    );
-};
+// Local SlotPurchaseModal removed in favor of imported component
 
 // ==========================================
 // MAIN COMPONENT
@@ -687,18 +669,15 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
     const [loading, setLoading] = useState(false);
     const [loadingMessage, setLoadingMessage] = useState('');
     const [appError, setAppError] = useState<string | null>(null);
-    const [showSlotModal, setShowSlotModal] = useState(false);
-    const [slotLoading, setSlotLoading] = useState(false);
 
-    // Economy Hook
-    const { 
-        cost, 
-        spendAether, 
-        paymentError, 
-        clearPaymentError, 
-        showStoreLink, 
-        isProcessingPayment 
-    } = useAetherEconomy(SERVICE_SLUG);
+    // Economy & Spell System
+    const spellSystem = useSpellSystem({
+        serviceSlugGen: SERVICE_SLUG,
+        serviceSlugSave: 'save_spell', // Assuming standard save slug
+        baseRedirectPath: '/spell-room/witchcraft-app/hoodoo-voodoo-magick'
+    });
+
+    const cost = spellSystem.genEconomy.cost;
     
     // State for ritual data
     const [petition, setPetition] = useState('');
@@ -769,7 +748,7 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
         setVoodooOfferingSelections([]); setFinalAffirmation(''); setChargingIndex(0);
         setIsSaved(false);
         setAppError(null);
-        clearPaymentError();
+        spellSystem.clearErrors();
         setIsReplayMode(false);
 
         // NEW: Clear URL params to exit Replay Mode cleanly
@@ -813,7 +792,7 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
                 setAppError("You must be logged in to access the Rootworker.");
                 return;
             }
-            const paid = await spendAether(session.user.id);
+            const paid = await spellSystem.genEconomy.spendAether(session.user.id);
             if (!paid) return; 
             await handleHoodooPsalmSearch();
         }
@@ -871,7 +850,7 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
 
         setMode(selectedMode);
         setAppError(null);
-        clearPaymentError();
+        spellSystem.clearErrors();
 
         if (selectedMode === 'standard') {
             setSelectedLwa('Papa Legba');
@@ -882,7 +861,7 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
                 setAppError("You must be logged in to consult the Lwa.");
                 return;
             }
-            const paid = await spendAether(session.user.id);
+            const paid = await spellSystem.genEconomy.spendAether(session.user.id);
             if (!paid) return;
             advanceStep();
         }
@@ -953,69 +932,57 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
                 element: path === 'hoodoo' ? 'Earth' : 'Spirit',
                 ritual_data: ritualData,
                 tradition: path === 'hoodoo' ? 'HOODOO' : 'VOODOO'
-            });
+            }, true); // Bypass Limit for Paid Saves
             
             setIsSaved(true);
             playSound('/audio/sfx-chaos-activate.mp3', 0.5).play();
         } catch (e: any) {
-            console.error(e);
-            if (e.message === 'GRIMOIRE_FULL') {
-                setShowSlotModal(true);
-            } else {
-                setAppError("Failed to save to Grimoire.");
-            }
+             console.error(e);
+             setAppError("Failed to save to Grimoire.");
         } finally {
             setIsSaving(false);
         }
     };
 
     const handleBuySlots = async () => {
-        if (!session?.user?.id) return;
-        setSlotLoading(true);
-        const success = await buySpellSlots(session.user.id);
-        setSlotLoading(false);
-        if (success) {
-            setShowSlotModal(false);
-            handleSaveToGrimoire();
-        } else {
-            setAppError("Insufficient Aether to expand Grimoire.");
-            setShowSlotModal(false);
-        }
+         // This is largely legacy now as saves bypass limits, 
+         // but kept for compatibility with spellSystem if needed manually.
+         await spellSystem.saveEconomy.buySlots(session.user.id);
     };
 
     const renderError = () => {
-        const msg = paymentError || appError;
-        const reset = paymentError ? clearPaymentError : () => setAppError(null);
+        if (!appError && ! spellSystem.activeError) return null;
+        
+        // Use standard blockage overlay for payment issues
+        if (spellSystem.activeError) {
+             return (
+                <BlockageErrorOverlay 
+                    error={spellSystem.activeError} 
+                    onDismiss={() => spellSystem.clearErrors()} 
+                    redirectPath={spellSystem.baseRedirectPath}
+                />
+            );
+        }
+
+        const reset = () => setAppError(null);
 
         return (
-            <div className="flex items-center justify-center h-full animate-in fade-in zoom-in">
+            <div className="flex items-center justify-center h-full animate-in fade-in zoom-in absolute inset-0 z-50 bg-black/80 backdrop-blur-sm">
                 <div className="text-center text-red-400 p-6 bg-red-900/50 rounded-lg max-w-sm border border-red-500/50 shadow-xl">
                     <div className="flex justify-center mb-2"><AlertTriangle size={32} /></div>
                     <p className="font-bold text-lg mb-2 uppercase tracking-wider">Ritual Interrupted</p>
-                    <p className="mb-6 text-sm text-red-200">{msg}</p>
-                    
-                    {showStoreLink ? (
-                        <div className="flex flex-col gap-3">
-                            <Link href="/store" className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-amber-600 hover:bg-amber-500 text-black font-bold rounded transition-colors uppercase tracking-wider text-xs">
-                                <Coins size={16} /> Purchase Aether
-                            </Link>
-                            <button onClick={reset} className="text-xs text-red-300 hover:text-white underline">
-                                Dismiss
-                            </button>
-                        </div>
-                    ) : (
-                        <button onClick={reset} className="px-6 py-2 border border-red-500 rounded hover:bg-red-900/50 transition-colors uppercase tracking-widest text-xs">
-                            Try Again
-                        </button>
-                    )}
+                    <p className="mb-6 text-sm text-red-200">{appError}</p>
+                    <button onClick={reset} className="px-6 py-2 border border-red-500 rounded hover:bg-red-900/50 transition-colors uppercase tracking-widest text-xs">
+                        Dismiss
+                    </button>
                 </div>
             </div>
         );
     };
 
     const renderContent = () => {
-        if (loading || isProcessingPayment) return <div className="flex items-center justify-center h-full"><LoadingSpinner title={isProcessingPayment ? "Offering Aether..." : loadingMessage || "Consulting the Spirits..."} /></div>;
-        if (paymentError || appError) return renderError();
+        if (loading || spellSystem.genEconomy.isProcessing) return <div className="flex items-center justify-center h-full"><LoadingSpinner title={spellSystem.genEconomy.isProcessing ? "Offering Faestones..." : loadingMessage || "Consulting the Spirits..."} /></div>;
+        if (appError) return renderError();
 
         if (step === 0) return <Step0_Crossroads onSelectPath={selectPath} />;
 
@@ -1063,11 +1030,22 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
             />
             
             <SlotPurchaseModal 
-                isOpen={showSlotModal} 
-                onClose={() => setShowSlotModal(false)}
+                isOpen={spellSystem.modalState.showSlotModal} 
+                onClose={() => spellSystem.setModalState(prev => ({ ...prev, showSlotModal: false }))}
                 onPurchase={handleBuySlots}
-                isProcessing={slotLoading}
+                isProcessing={spellSystem.saveEconomy.isProcessing}
+                showCurrencyWarning={spellSystem.modalState.showCurrencyWarning}
+                redirectPath={spellSystem.baseRedirectPath}
             />
+
+            {/* Global Errors (In case rendered outside content flow) */}
+            {spellSystem.activeError && (
+                 <BlockageErrorOverlay 
+                    error={spellSystem.activeError} 
+                    onDismiss={() => spellSystem.clearErrors()}
+                    redirectPath={spellSystem.baseRedirectPath}
+                />
+            )}
 
             <main 
                 onContextMenu={(e) => e.preventDefault()}
