@@ -744,11 +744,11 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
              if (savedState) {
                  try {
                      const parsed = JSON.parse(savedState);
-                     // Verify if the save is recent (e.g. within 10 mins) to avoid stale state
-                     if (Date.now() - parsed.timestamp < 1000 * 60 * 10) {
+                     // Verify if the save is recent (extended to 60 mins) to avoid stale state
+                     if (Date.now() - parsed.timestamp < 1000 * 60 * 60) {
                          if (parsed.path) setPath(parsed.path);
-                         if (parsed.step) setStep(parsed.step);
-                         if (parsed.petition) setPetition(parsed.petition);
+                         if (parsed.step !== undefined) setStep(parsed.step);
+                         if (parsed.petition !== undefined) setPetition(parsed.petition);
                          if (parsed.selectedPsalm) setSelectedPsalm(parsed.selectedPsalm);
                          if (parsed.selectedLwa) setSelectedLwa(parsed.selectedLwa);
                          if (parsed.hoodooMateriaSelections) setHoodooMateriaSelections(parsed.hoodooMateriaSelections);
@@ -757,8 +757,9 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
                          // If we are returning from store, likely we were in AI mode
                          setMode('ai'); 
                          
-                         // Clear it so it doesn't persist forever
-                         localStorage.removeItem('hoodoo_voodoo_autosave');
+                         // Note: We do NOT remove the item immediately to prevent React Strict Mode 
+                         // from deleting it on the first (discarded) render effect.
+                         // It will clear naturally on next overwrite or be ignored by timestamp eventually.
                      }
                  } catch (e) {
                      console.error("Failed to parse saved state", e);
