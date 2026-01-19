@@ -184,7 +184,7 @@ function StoreContent() {
             <div className="absolute inset-0 bg-black/20 z-0" />
             
             {/* Header */}
-            <header className="relative z-10 p-4 shrink-0 flex justify-between items-center border-b border-white/10 bg-black/40 backdrop-blur-md">
+            <header className="relative z-10 p-4 shrink-0 flex justify-between items-center bg-transparent">
                 <div className="flex items-center gap-4">
                     <MagickalBackLink href="/hall" text="Grand Hall" />
                 </div>
