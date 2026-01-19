@@ -12,21 +12,21 @@ import { createBrowserClient } from '@supabase/ssr';
 const STORE_ITEMS = [
     {
         id: 'pack_small',
-        name: "Handful of Stardust",
+        name: "Handful of Faestones",
         credits: 50,
         price: "$4.99",
-        icon: Sparkles,
+        quantity: 1,
         color: "text-slate-300",
         border: "border-slate-600",
         glow: "shadow-slate-500/20",
-        desc: "Enough for casual divination."
+        desc: "Enough for Casual Magick"
     },
     {
         id: 'pack_medium',
-        name: "Vial of Essence",
+        name: "A Pouch of Faestones",
         credits: 150,
         price: "$12.99",
-        icon: Coins,
+        quantity: 3,
         color: "text-amber-300",
         border: "border-amber-500",
         glow: "shadow-amber-500/40",
@@ -35,10 +35,10 @@ const STORE_ITEMS = [
     },
     {
         id: 'pack_large',
-        name: "Philosopher's Stone",
+        name: "A Bag of Faestones",
         credits: 500,
         price: "$39.99",
-        icon: Gem,
+        quantity: 6,
         color: "text-purple-300",
         border: "border-purple-500",
         glow: "shadow-purple-500/50",
@@ -46,6 +46,61 @@ const STORE_ITEMS = [
         badge: "BEST VALUE"
     }
 ];
+
+const FaestonePile = ({ count }: { count: number }) => {
+    if (count === 1) {
+        return (
+            <div className="relative w-16 h-16 mb-6 group-hover:scale-110 transition-transform duration-500">
+                <Image src="/images/faestones.png" alt="Faestone" layout="fill" objectFit="contain" />
+            </div>
+        );
+    }
+    
+    if (count === 3) {
+        return (
+            <div className="relative w-32 h-20 mb-6 group-hover:scale-110 transition-transform duration-500">
+                <div className="absolute left-0 bottom-0 w-14 h-14 rotate-[-15deg] z-10">
+                    <Image src="/images/faestones.png" alt="Faestone" layout="fill" objectFit="contain" />
+                </div>
+                <div className="absolute left-8 bottom-2 w-16 h-16 z-20">
+                    <Image src="/images/faestones.png" alt="Faestone" layout="fill" objectFit="contain" />
+                </div>
+                <div className="absolute right-0 bottom-1 w-14 h-14 rotate-[15deg] z-10">
+                    <Image src="/images/faestones.png" alt="Faestone" layout="fill" objectFit="contain" />
+                </div>
+            </div>
+        );
+    }
+
+    if (count === 6) {
+        return (
+            <div className="relative w-40 h-24 mb-6 group-hover:scale-110 transition-transform duration-500">
+                {/* Back Row */}
+                <div className="absolute left-2 bottom-6 w-14 h-14 rotate-[-45deg] opacity-90 blur-[1px]">
+                     <Image src="/images/faestones.png" alt="Faestone" layout="fill" objectFit="contain" />
+                </div>
+                <div className="absolute left-14 bottom-8 w-14 h-14 rotate-[10deg] opacity-90">
+                     <Image src="/images/faestones.png" alt="Faestone" layout="fill" objectFit="contain" />
+                </div>
+                <div className="absolute right-4 bottom-5 w-14 h-14 rotate-[60deg] opacity-90 blur-[1px]">
+                     <Image src="/images/faestones.png" alt="Faestone" layout="fill" objectFit="contain" />
+                </div>
+                
+                {/* Front Row */}
+                 <div className="absolute left-0 bottom-0 w-16 h-16 rotate-[-10deg] z-20">
+                     <Image src="/images/faestones.png" alt="Faestone" layout="fill" objectFit="contain" />
+                </div>
+                <div className="absolute left-10 -bottom-2 w-20 h-20 z-30 drop-shadow-xl">
+                     <Image src="/images/faestones.png" alt="Faestone" layout="fill" objectFit="contain" />
+                </div>
+                <div className="absolute right-0 bottom-1 w-16 h-16 rotate-[25deg] z-20">
+                     <Image src="/images/faestones.png" alt="Faestone" layout="fill" objectFit="contain" />
+                </div>
+            </div>
+        );
+    }
+    return null;
+};
 
 function StoreContent() {
     const router = useRouter();
@@ -175,9 +230,7 @@ function StoreContent() {
                                 </div>
                             )}
 
-                            <div className="relative w-16 h-16 mb-6 group-hover:scale-110 transition-transform duration-500">
-                                <Image src="/images/faestones.png" alt="Faestones" layout="fill" objectFit="contain" />
-                            </div>
+                            <FaestonePile count={pkg.quantity} />
                             
                             <h3 className="text-xl font-serif text-white mb-2">{pkg.name}</h3>
                             <div className="text-3xl font-bold font-mono text-white mb-4">
@@ -198,7 +251,7 @@ function StoreContent() {
                                 {loadingId === pkg.id ? (
                                     <Loader2 className="animate-spin w-4 h-4" />
                                 ) : (
-                                    `Purchase ${pkg.price}`
+                                    `Acquire ${pkg.price}`
                                 )}
                             </button>
                         </div>
