@@ -674,7 +674,7 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
     const spellSystem = useSpellSystem({
         serviceSlugGen: SERVICE_SLUG,
         serviceSlugSave: 'save_spell', // Assuming standard save slug
-        baseRedirectPath: '/spell-room/witchcraft-app/hoodoo-voodoo-magick'
+        baseRedirectPath: '/spell-room/hoodoo-rootwork-spells-app'
     });
 
     const cost = spellSystem.genEconomy.cost;
