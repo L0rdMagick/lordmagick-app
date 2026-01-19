@@ -736,6 +736,37 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
         }
     }, [loadId]);
 
+    // --- EFFECT: RESTORE STATE AFTER STORE RETURN ---
+    useEffect(() => {
+        const action = searchParams.get('action');
+        if (action === 'expand_slots') {
+             const savedState = localStorage.getItem('hoodoo_voodoo_autosave');
+             if (savedState) {
+                 try {
+                     const parsed = JSON.parse(savedState);
+                     // Verify if the save is recent (e.g. within 10 mins) to avoid stale state
+                     if (Date.now() - parsed.timestamp < 1000 * 60 * 10) {
+                         if (parsed.path) setPath(parsed.path);
+                         if (parsed.step) setStep(parsed.step);
+                         if (parsed.petition) setPetition(parsed.petition);
+                         if (parsed.selectedPsalm) setSelectedPsalm(parsed.selectedPsalm);
+                         if (parsed.selectedLwa) setSelectedLwa(parsed.selectedLwa);
+                         if (parsed.hoodooMateriaSelections) setHoodooMateriaSelections(parsed.hoodooMateriaSelections);
+                         if (parsed.voodooOfferingSelections) setVoodooOfferingSelections(parsed.voodooOfferingSelections);
+                         
+                         // If we are returning from store, likely we were in AI mode
+                         setMode('ai'); 
+                         
+                         // Clear it so it doesn't persist forever
+                         localStorage.removeItem('hoodoo_voodoo_autosave');
+                     }
+                 } catch (e) {
+                     console.error("Failed to parse saved state", e);
+                 }
+             }
+        }
+    }, [searchParams]);
+
     const handleOpenPsalmReader = (psalm: string) => {
         setSelectedPsalm(psalm);
         setIsPsalmLit(false);
