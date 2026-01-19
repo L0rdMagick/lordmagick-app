@@ -780,7 +780,7 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
 
         setMode(selectedMode);
         setAppError(null);
-        clearPaymentError();
+        spellSystem.clearErrors();
 
         if (selectedMode === 'standard') {
             setHoodooPsalmSelections(['Psalm 23', 'Psalm 91']);
@@ -944,10 +944,9 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
         }
     };
 
-    const handleBuySlots = async () => {
-         // This is largely legacy now as saves bypass limits, 
-         // but kept for compatibility with spellSystem if needed manually.
-         await spellSystem.saveEconomy.buySlots(session.user.id);
+     const handleBuySlots = async () => {
+         if (!session?.user?.id) return;
+         await spellSystem.buySlots(session.user.id);
     };
 
     const renderError = () => {
@@ -959,7 +958,7 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
                 <BlockageErrorOverlay 
                     error={spellSystem.activeError} 
                     onDismiss={() => spellSystem.clearErrors()} 
-                    redirectPath={spellSystem.baseRedirectPath}
+                    redirectPath={'/spell-room/witchcraft-app/hoodoo-voodoo-magick'}
                 />
             );
         }
@@ -981,7 +980,7 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
     };
 
     const renderContent = () => {
-        if (loading || spellSystem.genEconomy.isProcessing) return <div className="flex items-center justify-center h-full"><LoadingSpinner title={spellSystem.genEconomy.isProcessing ? "Offering Faestones..." : loadingMessage || "Consulting the Spirits..."} /></div>;
+        if (loading || spellSystem.genEconomy.isProcessingPayment) return <div className="flex items-center justify-center h-full"><LoadingSpinner title={spellSystem.genEconomy.isProcessingPayment ? "Offering Faestones..." : loadingMessage || "Consulting the Spirits..."} /></div>;
         if (appError) return renderError();
 
         if (step === 0) return <Step0_Crossroads onSelectPath={selectPath} />;
@@ -1030,12 +1029,16 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
             />
             
             <SlotPurchaseModal 
-                isOpen={spellSystem.modalState.showSlotModal} 
-                onClose={() => spellSystem.setModalState(prev => ({ ...prev, showSlotModal: false }))}
+                isOpen={spellSystem.modalState.isOpen} 
+                onClose={spellSystem.modalState.close}
                 onPurchase={handleBuySlots}
-                isProcessing={spellSystem.saveEconomy.isProcessing}
-                showCurrencyWarning={spellSystem.modalState.showCurrencyWarning}
-                redirectPath={spellSystem.baseRedirectPath}
+                isProcessing={spellSystem.modalState.isLoading}
+                showAetherWarning={spellSystem.modalState.showWarning}
+                showSuccess={spellSystem.modalState.showSuccess}
+                onGoToStore={() => spellSystem.goToStoreForSlots(
+                    { step, path, petition, selectedPsalm, selectedLwa, hoodooMateriaSelections, voodooOfferingSelections }, 
+                    'hoodoo_voodoo_autosave'
+                )}
             />
 
             {/* Global Errors (In case rendered outside content flow) */}
@@ -1043,7 +1046,7 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
                  <BlockageErrorOverlay 
                     error={spellSystem.activeError} 
                     onDismiss={() => spellSystem.clearErrors()}
-                    redirectPath={spellSystem.baseRedirectPath}
+                    redirectPath={'/spell-room/witchcraft-app/hoodoo-voodoo-magick'}
                 />
             )}
 
