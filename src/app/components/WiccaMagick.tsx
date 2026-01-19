@@ -502,7 +502,7 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
                 incantation: generatedSpell.central_chant,
                 tradition: 'WICCA',
                 ritual_data: ritualData 
-            });
+            }, true); // Bypassing Grimoire Limit because user paid for save
             setIsSaved(true);
             playAudio('BELL').play();
             localStorage.removeItem(LS_AUTOSAVE_KEY);

@@ -396,29 +396,32 @@ export const saveSpell = async (
         element?: string,
         ritual_data?: any, // JSONB data (ingredients, steps, etc)
         tradition?: string
-    }
+    },
+    bypassLimit: boolean = false
 ): Promise<Spell> => {
 
-    // 1. Check Spell Limits
-    const { count, error: countError } = await supabase
-        .from('spells')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', userId);
+    // 1. Check Spell Limits (if not bypassed)
+    if (!bypassLimit) {
+        const { count, error: countError } = await supabase
+            .from('spells')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', userId);
+            
+        if (countError) throw countError;
+
+        const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('spell_slots_limit')
+            .eq('id', userId)
+            .single();
         
-    if (countError) throw countError;
+        // Default to 5 if not set or error fetching profile
+        const limit = profile?.spell_slots_limit || 5;
 
-    const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('spell_slots_limit')
-        .eq('id', userId)
-        .single();
-    
-    // Default to 5 if not set or error fetching profile
-    const limit = profile?.spell_slots_limit || 5;
-
-    // Trigger purchase modal (handled by calling component) if full
-    if ((count || 0) >= limit) {
-        throw new Error("GRIMOIRE_FULL");
+        // Trigger purchase modal (handled by calling component) if full
+        if ((count || 0) >= limit) {
+            throw new Error("GRIMOIRE_FULL");
+        }
     }
 
     // 2. Perform Insert

@@ -817,7 +817,7 @@ function SoulConnectContent() {
              element: "love",
              tradition: 'LOVE',
              ritual_data: ritualData
-         });
+         }, true); // Bypassing Grimoire Limit because user paid for save
 
          setIsSaved(true);
          audio.playClick('magick');

@@ -30,29 +30,31 @@ interface ServitorPayload {
 /**
  * Saves a spell to the universal grimoire with slot checking.
  */
-export const saveSpell = async (userId: string, payload: SpellPayload): Promise<Spell> => {
-    // 1. Check Slot Limits
-    const { count, error: countError } = await supabase
-        .from('spells')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', userId);
+export const saveSpell = async (userId: string, payload: SpellPayload, bypassLimit: boolean = false): Promise<Spell> => {
+    // 1. Check Slot Limits (if not bypassed)
+    if (!bypassLimit) {
+        const { count, error: countError } = await supabase
+            .from('spells')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', userId);
 
-    if (countError) throw countError;
+        if (countError) throw countError;
 
-    const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('spell_slots_limit')
-        .eq('id', userId)
-        .single();
+        const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('spell_slots_limit')
+            .eq('id', userId)
+            .single();
 
-    if (profileError && profileError.code !== 'PGRST116') {
-        console.error("Error fetching profile limits:", profileError);
-    }
+        if (profileError && profileError.code !== 'PGRST116') {
+            console.error("Error fetching profile limits:", profileError);
+        }
 
-    const limit = profile?.spell_slots_limit || 5;
+        const limit = profile?.spell_slots_limit || 5;
 
-    if ((count || 0) >= limit) {
-        throw new Error("GRIMOIRE_FULL");
+        if ((count || 0) >= limit) {
+            throw new Error("GRIMOIRE_FULL");
+        }
     }
 
     // 2. Save Spell
