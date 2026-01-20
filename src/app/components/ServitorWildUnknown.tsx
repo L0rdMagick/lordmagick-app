@@ -1255,33 +1255,35 @@ export default function ServitorWildUnknown() {
                 <div className={`absolute bottom-[130px] right-[20px] w-32 h-32 z-20 flex flex-col items-center transition-all duration-300 ${!showVessel ? 'scale-0 opacity-0' : 'scale-100 opacity-100 anim-pop-in'}`}
                      style={{ zIndex: feedingStage === 'chest_anim' ? 300 : 20 }}>
                     {((config.offsets as any)[isMobileScreen ? 'vesselMobile' : 'vessel']?.v ?? config.offsets.vessel.v) && (
-                        <div id="vessel-wrapper" className={`w-full h-full relative transition-all duration-500 ${feedingStage === 'chest_anim' ? 'float-up-dissipate' : ''}`}
-                             style={getGameObjectStyle('vessel')}>
-                            <div id="game-vessel-inner" 
-                                 className={`w-full h-full ${isDepositing ? 'anim-vessel-deposit' : ''}`}
-                                 style={{ ...getSpriteStyle(config.vesselIndex, ASSETS.VESSELS) }}>
-                                 {treasurePile.map(t => (
-                                     <div key={t.id} className="absolute w-8 h-8 opacity-90" 
-                                          style={{
-                                              left: `calc(50% + ${t.x}px)`,
-                                              bottom: `calc(30% + ${t.y}px)`,
-                                              transform: `rotate(${t.r}deg)`,
-                                              ...getSpriteStyle(t.index, ASSETS.CARRY_TREASURE)
-                                          }}
-                                     />
-                                 ))}
+                        <>
+                            <div id="vessel-wrapper" className={`w-full h-full relative transition-all duration-500 ${feedingStage === 'chest_anim' ? 'float-up-dissipate' : ''}`}
+                                 style={getGameObjectStyle('vessel')}>
+                                <div id="game-vessel-inner" 
+                                     className={`w-full h-full ${isDepositing ? 'anim-vessel-deposit' : ''}`}
+                                     style={{ ...getSpriteStyle(config.vesselIndex, ASSETS.VESSELS) }}>
+                                     {treasurePile.map(t => (
+                                         <div key={t.id} className="absolute w-8 h-8 opacity-90" 
+                                              style={{
+                                                  left: `calc(50% + ${t.x}px)`,
+                                                  bottom: `calc(30% + ${t.y}px)`,
+                                                  transform: `rotate(${t.r}deg)`,
+                                                  ...getSpriteStyle(t.index, ASSETS.CARRY_TREASURE)
+                                              }}
+                                         />
+                                     ))}
+                                </div>
+                                 {/* INDIGO GLOW OVERLAY */}
+                                 {isDepositing && (
+                                    <div className="absolute top-1/2 left-1/2 w-20 h-20 rounded-full anim-glow-indigo pointer-events-none"
+                                         style={{
+                                             background: 'radial-gradient(circle, rgba(75,0,130,0.8) 0%, rgba(75,0,130,0) 70%)',
+                                             zIndex: 25
+                                         }}
+                                    />
+                                 )}
                             </div>
-                            </div>
-                             {/* INDIGO GLOW OVERLAY - Replaces old shine */}
-                             {isDepositing && (
-                                <div className="absolute top-1/2 left-1/2 w-20 h-20 rounded-full anim-glow-indigo pointer-events-none"
-                                     style={{
-                                         background: 'radial-gradient(circle, rgba(75,0,130,0.8) 0%, rgba(75,0,130,0) 70%)',
-                                         zIndex: 25
-                                     }}
-                                />
-                             )}
-                        </div>
+                            <div id="vessel-shine" className="absolute top-0 text-4xl opacity-0 transition-opacity duration-500">✨</div>
+                        </>
                     )}
                 </div>
 
