@@ -386,6 +386,9 @@ export default function ServitorWildUnknown() {
     // Feeding Sequence State
     const [feedingStage, setFeedingStage] = useState<'feeding' | 'fed_msg' | 'wishes_msg' | 'chest_anim'>('feeding');
     const [flyingTreasures, setFlyingTreasures] = useState<{id: number, startX: number, startY: number, endX: number, endY: number, rotate: number, index: number}[]>([]); 
+    
+    // Vessel Logic
+    const [showVessel, setShowVessel] = useState(true);
 
     const SAVE_COST = 10;
 
@@ -682,8 +685,8 @@ export default function ServitorWildUnknown() {
             setRigAnimation(config.movementType === 'fly' ? 'anim-fly-right' : 'anim-walk-right');
             
             const isMobile = window.innerWidth < 768;
-            // Destination is slightly to the left of the vessel to "hand off"
-            const rightDestination = isMobile ? 50 : 60; 
+            // Destination closer to vessel (center over card)
+            const rightDestination = isMobile ? 65 : 85; 
             
             await moveTo(rightDestination, id);
             if(!runningRef.current) break;
@@ -692,9 +695,8 @@ export default function ServitorWildUnknown() {
             
             // --- FLYING TREASURE ANIMATION ---
             const rectServitor = servitor ? servitor.getBoundingClientRect() : { left: 0, top: 0, width: 0, height: 0 };
-            // Position of the vessel target
-            const vesselTargetX = window.innerWidth - (isMobile ? 30 : 60); // Approx center of vessel
-            const vesselTargetY = window.innerHeight - (130 + 30); // Approx center of vessel (bottom: 130px)
+            const vesselTargetX = window.innerWidth - (isMobile ? 30 : 60); 
+            const vesselTargetY = window.innerHeight - (130 + 30); 
 
             const startX = rectServitor.left + (rectServitor.width / 2);
             const startY = rectServitor.top + (rectServitor.height / 3);
@@ -709,26 +711,23 @@ export default function ServitorWildUnknown() {
                 index: config.carryTreasureIndex
             }]);
 
-            // Hide carried treasure immediately so it looks like it was thrown
+            // Hide carried treasure immediately
             setIsCarryingTreasure(false); 
             
-            // Wait for fly animation (approx 800ms)
-            await wait(800);
+            // Wait for fly animation 
+            await wait(1000);
             
             setFlyingTreasures(prev => prev.filter(t => t.id !== flyId));
             
-            setTreasurePile(prev => [...prev, {
-                id: Math.random(),
-                x: (Math.random() * 50) - 25, 
-                y: (Math.random() * -20) - 10, 
-                r: (Math.random() * 60) - 30, 
-                index: config.carryTreasureIndex
-            }]);
+            // REMOVED: setTreasurePile update (Treasure disappears into vessel)
 
             playAudio(AUDIO_PATHS.DEPOSIT);
 
             setIsDepositing(true);
             setTimeout(() => setIsDepositing(false), 500);
+
+            // Pop vessel in if not visible (e.g. after resume)
+            if(!showVessel) setShowVessel(true);
 
             if(shine) { shine.style.opacity = '1'; setTimeout(() => shine.style.opacity = '0', 1000); }
             await wait(1000);
@@ -837,12 +836,18 @@ export default function ServitorWildUnknown() {
 
         setHungerState('sated'); 
         setFeedingStage('feeding');
+        setShowVessel(false); // Hide vessel to pop it back in later
+        
         depositRef.current = 0; 
         setDepositCount(0);
         runningRef.current = true; 
         loopIdRef.current++; 
         
-        setTimeout(() => mainLoop(loopIdRef.current), 1300);
+        setTimeout(() => {
+            // Trigger vessel pop-in just as servitor starts moving/jumping
+            setShowVessel(true);
+            mainLoop(loopIdRef.current);
+        }, 1300);
     };
 
     const DPad = ({ part, allowFlip = false, allowSpread = false }: { part: string, allowFlip?: boolean, allowSpread?: boolean }) => {
@@ -1090,10 +1095,18 @@ export default function ServitorWildUnknown() {
 
                 /* TREASURE FLY ANIMATION */
                 @keyframes fly-to-vessel {
-                    0% { transform: translate(0, 0) scale(1); opacity: 1; }
-                    80% { transform: translate(var(--tx), var(--ty)) scale(0.5); opacity: 1; }
-                    100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+                    0% { transform: translate(0, 0) scale(1) rotate(0deg); opacity: 1; }
+                    20% { opacity: 1; }
+                    100% { transform: translate(var(--tx), var(--ty)) scale(0.25) rotate(720deg); opacity: 0; }
                 }
+
+                @keyframes pop-in-elastic {
+                    0% { transform: scale(0); opacity: 0; }
+                    50% { transform: scale(1.2); opacity: 1; }
+                    70% { transform: scale(0.9); }
+                    100% { transform: scale(1); opacity: 1; }
+                }
+                .anim-pop-in { animation: pop-in-elastic 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
 
                 @keyframes float-dissipate {
                    0% { transform: translateY(0) scale(1); opacity: 1; filter: drop-shadow(0 0 10px gold); }
@@ -1174,7 +1187,7 @@ export default function ServitorWildUnknown() {
                     </div>
                 )}
 
-                <div className="absolute bottom-[130px] right-[20px] w-32 h-32 z-20 flex flex-col items-center">
+                <div className={`absolute bottom-[130px] right-[20px] w-32 h-32 z-20 flex flex-col items-center transition-all duration-300 ${!showVessel ? 'scale-0 opacity-0' : 'scale-100 opacity-100 anim-pop-in'}`}>
                     {config.offsets.vessel.v && (
                         <div id="vessel-wrapper" className="w-full h-full relative transition-all duration-500"
                              style={getGameObjectStyle('vessel')}>
@@ -1205,7 +1218,7 @@ export default function ServitorWildUnknown() {
                              top: t.startY,
                              '--tx': `${t.endX - t.startX}px`,
                              '--ty': `${t.endY - t.startY}px`,
-                             animation: 'fly-to-vessel 0.8s forwards cubic-bezier(0.25, 1, 0.5, 1)',
+                             animation: 'fly-to-vessel 1s forwards ease-in-out',
                              ...getSpriteStyle(t.index, ASSETS.CARRY_TREASURE)
                          } as any} />
                 ))}
@@ -1520,9 +1533,9 @@ export default function ServitorWildUnknown() {
                         </div>
                     ) : (
                         // FEEDING INTERFACE
-                        <div className="flex flex-col items-center justify-center min-h-60 pt-[50px]">
-                            <div className="h-8 mb-8 flex items-center justify-center w-full">
-                                <p className="text-[#FFD700] text-xl font-serif animate-pulse text-center whitespace-nowrap">
+                        <div className="absolute top-[10%] w-full flex flex-col items-center justify-center">
+                            <div className="h-8 mb-4 flex items-center justify-center w-full">
+                                <p className="text-[#FFD700] text-xl font-serif animate-pulse text-center whitespace-nowrap drop-shadow-md bg-black/50 px-4 rounded">
                                     {isFeeding ? "Feeding your Servitor..." : `${sName || 'Spirit'} requires sustenance...`}
                                 </p>
                             </div>
@@ -1541,7 +1554,7 @@ export default function ServitorWildUnknown() {
                                     }}
                                     onPointerCancel={(e) => stopHold()}
                                     style={{ transform: 'translateZ(0) scale(1)', touchAction: 'none' }} 
-                                    className={`w-40 h-40 rounded-full border-4 border-[#FFD700] flex items-center justify-center relative overflow-hidden bg-black shadow-[0_0_50px_#FFD700] transition-opacity duration-300 ${isFeeding ? 'opacity-90' : 'opacity-100'}`}
+                                    className={`w-40 h-40 rounded-full border-4 border-[#FFD700] flex items-center justify-center relative overflow-hidden bg-black/60 shadow-[0_0_50px_#FFD700] transition-opacity duration-300 ${isFeeding ? 'opacity-90' : 'opacity-100'} hover:bg-black/80`}
                                 >
                                     <div 
                                         className="absolute bottom-0 left-0 w-full bg-[#FFD700] z-10" 
