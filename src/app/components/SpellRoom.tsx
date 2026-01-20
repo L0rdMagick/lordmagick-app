@@ -147,32 +147,33 @@ const TraditionButton: React.FC<TraditionButtonProps> = ({ tradition }) => {
                     />
                     
                     {/* BINDING OF ISAAC STYLE OVERLAY (Bottom Sheet) */}
+                    {/* BINDING OF ISAAC STYLE OVERLAY (Bottom Sheet) */}
                     {tradition.isAvailable && (
-                        <div className="absolute inset-x-0 bottom-0 h-[85%] translate-y-full transition-transform duration-500 ease-out group-hover:translate-y-0 z-20 flex flex-col items-center justify-end pb-4 pointer-events-none group-hover:pointer-events-auto">
+                        <div className="absolute inset-0 translate-y-full transition-transform duration-500 ease-out group-hover:translate-y-0 z-20 flex flex-col items-center justify-center pb-4 pointer-events-none group-hover:pointer-events-auto">
                             
                             {/* Parchment Caption Container */}
-                            <div className="relative w-[90%] mb-12 opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-100">
+                            <div className="relative w-full h-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-100 flex flex-col items-center justify-center">
                                 {/* Parchment Image Background */}
                                 <div className="absolute inset-0 z-0">
                                     <Image
                                         src="/images/spell-room/magick-overlay-caption.png"
                                         alt="" // Decorative background
                                         fill
-                                        className="object-contain drop-shadow-xl"
+                                        className="object-cover drop-shadow-xl"
                                     />
                                 </div>
                                 
                                 {/* Caption Text */}
-                                <div className="relative z-10 p-6 flex items-center justify-center min-h-[140px]">
-                                    <p className="text-[#3c2f2f] text-center font-serif text-sm leading-snug font-semibold px-2 pt-2 mix-blend-multiply">
+                                <div className="relative z-10 w-[80%] flex items-center justify-center mb-8">
+                                    <p className="text-[#3c2f2f] text-center font-serif text-base leading-relaxed font-semibold mix-blend-multiply">
                                         {tradition.caption}
                                     </p>
                                 </div>
                             </div>
 
                              {/* Floating Sigil Button */}
-                            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-30 transition-transform duration-300 group-hover:scale-110 group-active:scale-95">
-                                <div className="relative w-24 h-24">
+                            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 transition-transform duration-300 group-hover:scale-110 group-active:scale-95">
+                                <div className="relative w-20 h-20">
                                     <Image
                                         src="/images/spell-room/magick-button.png"
                                         alt={buttonAlt}
