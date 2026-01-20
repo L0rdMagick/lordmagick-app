@@ -91,7 +91,7 @@ const DIRECTIONAL_OFFSETS = {
         legLeft:  { x: 5, y: 60, s: 0.9, f: true },
         vessel:  { x: -20, y: 7, s: 1.8, f: false },
         mound:   { x: 0, y: -2, s: 2.8, f: false },
-        vesselMobile: { x: -2, y: 7, s: 1.8, f: false }, // Clone of vessel
+        vesselMobile: { x: 0, y: 7, s: 1.8, f: false }, // Clone of vessel
         moundMobile: { x: 0, y: -10, s: 2.8, f: false },     // Clone of mound
     },
     facingLeft: {
@@ -366,10 +366,8 @@ export default function ServitorWildUnknown() {
         { id: 'clothes', label: 'ROBES', asset: ASSETS.CLOTHES, indexKey: 'clothingIndex', offsetKey: 'clothes', canFlip: true },
         { id: 'wing', label: 'WINGS', asset: ASSETS.BACK, indexKey: 'wingIndex', offsetKey: 'wing', canFlip: true },
         { id: 'sigil', label: 'SIGILS', asset: ASSETS.TREASURES, indexKey: 'sigilIndex', offsetKey: 'sigil', canFlip: true },
-        { id: 'mound', label: 'MOUND (PC)', asset: ASSETS.MOUND, indexKey: 'moundIndex', offsetKey: 'mound', canFlip: true }, 
-        { id: 'moundMobile', label: 'MOUND (MOB)', asset: ASSETS.MOUND, indexKey: 'moundIndex', offsetKey: 'moundMobile', canFlip: true },
-        { id: 'vessel', label: 'VESSEL (PC)', asset: ASSETS.VESSELS, indexKey: 'vesselIndex', offsetKey: 'vessel', canFlip: true },
-        { id: 'vesselMobile', label: 'VESSEL (MOB)', asset: ASSETS.VESSELS, indexKey: 'vesselIndex', offsetKey: 'vesselMobile', canFlip: true },
+        { id: 'mound', label: 'MOUNDS', asset: ASSETS.MOUND, indexKey: 'moundIndex', offsetKey: 'mound', canFlip: true }, 
+        { id: 'vessel', label: 'VESSELS', asset: ASSETS.VESSELS, indexKey: 'vesselIndex', offsetKey: 'vessel', canFlip: true },
         { id: 'food', label: 'FOOD', asset: ASSETS.FOOD, indexKey: 'foodIndex', offsetKey: null }
     ], []);
 
@@ -1397,15 +1395,22 @@ export default function ServitorWildUnknown() {
                                         </div>
                                     ) : (
                                         <>
-                                            {CATEGORIES.find(c => c.id === activeCategory)?.offsetKey && (
-                                                <div className="mb-4">
-                                                    <DPad 
-                                                        part={CATEGORIES.find(c => c.id === activeCategory)?.offsetKey as string} 
-                                                        allowFlip={CATEGORIES.find(c => c.id === activeCategory)?.canFlip} 
-                                                        allowSpread={CATEGORIES.find(c => c.id === activeCategory)?.canSpread}
-                                                    />
-                                                </div>
-                                            )}
+                                            {CATEGORIES.find(c => c.id === activeCategory)?.offsetKey && (() => {
+                                                const cat = CATEGORIES.find(c => c.id === activeCategory);
+                                                let key = cat?.offsetKey as string;
+                                                if (isMobileScreen && (key === 'mound' || key === 'vessel')) {
+                                                    key += 'Mobile';
+                                                }
+                                                return (
+                                                    <div className="mb-4">
+                                                        <DPad 
+                                                            part={key} 
+                                                            allowFlip={cat?.canFlip} 
+                                                            allowSpread={cat?.canSpread}
+                                                        />
+                                                    </div>
+                                                );
+                                            })()}
                                             
                                             {CATEGORIES.find(c => c.id === activeCategory)?.indexKey && (
                                                 <div className={`grid ${activeCategory === 'worlds' ? 'grid-cols-2' : 'grid-cols-4'} gap-2 mb-4 pb-2`}>
