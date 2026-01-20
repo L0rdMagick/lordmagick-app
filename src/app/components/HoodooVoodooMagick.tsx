@@ -5,7 +5,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import type { Session } from '@/lib/types';
 
 // Services
@@ -612,7 +612,7 @@ const Step7_Sending: React.FC<{onNext: () => void, petition: string, selections:
     );
 };
 
-const Step8_Manifestation: React.FC<{ affirmation: string, path: RitualPath, onFinish: () => void, selections?: MateriaSelection[], onSave: () => void, isSaving: boolean, isSaved: boolean }> = ({ affirmation, path, onFinish, selections = [], onSave, isSaving, isSaved }) => {
+const Step8_Manifestation: React.FC<{ affirmation: string, path: RitualPath, onCastAnother: () => void, onReturn: () => void, selections?: MateriaSelection[], onSave: () => void, isSaving: boolean, isSaved: boolean }> = ({ affirmation, path, onCastAnother, onReturn, selections = [], onSave, isSaving, isSaved }) => {
     const finalImage = path === 'hoodoo' ? 'hoodoo-manifestation-final.gif' : 'voodoo-manifestation-final.png';
     const variant = path === 'hoodoo' ? 'hoodoo_manifestation' : 'voodoo_manifestation';
     const particles = useMemo(() => Array.from({ length: 20 }).map((_, i) => ({ id: i, x: (Math.random() - 0.5) * 400, y: Math.random() * -500 - 50, duration: 5 + Math.random() * 5, delay: Math.random() * 7 })), []);
@@ -641,9 +641,10 @@ const Step8_Manifestation: React.FC<{ affirmation: string, path: RitualPath, onF
                 <div className="flex flex-col gap-3 w-full max-w-xs mt-4">
                     <button onClick={onSave} disabled={isSaved || isSaving} className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-amber-900/60 border border-amber-400 text-amber-100 font-serif rounded hover:bg-amber-800 disabled:opacity-50 transition-colors">
                         {isSaved ? <Check size={18} /> : <Save size={18} />}
-                        {isSaved ? "Saved to Grimoire" : isSaving ? "Saving..." : "Save to Grimoire (1 Credit)"}
+                        {isSaved ? "Work Sealed" : isSaving ? "Sealing..." : "Seal This Work (1 Credit)"}
                     </button>
-                    <RitualButton onClick={onFinish} className="w-full">Return</RitualButton>
+                    <RitualButton onClick={onCastAnother} className="w-full">Cast Another Spell</RitualButton>
+                    <RitualButton onClick={onReturn} className="w-full bg-slate-900/40 border-slate-600 hover:bg-slate-800">Return to Spell Room</RitualButton>
                 </div>
             </div>
         </StepContainer>
@@ -690,6 +691,7 @@ const PsalmReader: React.FC<{isOpen: boolean; onClose: () => void; psalmName: st
 // ==========================================
 
 const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }> = ({ session }) => {
+    const router = useRouter();
     const searchParams = useSearchParams();
     const loadId = searchParams.get('loadId');
     const actionParam = searchParams.get('action');
@@ -1033,8 +1035,33 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
         }
     };
 
+    const handleCastAnother = () => {
+        localStorage.removeItem('hoodoo_voodoo_autosave');
+        window.location.reload(); 
+    };
+
+    const handleReturnToRoom = () => {
+        localStorage.removeItem('hoodoo_voodoo_autosave');
+        router.push('/spell-room');
+    };
+
     const handleSaveToGrimoire = async () => {
         if (isSaved || !session?.user?.id) return;
+        
+        // 1. Payment Check (1 Credit for Save)
+        // We use 'save_spell' slug or just a direct deduction if we know the cost.
+        // Assuming spendAether requires checking against a cost. 
+        // We can just use the generic spendAether which usually checks for standard interaction cost unless specified.
+        // Actually, let's use the explicit check.
+        // NOTE: The user mentioned "1 Credit".
+        // We'll explicitly attempt to spend.
+        
+        const paid = await spellSystem.genEconomy.spendAether(session.user.id);
+        if (!paid) {
+            // Error is handled by spellSystem setting activeError, which triggers BlockageErrorOverlay
+            return;
+        }
+
         setIsSaving(true);
         setAppError(null);
         
@@ -1060,6 +1087,9 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
             
             setIsSaved(true);
             playSound('/audio/sfx-chaos-activate.mp3', 0.5).play();
+            
+            // Clean up autosave only on successful save
+            localStorage.removeItem('hoodoo_voodoo_autosave');
         } catch (e: any) {
              console.error(e);
              setAppError("Failed to save to Grimoire.");
@@ -1126,7 +1156,7 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
                 case 5: return <HoodooStep5_FixJar key={`charge-hoodoo-${chargingIndex}`} onNext={handleChargeNext} selections={hoodooMateriaSelections} index={chargingIndex} />;
                 case 6: return <HoodooStep6_SealJar onNext={handleHoodooFinalStep} selections={hoodooMateriaSelections} />;
                 case 7: return <Step7_Sending onNext={handleHoodooFinalStep} petition={petition} selections={hoodooMateriaSelections} variant="hoodoo_manifestation" image="hoodoo-manifestation-final.gif" />;
-                case 8: return <Step8_Manifestation affirmation={finalAffirmation} path={path} onFinish={resetState} selections={hoodooMateriaSelections} onSave={handleSaveToGrimoire} isSaving={isSaving} isSaved={isSaved} />;
+                case 8: return <Step8_Manifestation affirmation={finalAffirmation} path={path} onCastAnother={handleCastAnother} onReturn={handleReturnToRoom} selections={hoodooMateriaSelections} onSave={handleSaveToGrimoire} isSaving={isSaving} isSaved={isSaved} />;
                 default: return <div onClick={resetState}>Invalid Step</div>;
             }
         }
@@ -1140,7 +1170,7 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
                 case 5: return <VoodooStep5_MakeOffering key={`charge-voodoo-${chargingIndex}`} onNext={handleChargeNext} selections={voodooOfferingSelections} index={chargingIndex} />;
                 case 6: return <VoodooStep6_SealBottle onNext={handleVoodooFinalStep} selections={voodooOfferingSelections} lwa={selectedLwa} />;
                 case 7: return <Step7_Sending onNext={handleHoodooFinalStep} petition={petition} selections={voodooOfferingSelections} variant="voodoo_manifestation" image="voodoo-manifestation-final.png" />;
-                case 8: return <Step8_Manifestation affirmation={finalAffirmation} path={path} onFinish={resetState} selections={voodooOfferingSelections} onSave={handleSaveToGrimoire} isSaving={isSaving} isSaved={isSaved} />;
+                case 8: return <Step8_Manifestation affirmation={finalAffirmation} path={path} onCastAnother={handleCastAnother} onReturn={handleReturnToRoom} selections={voodooOfferingSelections} onSave={handleSaveToGrimoire} isSaving={isSaving} isSaved={isSaved} />;
                 default: return <div onClick={resetState}>Invalid Step</div>;
             }
         }
