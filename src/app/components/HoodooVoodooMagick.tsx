@@ -841,6 +841,25 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
 
     }, [actionParam]);
 
+    // --- EFFECT: CONTINUOUS AUTOSAVE ---
+    useEffect(() => {
+        // Only save if we are not currently hydrating and we have actually started the ritual (step > 0)
+        if (!isHydrating && step > 0) {
+            const stateToSave = {
+                step, 
+                path, 
+                petition, 
+                selectedPsalm, 
+                selectedLwa, 
+                hoodooMateriaSelections, 
+                voodooOfferingSelections,
+                timestamp: Date.now()
+            };
+            localStorage.setItem('hoodoo_voodoo_autosave', JSON.stringify(stateToSave));
+            // console.log("HoodooVoodooMagick: Autosaved state.", stateToSave);
+        }
+    }, [step, path, petition, selectedPsalm, selectedLwa, hoodooMateriaSelections, voodooOfferingSelections, isHydrating]);
+
     const handleOpenPsalmReader = (psalm: string) => {
         setSelectedPsalm(psalm);
         setIsPsalmLit(false);
