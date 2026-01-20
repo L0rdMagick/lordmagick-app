@@ -821,7 +821,9 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
                      if (parsed.selectedPsalm) setSelectedPsalm(parsed.selectedPsalm);
                      if (parsed.selectedLwa) setSelectedLwa(parsed.selectedLwa);
                      if (parsed.hoodooMateriaSelections) setHoodooMateriaSelections(parsed.hoodooMateriaSelections);
+                     if (parsed.hoodooMateriaSelections) setHoodooMateriaSelections(parsed.hoodooMateriaSelections);
                      if (parsed.voodooOfferingSelections) setVoodooOfferingSelections(parsed.voodooOfferingSelections);
+                     if (parsed.finalAffirmation) setFinalAffirmation(parsed.finalAffirmation);
                      
                      // If we are returning from store, likely we were in AI mode
                      setMode('ai'); 
@@ -855,12 +857,13 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
                 selectedLwa, 
                 hoodooMateriaSelections, 
                 voodooOfferingSelections,
+                finalAffirmation,
                 timestamp: Date.now()
             };
             localStorage.setItem('hoodoo_voodoo_autosave', JSON.stringify(stateToSave));
             // console.log("HoodooVoodooMagick: Autosaved state.", stateToSave);
         }
-    }, [step, path, petition, selectedPsalm, selectedLwa, hoodooMateriaSelections, voodooOfferingSelections, isHydrating]);
+    }, [step, path, petition, selectedPsalm, selectedLwa, hoodooMateriaSelections, voodooOfferingSelections, finalAffirmation, isHydrating]);
 
     const handleOpenPsalmReader = (psalm: string) => {
         setSelectedPsalm(psalm);
