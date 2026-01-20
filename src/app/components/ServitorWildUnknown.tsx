@@ -382,6 +382,11 @@ export default function ServitorWildUnknown() {
     const [showConfirmSave, setShowConfirmSave] = useState(false);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const [showExitWarning, setShowExitWarning] = useState(false);
+    
+    // Feeding Sequence State
+    const [feedingStage, setFeedingStage] = useState<'feeding' | 'fed_msg' | 'wishes_msg' | 'chest_anim'>('feeding');
+    const [flyingTreasures, setFlyingTreasures] = useState<{id: number, startX: number, startY: number, endX: number, endY: number, rotate: number, index: number}[]>([]); 
+
     const SAVE_COST = 10;
 
     useEffect(() => {
@@ -677,14 +682,41 @@ export default function ServitorWildUnknown() {
             setRigAnimation(config.movementType === 'fly' ? 'anim-fly-right' : 'anim-walk-right');
             
             const isMobile = window.innerWidth < 768;
-            const rightDestination = isMobile ? 60 : 72;
+            // Destination is slightly to the left of the vessel to "hand off"
+            const rightDestination = isMobile ? 50 : 60; 
             
             await moveTo(rightDestination, id);
             if(!runningRef.current) break;
 
             setRigAnimation('anim-idle');
-            setIsCarryingTreasure(false); 
+            
+            // --- FLYING TREASURE ANIMATION ---
+            const rectServitor = servitor ? servitor.getBoundingClientRect() : { left: 0, top: 0, width: 0, height: 0 };
+            // Position of the vessel target
+            const vesselTargetX = window.innerWidth - (isMobile ? 30 : 60); // Approx center of vessel
+            const vesselTargetY = window.innerHeight - (130 + 30); // Approx center of vessel (bottom: 130px)
 
+            const startX = rectServitor.left + (rectServitor.width / 2);
+            const startY = rectServitor.top + (rectServitor.height / 3);
+
+            const flyId = Math.random();
+            setFlyingTreasures(prev => [...prev, {
+                id: flyId,
+                startX, startY,
+                endX: vesselTargetX,
+                endY: vesselTargetY,
+                rotate: (Math.random() * 360),
+                index: config.carryTreasureIndex
+            }]);
+
+            // Hide carried treasure immediately so it looks like it was thrown
+            setIsCarryingTreasure(false); 
+            
+            // Wait for fly animation (approx 800ms)
+            await wait(800);
+            
+            setFlyingTreasures(prev => prev.filter(t => t.id !== flyId));
+            
             setTreasurePile(prev => [...prev, {
                 id: Math.random(),
                 x: (Math.random() * 50) - 25, 
@@ -707,6 +739,7 @@ export default function ServitorWildUnknown() {
             if(depositRef.current >= config.feedFreq) {
                 setHungerState('hungry');
                 setFeedProgress(0);
+                setFeedingStage('feeding'); // Reset sequence
                 break;
             }
             await wait(500);
@@ -756,6 +789,19 @@ export default function ServitorWildUnknown() {
                     setIsFeeding(false); 
                     setHungerState('fed');
                     setTreasurePile([]); 
+
+                    // Trigger Feeding Sequence
+                    setFeedingStage('fed_msg');
+                    setTimeout(() => {
+                        setFeedingStage('wishes_msg');
+                        setTimeout(() => {
+                            setFeedingStage('chest_anim');
+                            // Start floating chest animation
+                            setTimeout(() => {
+                                handleResume(); // Auto-resume after chest dissipates
+                            }, 3000); // Allow time for float & fade
+                        }, 2000);
+                    }, 2000);
                 }
             }
             
@@ -790,6 +836,7 @@ export default function ServitorWildUnknown() {
         setTimeout(() => setIsHappy(false), 1200);
 
         setHungerState('sated'); 
+        setFeedingStage('feeding');
         depositRef.current = 0; 
         setDepositCount(0);
         runningRef.current = true; 
@@ -1040,6 +1087,19 @@ export default function ServitorWildUnknown() {
                 
                 .custom-scrollbar::-webkit-scrollbar { width: 8px; } 
                 .custom-scrollbar::-webkit-scrollbar-thumb { background: #5d4037; border-radius: 4px; }
+
+                /* TREASURE FLY ANIMATION */
+                @keyframes fly-to-vessel {
+                    0% { transform: translate(0, 0) scale(1); opacity: 1; }
+                    80% { transform: translate(var(--tx), var(--ty)) scale(0.5); opacity: 1; }
+                    100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+                }
+
+                @keyframes float-dissipate {
+                   0% { transform: translateY(0) scale(1); opacity: 1; filter: drop-shadow(0 0 10px gold); }
+                   50% { transform: translateY(-30vh) scale(1.2); opacity: 0.8; filter: drop-shadow(0 0 30px gold); }
+                   100% { transform: translateY(-60vh) scale(1.5); opacity: 0; filter: blur(10px); }
+                }
             `}</style>
 
             <button onClick={() => hasUnsavedChanges ? setShowExitWarning(true) : router.push('/spell-room')} className="absolute top-5 right-4 z-60 text-gray-400 hover:text-white"><X /></button>
@@ -1114,7 +1174,7 @@ export default function ServitorWildUnknown() {
                     </div>
                 )}
 
-                <div className="absolute bottom-[20vh] right-[10%] w-32 h-32 z-20 flex flex-col items-center">
+                <div className="absolute bottom-[130px] right-[20px] w-32 h-32 z-20 flex flex-col items-center">
                     {config.offsets.vessel.v && (
                         <div id="vessel-wrapper" className="w-full h-full relative transition-all duration-500"
                              style={getGameObjectStyle('vessel')}>
@@ -1136,6 +1196,19 @@ export default function ServitorWildUnknown() {
                     )}
                     <div id="vessel-shine" className="absolute top-0 text-4xl opacity-0 transition-opacity duration-500">✨</div>
                 </div>
+
+                {/* Flying Treasures Layer */}
+                {flyingTreasures.map(t => (
+                    <div key={t.id} className="fixed w-8 h-8 z-200"
+                         style={{
+                             left: t.startX, 
+                             top: t.startY,
+                             '--tx': `${t.endX - t.startX}px`,
+                             '--ty': `${t.endY - t.startY}px`,
+                             animation: 'fly-to-vessel 0.8s forwards cubic-bezier(0.25, 1, 0.5, 1)',
+                             ...getSpriteStyle(t.index, ASSETS.CARRY_TREASURE)
+                         } as any} />
+                ))}
 
                 {fallingFood.map(f => (
                     <div key={f.id} className="absolute w-16 h-16 z-200 animate-bounce"
@@ -1416,14 +1489,38 @@ export default function ServitorWildUnknown() {
 
             {/* FEEDING MODAL */}
             {isFeedingActive && (
-                <div className={`absolute inset-0 z-200 flex flex-col items-center justify-start pt-[50px] transition-colors duration-300 ${isFeeding ? 'bg-black/0' : 'bg-black/80'}`}>
+                <div className={`absolute inset-0 z-200 flex flex-col items-center justify-center transition-colors duration-1000 ${hungerState === 'fed' ? 'bg-black/90' : 'bg-black/80'}`}>
+                    
                     {hungerState === 'fed' ? (
-                        <div className="text-center animate-in zoom-in">
-                            <h2 className="text-[#FFD700] magick-font text-3xl mb-4">Hunger Sated</h2>
-                            <button onClick={handleResume} className="runic-btn px-8 py-3 rounded text-lg font-bold">Resume Ritual</button>
+                        <div className="w-full text-center flex flex-col items-center justify-center">
+                            
+                            {/* STAGE 1: "You have fed [Name]" */}
+                            <div className={`transition-all duration-1000 absolute ${feedingStage === 'fed_msg' ? 'opacity-100 scale-100' : 'opacity-0 scale-90'}`}>
+                                <h2 className="text-[#FFD700] magick-font text-5xl drop-shadow-[0_0_20px_#FFD700] tracking-wide">
+                                    You have fed {sName || "the spirit"}
+                                </h2>
+                            </div>
+
+                            {/* STAGE 2: "Your wishes are flowing to you" */}
+                            <div className={`transition-all duration-1000 absolute ${feedingStage === 'wishes_msg' ? 'opacity-100 scale-100' : 'opacity-0 scale-90'}`}>
+                                <h2 className="text-[#FFD700] magick-font text-4xl drop-shadow-[0_0_15px_#FFD700] italic">
+                                    Your wishes are flowing to you.
+                                </h2>
+                            </div>
+
+                            {/* STAGE 3: Chest Float Animation */}
+                            {feedingStage === 'chest_anim' && (
+                                <div className="absolute w-40 h-40" style={{ animation: 'float-dissipate 3s forwards ease-in-out' }}>
+                                    {/* Using Vessel Image as "Chest" */}
+                                    <div className="w-full h-full" style={getSpriteStyle(config.vesselIndex, ASSETS.VESSELS)} />
+                                    <div className="absolute inset-0 flex items-center justify-center animate-pulse text-4xl">✨</div>
+                                </div>
+                            )}
+
                         </div>
                     ) : (
-                        <div className="flex flex-col items-center justify-center min-h-60">
+                        // FEEDING INTERFACE
+                        <div className="flex flex-col items-center justify-center min-h-60 pt-[50px]">
                             <div className="h-8 mb-8 flex items-center justify-center w-full">
                                 <p className="text-[#FFD700] text-xl font-serif animate-pulse text-center whitespace-nowrap">
                                     {isFeeding ? "Feeding your Servitor..." : `${sName || 'Spirit'} requires sustenance...`}
