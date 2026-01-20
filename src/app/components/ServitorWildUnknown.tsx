@@ -798,9 +798,9 @@ export default function ServitorWildUnknown() {
                             // Start floating chest animation
                             setTimeout(() => {
                                 handleResume(); // Auto-resume after chest dissipates
-                            }, 3000); // Allow time for float & fade
-                        }, 2000);
-                    }, 2000);
+                            }, 4000); // Allow time for full explosion effect
+                        }, 4000); // Message 2 duration
+                    }, 4000); // Message 1 duration
                 }
             }
             
@@ -1114,12 +1114,10 @@ export default function ServitorWildUnknown() {
                 /* RENAMED to match class usage with EXPLOSION effect */
                 @keyframes float-up-dissipate-anim {
                    0% { transform: translateY(0) scale(1); opacity: 1; filter: drop-shadow(0 0 10px gold); }
-                   60% { transform: translateY(-70vh) scale(1.2); opacity: 1; filter: drop-shadow(0 0 30px gold) brightness(1.5); }
-                   80% { transform: translateY(-80vh) scale(2.0); opacity: 0.8; filter: drop-shadow(0 0 50px white) brightness(3); }
-                   90% { opacity: 0; }
-                   100% { transform: translateY(-85vh) scale(3.0); opacity: 0; filter: blur(20px); }
+                   50% { transform: translateY(-35vh) scale(1.0); opacity: 1; filter: drop-shadow(0 0 20px gold); }
+                   100% { transform: translateY(-70vh) scale(3.5); opacity: 0; filter: drop-shadow(0 0 50px white) brightness(3) blur(10px); }
                 }
-                .float-up-dissipate { animation: float-up-dissipate-anim 3s forwards ease-in-out; }
+                .float-up-dissipate { animation: float-up-dissipate-anim 4s forwards cubic-bezier(0.25, 1, 0.5, 1); }
             `}</style>
 
             <button onClick={() => hasUnsavedChanges ? setShowExitWarning(true) : router.push('/spell-room')} className="absolute top-5 right-4 z-60 text-gray-400 hover:text-white"><X /></button>
@@ -1509,9 +1507,10 @@ export default function ServitorWildUnknown() {
             )}
 
             {/* FEEDING MODAL */}
-            {isFeedingActive && (
+            {isFeedingActive && feedingStage !== 'chest_anim' && (
                 // Custom gradient: mostly black at top (0-25%), then quick fade to transparent by 45%
-                <div className={`absolute inset-0 z-200 flex flex-col items-center justify-center transition-colors duration-1000 ${hungerState === 'fed' ? 'bg-black/80' : ''}`}
+                // During 'fed' state (messages), background becomes TRANSPARENT so we see game world
+                <div className={`absolute inset-0 z-200 flex flex-col items-center justify-center transition-colors duration-500 ${hungerState === 'fed' ? 'bg-transparent pointer-events-none' : ''}`}
                      style={{ background: hungerState !== 'fed' ? 'linear-gradient(180deg, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.85) 30%, rgba(0,0,0,0) 45%)' : undefined }}>
                     
                     {hungerState === 'fed' ? (
