@@ -1101,8 +1101,8 @@ export default function ServitorWildUnknown() {
                 .custom-scrollbar::-webkit-scrollbar { width: 8px; } 
                 .custom-scrollbar::-webkit-scrollbar-thumb { background: #5d4037; border-radius: 4px; }
 
-                /* TREASURE FLY ANIMATION */
-                @keyframes fly-to-vessel {
+                /* TREASURE FLY ANIMATION - RENAMED TO FORCE CACHE RESET */
+                @keyframes fly-deposit {
                     0% { transform: translate(0, 0) scale(1) rotate(0deg); opacity: 1; }
                     100% { transform: translate(var(--tx), var(--ty)) scale(1) rotate(720deg); opacity: 0; }
                 }
@@ -1229,15 +1229,15 @@ export default function ServitorWildUnknown() {
                     <div id="vessel-shine" className="absolute top-0 text-4xl opacity-0 transition-opacity duration-500">✨</div>
                 </div>
 
-                {/* Flying Treasures Layer */}
+                {/* Flying Treasures Layer - Increased size to match servitor scale better */ }
                 {flyingTreasures.map(t => (
-                    <div key={t.id} className="fixed w-8 h-8 z-200"
+                    <div key={t.id} className="fixed w-16 h-16 z-200"
                          style={{
-                             left: t.startX, 
-                             top: t.startY,
+                             left: t.startX - 16, // Adjust centering for larger size (approx half of w-16 difference)
+                             top: t.startY - 16,
                              '--tx': `${t.endX - t.startX}px`,
                              '--ty': `${t.endY - t.startY}px`,
-                             animation: 'fly-to-vessel 1s forwards ease-in-out',
+                             animation: 'fly-deposit 1.0s forwards ease-in-out',
                              ...getSpriteStyle(t.index, ASSETS.CARRY_TREASURE)
                          } as any} />
                 ))}
