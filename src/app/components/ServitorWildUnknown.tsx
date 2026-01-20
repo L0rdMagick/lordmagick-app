@@ -1170,6 +1170,14 @@ export default function ServitorWildUnknown() {
                     100% { opacity: 0; transform: scale(1.05); filter: blur(8px); }
                 }
                 .anim-msg-magick { animation: fade-in-out-magick 4s forwards ease-in-out; }
+
+                /* PHASE 15: INDIGO GLOW */
+                @keyframes glow-indigo-pulse {
+                    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+                    20% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); box-shadow: 0 0 20px #4b0082, 0 0 40px #4b0082 inset; }
+                    100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+                }
+                .anim-glow-indigo { animation: glow-indigo-pulse 0.8s ease-out forwards; }
             `}</style>
 
             <button onClick={() => hasUnsavedChanges ? setShowExitWarning(true) : router.push('/spell-room')} className="absolute top-5 right-4 z-60 text-gray-400 hover:text-white"><X /></button>
@@ -1263,9 +1271,18 @@ export default function ServitorWildUnknown() {
                                      />
                                  ))}
                             </div>
+                            </div>
+                             {/* INDIGO GLOW OVERLAY - Replaces old shine */}
+                             {isDepositing && (
+                                <div className="absolute top-1/2 left-1/2 w-20 h-20 rounded-full anim-glow-indigo pointer-events-none"
+                                     style={{
+                                         background: 'radial-gradient(circle, rgba(75,0,130,0.8) 0%, rgba(75,0,130,0) 70%)',
+                                         zIndex: 25
+                                     }}
+                                />
+                             )}
                         </div>
                     )}
-                    <div id="vessel-shine" className="absolute top-0 text-4xl opacity-0 transition-opacity duration-500">✨</div>
                 </div>
 
                 {/* Flying Treasures Layer - Increased size to match servitor scale better */ }
