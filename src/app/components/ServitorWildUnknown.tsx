@@ -1119,13 +1119,13 @@ export default function ServitorWildUnknown() {
                 @keyframes float-up-dissipate-anim {
                    /* 1. Fly to Top Center */
                    0% { transform: translateY(0) translateX(0) scale(1.8); }
-                   40% { transform: translateY(-70vh) translateX(calc(-50vw + 60px)) scale(1.8); filter: drop-shadow(0 0 20px gold); }
+                   40% { transform: translateY(-55vh) translateX(calc(-50vw + 60px)) scale(1.8); filter: drop-shadow(0 0 20px gold); }
                    
-                   /* 2. Twinkle & Shake */
-                   45% { transform: translateY(-70vh) translateX(calc(-50vw + 60px)) scale(1.8) rotate(-5deg); filter: drop-shadow(0 0 30px white) brightness(1.5); }
-                   50% { transform: translateY(-70vh) translateX(calc(-50vw + 60px)) scale(1.8) rotate(5deg); filter: drop-shadow(0 0 40px gold) brightness(1.8); }
-                   55% { transform: translateY(-70vh) translateX(calc(-50vw + 60px)) scale(1.8) rotate(-5deg); filter: drop-shadow(0 0 30px white) brightness(1.5); }
-                   60% { transform: translateY(-70vh) translateX(calc(-50vw + 60px)) scale(1.8) rotate(0deg); filter: drop-shadow(0 0 20px gold) brightness(1.0); }
+                   /* 2. Twinkle & Shake (at lower position) */
+                   45% { transform: translateY(-55vh) translateX(calc(-50vw + 60px)) scale(1.8) rotate(-5deg); filter: drop-shadow(0 0 30px white) brightness(1.5); }
+                   50% { transform: translateY(-55vh) translateX(calc(-50vw + 60px)) scale(1.8) rotate(5deg); filter: drop-shadow(0 0 40px gold) brightness(1.8); }
+                   55% { transform: translateY(-55vh) translateX(calc(-50vw + 60px)) scale(1.8) rotate(-5deg); filter: drop-shadow(0 0 30px white) brightness(1.5); }
+                   60% { transform: translateY(-55vh) translateX(calc(-50vw + 60px)) scale(1.8) rotate(0deg); filter: drop-shadow(0 0 20px gold) brightness(1.0); }
 
                    /* 3. Zoom Up & Disappear */
                    100% { transform: translateY(-150vh) translateX(calc(-50vw + 60px)) scale(1.8); opacity: 0; filter: blur(5px); }
