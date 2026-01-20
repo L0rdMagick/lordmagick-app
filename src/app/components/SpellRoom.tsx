@@ -195,10 +195,11 @@ const TraditionButton: React.FC<TraditionButtonProps> = ({ tradition }) => {
                     />
                     
                     {/* BINDING OF ISAAC STYLE OVERLAY (Bottom Sheet) */}
+                    {/* BINDING OF ISAAC STYLE OVERLAY (Bottom Sheet) */}
                     {tradition.isAvailable && (
                         <div 
                             className={`
-                                absolute inset-0 
+                                absolute inset-[1%] rounded-xl
                                 transition-transform duration-500 ease-out 
                                 z-20 flex flex-col items-center justify-start pointer-events-none 
                                 ${isTouched ? 'translate-y-0 pointer-events-auto' : 'translate-y-full group-hover:translate-y-0 group-hover:pointer-events-auto'}
@@ -206,30 +207,29 @@ const TraditionButton: React.FC<TraditionButtonProps> = ({ tradition }) => {
                         >
                             
                             {/* Parchment Caption Container */}
-                            <div className="relative w-full h-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-100 flex flex-col items-center" style={{ opacity: isTouched ? 1 : undefined }}>
+                            <div className="relative w-full h-full flex flex-col items-center justify-start opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-100" style={{ opacity: isTouched ? 1 : undefined }}>
                                 {/* Parchment Image Background */}
                                 <div className="absolute inset-0 z-0">
                                     <Image
                                         src="/images/spell-room/magick-overlay-caption.png"
                                         alt="" 
                                         fill
-                                        className="object-cover drop-shadow-xl"
-                                        style={{ objectPosition: 'center bottom' }} 
+                                        className="object-fill drop-shadow-xl rounded-xl"
                                     />
                                 </div>
                                 
-                                {/* Caption Text - Top Area with Bottom Padding to avoid Button */}
-                                {/* pb-[85%] reserves ~Square Button size (70% width -> ~70% height + 5% + margin) */}
-                                <div className="relative z-10 w-[80%] h-full flex items-center justify-center pb-[85%] mt-4">
-                                    <p className="text-[#3c2f2f] text-center font-serif text-base leading-relaxed font-semibold mix-blend-multiply overflow-y-auto max-h-full">
+                                {/* Caption Text - Adjusted for wide button */}
+                                {/* Button is w-70% aspect-3/1 -> height is ~23%. Bottom 5%. Space needed ~30% */}
+                                <div className="relative z-10 w-[80%] h-full flex items-center justify-center pb-[40%] mt-4">
+                                    <p className="text-[#3c2f2f] text-center font-serif text-xl md:text-2xl leading-snug font-semibold mix-blend-multiply overflow-y-auto max-h-full scrollbar-hide break-words">
                                         {tradition.caption}
                                     </p>
                                 </div>
                             </div>
 
-                             {/* Floating Sigil Button - 70% Width, 5% Bottom Padding */}
+                             {/* Floating Sigil Button - Wide Aspect Ratio (1024x335) */}
                             <div className="absolute bottom-[5%] left-1/2 -translate-x-1/2 z-30 w-[70%] transition-transform duration-300 group-hover:scale-105 group-active:scale-95">
-                                <div className="relative w-full aspect-square">
+                                <div className="relative w-full aspect-[3/1]">
                                     <Image
                                         src="/images/spell-room/magick-button.png"
                                         alt={buttonAlt}
