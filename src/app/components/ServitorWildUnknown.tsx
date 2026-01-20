@@ -686,7 +686,7 @@ export default function ServitorWildUnknown() {
             
             const isMobile = window.innerWidth < 768;
             // Destination closer to vessel (center over card)
-            const rightDestination = isMobile ? 65 : 85; 
+            const rightDestination = isMobile ? 55 : 75; 
             
             await moveTo(rightDestination, id);
             if(!runningRef.current) break;
