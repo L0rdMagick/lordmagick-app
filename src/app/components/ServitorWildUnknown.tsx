@@ -91,6 +91,8 @@ const DIRECTIONAL_OFFSETS = {
         legLeft:  { x: 5, y: 60, s: 0.9, f: true },
         vessel:  { x: -20, y: 15, s: 1.8, f: false },
         mound:   { x: 0, y: 3, s: 2.8, f: false },
+        vesselMobile: { x: -20, y: 15, s: 1.8, f: false }, // Clone of vessel
+        moundMobile: { x: 0, y: 3, s: 2.8, f: false },     // Clone of mound
     },
     facingLeft: {
         globalUI:   { x: 0, y: 0, s: 0 }, 
@@ -107,7 +109,9 @@ const DIRECTIONAL_OFFSETS = {
         legRight: { x: -5, y: 2, s: 0 },
         legLeft:  { x: -1, y: 10, s: 0 },
         vessel: { x: 0, y: 0, s: 0 },
-        mound: { x: 0, y: 0, s: 0 }
+        mound: { x: 0, y: 0, s: 0 },
+        vesselMobile: { x: 0, y: 0, s: 0 },
+        moundMobile: { x: 0, y: 0, s: 0 }
     }
 };
 
@@ -137,6 +141,8 @@ const DEFAULT_OFFSETS = {
     sigil:   { x: 0, y: 0, s: 0.0, f: false, v: true, spread: 0 },
     vessel:  { x: 0, y: 0, s: 0.0, f: false, v: true, spread: 0 },
     mound:   { x: 0, y: 0, s: 0.0, f: false, v: true, spread: 0 },
+    vesselMobile: { x: 0, y: 0, s: 0.0, f: false, v: true, spread: 0 },
+    moundMobile: { x: 0, y: 0, s: 0.0, f: false, v: true, spread: 0 },
 };
 
 // --- EXTRACTED SERVITOR RIG COMPONENT ---
@@ -316,6 +322,15 @@ export default function ServitorWildUnknown() {
     const [isCarryingTreasure, setIsCarryingTreasure] = useState(false);
     const [isHappy, setIsHappy] = useState(false);
     const [isDepositing, setIsDepositing] = useState(false);
+    
+    // --- RESPONSIVE LOGIC ---
+    const [isMobileScreen, setIsMobileScreen] = useState(false);
+    useEffect(() => {
+        const checkMobile = () => setIsMobileScreen(window.innerWidth < 768);
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
     const runningRef = useRef(false); 
     const loopIdRef = useRef(0);
@@ -351,8 +366,10 @@ export default function ServitorWildUnknown() {
         { id: 'clothes', label: 'ROBES', asset: ASSETS.CLOTHES, indexKey: 'clothingIndex', offsetKey: 'clothes', canFlip: true },
         { id: 'wing', label: 'WINGS', asset: ASSETS.BACK, indexKey: 'wingIndex', offsetKey: 'wing', canFlip: true },
         { id: 'sigil', label: 'SIGILS', asset: ASSETS.TREASURES, indexKey: 'sigilIndex', offsetKey: 'sigil', canFlip: true },
-        { id: 'mound', label: 'MOUNDS', asset: ASSETS.MOUND, indexKey: 'moundIndex', offsetKey: 'mound', canFlip: true }, 
-        { id: 'vessel', label: 'VESSELS', asset: ASSETS.VESSELS, indexKey: 'vesselIndex', offsetKey: 'vessel', canFlip: true },
+        { id: 'mound', label: 'MOUND (PC)', asset: ASSETS.MOUND, indexKey: 'moundIndex', offsetKey: 'mound', canFlip: true }, 
+        { id: 'moundMobile', label: 'MOUND (MOB)', asset: ASSETS.MOUND, indexKey: 'moundIndex', offsetKey: 'moundMobile', canFlip: true },
+        { id: 'vessel', label: 'VESSEL (PC)', asset: ASSETS.VESSELS, indexKey: 'vesselIndex', offsetKey: 'vessel', canFlip: true },
+        { id: 'vesselMobile', label: 'VESSEL (MOB)', asset: ASSETS.VESSELS, indexKey: 'vesselIndex', offsetKey: 'vesselMobile', canFlip: true },
         { id: 'food', label: 'FOOD', asset: ASSETS.FOOD, indexKey: 'foodIndex', offsetKey: null }
     ], []);
 
@@ -915,8 +932,19 @@ export default function ServitorWildUnknown() {
     const isFeedingActive = hungerState === 'hungry' || isFeeding || hungerState === 'fed';
 
     const getGameObjectStyle = (key: 'mound' | 'vessel') => {
-        const u = (config.offsets as any)[key];
-        const b = (DIRECTIONAL_OFFSETS.facingRight as any)[key];
+        // Determine effective key based on screen size
+        let effectiveKey = key;
+        if (isMobileScreen) {
+            effectiveKey = key === 'mound' ? 'moundMobile' : 'vesselMobile';
+        }
+        // Fallback to PC key if mobile key is missing in user config (e.g. old save)
+        // (Though updateOffset init should handle this, safeguards are good)
+        let u = (config.offsets as any)[effectiveKey];
+        if (!u && isMobileScreen) u = (config.offsets as any)[key]; // Fallback to PC
+        if (!u) return { transform: 'scale(0)', filter: 'opacity(0)' };
+
+        const b = (DIRECTIONAL_OFFSETS.facingRight as any)[effectiveKey] || (DIRECTIONAL_OFFSETS.facingRight as any)[key];
+        
         return {
             transform: `scale(${b.s + u.s}) translate(${b.x + u.x}%, ${b.y + u.y}%)`,
             filter: !u.v ? 'opacity(0)' : 'none'
@@ -1207,7 +1235,7 @@ export default function ServitorWildUnknown() {
 
                 <div className={`absolute bottom-[130px] right-[20px] w-32 h-32 z-20 flex flex-col items-center transition-all duration-300 ${!showVessel ? 'scale-0 opacity-0' : 'scale-100 opacity-100 anim-pop-in'}`}
                      style={{ zIndex: feedingStage === 'chest_anim' ? 300 : 20 }}>
-                    {config.offsets.vessel.v && (
+                    {((config.offsets as any)[isMobileScreen ? 'vesselMobile' : 'vessel']?.v ?? config.offsets.vessel.v) && (
                         <div id="vessel-wrapper" className={`w-full h-full relative transition-all duration-500 ${feedingStage === 'chest_anim' ? 'float-up-dissipate' : ''}`}
                              style={getGameObjectStyle('vessel')}>
                             <div id="game-vessel-inner" 
