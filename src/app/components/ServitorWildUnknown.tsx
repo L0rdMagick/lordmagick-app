@@ -700,12 +700,16 @@ export default function ServitorWildUnknown() {
 
             const startX = rectServitor.left + (rectServitor.width / 2);
             const startY = rectServitor.top + (rectServitor.height / 3);
+            
+            // Steeper angle: Reduce horizontal travel by 20%
+            const rawDiffX = vesselTargetX - startX;
+            const adjustedEndX = startX + (rawDiffX * 0.8);
 
             const flyId = Math.random();
             setFlyingTreasures(prev => [...prev, {
                 id: flyId,
                 startX, startY,
-                endX: vesselTargetX,
+                endX: adjustedEndX,
                 endY: vesselTargetY,
                 rotate: (Math.random() * 360),
                 index: config.carryTreasureIndex
@@ -1100,7 +1104,7 @@ export default function ServitorWildUnknown() {
                 /* TREASURE FLY ANIMATION */
                 @keyframes fly-to-vessel {
                     0% { transform: translate(0, 0) scale(1) rotate(0deg); opacity: 1; }
-                    100% { transform: translate(var(--tx), var(--ty)) scale(0.25) rotate(720deg); opacity: 0; }
+                    100% { transform: translate(var(--tx), var(--ty)) scale(0.75) rotate(720deg); opacity: 0; }
                 }
 
                 @keyframes pop-in-elastic {
@@ -1113,11 +1117,12 @@ export default function ServitorWildUnknown() {
 
                 /* RENAMED to match class usage with EXPLOSION effect */
                 @keyframes float-up-dissipate-anim {
-                   0% { transform: translateY(0) scale(1); opacity: 1; filter: drop-shadow(0 0 10px gold); }
-                   50% { transform: translateY(-35vh) scale(1.0); opacity: 1; filter: drop-shadow(0 0 20px gold); }
-                   100% { transform: translateY(-70vh) scale(3.5); opacity: 0; filter: drop-shadow(0 0 50px white) brightness(3) blur(10px); }
+                   0% { transform: translateY(0) translateX(0) scale(1.8); opacity: 1; filter: drop-shadow(0 0 10px gold); }
+                   50% { transform: translateY(-70vh) translateX(calc(-50vw + 60px)) scale(1.8); opacity: 1; filter: drop-shadow(0 0 30px gold) brightness(1.5); }
+                   80% { transform: translateY(-70vh) translateX(calc(-50vw + 60px)) scale(3.5); opacity: 0.5; filter: drop-shadow(0 0 80px white) brightness(4); }
+                   100% { transform: translateY(-70vh) translateX(calc(-50vw + 60px)) scale(4.0); opacity: 0; filter: blur(20px); }
                 }
-                .float-up-dissipate { animation: float-up-dissipate-anim 4s forwards cubic-bezier(0.25, 1, 0.5, 1); }
+                .float-up-dissipate { animation: float-up-dissipate-anim 5s forwards cubic-bezier(0.25, 1, 0.5, 1) !important; }
             `}</style>
 
             <button onClick={() => hasUnsavedChanges ? setShowExitWarning(true) : router.push('/spell-room')} className="absolute top-5 right-4 z-60 text-gray-400 hover:text-white"><X /></button>
@@ -1516,26 +1521,30 @@ export default function ServitorWildUnknown() {
                     {hungerState === 'fed' ? (
                         <div className="w-full text-center flex flex-col items-center justify-center p-6">
                             
-                            {/* STAGE 1: "You have fed [Name]" */}
-                            <div className={`transition-all duration-1000 absolute ${feedingStage === 'fed_msg' ? 'opacity-100 scale-100' : 'opacity-0 scale-90'}`}>
-                                <div className="bg-[#0f0f1a]/80 border border-[#FFD700]/40 rounded-xl p-10 backdrop-blur-md shadow-[0_0_30px_rgba(255,215,0,0.2)] max-w-lg mx-auto">
-                                    <h2 className="text-[#FFD700] magick-font text-4xl drop-shadow-[0_0_10px_#FFD700] tracking-wide mb-2">
-                                        You have fed
-                                    </h2>
-                                    <h3 className="text-[#FFD700] magick-font text-5xl uppercase drop-shadow-[0_0_20px_#FFA500]">
-                                        {sName || "The Spirit"}
-                                    </h3>
+                            {/* STAGE 1: "You have fed [Name]" */
+                             feedingStage === 'fed_msg' && (
+                                <div className="animate-in fade-in zoom-in duration-1000 absolute">
+                                    <div className="bg-[#0f0f1a]/80 border border-[#FFD700]/40 rounded-xl p-10 backdrop-blur-md shadow-[0_0_30px_rgba(255,215,0,0.2)] max-w-lg mx-auto">
+                                        <h2 className="text-[#FFD700] magick-font text-4xl drop-shadow-[0_0_10px_#FFD700] tracking-wide mb-2">
+                                            You have fed
+                                        </h2>
+                                        <h3 className="text-[#FFD700] magick-font text-5xl uppercase drop-shadow-[0_0_20px_#FFA500]">
+                                            {sName || "The Spirit"}
+                                        </h3>
+                                    </div>
                                 </div>
-                            </div>
+                            )}
 
-                            {/* STAGE 2: "Your wishes are flowing to you" */}
-                            <div className={`transition-all duration-1000 absolute ${feedingStage === 'wishes_msg' ? 'opacity-100 scale-100' : 'opacity-0 scale-90'}`}>
-                                <div className="bg-[#0f0f1a]/80 border border-[#FFD700]/40 rounded-xl p-10 backdrop-blur-md shadow-[0_0_30px_rgba(255,215,0,0.2)] max-w-lg mx-auto">
-                                    <h2 className="text-[#FFD700] magick-font text-4xl drop-shadow-[0_0_15px_#FFD700] italic leading-relaxed">
-                                        "Your wishes are flowing to you."
-                                    </h2>
+                            {/* STAGE 2: "Your wishes are flowing to you" */
+                             feedingStage === 'wishes_msg' && (
+                                <div className="animate-in fade-in zoom-in duration-1000 absolute">
+                                    <div className="bg-[#0f0f1a]/80 border border-[#FFD700]/40 rounded-xl p-10 backdrop-blur-md shadow-[0_0_30px_rgba(255,215,0,0.2)] max-w-lg mx-auto">
+                                        <h2 className="text-[#FFD700] magick-font text-4xl drop-shadow-[0_0_15px_#FFD700] italic leading-relaxed">
+                                            "Your wishes are flowing to you."
+                                        </h2>
+                                    </div>
                                 </div>
-                            </div>
+                            )}
 
                             {/* STAGE 3: Chest Animation handled by Main Vessel Instance */}
 
