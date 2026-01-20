@@ -1108,11 +1108,13 @@ export default function ServitorWildUnknown() {
                 }
                 .anim-pop-in { animation: pop-in-elastic 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
 
-                @keyframes float-dissipate {
+                /* RENAMED to match class usage */
+                @keyframes float-up-dissipate-anim {
                    0% { transform: translateY(0) scale(1); opacity: 1; filter: drop-shadow(0 0 10px gold); }
                    50% { transform: translateY(-30vh) scale(1.2); opacity: 0.8; filter: drop-shadow(0 0 30px gold); }
                    100% { transform: translateY(-60vh) scale(1.5); opacity: 0; filter: blur(10px); }
                 }
+                .float-up-dissipate { animation: float-up-dissipate-anim 3s forwards ease-in-out; }
             `}</style>
 
             <button onClick={() => hasUnsavedChanges ? setShowExitWarning(true) : router.push('/spell-room')} className="absolute top-5 right-4 z-60 text-gray-400 hover:text-white"><X /></button>
@@ -1187,9 +1189,10 @@ export default function ServitorWildUnknown() {
                     </div>
                 )}
 
-                <div className={`absolute bottom-[130px] right-[20px] w-32 h-32 z-20 flex flex-col items-center transition-all duration-300 ${!showVessel ? 'scale-0 opacity-0' : 'scale-100 opacity-100 anim-pop-in'}`}>
+                <div className={`absolute bottom-[130px] right-[20px] w-32 h-32 z-20 flex flex-col items-center transition-all duration-300 ${!showVessel ? 'scale-0 opacity-0' : 'scale-100 opacity-100 anim-pop-in'}`}
+                     style={{ zIndex: feedingStage === 'chest_anim' ? 300 : 20 }}>
                     {config.offsets.vessel.v && (
-                        <div id="vessel-wrapper" className="w-full h-full relative transition-all duration-500"
+                        <div id="vessel-wrapper" className={`w-full h-full relative transition-all duration-500 ${feedingStage === 'chest_anim' ? 'float-up-dissipate' : ''}`}
                              style={getGameObjectStyle('vessel')}>
                             <div id="game-vessel-inner" 
                                  className={`w-full h-full ${isDepositing ? 'anim-vessel-deposit' : ''}`}
@@ -1502,33 +1505,33 @@ export default function ServitorWildUnknown() {
 
             {/* FEEDING MODAL */}
             {isFeedingActive && (
-                <div className={`absolute inset-0 z-200 flex flex-col items-center justify-center transition-colors duration-1000 ${hungerState === 'fed' ? 'bg-black/90' : 'bg-black/80'}`}>
+                <div className={`absolute inset-0 z-200 flex flex-col items-center justify-center transition-colors duration-1000 ${hungerState === 'fed' ? 'bg-black/80' : 'bg-gradient-to-b from-black/95 via-black/70 to-transparent'}`}>
                     
                     {hungerState === 'fed' ? (
-                        <div className="w-full text-center flex flex-col items-center justify-center">
+                        <div className="w-full text-center flex flex-col items-center justify-center p-6">
                             
                             {/* STAGE 1: "You have fed [Name]" */}
                             <div className={`transition-all duration-1000 absolute ${feedingStage === 'fed_msg' ? 'opacity-100 scale-100' : 'opacity-0 scale-90'}`}>
-                                <h2 className="text-[#FFD700] magick-font text-5xl drop-shadow-[0_0_20px_#FFD700] tracking-wide">
-                                    You have fed {sName || "the spirit"}
-                                </h2>
+                                <div className="bg-[#0f0f1a]/80 border border-[#FFD700]/40 rounded-xl p-10 backdrop-blur-md shadow-[0_0_30px_rgba(255,215,0,0.2)] max-w-lg mx-auto">
+                                    <h2 className="text-[#FFD700] magick-font text-4xl drop-shadow-[0_0_10px_#FFD700] tracking-wide mb-2">
+                                        You have fed
+                                    </h2>
+                                    <h3 className="text-[#FFD700] magick-font text-5xl uppercase drop-shadow-[0_0_20px_#FFA500]">
+                                        {sName || "The Spirit"}
+                                    </h3>
+                                </div>
                             </div>
 
                             {/* STAGE 2: "Your wishes are flowing to you" */}
                             <div className={`transition-all duration-1000 absolute ${feedingStage === 'wishes_msg' ? 'opacity-100 scale-100' : 'opacity-0 scale-90'}`}>
-                                <h2 className="text-[#FFD700] magick-font text-4xl drop-shadow-[0_0_15px_#FFD700] italic">
-                                    Your wishes are flowing to you.
-                                </h2>
+                                <div className="bg-[#0f0f1a]/80 border border-[#FFD700]/40 rounded-xl p-10 backdrop-blur-md shadow-[0_0_30px_rgba(255,215,0,0.2)] max-w-lg mx-auto">
+                                    <h2 className="text-[#FFD700] magick-font text-4xl drop-shadow-[0_0_15px_#FFD700] italic leading-relaxed">
+                                        "Your wishes are flowing to you."
+                                    </h2>
+                                </div>
                             </div>
 
-                            {/* STAGE 3: Chest Float Animation */}
-                            {feedingStage === 'chest_anim' && (
-                                <div className="absolute w-40 h-40" style={{ animation: 'float-dissipate 3s forwards ease-in-out' }}>
-                                    {/* Using Vessel Image as "Chest" */}
-                                    <div className="w-full h-full" style={getSpriteStyle(config.vesselIndex, ASSETS.VESSELS)} />
-                                    <div className="absolute inset-0 flex items-center justify-center animate-pulse text-4xl">✨</div>
-                                </div>
-                            )}
+                            {/* STAGE 3: Chest Animation handled by Main Vessel Instance */}
 
                         </div>
                     ) : (
