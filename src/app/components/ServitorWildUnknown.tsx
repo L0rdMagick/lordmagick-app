@@ -1062,7 +1062,11 @@ export default function ServitorWildUnknown() {
                     100% { opacity: 1; transform: scale(1.1); filter: drop-shadow(0 0 5px white); } 
                 }
 
-                @keyframes fall { from { top: -10%; opacity: 1; } to { top: 100%; opacity: 0; } }
+                @keyframes fall { 
+                    0% { top: -10%; opacity: 1; } 
+                    70% { opacity: 1; }
+                    100% { top: 80%; opacity: 0; } 
+                }
 
                 .anim-walk-left .servitor-rig { animation: bounce 0.6s infinite; }
                 .anim-walk-left .leg-left-joint { animation: rotate-l 1.2s infinite ease-in-out; }
@@ -1096,7 +1100,6 @@ export default function ServitorWildUnknown() {
                 /* TREASURE FLY ANIMATION */
                 @keyframes fly-to-vessel {
                     0% { transform: translate(0, 0) scale(1) rotate(0deg); opacity: 1; }
-                    20% { opacity: 1; }
                     100% { transform: translate(var(--tx), var(--ty)) scale(0.25) rotate(720deg); opacity: 0; }
                 }
 
@@ -1108,11 +1111,13 @@ export default function ServitorWildUnknown() {
                 }
                 .anim-pop-in { animation: pop-in-elastic 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
 
-                /* RENAMED to match class usage */
+                /* RENAMED to match class usage with EXPLOSION effect */
                 @keyframes float-up-dissipate-anim {
                    0% { transform: translateY(0) scale(1); opacity: 1; filter: drop-shadow(0 0 10px gold); }
-                   50% { transform: translateY(-30vh) scale(1.2); opacity: 0.8; filter: drop-shadow(0 0 30px gold); }
-                   100% { transform: translateY(-60vh) scale(1.5); opacity: 0; filter: blur(10px); }
+                   60% { transform: translateY(-70vh) scale(1.2); opacity: 1; filter: drop-shadow(0 0 30px gold) brightness(1.5); }
+                   80% { transform: translateY(-80vh) scale(2.0); opacity: 0.8; filter: drop-shadow(0 0 50px white) brightness(3); }
+                   90% { opacity: 0; }
+                   100% { transform: translateY(-85vh) scale(3.0); opacity: 0; filter: blur(20px); }
                 }
                 .float-up-dissipate { animation: float-up-dissipate-anim 3s forwards ease-in-out; }
             `}</style>
@@ -1505,7 +1510,9 @@ export default function ServitorWildUnknown() {
 
             {/* FEEDING MODAL */}
             {isFeedingActive && (
-                <div className={`absolute inset-0 z-200 flex flex-col items-center justify-center transition-colors duration-1000 ${hungerState === 'fed' ? 'bg-black/80' : 'bg-gradient-to-b from-black/95 via-black/70 to-transparent'}`}>
+                // Custom gradient: mostly black at top (0-25%), then quick fade to transparent by 45%
+                <div className={`absolute inset-0 z-200 flex flex-col items-center justify-center transition-colors duration-1000 ${hungerState === 'fed' ? 'bg-black/80' : ''}`}
+                     style={{ background: hungerState !== 'fed' ? 'linear-gradient(180deg, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.85) 30%, rgba(0,0,0,0) 45%)' : undefined }}>
                     
                     {hungerState === 'fed' ? (
                         <div className="w-full text-center flex flex-col items-center justify-center p-6">
