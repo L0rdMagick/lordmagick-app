@@ -9,7 +9,11 @@ import {
   Triangle, Eye, X 
 } from 'lucide-react';
 // THE FIX: Import the new production-ready service functions
-import { generateElectricEnsorcellment, generateElectricOracle } from '@/lib/services/geminiService';
+import { generateElectricEnsorcellment, generateElectricOracle, saveSpell } from '@/lib/services/geminiService';
+import { useSpellSystem } from '@/hooks/useSpellSystem';
+import type { Session } from '@/lib/types';
+import { SlotPurchaseModal } from '@/app/components/economy/SlotPurchaseModal';
+import { BlockageErrorOverlay } from '@/app/components/economy/BlockageErrorOverlay';
 
 // ==========================================
 // 1. THE "VOID GATE" SPELL
@@ -205,21 +209,19 @@ const useParticleSystem = () => {
 };
 
 // The Wrapped Component
-const VoidGateSpell = ({ onExit }: { onExit: () => void }) => {
+const VoidGateSpell = ({ onExit, spellSystem, session }: { onExit: () => void, spellSystem: any, session: Session | null }) => {
   const [stage, setStage] = useState(0);
   const [intention, setIntention] = useState('');
+  const [mode, setMode] = useState<'standard' | 'ai'>('standard');
+  const [isSaving, setIsSaving] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
   const { initAudio, playTone, playDrone } = useAudioEngine();
   const { canvasRef, spawnExplosion } = useParticleSystem();
   
   // STAGE 1: INITIATION
   const StartScreen = () => (
     <div className="flex flex-col items-center justify-center h-full space-y-8 animate-fade-in relative z-20">
-      <div className="relative group cursor-pointer"
-           onClick={() => {
-             // FIX: Safe window access
-             const win = (globalThis as any).window;
-             if (win) spawnExplosion(win.innerWidth/2, win.innerHeight/2, '#d8b4fe', 50);
-           }}>
+      <div className="relative group cursor-pointer">
         <div className="absolute inset-0 bg-purple-600 blur-[100px] opacity-20 rounded-full animate-pulse"></div>
         <Orbit size={80} className="text-purple-300 animate-[spin_10s_linear_infinite] relative z-10" />
       </div>
@@ -229,21 +231,59 @@ const VoidGateSpell = ({ onExit }: { onExit: () => void }) => {
       <p className="text-center text-gray-400 max-w-md px-6 font-light italic tracking-wide">
         &quot;The numbers are the keys. The gestures are the lock.&quot;
       </p>
-      <button 
-        onClick={(e) => {
-          // FIX: Cast target to any to access getBoundingClientRect
-          const target = e.target as any;
-          const rect = target.getBoundingClientRect();
-          spawnExplosion(rect.x + rect.width/2, rect.y + rect.height/2, '#ffffff', 20);
-          initAudio();
-          playDrone(true);
-          playTone(110, 'sawtooth', 3, 0.2);
-          setStage(1);
-        }}
-        className="mt-12 px-16 py-5 border border-purple-500/30 bg-purple-900/10 backdrop-blur-sm text-purple-200 rounded-sm hover:bg-purple-500/20 hover:border-purple-400 hover:tracking-[0.4em] transition-all duration-700 tracking-[0.2em] uppercase text-sm"
-      >
-        Open The Gate
-      </button>
+      
+      <div className="flex flex-col gap-4 mt-8 w-full max-w-sm px-4">
+        {/* Standard (Free) Mode */}
+        <button 
+          onClick={async (e) => {
+            // FIX: Cast target to any to access getBoundingClientRect
+            const target = e.target as any;
+            const rect = target.getBoundingClientRect();
+            spawnExplosion(rect.x + rect.width/2, rect.y + rect.height/2, '#ffffff', 20);
+            initAudio();
+            playDrone(true);
+            playTone(110, 'sawtooth', 3, 0.2);
+            setMode('standard');
+            setStage(1);
+          }}
+          className="px-8 py-4 border border-purple-500/30 bg-purple-900/10 backdrop-blur-sm text-purple-200 rounded-sm hover:bg-purple-500/20 hover:border-purple-400 transition-all duration-300 tracking-[0.2em] uppercase text-xs"
+        >
+          Standard Ritual (Free)
+        </button>
+
+        {/* AI Enhanced Mode */}
+        <button 
+          onClick={async (e) => {
+            if (!session?.user?.id) { 
+                // Using alert for now as a fallback if no overlay available at this level, but the parent should handle auth
+                // Ideally this button shouldn't be reachable without auth if the page enforces it.
+                // But let's check spellSystem too.
+                return; 
+            }
+            
+            // Check Economy
+            const paid = await spellSystem.genEconomy.spendAether(session.user.id);
+            if (!paid) return;
+
+            // FIX: Cast target to any
+            const target = e.target as any;
+            const rect = target.getBoundingClientRect();
+            spawnExplosion(rect.x + rect.width/2, rect.y + rect.height/2, '#d8b4fe', 40);
+            initAudio();
+            playDrone(true);
+            playTone(110, 'sawtooth', 3, 0.2);
+            setMode('ai');
+            setStage(1);
+          }}
+          className="px-8 py-4 border border-purple-400 bg-purple-900/40 backdrop-blur-md text-white rounded-sm hover:bg-purple-800/60 shadow-[0_0_15px_rgba(168,85,247,0.3)] transition-all duration-300 tracking-[0.2em] uppercase text-xs font-bold"
+        >
+          High Ritual (AI Enhanced)
+        </button>
+        <div className="text-center text-[10px] text-gray-500 font-mono">
+             High Ritual cost: {spellSystem.genEconomy.cost} Aether
+        </div>
+      </div>
+
       <p className="text-[10px] text-gray-600 absolute bottom-8 uppercase tracking-widest">Audio & Touch Required</p>
     </div>
   );
@@ -510,8 +550,9 @@ const VoidGateSpell = ({ onExit }: { onExit: () => void }) => {
              <button
                 type="button"
                 onClick={handleEnsorcell}
-                disabled={!intention || isEnhancing}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-purple-600 hover:text-purple-300 transition-colors"
+                disabled={!intention || isEnhancing || mode === 'standard'}
+                className={`absolute right-2 top-1/2 -translate-y-1/2 transition-colors ${mode === 'standard' ? 'text-gray-600 cursor-not-allowed' : 'text-purple-600 hover:text-purple-300'}`}
+                title={mode === 'standard' ? "Only available in High Ritual" : "Enhance with AI"}
              >
                 <Sparkles size={20} className={isEnhancing ? "animate-spin" : ""} />
              </button>
@@ -661,6 +702,11 @@ const VoidGateSpell = ({ onExit }: { onExit: () => void }) => {
 
     useEffect(() => {
         const fetchOracle = async () => {
+             if (mode === 'standard') {
+                  setOracleMessage("The void accepts your command.");
+                  setLoading(false);
+                  return;
+             }
             // THE FIX: Use the real backend function for the Oracle message
             const response = await generateElectricOracle(intention);
             setOracleMessage(response);
@@ -668,6 +714,33 @@ const VoidGateSpell = ({ onExit }: { onExit: () => void }) => {
         };
         fetchOracle();
     }, [intention]);
+
+    const handleSave = async () => {
+        if (!session?.user?.id || isSaved || isSaving) return;
+
+        // Check Economy
+        const paid = await spellSystem.saveEconomy.spendAether(session.user.id);
+        if (!paid) return;
+
+        setIsSaving(true);
+        try {
+            await saveSpell(session.user.id, {
+                name: `Void Gate: ${intention.substring(0, 20)}`,
+                intention: intention,
+                incantation: oracleMessage, // Using the oracle message as the 'incantation' result
+                tradition: 'CHAOS', // Electric magick aligns closely with Chaos magick concepts
+                ritual_data: { type: 'electric_void_gate', mode, oracleMessage }
+            }, true); // Bypass limit logic since paid
+            setIsSaved(true);
+            playTone(880, 'sine', 1, 0.5);
+            const win = (globalThis as any).window;
+            if (win) spawnExplosion(win.innerWidth/2, win.innerHeight/2, '#a855f7', 80);
+        } catch (e: any) {
+            spellSystem.handleSaveError(e);
+        } finally {
+            setIsSaving(false);
+        }
+    };
 
     return (
     <div className="flex flex-col items-center justify-center h-full animate-fade-in px-8 text-center relative z-20">
@@ -687,12 +760,23 @@ const VoidGateSpell = ({ onExit }: { onExit: () => void }) => {
                 </div>
             )}
         </div>
-        <button 
-            onClick={onExit}
-            className="mt-12 text-[10px] text-gray-600 hover:text-white uppercase tracking-[0.4em] transition-colors border-b border-transparent hover:border-white pb-1"
-        >
-            Close The Circle
-        </button>
+        <div className="flex flex-col gap-4 mt-8 w-full max-w-sm">
+             <button 
+                onClick={handleSave}
+                disabled={isSaved || isSaving}
+                className={`py-3 border ${isSaved ? 'border-green-500/50 text-green-400' : 'border-purple-500/30 text-purple-300'} bg-gray-900/50 backdrop-blur-sm rounded uppercase tracking-widest text-xs hover:bg-purple-900/20 transition-all flex items-center justify-center gap-2`}
+             >
+                {isSaved ? "Saved to Grimoire" : isSaving ? "Saving..." : "Save to Grimoire"}
+                {isSaved && <span className="text-green-400">✓</span>}
+             </button>
+             
+             <button 
+                onClick={onExit}
+                className="text-[10px] text-gray-600 hover:text-white uppercase tracking-[0.4em] transition-colors border-b border-transparent hover:border-white pb-1"
+             >
+                Close The Circle
+             </button>
+        </div>
     </div>
     );
   };
@@ -770,12 +854,43 @@ const SpellCard = ({ title, desc, icon: Icon, onClick, disabled }: { title: stri
   </div>
 );
 
-export default function ElectricMagickPage() {
+export default function ElectricMagickPage({ session, isSubscribed, onBack }: { session: Session, isSubscribed: boolean, onBack?: () => void }) {
   const [activeSpell, setActiveSpell] = useState<string | null>(null);
+
+  const spellSystem = useSpellSystem({
+      serviceSlugGen: 'ai_electric_magick', // Adjust slug if needed
+      serviceSlugSave: 'save_spell_electric',
+      baseRedirectPath: '/spell-room/electric-magick-spells-app'
+  });
+  
+  const handleGoToStore = () => {
+      spellSystem.goToStoreForSlots(null, 'electric_spell_save_temp'); // Temp key not really used here yet but required by sig
+  };
 
   // If a spell is active, render that component instead of the menu
   if (activeSpell === 'void-gate') {
-    return <VoidGateSpell onExit={() => setActiveSpell(null)} />;
+    return (
+        <>
+            <VoidGateSpell onExit={() => setActiveSpell(null)} spellSystem={spellSystem} session={session} />
+            {/* Overlays must still be rendered at top level if component takes full screen */}
+            {spellSystem.activeError && (
+                <BlockageErrorOverlay 
+                    error={spellSystem.activeError}
+                    onDismiss={spellSystem.clearErrors}
+                    redirectPath="/spell-room/electric-magick-spells-app"
+                />
+            )}
+             <SlotPurchaseModal 
+                isOpen={spellSystem.modalState.isOpen} 
+                onClose={spellSystem.modalState.close} 
+                onPurchase={() => spellSystem.buySlots(session?.user?.id)} 
+                isProcessing={spellSystem.modalState.isLoading}
+                showAetherWarning={spellSystem.modalState.showWarning}
+                showSuccess={spellSystem.modalState.showSuccess}
+                onGoToStore={handleGoToStore}
+            />
+        </>
+    );
   }
 
   return (
