@@ -106,6 +106,7 @@ interface TraditionButtonProps {
 
 const TraditionButton: React.FC<TraditionButtonProps> = ({ tradition }) => {
     const [showMessage, setShowMessage] = useState(false);
+    const [isTouched, setIsTouched] = useState(false); // State for mobile tap interaction
 
     useEffect(() => {
         if (showMessage) {
@@ -115,10 +116,109 @@ const TraditionButton: React.FC<TraditionButtonProps> = ({ tradition }) => {
     }, [showMessage]);
 
     const handleClick = (e: React.MouseEvent) => {
+        // If locked, prevent default and show message
         if (!tradition.isAvailable) {
             e.preventDefault();
             setShowMessage(true);
+            return;
         }
+
+        // Mobile/Touch logic: First tap opens overlay, second tap navigates
+        // We can use the presence of the 'hover' media query to distinguish primary input mechanism roughly,
+        // or just rely on state. A simple robust way is:
+        // If the overlay is NOT visible (tracked by isTouched here for logic, though CSS uses group-hover),
+        // we prevent default.
+        // NOTE: On desktop, group-hover handles visuals. On mobile, we need this state.
+        // However, checking "is hover active" via JS is faulty.
+        // Strategy: If window width is small (mobile assumption) or touch event inferred.
+        // Simpler: If we are not 'touched', we prevent default. BUT this forces double click on desktop too if we aren't careful.
+        // Refined Strategy: Use a CSS media query check or just rely on the user tapping again.
+        // Let's implement active state toggle.
+        
+        // If we haven't flagged it as touched/active, and we are in a context where hover might not have triggered (implied by click without hover intent?):
+        // Actually, easiest way for "Mobile":
+        // Users expect: Tap -> Active.
+        // We can just check active state.
+        if (!isTouched) {
+             // For desktop users who hover, isTouched is false, but they see the overlay regardless.
+             // If they click, they want to go.
+             // For mobile users, they see nothing. They tap.
+             // We need to differentiate.
+             // Using a specialized functional approach: 
+             // On mobile, the first tap acts like hover.
+             // We can use onTouchStart to set a flag? 
+             // Let's try: simple toggle. behavior.
+        }
+    };
+    
+    // Better Mobile Handler: Use onTouchStart/End logic or just treat 'onClick' with a "prevent first" logic strictly for touch devices logic?
+    // Let's try a strict 'isTouched' state that is toggled by onClick.
+    // AND: We only preventDefault if !isTouched.
+    // Desktop nuance: Desktop users hover first. The visual is there. They click. 
+    // If we preventDefault on desktop, it's annoying.
+    // Fix: We reset isTouched on MouseLeave.
+    // On Desktop: MouseEnter -> (visuals show) -> Click -> Navigate. (isTouched is false, but we shouldn't block desktop).
+    // On Mobile: No MouseEnter. Tap -> Click.
+    
+    // We can use a simple trick: The overlay itself (the button inside) can be the link trigger?
+    // No, the whole card is the link.
+    
+    // Proposed Solution:
+    // 1. Desktop: Hover shows overlay. Link click works.
+    // 2. Mobile: Tap shows overlay (via CSS focus-within or JS). Link click blocked first time.
+    
+    const handleTouchStart = () => {
+        // This marks that we are interacting via touch
+        // preventing the "double click on desktop" issue if we used click only
+    };
+
+    const handleMobileClick = (e: React.MouseEvent) => {
+         if (!tradition.isAvailable) {
+            e.preventDefault();
+            setShowMessage(true);
+            return;
+        }
+        
+        // If overlay is not showing (simulated logic), prevent nav.
+        // We rely on 'isTouched' to represent "Overlay is Open via Tap".
+        if (!isTouched) {
+            e.preventDefault();
+            setIsTouched(true);
+            // On desktop this logic would force a double click unless we skip it.
+            // But we can't easily detect desktop vs mobile in click event without heuristics.
+            // Check CSS hover ability?
+            // window.matchMedia('(hover: hover)').matches
+            if (typeof window !== 'undefined' && window.matchMedia('(hover: hover)').matches) {
+                 // It IS a desktop/hover device. Allow navigation immediately?
+                 // But what if they haven't hovered yet? (Unlikely).
+                 // Actually, if it's desktop, click means go.
+                 // So we manually un-prevent default? No, we just don't prevent it.
+                 // Re-running the logic:
+                 // if (hasHover) return; // Navigate
+                 // else { e.preventDefault(); setIsTouched(true); }
+                 
+                 // However, we can't conditional return inside the PreventDefault block easily.
+            }
+        }
+    };
+
+    // Let's refine the handler for the View
+    const handleInteraction = (e: React.MouseEvent) => {
+         if (!tradition.isAvailable) {
+            e.preventDefault();
+            setShowMessage(true);
+            return;
+        }
+
+        // Check for hover capability
+        const hasHover = typeof window !== 'undefined' && window.matchMedia('(hover: hover)').matches;
+        
+        if (!hasHover && !isTouched) {
+            e.preventDefault();
+            setIsTouched(true);
+        }
+        // If hasHover (Desktop), we assume hover handled the preview, so click navigates.
+        // If !hasHover (Mobile) and isTouched is true, we allow navigation.
     };
 
     const href = tradition.customHref || `/spell-room/${slugifyTradition(tradition.name)}`;
@@ -128,13 +228,16 @@ const TraditionButton: React.FC<TraditionButtonProps> = ({ tradition }) => {
     const buttonAlt = `Magickal sigil button to initiate the ${tradition.name} - Cast ${tradition.category} ritual now`;
 
     return (
-        <div className="relative w-full max-w-sm mx-auto flex flex-col items-center">
+        <div 
+            className="relative w-full max-w-sm mx-auto flex flex-col items-center"
+            onMouseLeave={() => setIsTouched(false)} // Reset on mouse leave
+        >
             <Link 
                 href={href} 
-                onClick={handleClick}
+                onClick={handleInteraction}
                 className={`group relative block w-full overflow-hidden rounded-xl bg-black/40 border border-white/10 transition-all duration-300 ${!tradition.isAvailable ? 'cursor-not-allowed grayscale opacity-70' : 'cursor-pointer hover:border-purple-500/50 hover:shadow-[0_0_20px_rgba(168,85,247,0.3)]'}`}
                 role="button"
-                aria-expanded="false" // Should toggle on click/hover for screen readers technically, but simplified here
+                aria-expanded={isTouched} 
                 aria-label={`Open ${tradition.name} Ritual`}
             >
                 {/* Image Container */}
@@ -147,23 +250,30 @@ const TraditionButton: React.FC<TraditionButtonProps> = ({ tradition }) => {
                     />
                     
                     {/* BINDING OF ISAAC STYLE OVERLAY (Bottom Sheet) */}
-                    {/* BINDING OF ISAAC STYLE OVERLAY (Bottom Sheet) */}
                     {tradition.isAvailable && (
-                        <div className="absolute inset-0 translate-y-full transition-transform duration-500 ease-out group-hover:translate-y-0 z-20 flex flex-col items-center justify-center pb-4 pointer-events-none group-hover:pointer-events-auto">
+                        <div 
+                            className={`
+                                absolute inset-0 
+                                transition-transform duration-500 ease-out 
+                                z-20 flex flex-col items-center justify-center pointer-events-none 
+                                ${isTouched ? 'translate-y-0 pointer-events-auto' : 'translate-y-full group-hover:translate-y-0 group-hover:pointer-events-auto'}
+                            `}
+                        >
                             
                             {/* Parchment Caption Container */}
-                            <div className="relative w-full h-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-100 flex flex-col items-center justify-center">
+                            <div className="relative w-full h-full flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-100" style={{ opacity: isTouched ? 1 : undefined }}>
                                 {/* Parchment Image Background */}
                                 <div className="absolute inset-0 z-0">
                                     <Image
                                         src="/images/spell-room/magick-overlay-caption.png"
-                                        alt="" // Decorative background
+                                        alt="" 
                                         fill
                                         className="object-cover drop-shadow-xl"
+                                        style={{ objectPosition: 'center bottom' }} // Ensure bottom isn't weirdly cropped
                                     />
                                 </div>
                                 
-                                {/* Caption Text */}
+                                {/* Caption Text - 80% Width */}
                                 <div className="relative z-10 w-[80%] flex items-center justify-center mb-8">
                                     <p className="text-[#3c2f2f] text-center font-serif text-base leading-relaxed font-semibold mix-blend-multiply">
                                         {tradition.caption}
@@ -171,9 +281,9 @@ const TraditionButton: React.FC<TraditionButtonProps> = ({ tradition }) => {
                                 </div>
                             </div>
 
-                             {/* Floating Sigil Button */}
-                            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 transition-transform duration-300 group-hover:scale-110 group-active:scale-95">
-                                <div className="relative w-20 h-20">
+                             {/* Floating Sigil Button - 70% Width */}
+                            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 w-[70%] transition-transform duration-300 group-hover:scale-105 group-active:scale-95">
+                                <div className="relative w-full aspect-square">
                                     <Image
                                         src="/images/spell-room/magick-button.png"
                                         alt={buttonAlt}
