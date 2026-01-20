@@ -1115,14 +1115,22 @@ export default function ServitorWildUnknown() {
                 }
                 .anim-pop-in { animation: pop-in-elastic 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
 
-                /* RENAMED to match class usage with EXPLOSION effect */
+                /* RENAMED to match class usage with EXIT effect */
                 @keyframes float-up-dissipate-anim {
-                   0% { transform: translateY(0) translateX(0) scale(1.8); opacity: 1; filter: drop-shadow(0 0 10px gold); }
-                   50% { transform: translateY(-70vh) translateX(calc(-50vw + 60px)) scale(1.8); opacity: 1; filter: drop-shadow(0 0 30px gold) brightness(1.5); }
-                   80% { transform: translateY(-70vh) translateX(calc(-50vw + 60px)) scale(3.5); opacity: 0.5; filter: drop-shadow(0 0 80px white) brightness(4); }
-                   100% { transform: translateY(-70vh) translateX(calc(-50vw + 60px)) scale(4.0); opacity: 0; filter: blur(20px); }
+                   /* 1. Fly to Top Center */
+                   0% { transform: translateY(0) translateX(0) scale(1.8); }
+                   40% { transform: translateY(-70vh) translateX(calc(-50vw + 60px)) scale(1.8); filter: drop-shadow(0 0 20px gold); }
+                   
+                   /* 2. Twinkle & Shake */
+                   45% { transform: translateY(-70vh) translateX(calc(-50vw + 60px)) scale(1.8) rotate(-5deg); filter: drop-shadow(0 0 30px white) brightness(1.5); }
+                   50% { transform: translateY(-70vh) translateX(calc(-50vw + 60px)) scale(1.8) rotate(5deg); filter: drop-shadow(0 0 40px gold) brightness(1.8); }
+                   55% { transform: translateY(-70vh) translateX(calc(-50vw + 60px)) scale(1.8) rotate(-5deg); filter: drop-shadow(0 0 30px white) brightness(1.5); }
+                   60% { transform: translateY(-70vh) translateX(calc(-50vw + 60px)) scale(1.8) rotate(0deg); filter: drop-shadow(0 0 20px gold) brightness(1.0); }
+
+                   /* 3. Zoom Up & Disappear */
+                   100% { transform: translateY(-150vh) translateX(calc(-50vw + 60px)) scale(1.8); opacity: 0; filter: blur(5px); }
                 }
-                .float-up-dissipate { animation: float-up-dissipate-anim 5s forwards cubic-bezier(0.25, 1, 0.5, 1) !important; }
+                .float-up-dissipate { animation: float-up-dissipate-anim 4s forwards linear !important; }
             `}</style>
 
             <button onClick={() => hasUnsavedChanges ? setShowExitWarning(true) : router.push('/spell-room')} className="absolute top-5 right-4 z-60 text-gray-400 hover:text-white"><X /></button>
@@ -1515,11 +1523,11 @@ export default function ServitorWildUnknown() {
             {isFeedingActive && feedingStage !== 'chest_anim' && (
                 // Custom gradient: mostly black at top (0-25%), then quick fade to transparent by 45%
                 // During 'fed' state (messages), background becomes TRANSPARENT so we see game world
-                <div className={`absolute inset-0 z-200 flex flex-col items-center justify-center transition-colors duration-500 ${hungerState === 'fed' ? 'bg-transparent pointer-events-none' : ''}`}
+                <div className={`absolute inset-0 z-200 flex flex-col items-center transition-colors duration-500 ${hungerState === 'fed' ? 'bg-transparent pointer-events-none' : 'justify-center'}`}
                      style={{ background: hungerState !== 'fed' ? 'linear-gradient(180deg, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.85) 30%, rgba(0,0,0,0) 45%)' : undefined }}>
                     
                     {hungerState === 'fed' ? (
-                        <div className="w-full text-center flex flex-col items-center justify-center p-6">
+                        <div className="w-full text-center flex flex-col items-center absolute top-[20%]">
                             
                             {/* STAGE 1: "You have fed [Name]" */
                              feedingStage === 'fed_msg' && (
