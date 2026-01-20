@@ -716,16 +716,19 @@ export default function ServitorWildUnknown() {
             const startX = rectServitor.left + (rectServitor.width / 2);
             const startY = rectServitor.top + (rectServitor.height / 3);
             
-            // Steeper angle: Reduce horizontal travel by 20%
+            // Steeper angle: Reduce horizontal travel further (User req: "2 measurements sooner")
+            // Previously 0.8, reducing to 0.7 to stop noticeably short of center
             const rawDiffX = vesselTargetX - startX;
-            const adjustedEndX = startX + (rawDiffX * 0.8);
+            const adjustedEndX = startX + (rawDiffX * 0.70);
+            // Also adjust vertical stop point slightly higher
+            const adjustedEndY = vesselTargetY - 40;
 
             const flyId = Math.random();
             setFlyingTreasures(prev => [...prev, {
                 id: flyId,
                 startX, startY,
                 endX: adjustedEndX,
-                endY: vesselTargetY,
+                endY: adjustedEndY,
                 rotate: (Math.random() * 360),
                 index: config.carryTreasureIndex
             }]);
@@ -1145,19 +1148,28 @@ export default function ServitorWildUnknown() {
                 /* RENAMED to match class usage with EXIT effect */
                 @keyframes float-up-dissipate-anim {
                    /* 1. Fly to Top Center */
+                   /* Center Calc: Right 20px + Half Width (64px) = 84px from right. Center is 50vw from right. Target X = -50vw + 84px */
                    0% { transform: translateY(0) translateX(0) scale(1.8); }
-                   40% { transform: translateY(-55vh) translateX(calc(-50vw + 60px)) scale(1.8); filter: drop-shadow(0 0 20px gold); }
+                   40% { transform: translateY(-55vh) translateX(calc(-50vw + 84px)) scale(1.8); filter: drop-shadow(0 0 20px gold); }
                    
                    /* 2. Twinkle & Shake (at lower position) */
-                   45% { transform: translateY(-55vh) translateX(calc(-50vw + 60px)) scale(1.8) rotate(-5deg); filter: drop-shadow(0 0 30px white) brightness(1.5); }
-                   50% { transform: translateY(-55vh) translateX(calc(-50vw + 60px)) scale(1.8) rotate(5deg); filter: drop-shadow(0 0 40px gold) brightness(1.8); }
-                   55% { transform: translateY(-55vh) translateX(calc(-50vw + 60px)) scale(1.8) rotate(-5deg); filter: drop-shadow(0 0 30px white) brightness(1.5); }
-                   60% { transform: translateY(-55vh) translateX(calc(-50vw + 60px)) scale(1.8) rotate(0deg); filter: drop-shadow(0 0 20px gold) brightness(1.0); }
+                   45% { transform: translateY(-55vh) translateX(calc(-50vw + 84px)) scale(1.8) rotate(-5deg); filter: drop-shadow(0 0 30px white) brightness(1.5); }
+                   50% { transform: translateY(-55vh) translateX(calc(-50vw + 84px)) scale(1.8) rotate(5deg); filter: drop-shadow(0 0 40px gold) brightness(1.8); }
+                   55% { transform: translateY(-55vh) translateX(calc(-50vw + 84px)) scale(1.8) rotate(-5deg); filter: drop-shadow(0 0 30px white) brightness(1.5); }
+                   60% { transform: translateY(-55vh) translateX(calc(-50vw + 84px)) scale(1.8) rotate(0deg); filter: drop-shadow(0 0 20px gold) brightness(1.0); }
 
                    /* 3. Zoom Up & Disappear */
-                   100% { transform: translateY(-150vh) translateX(calc(-50vw + 60px)) scale(1.8); opacity: 0; filter: blur(5px); }
+                   100% { transform: translateY(-150vh) translateX(calc(-50vw + 84px)) scale(1.8); opacity: 0; filter: blur(5px); }
                 }
                 .float-up-dissipate { animation: float-up-dissipate-anim 4s forwards linear !important; }
+
+                @keyframes fade-in-out-magick {
+                    0% { opacity: 0; transform: scale(0.95); filter: blur(4px); }
+                    15% { opacity: 1; transform: scale(1); filter: blur(0px); }
+                    85% { opacity: 1; transform: scale(1); filter: blur(0px); }
+                    100% { opacity: 0; transform: scale(1.05); filter: blur(8px); }
+                }
+                .anim-msg-magick { animation: fade-in-out-magick 4s forwards ease-in-out; }
             `}</style>
 
             <button onClick={() => hasUnsavedChanges ? setShowExitWarning(true) : router.push('/spell-room')} className="absolute top-5 right-4 z-60 text-gray-400 hover:text-white"><X /></button>
@@ -1565,7 +1577,7 @@ export default function ServitorWildUnknown() {
                             
                             {/* STAGE 1: "You have fed [Name]" */
                              feedingStage === 'fed_msg' && (
-                                <div className="animate-in fade-in zoom-in duration-1000 absolute">
+                                <div className="anim-msg-magick absolute">
                                     <div className="bg-[#0f0f1a]/80 border border-[#FFD700]/40 rounded-xl p-10 backdrop-blur-md shadow-[0_0_30px_rgba(255,215,0,0.2)] max-w-lg mx-auto">
                                         <h2 className="text-[#FFD700] magick-font text-4xl drop-shadow-[0_0_10px_#FFD700] tracking-wide mb-2">
                                             You have fed
@@ -1579,7 +1591,7 @@ export default function ServitorWildUnknown() {
 
                             {/* STAGE 2: "Your wishes are flowing to you" */
                              feedingStage === 'wishes_msg' && (
-                                <div className="animate-in fade-in zoom-in duration-1000 absolute">
+                                <div className="anim-msg-magick absolute">
                                     <div className="bg-[#0f0f1a]/80 border border-[#FFD700]/40 rounded-xl p-10 backdrop-blur-md shadow-[0_0_30px_rgba(255,215,0,0.2)] max-w-lg mx-auto">
                                         <h2 className="text-[#FFD700] magick-font text-4xl drop-shadow-[0_0_15px_#FFD700] italic leading-relaxed">
                                             "Your wishes are flowing to you."
