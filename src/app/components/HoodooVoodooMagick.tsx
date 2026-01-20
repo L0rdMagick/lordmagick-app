@@ -1048,6 +1048,10 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
         router.push('/spell-room');
     };
 
+    const handleExitRitual = () => {
+        localStorage.removeItem('hoodoo_voodoo_autosave');
+    };
+
     const handleSaveToGrimoire = async () => {
         if (isSaved || !session?.user?.id) return;
         
@@ -1234,7 +1238,13 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
                 <div className="absolute inset-0 bg-black/40" />
                 <header className={`relative z-20 w-full p-4 md:p-6 shrink-0 transition-opacity duration-500 ${psalmReaderOpen ? 'opacity-0' : 'opacity-100'}`}>
                     <div className="flex justify-between items-center flex-wrap w-full max-w-7xl mx-auto">
-                        <div className="order-1"><MagickalBackLink href="/spell-room" text="All Traditions" /></div>
+                        <div className="order-1">
+                            <MagickalBackLink 
+                                href="/spell-room" 
+                                text="All Traditions" 
+                                onClick={handleExitRitual}
+                            />
+                        </div>
                         <div className="order-2 md:order-3"><RoomsButton /></div>
                         <h1 className="w-full text-center order-3 md:w-auto md:order-2 text-4xl md:text-5xl font-serif text-amber-300 mt-2 md:mt-0" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
                             Ache

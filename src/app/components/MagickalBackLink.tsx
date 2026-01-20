@@ -6,11 +6,13 @@ interface MagickalBackLinkProps {
   href: string;
   text: string;
   className?: string;
+  onClick?: () => void;
 }
 
-const MagickalBackLink: React.FC<MagickalBackLinkProps> = ({ href, text, className }) => (
+const MagickalBackLink: React.FC<MagickalBackLinkProps> = ({ href, text, className, onClick }) => (
     <Link 
       href={href}
+      onClick={onClick}
       className={`group flex items-center gap-3 text-cyan-200 opacity-80 hover:opacity-100 transition-all duration-300 ${className}`}
       style={{ filter: 'drop-shadow(1px 1px 3px rgba(0,0,0,0.7))' }}
     >
