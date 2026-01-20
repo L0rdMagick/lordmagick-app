@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { createBrowserClient } from '@supabase/ssr';
 
-// --- 1. ASSET CONFIGURATION ---
+// --- 1. ASSET CONFIGURATIO N ---
 const ASSET_PATH = '/images/Servitor_images/';
 
 const ASSETS = {
