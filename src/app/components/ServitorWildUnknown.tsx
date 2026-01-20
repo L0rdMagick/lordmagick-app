@@ -1277,10 +1277,11 @@ export default function ServitorWildUnknown() {
                                 
                                  {/* GOLDEN AURA - Behind Vessel */}
                                  {isDepositing && (
-                                    <div className="absolute top-1/2 left-1/2 w-24 h-24 rounded-full anim-glow-aura pointer-events-none"
+                                    <div className="absolute top-1/2 left-1/2 w-32 h-32 rounded-full anim-glow-aura pointer-events-none"
                                          style={{
-                                             background: 'radial-gradient(circle, rgba(255,215,0,0.6) 0%, rgba(255,165,0,0.2) 60%, transparent 80%)',
-                                             zIndex: -1 
+                                             background: 'radial-gradient(circle, rgba(255,215,0,0.5) 0%, rgba(255,165,0,0.15) 50%, transparent 70%)',
+                                             zIndex: -1,
+                                             filter: 'blur(20px)'
                                          }}
                                     />
                                  )}
