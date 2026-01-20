@@ -1171,13 +1171,26 @@ export default function ServitorWildUnknown() {
                 }
                 .anim-msg-magick { animation: fade-in-out-magick 4s forwards ease-in-out; }
 
-                /* PHASE 15: INDIGO GLOW */
-                @keyframes glow-indigo-pulse {
-                    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
-                    20% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); box-shadow: 0 0 20px #4b0082, 0 0 40px #4b0082 inset; }
-                    100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+                .anim-msg-magick { animation: fade-in-out-magick 4s forwards ease-in-out; }
+
+                /* PHASE 16: GOLDEN AURA & MOBILE OPTIMIZATION */
+                @keyframes glow-gold-aura {
+                    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+                    20% { opacity: 1; transform: translate(-50%, -50%) scale(1.4); filter: drop-shadow(0 0 15px #FFD700) drop-shadow(0 0 30px #FFA500); }
+                    100% { opacity: 0; transform: translate(-50%, -50%) scale(1.0); }
                 }
-                .anim-glow-indigo { animation: glow-indigo-pulse 0.8s ease-out forwards; }
+                .anim-glow-aura { 
+                    animation: glow-gold-aura 1.0s ease-out forwards;
+                    will-change: transform, opacity;
+                    backface-visibility: hidden;
+                }
+                
+                /* Hardward Acceleration Utility */
+                .gpu-accel {
+                    transform: translateZ(0);
+                    backface-visibility: hidden;
+                    will-change: transform;
+                }
             `}</style>
 
             <button onClick={() => hasUnsavedChanges ? setShowExitWarning(true) : router.push('/spell-room')} className="absolute top-5 right-4 z-60 text-gray-400 hover:text-white"><X /></button>
@@ -1256,33 +1269,38 @@ export default function ServitorWildUnknown() {
                      style={{ zIndex: feedingStage === 'chest_anim' ? 300 : 20 }}>
                     {((config.offsets as any)[isMobileScreen ? 'vesselMobile' : 'vessel']?.v ?? config.offsets.vessel.v) && (
                         <>
-                            <div id="vessel-wrapper" className={`w-full h-full relative transition-all duration-500 ${feedingStage === 'chest_anim' ? 'float-up-dissipate' : ''}`}
-                                 style={getGameObjectStyle('vessel')}>
+                            <div id="vessel-wrapper" className={`w-full h-full relative transition-all duration-500 gpu-accel ${feedingStage === 'chest_anim' ? 'float-up-dissipate' : ''}`}
+                                 style={{ 
+                                     ...getGameObjectStyle('vessel'),
+                                     transformStyle: 'preserve-3d' // Ensure z-index works for children
+                                 }}>
+                                
+                                 {/* GOLDEN AURA - Behind Vessel */}
+                                 {isDepositing && (
+                                    <div className="absolute top-1/2 left-1/2 w-24 h-24 rounded-full anim-glow-aura pointer-events-none"
+                                         style={{
+                                             background: 'radial-gradient(circle, rgba(255,215,0,0.6) 0%, rgba(255,165,0,0.2) 60%, transparent 80%)',
+                                             zIndex: -1 
+                                         }}
+                                    />
+                                 )}
+
                                 <div id="game-vessel-inner" 
-                                     className={`w-full h-full ${isDepositing ? 'anim-vessel-deposit' : ''}`}
+                                     className={`w-full h-full relative z-10 gpu-accel ${isDepositing ? 'anim-vessel-deposit' : ''}`}
                                      style={{ ...getSpriteStyle(config.vesselIndex, ASSETS.VESSELS) }}>
                                      {treasurePile.map(t => (
-                                         <div key={t.id} className="absolute w-8 h-8 opacity-90" 
+                                         <div key={t.id} className="absolute w-8 h-8 opacity-90 gpu-accel" 
                                               style={{
                                                   left: `calc(50% + ${t.x}px)`,
                                                   bottom: `calc(30% + ${t.y}px)`,
-                                                  transform: `rotate(${t.r}deg)`,
+                                                  transform: `translateZ(0) rotate(${t.r}deg)`,
                                                   ...getSpriteStyle(t.index, ASSETS.CARRY_TREASURE)
                                               }}
                                          />
                                      ))}
                                 </div>
-                                 {/* INDIGO GLOW OVERLAY */}
-                                 {isDepositing && (
-                                    <div className="absolute top-1/2 left-1/2 w-20 h-20 rounded-full anim-glow-indigo pointer-events-none"
-                                         style={{
-                                             background: 'radial-gradient(circle, rgba(75,0,130,0.8) 0%, rgba(75,0,130,0) 70%)',
-                                             zIndex: 25
-                                         }}
-                                    />
-                                 )}
                             </div>
-                            <div id="vessel-shine" className="absolute top-0 text-4xl opacity-0 transition-opacity duration-500">✨</div>
+                            <div id="vessel-shine" className="absolute top-0 text-4xl opacity-0 transition-opacity duration-500 z-20">✨</div>
                         </>
                     )}
                 </div>
