@@ -9,57 +9,87 @@ interface TraditionInfo {
   name: Tradition;
   image: string;
   isAvailable: boolean;
-  customHref?: string; 
+  customHref?: string;
+  caption: string;
+  category: string;
+  visualTags: string; // Specific visual description for alt text
 }
 
-// REORDERED LIST based on request
+// REORDERED LIST based on request with NEW SEO DATA & CAPTIONS
 const traditions: TraditionInfo[] = [
   {
     name: "Wicca Magick",
     image: "/images/spell-room/wicca-witchcraft-magick-button.png",
     isAvailable: true,
+    caption: "Interactive Wiccan altar for circle casting, deity invocation, and elemental spellwork.",
+    category: "Wiccan",
+    visualTags: "Glowing pentacle and ritual candles on a wooden altar"
   },
   {
     name: "Hoodoo (Rootwork)",
     image: "/images/spell-room/hoodoo-magick-button.png",
     isAvailable: true,
+    caption: "Traditional Rootwork and Voodoo Lwa service with Psalm divination and jar fixing.",
+    category: "Hoodoo",
+    visualTags: "Antique mojo bag, burning candles, and petition paper"
   },
   {
     name: "Grimoire of Magickal Servitors",
     image: "/images/spell-room/servitor-magick.png", 
     isAvailable: true,
-    customHref: "/spell-room/grimoire-of-digital-servitors"
+    customHref: "/spell-room/grimoire-of-digital-servitors",
+    caption: "Design, program, and bind custom digital spirit servitors to do your bidding.",
+    category: "Chaos",
+    visualTags: "Glowing cybernetic spirit construct in a digital containment field"
   },
   {
-      name: "Servitors of the Wild Unknown",
-      image: "/images/spell-room/servitors-of-the-wild-unknown.png", 
-      isAvailable: true,
-      customHref: "/spell-room/servitors-of-the-wild-unknown"
+    name: "Servitors of the Wild Unknown",
+    image: "/images/spell-room/servitors-of-the-wild-unknown.png", 
+    isAvailable: true,
+    customHref: "/spell-room/servitors-of-the-wild-unknown",
+    caption: "Summon specialized chaotic entities from deep dimensions for complex tasks.",
+    category: "Dimensional",
+    visualTags: "Abstract otherworldly creature emerging from a portal"
   },
   {
     name: "Love",
     image: "/images/spell-room/love-spells-app-page.png", 
     isAvailable: true,
+    caption: "Soul Connect spells and honey jar rituals to sweeten relationships and attract love.",
+    category: "Love",
+    visualTags: "Radiant pink heart energy with rose petals and soft light"
   },
   {
     name: "Electric Magick",
     image: "/images/spell-room/electric-magick-button.png", 
     isAvailable: true,
+    caption: "Cyber-sorcery using digital chaos magick, neural linking, and reality patching.",
+    category: "Techno-pagan",
+    visualTags: "Neon circuit board sigils and data streams"
   },
   {
     name: "Chaos Magick",
     image: "/images/spell-room/chaos-magick-button.png",
     isAvailable: true,
+    caption: "Generate and charge unique sigils with primal chaos energy and gnosis.",
+    category: "Chaos",
+    visualTags: "Chaosphere symbol pulsating with purple entropy energy"
   },
   {
     name: "Ceremonial Magick",
     image: "/images/spell-room/ceremonial-magick-button.png",
     isAvailable: false, 
+    caption: "High ritual invocation, banishing, and communion with the divine. (Coming Soon)",
+    category: "High Magick",
+    visualTags: "Golden ritual chalice and solomonic circle"
   },
   {
     name: "Folk Magick",
     image: "/images/spell-room/folk-magick-button.png",
     isAvailable: false, 
+    caption: "Ancient earth-based practices using herbs, stones, and simple charms. (Coming Soon)",
+    category: "Folk",
+    visualTags: "Bundles of dried herbs, crystals, and natural stones"
   },
 ];
 
@@ -93,43 +123,86 @@ const TraditionButton: React.FC<TraditionButtonProps> = ({ tradition }) => {
 
     const href = tradition.customHref || `/spell-room/${slugifyTradition(tradition.name)}`;
 
+    // SEO Alt Text Formulas
+    const thumbnailAlt = `${tradition.visualTags} for ${tradition.name} ritual - ${tradition.category} Witchcraft - LordMagick App`;
+    const buttonAlt = `Magickal sigil button to initiate the ${tradition.name} - Cast ${tradition.category} ritual now`;
+
     return (
-        <div className="relative w-full max-w-sm mx-auto">
+        <div className="relative w-full max-w-sm mx-auto flex flex-col items-center">
             <Link 
                 href={href} 
                 onClick={handleClick}
-                className={`group relative block w-full transition-all duration-300 ${!tradition.isAvailable ? 'cursor-pointer' : ''}`}
+                className={`group relative block w-full overflow-hidden rounded-xl bg-black/40 border border-white/10 transition-all duration-300 ${!tradition.isAvailable ? 'cursor-not-allowed grayscale opacity-70' : 'cursor-pointer hover:border-purple-500/50 hover:shadow-[0_0_20px_rgba(168,85,247,0.3)]'}`}
+                role="button"
+                aria-expanded="false" // Should toggle on click/hover for screen readers technically, but simplified here
+                aria-label={`Open ${tradition.name} Ritual`}
             >
                 {/* Image Container */}
-                <div
-                    className={`
-                        transition-transform duration-300 ease-in-out overflow-hidden rounded-lg
-                        ${tradition.isAvailable ? 'group-hover:scale-105 active:scale-95' : 'grayscale opacity-70 group-hover:scale-100'}
-                    `}
-                    style={{ filter: tradition.isAvailable ? 'drop-shadow(5px 8px 15px rgba(0,0,0,0.7))' : 'none' }}
-                >
+                <div className="relative w-full aspect-[3/4] overflow-hidden">
                     <Image
                         src={tradition.image}
-                        alt={tradition.name}
-                        width={500}
-                        height={700}
-                        className={`w-full h-auto object-cover aspect-[3/4] ${tradition.isAvailable ? 'group-hover:brightness-110' : ''}`}
+                        alt={thumbnailAlt}
+                        fill
+                        className={`object-cover transition-transform duration-700 ease-in-out ${tradition.isAvailable ? 'group-hover:scale-110' : ''}`}
                     />
-                     {/* Label Overlay for Clarity */}
-                     <div className="absolute bottom-0 left-0 w-full bg-black/60 p-2 text-center">
-                        <span className="text-white font-serif text-sm tracking-widest uppercase">{tradition.name}</span>
-                     </div>
+                    
+                    {/* BINDING OF ISAAC STYLE OVERLAY (Bottom Sheet) */}
+                    {tradition.isAvailable && (
+                        <div className="absolute inset-x-0 bottom-0 h-[85%] translate-y-full transition-transform duration-500 ease-out group-hover:translate-y-0 z-20 flex flex-col items-center justify-end pb-4 pointer-events-none group-hover:pointer-events-auto">
+                            
+                            {/* Parchment Caption Container */}
+                            <div className="relative w-[90%] mb-12 opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-100">
+                                {/* Parchment Image Background */}
+                                <div className="absolute inset-0 z-0">
+                                    <Image
+                                        src="/images/spell-room/magick-overlay-caption.png"
+                                        alt="" // Decorative background
+                                        fill
+                                        className="object-contain drop-shadow-xl"
+                                    />
+                                </div>
+                                
+                                {/* Caption Text */}
+                                <div className="relative z-10 p-6 flex items-center justify-center min-h-[140px]">
+                                    <p className="text-[#3c2f2f] text-center font-serif text-sm leading-snug font-semibold px-2 pt-2 mix-blend-multiply">
+                                        {tradition.caption}
+                                    </p>
+                                </div>
+                            </div>
+
+                             {/* Floating Sigil Button */}
+                            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-30 transition-transform duration-300 group-hover:scale-110 group-active:scale-95">
+                                <div className="relative w-24 h-24">
+                                    <Image
+                                        src="/images/spell-room/magick-button.png"
+                                        alt={buttonAlt}
+                                        fill
+                                        className="object-contain drop-shadow-[0_0_15px_rgba(168,85,247,0.6)]"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
+                {/* LOCKED STATE OVERLAY */}
                 {!tradition.isAvailable && !showMessage && (
-                    <div className="absolute bottom-[20%] left-1/2 -translate-x-1/2 opacity-80 z-10">
-                         <span className="text-gray-400 text-xs uppercase tracking-widest font-serif border-b border-gray-600 pb-1 bg-black/50 px-2">Locked</span>
+                    <div className="absolute bottom-[20%] left-1/2 -translate-x-1/2 opacity-80 z-10 w-full text-center">
+                         <span className="text-gray-400 text-xs uppercase tracking-widest font-serif border-b border-gray-600 pb-1 bg-black/80 px-3 py-1 rounded-full">Locked</span>
                     </div>
                 )}
             </Link>
 
+             {/* LABEL BENEATH IMAGE */}
+             <div className="mt-3 text-center z-10 relative group-hover:text-purple-300 transition-colors duration-300">
+                 <h3 className={`font-serif text-lg tracking-wide ${tradition.isAvailable ? 'text-purple-200' : 'text-gray-600'}`} style={{ textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}>
+                     {tradition.name}
+                 </h3>
+             </div>
+
+            {/* ERROR TOAST */}
             {showMessage && (
-                <div className="absolute inset-0 z-20 flex items-center justify-center animate-fade-in">
+                <div className="absolute inset-0 z-50 flex items-center justify-center animate-fade-in pointer-events-none">
                     <div className="bg-black/90 border border-purple-500/50 p-4 rounded-lg shadow-[0_0_20px_rgba(168,85,247,0.4)] backdrop-blur-sm text-center transform scale-110 transition-all">
                         <p className="text-purple-200 font-serif text-sm md:text-base italic tracking-wide" style={{ textShadow: '0 0 10px rgba(168,85,247,0.8)' }}>
                             This Ritual is in Preparation
@@ -143,8 +216,8 @@ const TraditionButton: React.FC<TraditionButtonProps> = ({ tradition }) => {
 
 const SpellRoom: React.FC = () => {
   return (
-    <div className="w-full h-full animate-fade-in p-4 md:p-8">
-       <div className="w-full max-w-360 mx-auto grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-8 items-start justify-center">
+    <div className="w-full h-full animate-fade-in p-4 md:p-8 pb-20">
+       <div className="w-full max-w-[1400px] mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-8 items-start justify-center">
         {traditions.map((tradition) => (
           <TraditionButton 
             key={tradition.name}
