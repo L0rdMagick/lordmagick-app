@@ -933,7 +933,8 @@ export default function ServitorWildUnknown() {
 
     const getGameObjectStyle = (key: 'mound' | 'vessel') => {
         // Determine effective key based on screen size
-        let effectiveKey = key;
+        // Determine effective key based on screen size
+        let effectiveKey: string = key;
         if (isMobileScreen) {
             effectiveKey = key === 'mound' ? 'moundMobile' : 'vesselMobile';
         }
