@@ -21,22 +21,24 @@ export const useAetherEconomy = (serviceSlug: string) => {
     }, [serviceSlug]);
 
     // 2. The Spend Function
-    const spendAether = async (userId: string): Promise<boolean> => {
+    const spendAether = async (userId: string, overrideCost?: number): Promise<boolean> => {
         setIsProcessingPayment(true);
         setPaymentError(null);
         setShowStoreLink(false);
 
-        if (cost === 0) {
+        const finalCost = overrideCost !== undefined ? overrideCost : cost;
+
+        if (finalCost === 0) {
             // Free service?
             setIsProcessingPayment(false);
             return true;
         }
 
         try {
-            const success = await deductUserCredits(userId, cost);
+            const success = await deductUserCredits(userId, finalCost);
             
             if (!success) {
-                setPaymentError("Insufficient Faestones.");
+                setPaymentError(`Insufficient Faestones. Required: ${finalCost}`);
                 setShowStoreLink(true);
                 setIsProcessingPayment(false);
                 return false;
