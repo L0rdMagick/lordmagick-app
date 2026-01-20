@@ -262,7 +262,8 @@ const VoidGateSpell = ({ onExit, spellSystem, session }: { onExit: () => void, s
             }
             
             // Check Economy
-            const paid = await spellSystem.genEconomy.spendAether(session.user.id);
+            // Force 3 Faestones cost explicitly
+            const paid = await spellSystem.genEconomy.spendAether(session.user.id, 3);
             if (!paid) return;
 
             // FIX: Cast target to any
@@ -719,7 +720,8 @@ const VoidGateSpell = ({ onExit, spellSystem, session }: { onExit: () => void, s
         if (!session?.user?.id || isSaved || isSaving) return;
 
         // Check Economy
-        const paid = await spellSystem.saveEconomy.spendAether(session.user.id);
+        // Force 2 Faestones cost explicitly
+        const paid = await spellSystem.saveEconomy.spendAether(session.user.id, 2);
         if (!paid) return;
 
         setIsSaving(true);
@@ -881,12 +883,9 @@ const GenericElectricSpell = ({
         if (!session?.user?.id || isSaved || isSaving) return;
         
         // CHECK 2 FAESTONE SAVE COST
-        const paid = await spellSystem.saveEconomy.spendAether(session.user.id); // Default is 2 from hook config usually, or we pass amt? 
-        // Logic check: The hook uses default cost from DB or config. 
-        // User said "charge them 2 faestones to save". 
-        // We will assume the serviceSlugSave is configured for 2, or we force it if the hook supports it.
-        // The current hook doesn't accept override easily without modifying hook, 
-        // BUT we can assume standardized pricing on backend or just proceed if hook handles "spend".
+        // Explicitly passing 2 to override any potential hook race conditions
+        const paid = await spellSystem.saveEconomy.spendAether(session.user.id, 2); 
+
         if (!paid) return;
 
         setIsSaving(true);
