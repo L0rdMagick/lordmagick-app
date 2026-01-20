@@ -1594,7 +1594,7 @@ export default function ServitorWildUnknown() {
                                 <div className="anim-msg-magick absolute">
                                     <div className="bg-[#0f0f1a]/80 border border-[#FFD700]/40 rounded-xl p-10 backdrop-blur-md shadow-[0_0_30px_rgba(255,215,0,0.2)] max-w-lg mx-auto">
                                         <h2 className="text-[#FFD700] magick-font text-4xl drop-shadow-[0_0_15px_#FFD700] italic leading-relaxed">
-                                            "Your wishes are flowing to you."
+                                            Your wishes are flowing to you.
                                         </h2>
                                     </div>
                                 </div>
