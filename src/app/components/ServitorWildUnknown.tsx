@@ -92,7 +92,7 @@ const DIRECTIONAL_OFFSETS = {
         vessel:  { x: -20, y: 7, s: 1.8, f: false },
         mound:   { x: 0, y: -2, s: 2.8, f: false },
         vesselMobile: { x: -2, y: 7, s: 1.8, f: false }, // Clone of vessel
-        moundMobile: { x: 0, y: -2, s: 2.8, f: false },     // Clone of mound
+        moundMobile: { x: 0, y: -10, s: 2.8, f: false },     // Clone of mound
     },
     facingLeft: {
         globalUI:   { x: 0, y: 0, s: 0 }, 
