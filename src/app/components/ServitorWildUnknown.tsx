@@ -1104,7 +1104,7 @@ export default function ServitorWildUnknown() {
                 /* TREASURE FLY ANIMATION */
                 @keyframes fly-to-vessel {
                     0% { transform: translate(0, 0) scale(1) rotate(0deg); opacity: 1; }
-                    100% { transform: translate(var(--tx), var(--ty)) scale(0.75) rotate(720deg); opacity: 0; }
+                    100% { transform: translate(var(--tx), var(--ty)) scale(1) rotate(720deg); opacity: 0; }
                 }
 
                 @keyframes pop-in-elastic {
@@ -1165,8 +1165,8 @@ export default function ServitorWildUnknown() {
                 <div className="absolute inset-0 bg-black/40" />
             </div>
 
-            {/* MAGICAL BACKGROUND SPARKLES (Task 4) */}
-            {isRunning && !isFeedingActive && (
+            {/* MAGICAL BACKGROUND SPARKLES */}
+            {isRunning && (
                 <div className="stars-container">
                     <div className="stars-1"></div>
                     <div className="stars-2"></div>
