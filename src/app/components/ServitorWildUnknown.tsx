@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { createBrowserClient } from '@supabase/ssr';
 
-// --- 1. ASSET CONFIGURATIO N ---
+// --- 1. ASSET CONFIGURATION ---
 const ASSET_PATH = '/images/Servitor_images/';
 
 const ASSETS = {
@@ -89,7 +89,7 @@ const DIRECTIONAL_OFFSETS = {
         armLeft:  { x: 25, y: 19, s: 0.6, f: false }, 
         legRight: { x: -5, y: 65, s: 0.9, f: true },
         legLeft:  { x: 5, y: 60, s: 0.9, f: true },
-        vessel:  { x: 10, y: 0, s: 1.8, f: false },
+        vessel:  { x: -20, y: 0, s: 1.8, f: false },
         mound:   { x: 0, y: 3, s: 2.8, f: false },
     },
     facingLeft: {
