@@ -294,7 +294,6 @@ const InjectionStage = ({ onComplete, playTone, setIntention, intention, isRepla
               autoFocus
               type="text" 
               value={input}
-              value={input}
               // FIX: Cast currentTarget to any to safely access value
               onChange={(e) => {
                 const val = (e.currentTarget as any).value;
