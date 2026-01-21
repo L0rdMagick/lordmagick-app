@@ -26,7 +26,7 @@ export const BlockageErrorOverlay = ({
         if (typeof window !== 'undefined') {
             sessionStorage.setItem('PENDING_PURCHASE', 'true');
         }
-        router.push('/hoodoo-store');
+        router.push('/store');
     };
     
     if (!error) return null;
