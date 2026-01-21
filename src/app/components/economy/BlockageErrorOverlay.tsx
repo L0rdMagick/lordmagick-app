@@ -56,7 +56,6 @@ export const BlockageErrorOverlay = ({
                                         Manifest Faestones
                                     </button>
                                 ) : (
-                                ) : (
                                     <button 
                                         onClick={handleGoToStore}
                                         className="w-full flex items-center justify-center gap-2 py-3 bg-amber-700 hover:bg-amber-600 text-white font-bold rounded uppercase tracking-wider text-xs transition-colors shadow-[0_0_15px_rgba(180,83,9,0.4)]"
@@ -66,8 +65,6 @@ export const BlockageErrorOverlay = ({
                                         </div> 
                                         Manifest Faestones
                                     </button>
-                                )
-                            )}
                                 )
                             )}
                             <button onClick={onDismiss} className="text-gray-400 hover:text-white text-xs font-serif italic tracking-wide">
