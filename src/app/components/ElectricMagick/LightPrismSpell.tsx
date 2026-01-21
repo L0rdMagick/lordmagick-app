@@ -356,7 +356,7 @@ const RealityOverwriteSpell = ({ onExit, spellSystem, session }: { onExit: () =>
         sectorIndex: 0,
         userInputs: {} as Record<string, string>,
         optimizationData: {} as Record<string, string>,
-        subStage: 'scan' as 'scan' | 'input' | 'processing' | 'complete',
+        subStage: 'scan' as 'scan' | 'input' | 'processing' | 'complete' | 'incantation' | 'activity',
         isSaved: false
     });
 
@@ -367,6 +367,7 @@ const RealityOverwriteSpell = ({ onExit, spellSystem, session }: { onExit: () =>
     const setIsSaved = (s: boolean) => setSpellState(prev => ({ ...prev, isSaved: s }));
 
     const { sectorIndex, userInputs, optimizationData, subStage, isSaved } = spellState;
+    const currentSector = SECTORS[sectorIndex];
 
 
     const { initAudio, playTone, playDrone } = useAudioEngine();

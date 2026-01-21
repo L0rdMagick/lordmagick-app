@@ -97,10 +97,12 @@ const DataScryingSpell = ({ onExit, spellSystem, session }: { onExit: () => void
 
     const { stage, intention, mode, decodedMessage, isSaved } = spellState;
 
+    // Audio & Particles (Restored)
+    const { initAudio, playTone, playDrone, modulateFilter } = useAudioEngine();
+    const { canvasRef, spawnExplosion } = useParticleSystem();
     
     // Saving State
     const [isSaving, setIsSaving] = useState(false);
-    const [isSaved, setIsSaved] = useState(false);
 
     const handleBegin = async (selectedMode: 'standard' | 'ai') => {
         if (selectedMode === 'ai') {
