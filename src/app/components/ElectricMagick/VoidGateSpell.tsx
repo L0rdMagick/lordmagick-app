@@ -11,7 +11,7 @@ import { generateElectricEnsorcellment, generateElectricOracle } from '@/lib/ser
 import { useAudioEngine, useParticleSystem, getMagickalNumber } from './hooks';
 
 // The Wrapped Component
-const VoidGateSpell = ({ onExit }: { onExit: () => void }) => {
+const VoidGateSpell = ({ onExit, spellSystem, session }: { onExit: () => void, spellSystem: any, session: any }) => {
   const [stage, setStage] = useState(0);
   const [intention, setIntention] = useState('');
   const { initAudio, playTone, playDrone } = useAudioEngine();
@@ -37,21 +37,49 @@ const VoidGateSpell = ({ onExit }: { onExit: () => void }) => {
       <p className="text-center text-gray-400 max-w-md px-6 font-light italic tracking-wide">
         &quot;The numbers are the keys. The gestures are the lock.&quot;
       </p>
-      <button 
-        onClick={(e) => {
-          // FIX: Cast target to 'any' to bypass type checking for getBoundingClientRect
-          const target = e.target as any;
-          const rect = target.getBoundingClientRect();
-          spawnExplosion(rect.x + rect.width/2, rect.y + rect.height/2, '#ffffff', 20);
-          initAudio();
-          playDrone(true);
-          playTone(110, 'sawtooth', 3, 0.2);
-          setStage(1);
-        }}
-        className="mt-12 px-16 py-5 border border-purple-500/30 bg-purple-900/10 backdrop-blur-sm text-purple-200 rounded-sm hover:bg-purple-500/20 hover:border-purple-400 hover:tracking-[0.4em] transition-all duration-700 tracking-[0.2em] uppercase text-sm"
-      >
-        Open The Gate
-      </button>
+      <div className="flex flex-col gap-4 mt-8 w-full max-w-sm px-4">
+        {/* Standard (Free) Mode */}
+        <button 
+          onClick={(e) => {
+            const target = e.target as any;
+            const rect = target.getBoundingClientRect();
+            spawnExplosion(rect.x + rect.width/2, rect.y + rect.height/2, '#ffffff', 20);
+            initAudio();
+            playDrone(true);
+            playTone(110, 'sawtooth', 3, 0.2);
+            setStage(1);
+          }}
+          className="px-8 py-4 border border-purple-500/30 bg-purple-900/10 backdrop-blur-sm text-purple-200 rounded-sm hover:bg-purple-500/20 hover:border-purple-400 transition-all duration-300 tracking-[0.2em] uppercase text-xs"
+        >
+          Standard Ritual (Free)
+        </button>
+
+        {/* AI Enhanced Mode */}
+        <button 
+          onClick={async (e) => {
+             if (!session?.user?.id) return;
+            
+            // Check Economy - Explicit 3 cost
+            const paid = await spellSystem.genEconomy.spendAether(session.user.id, 3);
+            if (!paid) return;
+
+            const target = e.target as any;
+            const rect = target.getBoundingClientRect();
+            spawnExplosion(rect.x + rect.width/2, rect.y + rect.height/2, '#d8b4fe', 40);
+            initAudio();
+            playDrone(true);
+            playTone(110, 'sawtooth', 3, 0.2);
+            // Assuming we might want to store mode if needed later, but stage 1 is next either way
+            setStage(1);
+          }}
+          className="px-8 py-4 border border-purple-400 bg-purple-900/40 backdrop-blur-md text-white rounded-sm hover:bg-purple-800/60 shadow-[0_0_15px_rgba(168,85,247,0.3)] transition-all duration-300 tracking-[0.2em] uppercase text-xs font-bold"
+        >
+          High Ritual (AI Enhanced)
+        </button>
+        <div className="text-center text-[10px] text-gray-500 font-mono">
+             High Ritual cost: {spellSystem.genEconomy.cost || 3} Aether
+        </div>
+      </div>
       <p className="text-[10px] text-gray-600 absolute bottom-8 uppercase tracking-widest">Audio & Touch Required</p>
     </div>
   );

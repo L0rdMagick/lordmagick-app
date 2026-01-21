@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAudioEngine, useParticleSystem } from './hooks';
-import { deductUserCredits, saveSpell } from '@/lib/services/geminiService';
+import { saveSpell } from '@/lib/services/geminiService';
 import type { Session } from '@/lib/types';
 
 // --- CONSTANTS ---
@@ -38,7 +38,7 @@ const GlitchText = ({ text, active = false }: { text: string, active?: boolean }
 };
 
 // --- STAGE 0: INTRO & PAYWALL ---
-const IntroStage = ({ onComplete, playTone, session }: { onComplete: () => void, playTone: any, session: Session | undefined }) => {
+const IntroStage = ({ onComplete, playTone, session, spellSystem }: { onComplete: () => void, playTone: any, session: Session | undefined, spellSystem: any }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
@@ -51,11 +51,12 @@ const IntroStage = ({ onComplete, playTone, session }: { onComplete: () => void,
 
             // 1. Check for Session (Paid Mode)
             if (session?.user?.id) {
-                const success = await deductUserCredits(session.user.id, COST_TO_ENTER);
+                const paid = await spellSystem.genEconomy.spendAether(session.user.id, 3);
                 
-                if (!success) {
+                if (!paid) {
                     playTone(100, 'sawtooth', 0.5);
-                    setError('INSUFFICIENT AETHER. PLEASE RECHARGE.');
+                    // spellSystem should handle the overlay, but we can also show a local error if needed.
+                    // For now, adhere to returning early.
                     setLoading(false);
                     return; 
                 }
@@ -149,7 +150,7 @@ const IntroStage = ({ onComplete, playTone, session }: { onComplete: () => void,
                             <>
                                 <Lock size={14} className="group-hover:hidden text-cyan-600" />
                                 <Zap size={14} className="hidden group-hover:block" />
-                                <span className="font-bold">INITIALIZE {session?.user ? `(-${COST_TO_ENTER} AETHER)` : '(TEST MODE)'}</span>
+                                <span className="font-bold">INITIALIZE {session?.user ? `(-3 AETHER)` : '(TEST MODE)'}</span>
                             </>
                         )}
                     </button>
@@ -513,7 +514,7 @@ const EntropyStage = ({ onComplete, playTone, spawnExplosion, intention }: { onC
 };
 
 // --- STAGE 5: REBOOT (Success & Save) ---
-const RebootStage = ({ intention, onExit, session }: { intention: string, onExit: () => void, session: Session | undefined }) => {
+const RebootStage = ({ intention, onExit, session, spellSystem }: { intention: string, onExit: () => void, session: Session | undefined, spellSystem: any }) => {
   const [bootLog, setBootLog] = useState<string[]>([]);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -543,20 +544,19 @@ const RebootStage = ({ intention, onExit, session }: { intention: string, onExit
 
   const handleSave = async () => {
       if (!session?.user?.id) return;
+      
+      const paid = await spellSystem.saveEconomy.spendAether(session.user.id, 2);
+      if (!paid) return;
+
       setSaving(true);
       try {
-          const success = await deductUserCredits(session.user.id, COST_TO_SAVE);
-          if (success) {
-              await saveSpell(session.user.id, {
-                  name: `Zero Point Zet: ${new Date().toLocaleDateString()}`,
-                  intention: intention,
-                  incantation: `ZERO POINT INJECTION\nTARGET: ${intention}\nSTATUS: OVERWRITTEN`,
-                  element: 'AETHER'
-              });
-              setSaved(true);
-          } else {
-              alert('Insufficient Aether to save.');
-          }
+          await saveSpell(session.user.id, {
+              name: `Zero Point Zet: ${new Date().toLocaleDateString()}`,
+              intention: intention,
+              incantation: `ZERO POINT INJECTION\nTARGET: ${intention}\nSTATUS: OVERWRITTEN`,
+              element: 'AETHER'
+          });
+          setSaved(true);
       } catch (e) {
           console.error(e);
       } finally {
@@ -589,7 +589,7 @@ const RebootStage = ({ intention, onExit, session }: { intention: string, onExit
                     className={`w-full py-4 border border-green-700 bg-green-900/20 text-green-400 hover:text-white font-mono text-xs tracking-widest hover:border-green-400 transition-all flex items-center justify-center gap-2 ${saved || !session?.user ? 'opacity-50 cursor-default' : ''}`}
                 >
                     <Save size={14} /> 
-                    {saved ? "LOG SAVED" : !session?.user ? "LOG IN TO SAVE" : `SAVE TO GRIMOIRE (-${COST_TO_SAVE} AETHER)`}
+                    {saved ? "LOG SAVED" : !session?.user ? "LOG IN TO SAVE" : `SAVE TO GRIMOIRE (-2 AETHER)`}
                 </button>
 
                 <button 
@@ -607,7 +607,7 @@ const RebootStage = ({ intention, onExit, session }: { intention: string, onExit
 };
 
 // --- MAIN ORCHESTRATOR ---
-const ZeroPointZetSpell = ({ onExit, session }: { onExit: () => void, session?: Session }) => {
+const ZeroPointZetSpell = ({ onExit, session, spellSystem }: { onExit: () => void, session?: Session, spellSystem: any }) => {
   // 0: Intro, 1: Auth, 2: Inject, 3: Stabilize, 4: Entropy, 5: Reboot
   const [stage, setStage] = useState(0); 
   const [intention, setIntention] = useState("");
@@ -622,12 +622,12 @@ const ZeroPointZetSpell = ({ onExit, session }: { onExit: () => void, session?: 
 
   const renderStage = () => {
     switch (stage) {
-      case 0: return <IntroStage onComplete={() => setStage(1)} playTone={playTone} session={session} />;
+      case 0: return <IntroStage onComplete={() => setStage(1)} playTone={playTone} session={session} spellSystem={spellSystem} />;
       case 1: return <BioAuthStage onComplete={() => setStage(2)} playTone={playTone} />;
       case 2: return <InjectionStage onComplete={() => setStage(3)} playTone={playTone} setIntention={setIntention} />;
       case 3: return <StabilizationStage onComplete={() => setStage(4)} playTone={playTone} modulateFilter={modulateFilter} />;
       case 4: return <EntropyStage onComplete={() => setStage(5)} playTone={playTone} spawnExplosion={spawnExplosion} intention={intention} />;
-      case 5: return <RebootStage intention={intention} onExit={onExit} session={session} />;
+      case 5: return <RebootStage intention={intention} onExit={onExit} session={session} spellSystem={spellSystem} />;
       default: return null;
     }
   };

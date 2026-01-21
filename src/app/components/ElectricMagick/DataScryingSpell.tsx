@@ -73,7 +73,7 @@ const IntentionStage: React.FC<IntentionStageProps> = ({ intention, setIntention
 
 // --- MAIN COMPONENT ---
 
-const DataScryingSpell = ({ onExit, session }: { onExit: () => void, session?: Session }) => {
+const DataScryingSpell = ({ onExit, spellSystem, session }: { onExit: () => void, spellSystem: any, session?: Session }) => {
     // Stage 0: Intention, 1: Bio-Sync, 2: Tuning, 3: Focus (Generation), 4: Reveal (Result & Save)
     const [stage, setStage] = useState(0); 
     const { initAudio, playTone, playDrone, modulateFilter } = useAudioEngine();
@@ -88,7 +88,12 @@ const DataScryingSpell = ({ onExit, session }: { onExit: () => void, session?: S
     const [isSaving, setIsSaving] = useState(false);
     const [isSaved, setIsSaved] = useState(false);
 
-    const handleBegin = (selectedMode: 'standard' | 'ai') => {
+    const handleBegin = async (selectedMode: 'standard' | 'ai') => {
+        if (selectedMode === 'ai') {
+            if (!session?.user?.id) return;
+            const paid = await spellSystem.genEconomy.spendAether(session.user.id, 3);
+            if (!paid) return;
+        }
         setMode(selectedMode);
         setStage(1);
     };
@@ -386,9 +391,16 @@ const DataScryingSpell = ({ onExit, session }: { onExit: () => void, session?: S
     const RevealStage = () => {
         const handleBurnToDrive = async () => {
             if (isSaved || isSaving) return;
+            
+            // Payment Check
+             const userId = session?.user?.id || 'anon';
+             if (userId !== 'anon') {
+                 const paid = await spellSystem.saveEconomy.spendAether(userId, 2);
+                 if (!paid) return;
+             }
+
             setIsSaving(true);
             try {
-                const userId = session?.user?.id || 'anon';
                 await saveSpell(userId, {
                     name: `Data Scry: ${intention.substring(0, 20)}...`,
                     intention: intention,

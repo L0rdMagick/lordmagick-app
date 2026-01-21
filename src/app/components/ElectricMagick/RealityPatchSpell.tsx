@@ -12,7 +12,7 @@ import Link from 'next/link';
 // HOOKS
 // We only import useParticleSystem. We keep the local useAudioEngine because it is specialized for this spell.
 import { useParticleSystem } from './hooks'; 
-import { useAetherEconomy } from '@/hooks/useAetherEconomy';
+
 
 // --- CONSTANTS & DATA ---
 const SERVICE_SLUG = 'ai_reality_patch'; // Ensure this slug exists in your DB or use 'ai_electric_magick'
@@ -663,32 +663,22 @@ const useSpecializedAudioEngine = () => {
 // --- SUB-COMPONENTS ---
 
 // 0. INTRO / PAYWALL / INTENTION
-const IntroBreach = ({ setIntention, setArchetype, setPhase, setAiData, audio, session }: any) => {
+// 0. INTRO / PAYWALL / INTENTION
+const IntroBreach = ({ setIntention, setArchetype, setPhase, setAiData, audio, session, spellSystem }: any) => {
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
     
-    // ECONOMY HOOK
-    const { 
-        cost, 
-        spendAether, 
-        paymentError, 
-        clearPaymentError, 
-        showStoreLink, 
-        isProcessingPayment 
-    } = useAetherEconomy(SERVICE_SLUG);
-
     const handleSubmit = async () => {
         if (!input || input.length < 3) return;
         setLoading(true);
-        clearPaymentError();
         
         try {
             audio.initAudio();
             
-            // 1. Process Payment via Hook
+            // 1. Process Payment via spellSystem
             if (session?.user?.id) {
-                const success = await spendAether(session.user.id);
-                if (!success) {
+                const paid = await spellSystem.genEconomy.spendAether(session.user.id, 3);
+                if (!paid) {
                     setLoading(false);
                     return;
                 }
@@ -718,7 +708,7 @@ const IntroBreach = ({ setIntention, setArchetype, setPhase, setAiData, audio, s
             <div className="border border-red-500/50 bg-black/90 p-6 md:p-8 max-w-lg w-full shadow-[0_0_50px_rgba(220,38,38,0.2)] flex flex-col items-center gap-6">
                 <div>
                     <h1 className="text-2xl font-serif text-red-500 tracking-[0.2em]">REALITY BREACH</h1>
-                    <p className="text-red-900/80 font-mono text-[10px]">ADMIN ACCESS REQUIRED // COST: {cost} AETHER</p>
+                    <p className="text-red-900/80 font-mono text-[10px]">ADMIN ACCESS REQUIRED // COST: 3 AETHER</p>
                 </div>
                 
                 <p className="text-slate-400 font-mono text-xs leading-relaxed hidden md:block">
@@ -732,28 +722,17 @@ const IntroBreach = ({ setIntention, setArchetype, setPhase, setAiData, audio, s
                     <textarea 
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
-                        disabled={loading || isProcessingPayment}
+                        disabled={loading}
                         placeholder="e.g. I am fully healed and wealthy..."
                         className="w-full h-24 bg-slate-900/50 border border-slate-700 p-4 text-white text-center font-serif italic focus:border-red-500 focus:outline-none transition-colors resize-none"
                     />
                 </div>
 
-                {paymentError && (
-                    <div className="flex flex-col items-center gap-2 text-red-500 font-mono text-xs animate-pulse bg-red-900/20 p-2 rounded w-full">
-                        <div className="flex items-center gap-2"><AlertTriangle size={14}/> {paymentError}</div>
-                        {showStoreLink && (
-                             <Link href="/store" className="mt-2 flex items-center gap-2 px-4 py-2 bg-amber-600 text-black font-bold uppercase text-[10px] rounded hover:bg-amber-500 transition-colors">
-                                <Coins size={12} /> Purchase Aether
-                             </Link>
-                        )}
-                    </div>
-                )}
-
-                {loading || isProcessingPayment ? (
+                {loading ? (
                     <div className="flex flex-col items-center space-y-2">
                         <div className="w-6 h-6 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
                         <span className="text-red-500 font-mono text-[10px] animate-pulse">
-                            {isProcessingPayment ? "VERIFYING CREDITS..." : "GENERATING PROTOCOLS..."}
+                            GENERATING PROTOCOLS...
                         </span>
                     </div>
                 ) : (
@@ -1399,16 +1378,19 @@ const ChargeAndCast = ({ setPhase, setGlitchActive, archetype, audio, spawnExplo
 };
 
 // 9. FINAL CAST
-const FinalCast = ({ intention, archetype, audio, onExit, session, aiData }: any) => {
+const FinalCast = ({ intention, archetype, audio, onExit, session, aiData, spellSystem }: any) => {
     const [saved, setSaved] = useState(false);
     const [saving, setSaving] = useState(false);
 
     const handleSave = async () => {
         if(!session?.user) return;
+        
+        // Payment
+        const paid = await spellSystem.saveEconomy.spendAether(session.user.id, 2);
+        if (!paid) return;
+
         setSaving(true);
         try {
-            // NOTE: Credits were deducted at entry (IntroBreach), saving usually costs less or is free depending on model.
-            // Assuming save is an additional small cost or free. Let's make it free here as they paid upfront.
             await saveSpell(session.user.id, {
                  name: `Reality Breach: ${new Date().toLocaleDateString()}`,
                  intention: intention,
@@ -1442,7 +1424,7 @@ const FinalCast = ({ intention, archetype, audio, onExit, session, aiData }: any
                     disabled={saved || saving}
                     className={`w-full py-4 border border-slate-700 bg-slate-900/50 text-white font-mono text-[10px] tracking-widest hover:border-white transition-all flex items-center justify-center gap-2 ${saved ? 'opacity-50 cursor-default' : ''}`}
                  >
-                    <Save size={14} /> {saved ? "LOG SAVED" : `SAVE TO GRIMOIRE`}
+                    <Save size={14} /> {saved ? "LOG SAVED" : `SAVE TO GRIMOIRE (2 CREDITS)`}
                  </button>
                  
                  <button 
@@ -1458,7 +1440,7 @@ const FinalCast = ({ intention, archetype, audio, onExit, session, aiData }: any
 
 // --- MAIN COMPONENT ---
 
-export default function RealityPatchSpell({ onExit, session }: { onExit: () => void, session?: Session }) {
+export default function RealityPatchSpell({ onExit, session, spellSystem }: { onExit: () => void, session?: Session, spellSystem: any }) {
   const [phase, setPhase] = useState('INTRO'); 
   const [intention, setIntention] = useState('');
   const [archetype, setArchetype] = useState(ARCHETYPES.UNK);
@@ -1535,7 +1517,7 @@ export default function RealityPatchSpell({ onExit, session }: { onExit: () => v
       {/* Main Container - One Page Layout */}
       <div className="relative z-10 w-full h-full flex flex-col justify-between">
           <main className="w-full h-full relative z-10 flex flex-col items-center justify-center max-w-lg mx-auto">
-                {phase === 'INTRO' && <IntroBreach setIntention={setIntention} setArchetype={setArchetype} setPhase={setPhase} setAiData={setAiData} audio={audio} session={session} />}
+                {phase === 'INTRO' && <IntroBreach setIntention={setIntention} setArchetype={setArchetype} setPhase={setPhase} setAiData={setAiData} audio={audio} session={session} spellSystem={spellSystem} />}
                 {phase === 'CONSECRATE' && <Consecration setPhase={setPhase} archetype={archetype} audio={audio} spawnExplosion={spawnExplosion} aiData={aiData} />}
                 {phase === 'GROUNDING' && <Grounding setPhase={setPhase} audio={audio} aiData={aiData} archetype={archetype} />}
                 {phase === 'AGREEMENT' && <Agreement setPhase={setPhase} audio={audio} />}
@@ -1543,7 +1525,7 @@ export default function RealityPatchSpell({ onExit, session }: { onExit: () => v
                 {phase === 'INTEGRATION' && <VoidIntegration setPhase={setPhase} archetype={archetype} audio={audio} aiData={aiData} intention={intention} spawnExplosion={spawnExplosion} />}
                 {phase === 'SPIRAL' && <SpiralActivation setPhase={setPhase} archetype={archetype} audio={audio} aiData={aiData} intention={intention} />}
                 {phase === 'CHARGE' && <ChargeAndCast setPhase={setPhase} setGlitchActive={setGlitchActive} archetype={archetype} audio={audio} spawnExplosion={spawnExplosion} aiData={aiData} />}
-                {phase === 'CAST' && <FinalCast intention={intention} archetype={archetype} audio={audio} onExit={onExit} session={session} aiData={aiData} />}
+                {phase === 'CAST' && <FinalCast intention={intention} archetype={archetype} audio={audio} onExit={onExit} session={session} aiData={aiData} spellSystem={spellSystem} />}
           </main>
       </div>
     </div>

@@ -374,15 +374,22 @@ interface TransmitStageProps {
     session?: Session;
 }
 
-const TransmitStage = ({ onExit, finalLog, target, intent, saveEnabled, session }: TransmitStageProps) => {
+const TransmitStage = ({ onExit, finalLog, target, intent, saveEnabled, session, spellSystem }: any) => {
     const [isSaving, setIsSaving] = useState(false);
     const [isSaved, setIsSaved] = useState(false);
 
     const handleSave = async () => {
         if (isSaved || isSaving) return;
+        
+        // Payment
+        const userId = session?.user?.id || 'anon';
+        if (userId !== 'anon') {
+             const paid = await spellSystem.saveEconomy.spendAether(userId, 2);
+             if (!paid) return;
+        }
+
         setIsSaving(true);
         try {
-            const userId = session?.user?.id || 'anon';
             await saveSpell(userId, {
                 name: `Neural Link: ${target.substring(0, 15)}...`,
                 intention: `${target}: ${intent}`,
@@ -437,7 +444,7 @@ const TransmitStage = ({ onExit, finalLog, target, intent, saveEnabled, session 
 // MAIN ORCHESTRATOR
 // ==========================================
 
-const NeuralLinkSpell = ({ onExit, session }: { onExit: () => void, session?: Session }) => {
+const NeuralLinkSpell = ({ onExit, spellSystem, session }: { onExit: () => void, spellSystem: any, session?: Session }) => {
     const [stage, setStage] = useState(0); 
     // Stages mapping:
     // 0: Target
@@ -457,6 +464,12 @@ const NeuralLinkSpell = ({ onExit, session }: { onExit: () => void, session?: Se
     const [aiContent, setAiContent] = useState<NeuralLinkResult | null>(null);
 
     const handleBegin = async (selectedMode: 'standard' | 'ai') => {
+        if (selectedMode === 'ai') {
+             if (!session?.user?.id) return;
+             const paid = await spellSystem.genEconomy.spendAether(session.user.id, 3);
+             if (!paid) return;
+        }
+
         initAudio();
         playTone(440, 'sine', 0.5);
         setMode(selectedMode);
@@ -494,7 +507,7 @@ const NeuralLinkSpell = ({ onExit, session }: { onExit: () => void, session?: Se
             case 3: return <VoidInjectionStage onNext={handleInjectionNext} playTone={playTone} />;
             case 4: return <IncantationStage text={aiContent?.incantation2 || "Finalizing..."} onNext={handleIncantation2Next} title="Reality Overwrite" playTone={playTone} />;
             case 5: return <SyncStage playTone={playTone} spawnExplosion={spawnExplosion} onNext={handleSyncNext} />;
-            case 6: return <TransmitStage onExit={onExit} finalLog={aiContent?.finalResult || "Link Established."} target={target} intent={intent} saveEnabled={mode === 'ai'} session={session} />;
+            case 6: return <TransmitStage onExit={onExit} finalLog={aiContent?.finalResult || "Link Established."} target={target} intent={intent} saveEnabled={mode === 'ai'} session={session} spellSystem={spellSystem} />;
             default: return null;
         }
     };

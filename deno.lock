@@ -24,6 +24,7 @@
     "npm:google-auth-library@^9.11.0": "9.15.1",
     "npm:gray-matter@^4.0.3": "4.0.3",
     "npm:lucide-react@0.469": "0.469.0_react@19.2.0",
+    "npm:next@16.1.3": "16.1.3_react@19.2.0_react-dom@19.2.0__react@19.2.0",
     "npm:next@^16.0.7": "16.1.3_react@19.2.0_react-dom@19.2.0__react@19.2.0",
     "npm:react-dom@19.2.0": "19.2.0_react@19.2.0",
     "npm:react@19.2.0": "19.2.0",

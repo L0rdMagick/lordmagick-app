@@ -336,7 +336,7 @@ const ActivityUpload = ({ onComplete, color }: { onComplete: () => void, color: 
 
 // --- MAIN ORCHESTRATOR ---
 
-const RealityOverwriteSpell = ({ onExit, session }: { onExit: () => void, session?: Session }) => {
+const RealityOverwriteSpell = ({ onExit, spellSystem, session }: { onExit: () => void, spellSystem: any, session?: Session }) => {
     const [started, setStarted] = useState(false);
     const [sectorIndex, setSectorIndex] = useState(0);
     const [subStage, setSubStage] = useState<'input' | 'processing' | 'incantation' | 'activity' | 'complete'>('input');
@@ -383,10 +383,23 @@ const RealityOverwriteSpell = ({ onExit, session }: { onExit: () => void, sessio
                     <div className="flex flex-col md:flex-row justify-between items-center border-t border-red-900/30 pt-6 gap-4">
                         <div className="flex flex-col text-center md:text-left">
                             <span className="text-[10px] text-gray-500 font-mono">REQUIRED RESOURCES</span>
-                            <span className="text-xl font-serif text-white">{COST} AETHER (CREDITS)</span>
+                            <span className="text-xl font-serif text-white">3 AETHER (CREDITS)</span>
                         </div>
                         <button 
-                            onClick={() => { initAudio(); setStarted(true); }}
+                            onClick={async () => {
+                                if (!session?.user?.id) {
+                                    // Handle no session case or allow free test? Assuming requires session for paid check.
+                                    // If no session, maybe prompt or just let it fail silently/log.
+                                    // But previous logic suggests we want to block.
+                                    // Let's assume session check is inside spendAether or we return early.
+                                    return; 
+                                }
+                                const paid = await spellSystem.genEconomy.spendAether(session.user.id, 3);
+                                if (paid) {
+                                    initAudio(); 
+                                    setStarted(true); 
+                                }
+                            }}
                             className="bg-red-600 hover:bg-red-500 text-black font-bold px-8 py-3 font-mono text-xs tracking-widest transition-colors w-full md:w-auto"
                         >
                             INITIATE REBOOT
@@ -452,9 +465,16 @@ const RealityOverwriteSpell = ({ onExit, session }: { onExit: () => void, sessio
 
     const handleSave = async () => {
         if (isSaved || isSaving) return;
+        
+        const userId = session?.user?.id || 'anon';
+        if (userId !== 'anon') {
+             const paid = await spellSystem.saveEconomy.spendAether(userId, 2);
+             if (!paid) return;
+        }
+        
         setIsSaving(true);
         try {
-            await saveSpell(session?.user?.id || 'anon', {
+            await saveSpell(userId, {
                 name: `System Reboot: ${new Date().toLocaleDateString()}`,
                 intention: "Total Reality Code Overwrite",
                 incantation: log.join('\n'),
@@ -494,7 +514,7 @@ const RealityOverwriteSpell = ({ onExit, session }: { onExit: () => void, sessio
                             className="flex items-center gap-2 px-8 py-3 border border-green-500 bg-green-900/20 text-green-400 hover:bg-green-900/40 transition-colors uppercase font-mono text-xs"
                         >
                             {isSaved ? <CheckCircle size={16}/> : <Save size={16}/>}
-                            {isSaved ? "LOG SAVED" : "SAVE LOG (5 CREDITS)"}
+                            {isSaved ? "LOG SAVED" : "SAVE LOG (2 CREDITS)"}
                         </button>
                         <button 
                             onClick={onExit}

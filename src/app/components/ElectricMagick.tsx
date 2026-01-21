@@ -927,7 +927,7 @@ const GenericElectricSpell = ({
                     className="px-12 py-4 border border-purple-500/50 bg-purple-900/20 hover:bg-purple-500/30 transition-all uppercase tracking-[0.3em] text-sm"
                     style={{ borderColor: color, color: 'white' }}
                 >
-                    INITIALIZE PROTOCOL
+                    INITIALIZE  PROTOCOL
                 </button>
             </div>
         );

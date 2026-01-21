@@ -8,7 +8,11 @@ import DataScryingSpell from './DataScryingSpell';
 import NeuralLinkSpell from './NeuralLinkSpell'; 
 import LightPrismSpell from './LightPrismSpell';
 import RealityPatchSpell from './RealityPatchSpell'; 
-import ZeroPointZetSpell from './ZeroPointZetSpell'; // IMPORT NEW SPELL
+import ZeroPointZetSpell from './ZeroPointZetSpell'; 
+import { useSpellSystem } from '@/hooks/useSpellSystem';
+import type { Session } from '@/lib/types';
+import { SlotPurchaseModal } from '@/app/components/economy/SlotPurchaseModal';
+import { BlockageErrorOverlay } from '@/app/components/economy/BlockageErrorOverlay';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const SpellCard = ({ title, desc, icon: Icon, onClick, disabled }: { title: string, desc: string, icon: any, onClick?: () => void, disabled?: boolean }) => (
@@ -31,15 +35,60 @@ const SpellCard = ({ title, desc, icon: Icon, onClick, disabled }: { title: stri
   </div>
 );
 
-export default function ElectricMagickMenu() {
+export default function ElectricMagickMenu({ session, isSubscribed, onBack }: { session?: Session, isSubscribed?: boolean, onBack?: () => void }) {
   const [activeSpell, setActiveSpell] = useState<string | null>(null);
 
-  if (activeSpell === 'void-gate') return <VoidGateSpell onExit={() => setActiveSpell(null)} />;
-  if (activeSpell === 'data-scry') return <DataScryingSpell onExit={() => setActiveSpell(null)} />;
-  if (activeSpell === 'neural-link') return <NeuralLinkSpell onExit={() => setActiveSpell(null)} />;
-  if (activeSpell === 'light-prism') return <LightPrismSpell onExit={() => setActiveSpell(null)} />; 
-  if (activeSpell === 'reality-patch') return <RealityPatchSpell onExit={() => setActiveSpell(null)} />; 
-  if (activeSpell === 'zero-point-zet') return <ZeroPointZetSpell onExit={() => setActiveSpell(null)} />; // RENDER NEW SPELL
+  const spellSystem = useSpellSystem({
+      serviceSlugGen: 'ai_electric_magick', 
+      serviceSlugSave: 'save_spell_electric',
+      baseRedirectPath: '/spell-room/electric-magick-spells-app'
+  });
+  
+  const handleGoToStore = () => {
+      spellSystem.goToStoreForSlots(null, 'electric_spell_save_temp'); 
+  };
+
+  const commonProps = { 
+      onExit: () => setActiveSpell(null), 
+      spellSystem, 
+      session 
+  };
+
+  const renderActiveSpell = () => {
+    switch (activeSpell) {
+        case 'void-gate': return <VoidGateSpell {...commonProps} />;
+        case 'data-scry': return <DataScryingSpell {...commonProps} />;
+        case 'neural-link': return <NeuralLinkSpell {...commonProps} />;
+        case 'light-prism': return <LightPrismSpell {...commonProps} />; 
+        case 'reality-patch': return <RealityPatchSpell {...commonProps} />; 
+        case 'zero-point-zet': return <ZeroPointZetSpell {...commonProps} />;
+        default: return null;
+    }
+  };
+
+  if (activeSpell) {
+      return (
+        <>
+            {renderActiveSpell()}
+            {spellSystem.activeError && (
+                <BlockageErrorOverlay 
+                    error={spellSystem.activeError}
+                    onDismiss={spellSystem.clearErrors}
+                    redirectPath="/spell-room/electric-magick-spells-app"
+                />
+            )}
+             <SlotPurchaseModal 
+                isOpen={spellSystem.modalState.isOpen} 
+                onClose={spellSystem.modalState.close} 
+                onPurchase={() => spellSystem.buySlots(session?.user?.id || '')} 
+                isProcessing={spellSystem.modalState.isLoading}
+                showAetherWarning={spellSystem.modalState.showWarning}
+                showSuccess={spellSystem.modalState.showSuccess}
+                onGoToStore={handleGoToStore}
+            />
+        </>
+      );
+  }
 
   return (
     <div className="min-h-screen bg-black text-gray-200 font-sans selection:bg-purple-900 selection:text-white relative overflow-hidden">
