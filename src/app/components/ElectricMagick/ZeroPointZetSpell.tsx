@@ -518,8 +518,8 @@ const EntropyStage = ({ onComplete, playTone, spawnExplosion, intention }: { onC
 // --- STAGE 5: REBOOT (Success & Save) ---
 const RebootStage = ({ intention, onExit, session, spellSystem }: { intention: string, onExit: () => void, session: Session | undefined, spellSystem: any }) => {
   const [bootLog, setBootLog] = useState<string[]>([]);
-  const [saved, setSaved] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     const logs = [
