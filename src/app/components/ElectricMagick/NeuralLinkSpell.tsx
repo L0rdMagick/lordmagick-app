@@ -390,9 +390,10 @@ interface TransmitStageProps {
     spellSystem?: any; 
     aiContent: NeuralLinkResult | null;
     setEconomyError: (e: string) => void;
+    isReplay?: boolean;
 }
 
-const TransmitStage = ({ onExit, finalLog, target, intent, saveEnabled, session, spellSystem, aiContent, setEconomyError }: TransmitStageProps) => {
+const TransmitStage = ({ onExit, finalLog, target, intent, saveEnabled, session, spellSystem, aiContent, setEconomyError, isReplay }: TransmitStageProps) => {
     const [isSaving, setIsSaving] = useState(false);
     const [isSaved, setIsSaved] = useState(false);
 
@@ -450,11 +451,11 @@ const TransmitStage = ({ onExit, finalLog, target, intent, saveEnabled, session,
                 {saveEnabled ? (
                     <button 
                         onClick={handleSaveSpell}
-                        disabled={isSaved || isSaving}
+                        disabled={isSaved || isSaving || isReplay}
                         className="flex items-center justify-center gap-3 px-8 py-4 border border-pink-500 bg-pink-900/20 hover:bg-pink-900/40 text-pink-200 transition-colors uppercase tracking-[0.2em] text-xs rounded-sm disabled:opacity-50"
                     >
-                        {isSaved ? <Check size={16} /> : <HardDrive size={16} />}
-                        <span>{isSaved ? "LINK ARCHIVED" : "ARCHIVE LINK (2 CREDITS)"}</span>
+                        {isSaved || isReplay ? <Check size={16} /> : <HardDrive size={16} />}
+                        <span>{isSaved || isReplay ? "LINK ARCHIVED" : "ARCHIVE LINK (2 CREDITS)"}</span>
                     </button>
                 ) : (
                     <div className="text-pink-800 text-[10px] tracking-widest uppercase">
@@ -621,7 +622,7 @@ const NeuralLinkSpell = ({ onExit, spellSystem, session, savedState }: { onExit:
             case 3: return <VoidInjectionStage onNext={handleInjectionNext} playTone={playTone} initAudio={initAudio} />;
             case 4: return <IncantationStage text={aiContent?.incantation2 || "Finalizing..."} onNext={handleIncantation2Next} title="Reality Overwrite" playTone={playTone} initAudio={initAudio} />;
             case 5: return <SyncStage playTone={playTone} spawnExplosion={spawnExplosion} onNext={handleSyncNext} initAudio={initAudio} />;
-            case 6: return <TransmitStage onExit={onExit} finalLog={aiContent?.finalResult || "Link Established."} target={target} intent={intent} saveEnabled={mode === 'ai'} session={session} spellSystem={spellSystem} aiContent={aiContent} setEconomyError={setEconomyError} />;
+            case 6: return <TransmitStage onExit={onExit} finalLog={aiContent?.finalResult || "Link Established."} target={target} intent={intent} saveEnabled={mode === 'ai'} session={session} spellSystem={spellSystem} aiContent={aiContent} setEconomyError={setEconomyError} isReplay={spellState.rehydrated} />;
             default: return null;
         }
     };
