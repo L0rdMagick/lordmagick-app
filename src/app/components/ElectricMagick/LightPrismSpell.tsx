@@ -374,13 +374,23 @@ const RealityOverwriteSpell = ({ onExit, spellSystem, session, savedState }: { o
     const { sectorIndex, userInputs, optimizationData, subStage, isSaved, aiResponse, draftInput } = spellState;
     const currentSector = SECTORS[sectorIndex];
 
-    // Auto-start if restored from partial state
+    // Auto-start only if we have active progress, otherwise show intro (payment screen)
     useEffect(() => {
         if (isRestored) {
-            setStarted(true);
+             // If we have substantial progress (sector > 0), maybe auto-start?
+             // But for safety, and to ensure payment check if they just had a blockage,
+             // it's better to show the Intro screen. The persistence will keep their input.
+             // We do restore draftInput though.
             if (draftInput) setUserInput(draftInput);
+            
+            // If they were deep in the spell (sector > 0), we can auto-start
+            if (sectorIndex > 0) {
+                setStarted(true);
+            }
+            // If sector is 0, they might have been at the payment screen or blockage.
+            // So we stay on Intro (started = false) to let them hit "Initiate" and pay.
         }
-    }, [isRestored, draftInput]);
+    }, [isRestored, draftInput, sectorIndex]);
 
     // Sync draft input to persistence
     useEffect(() => {
