@@ -383,17 +383,24 @@ const RealityOverwriteSpell = ({ onExit, spellSystem, session, savedState }: { o
             // Reconstruct log if possible or just show final state
             if (rData?.full_log) setLog(rData.full_log);
 
+            // Find sector index
+            let sIdx = 0;
+            if (rData?.sector?.id) {
+                sIdx = SECTORS.findIndex(s => s.id === rData.sector.id);
+                if (sIdx === -1) sIdx = 0;
+            }
+
             setSpellState({
-                sectorIndex: 6, // Assume complete or verify from rData
+                sectorIndex: sIdx, 
                 userInputs: {}, 
                 optimizationData: {},
-                subStage: 'complete',
+                subStage: 'input', // Start at Input
                 isSaved: true,
                 aiResponse: rData?.ai_response || savedState.incantation || '',
                 rehydrated: true
             });
-            setFinalStage(true);
-            setStarted(true);
+            // Do NOT set finalStage or started to true immediately, let them see intro or start flow
+            setStarted(false); 
         }
     }, [savedState, spellState.rehydrated]);
 
@@ -437,15 +444,18 @@ const RealityOverwriteSpell = ({ onExit, spellSystem, session, savedState }: { o
                         <button 
                             onClick={async () => {
                                 if (!session?.user?.id) return; 
-                                const paid = await spellSystem.genEconomy.spendAether(session.user.id, 3);
-                                if (paid) {
-                                    initAudio(); 
-                                    setStarted(true); 
+                                
+                                if (!spellState.rehydrated) {
+                                    const paid = await spellSystem.genEconomy.spendAether(session.user.id, 3);
+                                    if (!paid) return;
                                 }
+                                
+                                initAudio(); 
+                                setStarted(true); 
                             }}
                             className="bg-red-600 hover:bg-red-500 text-black font-bold px-8 py-3 font-mono text-xs tracking-widest transition-colors w-full md:w-auto"
                         >
-                            INITIATE REBOOT
+                            INITIATE REBOOT {spellState.rehydrated ? "(REPLAY)" : ""}
                         </button>
                     </div>
                 </div>
@@ -634,16 +644,17 @@ const RealityOverwriteSpell = ({ onExit, spellSystem, session, savedState }: { o
                             </label>
                             <textarea 
                                 value={userInput}
-                                onChange={(e) => setUserInput(e.target.value)}
-                                className="w-full bg-gray-900/50 border border-gray-700 p-4 text-white focus:outline-none focus:border-white font-mono text-sm h-32 resize-none rounded text-center placeholder:text-gray-700"
-                                placeholder={currentSector.exampleInput}
-                                autoFocus
+                                onChange={(e) => !spellState.rehydrated && setUserInput(e.target.value)}
+                                readOnly={spellState.rehydrated}
+                                className={`w-full bg-gray-900/50 border ${spellState.rehydrated ? 'border-gray-500/50 text-gray-500' : 'border-gray-700 text-white'} p-4 focus:outline-none focus:border-white font-mono text-sm h-32 resize-none rounded text-center placeholder:text-gray-700`}
+                                placeholder={spellState.rehydrated ? "CACHED SECTOR DATA" : currentSector.exampleInput}
+                                autoFocus={!spellState.rehydrated}
                             />
                         </div>
                         
                         <button 
                             onClick={handleInputSubmit}
-                            disabled={!userInput}
+                            disabled={!userInput && !spellState.rehydrated}
                             className="w-full mt-6 py-4 border border-white/20 hover:bg-white/10 hover:border-white transition-all uppercase tracking-[0.2em] text-xs disabled:opacity-30"
                         >
                             <span className="flex items-center justify-center gap-2">

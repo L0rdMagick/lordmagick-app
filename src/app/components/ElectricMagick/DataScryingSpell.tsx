@@ -17,9 +17,10 @@ interface IntentionStageProps {
     intention: string;
     setIntention: (val: string) => void;
     onBegin: (mode: 'standard' | 'ai') => void;
+    isReplay?: boolean;
 }
 
-const IntentionStage: React.FC<IntentionStageProps> = ({ intention, setIntention, onBegin }) => {
+const IntentionStage: React.FC<IntentionStageProps> = ({ intention, setIntention, onBegin, isReplay }) => {
     return (
         <div className="flex flex-col items-center justify-center h-full w-full p-6 animate-fade-in relative z-20">
             <h2 className="text-2xl font-serif text-cyan-400 mb-6 tracking-[0.3em] uppercase text-center drop-shadow-[0_0_10px_rgba(6,182,212,0.8)]">Initialize Query</h2>
@@ -29,11 +30,13 @@ const IntentionStage: React.FC<IntentionStageProps> = ({ intention, setIntention
                 <input 
                     type="text" 
                     value={intention}
-                    onChange={(e) => setIntention(e.target.value)}
+                    onChange={(e) => !isReplay && setIntention(e.target.value)}
+                    readOnly={isReplay}
                     placeholder="ENTER TARGET DATA / INTENTION"
-                    className="relative w-full bg-black/80 border-b-2 border-cyan-900 text-cyan-100 text-center font-mono py-4 focus:outline-none focus:border-cyan-400 placeholder:text-cyan-900 transition-all uppercase tracking-widest text-lg z-10"
-                    autoFocus
+                    className={`relative w-full bg-black/80 border-b-2 ${isReplay ? 'border-cyan-500/50 text-cyan-500/70 cursor-not-allowed' : 'border-cyan-900 text-cyan-100'} text-center font-mono py-4 focus:outline-none focus:border-cyan-400 placeholder:text-cyan-900 transition-all uppercase tracking-widest text-lg z-10`}
+                    autoFocus={!isReplay}
                 />
+                {isReplay && <div className="absolute right-0 top-0 bottom-0 flex items-center pr-2"><Lock size={16} className="text-cyan-500/50" /></div>}
             </div>
 
             <div className="flex flex-col gap-4 w-full max-w-sm z-10">
@@ -64,7 +67,7 @@ const IntentionStage: React.FC<IntentionStageProps> = ({ intention, setIntention
                         <div className="text-purple-200 font-mono text-sm tracking-wider font-bold uppercase flex items-center gap-2">
                              Deep Net Decryption
                         </div>
-                        <div className="text-purple-400/70 text-[10px] tracking-wide mt-1">Neural Analysis of Intent. 3 Credits.</div>
+                        <div className="text-purple-400/70 text-[10px] tracking-wide mt-1">{isReplay ? "Replay Cached Session" : "Neural Analysis of Intent. 3 Credits."}</div>
                     </div>
                 </button>
             </div>
@@ -111,7 +114,7 @@ const DataScryingSpell = ({ onExit, spellSystem, session, savedState }: { onExit
             const rData = typeof savedState.ritual_data === 'string' ? JSON.parse(savedState.ritual_data) : savedState.ritual_data;
             
             setSpellState({
-                stage: 4, // Jump to Reveal
+                stage: 0, // Start from beginning
                 intention: savedState.intention || '',
                 mode: rData?.mode || 'standard',
                 decodedMessage: rData?.full_response || savedState.incantation || '',
@@ -122,7 +125,8 @@ const DataScryingSpell = ({ onExit, spellSystem, session, savedState }: { onExit
     }, [savedState, spellState.rehydrated]);
 
     const handleBegin = async (selectedMode: 'standard' | 'ai') => {
-        if (selectedMode === 'ai') {
+        // Skip payment if replaying
+        if (selectedMode === 'ai' && !spellState.rehydrated) {
             if (!session?.user?.id) return;
             const paid = await spellSystem.genEconomy.spendAether(session.user.id, 3);
             if (!paid) return;
@@ -517,7 +521,7 @@ const DataScryingSpell = ({ onExit, spellSystem, session, savedState }: { onExit
             <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none z-10" style={{ mixBlendMode: 'screen' }} />
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(6,182,212,0.1)_0%,rgba(0,0,0,1)_90%)] pointer-events-none z-0" />
             <div className="relative z-20 h-full w-full">
-                 {stage === 0 ? <IntentionStage intention={intention} setIntention={setIntention} onBegin={handleBegin} /> : 
+                 {stage === 0 ? <IntentionStage intention={intention} setIntention={setIntention} onBegin={handleBegin} isReplay={spellState.rehydrated} /> : 
                   stage === 1 ? <BioSyncStage /> : 
                   stage === 2 ? <TuningStage /> :
                   stage === 3 ? <FocusStage /> :

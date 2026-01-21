@@ -22,9 +22,10 @@ interface TargetStageProps {
     intent: string;
     setIntent: (val: string) => void;
     onBegin: (mode: 'standard' | 'ai') => void;
+    isReplay?: boolean;
 }
 
-const TargetStage = ({ target, setTarget, intent, setIntent, onBegin }: TargetStageProps) => {
+const TargetStage = ({ target, setTarget, intent, setIntent, onBegin, isReplay }: TargetStageProps) => {
     return (
         <div className="flex flex-col items-center justify-center h-full w-full px-6 animate-fade-in relative z-20">
             <Brain className="text-pink-500 mb-6 animate-pulse" size={48} />
@@ -36,11 +37,13 @@ const TargetStage = ({ target, setTarget, intent, setIntent, onBegin }: TargetSt
                     <input 
                         type="text" 
                         value={target}
-                        onChange={(e) => setTarget(e.target.value)}
-                        className="w-full bg-black/50 border-b border-pink-900/50 p-4 text-pink-100 focus:outline-none focus:border-pink-500 font-serif text-xl text-center placeholder:text-pink-900/30 transition-all uppercase"
+                        onChange={(e) => !isReplay && setTarget(e.target.value)}
+                        readOnly={isReplay}
+                        className={`w-full bg-black/50 border-b ${isReplay ? 'border-pink-500/30 text-pink-500/70' : 'border-pink-900/50 text-pink-100'} p-4 focus:outline-none focus:border-pink-500 font-serif text-xl text-center placeholder:text-pink-900/30 transition-all uppercase`}
                         placeholder="TARGET IDENTIFIER"
-                        autoFocus
+                        autoFocus={!isReplay}
                     />
+                    {isReplay && <Lock size={16} className="absolute right-2 top-10 text-pink-500/50" />}
                 </div>
 
                 <div className="group relative">
@@ -48,10 +51,12 @@ const TargetStage = ({ target, setTarget, intent, setIntent, onBegin }: TargetSt
                     <input 
                         type="text" 
                         value={intent}
-                        onChange={(e) => setIntent(e.target.value)}
-                        className="w-full bg-black/50 border-b border-pink-900/50 p-4 text-pink-100 focus:outline-none focus:border-pink-500 font-serif text-xl text-center placeholder:text-pink-900/30 transition-all uppercase"
+                        onChange={(e) => !isReplay && setIntent(e.target.value)}
+                        readOnly={isReplay}
+                        className={`w-full bg-black/50 border-b ${isReplay ? 'border-pink-500/30 text-pink-500/70' : 'border-pink-900/50 text-pink-100'} p-4 focus:outline-none focus:border-pink-500 font-serif text-xl text-center placeholder:text-pink-900/30 transition-all uppercase`}
                         placeholder="COMMAND STRING"
                     />
+                    {isReplay && <div className="absolute right-2 bottom-4"><Lock size={16} className="text-pink-500/50" /></div>}
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 pt-4">
@@ -82,7 +87,7 @@ const TargetStage = ({ target, setTarget, intent, setIntent, onBegin }: TargetSt
                             <div className="text-purple-200 font-mono text-sm tracking-wider font-bold uppercase flex items-center gap-2">
                                 Reality Overwrite
                             </div>
-                            <div className="text-purple-400/70 text-[10px] tracking-wide mt-1">AI Incantations + Void Injection. 3 Credits.</div>
+                            <div className="text-purple-400/70 text-[10px] tracking-wide mt-1">{isReplay ? "Replay Cached Session" : "AI Incantations + Void Injection. 3 Credits."}</div>
                         </div>
                     </button>
                 </div>
@@ -511,7 +516,7 @@ const NeuralLinkSpell = ({ onExit, spellSystem, session, savedState }: { onExit:
                      finalResult: "CONNECTION RESTORED FROM ARCHIVES."
                  });
             }
-            setStage(6); // Jump to Transmit
+            setStage(0); // Start from beginning
             
             // Update persist
             setSpellState({
@@ -519,7 +524,7 @@ const NeuralLinkSpell = ({ onExit, spellSystem, session, savedState }: { onExit:
                 targetPersist: rData?.target || "",
                 intentPersist: savedState.intention,
                 modePersist: rData?.mode || 'standard',
-                stagePersist: 6,
+                stagePersist: 0,
                 rehydrated: true
             });
         }
@@ -545,7 +550,7 @@ const NeuralLinkSpell = ({ onExit, spellSystem, session, savedState }: { onExit:
     }, [stage, target, intent, mode]);
 
     const handleBegin = async (selectedMode: 'standard' | 'ai') => {
-        if (selectedMode === 'ai') {
+        if (selectedMode === 'ai' && !spellState.rehydrated) {
              if (!session?.user?.id) return;
              const paid = await spellSystem.genEconomy.spendAether(session.user.id, 3);
              if (!paid) return;
@@ -586,7 +591,7 @@ const NeuralLinkSpell = ({ onExit, spellSystem, session, savedState }: { onExit:
     // Render logic based on Stage ID
     const renderStage = () => {
         switch(stage) {
-            case 0: return <TargetStage target={target} setTarget={setTarget} intent={intent} setIntent={setIntent} onBegin={handleBegin} />;
+            case 0: return <TargetStage target={target} setTarget={setTarget} intent={intent} setIntent={setIntent} onBegin={handleBegin} isReplay={spellState.rehydrated} />;
             case 1: return <CalibrationStage playDrone={playDrone} playTone={playTone} onNext={handleCalibrationNext} />;
             case 2: return <IncantationStage text={aiContent?.incantation1 || "Initializing..."} onNext={handleIncantation1Next} title="Primary Directive" playTone={playTone} initAudio={initAudio} />;
             case 3: return <VoidInjectionStage onNext={handleInjectionNext} playTone={playTone} initAudio={initAudio} />;

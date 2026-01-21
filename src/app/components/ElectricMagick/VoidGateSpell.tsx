@@ -45,7 +45,7 @@ const VoidGateSpell = ({ onExit, spellSystem, session, savedState }: { onExit: (
         const rData = typeof savedState.ritual_data === 'string' ? JSON.parse(savedState.ritual_data) : savedState.ritual_data;
         
         setSpellState({
-            stage: 7, // Jump to Final
+            stage: 0, // Start from Beginning
             intention: savedState.intention || '',
             oracleMessage: rData?.oracle_message || savedState.incantation || "THE VOID SPEAKS",
             isSaved: true,
@@ -96,9 +96,11 @@ const VoidGateSpell = ({ onExit, spellSystem, session, savedState }: { onExit: (
           onClick={async (e) => {
              if (!session?.user?.id) return;
             
-            // Check Economy - Explicit 3 cost
-            const paid = await spellSystem.genEconomy.spendAether(session.user.id, 3);
-            if (!paid) return;
+             // Check Economy - Explicit 3 cost (Skip if Replay)
+             if (!spellState.rehydrated) {
+                 const paid = await spellSystem.genEconomy.spendAether(session.user.id, 3);
+                 if (!paid) return;
+             }
 
             const target = e.target as any;
             const rect = target.getBoundingClientRect();
@@ -111,7 +113,7 @@ const VoidGateSpell = ({ onExit, spellSystem, session, savedState }: { onExit: (
           }}
           className="px-8 py-4 border border-purple-400 bg-purple-900/40 backdrop-blur-md text-white rounded-sm hover:bg-purple-800/60 shadow-[0_0_15px_rgba(168,85,247,0.3)] transition-all duration-300 tracking-[0.2em] uppercase text-xs font-bold"
         >
-          High Ritual (AI Enhanced)
+          {spellState.rehydrated ? "High Ritual (Replay)" : "High Ritual (AI Enhanced)"}
         </button>
         <div className="text-center text-[10px] text-gray-500 font-mono">
              High Ritual cost: {spellSystem.genEconomy.cost || 3} Aether
@@ -387,10 +389,11 @@ const VoidGateSpell = ({ onExit, spellSystem, session, savedState }: { onExit: (
                 type="text" 
                 value={intention}
                 // FIX: Cast target to 'any' to bypass input type checking
-                onChange={(e) => setIntention((e.target as any).value)}
+                onChange={(e) => !spellState.rehydrated && setIntention((e.target as any).value)}
+                readOnly={spellState.rehydrated}
                 placeholder="I WILL..."
-                className="w-full bg-transparent border-b border-purple-900/50 text-center text-xl p-4 text-purple-100 focus:outline-none focus:border-purple-500 font-serif tracking-wide uppercase placeholder:text-gray-800 transition-all focus:bg-purple-900/10"
-                autoFocus
+                className={`w-full bg-transparent border-b ${spellState.rehydrated ? 'border-purple-500/30 text-purple-500/70' : 'border-purple-900/50 text-purple-100'} text-center text-xl p-4 focus:outline-none focus:border-purple-500 font-serif tracking-wide uppercase placeholder:text-gray-800 transition-all focus:bg-purple-900/10`}
+                autoFocus={!spellState.rehydrated}
              />
              <button
                 type="button"

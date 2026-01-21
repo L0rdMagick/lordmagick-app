@@ -39,7 +39,7 @@ const GlitchText = ({ text, active = false }: { text: string, active?: boolean }
 };
 
 // --- STAGE 0: INTRO & PAYWALL ---
-const IntroStage = ({ onComplete, playTone, initAudio, session, spellSystem }: { onComplete: () => void, playTone: any, initAudio: any, session: Session | undefined, spellSystem: any }) => {
+const IntroStage = ({ onComplete, playTone, initAudio, session, spellSystem, isReplay }: { onComplete: () => void, playTone: any, initAudio: any, session: Session | undefined, spellSystem: any, isReplay?: boolean }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
@@ -53,14 +53,17 @@ const IntroStage = ({ onComplete, playTone, initAudio, session, spellSystem }: {
 
             // 1. Check for Session (Paid Mode)
             if (session?.user?.id) {
-                const paid = await spellSystem.genEconomy.spendAether(session.user.id, 3);
-                
-                if (!paid) {
-                    playTone(100, 'sawtooth', 0.5);
-                    // spellSystem should handle the overlay, but we can also show a local error if needed.
-                    // For now, adhere to returning early.
-                    setLoading(false);
-                    return; 
+                // Skip payment if replay
+                if (!isReplay) {
+                    const paid = await spellSystem.genEconomy.spendAether(session.user.id, 3);
+                    
+                    if (!paid) {
+                        playTone(100, 'sawtooth', 0.5);
+                        // spellSystem should handle the overlay, but we can also show a local error if needed.
+                        // For now, adhere to returning early.
+                        setLoading(false);
+                        return; 
+                    }
                 }
             } else {
                 // 2. No Session (Test/Dev Mode)
@@ -152,7 +155,7 @@ const IntroStage = ({ onComplete, playTone, initAudio, session, spellSystem }: {
                             <>
                                 <Lock size={14} className="group-hover:hidden text-cyan-600" />
                                 <Zap size={14} className="hidden group-hover:block" />
-                                <span className="font-bold">INITIALIZE {session?.user ? `(-3 AETHER)` : '(TEST MODE)'}</span>
+                                <span className="font-bold">INITIALIZE {isReplay ? "(REPLAY)" : session?.user ? `(-3 AETHER)` : '(TEST MODE)'}</span>
                             </>
                         )}
                     </button>
@@ -244,8 +247,8 @@ const BioAuthStage = ({ onComplete, playTone }: { onComplete: () => void, playTo
 };
 
 // --- STAGE 2: CODE INJECTION (The Word) ---
-const InjectionStage = ({ onComplete, playTone, setIntention }: { onComplete: () => void, playTone: any, setIntention: (s: string) => void }) => {
-  const [input, setInput] = useState("");
+const InjectionStage = ({ onComplete, playTone, setIntention, intention, isReplay }: { onComplete: () => void, playTone: any, setIntention: (s: string) => void, intention: string, isReplay?: boolean }) => {
+  const [input, setInput] = useState(intention || "");
   const [hexStream, setHexStream] = useState<string[]>([]);
   
   useEffect(() => {
@@ -291,13 +294,17 @@ const InjectionStage = ({ onComplete, playTone, setIntention }: { onComplete: ()
               autoFocus
               type="text" 
               value={input}
+              value={input}
               // FIX: Cast currentTarget to any to safely access value
               onChange={(e) => {
                 const val = (e.currentTarget as any).value;
-                setInput(val);
-                playTone(400 + (val.length * 20), 'sine', 0.05);
+                if (!isReplay) {
+                    setInput(val);
+                    playTone(400 + (val.length * 20), 'sine', 0.05);
+                }
               }}
-              className="w-full bg-transparent border-b-2 border-green-800 text-green-400 font-mono text-xl py-2 focus:outline-none focus:border-green-400 transition-colors placeholder:text-green-900 uppercase"
+              readOnly={isReplay}
+              className={`w-full bg-transparent border-b-2 ${isReplay ? 'border-green-500/50 text-green-500/70' : 'border-green-800 text-green-400'} font-mono text-xl py-2 focus:outline-none focus:border-green-400 transition-colors placeholder:text-green-900 uppercase`}
               placeholder="ENTER COMMAND..."
             />
           </div>
@@ -660,7 +667,7 @@ const ZeroPointZetSpell = ({ onExit, session, spellSystem, savedState }: { onExi
     if (savedState && !spellState.rehydrated) {
        // Zero Point Zet is simple, just intention and done state
        setSpellState({
-           stage: 5, // Reboot Stage
+           stage: 0, // Start from Intro
            intention: savedState.intention || '',
            isSaved: true,
            rehydrated: true
@@ -670,9 +677,9 @@ const ZeroPointZetSpell = ({ onExit, session, spellSystem, savedState }: { onExi
 
   const renderStage = () => {
     switch (stage) {
-      case 0: return <IntroStage onComplete={() => setStage(1)} playTone={playTone} initAudio={initAudio} session={session} spellSystem={spellSystem} />;
+      case 0: return <IntroStage onComplete={() => setStage(1)} playTone={playTone} initAudio={initAudio} session={session} spellSystem={spellSystem} isReplay={spellState.rehydrated} />;
       case 1: return <BioAuthStage onComplete={() => setStage(2)} playTone={playTone} />;
-      case 2: return <InjectionStage onComplete={() => setStage(3)} playTone={playTone} setIntention={setIntention} />;
+      case 2: return <InjectionStage onComplete={() => setStage(3)} playTone={playTone} setIntention={setIntention} intention={intention} isReplay={spellState.rehydrated} />;
       case 3: return <StabilizationStage onComplete={() => setStage(4)} playTone={playTone} modulateFilter={modulateFilter} />;
       case 4: return <EntropyStage onComplete={() => setStage(5)} playTone={playTone} spawnExplosion={spawnExplosion} intention={intention} />;
       case 5: return <RebootStage intention={intention} onExit={onExit} session={session} spellSystem={spellSystem} isAlreadySaved={isSaved} />;

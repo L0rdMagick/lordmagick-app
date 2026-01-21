@@ -667,8 +667,8 @@ const useSpecializedAudioEngine = () => {
 
 // 0. INTRO / PAYWALL / INTENTION
 // 0. INTRO / PAYWALL / INTENTION
-const IntroBreach = ({ setIntention, setArchetype, setPhase, setAiData, audio, session, spellSystem }: any) => {
-    const [input, setInput] = useState('');
+const IntroBreach = ({ setIntention, setArchetype, setPhase, setAiData, audio, session, spellSystem, isReplay, existingAiData, initialIntention }: any) => {
+    const [input, setInput] = useState(initialIntention || '');
     const [loading, setLoading] = useState(false);
     
     const handleSubmit = async () => {
@@ -680,10 +680,13 @@ const IntroBreach = ({ setIntention, setArchetype, setPhase, setAiData, audio, s
             
             // 1. Process Payment via spellSystem
             if (session?.user?.id) {
-                const paid = await spellSystem.genEconomy.spendAether(session.user.id, 3);
-                if (!paid) {
-                    setLoading(false);
-                    return;
+                // Skip if replay
+                if (!isReplay) {
+                    const paid = await spellSystem.genEconomy.spendAether(session.user.id, 3);
+                    if (!paid) {
+                        setLoading(false);
+                        return;
+                    }
                 }
             } else {
                 console.log("Dev Mode: Bypassing Credit Check");
@@ -691,10 +694,16 @@ const IntroBreach = ({ setIntention, setArchetype, setPhase, setAiData, audio, s
             
             audio.playOneShot('boom');
 
-            // 2. AI Generation
+            // 2. AI Generation or Replay
             const arch = detectArchetype(input);
             setArchetype(arch);
             setIntention(input);
+
+            if (isReplay && existingAiData) {
+                 // Use existing data
+                 setPhase('CONSECRATE');
+                 return;
+            }
 
             const ritualData = await generateRealityPatchRitual(input);
             setAiData(ritualData);
@@ -724,7 +733,8 @@ const IntroBreach = ({ setIntention, setArchetype, setPhase, setAiData, audio, s
                     </label>
                     <textarea 
                         value={input}
-                        onChange={(e) => setInput(e.target.value)}
+                        onChange={(e) => !isReplay && setInput(e.target.value)}
+                        readOnly={isReplay}
                         disabled={loading}
                         placeholder="e.g. I am fully healed and wealthy..."
                         className="w-full h-24 bg-slate-900/50 border border-slate-700 p-4 text-white text-center font-serif italic focus:border-red-500 focus:outline-none transition-colors resize-none"
@@ -744,7 +754,7 @@ const IntroBreach = ({ setIntention, setArchetype, setPhase, setAiData, audio, s
                         disabled={!input}
                         className="w-full py-4 border border-red-900 text-red-500 hover:bg-red-900/20 hover:text-red-400 hover:border-red-500 transition-all font-mono text-xs tracking-[0.2em] uppercase"
                     >
-                        Initialize Ritual
+                        Initialize Ritual {isReplay ? "(REPLAY)" : ""}
                     </button>
                 )}
             </div>
@@ -1496,10 +1506,10 @@ function RealityPatchCore({ onExit, session, spellSystem, savedState }: { onExit
             // Handle archetype restoration
             if (rData?.archetype) setArchetype(rData.archetype);
             
-            setPhase('CAST'); 
+            setPhase('INTRO'); // Start from INTRO
             
             setSpellState({
-                phase: 'CAST',
+                phase: 'INTRO',
                 intention: savedState.intention,
                 archetype: rData?.archetype || spellState.archetype || ARCHETYPES.UNK,
                 aiData: rData?.full_ritual_script || null,
@@ -1584,7 +1594,7 @@ function RealityPatchCore({ onExit, session, spellSystem, savedState }: { onExit
         {/* Main Container - One Page Layout */}
         <div className="relative z-10 w-full h-full flex flex-col justify-between">
             <main className="w-full h-full relative z-10 flex flex-col items-center justify-center max-w-lg mx-auto">
-                    {phase === 'INTRO' && <IntroBreach setIntention={setIntention} setArchetype={setArchetype} setPhase={setPhase} setAiData={setAiData} audio={audio} session={session} spellSystem={spellSystem} />}
+                    {phase === 'INTRO' && <IntroBreach setIntention={setIntention} setArchetype={setArchetype} setPhase={setPhase} setAiData={setAiData} audio={audio} session={session} spellSystem={spellSystem} isReplay={spellState.rehydrated} existingAiData={aiData} initialIntention={intention} />}
                     {phase === 'CONSECRATE' && <Consecration setPhase={setPhase} archetype={archetype} audio={audio} spawnExplosion={spawnExplosion} aiData={aiData} />}
                     {phase === 'GROUNDING' && <Grounding setPhase={setPhase} audio={audio} aiData={aiData} archetype={archetype} />}
                     {phase === 'AGREEMENT' && <Agreement setPhase={setPhase} audio={audio} />}
