@@ -395,6 +395,13 @@ const RealityOverwriteSpell = ({ onExit, spellSystem, session, savedState }: { o
 
     // REHYDRATION
     useEffect(() => {
+        // Check if we are in a return flow to prevent overwriting restored state with savedState
+        const isPending = typeof window !== 'undefined' && sessionStorage.getItem('PENDING_PURCHASE');
+        
+        if ((isRestored || isPending) && !spellState.rehydrated) {
+            return;
+        }
+
         if (savedState && !spellState.rehydrated) {
             const rData = typeof savedState.ritual_data === 'string' ? JSON.parse(savedState.ritual_data) : savedState.ritual_data;
             
@@ -421,7 +428,7 @@ const RealityOverwriteSpell = ({ onExit, spellSystem, session, savedState }: { o
             // Do NOT set finalStage or started to true immediately, let them see intro or start flow
             setStarted(false); 
         }
-    }, [savedState, spellState.rehydrated]);
+    }, [savedState, spellState.rehydrated, isRestored]);
 
     const handleSelectSector = (idx: number) => {
         initAudio(); // FIX: Audio Init

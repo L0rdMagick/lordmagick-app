@@ -1482,7 +1482,7 @@ export default function RealityPatchSpell({ onExit, session, spellSystem, savedS
 }
 
 function RealityPatchCore({ onExit, session, spellSystem, savedState }: { onExit: () => void, session?: Session, spellSystem?: any, savedState?: any }) {
-    const { state: spellState, setState: setSpellState, clearState } = useSpellPersistence('reality_patch_spell_state', {
+    const { state: spellState, setState: setSpellState, clearState, isRestored } = useSpellPersistence('reality_patch_spell_state', {
          phase: 'INTRO' as Phase,
          intention: '',
          archetype: ARCHETYPES.UNK, // Default to UNK instead of hardcoded object to match type
@@ -1503,6 +1503,13 @@ function RealityPatchCore({ onExit, session, spellSystem, savedState }: { onExit
 
     // REHYDRATION
     useEffect(() => {
+        // Check if we are in a return flow to prevent overwriting restored state with savedState
+        const isPending = typeof window !== 'undefined' && sessionStorage.getItem('PENDING_PURCHASE');
+
+        if ((isRestored || isPending) && !spellState.rehydrated) {
+            return;
+        }
+
         if (savedState && !spellState.rehydrated) {
             const rData = typeof savedState.ritual_data === 'string' ? JSON.parse(savedState.ritual_data) : savedState.ritual_data;
             
@@ -1529,8 +1536,9 @@ function RealityPatchCore({ onExit, session, spellSystem, savedState }: { onExit
             setIntention(spellState.intention);
             setArchetype(spellState.archetype);
             setAiData(spellState.aiData);
+            setAiData(spellState.aiData);
         }
-    }, [savedState, spellState.rehydrated]);
+    }, [savedState, spellState.rehydrated, isRestored]);
 
     // Persistence Sync
     useEffect(() => {

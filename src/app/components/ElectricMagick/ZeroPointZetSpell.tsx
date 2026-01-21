@@ -634,7 +634,7 @@ const RebootStage = ({ intention, onExit, session, spellSystem, isAlreadySaved, 
 // --- MAIN ORCHESTRATOR ---
 const ZeroPointZetSpell = ({ onExit, session, spellSystem, savedState }: { onExit: () => void, session?: Session, spellSystem: any, savedState?: any }) => {
   // Persistent State
-  const { state: spellState, setState: setSpellState, clearState } = useSpellPersistence('zero_point_zet_spell_state', {
+  const { state: spellState, setState: setSpellState, clearState, isRestored } = useSpellPersistence('zero_point_zet_spell_state', {
       stage: 0,
       intention: '',
       isSaved: false,
@@ -665,6 +665,13 @@ const ZeroPointZetSpell = ({ onExit, session, spellSystem, savedState }: { onExi
 
   // REHYDRATION
   useEffect(() => {
+    // Check if we are in a return flow to prevent overwriting restored state with savedState
+    const isPending = typeof window !== 'undefined' && sessionStorage.getItem('PENDING_PURCHASE');
+
+    if ((isRestored || isPending) && !spellState.rehydrated) {
+        return;
+    }
+
     if (savedState && !spellState.rehydrated) {
        // Zero Point Zet is simple, just intention and done state
        setSpellState({
@@ -673,8 +680,9 @@ const ZeroPointZetSpell = ({ onExit, session, spellSystem, savedState }: { onExi
            isSaved: true,
            rehydrated: true
        });
+
     }
-  }, [savedState, spellState.rehydrated]);
+  }, [savedState, spellState.rehydrated, isRestored]);
 
   const renderStage = () => {
     switch (stage) {

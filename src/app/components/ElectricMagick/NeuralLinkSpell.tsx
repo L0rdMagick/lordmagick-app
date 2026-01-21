@@ -490,7 +490,7 @@ const NeuralLinkSpell = ({ onExit, spellSystem, session, savedState }: { onExit:
     const [economyError, setEconomyError] = useState<string | null>(null);
     
     // Persistent State
-    const { state: spellState, setState: setSpellState, clearState } = useSpellPersistence('neural_link_spell_state', {
+    const { state: spellState, setState: setSpellState, clearState, isRestored } = useSpellPersistence('neural_link_spell_state', {
         aiContent: null as NeuralLinkResult | null,
         targetPersist: '',
         intentPersist: '',
@@ -504,6 +504,13 @@ const NeuralLinkSpell = ({ onExit, spellSystem, session, savedState }: { onExit:
     
     // REHYDRATION
     useEffect(() => {
+        // Check if we are in a return flow to prevent overwriting restored state with savedState
+        const isPending = typeof window !== 'undefined' && sessionStorage.getItem('PENDING_PURCHASE');
+    
+        if ((isRestored || isPending) && !spellState.rehydrated) {
+            return;
+        }
+
         if (savedState && !spellState.rehydrated) {
             const rData = typeof savedState.ritual_data === 'string' ? JSON.parse(savedState.ritual_data) : savedState.ritual_data;
             const fullAi = rData?.full_ai_structure || null;
@@ -539,7 +546,7 @@ const NeuralLinkSpell = ({ onExit, spellSystem, session, savedState }: { onExit:
              setIntent(spellState.intentPersist);
              setMode(spellState.modePersist as any);
         }
-    }, [savedState, spellState.rehydrated]);
+    }, [savedState, spellState.rehydrated, isRestored]);
 
     // Keep Persistence Updated
     useEffect(() => {

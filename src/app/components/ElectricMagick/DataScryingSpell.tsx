@@ -86,7 +86,7 @@ const DataScryingSpell = ({ onExit, spellSystem, session, savedState }: { onExit
         onExit();
     };
     // Persistent Spell State
-    const { state: spellState, setState: setSpellState, clearState } = useSpellPersistence('data_scrying_spell_state', {
+    const { state: spellState, setState: setSpellState, clearState, isRestored } = useSpellPersistence('data_scrying_spell_state', {
         stage: 0,
         intention: '',
         mode: 'standard' as 'standard' | 'ai',
@@ -114,6 +114,13 @@ const DataScryingSpell = ({ onExit, spellSystem, session, savedState }: { onExit
 
     // REHYDRATION
     useEffect(() => {
+        // Check if we are in a return flow to prevent overwriting restored state with savedState
+        const isPending = typeof window !== 'undefined' && sessionStorage.getItem('PENDING_PURCHASE');
+    
+        if ((isRestored || isPending) && !spellState.rehydrated) {
+            return;
+        }
+
         if (savedState && !spellState.rehydrated) {
             const rData = typeof savedState.ritual_data === 'string' ? JSON.parse(savedState.ritual_data) : savedState.ritual_data;
             
@@ -126,7 +133,7 @@ const DataScryingSpell = ({ onExit, spellSystem, session, savedState }: { onExit
                 rehydrated: true
             });
         }
-    }, [savedState, spellState.rehydrated]);
+    }, [savedState, spellState.rehydrated, isRestored]);
 
     const handleBegin = async (selectedMode: 'standard' | 'ai') => {
         // Skip payment if replaying

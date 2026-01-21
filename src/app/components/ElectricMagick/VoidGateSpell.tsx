@@ -20,7 +20,7 @@ const VoidGateSpell = ({ onExit, spellSystem, session, savedState }: { onExit: (
       onExit();
   };
   // Persist the entire spell state in one object to keep it simple
-  const { state: spellState, setState: setSpellState, clearState } = useSpellPersistence('void_gate_spell_state', {
+  const { state: spellState, setState: setSpellState, clearState, isRestored } = useSpellPersistence('void_gate_spell_state', {
       stage: 0,
       intention: '',
       isSaved: false,
@@ -43,6 +43,13 @@ const VoidGateSpell = ({ onExit, spellSystem, session, savedState }: { onExit: (
 
   // REHYDRATION
   useEffect(() => {
+    // Check if we are in a return flow to prevent overwriting restored state with savedState
+    const isPending = typeof window !== 'undefined' && sessionStorage.getItem('PENDING_PURCHASE');
+    
+    if ((isRestored || isPending) && !spellState.rehydrated) {
+        return;
+    }
+
     if (savedState && !spellState.rehydrated) {
         const rData = typeof savedState.ritual_data === 'string' ? JSON.parse(savedState.ritual_data) : savedState.ritual_data;
         
@@ -54,7 +61,7 @@ const VoidGateSpell = ({ onExit, spellSystem, session, savedState }: { onExit: (
             rehydrated: true
         });
     }
-  }, [savedState, spellState.rehydrated]);
+  }, [savedState, spellState.rehydrated, isRestored]);
   
   // STAGE 1: INITIATION
   const StartScreen = () => (
