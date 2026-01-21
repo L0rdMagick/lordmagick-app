@@ -87,6 +87,9 @@ export default function GrimoirePage() {
         if (nameLower.includes('zero point')) {
              return `/spell-room/electric-magick-spells-app?spell=zero-point-zet&loadId=${spell.id}`;
         }
+        if (nameLower.includes('void gate')) {
+             return `/spell-room/electric-magick-spells-app?spell=void-gate&loadId=${spell.id}`;
+        }
         
         return null; // Unknown type
     };

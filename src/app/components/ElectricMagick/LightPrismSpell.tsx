@@ -355,7 +355,7 @@ const RealityOverwriteSpell = ({ onExit, spellSystem, session, savedState }: { o
         sectorIndex: 0,
         userInputs: {} as Record<string, string>,
         optimizationData: {} as Record<string, string>,
-        subStage: 'scan' as 'scan' | 'input' | 'processing' | 'complete' | 'incantation' | 'activity',
+        subStage: 'input' as 'scan' | 'input' | 'processing' | 'complete' | 'incantation' | 'activity',
         isSaved: false,
         aiResponse: '', // Persistent
         rehydrated: false

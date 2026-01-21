@@ -1,5 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Coins } from 'lucide-react';
 
@@ -18,6 +19,15 @@ export const BlockageErrorOverlay = ({
     redirectPath = '/store',
     onGoToStore
 }: BlockageErrorOverlayProps) => {
+    const router = useRouter(); // Initialize useRouter
+
+    const handleGoToStore = () => {
+        // Set persistence flag so spells can restore state upon return
+        if (typeof window !== 'undefined') {
+            sessionStorage.setItem('PENDING_PURCHASE', 'true');
+        }
+        router.push('/hoodoo-store');
+    };
     
     if (!error) return null;
 
@@ -46,16 +56,18 @@ export const BlockageErrorOverlay = ({
                                         Manifest Faestones
                                     </button>
                                 ) : (
-                                    <Link 
-                                        href={`/store?redirect=${encodeURIComponent(redirectPath)}`}
-                                        onClick={() => sessionStorage.setItem('PENDING_PURCHASE', 'true')}
+                                ) : (
+                                    <button 
+                                        onClick={handleGoToStore}
                                         className="w-full flex items-center justify-center gap-2 py-3 bg-amber-700 hover:bg-amber-600 text-white font-bold rounded uppercase tracking-wider text-xs transition-colors shadow-[0_0_15px_rgba(180,83,9,0.4)]"
                                     >
                                         <div className="w-4 h-4 relative">
                                             <Image src="/images/faestones.png" alt="Token" layout="fill" objectFit="contain" />
                                         </div> 
                                         Manifest Faestones
-                                    </Link>
+                                    </button>
+                                )
+                            )}
                                 )
                             )}
                             <button onClick={onDismiss} className="text-gray-400 hover:text-white text-xs font-serif italic tracking-wide">
@@ -72,13 +84,12 @@ export const BlockageErrorOverlay = ({
                         <p className="text-gray-400 text-sm mb-6">{error}</p>
                         <div className="flex flex-col gap-3">
                             {showStoreLink && (
-                                <Link 
-                                href={`/store?redirect=${encodeURIComponent(redirectPath)}`}
-                                onClick={() => sessionStorage.setItem('PENDING_PURCHASE', 'true')}
+                                <button 
+                                onClick={handleGoToStore}
                                 className="w-full bg-amber-600 hover:bg-amber-500 text-black py-3 uppercase tracking-widest font-magical text-xs rounded transition-colors flex items-center justify-center gap-2"
                                 >
                                     <div className="w-4 h-4 relative"><Image src="/images/faestones.png" alt="Faestone" layout="fill" objectFit="contain" /></div> Manifest More Faestones
-                                </Link>
+                                </button>
                             )}
                             <button onClick={onDismiss} className="w-full border border-red-500/50 text-red-300 py-3 uppercase tracking-widest font-magical text-xs hover:bg-red-900/20 transition-colors">
                                 Cancel the Ritual
