@@ -544,27 +544,43 @@ const RebootStage = ({ intention, onExit, session, spellSystem }: { intention: s
     return () => clearInterval(interval);
   }, [intention]);
 
-  const handleSave = async () => {
-      if (!session?.user?.id) return;
-      
-      const paid = await spellSystem.saveEconomy.spendAether(session.user.id, 2);
-      if (!paid) return;
+    const handleSaveSpell = async () => {
+         if (isSaved || isSaving) return;
+         const userId = session?.user?.id;
+         if (!userId) return;
 
-      setSaving(true);
-      try {
-          await saveSpell(session.user.id, {
-              name: `Zero Point Zet: ${new Date().toLocaleDateString()}`,
-              intention: intention,
-              incantation: `ZERO POINT INJECTION\nTARGET: ${intention}\nSTATUS: OVERWRITTEN`,
-              element: 'AETHER'
-          });
-          setSaved(true);
-      } catch (e) {
-          console.error(e);
-      } finally {
-          setSaving(false);
-      }
-  };
+         setIsSaving(true);
+         try {
+             const gemini = await import('@/lib/services/geminiService');
+             
+             // 1. Check Limits
+             const isFull = await gemini.checkGrimoireLimit(userId);
+             if (isFull) throw new Error("GRIMOIRE_FULL");
+
+             // 2. Pay Credits
+             const paid = await spellSystem.saveEconomy.spendAether(userId, 2);
+             if (!paid) throw new Error("INSUFFICIENT_FUNDS");
+
+             // 3. Save
+             await gemini.saveSpell(userId, {
+                 name: `Zero Point Zet: ${intention.substring(0, 15)}...`,
+                 intention: intention,
+                 incantation: "REALITY_HACK_COMPLETE",
+                 element: "Aether"
+             }, true);
+
+             setIsSaved(true);
+         } catch (error: any) {
+             console.error("Save failed:", error);
+             if (error.message === "INSUFFICIENT_FUNDS") {
+                 // handled
+             } else {
+                 spellSystem.handleSaveError(error);
+             }
+         } finally {
+             setIsSaving(false);
+         }
+    };
 
   return (
     <div className="flex flex-col items-center justify-center h-full w-full bg-black text-green-500 font-mono text-sm p-8">
@@ -586,13 +602,14 @@ const RebootStage = ({ intention, onExit, session, spellSystem }: { intention: s
             
             <div className="flex flex-col gap-4">
                 <button 
-                    onClick={handleSave}
-                    disabled={saved || saving || !session?.user}
-                    className={`w-full py-4 border border-green-700 bg-green-900/20 text-green-400 hover:text-white font-mono text-xs tracking-widest hover:border-green-400 transition-all flex items-center justify-center gap-2 ${saved || !session?.user ? 'opacity-50 cursor-default' : ''}`}
+                    onClick={handleSaveSpell}
+                    disabled={isSaved || isSaving || !session?.user}
+                    className={`w-full py-4 border border-green-700 bg-green-900/20 text-green-400 hover:text-white font-mono text-xs tracking-widest hover:border-green-400 transition-all flex items-center justify-center gap-2 ${isSaved || !session?.user ? 'opacity-50 cursor-default' : ''}`}
                 >
                     <Save size={14} /> 
-                    {saved ? "LOG SAVED" : !session?.user ? "LOG IN TO SAVE" : `SAVE TO GRIMOIRE (-2 AETHER)`}
+                    {isSaved ? "LOG SAVED" : !session?.user ? "LOG IN TO SAVE" : `SAVE TO GRIMOIRE (-2 AETHER)`}
                 </button>
+                {isSaving && <div className="text-center text-xs text-green-500 animate-pulse">SAVING TO ETHER...</div>}
 
                 <button 
                 onClick={onExit}

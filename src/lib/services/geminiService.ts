@@ -384,6 +384,28 @@ export const uploadBase64Image = async (base64: string, path: string): Promise<s
 };
 
 /**
+ * Checks if the user has reached their spell slot limit.
+ */
+export const checkGrimoireLimit = async (userId: string): Promise<boolean> => {
+    const { count, error: countError } = await supabase
+        .from('spells')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId);
+        
+    if (countError) throw countError;
+
+    const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('spell_slots_limit')
+        .eq('id', userId)
+        .single();
+    
+    const limit = profile?.spell_slots_limit || 5;
+
+    return (count || 0) >= limit;
+};
+
+/**
  * Saves a spell to the universal grimoire with slot limit checking.
  */
 export const saveSpell = async (
@@ -394,7 +416,7 @@ export const saveSpell = async (
         incantation: string, 
         sigil_url?: string, 
         element?: string,
-        ritual_data?: any, // JSONB data (ingredients, steps, etc)
+        ritual_data?: any, 
         tradition?: string
     },
     bypassLimit: boolean = false

@@ -636,24 +636,37 @@ const FinalStage = ({
 
     const handleSaveSpell = async () => {
          if (isSaved || isSaving) return;
-         if (!session?.user?.id) return;
-         
-         const paid = await spellSystem.saveEconomy.spendAether(session.user.id, 2);
-         if (!paid) return;
+         const userId = session?.user?.id;
+         if (!userId) return;
 
          setIsSaving(true);
          try {
-             await import('@/lib/services/geminiService').then(mod => 
-                 mod.saveSpell(session.user.id!, {
-                     name: `Void Gate: ${intention.substring(0, 15)}...`,
-                     intention: intention,
-                     incantation: oracleMessage,
-                     element: 'Spirit'
-                 })
-             );
+             const gemini = await import('@/lib/services/geminiService');
+             
+             // 1. Check Limit
+             const isFull = await gemini.checkGrimoireLimit(userId);
+             if (isFull) throw new Error("GRIMOIRE_FULL");
+
+             // 2. Pay
+             const paid = await spellSystem.saveEconomy.spendAether(userId, 2);
+             if (!paid) throw new Error("INSUFFICIENT_FUNDS");
+
+             // 3. Save
+             await gemini.saveSpell(userId, {
+                 name: `Void Gate: ${intention.substring(0, 15)}...`,
+                 intention: intention,
+                 incantation: oracleMessage,
+                 element: 'Spirit'
+             }, true);
+
              setIsSaved(true);
-         } catch (e) {
-             console.error("Save failed:", e);
+         } catch (error: any) {
+             console.error("Save failed:", error);
+             if (error.message === "INSUFFICIENT_FUNDS") {
+                 // handled
+             } else {
+                 spellSystem.handleSaveError(error);
+             }
          } finally {
              setIsSaving(false);
          }

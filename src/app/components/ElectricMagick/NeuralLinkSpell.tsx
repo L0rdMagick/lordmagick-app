@@ -379,33 +379,45 @@ interface TransmitStageProps {
     intent: string;
     saveEnabled: boolean;
     session?: Session;
+    spellSystem?: any; 
+    aiContent: NeuralLinkResult | null;
 }
 
-const TransmitStage = ({ onExit, finalLog, target, intent, saveEnabled, session, spellSystem }: any) => {
+const TransmitStage = ({ onExit, finalLog, target, intent, saveEnabled, session, spellSystem, aiContent }: TransmitStageProps) => {
     const [isSaving, setIsSaving] = useState(false);
     const [isSaved, setIsSaved] = useState(false);
 
-    const handleSave = async () => {
+    const handleSaveSpell = async () => {
         if (isSaved || isSaving) return;
-        
-        // Payment
-        const userId = session?.user?.id || 'anon';
-        if (userId !== 'anon') {
-             const paid = await spellSystem.saveEconomy.spendAether(userId, 2);
-             if (!paid) return;
-        }
+        const userId = session?.user?.id;
+        if (!userId) return;
 
         setIsSaving(true);
         try {
+            // 1. Check Limit
+            const isFull = await import('@/lib/services/geminiService').then(mod => mod.checkGrimoireLimit(userId));
+            if (isFull) throw new Error("GRIMOIRE_FULL");
+
+            // 2. Pay Credits
+            const paid = await spellSystem.saveEconomy.spendAether(userId, 2);
+            if (!paid) throw new Error("INSUFFICIENT_FUNDS");
+
+            // 3. Save
             await saveSpell(userId, {
-                name: `Neural Link: ${target.substring(0, 15)}...`,
-                intention: `${target}: ${intent}`,
-                incantation: finalLog,
-                element: "Air" 
-            });
+                name: `Neural Link: ${target.substring(0, 15)}`,
+                intention: `${intent}`,
+                incantation: aiContent?.incantation2 || "LINK ESTABLISHED",
+                element: "Spirit"
+            }, true);
+
             setIsSaved(true);
-        } catch (error) {
+        } catch (error: any) {
             console.error("Save failed:", error);
+            if (error.message === "INSUFFICIENT_FUNDS") {
+                // handled
+            } else {
+                spellSystem.handleSaveError(error);
+            }
         } finally {
             setIsSaving(false);
         }
@@ -425,23 +437,27 @@ const TransmitStage = ({ onExit, finalLog, target, intent, saveEnabled, session,
             </div>
 
             <div className="flex flex-col gap-4 w-full max-w-xs">
-                {saveEnabled && (
-                     <button 
-                        onClick={handleSave}
+                {saveEnabled ? (
+                    <button 
+                        onClick={handleSaveSpell}
                         disabled={isSaved || isSaving}
-                        className="flex items-center justify-center gap-3 px-8 py-4 border border-pink-500 bg-pink-900/30 hover:bg-pink-800/50 text-pink-200 transition-colors uppercase tracking-[0.2em] text-xs rounded-sm disabled:opacity-50 group"
+                        className="flex items-center justify-center gap-3 px-8 py-4 border border-pink-500 bg-pink-900/20 hover:bg-pink-900/40 text-pink-200 transition-colors uppercase tracking-[0.2em] text-xs rounded-sm disabled:opacity-50"
                     >
-                        {isSaved ? <Check size={16} /> : <Save size={16} />}
-                        <span>{isSaved ? "SAVED TO ETHER" : isSaving ? "BURNING..." : "BURN TO ETHER DRIVE (1 CREDIT)"}</span>
+                        {isSaved ? <Check size={16} /> : <HardDrive size={16} />}
+                        <span>{isSaved ? "LINK ARCHIVED" : "ARCHIVE LINK (2 CREDITS)"}</span>
                     </button>
+                ) : (
+                    <div className="text-pink-800 text-[10px] tracking-widest uppercase">
+                        Standard Link Active. (No Archive)
+                    </div>
                 )}
 
                 <button 
-                onClick={onExit}
-                className="text-[10px] text-pink-900 hover:text-pink-500 uppercase tracking-[0.4em] transition-colors mt-8"
-             >
-                Close Connection
-             </button>
+                    onClick={onExit}
+                    className="mt-8 text-[10px] text-pink-700 hover:text-pink-400 uppercase tracking-[0.3em] font-mono transition-colors"
+                >
+                    Sever Connection
+                </button>
             </div>
         </div>
     );
@@ -538,7 +554,7 @@ const NeuralLinkSpell = ({ onExit, spellSystem, session }: { onExit: () => void,
             case 3: return <VoidInjectionStage onNext={handleInjectionNext} playTone={playTone} initAudio={initAudio} />;
             case 4: return <IncantationStage text={aiContent?.incantation2 || "Finalizing..."} onNext={handleIncantation2Next} title="Reality Overwrite" playTone={playTone} initAudio={initAudio} />;
             case 5: return <SyncStage playTone={playTone} spawnExplosion={spawnExplosion} onNext={handleSyncNext} initAudio={initAudio} />;
-            case 6: return <TransmitStage onExit={onExit} finalLog={aiContent?.finalResult || "Link Established."} target={target} intent={intent} saveEnabled={mode === 'ai'} session={session} spellSystem={spellSystem} />;
+            case 6: return <TransmitStage onExit={onExit} finalLog={aiContent?.finalResult || "Link Established."} target={target} intent={intent} saveEnabled={mode === 'ai'} session={session} spellSystem={spellSystem} aiContent={aiContent} />;
             default: return null;
         }
     };

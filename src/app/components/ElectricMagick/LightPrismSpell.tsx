@@ -491,29 +491,42 @@ const RealityOverwriteSpell = ({ onExit, spellSystem, session }: { onExit: () =>
         }
     };
 
-    const handleSave = async () => {
-        if (isSaved || isSaving) return;
-        
-        const userId = session?.user?.id || 'anon';
-        if (userId !== 'anon') {
+    const handleSaveSpell = async () => {
+         if (isSaved || isSaving) return;
+         const userId = session?.user?.id;
+         if (!userId) return;
+
+         setIsSaving(true);
+         try {
+             const gemini = await import('@/lib/services/geminiService');
+             
+             // 1. Check Limits
+             const isFull = await gemini.checkGrimoireLimit(userId);
+             if (isFull) throw new Error("GRIMOIRE_FULL");
+
+             // 2. Pay
              const paid = await spellSystem.saveEconomy.spendAether(userId, 2);
-             if (!paid) return;
-        }
-        
-        setIsSaving(true);
-        try {
-            await saveSpell(userId, {
-                name: `System Reboot: ${new Date().toLocaleDateString()}`,
-                intention: "Total Reality Code Overwrite",
-                incantation: log.join('\n'),
-                element: "Spirit"
-            });
-            setIsSaved(true);
-        } catch (e) {
-            console.error(e);
-        } finally {
-            setIsSaving(false);
-        }
+             if (!paid) throw new Error("INSUFFICIENT_FUNDS");
+
+             // 3. Save
+             await gemini.saveSpell(userId, {
+                 name: `Light Prism: ${SECTORS[sectorIndex].name}`,
+                 intention: `Sector ${sectorIndex} Optimization`,
+                 incantation: aiResponse || "SPECTRUM ALIGNED",
+                 element: "Fire" // Light/Fire association
+             }, true);
+
+             setIsSaved(true);
+         } catch (error: any) {
+             console.error("Save failed:", error);
+             if (error.message === "INSUFFICIENT_FUNDS") {
+                 // handled
+             } else {
+                 spellSystem.handleSaveError(error);
+             }
+         } finally {
+             setIsSaving(false);
+         }
     };
 
     // -- RENDERERS --
@@ -537,7 +550,7 @@ const RealityOverwriteSpell = ({ onExit, spellSystem, session }: { onExit: () =>
 
                     <div className="flex gap-4 justify-center">
                         <button 
-                            onClick={handleSave}
+                            onClick={handleSaveSpell}
                             disabled={isSaved || isSaving}
                             className="flex items-center gap-2 px-8 py-3 border border-green-500 bg-green-900/20 text-green-400 hover:bg-green-900/40 transition-colors uppercase font-mono text-xs"
                         >

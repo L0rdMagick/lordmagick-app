@@ -409,29 +409,45 @@ const DataScryingSpell = ({ onExit, spellSystem, session }: { onExit: () => void
     // --- STAGE 4: REVEAL ---
     const RevealStage = () => {
         const handleBurnToDrive = async () => {
-            if (isSaved || isSaving) return;
-            
-            // Payment Check
-             const userId = session?.user?.id || 'anon';
-             if (userId !== 'anon') {
-                 const paid = await spellSystem.saveEconomy.spendAether(userId, 2);
-                 if (!paid) return;
-             }
+             if (isSaved || isSaving) return;
+             const userId = session?.user?.id;
+             if (!userId) return;
 
-            setIsSaving(true);
-            try {
-                await saveSpell(userId, {
+             setIsSaving(true);
+             try {
+                 // 1. Check Limits First (Before Payment)
+                 const isFull = await import('@/lib/services/geminiService').then(mod => mod.checkGrimoireLimit(userId));
+                 if (isFull) {
+                     throw new Error("GRIMOIRE_FULL");
+                 }
+
+                 // 2. Pay Credits
+                 const paid = await spellSystem.saveEconomy.spendAether(userId, 2);
+                 if (!paid) throw new Error("INSUFFICIENT_FUNDS");
+
+                 // 3. Save Spell (Limit already checked, so we can technically bypass or check again, 
+                 // but checking again is safer race-condition wise, though spending first is the risk. 
+                 // Since we checked, we proceed.)
+                 await saveSpell(userId, {
                     name: `Data Scry: ${intention.substring(0, 20)}...`,
                     intention: intention,
                     incantation: decodedMessage,
                     element: "Air" 
-                });
-                setIsSaved(true);
-            } catch (error) {
-                console.error("Save failed:", error);
-            } finally {
-                setIsSaving(false);
-            }
+                 }, true); // Bypass limit in saveSpell since we manually checked
+
+                 setIsSaved(true);
+             } catch (error: any) {
+                 console.error("Save failed:", error);
+                 if (error.message === "INSUFFICIENT_FUNDS") {
+                     // Handled by spendAether setting error state
+                 } else if (spellSystem.handleSaveError(error)) {
+                     // Handled by spellSystem (e.g. modal)
+                 } else {
+                     // Generic error?
+                 }
+             } finally {
+                 setIsSaving(false);
+             }
         };
 
         return (

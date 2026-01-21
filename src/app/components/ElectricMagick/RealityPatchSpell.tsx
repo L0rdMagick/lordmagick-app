@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { 
   Heart, DollarSign, Sun, Shield, Star, Fingerprint, Check, X, Save, ArrowDown, Infinity, 
-  Coins, AlertTriangle
+  Coins, AlertTriangle, Loader2
 } from 'lucide-react';
 import { generateRealityPatchRitual, saveSpell } from '@/lib/services/geminiService';
 import type { Session, RealityPatchRitualData } from '@/lib/types';
@@ -1380,30 +1380,44 @@ const ChargeAndCast = ({ setPhase, setGlitchActive, archetype, audio, spawnExplo
 
 // 9. FINAL CAST
 const FinalCast = ({ intention, archetype, audio, onExit, session, aiData, spellSystem }: any) => {
-    const [saved, setSaved] = useState(false);
-    const [saving, setSaving] = useState(false);
+    const [isSaved, setIsSaved] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
 
-    const handleSave = async () => {
-        if(!session?.user) return;
-        
-        // Payment
-        const paid = await spellSystem.saveEconomy.spendAether(session.user.id, 2);
-        if (!paid) return;
+    const handleSaveSpell = async () => {
+        // Logic check
+        if (isSaved || isSaving) return;
+        const userId = session?.user?.id;
+        if (!userId) return;
 
-        setSaving(true);
+        setIsSaving(true);
         try {
-            await saveSpell(session.user.id, {
-                 name: `Reality Breach: ${new Date().toLocaleDateString()}`,
-                 intention: intention,
-                 incantation: `${aiData.consecration}\n${aiData.etching}\n${aiData.ancientTongue}\n${aiData.integration}`,
-                 element: archetype.theme,
-                 ritual_data: aiData
-             });
-             setSaved(true);
-        } catch(e) {
-            console.error(e);
+            // 1. Limit Check
+            const isFull = await import('@/lib/services/geminiService').then(mod => mod.checkGrimoireLimit(userId));
+            if (isFull) throw new Error("GRIMOIRE_FULL");
+
+            // 2. Pay Credits
+            const paid = await spellSystem.saveEconomy.spendAether(userId, 2);
+            if (!paid) throw new Error("INSUFFICIENT_FUNDS");
+
+            // 3. Save
+            const gemini = await import('@/lib/services/geminiService');
+            await gemini.saveSpell(userId, {
+                name: `Reality Patch: ${intention.substring(0, 15)}...`,
+                intention: intention,
+                incantation: aiData?.etching || "PATCH APPLIED",
+                element: "Earth"
+            }, true);
+
+            setIsSaved(true);
+        } catch (error: any) {
+            console.error("Save failed:", error);
+            if (error.message === "INSUFFICIENT_FUNDS") {
+                // handled
+            } else {
+                spellSystem.handleSaveError(error);
+            }
         } finally {
-            setSaving(false);
+            setIsSaving(false);
         }
     };
 
@@ -1421,12 +1435,14 @@ const FinalCast = ({ intention, archetype, audio, onExit, session, aiData, spell
             
             <div className="flex flex-col gap-4 w-full max-w-xs mt-8 z-50">
                  <button 
-                    onClick={handleSave}
-                    disabled={saved || saving}
-                    className={`w-full py-4 border border-slate-700 bg-slate-900/50 text-white font-mono text-[10px] tracking-widest hover:border-white transition-all flex items-center justify-center gap-2 ${saved ? 'opacity-50 cursor-default' : ''}`}
-                 >
-                    <Save size={14} /> {saved ? "LOG SAVED" : `SAVE TO GRIMOIRE (2 CREDITS)`}
-                 </button>
+                onClick={handleSaveSpell}
+                disabled={isSaved || isSaving}
+                className="w-full flex items-center justify-center gap-2 px-8 py-3 border border-purple-500 bg-purple-900/30 hover:bg-purple-900/50 text-purple-200 transition-all uppercase font-mono text-sm tracking-widest relative overflow-hidden group mb-4"
+            >
+                <div className="absolute inset-0 bg-purple-500/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300"/>
+                {isSaving ? <Loader2 className="animate-spin"/> : isSaved ? <Check/> : <Save/>}
+                <span className="relative z-10">{isSaved ? "PATCH SECURED" : isSaving ? "BURNING..." : "BURN TO REALITY (2 CREDITS)"}</span>
+            </button>
                  
                  <button 
                     onClick={() => { audio.stopLoop(); audio.playOneShot('boom'); onExit(); }}
