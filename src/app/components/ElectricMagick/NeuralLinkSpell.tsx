@@ -11,6 +11,7 @@ import { generateElectricNeuralLink, saveSpell } from '@/lib/services/geminiServ
 import type { NeuralLinkResult, Session } from '@/lib/types';
 import { useAudioEngine, useParticleSystem } from './hooks';
 import { useSpellPersistence } from '@/hooks/useSpellPersistence';
+import { BlockageErrorOverlay } from '../economy/BlockageErrorOverlay';
 
 // ==========================================
 // SUB-COMPONENTS
@@ -87,7 +88,7 @@ const TargetStage = ({ target, setTarget, intent, setIntent, onBegin, isReplay }
                         </div>
                         <div className="relative z-10">
                             <div className="text-purple-200 font-mono text-sm tracking-wider font-bold uppercase flex items-center gap-2">
-                                Reality Overwrite
+                                Reality Overwrite {isReplay && "(REPLAY)"}
                             </div>
                             <div className="text-purple-400/70 text-[10px] tracking-wide mt-1">{isReplay ? "Replay Cached Session" : "AI Incantations + Void Injection. 3 Credits."}</div>
                         </div>
@@ -388,9 +389,10 @@ interface TransmitStageProps {
     session?: Session;
     spellSystem?: any; 
     aiContent: NeuralLinkResult | null;
+    setEconomyError: (e: string) => void;
 }
 
-const TransmitStage = ({ onExit, finalLog, target, intent, saveEnabled, session, spellSystem, aiContent }: TransmitStageProps) => {
+const TransmitStage = ({ onExit, finalLog, target, intent, saveEnabled, session, spellSystem, aiContent, setEconomyError }: TransmitStageProps) => {
     const [isSaving, setIsSaving] = useState(false);
     const [isSaved, setIsSaved] = useState(false);
 
@@ -422,7 +424,7 @@ const TransmitStage = ({ onExit, finalLog, target, intent, saveEnabled, session,
         } catch (error: any) {
             console.error("Save failed:", error);
             if (error.message === "INSUFFICIENT_FUNDS") {
-                // handled
+                 setEconomyError("Insufficient Faestones");
             } else {
                 spellSystem.handleSaveError(error);
             }
@@ -485,6 +487,7 @@ const NeuralLinkSpell = ({ onExit, spellSystem, session, savedState }: { onExit:
     const [target, setTarget] = useState("");
     const [intent, setIntent] = useState("");
     const [mode, setMode] = useState<'standard' | 'ai'>('standard');
+    const [economyError, setEconomyError] = useState<string | null>(null);
     
     // Persistent State
     const { state: spellState, setState: setSpellState, clearState } = useSpellPersistence('neural_link_spell_state', {
@@ -555,7 +558,10 @@ const NeuralLinkSpell = ({ onExit, spellSystem, session, savedState }: { onExit:
         if (selectedMode === 'ai' && !spellState.rehydrated) {
              if (!session?.user?.id) return;
              const paid = await spellSystem.genEconomy.spendAether(session.user.id, 3);
-             if (!paid) return;
+             if (!paid) {
+                 setEconomyError("Insufficient Faestones");
+                 return;
+             }
         }
 
         initAudio();
@@ -599,7 +605,7 @@ const NeuralLinkSpell = ({ onExit, spellSystem, session, savedState }: { onExit:
             case 3: return <VoidInjectionStage onNext={handleInjectionNext} playTone={playTone} initAudio={initAudio} />;
             case 4: return <IncantationStage text={aiContent?.incantation2 || "Finalizing..."} onNext={handleIncantation2Next} title="Reality Overwrite" playTone={playTone} initAudio={initAudio} />;
             case 5: return <SyncStage playTone={playTone} spawnExplosion={spawnExplosion} onNext={handleSyncNext} initAudio={initAudio} />;
-            case 6: return <TransmitStage onExit={onExit} finalLog={aiContent?.finalResult || "Link Established."} target={target} intent={intent} saveEnabled={mode === 'ai'} session={session} spellSystem={spellSystem} aiContent={aiContent} />;
+            case 6: return <TransmitStage onExit={onExit} finalLog={aiContent?.finalResult || "Link Established."} target={target} intent={intent} saveEnabled={mode === 'ai'} session={session} spellSystem={spellSystem} aiContent={aiContent} setEconomyError={setEconomyError} />;
             default: return null;
         }
     };
@@ -614,6 +620,10 @@ const NeuralLinkSpell = ({ onExit, spellSystem, session, savedState }: { onExit:
                  {renderStage()}
             </div>
             <style>{styles}</style>
+            <BlockageErrorOverlay 
+                error={economyError} 
+                onDismiss={() => setEconomyError(null)} 
+            />
         </div>
     );
 };

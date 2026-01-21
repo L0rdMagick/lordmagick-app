@@ -9,6 +9,7 @@ import {
 import { generateDataScrying, saveSpell } from '@/lib/services/geminiService';
 import { useAudioEngine, useParticleSystem, getMagickalNumber } from './hooks';
 import { useSpellPersistence } from '@/hooks/useSpellPersistence';
+import { BlockageErrorOverlay } from '../economy/BlockageErrorOverlay';
 import type { Session } from '@/lib/types';
 
 // --- SUB-COMPONENTS ---
@@ -67,7 +68,7 @@ const IntentionStage: React.FC<IntentionStageProps> = ({ intention, setIntention
                     </div>
                     <div className="relative z-10">
                         <div className="text-purple-200 font-mono text-sm tracking-wider font-bold uppercase flex items-center gap-2">
-                             Deep Net Decryption
+                             Deep Net Decryption {isReplay && "(REPLAY)"}
                         </div>
                         <div className="text-purple-400/70 text-[10px] tracking-wide mt-1">{isReplay ? "Replay Cached Session" : "Neural Analysis of Intent. 3 Credits."}</div>
                     </div>
@@ -109,6 +110,7 @@ const DataScryingSpell = ({ onExit, spellSystem, session, savedState }: { onExit
     
     // Saving State
     const [isSaving, setIsSaving] = useState(false);
+    const [economyError, setEconomyError] = useState<string | null>(null);
 
     // REHYDRATION
     useEffect(() => {
@@ -131,7 +133,10 @@ const DataScryingSpell = ({ onExit, spellSystem, session, savedState }: { onExit
         if (selectedMode === 'ai' && !spellState.rehydrated) {
             if (!session?.user?.id) return;
             const paid = await spellSystem.genEconomy.spendAether(session.user.id, 3);
-            if (!paid) return;
+            if (!paid) {
+                setEconomyError("Insufficient Faestones");
+                return;
+            }
         }
         setMode(selectedMode);
         setStage(1);
@@ -467,7 +472,7 @@ const DataScryingSpell = ({ onExit, spellSystem, session, savedState }: { onExit
              } catch (error: any) {
                  console.error("Save failed:", error);
                  if (error.message === "INSUFFICIENT_FUNDS") {
-                     // Handled by spendAether setting error state
+                     setEconomyError("Insufficient Faestones");
                  } else if (spellSystem.handleSaveError(error)) {
                      // Handled by spellSystem (e.g. modal)
                  } else {
@@ -499,7 +504,7 @@ const DataScryingSpell = ({ onExit, spellSystem, session, savedState }: { onExit
                         className="flex items-center justify-center gap-3 px-8 py-4 border border-cyan-500 bg-cyan-900/30 hover:bg-cyan-800/50 text-cyan-200 transition-colors uppercase tracking-[0.2em] text-xs rounded-sm disabled:opacity-50 group"
                     >
                         {isSaved ? <Check size={16} /> : <HardDrive size={16} />}
-                        <span>{isSaved ? "SAVED TO ETHER" : isSaving ? "BURNING..." : "BURN TO ETHER DRIVE (1 CREDIT)"}</span>
+                        <span>{isSaved ? "SAVED TO ETHER" : isSaving ? "BURNING..." : "BURN TO ETHER DRIVE (2 CREDITS)"}</span>
                     </button>
                     <button 
                 onClick={handleExit}
@@ -530,6 +535,10 @@ const DataScryingSpell = ({ onExit, spellSystem, session, savedState }: { onExit
                   <RevealStage />}
             </div>
             <style>{styles}</style>
+            <BlockageErrorOverlay 
+                error={economyError} 
+                onDismiss={() => setEconomyError(null)} 
+            />
         </div>
     );
 };

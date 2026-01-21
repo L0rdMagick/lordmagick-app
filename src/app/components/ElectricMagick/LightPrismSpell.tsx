@@ -12,6 +12,7 @@ import {
 import { generateRealityOverwrite, saveSpell } from '@/lib/services/geminiService';
 import { useAudioEngine, useParticleSystem } from './hooks';
 import { useSpellPersistence } from '@/hooks/useSpellPersistence';
+import { BlockageErrorOverlay } from '../economy/BlockageErrorOverlay';
 import type { Session } from '@/lib/types';
 
 // --- CONFIGURATION ---
@@ -349,6 +350,7 @@ const RealityOverwriteSpell = ({ onExit, spellSystem, session, savedState }: { o
     // Final stages
     const [finalStage, setFinalStage] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    const [economyError, setEconomyError] = useState<string | null>(null);
 
     // Persistent State
     const { state: spellState, setState: setSpellState, clearState } = useSpellPersistence('light_prism_spell_state', {
@@ -447,7 +449,10 @@ const RealityOverwriteSpell = ({ onExit, spellSystem, session, savedState }: { o
                                 
                                 if (!spellState.rehydrated) {
                                     const paid = await spellSystem.genEconomy.spendAether(session.user.id, 3);
-                                    if (!paid) return;
+                                    if (!paid) {
+                                        setEconomyError("Insufficient Faestones");
+                                        return;
+                                    }
                                 }
                                 
                                 initAudio(); 
@@ -548,7 +553,7 @@ const RealityOverwriteSpell = ({ onExit, spellSystem, session, savedState }: { o
          } catch (error: any) {
              console.error("Save failed:", error);
              if (error.message === "INSUFFICIENT_FUNDS") {
-                 // handled
+                 setEconomyError("Insufficient Faestones");
              } else {
                  spellSystem.handleSaveError(error);
              }
@@ -752,6 +757,10 @@ const RealityOverwriteSpell = ({ onExit, spellSystem, session, savedState }: { o
                 .animate-fade-in { animation: fade-in 0.5s ease-out forwards; }
                 .animate-fade-in-up { animation: fade-in-up 0.5s ease-out forwards; }
             `}</style>
+            <BlockageErrorOverlay 
+                error={economyError} 
+                onDismiss={() => setEconomyError(null)} 
+            />
         </div>
     );
 };
