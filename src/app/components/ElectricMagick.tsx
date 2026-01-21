@@ -858,10 +858,16 @@ const GenericElectricSpell = ({
     const { spawnExplosion } = useParticleSystem();
 
     const handleStart = async (e: any) => {
-        if (!session?.user?.id) return;
+        if (!session?.user?.id) {
+            alert("DEBUG: No User ID Session found!");
+            return;
+        }
         
         // CHECK 3 FAESTONE COST
+        alert(`DEBUG: Attempting to spend ${cost} Faestones from user ${session.user.id.substring(0,5)}...`);
         const paid = await spellSystem.genEconomy.spendAether(session.user.id, cost);
+        alert(`DEBUG: Payment Result: ${paid}`);
+        
         if (!paid) return;
 
         // Visuals
