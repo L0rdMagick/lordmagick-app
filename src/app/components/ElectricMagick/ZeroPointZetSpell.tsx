@@ -516,9 +516,9 @@ const EntropyStage = ({ onComplete, playTone, spawnExplosion, intention }: { onC
 };
 
 // --- STAGE 5: REBOOT (Success & Save) ---
-const RebootStage = ({ intention, onExit, session, spellSystem }: { intention: string, onExit: () => void, session: Session | undefined, spellSystem: any }) => {
+const RebootStage = ({ intention, onExit, session, spellSystem, isAlreadySaved }: { intention: string, onExit: () => void, session: Session | undefined, spellSystem: any, isAlreadySaved?: boolean }) => {
   const [bootLog, setBootLog] = useState<string[]>([]);
-  const [isSaved, setIsSaved] = useState(false);
+  const [isSaved, setIsSaved] = useState(isAlreadySaved || false);
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -566,7 +566,11 @@ const RebootStage = ({ intention, onExit, session, spellSystem }: { intention: s
                  name: `Zero Point Zet: ${intention.substring(0, 15)}...`,
                  intention: intention,
                  incantation: "REALITY_HACK_COMPLETE",
-                 element: "Aether"
+                 element: "Aether",
+                 ritual_data: {
+                     status: "OVERWRITTEN",
+                     log_summary: "KERNEL REWRITE SUCCESSFUL"
+                 }
              }, true);
 
              setIsSaved(true);

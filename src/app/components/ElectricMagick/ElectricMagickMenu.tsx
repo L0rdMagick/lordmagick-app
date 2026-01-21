@@ -14,6 +14,9 @@ import type { Session } from '@/lib/types';
 import { SlotPurchaseModal } from '@/app/components/economy/SlotPurchaseModal';
 import { BlockageErrorOverlay } from '@/app/components/economy/BlockageErrorOverlay';
 import { useSpellPersistence } from '@/hooks/useSpellPersistence';
+import { useSearchParams } from 'next/navigation';
+import { getSpellById } from '@/lib/services/geminiService';
+import type { Spell } from '@/lib/types';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const SpellCard = ({ title, desc, icon: Icon, onClick, disabled }: { title: string, desc: string, icon: any, onClick?: () => void, disabled?: boolean }) => (
@@ -39,6 +42,37 @@ const SpellCard = ({ title, desc, icon: Icon, onClick, disabled }: { title: stri
 export default function ElectricMagickMenu({ session, isSubscribed, onBack }: { session?: Session, isSubscribed?: boolean, onBack?: () => void }) {
   // Persistence for the active spell ("which spell is open")
   const { state: activeSpell, setState: setActiveSpell, clearState: clearActiveSpell } = useSpellPersistence<string | null>('electric_magick_active_spell', null, { consumeFlag: false });
+  const [loadedSpell, setLoadedSpell] = useState<Spell | null>(null);
+  
+  const searchParams = useSearchParams();
+  const loadId = searchParams.get('loadId');
+  const querySpell = searchParams.get('spell');
+
+  // Load Spell Data if loadId exists
+  React.useEffect(() => {
+    if (loadId && !loadedSpell) { 
+         const load = async () => {
+             const spell = await getSpellById(loadId);
+             if (spell) {
+                 setLoadedSpell(spell);
+                 if (spell.name.includes("Data Scry")) setActiveSpell('data-scry');
+                 else if (spell.name.includes("Neural Link")) setActiveSpell('neural-link');
+                 else if (spell.name.includes("Light Prism")) setActiveSpell('light-prism');
+                 else if (spell.name.includes("Reality Patch")) setActiveSpell('reality-patch');
+                 else if (spell.name.includes("Zero Point")) setActiveSpell('zero-point-zet');
+                 else if (spell.name.includes("Void Gate")) setActiveSpell('void-gate');
+             }
+         };
+         load();
+    }
+    // Also handle direct query param 'spell' if no loadId
+    else if (!activeSpell && querySpell) {
+         if (querySpell === 'reality-patch') setActiveSpell('reality-patch');
+         else if (querySpell === 'neural-link') setActiveSpell('neural-link');
+         else if (querySpell === 'data-scry') setActiveSpell('data-scry');
+         else if (querySpell === 'zero-point-zet') setActiveSpell('zero-point-zet');
+    }
+  }, [loadId, querySpell]);
 
   const spellSystem = useSpellSystem({
       serviceSlugGen: 'ai_electric_magick', 
@@ -49,11 +83,18 @@ export default function ElectricMagickMenu({ session, isSubscribed, onBack }: { 
   const handleGoToStore = () => {
       spellSystem.goToStoreForSlots(null, 'electric_spell_save_temp'); 
   };
+  
+  const handleExitSpell = () => {
+      clearActiveSpell();
+      setLoadedSpell(null); 
+      if (onBack) onBack(); 
+  };
 
   const commonProps = { 
-      onExit: () => clearActiveSpell(), 
+      onExit: handleExitSpell, 
       spellSystem, 
-      session 
+      session,
+      savedState: loadedSpell
   };
 
   const renderActiveSpell = () => {

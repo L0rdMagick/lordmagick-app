@@ -407,7 +407,12 @@ const TransmitStage = ({ onExit, finalLog, target, intent, saveEnabled, session,
                 name: `Neural Link: ${target.substring(0, 15)}`,
                 intention: `${intent}`,
                 incantation: aiContent?.incantation2 || "LINK ESTABLISHED",
-                element: "Spirit"
+                element: "Spirit",
+                ritual_data: {
+                    target: target,
+                    mode: session ? 'ai' : 'standard', // Infer mode or pass it if available (prop is not passed currently but inferred)
+                    full_ai_structure: aiContent || { finalResult: finalLog }
+                }
             }, true);
 
             setIsSaved(true);
@@ -467,17 +472,10 @@ const TransmitStage = ({ onExit, finalLog, target, intent, saveEnabled, session,
 // MAIN ORCHESTRATOR
 // ==========================================
 
-const NeuralLinkSpell = ({ onExit, spellSystem, session }: { onExit: () => void, spellSystem: any, session?: Session }) => {
+const NeuralLinkSpell = ({ onExit, spellSystem, session, savedState }: { onExit: () => void, spellSystem: any, session?: Session, savedState?: any }) => {
     const [stage, setStage] = useState(0); 
-    // Stages mapping:
-    // 0: Target
-    // 1: Calibration
-    // 2: Incantation 1 (AI Only)
-    // 3: Void Injection (AI Only)
-    // 4: Incantation 2 (AI Only)
-    // 5: Sync (Both)
-    // 6: Transmit (Both)
-
+    // Stages: 0:Target, 1:Calib, 2:Inc1, 3:Void, 4:Inc2, 5:Sync, 6:Transmit
+    
     const { initAudio, playTone, playDrone } = useAudioEngine();
     const { canvasRef, spawnExplosion } = useParticleSystem();
     
@@ -488,23 +486,67 @@ const NeuralLinkSpell = ({ onExit, spellSystem, session }: { onExit: () => void,
     // Persistent State
     const { state: spellState, setState: setSpellState, clearState } = useSpellPersistence('neural_link_spell_state', {
         aiContent: null as NeuralLinkResult | null,
-        // ... (can add others if full persistence is needed, currently transient state used for target/intent if not fully migrated)
-        // Ideally we migrate all key state but fixing the regeneration is priority. 
-        // Current code used local state for target/intent which is fine if reset on reload, 
-        // but user expects restoration. Let's add them.
         targetPersist: '',
         intentPersist: '',
         modePersist: 'standard',
-        stagePersist: 0
+        stagePersist: 0,
+        rehydrated: false
     });
-    
-    // Sync transient to persistent (or just use persistent).
-    // Given the request scope, let's map the existing AI content to persistence.
-    // Ideally we rewrite to use spellState completely but for minimal diff:
     
     const setAiContent = (c: NeuralLinkResult | null) => setSpellState(prev => ({ ...prev, aiContent: c }));
     const aiContent = spellState.aiContent;
+    
+    // REHYDRATION
+    useEffect(() => {
+        if (savedState && !spellState.rehydrated) {
+            const rData = typeof savedState.ritual_data === 'string' ? JSON.parse(savedState.ritual_data) : savedState.ritual_data;
+            const fullAi = rData?.full_ai_structure || null;
 
+            setTarget(rData?.target || savedState.name.replace('Neural Link: ', ''));
+            setIntent(savedState.intention);
+            setMode(rData?.mode || 'standard');
+            // If we have full AI content, restore it. If not (legacy), construct minimal
+            if (fullAi) {
+                setAiContent(fullAi);
+            } else {
+                 setAiContent({
+                     incantation1: "RESTORED LINK",
+                     incantation2: savedState.incantation,
+                     finalResult: "CONNECTION RESTORED FROM ARCHIVES."
+                 });
+            }
+            setStage(6); // Jump to Transmit
+            
+            // Update persist
+            setSpellState({
+                aiContent: fullAi || { incantation1: "RESTORED", incantation2: savedState.incantation, finalResult: "RESTORED" },
+                targetPersist: rData?.target || "",
+                intentPersist: savedState.intention,
+                modePersist: rData?.mode || 'standard',
+                stagePersist: 6,
+                rehydrated: true
+            });
+        }
+        else if (spellState.stagePersist > 0) {
+             setStage(spellState.stagePersist);
+             setTarget(spellState.targetPersist);
+             setIntent(spellState.intentPersist);
+             setMode(spellState.modePersist as any);
+        }
+    }, [savedState, spellState.rehydrated]);
+
+    // Keep Persistence Updated
+    useEffect(() => {
+        if (stage > 0 || target) {
+            setSpellState(prev => ({
+                ...prev,
+                stagePersist: stage,
+                targetPersist: target,
+                intentPersist: intent,
+                modePersist: mode
+            }));
+        }
+    }, [stage, target, intent, mode]);
 
     const handleBegin = async (selectedMode: 'standard' | 'ai') => {
         if (selectedMode === 'ai') {

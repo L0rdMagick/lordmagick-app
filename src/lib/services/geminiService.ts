@@ -483,7 +483,22 @@ export const getSpells = async (userId: string): Promise<Spell[]> => {
         .order('created_at', { ascending: false });
     
     if (error) throw new Error("Could not fetch your Book of Shadows.");
+    if (error) throw new Error("Could not fetch your Book of Shadows.");
     return (data as Spell[]) || [];
+};
+
+export const getSpellById = async (spellId: string): Promise<Spell | null> => {
+    const { data, error } = await supabase
+        .from('spells')
+        .select('*')
+        .eq('id', spellId)
+        .single();
+    
+    if (error) {
+        console.error("Error fetching spell:", error);
+        return null; // Return null gracefully
+    }
+    return data as Spell;
 };
 
 export const getTodaysSpellCount = async (userId: string): Promise<number> => {

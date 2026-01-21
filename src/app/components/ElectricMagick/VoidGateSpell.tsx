@@ -656,7 +656,11 @@ const FinalStage = ({
                  name: `Void Gate: ${intention.substring(0, 15)}...`,
                  intention: intention,
                  incantation: oracleMessage,
-                 element: 'Spirit'
+                 element: 'Spirit',
+                 ritual_data: {
+                     oracle_message: oracleMessage,
+                     timestamp: new Date().toISOString()
+                 }
              }, true);
 
              setIsSaved(true);

@@ -432,7 +432,12 @@ const DataScryingSpell = ({ onExit, spellSystem, session }: { onExit: () => void
                     name: `Data Scry: ${intention.substring(0, 20)}...`,
                     intention: intention,
                     incantation: decodedMessage,
-                    element: "Air" 
+                    element: "Air",
+                    ritual_data: {
+                        mode: mode,
+                        full_response: decodedMessage,
+                        timestamp: new Date().toISOString()
+                    }
                  }, true); // Bypass limit in saveSpell since we manually checked
 
                  setIsSaved(true);

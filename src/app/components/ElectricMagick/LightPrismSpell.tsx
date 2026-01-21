@@ -513,7 +513,12 @@ const RealityOverwriteSpell = ({ onExit, spellSystem, session }: { onExit: () =>
                  name: `Light Prism: ${SECTORS[sectorIndex].name}`,
                  intention: `Sector ${sectorIndex} Optimization`,
                  incantation: aiResponse || "SPECTRUM ALIGNED",
-                 element: "Fire" // Light/Fire association
+                 element: "Fire",
+                 ritual_data: {
+                     sector: SECTORS[sectorIndex],
+                     full_log: log,
+                     ai_response: aiResponse
+                 }
              }, true);
 
              setIsSaved(true);

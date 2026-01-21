@@ -1379,13 +1379,14 @@ const ChargeAndCast = ({ setPhase, setGlitchActive, archetype, audio, spawnExplo
 };
 
 // 9. FINAL CAST
-const FinalCast = ({ intention, archetype, audio, onExit, session, aiData, spellSystem }: any) => {
-    const [isSaved, setIsSaved] = useState(false);
+const FinalCast = ({ intention, archetype, audio, onExit, session, aiData, spellSystem, isAlreadySaved }: any) => {
+    const [isSaved, setIsSaved] = useState(isAlreadySaved || false);
     const [isSaving, setIsSaving] = useState(false);
 
     const handleSaveSpell = async () => {
         // Logic check
         if (isSaved || isSaving) return;
+
         const userId = session?.user?.id;
         if (!userId) return;
 
@@ -1405,7 +1406,11 @@ const FinalCast = ({ intention, archetype, audio, onExit, session, aiData, spell
                 name: `Reality Patch: ${intention.substring(0, 15)}...`,
                 intention: intention,
                 incantation: aiData?.etching || "PATCH APPLIED",
-                element: "Earth"
+                element: "Earth",
+                ritual_data: {
+                    full_ritual_script: aiData,
+                    archetype: archetype
+                }
             }, true);
 
             setIsSaved(true);
@@ -1554,9 +1559,66 @@ export default function RealityPatchSpell({ onExit, session, spellSystem }: { on
                 {phase === 'INTEGRATION' && <VoidIntegration setPhase={setPhase} archetype={archetype} audio={audio} aiData={aiData} intention={intention} spawnExplosion={spawnExplosion} />}
                 {phase === 'SPIRAL' && <SpiralActivation setPhase={setPhase} archetype={archetype} audio={audio} aiData={aiData} intention={intention} />}
                 {phase === 'CHARGE' && <ChargeAndCast setPhase={setPhase} setGlitchActive={setGlitchActive} archetype={archetype} audio={audio} spawnExplosion={spawnExplosion} aiData={aiData} />}
-                {phase === 'CAST' && <FinalCast intention={intention} archetype={archetype} audio={audio} onExit={() => { clearState(); onExit(); }} session={session} aiData={aiData} spellSystem={spellSystem} />}
+                {phase === 'CAST' && <FinalCast intention={intention} archetype={archetype} audio={audio} onExit={() => { clearState(); onExit(); }} session={session} aiData={aiData} spellSystem={spellSystem} isAlreadySaved={!!savedState} />}
           </main>
       </div>
     </div>
   );
 }
+
+// WRAPPER
+export default function RealityPatchSpell({ onExit, session, spellSystem, savedState }: { onExit: () => void, session?: Session, spellSystem?: any, savedState?: any }) {
+    return <RealityPatchCore onExit={onExit} session={session} spellSystem={spellSystem} savedState={savedState} />;
+}
+
+// EXTRACTED CORE to allow hooks inside
+function RealityPatchCore({ onExit, session, spellSystem, savedState }: { onExit: () => void, session?: Session, spellSystem?: any, savedState?: any }) {
+    const { state: spellState, setState: setSpellState, clearState } = useSpellPersistence('reality_patch_spell_state', {
+         phase: 'INTRO' as Phase,
+         intention: '',
+         archetype: { name: 'VOID WALKER', color: 'text-purple-500', icon: 'Cpu', theme: 'Spirit' } as any, // Default needed
+         aiData: null as RealityPatchRitualData | null,
+         rehydrated: false
+    });
+
+    // Local state synced to persistence
+    const [phase, setPhase] = useState<Phase>('INTRO');
+    const [intention, setIntention] = useState('');
+    const [archetype, setArchetype] = useState(spellState.archetype); 
+    const [aiData, setAiData] = useState<RealityPatchRitualData | null>(null);
+    const audio = useAudioEngine();
+    
+    // REHYDRATION
+    useEffect(() => {
+        if (savedState && !spellState.rehydrated) {
+            const rData = typeof savedState.ritual_data === 'string' ? JSON.parse(savedState.ritual_data) : savedState.ritual_data;
+            
+            setIntention(savedState.intention);
+            setAiData(rData?.full_ritual_script || { etching: savedState.incantation || "ERROR" });
+            if (rData?.archetype) setArchetype(rData.archetype);
+            
+            setPhase('CAST'); // Jump to final
+            
+            setSpellState({
+                phase: 'CAST',
+                intention: savedState.intention,
+                archetype: rData?.archetype || spellState.archetype,
+                aiData: rData?.full_ritual_script || null,
+                rehydrated: true
+            });
+        }
+        else if (spellState.phase !== 'INTRO') {
+            setPhase(spellState.phase);
+            setIntention(spellState.intention);
+            setArchetype(spellState.archetype);
+            setAiData(spellState.aiData);
+        }
+    }, [savedState, spellState.rehydrated]);
+
+    useEffect(() => {
+        if (phase !== 'INTRO') {
+             setSpellState(prev => ({ ...prev, phase, intention, archetype, aiData }));
+        }
+    }, [phase, intention, archetype, aiData]);
+    
+    // Map props to children...
