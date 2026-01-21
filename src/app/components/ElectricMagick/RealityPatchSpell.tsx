@@ -1394,11 +1394,7 @@ const FinalCast = ({ intention, archetype, audio, onExit, session, aiData, spell
 
         setIsSaving(true);
         try {
-            // 1. Limit Check
-            const isFull = await import('@/lib/services/geminiService').then(mod => mod.checkGrimoireLimit(userId));
-            if (isFull) throw new Error("GRIMOIRE_FULL");
-
-            // 2. Pay Credits
+            // 1. Pay Credits
             const paid = await spellSystem.saveEconomy.spendAether(userId, 2);
             if (!paid) throw new Error("INSUFFICIENT_FUNDS");
 
