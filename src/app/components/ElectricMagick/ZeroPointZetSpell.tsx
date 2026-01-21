@@ -39,13 +39,14 @@ const GlitchText = ({ text, active = false }: { text: string, active?: boolean }
 };
 
 // --- STAGE 0: INTRO & PAYWALL ---
-const IntroStage = ({ onComplete, playTone, session, spellSystem }: { onComplete: () => void, playTone: any, session: Session | undefined, spellSystem: any }) => {
+const IntroStage = ({ onComplete, playTone, initAudio, session, spellSystem }: { onComplete: () => void, playTone: any, initAudio: any, session: Session | undefined, spellSystem: any }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
     const handleUnlock = async () => {
         setLoading(true);
         setError('');
+        initAudio(); // Now defined
         
         try {
             playTone(200, 'square', 0.1);
@@ -638,7 +639,7 @@ const ZeroPointZetSpell = ({ onExit, session, spellSystem }: { onExit: () => voi
 
   const renderStage = () => {
     switch (stage) {
-      case 0: return <IntroStage onComplete={() => setStage(1)} playTone={playTone} session={session} spellSystem={spellSystem} />;
+      case 0: return <IntroStage onComplete={() => setStage(1)} playTone={playTone} initAudio={initAudio} session={session} spellSystem={spellSystem} />;
       case 1: return <BioAuthStage onComplete={() => setStage(2)} playTone={playTone} />;
       case 2: return <InjectionStage onComplete={() => setStage(3)} playTone={playTone} setIntention={setIntention} />;
       case 3: return <StabilizationStage onComplete={() => setStage(4)} playTone={playTone} modulateFilter={modulateFilter} />;

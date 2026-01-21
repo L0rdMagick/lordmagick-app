@@ -163,12 +163,14 @@ interface IncantationStageProps {
     onNext: () => void;
     title: string;
     playTone: (freq: number, type?: any, dur?: number, vol?: number) => void;
+    initAudio: () => void;
 }
 
-const IncantationStage = ({ text, onNext, title, playTone }: IncantationStageProps) => {
+const IncantationStage = ({ text, onNext, title, playTone, initAudio }: IncantationStageProps) => {
     const [confirmed, setConfirmed] = useState(false);
 
     const handleConfirm = () => {
+        initAudio(); // FIX: Audio Init
         playTone(400, 'square', 0.2);
         setConfirmed(true);
         setTimeout(onNext, 500);
@@ -204,15 +206,17 @@ const IncantationStage = ({ text, onNext, title, playTone }: IncantationStagePro
 interface VoidInjectionStageProps {
     onNext: () => void;
     playTone: (freq: number, type?: any, dur?: number, vol?: number) => void;
+    initAudio: () => void;
 }
 
-const VoidInjectionStage = ({ onNext, playTone }: VoidInjectionStageProps) => {
+const VoidInjectionStage = ({ onNext, playTone, initAudio }: VoidInjectionStageProps) => {
     const [progress, setProgress] = useState(0);
     // eslint-disable-next-line no-undef
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
     const handleInject = (e: React.MouseEvent | React.TouchEvent) => {
         if (e.cancelable) e.preventDefault();
+        initAudio(); // FIX: Audio Init
         
         intervalRef.current = setInterval(() => {
             setProgress(p => {
@@ -272,9 +276,10 @@ interface SyncStageProps {
     playTone: (freq: number, type?: any, dur?: number, vol?: number) => void;
     spawnExplosion: (x: number, y: number, color?: string, count?: number) => void;
     onNext: () => void;
+    initAudio: () => void;
 }
 
-const SyncStage = ({ playTone, spawnExplosion, onNext }: SyncStageProps) => {
+const SyncStage = ({ playTone, spawnExplosion, onNext, initAudio }: SyncStageProps) => {
     const [touches, setTouches] = useState(0);
     const [power, setPower] = useState(0);
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -289,6 +294,7 @@ const SyncStage = ({ playTone, spawnExplosion, onNext }: SyncStageProps) => {
     }, [power, playTone]);
 
     const checkTouches = (e: React.TouchEvent | React.MouseEvent) => {
+        initAudio(); // FIX: Audio Init on interaction
         const count = 'touches' in e ? e.touches.length : (e.buttons === 1 ? 1 : 0);
         setTouches(count);
 
@@ -504,10 +510,10 @@ const NeuralLinkSpell = ({ onExit, spellSystem, session }: { onExit: () => void,
         switch(stage) {
             case 0: return <TargetStage target={target} setTarget={setTarget} intent={intent} setIntent={setIntent} onBegin={handleBegin} />;
             case 1: return <CalibrationStage playDrone={playDrone} playTone={playTone} onNext={handleCalibrationNext} />;
-            case 2: return <IncantationStage text={aiContent?.incantation1 || "Initializing..."} onNext={handleIncantation1Next} title="Primary Directive" playTone={playTone} />;
-            case 3: return <VoidInjectionStage onNext={handleInjectionNext} playTone={playTone} />;
-            case 4: return <IncantationStage text={aiContent?.incantation2 || "Finalizing..."} onNext={handleIncantation2Next} title="Reality Overwrite" playTone={playTone} />;
-            case 5: return <SyncStage playTone={playTone} spawnExplosion={spawnExplosion} onNext={handleSyncNext} />;
+            case 2: return <IncantationStage text={aiContent?.incantation1 || "Initializing..."} onNext={handleIncantation1Next} title="Primary Directive" playTone={playTone} initAudio={initAudio} />;
+            case 3: return <VoidInjectionStage onNext={handleInjectionNext} playTone={playTone} initAudio={initAudio} />;
+            case 4: return <IncantationStage text={aiContent?.incantation2 || "Finalizing..."} onNext={handleIncantation2Next} title="Reality Overwrite" playTone={playTone} initAudio={initAudio} />;
+            case 5: return <SyncStage playTone={playTone} spawnExplosion={spawnExplosion} onNext={handleSyncNext} initAudio={initAudio} />;
             case 6: return <TransmitStage onExit={onExit} finalLog={aiContent?.finalResult || "Link Established."} target={target} intent={intent} saveEnabled={mode === 'ai'} session={session} spellSystem={spellSystem} />;
             default: return null;
         }

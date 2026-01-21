@@ -27,7 +27,8 @@ export const useSpellPersistence = <T>(key: string, initialState: T) => {
 
     const clearState = useCallback(() => {
         sessionStorage.removeItem(key);
-    }, [key]);
+        setState(initialState);
+    }, [key, initialState]);
 
     return { state, setState, clearState, isRestored };
 };

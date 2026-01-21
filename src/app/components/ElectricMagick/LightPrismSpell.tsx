@@ -373,6 +373,11 @@ const RealityOverwriteSpell = ({ onExit, spellSystem, session }: { onExit: () =>
     const { initAudio, playTone, playDrone } = useAudioEngine();
     const { canvasRef, spawnExplosion } = useParticleSystem();
 
+    const handleSelectSector = (idx: number) => {
+        initAudio(); // FIX: Audio Init
+        playTone(300 + (idx * 50), 'sine', 0.2);
+        setSectorIndex(idx);
+    };
 
     // -- INTRO --
     if (!started) {

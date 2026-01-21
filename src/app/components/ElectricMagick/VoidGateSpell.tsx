@@ -5,7 +5,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Sparkles, Flame, Droplets, Wind, Mountain, 
-  ArrowUp, Sun, Moon, Orbit, X 
+  ArrowUp, Sun, Moon, Orbit, X, Check, HardDrive 
 } from 'lucide-react';
 import { generateElectricEnsorcellment, generateElectricOracle } from '@/lib/services/geminiService';
 import { useAudioEngine, useParticleSystem, getMagickalNumber } from './hooks';
@@ -104,13 +104,16 @@ const VoidGateSpell = ({ onExit, spellSystem, session }: { onExit: () => void, s
     </div>
   );
 
-  // STAGE 2: BANISHING
+// --- STAGE 2: BANISHING
   const BanishingStage = () => {
     const [cleared, setCleared] = useState(0);
     const [target] = useState(() => getMagickalNumber(80, 150)); 
     
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handleMove = (e: any) => {
+      // FIX: Ensure audio is initialized on first interaction
+      initAudio();
+      
       const clientX = e.touches ? e.touches[0].clientX : e.clientX;
       const clientY = e.touches ? e.touches[0].clientY : e.clientY;
       
@@ -174,6 +177,7 @@ const VoidGateSpell = ({ onExit, spellSystem, session }: { onExit: () => void, s
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handlePan = (e: any) => {
         e.preventDefault();
+        initAudio(); // FIX: Audio Init
         // FIX: Safe window access via globalThis
         const win = (globalThis as any).window;
         if (!win) return;
@@ -239,6 +243,7 @@ const VoidGateSpell = ({ onExit, spellSystem, session }: { onExit: () => void, s
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handleDragStart = (e: any, id: string) => {
+        initAudio(); // FIX: Audio Init
         e.currentTarget.setPointerCapture(e.pointerId);
         setDragging(id);
     };
@@ -316,6 +321,7 @@ const VoidGateSpell = ({ onExit, spellSystem, session }: { onExit: () => void, s
 
     const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault();
+      initAudio(); // FIX: Audio Init
       if (intention.length > 0) {
         playTone(440, 'sine', 1);
         setStage(5);
@@ -324,6 +330,7 @@ const VoidGateSpell = ({ onExit, spellSystem, session }: { onExit: () => void, s
 
     const handleEnsorcell = async (e: React.MouseEvent) => {
       e.preventDefault();
+      initAudio(); // FIX: Audio Init
       if (!intention || isEnhancing) return;
       setIsEnhancing(true);
       playTone(880, 'sine', 0.5, 0.05);
@@ -406,6 +413,7 @@ const VoidGateSpell = ({ onExit, spellSystem, session }: { onExit: () => void, s
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handleCharge = (e: any) => {
+      initAudio(); // FIX: Audio Init
       const boost = Math.random() * 3 + 5; 
       const newCharge = Math.min(target, charge + boost);
       setCharge(newCharge);
@@ -480,6 +488,7 @@ const VoidGateSpell = ({ onExit, spellSystem, session }: { onExit: () => void, s
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const triggerRelease = (e: any) => {
         if(released) return;
+        initAudio(); // FIX: Audio Init
         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
         const clientY = e.touches ? e.touches[0].clientY : e.clientY;
         setReleased(true);
@@ -519,8 +528,9 @@ const VoidGateSpell = ({ onExit, spellSystem, session }: { onExit: () => void, s
     );
   };
 
-  // STAGE 8: FINAL
+  // STAGE 8: FINAL (Updated with Save Logic)
   const FinalStage = () => {
+    // Icons imported at top
     const [oracleMessage, setOracleMessage] = useState("");
     const [loading, setLoading] = useState(true);
 
@@ -532,6 +542,33 @@ const VoidGateSpell = ({ onExit, spellSystem, session }: { onExit: () => void, s
         };
         fetchOracle();
     }, [intention]);
+
+    const handleSaveSpell = async () => {
+         if (isSaved || isSaving) return;
+         if (!session?.user?.id) return;
+         
+         const paid = await spellSystem.saveEconomy.spendAether(session.user.id, 2);
+         if (!paid) return;
+
+         setIsSaving(true);
+         try {
+             // Mock save or real save call
+             // NOTE: Need to import saveSpell from geminiService at top
+             await import('@/lib/services/geminiService').then(mod => 
+                 mod.saveSpell(session.user.id, {
+                     name: `Void Gate: ${intention.substring(0, 15)}...`,
+                     intention: intention,
+                     incantation: oracleMessage,
+                     element: 'Spirit'
+                 })
+             );
+             setIsSaved(true);
+         } catch (e) {
+             console.error("Save failed:", e);
+         } finally {
+             setIsSaving(false);
+         }
+    };
 
     return (
     <div className="flex flex-col items-center justify-center h-full animate-fade-in px-8 text-center relative z-20">
@@ -551,9 +588,22 @@ const VoidGateSpell = ({ onExit, spellSystem, session }: { onExit: () => void, s
                 </div>
             )}
         </div>
+        
+        {/* Save Button Section */}
+        {!loading && (
+             <button 
+                 onClick={handleSaveSpell}
+                 disabled={isSaved || isSaving}
+                 className="mb-8 flex items-center gap-2 px-8 py-3 border border-purple-500 bg-purple-900/20 text-purple-300 hover:bg-purple-900/40 transition-all uppercase font-mono text-xs disabled:opacity-50"
+             >
+                 {isSaved ? <Check size={16} /> : <HardDrive size={16} />}
+                 {isSaved ? "SAVED TO GRIMOIRE" : "SAVE RESULT (2 CREDITS)"}
+             </button>
+        )}
+
         <button 
             onClick={handleExit}
-            className="mt-12 text-[10px] text-gray-600 hover:text-white uppercase tracking-[0.4em] transition-colors border-b border-transparent hover:border-white pb-1"
+            className="text-[10px] text-gray-600 hover:text-white uppercase tracking-[0.4em] transition-colors border-b border-transparent hover:border-white pb-1"
         >
             Close The Circle
         </button>

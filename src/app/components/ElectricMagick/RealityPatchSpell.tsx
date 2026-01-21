@@ -1371,8 +1371,8 @@ const ChargeAndCast = ({ setPhase, setGlitchActive, archetype, audio, spawnExplo
            </div>
            
            <button className="w-full h-full absolute inset-0 opacity-0 cursor-pointer z-30"
-              onMouseDown={() => setShaking(true)} onMouseUp={() => setShaking(false)} onMouseLeave={() => setShaking(false)}
-              onTouchStart={(e) => { e.preventDefault(); setShaking(true); }} onTouchEnd={() => setShaking(false)}
+              onMouseDown={() => { audio.initAudio(); setShaking(true); }} onMouseUp={() => setShaking(false)} onMouseLeave={() => setShaking(false)}
+              onTouchStart={(e) => { e.preventDefault(); audio.initAudio(); setShaking(true); }} onTouchEnd={() => setShaking(false)}
            />
        </div>
    );
