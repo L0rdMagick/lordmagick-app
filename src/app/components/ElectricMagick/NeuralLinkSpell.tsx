@@ -503,14 +503,23 @@ const NeuralLinkSpell = ({ onExit, spellSystem, session, savedState }: { onExit:
     const aiContent = spellState.aiContent;
     
     // REHYDRATION
+    // REHYDRATION
     useEffect(() => {
-        // Check if we are in a return flow to prevent overwriting restored state with savedState
+        // Check if we are in a return flow or have restored state
         const isPending = typeof window !== 'undefined' && sessionStorage.getItem('PENDING_PURCHASE');
+        const hasRestoredState = isRestored || isPending;
     
-        if ((isRestored || isPending) && !spellState.rehydrated) {
-            return;
+        // Priority 1: Restore from Session (Store Return or Refresh)
+        if (hasRestoredState && !spellState.rehydrated) {
+             // Even if stage is 0, we might have text inputs to restore
+             setStage(spellState.stagePersist);
+             setTarget(spellState.targetPersist);
+             setIntent(spellState.intentPersist);
+             setMode(spellState.modePersist as any);
+             return;
         }
 
+        // Priority 2: Load from Grimoire (if not restoring session)
         if (savedState && !spellState.rehydrated) {
             const rData = typeof savedState.ritual_data === 'string' ? JSON.parse(savedState.ritual_data) : savedState.ritual_data;
             const fullAi = rData?.full_ai_structure || null;
@@ -518,7 +527,7 @@ const NeuralLinkSpell = ({ onExit, spellSystem, session, savedState }: { onExit:
             setTarget(rData?.target || savedState.name.replace('Neural Link: ', ''));
             setIntent(savedState.intention);
             setMode(rData?.mode || 'standard');
-            // If we have full AI content, restore it. If not (legacy), construct minimal
+            
             if (fullAi) {
                 setAiContent(fullAi);
             } else {
@@ -528,9 +537,8 @@ const NeuralLinkSpell = ({ onExit, spellSystem, session, savedState }: { onExit:
                      finalResult: "CONNECTION RESTORED FROM ARCHIVES."
                  });
             }
-            setStage(0); // Start from beginning
+            setStage(0); 
             
-            // Update persist
             setSpellState({
                 aiContent: fullAi || { incantation1: "RESTORED", incantation2: savedState.incantation, finalResult: "RESTORED" },
                 targetPersist: rData?.target || "",
@@ -540,13 +548,14 @@ const NeuralLinkSpell = ({ onExit, spellSystem, session, savedState }: { onExit:
                 rehydrated: true
             });
         }
-        else if (spellState.stagePersist > 0) {
+        // Fallback sync for late hydration events
+        else if (isRestored && spellState.stagePersist >= 0) {
              setStage(spellState.stagePersist);
              setTarget(spellState.targetPersist);
              setIntent(spellState.intentPersist);
              setMode(spellState.modePersist as any);
         }
-    }, [savedState, spellState.rehydrated, isRestored]);
+    }, [savedState, spellState.rehydrated, isRestored, spellState.stagePersist, spellState.targetPersist, spellState.intentPersist, spellState.modePersist]);
 
     // Keep Persistence Updated
     useEffect(() => {
