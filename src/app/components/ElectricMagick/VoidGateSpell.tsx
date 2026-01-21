@@ -11,6 +11,7 @@ import { generateElectricEnsorcellment, generateElectricOracle } from '@/lib/ser
 import type { Session } from '@/lib/types';
 import { useAudioEngine, useParticleSystem, getMagickalNumber } from './hooks';
 import { useSpellPersistence } from '@/hooks/useSpellPersistence';
+import { BlockageErrorOverlay } from '../economy/BlockageErrorOverlay';
 
 // The Wrapped Component
 const VoidGateSpell = ({ onExit, spellSystem, session, savedState }: { onExit: () => void, spellSystem: any, session: any, savedState?: any }) => {
@@ -35,6 +36,7 @@ const VoidGateSpell = ({ onExit, spellSystem, session, savedState }: { onExit: (
 
   const { stage, intention, isSaved, oracleMessage } = spellState;
 
+  const [economyError, setEconomyError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false); // Transient state, doesn't need persistence usually
   const { initAudio, playTone, playDrone } = useAudioEngine();
   const { canvasRef, spawnExplosion } = useParticleSystem();
@@ -99,10 +101,13 @@ const VoidGateSpell = ({ onExit, spellSystem, session, savedState }: { onExit: (
           onClick={async (e) => {
              if (!session?.user?.id) return;
             
-             // Check Economy - Explicit 3 cost (Skip if Replay)
+              // Check Economy - Explicit 3 cost (Skip if Replay)
              if (!spellState.rehydrated) {
                  const paid = await spellSystem.genEconomy.spendAether(session.user.id, 3);
-                 if (!paid) return;
+                 if (!paid) {
+                     setEconomyError("Insufficient Faestones");
+                     return;
+                 }
              }
 
             const target = e.target as any;
@@ -574,6 +579,7 @@ const VoidGateSpell = ({ onExit, spellSystem, session, savedState }: { onExit: (
                     handleExit={handleExit}
                     session={session}
                     spellSystem={spellSystem}
+                    setEconomyError={setEconomyError}
                  />;
       default: return <StartScreen />;
     }
@@ -607,6 +613,10 @@ const VoidGateSpell = ({ onExit, spellSystem, session, savedState }: { onExit: (
             <div className="flex-1 relative">{renderStage()}</div>
         </div>
         <style>{styles}</style>
+        <BlockageErrorOverlay 
+            error={economyError} 
+            onDismiss={() => setEconomyError(null)} 
+        />
     </div>
   );
 };
@@ -620,7 +630,8 @@ const FinalStage = ({
     setIsSaved, 
     handleExit, 
     session, 
-    spellSystem 
+    spellSystem,
+    setEconomyError
 }: { 
     intention: string, 
     oracleMessage: string, 
@@ -629,7 +640,8 @@ const FinalStage = ({
     setIsSaved: (s: boolean) => void, 
     handleExit: () => void, 
     session: Session | undefined, 
-    spellSystem: any 
+    spellSystem: any,
+    setEconomyError: (e: string) => void
 }) => {
     // Local state for UI loading only
     const [loading, setLoading] = useState(!oracleMessage);
@@ -685,7 +697,7 @@ const FinalStage = ({
          } catch (error: any) {
              console.error("Save failed:", error);
              if (error.message === "INSUFFICIENT_FUNDS") {
-                 // handled
+                 setEconomyError("Insufficient Faestones");
              } else {
                  spellSystem.handleSaveError(error);
              }

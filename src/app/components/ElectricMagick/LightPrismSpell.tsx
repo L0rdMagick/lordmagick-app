@@ -353,13 +353,14 @@ const RealityOverwriteSpell = ({ onExit, spellSystem, session, savedState }: { o
     const [economyError, setEconomyError] = useState<string | null>(null);
 
     // Persistent State
-    const { state: spellState, setState: setSpellState, clearState } = useSpellPersistence('light_prism_spell_state', {
+    const { state: spellState, setState: setSpellState, clearState, isRestored } = useSpellPersistence('light_prism_spell_state', {
         sectorIndex: 0,
         userInputs: {} as Record<string, string>,
         optimizationData: {} as Record<string, string>,
         subStage: 'input' as 'scan' | 'input' | 'processing' | 'complete' | 'incantation' | 'activity',
         isSaved: false,
-        aiResponse: '', // Persistent
+        aiResponse: '', 
+        draftInput: '', 
         rehydrated: false
     });
 
@@ -370,8 +371,23 @@ const RealityOverwriteSpell = ({ onExit, spellSystem, session, savedState }: { o
     const setIsSaved = (s: boolean) => setSpellState(prev => ({ ...prev, isSaved: s }));
     const setAiResponse = (r: string) => setSpellState(prev => ({ ...prev, aiResponse: r }));
 
-    const { sectorIndex, userInputs, optimizationData, subStage, isSaved, aiResponse } = spellState;
+    const { sectorIndex, userInputs, optimizationData, subStage, isSaved, aiResponse, draftInput } = spellState;
     const currentSector = SECTORS[sectorIndex];
+
+    // Auto-start if restored from partial state
+    useEffect(() => {
+        if (isRestored) {
+            setStarted(true);
+            if (draftInput) setUserInput(draftInput);
+        }
+    }, [isRestored, draftInput]);
+
+    // Sync draft input to persistence
+    useEffect(() => {
+        if (userInput) {
+            setSpellState(prev => ({ ...prev, draftInput: userInput }));
+        }
+    }, [userInput, setSpellState]);
 
 
     const { initAudio, playTone, playDrone } = useAudioEngine();
@@ -399,6 +415,7 @@ const RealityOverwriteSpell = ({ onExit, spellSystem, session, savedState }: { o
                 subStage: 'input', // Start at Input
                 isSaved: true,
                 aiResponse: rData?.ai_response || savedState.incantation || '',
+                draftInput: '',
                 rehydrated: true
             });
             // Do NOT set finalStage or started to true immediately, let them see intro or start flow

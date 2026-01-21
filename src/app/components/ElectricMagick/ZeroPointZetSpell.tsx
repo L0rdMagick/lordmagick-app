@@ -21,6 +21,7 @@ import { useAudioEngine, useParticleSystem } from './hooks';
 import { saveSpell } from '@/lib/services/geminiService';
 import { useSpellPersistence } from '@/hooks/useSpellPersistence';
 import type { Session } from '@/lib/types';
+import { BlockageErrorOverlay } from '../economy/BlockageErrorOverlay';
 
 // --- CONSTANTS ---
 const COST_TO_ENTER = 10;
@@ -39,7 +40,7 @@ const GlitchText = ({ text, active = false }: { text: string, active?: boolean }
 };
 
 // --- STAGE 0: INTRO & PAYWALL ---
-const IntroStage = ({ onComplete, playTone, initAudio, session, spellSystem, isReplay }: { onComplete: () => void, playTone: any, initAudio: any, session: Session | undefined, spellSystem: any, isReplay?: boolean }) => {
+const IntroStage = ({ onComplete, playTone, initAudio, session, spellSystem, isReplay, setEconomyError }: { onComplete: () => void, playTone: any, initAudio: any, session: Session | undefined, spellSystem: any, isReplay?: boolean, setEconomyError: (e: string) => void }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
@@ -59,8 +60,7 @@ const IntroStage = ({ onComplete, playTone, initAudio, session, spellSystem, isR
                     
                     if (!paid) {
                         playTone(100, 'sawtooth', 0.5);
-                        // spellSystem should handle the overlay, but we can also show a local error if needed.
-                        // For now, adhere to returning early.
+                        setEconomyError("Insufficient Faestones");
                         setLoading(false);
                         return; 
                     }
@@ -522,7 +522,7 @@ const EntropyStage = ({ onComplete, playTone, spawnExplosion, intention }: { onC
 };
 
 // --- STAGE 5: REBOOT (Success & Save) ---
-const RebootStage = ({ intention, onExit, session, spellSystem, isAlreadySaved }: { intention: string, onExit: () => void, session: Session | undefined, spellSystem: any, isAlreadySaved?: boolean }) => {
+const RebootStage = ({ intention, onExit, session, spellSystem, isAlreadySaved, setEconomyError }: { intention: string, onExit: () => void, session: Session | undefined, spellSystem: any, isAlreadySaved?: boolean, setEconomyError: (e: string) => void }) => {
   const [bootLog, setBootLog] = useState<string[]>([]);
   const [isSaved, setIsSaved] = useState(isAlreadySaved || false);
   const [isSaving, setIsSaving] = useState(false);
@@ -579,7 +579,7 @@ const RebootStage = ({ intention, onExit, session, spellSystem, isAlreadySaved }
          } catch (error: any) {
              console.error("Save failed:", error);
              if (error.message === "INSUFFICIENT_FUNDS") {
-                 // handled
+                 setEconomyError("Insufficient Faestones");
              } else {
                  spellSystem.handleSaveError(error);
              }
@@ -641,6 +641,8 @@ const ZeroPointZetSpell = ({ onExit, session, spellSystem, savedState }: { onExi
       rehydrated: false
   });
 
+  const [economyError, setEconomyError] = useState<string | null>(null);
+
   const setStage = (s: number | ((prev: number) => number)) => setSpellState(prev => ({ ...prev, stage: typeof s === 'function' ? s(prev.stage) : s }));
   const setIntention = (i: string) => setSpellState(prev => ({ ...prev, intention: i }));
   const setIsSaved = (s: boolean) => setSpellState(prev => ({ ...prev, isSaved: s }));
@@ -676,12 +678,12 @@ const ZeroPointZetSpell = ({ onExit, session, spellSystem, savedState }: { onExi
 
   const renderStage = () => {
     switch (stage) {
-      case 0: return <IntroStage onComplete={() => setStage(1)} playTone={playTone} initAudio={initAudio} session={session} spellSystem={spellSystem} isReplay={spellState.rehydrated} />;
+      case 0: return <IntroStage onComplete={() => setStage(1)} playTone={playTone} initAudio={initAudio} session={session} spellSystem={spellSystem} isReplay={spellState.rehydrated} setEconomyError={setEconomyError} />;
       case 1: return <BioAuthStage onComplete={() => setStage(2)} playTone={playTone} />;
       case 2: return <InjectionStage onComplete={() => setStage(3)} playTone={playTone} setIntention={setIntention} intention={intention} isReplay={spellState.rehydrated} />;
       case 3: return <StabilizationStage onComplete={() => setStage(4)} playTone={playTone} modulateFilter={modulateFilter} />;
       case 4: return <EntropyStage onComplete={() => setStage(5)} playTone={playTone} spawnExplosion={spawnExplosion} intention={intention} />;
-      case 5: return <RebootStage intention={intention} onExit={onExit} session={session} spellSystem={spellSystem} isAlreadySaved={isSaved} />;
+      case 5: return <RebootStage intention={intention} onExit={onExit} session={session} spellSystem={spellSystem} isAlreadySaved={isSaved} setEconomyError={setEconomyError} />;
       default: return null;
     }
   };
@@ -700,6 +702,11 @@ const ZeroPointZetSpell = ({ onExit, session, spellSystem, savedState }: { onExi
       <div className="relative z-10 h-full w-full">
         {renderStage()}
       </div>
+      
+      <BlockageErrorOverlay 
+          error={economyError} 
+          onDismiss={() => setEconomyError(null)} 
+      />
 
       <style jsx global>{`
         @keyframes scan {

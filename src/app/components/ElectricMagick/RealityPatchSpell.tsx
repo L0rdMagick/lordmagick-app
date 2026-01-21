@@ -13,6 +13,7 @@ import Link from 'next/link';
 // We only import useParticleSystem. We keep the local useAudioEngine because it is specialized for this spell.
 import { useParticleSystem } from './hooks'; 
 import { useSpellPersistence } from '@/hooks/useSpellPersistence'; 
+import { BlockageErrorOverlay } from '../economy/BlockageErrorOverlay'; 
 
 
 // --- CONSTANTS & DATA ---
@@ -667,7 +668,7 @@ const useSpecializedAudioEngine = () => {
 
 // 0. INTRO / PAYWALL / INTENTION
 // 0. INTRO / PAYWALL / INTENTION
-const IntroBreach = ({ setIntention, setArchetype, setPhase, setAiData, audio, session, spellSystem, isReplay, existingAiData, initialIntention }: any) => {
+const IntroBreach = ({ setIntention, setArchetype, setPhase, setAiData, audio, session, spellSystem, isReplay, existingAiData, initialIntention, setEconomyError }: any) => {
     const [input, setInput] = useState(initialIntention || '');
     const [loading, setLoading] = useState(false);
     
@@ -678,12 +679,16 @@ const IntroBreach = ({ setIntention, setArchetype, setPhase, setAiData, audio, s
         try {
             audio.initAudio();
             
+            // Persist intention immediately so it survives redirect
+            setIntention(input);
+
             // 1. Process Payment via spellSystem
             if (session?.user?.id) {
                 // Skip if replay
                 if (!isReplay) {
                     const paid = await spellSystem.genEconomy.spendAether(session.user.id, 3);
                     if (!paid) {
+                        setEconomyError("Insufficient Faestones");
                         setLoading(false);
                         return;
                     }
@@ -697,7 +702,7 @@ const IntroBreach = ({ setIntention, setArchetype, setPhase, setAiData, audio, s
             // 2. AI Generation or Replay
             const arch = detectArchetype(input);
             setArchetype(arch);
-            setIntention(input);
+            // Intention already set above
 
             if (isReplay && existingAiData) {
                  // Use existing data
@@ -1391,7 +1396,7 @@ const ChargeAndCast = ({ setPhase, setGlitchActive, archetype, audio, spawnExplo
 };
 
 // 9. FINAL CAST
-const FinalCast = ({ intention, archetype, audio, onExit, session, aiData, spellSystem, isAlreadySaved }: any) => {
+const FinalCast = ({ intention, archetype, audio, onExit, session, aiData, spellSystem, isAlreadySaved, setEconomyError }: any) => {
     const [isSaved, setIsSaved] = useState(isAlreadySaved || false);
     const [isSaving, setIsSaving] = useState(false);
 
@@ -1425,7 +1430,7 @@ const FinalCast = ({ intention, archetype, audio, onExit, session, aiData, spell
         } catch (error: any) {
             console.error("Save failed:", error);
             if (error.message === "INSUFFICIENT_FUNDS") {
-                // handled
+                setEconomyError("Insufficient Faestones");
             } else {
                 spellSystem.handleSaveError(error);
             }
@@ -1494,6 +1499,7 @@ function RealityPatchCore({ onExit, session, spellSystem, savedState }: { onExit
     
     // UI Local State
     const [glitchActive, setGlitchActive] = useState(false);
+    const [economyError, setEconomyError] = useState<string | null>(null);
 
     // REHYDRATION
     useEffect(() => {
@@ -1594,7 +1600,7 @@ function RealityPatchCore({ onExit, session, spellSystem, savedState }: { onExit
         {/* Main Container - One Page Layout */}
         <div className="relative z-10 w-full h-full flex flex-col justify-between">
             <main className="w-full h-full relative z-10 flex flex-col items-center justify-center max-w-lg mx-auto">
-                    {phase === 'INTRO' && <IntroBreach setIntention={setIntention} setArchetype={setArchetype} setPhase={setPhase} setAiData={setAiData} audio={audio} session={session} spellSystem={spellSystem} isReplay={spellState.rehydrated} existingAiData={aiData} initialIntention={intention} />}
+                    {phase === 'INTRO' && <IntroBreach setIntention={setIntention} setArchetype={setArchetype} setPhase={setPhase} setAiData={setAiData} audio={audio} session={session} spellSystem={spellSystem} isReplay={spellState.rehydrated} existingAiData={aiData} initialIntention={intention} setEconomyError={setEconomyError} />}
                     {phase === 'CONSECRATE' && <Consecration setPhase={setPhase} archetype={archetype} audio={audio} spawnExplosion={spawnExplosion} aiData={aiData} />}
                     {phase === 'GROUNDING' && <Grounding setPhase={setPhase} audio={audio} aiData={aiData} archetype={archetype} />}
                     {phase === 'AGREEMENT' && <Agreement setPhase={setPhase} audio={audio} />}
@@ -1602,9 +1608,13 @@ function RealityPatchCore({ onExit, session, spellSystem, savedState }: { onExit
                     {phase === 'INTEGRATION' && <VoidIntegration setPhase={setPhase} archetype={archetype} audio={audio} aiData={aiData} intention={intention} spawnExplosion={spawnExplosion} />}
                     {phase === 'SPIRAL' && <SpiralActivation setPhase={setPhase} archetype={archetype} audio={audio} aiData={aiData} intention={intention} />}
                     {phase === 'CHARGE' && <ChargeAndCast setPhase={setPhase} setGlitchActive={setGlitchActive} archetype={archetype} audio={audio} spawnExplosion={spawnExplosion} aiData={aiData} />}
-                    {phase === 'CAST' && <FinalCast intention={intention} archetype={archetype} audio={audio} onExit={() => { clearState(); onExit(); }} session={session} aiData={aiData} spellSystem={spellSystem} isAlreadySaved={!!savedState} />}
+                    {phase === 'CAST' && <FinalCast intention={intention} archetype={archetype} audio={audio} onExit={() => { clearState(); onExit(); }} session={session} aiData={aiData} spellSystem={spellSystem} isAlreadySaved={!!savedState} setEconomyError={setEconomyError} />}
             </main>
         </div>
+        <BlockageErrorOverlay 
+            error={economyError} 
+            onDismiss={() => setEconomyError(null)} 
+        />
         </div>
     );
 }
