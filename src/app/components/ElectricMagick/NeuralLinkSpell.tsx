@@ -394,11 +394,7 @@ const TransmitStage = ({ onExit, finalLog, target, intent, saveEnabled, session,
 
         setIsSaving(true);
         try {
-            // 1. Check Limit
-            const isFull = await import('@/lib/services/geminiService').then(mod => mod.checkGrimoireLimit(userId));
-            if (isFull) throw new Error("GRIMOIRE_FULL");
-
-            // 2. Pay Credits
+            // 1. Pay Credits
             const paid = await spellSystem.saveEconomy.spendAether(userId, 2);
             if (!paid) throw new Error("INSUFFICIENT_FUNDS");
 

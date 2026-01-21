@@ -337,7 +337,7 @@ const ActivityUpload = ({ onComplete, color }: { onComplete: () => void, color: 
 
 // --- MAIN ORCHESTRATOR ---
 
-const RealityOverwriteSpell = ({ onExit, spellSystem, session }: { onExit: () => void, spellSystem: any, session?: Session }) => {
+const RealityOverwriteSpell = ({ onExit, spellSystem, session, savedState }: { onExit: () => void, spellSystem: any, session?: Session, savedState?: any }) => {
     const handleExit = () => {
         clearState();
         onExit();
@@ -357,7 +357,8 @@ const RealityOverwriteSpell = ({ onExit, spellSystem, session }: { onExit: () =>
         optimizationData: {} as Record<string, string>,
         subStage: 'scan' as 'scan' | 'input' | 'processing' | 'complete' | 'incantation' | 'activity',
         isSaved: false,
-        aiResponse: '' // Persistent
+        aiResponse: '', // Persistent
+        rehydrated: false
     });
 
     const setSectorIndex = (i: number | ((prev: number) => number)) => setSpellState(prev => ({ ...prev, sectorIndex: typeof i === 'function' ? i(prev.sectorIndex) : i }));
@@ -373,6 +374,28 @@ const RealityOverwriteSpell = ({ onExit, spellSystem, session }: { onExit: () =>
 
     const { initAudio, playTone, playDrone } = useAudioEngine();
     const { canvasRef, spawnExplosion } = useParticleSystem();
+
+    // REHYDRATION
+    useEffect(() => {
+        if (savedState && !spellState.rehydrated) {
+            const rData = typeof savedState.ritual_data === 'string' ? JSON.parse(savedState.ritual_data) : savedState.ritual_data;
+            
+            // Reconstruct log if possible or just show final state
+            if (rData?.full_log) setLog(rData.full_log);
+
+            setSpellState({
+                sectorIndex: 6, // Assume complete or verify from rData
+                userInputs: {}, 
+                optimizationData: {},
+                subStage: 'complete',
+                isSaved: true,
+                aiResponse: rData?.ai_response || savedState.incantation || '',
+                rehydrated: true
+            });
+            setFinalStage(true);
+            setStarted(true);
+        }
+    }, [savedState, spellState.rehydrated]);
 
     const handleSelectSector = (idx: number) => {
         initAudio(); // FIX: Audio Init
@@ -413,13 +436,7 @@ const RealityOverwriteSpell = ({ onExit, spellSystem, session }: { onExit: () =>
                         </div>
                         <button 
                             onClick={async () => {
-                                if (!session?.user?.id) {
-                                    // Handle no session case or allow free test? Assuming requires session for paid check.
-                                    // If no session, maybe prompt or just let it fail silently/log.
-                                    // But previous logic suggests we want to block.
-                                    // Let's assume session check is inside spendAether or we return early.
-                                    return; 
-                                }
+                                if (!session?.user?.id) return; 
                                 const paid = await spellSystem.genEconomy.spendAether(session.user.id, 3);
                                 if (paid) {
                                     initAudio(); 
@@ -500,11 +517,7 @@ const RealityOverwriteSpell = ({ onExit, spellSystem, session }: { onExit: () =>
          try {
              const gemini = await import('@/lib/services/geminiService');
              
-             // 1. Check Limits
-             const isFull = await gemini.checkGrimoireLimit(userId);
-             if (isFull) throw new Error("GRIMOIRE_FULL");
-
-             // 2. Pay
+             // 1. Pay
              const paid = await spellSystem.saveEconomy.spendAether(userId, 2);
              if (!paid) throw new Error("INSUFFICIENT_FUNDS");
 

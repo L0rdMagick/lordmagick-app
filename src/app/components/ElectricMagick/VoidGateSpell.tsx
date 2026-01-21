@@ -13,7 +13,7 @@ import { useAudioEngine, useParticleSystem, getMagickalNumber } from './hooks';
 import { useSpellPersistence } from '@/hooks/useSpellPersistence';
 
 // The Wrapped Component
-const VoidGateSpell = ({ onExit, spellSystem, session }: { onExit: () => void, spellSystem: any, session: any }) => {
+const VoidGateSpell = ({ onExit, spellSystem, session, savedState }: { onExit: () => void, spellSystem: any, session: any, savedState?: any }) => {
   const handleExit = () => {
       clearState();
       onExit();
@@ -23,7 +23,8 @@ const VoidGateSpell = ({ onExit, spellSystem, session }: { onExit: () => void, s
       stage: 0,
       intention: '',
       isSaved: false,
-      oracleMessage: '' // Persistent State
+      oracleMessage: '', // Persistent State
+      rehydrated: false
   });
 
   // Derived state setters to maintain compatibility with existing code structure without rewriting everything
@@ -37,6 +38,21 @@ const VoidGateSpell = ({ onExit, spellSystem, session }: { onExit: () => void, s
   const [isSaving, setIsSaving] = useState(false); // Transient state, doesn't need persistence usually
   const { initAudio, playTone, playDrone } = useAudioEngine();
   const { canvasRef, spawnExplosion } = useParticleSystem();
+
+  // REHYDRATION
+  useEffect(() => {
+    if (savedState && !spellState.rehydrated) {
+        const rData = typeof savedState.ritual_data === 'string' ? JSON.parse(savedState.ritual_data) : savedState.ritual_data;
+        
+        setSpellState({
+            stage: 7, // Jump to Final
+            intention: savedState.intention || '',
+            oracleMessage: rData?.oracle_message || savedState.incantation || "THE VOID SPEAKS",
+            isSaved: true,
+            rehydrated: true
+        });
+    }
+  }, [savedState, spellState.rehydrated]);
   
   // STAGE 1: INITIATION
   const StartScreen = () => (
@@ -643,11 +659,7 @@ const FinalStage = ({
          try {
              const gemini = await import('@/lib/services/geminiService');
              
-             // 1. Check Limit
-             const isFull = await gemini.checkGrimoireLimit(userId);
-             if (isFull) throw new Error("GRIMOIRE_FULL");
-
-             // 2. Pay
+             // 1. Pay
              const paid = await spellSystem.saveEconomy.spendAether(userId, 2);
              if (!paid) throw new Error("INSUFFICIENT_FUNDS");
 

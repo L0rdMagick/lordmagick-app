@@ -74,7 +74,7 @@ const IntentionStage: React.FC<IntentionStageProps> = ({ intention, setIntention
 
 // --- MAIN COMPONENT ---
 
-const DataScryingSpell = ({ onExit, spellSystem, session }: { onExit: () => void, spellSystem: any, session?: Session }) => {
+const DataScryingSpell = ({ onExit, spellSystem, session, savedState }: { onExit: () => void, spellSystem: any, session?: Session, savedState?: any }) => {
     const handleExit = () => {
         clearState();
         onExit();
@@ -85,7 +85,8 @@ const DataScryingSpell = ({ onExit, spellSystem, session }: { onExit: () => void
         intention: '',
         mode: 'standard' as 'standard' | 'ai',
         decodedMessage: '',
-        isSaved: false
+        isSaved: false,
+        rehydrated: false
     });
 
     // Derived setters for backward compatibility
@@ -103,6 +104,22 @@ const DataScryingSpell = ({ onExit, spellSystem, session }: { onExit: () => void
     
     // Saving State
     const [isSaving, setIsSaving] = useState(false);
+
+    // REHYDRATION
+    useEffect(() => {
+        if (savedState && !spellState.rehydrated) {
+            const rData = typeof savedState.ritual_data === 'string' ? JSON.parse(savedState.ritual_data) : savedState.ritual_data;
+            
+            setSpellState({
+                stage: 4, // Jump to Reveal
+                intention: savedState.intention || '',
+                mode: rData?.mode || 'standard',
+                decodedMessage: rData?.full_response || savedState.incantation || '',
+                isSaved: true,
+                rehydrated: true
+            });
+        }
+    }, [savedState, spellState.rehydrated]);
 
     const handleBegin = async (selectedMode: 'standard' | 'ai') => {
         if (selectedMode === 'ai') {

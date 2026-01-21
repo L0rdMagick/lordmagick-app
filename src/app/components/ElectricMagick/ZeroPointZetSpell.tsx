@@ -553,11 +553,7 @@ const RebootStage = ({ intention, onExit, session, spellSystem, isAlreadySaved }
          try {
              const gemini = await import('@/lib/services/geminiService');
              
-             // 1. Check Limits
-             const isFull = await gemini.checkGrimoireLimit(userId);
-             if (isFull) throw new Error("GRIMOIRE_FULL");
-
-             // 2. Pay Credits
+             // 1. Pay Credits
              const paid = await spellSystem.saveEconomy.spendAether(userId, 2);
              if (!paid) throw new Error("INSUFFICIENT_FUNDS");
 
@@ -630,12 +626,13 @@ const RebootStage = ({ intention, onExit, session, spellSystem, isAlreadySaved }
 };
 
 // --- MAIN ORCHESTRATOR ---
-const ZeroPointZetSpell = ({ onExit, session, spellSystem }: { onExit: () => void, session?: Session, spellSystem: any }) => {
+const ZeroPointZetSpell = ({ onExit, session, spellSystem, savedState }: { onExit: () => void, session?: Session, spellSystem: any, savedState?: any }) => {
   // Persistent State
   const { state: spellState, setState: setSpellState, clearState } = useSpellPersistence('zero_point_zet_spell_state', {
       stage: 0,
       intention: '',
-      isSaved: false
+      isSaved: false,
+      rehydrated: false
   });
 
   const setStage = (s: number | ((prev: number) => number)) => setSpellState(prev => ({ ...prev, stage: typeof s === 'function' ? s(prev.stage) : s }));
@@ -658,6 +655,19 @@ const ZeroPointZetSpell = ({ onExit, session, spellSystem }: { onExit: () => voi
     return () => playDrone(false);
   }, [initAudio, playDrone]);
 
+  // REHYDRATION
+  useEffect(() => {
+    if (savedState && !spellState.rehydrated) {
+       // Zero Point Zet is simple, just intention and done state
+       setSpellState({
+           stage: 5, // Reboot Stage
+           intention: savedState.intention || '',
+           isSaved: true,
+           rehydrated: true
+       });
+    }
+  }, [savedState, spellState.rehydrated]);
+
   const renderStage = () => {
     switch (stage) {
       case 0: return <IntroStage onComplete={() => setStage(1)} playTone={playTone} initAudio={initAudio} session={session} spellSystem={spellSystem} />;
@@ -665,7 +675,7 @@ const ZeroPointZetSpell = ({ onExit, session, spellSystem }: { onExit: () => voi
       case 2: return <InjectionStage onComplete={() => setStage(3)} playTone={playTone} setIntention={setIntention} />;
       case 3: return <StabilizationStage onComplete={() => setStage(4)} playTone={playTone} modulateFilter={modulateFilter} />;
       case 4: return <EntropyStage onComplete={() => setStage(5)} playTone={playTone} spawnExplosion={spawnExplosion} intention={intention} />;
-      case 5: return <RebootStage intention={intention} onExit={onExit} session={session} spellSystem={spellSystem} />;
+      case 5: return <RebootStage intention={intention} onExit={onExit} session={session} spellSystem={spellSystem} isAlreadySaved={isSaved} />;
       default: return null;
     }
   };
