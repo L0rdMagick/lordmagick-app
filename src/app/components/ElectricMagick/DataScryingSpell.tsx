@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { generateDataScrying, saveSpell } from '@/lib/services/geminiService';
 import { useAudioEngine, useParticleSystem, getMagickalNumber } from './hooks';
+import { useSpellPersistence } from '@/hooks/useSpellPersistence';
 import type { Session } from '@/lib/types';
 
 // --- SUB-COMPONENTS ---
@@ -74,15 +75,28 @@ const IntentionStage: React.FC<IntentionStageProps> = ({ intention, setIntention
 // --- MAIN COMPONENT ---
 
 const DataScryingSpell = ({ onExit, spellSystem, session }: { onExit: () => void, spellSystem: any, session?: Session }) => {
-    // Stage 0: Intention, 1: Bio-Sync, 2: Tuning, 3: Focus (Generation), 4: Reveal (Result & Save)
-    const [stage, setStage] = useState(0); 
-    const { initAudio, playTone, playDrone, modulateFilter } = useAudioEngine();
-    const { canvasRef, spawnExplosion } = useParticleSystem();
-    
-    // Spell Data
-    const [intention, setIntention] = useState("");
-    const [mode, setMode] = useState<'standard' | 'ai'>('standard');
-    const [decodedMessage, setDecodedMessage] = useState("");
+    const handleExit = () => {
+        clearState();
+        onExit();
+    };
+    // Persistent Spell State
+    const { state: spellState, setState: setSpellState, clearState } = useSpellPersistence('data_scrying_spell_state', {
+        stage: 0,
+        intention: '',
+        mode: 'standard' as 'standard' | 'ai',
+        decodedMessage: '',
+        isSaved: false
+    });
+
+    // Derived setters for backward compatibility
+    const setStage = (s: number | ((prev: number) => number)) => setSpellState(prev => ({ ...prev, stage: typeof s === 'function' ? s(prev.stage) : s }));
+    const setIntention = (i: string) => setSpellState(prev => ({ ...prev, intention: i }));
+    const setMode = (m: 'standard' | 'ai') => setSpellState(prev => ({ ...prev, mode: m }));
+    const setDecodedMessage = (msg: string) => setSpellState(prev => ({ ...prev, decodedMessage: msg }));
+    const setIsSaved = (s: boolean) => setSpellState(prev => ({ ...prev, isSaved: s }));
+
+    const { stage, intention, mode, decodedMessage, isSaved } = spellState;
+
     
     // Saving State
     const [isSaving, setIsSaving] = useState(false);
@@ -439,11 +453,11 @@ const DataScryingSpell = ({ onExit, spellSystem, session }: { onExit: () => void
                         <span>{isSaved ? "SAVED TO ETHER" : isSaving ? "BURNING..." : "BURN TO ETHER DRIVE (1 CREDIT)"}</span>
                     </button>
                     <button 
-                        onClick={onExit}
-                        className="px-8 py-3 border border-cyan-900/50 text-cyan-700 hover:text-cyan-400 hover:border-cyan-400 transition-colors uppercase tracking-[0.2em] text-xs rounded-sm"
-                    >
-                        Terminate Session
-                    </button>
+                onClick={handleExit}
+                className="mt-8 text-[10px] text-cyan-700 hover:text-cyan-400 uppercase tracking-[0.3em] font-mono transition-colors"
+            >
+                Terminate Connection
+            </button>
                 </div>
             </div>
         );

@@ -10,6 +10,7 @@ import { generateElectricNeuralLink, saveSpell } from '@/lib/services/geminiServ
 // FIX: Import Type from the correct file
 import type { NeuralLinkResult, Session } from '@/lib/types';
 import { useAudioEngine, useParticleSystem } from './hooks';
+import { useSpellPersistence } from '@/hooks/useSpellPersistence';
 
 // ==========================================
 // SUB-COMPONENTS
@@ -430,11 +431,11 @@ const TransmitStage = ({ onExit, finalLog, target, intent, saveEnabled, session,
                 )}
 
                 <button 
-                    onClick={onExit}
-                    className="px-8 py-3 border border-pink-900 text-pink-600 hover:text-pink-300 hover:border-pink-400 transition-colors uppercase tracking-[0.2em] text-xs rounded"
-                >
-                    Sever Connection
-                </button>
+                onClick={onExit}
+                className="text-[10px] text-pink-900 hover:text-pink-500 uppercase tracking-[0.4em] transition-colors mt-8"
+             >
+                Close Connection
+             </button>
             </div>
         </div>
     );

@@ -9,11 +9,31 @@ import {
 } from 'lucide-react';
 import { generateElectricEnsorcellment, generateElectricOracle } from '@/lib/services/geminiService';
 import { useAudioEngine, useParticleSystem, getMagickalNumber } from './hooks';
+import { useSpellPersistence } from '@/hooks/useSpellPersistence';
 
 // The Wrapped Component
 const VoidGateSpell = ({ onExit, spellSystem, session }: { onExit: () => void, spellSystem: any, session: any }) => {
-  const [stage, setStage] = useState(0);
-  const [intention, setIntention] = useState('');
+  const handleExit = () => {
+      clearState();
+      onExit();
+  };
+  // Persist the entire spell state in one object to keep it simple
+  const { state: spellState, setState: setSpellState, clearState } = useSpellPersistence('void_gate_spell_state', {
+      stage: 0,
+      intention: '',
+      mode: 'standard' as 'standard' | 'ai',
+      isSaved: false
+  });
+
+  // Derived state setters to maintain compatibility with existing code structure without rewriting everything
+  const setStage = (s: number | ((prev: number) => number)) => setSpellState(prev => ({ ...prev, stage: typeof s === 'function' ? s(prev.stage) : s }));
+  const setIntention = (i: string) => setSpellState(prev => ({ ...prev, intention: i }));
+  const setMode = (m: 'standard' | 'ai') => setSpellState(prev => ({ ...prev, mode: m }));
+  const setIsSaved = (s: boolean) => setSpellState(prev => ({ ...prev, isSaved: s }));
+
+  const { stage, intention, mode, isSaved } = spellState;
+  
+  const [isSaving, setIsSaving] = useState(false); // Transient state, doesn't need persistence usually
   const { initAudio, playTone, playDrone } = useAudioEngine();
   const { canvasRef, spawnExplosion } = useParticleSystem();
   
@@ -532,7 +552,7 @@ const VoidGateSpell = ({ onExit, spellSystem, session }: { onExit: () => void, s
             )}
         </div>
         <button 
-            onClick={onExit}
+            onClick={handleExit}
             className="mt-12 text-[10px] text-gray-600 hover:text-white uppercase tracking-[0.4em] transition-colors border-b border-transparent hover:border-white pb-1"
         >
             Close The Circle

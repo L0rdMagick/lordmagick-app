@@ -12,6 +12,7 @@ import Link from 'next/link';
 // HOOKS
 // We only import useParticleSystem. We keep the local useAudioEngine because it is specialized for this spell.
 import { useParticleSystem } from './hooks'; 
+import { useSpellPersistence } from '@/hooks/useSpellPersistence'; 
 
 
 // --- CONSTANTS & DATA ---
@@ -1441,18 +1442,30 @@ const FinalCast = ({ intention, archetype, audio, onExit, session, aiData, spell
 // --- MAIN COMPONENT ---
 
 export default function RealityPatchSpell({ onExit, session, spellSystem }: { onExit: () => void, session?: Session, spellSystem: any }) {
-  const [phase, setPhase] = useState('INTRO'); 
-  const [intention, setIntention] = useState('');
-  const [archetype, setArchetype] = useState(ARCHETYPES.UNK);
-  const [glitchActive, setGlitchActive] = useState(false);
-  const [aiData, setAiData] = useState<RealityPatchRitualData>({
-      consecration: "",
-      grounding: "",
-      etching: "",
-      ancientTongue: "",
-      integration: "",
-      charge: ""
+  // Persistent State
+  const { state: spellState, setState: setSpellState, clearState } = useSpellPersistence('reality_patch_spell_state', {
+      phase: 'INTRO',
+      intention: '',
+      archetype: ARCHETYPES.UNK,
+      glitchActive: false,
+      aiData: {
+          consecration: "",
+          grounding: "",
+          etching: "",
+          ancientTongue: "",
+          integration: "",
+          charge: ""
+      } as RealityPatchRitualData
   });
+
+  const setPhase = (p: string) => setSpellState(prev => ({ ...prev, phase: p }));
+  const setIntention = (i: string) => setSpellState(prev => ({ ...prev, intention: i }));
+  const setArchetype = (a: any) => setSpellState(prev => ({ ...prev, archetype: a }));
+  const setGlitchActive = (g: boolean) => setSpellState(prev => ({ ...prev, glitchActive: g }));
+  const setAiData = (d: RealityPatchRitualData | ((prev: RealityPatchRitualData) => RealityPatchRitualData)) => setSpellState(prev => ({ ...prev, aiData: typeof d === 'function' ? d(prev.aiData) : d }));
+
+  const { phase, intention, archetype, glitchActive, aiData } = spellState;
+
   
   // Use the LOCAL specialized audio engine
   const audio = useSpecializedAudioEngine();
@@ -1507,7 +1520,7 @@ export default function RealityPatchSpell({ onExit, session, spellSystem }: { on
   return (
     <div className="fixed inset-0 w-full h-dvh bg-black text-slate-200 font-sans z-50 overflow-hidden">
       <style>{styles}</style>
-      <button onClick={() => { audio.stopLoop(); onExit(); }} className="absolute top-4 right-4 z-60 text-slate-500 hover:text-white transition-colors cursor-pointer bg-black/40 p-2 rounded-full backdrop-blur-md">
+      <button onClick={() => { audio.stopLoop(); clearState(); onExit(); }} className="absolute top-4 right-4 z-60 text-slate-500 hover:text-white transition-colors cursor-pointer bg-black/40 p-2 rounded-full backdrop-blur-md">
         <X size={20}/>
       </button>
 
@@ -1525,7 +1538,7 @@ export default function RealityPatchSpell({ onExit, session, spellSystem }: { on
                 {phase === 'INTEGRATION' && <VoidIntegration setPhase={setPhase} archetype={archetype} audio={audio} aiData={aiData} intention={intention} spawnExplosion={spawnExplosion} />}
                 {phase === 'SPIRAL' && <SpiralActivation setPhase={setPhase} archetype={archetype} audio={audio} aiData={aiData} intention={intention} />}
                 {phase === 'CHARGE' && <ChargeAndCast setPhase={setPhase} setGlitchActive={setGlitchActive} archetype={archetype} audio={audio} spawnExplosion={spawnExplosion} aiData={aiData} />}
-                {phase === 'CAST' && <FinalCast intention={intention} archetype={archetype} audio={audio} onExit={onExit} session={session} aiData={aiData} spellSystem={spellSystem} />}
+                {phase === 'CAST' && <FinalCast intention={intention} archetype={archetype} audio={audio} onExit={() => { clearState(); onExit(); }} session={session} aiData={aiData} spellSystem={spellSystem} />}
           </main>
       </div>
     </div>

@@ -13,6 +13,7 @@ import { useSpellSystem } from '@/hooks/useSpellSystem';
 import type { Session } from '@/lib/types';
 import { SlotPurchaseModal } from '@/app/components/economy/SlotPurchaseModal';
 import { BlockageErrorOverlay } from '@/app/components/economy/BlockageErrorOverlay';
+import { useSpellPersistence } from '@/hooks/useSpellPersistence';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const SpellCard = ({ title, desc, icon: Icon, onClick, disabled }: { title: string, desc: string, icon: any, onClick?: () => void, disabled?: boolean }) => (
@@ -36,7 +37,8 @@ const SpellCard = ({ title, desc, icon: Icon, onClick, disabled }: { title: stri
 );
 
 export default function ElectricMagickMenu({ session, isSubscribed, onBack }: { session?: Session, isSubscribed?: boolean, onBack?: () => void }) {
-  const [activeSpell, setActiveSpell] = useState<string | null>(null);
+  // Persistence for the active spell ("which spell is open")
+  const { state: activeSpell, setState: setActiveSpell, clearState: clearActiveSpell } = useSpellPersistence<string | null>('electric_magick_active_spell', null);
 
   const spellSystem = useSpellSystem({
       serviceSlugGen: 'ai_electric_magick', 
@@ -49,7 +51,7 @@ export default function ElectricMagickMenu({ session, isSubscribed, onBack }: { 
   };
 
   const commonProps = { 
-      onExit: () => setActiveSpell(null), 
+      onExit: () => clearActiveSpell(), 
       spellSystem, 
       session 
   };

@@ -19,6 +19,7 @@ import {
 import { motion } from 'framer-motion';
 import { useAudioEngine, useParticleSystem } from './hooks';
 import { saveSpell } from '@/lib/services/geminiService';
+import { useSpellPersistence } from '@/hooks/useSpellPersistence';
 import type { Session } from '@/lib/types';
 
 // --- CONSTANTS ---
@@ -608,9 +609,24 @@ const RebootStage = ({ intention, onExit, session, spellSystem }: { intention: s
 
 // --- MAIN ORCHESTRATOR ---
 const ZeroPointZetSpell = ({ onExit, session, spellSystem }: { onExit: () => void, session?: Session, spellSystem: any }) => {
-  // 0: Intro, 1: Auth, 2: Inject, 3: Stabilize, 4: Entropy, 5: Reboot
-  const [stage, setStage] = useState(0); 
-  const [intention, setIntention] = useState("");
+  // Persistent State
+  const { state: spellState, setState: setSpellState, clearState } = useSpellPersistence('zero_point_zet_spell_state', {
+      stage: 0,
+      intention: '',
+      isSaved: false
+  });
+
+  const setStage = (s: number | ((prev: number) => number)) => setSpellState(prev => ({ ...prev, stage: typeof s === 'function' ? s(prev.stage) : s }));
+  const setIntention = (i: string) => setSpellState(prev => ({ ...prev, intention: i }));
+  const setIsSaved = (s: boolean) => setSpellState(prev => ({ ...prev, isSaved: s }));
+
+  const { stage, intention, isSaved } = spellState;
+
+  const handleExit = () => {
+      clearState();
+      onExit();
+  };
+
   const { initAudio, playTone, playDrone, modulateFilter } = useAudioEngine();
   const { canvasRef, spawnExplosion } = useParticleSystem();
 
@@ -634,7 +650,7 @@ const ZeroPointZetSpell = ({ onExit, session, spellSystem }: { onExit: () => voi
 
   return (
     <div className="fixed inset-0 bg-black text-white overflow-hidden font-sans z-50">
-      <button onClick={onExit} className="absolute top-6 right-6 z-50 text-gray-700 hover:text-white transition-colors"><X size={24}/></button>
+      <button onClick={handleExit} className="absolute top-6 right-6 z-50 text-gray-700 hover:text-white transition-colors"><X size={24}/></button>
       
       {/* Global Particle Layer */}
       <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none z-0" style={{ mixBlendMode: 'screen' }} />

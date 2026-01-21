@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { generateRealityOverwrite, saveSpell } from '@/lib/services/geminiService';
 import { useAudioEngine, useParticleSystem } from './hooks';
+import { useSpellPersistence } from '@/hooks/useSpellPersistence';
 import type { Session } from '@/lib/types';
 
 // --- CONFIGURATION ---
@@ -337,9 +338,11 @@ const ActivityUpload = ({ onComplete, color }: { onComplete: () => void, color: 
 // --- MAIN ORCHESTRATOR ---
 
 const RealityOverwriteSpell = ({ onExit, spellSystem, session }: { onExit: () => void, spellSystem: any, session?: Session }) => {
+    const handleExit = () => {
+        clearState();
+        onExit();
+    };
     const [started, setStarted] = useState(false);
-    const [sectorIndex, setSectorIndex] = useState(0);
-    const [subStage, setSubStage] = useState<'input' | 'processing' | 'incantation' | 'activity' | 'complete'>('input');
     const [userInput, setUserInput] = useState('');
     const [aiResponse, setAiResponse] = useState('');
     const [log, setLog] = useState<string[]>([]);
@@ -347,12 +350,28 @@ const RealityOverwriteSpell = ({ onExit, spellSystem, session }: { onExit: () =>
     // Final stages
     const [finalStage, setFinalStage] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
-    const [isSaved, setIsSaved] = useState(false);
+
+    // Persistent State
+    const { state: spellState, setState: setSpellState, clearState } = useSpellPersistence('light_prism_spell_state', {
+        sectorIndex: 0,
+        userInputs: {} as Record<string, string>,
+        optimizationData: {} as Record<string, string>,
+        subStage: 'scan' as 'scan' | 'input' | 'processing' | 'complete',
+        isSaved: false
+    });
+
+    const setSectorIndex = (i: number | ((prev: number) => number)) => setSpellState(prev => ({ ...prev, sectorIndex: typeof i === 'function' ? i(prev.sectorIndex) : i }));
+    const setUserInputs = (inputs: Record<string, string> | ((prev: Record<string, string>) => Record<string, string>)) => setSpellState(prev => ({ ...prev, userInputs: typeof inputs === 'function' ? inputs(prev.userInputs) : inputs }));
+    const setOptimizationData = (data: Record<string, string> | ((prev: Record<string, string>) => Record<string, string>)) => setSpellState(prev => ({ ...prev, optimizationData: typeof data === 'function' ? data(prev.optimizationData) : data }));
+    const setSubStage = (s: 'scan' | 'input' | 'processing' | 'complete' | 'incantation' | 'activity') => setSpellState(prev => ({ ...prev, subStage: s }));
+    const setIsSaved = (s: boolean) => setSpellState(prev => ({ ...prev, isSaved: s }));
+
+    const { sectorIndex, userInputs, optimizationData, subStage, isSaved } = spellState;
+
 
     const { initAudio, playTone, playDrone } = useAudioEngine();
     const { canvasRef, spawnExplosion } = useParticleSystem();
 
-    const currentSector = SECTORS[sectorIndex];
 
     // -- INTRO --
     if (!started) {
@@ -613,6 +632,12 @@ const RealityOverwriteSpell = ({ onExit, spellSystem, session }: { onExit: () =>
                             <p className="font-serif text-xl md:text-2xl leading-relaxed text-white drop-shadow-md">
                                 &quot;{aiResponse}&quot;
                             </p>
+                            <button 
+                                onClick={handleExit}
+                                className="text-[10px] text-gray-500 hover:text-white uppercase tracking-[0.2em] transition-colors"
+                            >
+                                Exit System
+                            </button>
                         </div>
                         <p className="text-[10px] font-mono text-gray-500 uppercase tracking-widest mb-6">
                             SPEAK THIS COMMAND TO INITIALIZE THE PATCH
