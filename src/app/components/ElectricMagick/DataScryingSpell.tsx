@@ -40,6 +40,7 @@ const IntentionStage: React.FC<IntentionStageProps> = ({ intention, setIntention
             </div>
 
             <div className="flex flex-col gap-4 w-full max-w-sm z-10">
+                {!isReplay && (
                 <button 
                     onClick={() => onBegin('standard')}
                     disabled={!intention}
@@ -53,6 +54,7 @@ const IntentionStage: React.FC<IntentionStageProps> = ({ intention, setIntention
                         <div className="text-cyan-700 text-[10px] tracking-wide mt-1">Local Analysis. Quick. Free.</div>
                     </div>
                 </button>
+                )}
 
                 <button 
                     onClick={() => onBegin('ai')}

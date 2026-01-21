@@ -60,6 +60,7 @@ const TargetStage = ({ target, setTarget, intent, setIntent, onBegin, isReplay }
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 pt-4">
+                     {!isReplay && (
                      <button 
                         onClick={() => onBegin('standard')}
                         disabled={!target || !intent}
@@ -73,6 +74,7 @@ const TargetStage = ({ target, setTarget, intent, setIntent, onBegin, isReplay }
                             <div className="text-pink-700 text-[10px] tracking-wide mt-1">Direct Link. Instant. Free.</div>
                         </div>
                     </button>
+                    )}
 
                     <button 
                         onClick={() => onBegin('ai')}

@@ -76,6 +76,8 @@ const VoidGateSpell = ({ onExit, spellSystem, session, savedState }: { onExit: (
       </p>
       <div className="flex flex-col gap-4 mt-8 w-full max-w-sm px-4">
         {/* Standard (Free) Mode */}
+        {/* Standard (Free) Mode */}
+        {!spellState.rehydrated && (
         <button 
           onClick={(e) => {
             const target = e.target as any;
@@ -89,7 +91,8 @@ const VoidGateSpell = ({ onExit, spellSystem, session, savedState }: { onExit: (
           className="px-8 py-4 border border-purple-500/30 bg-purple-900/10 backdrop-blur-sm text-purple-200 rounded-sm hover:bg-purple-500/20 hover:border-purple-400 transition-all duration-300 tracking-[0.2em] uppercase text-xs"
         >
           Standard Ritual (Free)
-        </button>
+        </button>  
+        )}
 
         {/* AI Enhanced Mode */}
         <button 
