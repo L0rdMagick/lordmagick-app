@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { Coins } from 'lucide-react';
 
@@ -19,14 +19,21 @@ export const BlockageErrorOverlay = ({
     redirectPath = '/store',
     onGoToStore
 }: BlockageErrorOverlayProps) => {
-    const router = useRouter(); // Initialize useRouter
+    const router = useRouter(); 
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
 
     const handleGoToStore = () => {
-        // Set persistence flag so spells can restore state upon return
         if (typeof window !== 'undefined') {
             sessionStorage.setItem('PENDING_PURCHASE', 'true');
         }
-        router.push('/store');
+        
+        // Construct return URL
+        const currentQuery = searchParams.toString();
+        const returnUrl = currentQuery ? `${pathname}?${currentQuery}` : pathname;
+        const encodedRedirect = encodeURIComponent(returnUrl);
+        
+        router.push(`/store?redirect=${encodedRedirect}`);
     };
     
     if (!error) return null;
