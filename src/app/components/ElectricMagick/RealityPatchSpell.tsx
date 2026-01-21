@@ -35,6 +35,8 @@ const detectArchetype = (text: string) => {
   return ARCHETYPES.UNK;
 };
 
+type Phase = 'INTRO' | 'CONSECRATE' | 'GROUNDING' | 'AGREEMENT' | 'ETCHING' | 'INTEGRATION' | 'SPIRAL' | 'CHARGE' | 'CAST';
+
 // --- UTILITY: SIGIL GENERATOR ---
 const generateSigilPath = (input: string): string => {
   if (!input) return "M100,100 L100,100";
@@ -1462,132 +1464,31 @@ const FinalCast = ({ intention, archetype, audio, onExit, session, aiData, spell
 
 // --- MAIN COMPONENT ---
 
-export default function RealityPatchSpell({ onExit, session, spellSystem }: { onExit: () => void, session?: Session, spellSystem: any }) {
-  // Persistent State
-  const { state: spellState, setState: setSpellState, clearState } = useSpellPersistence('reality_patch_spell_state', {
-      phase: 'INTRO',
-      intention: '',
-      archetype: ARCHETYPES.UNK,
-      glitchActive: false,
-      aiData: {
-          consecration: "",
-          grounding: "",
-          etching: "",
-          ancientTongue: "",
-          integration: "",
-          charge: ""
-      } as RealityPatchRitualData
-  });
+// --- MAIN WRAPPER & CORE ---
 
-  const setPhase = (p: string) => setSpellState(prev => ({ ...prev, phase: p }));
-  const setIntention = (i: string) => setSpellState(prev => ({ ...prev, intention: i }));
-  const setArchetype = (a: any) => setSpellState(prev => ({ ...prev, archetype: a }));
-  const setGlitchActive = (g: boolean) => setSpellState(prev => ({ ...prev, glitchActive: g }));
-  const setAiData = (d: RealityPatchRitualData | ((prev: RealityPatchRitualData) => RealityPatchRitualData)) => setSpellState(prev => ({ ...prev, aiData: typeof d === 'function' ? d(prev.aiData) : d }));
-
-  const { phase, intention, archetype, glitchActive, aiData } = spellState;
-
-  
-  // Use the LOCAL specialized audio engine
-  const audio = useSpecializedAudioEngine();
-  // Use the IMPORTED particle system
-  const { spawnExplosion } = useParticleSystem(); 
-
-  const getWarpIntensity = () => {
-      switch(phase) {
-          case 'INTRO': return 0;
-          case 'CONSECRATE': return 10;
-          case 'GROUNDING': return 20;
-          case 'AGREEMENT': return 25;
-          case 'ETCHING': return 40;
-          case 'INTEGRATION': return 60;
-          case 'SPIRAL': return 100;
-          case 'CHARGE': return 150;
-          case 'CAST': return 500;
-          default: return 0;
-      }
-  };
-
-  // Background Effects
-  const WarpBackground = ({ intensity }: { intensity: number }) => (
-    <div className="fixed inset-0 z-0 bg-black overflow-hidden pointer-events-none">
-        <div className="absolute inset-0 opacity-30 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')]" />
-        <svg className="absolute inset-0 w-full h-full opacity-30 mix-blend-screen">
-        <filter id="warpFilter">
-            <feTurbulence type="fractalNoise" baseFrequency={0.01 + (intensity / 5000)} numOctaves="2" result="noise" />
-            <feDisplacementMap in="SourceGraphic" in2="noise" scale={intensity} />
-        </filter>
-        <rect width="100%" height="100%" filter="url(#warpFilter)" fill="indigo" />
-        </svg>
-        <div className="absolute inset-0 bg-linear-to-b from-black via-transparent to-slate-950 opacity-90" />
-    </div>
-  );
-
-  const GlitchOverlay = ({ active }: { active: boolean }) => {
-    if (!active) return null;
-    return (
-        <div className="fixed inset-0 z-50 pointer-events-none mix-blend-difference animate-pulse bg-white/10">
-        <div className="absolute top-1/4 left-0 w-full h-2 bg-cyan-500/50 blur-sm transform -skew-x-12" />
-        <div className="absolute bottom-1/3 left-0 w-full h-4 bg-purple-500/50 blur-md transform skew-x-12" />
-        </div>
-    );
-  };
-
-  const styles = `
-    @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-    .animate-spin-slow { animation: spin-slow 20s linear infinite; }
-  `;
-
-  return (
-    <div className="fixed inset-0 w-full h-dvh bg-black text-slate-200 font-sans z-50 overflow-hidden">
-      <style>{styles}</style>
-      <button onClick={() => { audio.stopLoop(); clearState(); onExit(); }} className="absolute top-4 right-4 z-60 text-slate-500 hover:text-white transition-colors cursor-pointer bg-black/40 p-2 rounded-full backdrop-blur-md">
-        <X size={20}/>
-      </button>
-
-      <WarpBackground intensity={getWarpIntensity()} />
-      <GlitchOverlay active={glitchActive} />
-      
-      {/* Main Container - One Page Layout */}
-      <div className="relative z-10 w-full h-full flex flex-col justify-between">
-          <main className="w-full h-full relative z-10 flex flex-col items-center justify-center max-w-lg mx-auto">
-                {phase === 'INTRO' && <IntroBreach setIntention={setIntention} setArchetype={setArchetype} setPhase={setPhase} setAiData={setAiData} audio={audio} session={session} spellSystem={spellSystem} />}
-                {phase === 'CONSECRATE' && <Consecration setPhase={setPhase} archetype={archetype} audio={audio} spawnExplosion={spawnExplosion} aiData={aiData} />}
-                {phase === 'GROUNDING' && <Grounding setPhase={setPhase} audio={audio} aiData={aiData} archetype={archetype} />}
-                {phase === 'AGREEMENT' && <Agreement setPhase={setPhase} audio={audio} />}
-                {phase === 'ETCHING' && <Etching setPhase={setPhase} archetype={archetype} audio={audio} aiData={aiData} intention={intention} spawnExplosion={spawnExplosion} />}
-                {phase === 'INTEGRATION' && <VoidIntegration setPhase={setPhase} archetype={archetype} audio={audio} aiData={aiData} intention={intention} spawnExplosion={spawnExplosion} />}
-                {phase === 'SPIRAL' && <SpiralActivation setPhase={setPhase} archetype={archetype} audio={audio} aiData={aiData} intention={intention} />}
-                {phase === 'CHARGE' && <ChargeAndCast setPhase={setPhase} setGlitchActive={setGlitchActive} archetype={archetype} audio={audio} spawnExplosion={spawnExplosion} aiData={aiData} />}
-                {phase === 'CAST' && <FinalCast intention={intention} archetype={archetype} audio={audio} onExit={() => { clearState(); onExit(); }} session={session} aiData={aiData} spellSystem={spellSystem} isAlreadySaved={!!savedState} />}
-          </main>
-      </div>
-    </div>
-  );
-}
-
-// WRAPPER
 export default function RealityPatchSpell({ onExit, session, spellSystem, savedState }: { onExit: () => void, session?: Session, spellSystem?: any, savedState?: any }) {
     return <RealityPatchCore onExit={onExit} session={session} spellSystem={spellSystem} savedState={savedState} />;
 }
 
-// EXTRACTED CORE to allow hooks inside
 function RealityPatchCore({ onExit, session, spellSystem, savedState }: { onExit: () => void, session?: Session, spellSystem?: any, savedState?: any }) {
     const { state: spellState, setState: setSpellState, clearState } = useSpellPersistence('reality_patch_spell_state', {
          phase: 'INTRO' as Phase,
          intention: '',
-         archetype: { name: 'VOID WALKER', color: 'text-purple-500', icon: 'Cpu', theme: 'Spirit' } as any, // Default needed
+         archetype: ARCHETYPES.UNK, // Default to UNK instead of hardcoded object to match type
+         glitchActive: false,
          aiData: null as RealityPatchRitualData | null,
          rehydrated: false
     });
 
-    // Local state synced to persistence
     const [phase, setPhase] = useState<Phase>('INTRO');
     const [intention, setIntention] = useState('');
-    const [archetype, setArchetype] = useState(spellState.archetype); 
+    const [archetype, setArchetype] = useState(spellState.archetype || ARCHETYPES.UNK); 
     const [aiData, setAiData] = useState<RealityPatchRitualData | null>(null);
-    const audio = useAudioEngine();
+    const audio = useSpecializedAudioEngine();
     
+    // UI Local State
+    const [glitchActive, setGlitchActive] = useState(false);
+
     // REHYDRATION
     useEffect(() => {
         if (savedState && !spellState.rehydrated) {
@@ -1595,19 +1496,23 @@ function RealityPatchCore({ onExit, session, spellSystem, savedState }: { onExit
             
             setIntention(savedState.intention);
             setAiData(rData?.full_ritual_script || { etching: savedState.incantation || "ERROR" });
+            
+            // Handle archetype restoration
             if (rData?.archetype) setArchetype(rData.archetype);
             
-            setPhase('CAST'); // Jump to final
+            setPhase('CAST'); 
             
             setSpellState({
                 phase: 'CAST',
                 intention: savedState.intention,
-                archetype: rData?.archetype || spellState.archetype,
+                archetype: rData?.archetype || spellState.archetype || ARCHETYPES.UNK,
                 aiData: rData?.full_ritual_script || null,
+                glitchActive: false,
                 rehydrated: true
             });
         }
         else if (spellState.phase !== 'INTRO') {
+            // Normal Persist Restoration
             setPhase(spellState.phase);
             setIntention(spellState.intention);
             setArchetype(spellState.archetype);
@@ -1615,10 +1520,85 @@ function RealityPatchCore({ onExit, session, spellSystem, savedState }: { onExit
         }
     }, [savedState, spellState.rehydrated]);
 
+    // Persistence Sync
     useEffect(() => {
         if (phase !== 'INTRO') {
              setSpellState(prev => ({ ...prev, phase, intention, archetype, aiData }));
         }
     }, [phase, intention, archetype, aiData]);
     
-    // Map props to children...
+    // Helpers
+    const getWarpIntensity = () => {
+        switch (phase) {
+            case 'INTRO': return 10;
+            case 'CONSECRATE': return 15;
+            case 'GROUNDING': return 20;
+            case 'AGREEMENT': return 25;
+            case 'ETCHING': return 40;
+            case 'INTEGRATION': return 60;
+            case 'SPIRAL': return 100;
+            case 'CHARGE': return 150;
+            case 'CAST': return 500;
+            default: return 0;
+        }
+    };
+
+    const WarpBackground = ({ intensity }: { intensity: number }) => (
+        <div className="fixed inset-0 z-0 bg-black overflow-hidden pointer-events-none">
+            <div className="absolute inset-0 opacity-30 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')]" />
+            <svg className="absolute inset-0 w-full h-full opacity-30 mix-blend-screen">
+            <filter id="warpFilter">
+                <feTurbulence type="fractalNoise" baseFrequency={0.01 + (intensity / 5000)} numOctaves="2" result="noise" />
+                <feDisplacementMap in="SourceGraphic" in2="noise" scale={intensity} />
+            </filter>
+            <rect width="100%" height="100%" filter="url(#warpFilter)" fill="indigo" />
+            </svg>
+            <div className="absolute inset-0 bg-linear-to-b from-black via-transparent to-slate-950 opacity-90" />
+        </div>
+    );
+
+    const GlitchOverlay = ({ active }: { active: boolean }) => {
+        if (!active) return null;
+        return (
+            <div className="fixed inset-0 z-50 pointer-events-none mix-blend-difference animate-pulse bg-white/10">
+            <div className="absolute top-1/4 left-0 w-full h-2 bg-cyan-500/50 blur-sm transform -skew-x-12" />
+            <div className="absolute bottom-1/3 left-0 w-full h-4 bg-purple-500/50 blur-md transform skew-x-12" />
+            </div>
+        );
+    };
+
+    const styles = `
+        @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .animate-spin-slow { animation: spin-slow 20s linear infinite; }
+    `;
+
+    // Particle
+    const { spawnExplosion } = useParticleSystem();
+
+    return (
+        <div className="fixed inset-0 w-full h-dvh bg-black text-slate-200 font-sans z-50 overflow-hidden">
+        <style>{styles}</style>
+        <button onClick={() => { audio.stopLoop(); clearState(); onExit(); }} className="absolute top-4 right-4 z-60 text-slate-500 hover:text-white transition-colors cursor-pointer bg-black/40 p-2 rounded-full backdrop-blur-md">
+            <X size={20}/>
+        </button>
+
+        <WarpBackground intensity={getWarpIntensity()} />
+        <GlitchOverlay active={glitchActive} />
+        
+        {/* Main Container - One Page Layout */}
+        <div className="relative z-10 w-full h-full flex flex-col justify-between">
+            <main className="w-full h-full relative z-10 flex flex-col items-center justify-center max-w-lg mx-auto">
+                    {phase === 'INTRO' && <IntroBreach setIntention={setIntention} setArchetype={setArchetype} setPhase={setPhase} setAiData={setAiData} audio={audio} session={session} spellSystem={spellSystem} />}
+                    {phase === 'CONSECRATE' && <Consecration setPhase={setPhase} archetype={archetype} audio={audio} spawnExplosion={spawnExplosion} aiData={aiData} />}
+                    {phase === 'GROUNDING' && <Grounding setPhase={setPhase} audio={audio} aiData={aiData} archetype={archetype} />}
+                    {phase === 'AGREEMENT' && <Agreement setPhase={setPhase} audio={audio} />}
+                    {phase === 'ETCHING' && <Etching setPhase={setPhase} archetype={archetype} audio={audio} aiData={aiData} intention={intention} spawnExplosion={spawnExplosion} />}
+                    {phase === 'INTEGRATION' && <VoidIntegration setPhase={setPhase} archetype={archetype} audio={audio} aiData={aiData} intention={intention} spawnExplosion={spawnExplosion} />}
+                    {phase === 'SPIRAL' && <SpiralActivation setPhase={setPhase} archetype={archetype} audio={audio} aiData={aiData} intention={intention} />}
+                    {phase === 'CHARGE' && <ChargeAndCast setPhase={setPhase} setGlitchActive={setGlitchActive} archetype={archetype} audio={audio} spawnExplosion={spawnExplosion} aiData={aiData} />}
+                    {phase === 'CAST' && <FinalCast intention={intention} archetype={archetype} audio={audio} onExit={() => { clearState(); onExit(); }} session={session} aiData={aiData} spellSystem={spellSystem} isAlreadySaved={!!savedState} />}
+            </main>
+        </div>
+        </div>
+    );
+}
