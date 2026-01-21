@@ -48,6 +48,7 @@ export const BlockageErrorOverlay = ({
                                 ) : (
                                     <Link 
                                         href={`/store?redirect=${encodeURIComponent(redirectPath)}`}
+                                        onClick={() => sessionStorage.setItem('PENDING_PURCHASE', 'true')}
                                         className="w-full flex items-center justify-center gap-2 py-3 bg-amber-700 hover:bg-amber-600 text-white font-bold rounded uppercase tracking-wider text-xs transition-colors shadow-[0_0_15px_rgba(180,83,9,0.4)]"
                                     >
                                         <div className="w-4 h-4 relative">
@@ -73,6 +74,7 @@ export const BlockageErrorOverlay = ({
                             {showStoreLink && (
                                 <Link 
                                 href={`/store?redirect=${encodeURIComponent(redirectPath)}`}
+                                onClick={() => sessionStorage.setItem('PENDING_PURCHASE', 'true')}
                                 className="w-full bg-amber-600 hover:bg-amber-500 text-black py-3 uppercase tracking-widest font-magical text-xs rounded transition-colors flex items-center justify-center gap-2"
                                 >
                                     <div className="w-4 h-4 relative"><Image src="/images/faestones.png" alt="Faestone" layout="fill" objectFit="contain" /></div> Manifest More Faestones

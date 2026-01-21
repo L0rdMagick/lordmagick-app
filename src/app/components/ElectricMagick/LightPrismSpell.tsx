@@ -344,7 +344,6 @@ const RealityOverwriteSpell = ({ onExit, spellSystem, session }: { onExit: () =>
     };
     const [started, setStarted] = useState(false);
     const [userInput, setUserInput] = useState('');
-    const [aiResponse, setAiResponse] = useState('');
     const [log, setLog] = useState<string[]>([]);
     
     // Final stages
@@ -357,7 +356,8 @@ const RealityOverwriteSpell = ({ onExit, spellSystem, session }: { onExit: () =>
         userInputs: {} as Record<string, string>,
         optimizationData: {} as Record<string, string>,
         subStage: 'scan' as 'scan' | 'input' | 'processing' | 'complete' | 'incantation' | 'activity',
-        isSaved: false
+        isSaved: false,
+        aiResponse: '' // Persistent
     });
 
     const setSectorIndex = (i: number | ((prev: number) => number)) => setSpellState(prev => ({ ...prev, sectorIndex: typeof i === 'function' ? i(prev.sectorIndex) : i }));
@@ -365,8 +365,9 @@ const RealityOverwriteSpell = ({ onExit, spellSystem, session }: { onExit: () =>
     const setOptimizationData = (data: Record<string, string> | ((prev: Record<string, string>) => Record<string, string>)) => setSpellState(prev => ({ ...prev, optimizationData: typeof data === 'function' ? data(prev.optimizationData) : data }));
     const setSubStage = (s: 'scan' | 'input' | 'processing' | 'complete' | 'incantation' | 'activity') => setSpellState(prev => ({ ...prev, subStage: s }));
     const setIsSaved = (s: boolean) => setSpellState(prev => ({ ...prev, isSaved: s }));
+    const setAiResponse = (r: string) => setSpellState(prev => ({ ...prev, aiResponse: r }));
 
-    const { sectorIndex, userInputs, optimizationData, subStage, isSaved } = spellState;
+    const { sectorIndex, userInputs, optimizationData, subStage, isSaved, aiResponse } = spellState;
     const currentSector = SECTORS[sectorIndex];
 
 
@@ -448,8 +449,10 @@ const RealityOverwriteSpell = ({ onExit, spellSystem, session }: { onExit: () =>
         playDrone(true, 100 + (sectorIndex * 50));
 
         try {
-            const response = await generateRealityOverwrite(currentSector.name, userInput);
-            setAiResponse(response);
+            if (!aiResponse) {
+                const response = await generateRealityOverwrite(currentSector.name, userInput);
+                setAiResponse(response);
+            }
             setSubStage('incantation');
             playTone(880, 'sine', 0.5);
         } catch (e) {

@@ -468,7 +468,27 @@ const NeuralLinkSpell = ({ onExit, spellSystem, session }: { onExit: () => void,
     const [target, setTarget] = useState("");
     const [intent, setIntent] = useState("");
     const [mode, setMode] = useState<'standard' | 'ai'>('standard');
-    const [aiContent, setAiContent] = useState<NeuralLinkResult | null>(null);
+    
+    // Persistent State
+    const { state: spellState, setState: setSpellState, clearState } = useSpellPersistence('neural_link_spell_state', {
+        aiContent: null as NeuralLinkResult | null,
+        // ... (can add others if full persistence is needed, currently transient state used for target/intent if not fully migrated)
+        // Ideally we migrate all key state but fixing the regeneration is priority. 
+        // Current code used local state for target/intent which is fine if reset on reload, 
+        // but user expects restoration. Let's add them.
+        targetPersist: '',
+        intentPersist: '',
+        modePersist: 'standard',
+        stagePersist: 0
+    });
+    
+    // Sync transient to persistent (or just use persistent).
+    // Given the request scope, let's map the existing AI content to persistence.
+    // Ideally we rewrite to use spellState completely but for minimal diff:
+    
+    const setAiContent = (c: NeuralLinkResult | null) => setSpellState(prev => ({ ...prev, aiContent: c }));
+    const aiContent = spellState.aiContent;
+
 
     const handleBegin = async (selectedMode: 'standard' | 'ai') => {
         if (selectedMode === 'ai') {
@@ -482,9 +502,13 @@ const NeuralLinkSpell = ({ onExit, spellSystem, session }: { onExit: () => void,
         setMode(selectedMode);
         setStage(1); // Move to calibration immediately
 
-        // Prefetch content
-        const result = await generateElectricNeuralLink(target, intent, selectedMode);
-        setAiContent(result);
+        setStage(1); // Move to calibration immediately
+
+        // Prefetch content only if not already present
+        if (!aiContent) {
+            const result = await generateElectricNeuralLink(target, intent, selectedMode);
+            setAiContent(result);
+        }
     };
 
     const handleCalibrationNext = () => {

@@ -303,8 +303,11 @@ const DataScryingSpell = ({ onExit, spellSystem, session }: { onExit: () => void
             "DECRYPTING SIGILS..."
         ], []);
 
-        // 1. DATA FETCHING EFFECT (Runs Once)
+        // 1. DATA FETCHING EFFECT
         useEffect(() => {
+            // Check if we already have the message from persistence
+            if (decodedMessage) return;
+
             let active = true;
             
             const fetchData = async () => {
@@ -331,7 +334,7 @@ const DataScryingSpell = ({ onExit, spellSystem, session }: { onExit: () => void
 
             fetchData();
             return () => { active = false; };
-        }, []); // Empty dependency array = runs once on mount
+        }, [decodedMessage, intention, mode]); // Added dependencies
 
         // 2. ANIMATION & SOUND EFFECT
         useEffect(() => {

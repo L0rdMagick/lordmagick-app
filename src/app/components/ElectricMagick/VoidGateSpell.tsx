@@ -8,6 +8,7 @@ import {
   ArrowUp, Sun, Moon, Orbit, X, Check, HardDrive 
 } from 'lucide-react';
 import { generateElectricEnsorcellment, generateElectricOracle } from '@/lib/services/geminiService';
+import type { Session } from '@/lib/types';
 import { useAudioEngine, useParticleSystem, getMagickalNumber } from './hooks';
 import { useSpellPersistence } from '@/hooks/useSpellPersistence';
 
@@ -21,18 +22,18 @@ const VoidGateSpell = ({ onExit, spellSystem, session }: { onExit: () => void, s
   const { state: spellState, setState: setSpellState, clearState } = useSpellPersistence('void_gate_spell_state', {
       stage: 0,
       intention: '',
-      mode: 'standard' as 'standard' | 'ai',
-      isSaved: false
+      isSaved: false,
+      oracleMessage: '' // Persistent State
   });
 
   // Derived state setters to maintain compatibility with existing code structure without rewriting everything
   const setStage = (s: number | ((prev: number) => number)) => setSpellState(prev => ({ ...prev, stage: typeof s === 'function' ? s(prev.stage) : s }));
   const setIntention = (i: string) => setSpellState(prev => ({ ...prev, intention: i }));
-  const setMode = (m: 'standard' | 'ai') => setSpellState(prev => ({ ...prev, mode: m }));
   const setIsSaved = (s: boolean) => setSpellState(prev => ({ ...prev, isSaved: s }));
+  const setOracleMessage = (m: string) => setSpellState(prev => ({ ...prev, oracleMessage: m }));
 
-  const { stage, intention, mode, isSaved } = spellState;
-  
+  const { stage, intention, isSaved, oracleMessage } = spellState;
+
   const [isSaving, setIsSaving] = useState(false); // Transient state, doesn't need persistence usually
   const { initAudio, playTone, playDrone } = useAudioEngine();
   const { canvasRef, spawnExplosion } = useParticleSystem();
@@ -528,20 +529,110 @@ const VoidGateSpell = ({ onExit, spellSystem, session }: { onExit: () => void, s
     );
   };
 
-  // STAGE 8: FINAL (Updated with Save Logic)
-  const FinalStage = () => {
-    // Icons imported at top
-    const [oracleMessage, setOracleMessage] = useState("");
-    const [loading, setLoading] = useState(true);
+  // FinalStage extracted to top level
+
+  const renderStage = () => {
+    const handleReleaseComplete = () => {
+        setTimeout(() => setStage(7), 4000);
+    };
+    switch(stage) {
+      case 0: return <StartScreen />;
+      case 1: return <BanishingStage />;
+      case 2: return <CircleStage />;
+      case 3: return <InvocationStage />;
+      case 4: return <IntentionStage />;
+      case 5: return <ConsecrationStage />;
+      case 6: return <div onClick={handleReleaseComplete} className="h-full w-full"><ReleaseStage /></div>;
+      case 7: return <FinalStage 
+                    intention={intention}
+                    oracleMessage={oracleMessage}
+                    setOracleMessage={setOracleMessage}
+                    isSaved={isSaved}
+                    setIsSaved={setIsSaved}
+                    handleExit={handleExit}
+                    session={session}
+                    spellSystem={spellSystem}
+                 />;
+      default: return <StartScreen />;
+    }
+  };
+
+  const styles = `
+    @keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .animate-fade-in { animation: fade-in 1s ease-out forwards; }
+    .speed-fast { animation-duration: 0.5s; }
+  `;
+
+  return (
+    <div className="fixed inset-0 bg-black text-gray-100 overflow-hidden select-none font-sans touch-none z-50">
+        <button 
+          onClick={onExit} 
+          className="absolute top-6 right-6 z-50 p-2 text-gray-600 hover:text-white transition-colors"
+        >
+          <X size={24} />
+        </button>
+        <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none z-10" style={{ mixBlendMode: 'screen' }} />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(88,28,135,0.1)_0%,rgba(0,0,0,1)_90%)] pointer-events-none z-0" />
+        <div className="absolute inset-0 opacity-20 pointer-events-none z-0" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.5' numOctaves='3' stitchTiles='stitch'/%3E%3Cfilter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E")` }} />
+        <div className="relative z-20 h-full w-full flex flex-col">
+            <div className="h-16 flex items-center justify-between px-6 opacity-30">
+                <div className="flex gap-2">
+                    {[1,2,3,4,5,6].map(s => (
+                        <div key={s} className={`h-0.5 w-4 rounded-full transition-colors duration-700 ${stage >= s ? 'bg-purple-400 shadow-[0_0_10px_#a855f7]' : 'bg-gray-900'}`} />
+                    ))}
+                </div>
+            </div>
+            <div className="flex-1 relative">{renderStage()}</div>
+        </div>
+        <style>{styles}</style>
+    </div>
+  );
+};
+
+// --- EXTRACTED FINAL STAGE ---
+const FinalStage = ({ 
+    intention, 
+    oracleMessage, 
+    setOracleMessage, 
+    isSaved, 
+    setIsSaved, 
+    handleExit, 
+    session, 
+    spellSystem 
+}: { 
+    intention: string, 
+    oracleMessage: string, 
+    setOracleMessage: (m: string) => void, 
+    isSaved: boolean, 
+    setIsSaved: (s: boolean) => void, 
+    handleExit: () => void, 
+    session: Session | undefined, 
+    spellSystem: any 
+}) => {
+    // Local state for UI loading only
+    const [loading, setLoading] = useState(!oracleMessage);
+    const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
         const fetchOracle = async () => {
-            const response = await generateElectricOracle(intention);
-            setOracleMessage(response);
-            setLoading(false);
+            // Check persistence first
+            if (oracleMessage) {
+                setLoading(false);
+                return;
+            }
+            try {
+                const response = await generateElectricOracle(intention);
+                setOracleMessage(response);
+            } catch (e) {
+                console.error(e);
+                setOracleMessage("THE VOID IS SILENT.");
+            } finally {
+                setLoading(false);
+            }
         };
         fetchOracle();
-    }, [intention]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [intention]); 
 
     const handleSaveSpell = async () => {
          if (isSaved || isSaving) return;
@@ -552,10 +643,8 @@ const VoidGateSpell = ({ onExit, spellSystem, session }: { onExit: () => void, s
 
          setIsSaving(true);
          try {
-             // Mock save or real save call
-             // NOTE: Need to import saveSpell from geminiService at top
              await import('@/lib/services/geminiService').then(mod => 
-                 mod.saveSpell(session.user.id, {
+                 mod.saveSpell(session.user.id!, {
                      name: `Void Gate: ${intention.substring(0, 15)}...`,
                      intention: intention,
                      incantation: oracleMessage,
@@ -589,7 +678,6 @@ const VoidGateSpell = ({ onExit, spellSystem, session }: { onExit: () => void, s
             )}
         </div>
         
-        {/* Save Button Section */}
         {!loading && (
              <button 
                  onClick={handleSaveSpell}
@@ -609,55 +697,8 @@ const VoidGateSpell = ({ onExit, spellSystem, session }: { onExit: () => void, s
         </button>
     </div>
     );
-  };
-
-  const renderStage = () => {
-    const handleReleaseComplete = () => {
-        setTimeout(() => setStage(7), 4000);
-    };
-    switch(stage) {
-      case 0: return <StartScreen />;
-      case 1: return <BanishingStage />;
-      case 2: return <CircleStage />;
-      case 3: return <InvocationStage />;
-      case 4: return <IntentionStage />;
-      case 5: return <ConsecrationStage />;
-      case 6: return <div onClick={handleReleaseComplete} className="h-full w-full"><ReleaseStage /></div>;
-      case 7: return <FinalStage />;
-      default: return <StartScreen />;
-    }
-  };
-
-  const styles = `
-    @keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    .animate-fade-in { animation: fade-in 1s ease-out forwards; }
-    .speed-fast { animation-duration: 0.5s; }
-  `;
-
-  return (
-    <div className="fixed inset-0 bg-black text-gray-100 overflow-hidden select-none font-sans touch-none z-50">
-        <button 
-          onClick={onExit} 
-          className="absolute top-6 right-6 z-50 p-2 text-gray-600 hover:text-white transition-colors"
-        >
-          <X size={24} />
-        </button>
-        <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none z-10" style={{ mixBlendMode: 'screen' }} />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(88,28,135,0.1)_0%,rgba(0,0,0,1)_90%)] pointer-events-none z-0" />
-        <div className="absolute inset-0 opacity-20 pointer-events-none z-0" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.5' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E")` }} />
-        <div className="relative z-20 h-full w-full flex flex-col">
-            <div className="h-16 flex items-center justify-between px-6 opacity-30">
-                <div className="flex gap-2">
-                    {[1,2,3,4,5,6].map(s => (
-                        <div key={s} className={`h-0.5 w-4 rounded-full transition-colors duration-700 ${stage >= s ? 'bg-purple-400 shadow-[0_0_10px_#a855f7]' : 'bg-gray-900'}`} />
-                    ))}
-                </div>
-            </div>
-            <div className="flex-1 relative">{renderStage()}</div>
-        </div>
-        <style>{styles}</style>
-    </div>
-  );
 };
 
 export default VoidGateSpell;
+
+

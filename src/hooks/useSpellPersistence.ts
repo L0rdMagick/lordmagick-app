@@ -4,19 +4,38 @@ export const useSpellPersistence = <T>(key: string, initialState: T) => {
     const [state, setState] = useState<T>(initialState);
     const [isRestored, setIsRestored] = useState(false);
 
-    // Load state from session storage on mount
+    // Load state from session storage ONLY if returning from valid flow
     useEffect(() => {
-        const saved = sessionStorage.getItem(key);
-        if (saved) {
-            try {
-                const parsed = JSON.parse(saved);
-                setState(parsed);
-                setIsRestored(true);
-            } catch (e) {
-                console.error("Failed to parse persisted spell state:", e);
+        const checkRestoration = () => {
+            if (typeof window === 'undefined') return;
+            
+            // Check for the "wait, I'm coming back" flag
+            const isReturnFlow = sessionStorage.getItem('PENDING_PURCHASE');
+            const saved = sessionStorage.getItem(key);
+
+            if (isReturnFlow && saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    setState(parsed);
+                    setIsRestored(true);
+                    sessionStorage.removeItem('PENDING_PURCHASE'); // Consume the flag
+                } catch (e) {
+                    console.error("Failed to parse persisted spell state:", e);
+                    // Fallback to clear
+                    sessionStorage.removeItem(key);
+                    setState(initialState);
+                }
+            } else {
+                 // If not a return flow, clear any old state to prevent sticking
+                 sessionStorage.removeItem(key);
+                 setState(initialState);
             }
-        }
-    }, [key]);
+        };
+
+        checkRestoration();
+        
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [key]); // Intentionally omitting initialState to avoid deep equality check issues on object literals
 
     // Save state to session storage whenever it changes
     useEffect(() => {
