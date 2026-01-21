@@ -23,6 +23,7 @@ export const getServiceCost = async (slug: string): Promise<number> => {
 // Deduct credits safely
 export const deductUserCredits = async (userId: string, cost: number): Promise<boolean> => {
     try {
+        console.log(`[Economy] Attempting to deduct ${cost} from user ${userId}`);
         // 1. Get Profile
         const { data: profile, error: fetchError } = await supabase
             .from('profiles')
@@ -31,12 +32,15 @@ export const deductUserCredits = async (userId: string, cost: number): Promise<b
             .single();
 
         if (fetchError || !profile) {
-            console.error("Economy Error: Profile not found");
+            console.error("Economy Error: Profile not found", fetchError);
             return false;
         }
 
+        console.log(`[Economy] User Balance: ${profile.credits}, Cost: ${cost}`);
+
         // 2. Check Balance
         if (profile.credits < cost) {
+            console.warn(`[Economy] Insufficient funds. Balance: ${profile.credits} < Cost: ${cost}`);
             return false;
         }
 
@@ -51,6 +55,7 @@ export const deductUserCredits = async (userId: string, cost: number): Promise<b
             return false;
         }
 
+        console.log("[Economy] Deduction successful");
         return true;
     } catch (e) {
         console.error("Economy Exception:", e);
