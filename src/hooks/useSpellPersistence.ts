@@ -1,6 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 
-export const useSpellPersistence = <T>(key: string, initialState: T) => {
+// Option interface
+export interface PersistenceOptions {
+    consumeFlag?: boolean;
+}
+
+export const useSpellPersistence = <T>(key: string, initialState: T, options?: PersistenceOptions) => {
     const [state, setState] = useState<T>(initialState);
     const [isRestored, setIsRestored] = useState(false);
 
@@ -18,7 +23,11 @@ export const useSpellPersistence = <T>(key: string, initialState: T) => {
                     const parsed = JSON.parse(saved);
                     setState(parsed);
                     setIsRestored(true);
-                    sessionStorage.removeItem('PENDING_PURCHASE'); // Consume the flag
+                    
+                    // Consume flag only if requested (default true)
+                    if (options?.consumeFlag !== false) {
+                        sessionStorage.removeItem('PENDING_PURCHASE'); 
+                    }
                 } catch (e) {
                     console.error("Failed to parse persisted spell state:", e);
                     // Fallback to clear
@@ -35,7 +44,7 @@ export const useSpellPersistence = <T>(key: string, initialState: T) => {
         checkRestoration();
         
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [key]); // Intentionally omitting initialState to avoid deep equality check issues on object literals
+    }, [key, options?.consumeFlag]); // Intentionally omitting initialState to avoid deep equality check issues on object literals
 
     // Save state to session storage whenever it changes
     useEffect(() => {

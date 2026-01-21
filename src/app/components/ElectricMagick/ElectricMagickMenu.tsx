@@ -38,7 +38,7 @@ const SpellCard = ({ title, desc, icon: Icon, onClick, disabled }: { title: stri
 
 export default function ElectricMagickMenu({ session, isSubscribed, onBack }: { session?: Session, isSubscribed?: boolean, onBack?: () => void }) {
   // Persistence for the active spell ("which spell is open")
-  const { state: activeSpell, setState: setActiveSpell, clearState: clearActiveSpell } = useSpellPersistence<string | null>('electric_magick_active_spell', null);
+  const { state: activeSpell, setState: setActiveSpell, clearState: clearActiveSpell } = useSpellPersistence<string | null>('electric_magick_active_spell', null, { consumeFlag: false });
 
   const spellSystem = useSpellSystem({
       serviceSlugGen: 'ai_electric_magick', 
