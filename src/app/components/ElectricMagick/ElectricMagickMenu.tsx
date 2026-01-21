@@ -14,7 +14,7 @@ import type { Session } from '@/lib/types';
 import { SlotPurchaseModal } from '@/app/components/economy/SlotPurchaseModal';
 import { BlockageErrorOverlay } from '@/app/components/economy/BlockageErrorOverlay';
 import { useSpellPersistence } from '@/hooks/useSpellPersistence';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { getSpellById } from '@/lib/services/geminiService';
 import type { Spell } from '@/lib/types';
 
@@ -44,6 +44,8 @@ export default function ElectricMagickMenu({ session, isSubscribed, onBack }: { 
   const { state: activeSpell, setState: setActiveSpell, clearState: clearActiveSpell } = useSpellPersistence<string | null>('electric_magick_active_spell', null, { consumeFlag: false });
   const [loadedSpell, setLoadedSpell] = useState<Spell | null>(null);
   
+  const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const loadId = searchParams.get('loadId');
   const querySpell = searchParams.get('spell');
@@ -85,9 +87,17 @@ export default function ElectricMagickMenu({ session, isSubscribed, onBack }: { 
   };
   
   const handleExitSpell = () => {
+      // Clear URL params on exit to prevent sticky loadIds
+      router.replace(pathname);
       clearActiveSpell();
       setLoadedSpell(null); 
       if (onBack) onBack(); 
+  };
+
+  const handleSelectSpell = (spellKey: string) => {
+      // Clear URL params when manually selecting a spell to avoid pollution
+      router.replace(pathname);
+      setActiveSpell(spellKey);
   };
 
   const commonProps = { 
@@ -164,35 +174,35 @@ export default function ElectricMagickMenu({ session, isSubscribed, onBack }: { 
             title="The Void Gate"
             desc="A chaos magick ritual involving gestures, numeric alignments, and sigil crafting to open a digital wormhole."
             icon={Orbit}
-            onClick={() => setActiveSpell('void-gate')}
+            onClick={() => handleSelectSpell('void-gate')}
           />
 
           <SpellCard 
             title="Data Scrying"
             desc="Gaze into the static of the machine god to divine future timelines."
             icon={Eye}
-            onClick={() => setActiveSpell('data-scry')}
+            onClick={() => handleSelectSpell('data-scry')}
           />
 
           <SpellCard 
             title="Neural Link"
             desc="Bind two minds across the network through synchronized frequency modulation."
             icon={Activity}
-            onClick={() => setActiveSpell('neural-link')}
+            onClick={() => handleSelectSpell('neural-link')}
           />
 
           <SpellCard 
             title="Light Prism"
             desc="Refract your intention through digital spectrums to manifest color magick."
             icon={Triangle}
-            onClick={() => setActiveSpell('light-prism')} 
+            onClick={() => handleSelectSpell('light-prism')} 
           />
 
           <SpellCard 
             title="The Reality Patch"
             desc="Inject a new intention directly into the source code of the universe through bio-rhythmic crystallization."
             icon={SquareActivity}
-            onClick={() => setActiveSpell('reality-patch')} 
+            onClick={() => handleSelectSpell('reality-patch')} 
           />
 
           {/* THE NEW ZER0 P0INT ZET SPELL */}
@@ -200,7 +210,7 @@ export default function ElectricMagickMenu({ session, isSubscribed, onBack }: { 
             title="Zer0 P0int Zet"
             desc="Hack the subatomic layer. A high-intensity, resistance-based ritual to overwrite local reality parameters."
             icon={Terminal}
-            onClick={() => setActiveSpell('zero-point-zet')} 
+            onClick={() => handleSelectSpell('zero-point-zet')} 
           />
           
         </div>
