@@ -90,6 +90,9 @@ export default function GrimoirePage() {
         if (nameLower.includes('void gate')) {
              return `/spell-room/electric-magick-spells-app?spell=void-gate&loadId=${spell.id}`;
         }
+        if (nameLower.includes('light prism')) {
+             return `/spell-room/electric-magick-spells-app?spell=light-prism&loadId=${spell.id}`;
+        }
         
         return null; // Unknown type
     };

@@ -436,7 +436,7 @@ const RealityOverwriteSpell = ({ onExit, spellSystem, session, savedState }: { o
 
             setSpellState({
                 sectorIndex: sIdx, 
-                userInputs: {}, 
+                userInputs: rData?.user_inputs || {}, 
                 optimizationData: {},
                 subStage: 'input', // Start at Input
                 isSaved: true,
@@ -594,7 +594,9 @@ const RealityOverwriteSpell = ({ onExit, spellSystem, session, savedState }: { o
                  ritual_data: {
                      sector: SECTORS[sectorIndex],
                      full_log: log,
-                     ai_response: aiResponse
+                     ai_response: aiResponse,
+                     user_inputs: userInputs, // Save all user inputs
+                     final_stage: true // Mark as completed
                  }
              }, true);
 
