@@ -444,6 +444,8 @@ const RealityOverwriteSpell = ({ onExit, spellSystem, session, savedState }: { o
                 isSaved: true,
                 aiResponse: rData?.ai_response || savedState.incantation || '',
                 draftInput: '',
+                persistLog: rData?.full_log || [],
+                persistFinalStage: false,
                 rehydrated: true
             });
             // Do NOT set finalStage or started to true immediately, let them see intro or start flow
