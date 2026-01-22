@@ -431,8 +431,13 @@ const RealityOverwriteSpell = ({ onExit, spellSystem, session, savedState }: { o
             // Find sector index
             let sIdx = 0;
             if (rData?.sector?.id) {
-                sIdx = SECTORS.findIndex(s => s.id === rData.sector.id);
-                if (sIdx === -1) sIdx = 0;
+                // If the spell was completed, restart from beginning for replay
+                if (rData.final_stage === true) {
+                    sIdx = 0;
+                } else {
+                    sIdx = SECTORS.findIndex(s => s.id === rData.sector.id);
+                    if (sIdx === -1) sIdx = 0;
+                }
             }
 
             setSpellState({
