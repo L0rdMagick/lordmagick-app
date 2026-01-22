@@ -672,6 +672,11 @@ const IntroBreach = ({ setIntention, setArchetype, setPhase, setAiData, audio, s
     const [input, setInput] = useState(initialIntention || '');
     const [loading, setLoading] = useState(false);
     
+    // Sync input when initialIntention updates (e.g. after rehydration)
+    useEffect(() => {
+        if (initialIntention) setInput(initialIntention);
+    }, [initialIntention]);
+    
     const handleSubmit = async () => {
         if (!input || input.length < 3) return;
         setLoading(true);
@@ -1536,13 +1541,12 @@ function RealityPatchCore({ onExit, session, spellSystem, savedState }: { onExit
                 rehydrated: true
             });
         }
-        else if (spellState.phase !== 'INTRO') {
-            // Normal Persist Restoration
+        else if (spellState.phase) {
+            // Normal Persist Restoration (handle both INTRO with data and other phases)
             setPhase(spellState.phase);
-            setIntention(spellState.intention);
-            setArchetype(spellState.archetype);
-            setAiData(spellState.aiData);
-            setAiData(spellState.aiData);
+            if (spellState.intention) setIntention(spellState.intention);
+            if (spellState.archetype) setArchetype(spellState.archetype);
+            if (spellState.aiData) setAiData(spellState.aiData);
         }
     }, [savedState, spellState.rehydrated, isRestored]);
 
