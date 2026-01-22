@@ -390,18 +390,16 @@ const RealityOverwriteSpell = ({ onExit, spellSystem, session, savedState }: { o
                  setStarted(true);
             } else if (sectorIndex > 0) {
                 setStarted(true);
+            } else if (spellState.sectorIndex === 6 && spellState.subStage === 'complete') {
+                // Determine if we should be at final stage based on implicit state
+                setFinalStage(true);
+                setStarted(true);
             }
         }
     }, [isRestored, draftInput, sectorIndex, spellState.persistLog, spellState.persistFinalStage]);
-
-    // Sync state to persistence
-    useEffect(() => {
-        setSpellState(prev => ({
-             ...prev,
-             persistLog: log,
-             persistFinalStage: finalStage
-        }));
-    }, [log, finalStage, setSpellState]);
+    
+    // REMOVED BUGGY SYNC EFFECT that was overwriting persistence with empty local state on mount.
+    // Instead, we now explicitly update persistence in addToLog and advanceSector.
 
     // Sync draft input to persistence
     useEffect(() => {
@@ -518,7 +516,9 @@ const RealityOverwriteSpell = ({ onExit, spellSystem, session, savedState }: { o
     // -- HELPERS --
 
     const addToLog = (msg: string) => {
-        setLog(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`]);
+        const newEntry = `[${new Date().toLocaleTimeString()}] ${msg}`;
+        setLog(prev => [...prev, newEntry]);
+        setSpellState(prev => ({ ...prev, persistLog: [...(prev.persistLog || []), newEntry] }));
     };
 
     const handleInputSubmit = async () => {
@@ -567,6 +567,7 @@ const RealityOverwriteSpell = ({ onExit, spellSystem, session, savedState }: { o
             playDrone(false);
         } else {
             setFinalStage(true);
+            setSpellState(prev => ({ ...prev, persistFinalStage: true }));
             playDrone(true, 50); // Deep drone for finale
         }
     };
