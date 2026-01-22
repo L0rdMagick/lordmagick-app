@@ -1,0 +1,5 @@
+Debugging plan:
+1. Verify if `spellState.userInputs` is populated correctly during rehydration.
+2. Ensure `advanceSector` uses the correct source for `userInputs`.
+3. Check for any intermediate clearing of `userInputs`.
+4. Fix the issue where `userInput` is set but maybe cleared by `draftInput` effect or similar.

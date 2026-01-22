@@ -599,10 +599,16 @@ const RealityOverwriteSpell = ({ onExit, spellSystem, session, savedState }: { o
 
     const advanceSector = () => {
         if (sectorIndex < 6) {
-            setSectorIndex(prev => prev + 1);
+            const nextSectorIndex = sectorIndex + 1;
+            setSectorIndex(nextSectorIndex);
             setSubStage('input');
-            setUserInput('');
-            setSpellState(prev => ({ ...prev, draftInput: '' }));
+            
+            // Check if we have a saved input for the next sector (replay mode)
+            const nextSectorId = SECTORS[nextSectorIndex].id;
+            const savedInput = userInputs[nextSectorId] || '';
+            setUserInput(savedInput);
+            // Ensure persistent draft input matches the saved input, so it doesn't auto-clear on re-render
+            setSpellState(prev => ({ ...prev, draftInput: savedInput }));
             setAiResponse('');
             playDrone(false);
         } else {
