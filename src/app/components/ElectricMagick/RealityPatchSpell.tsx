@@ -738,7 +738,13 @@ const IntroBreach = ({ setIntention, setArchetype, setPhase, setAiData, audio, s
                     </label>
                     <textarea 
                         value={input}
-                        onChange={(e) => !isReplay && setInput(e.target.value)}
+                        onChange={(e) => {
+                            const val = e.target.value;
+                            if (!isReplay) {
+                                setInput(val);
+                                setIntention(val); // Sync to parent/persistence immediately
+                            }
+                        }}
                         readOnly={isReplay}
                         disabled={loading}
                         placeholder="e.g. I am fully healed and wealthy..."
@@ -759,7 +765,7 @@ const IntroBreach = ({ setIntention, setArchetype, setPhase, setAiData, audio, s
                         disabled={!input}
                         className="w-full py-4 border border-red-900 text-red-500 hover:bg-red-900/20 hover:text-red-400 hover:border-red-500 transition-all font-mono text-xs tracking-[0.2em] uppercase"
                     >
-                        Initialize Ritual {isReplay ? "(REPLAY)" : ""}
+                        Initialize Ritual {isReplay ? "(REPLAY)" : "(3 AETHER)"}
                     </button>
                 )}
             </div>
