@@ -361,6 +361,8 @@ const RealityOverwriteSpell = ({ onExit, spellSystem, session, savedState }: { o
         isSaved: false,
         aiResponse: '', 
         draftInput: '', 
+        persistLog: [] as string[],
+        persistFinalStage: false,
         rehydrated: false
     });
 
@@ -374,30 +376,39 @@ const RealityOverwriteSpell = ({ onExit, spellSystem, session, savedState }: { o
     const { sectorIndex, userInputs, optimizationData, subStage, isSaved, aiResponse, draftInput } = spellState;
     const currentSector = SECTORS[sectorIndex];
 
-    // Auto-start only if we have active progress, otherwise show intro (payment screen)
     useEffect(() => {
         if (isRestored) {
-             // If we have substantial progress (sector > 0), maybe auto-start?
-             // But for safety, and to ensure payment check if they just had a blockage,
-             // it's better to show the Intro screen. The persistence will keep their input.
-             // We do restore draftInput though.
             if (draftInput) setUserInput(draftInput);
             
-            // If they were deep in the spell (sector > 0), we can auto-start
-            if (sectorIndex > 0) {
+            // Restore Log and Final Stage
+            if (spellState.persistLog && spellState.persistLog.length > 0) {
+                 setLog(spellState.persistLog);
+            }
+            if (spellState.persistFinalStage) {
+                 setFinalStage(true);
+                 // If we are in final stage, we should be started
+                 setStarted(true);
+            } else if (sectorIndex > 0) {
                 setStarted(true);
             }
-            // If sector is 0, they might have been at the payment screen or blockage.
-            // So we stay on Intro (started = false) to let them hit "Initiate" and pay.
         }
-    }, [isRestored, draftInput, sectorIndex]);
+    }, [isRestored, draftInput, sectorIndex, spellState.persistLog, spellState.persistFinalStage]);
+
+    // Sync state to persistence
+    useEffect(() => {
+        setSpellState(prev => ({
+             ...prev,
+             persistLog: log,
+             persistFinalStage: finalStage
+        }));
+    }, [log, finalStage, setSpellState]);
 
     // Sync draft input to persistence
     useEffect(() => {
-        if (userInput) {
+        if (isRestored) {
             setSpellState(prev => ({ ...prev, draftInput: userInput }));
         }
-    }, [userInput, setSpellState]);
+    }, [userInput, setSpellState, isRestored]);
 
 
     const { initAudio, playTone, playDrone } = useAudioEngine();
@@ -549,6 +560,7 @@ const RealityOverwriteSpell = ({ onExit, spellSystem, session, savedState }: { o
             setSectorIndex(prev => prev + 1);
             setSubStage('input');
             setUserInput('');
+            setSpellState(prev => ({ ...prev, draftInput: '' }));
             setAiResponse('');
             playDrone(false);
         } else {
