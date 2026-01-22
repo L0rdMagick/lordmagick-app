@@ -543,7 +543,6 @@ const RealityOverwriteSpell = ({ onExit, spellSystem, session, savedState }: { o
         playDrone(true, 100 + (sectorIndex * 50));
 
         try {
-        try {
             if (!aiResponse) {
                 let response = "";
                 // If rehydrated (replay mode), try to find saved response first
