@@ -352,6 +352,8 @@ const RealityOverwriteSpell = ({ onExit, spellSystem, session, savedState }: { o
     const [isSaving, setIsSaving] = useState(false);
     const [economyError, setEconomyError] = useState<string | null>(null);
 
+    const [aiResponses, setAiResponses] = useState<Record<string, string>>({}); // Local state for collection, will sync to persistence
+
     // Persistent State
     const { state: spellState, setState: setSpellState, clearState, isRestored } = useSpellPersistence('light_prism_spell_state', {
         sectorIndex: 0,
@@ -360,6 +362,7 @@ const RealityOverwriteSpell = ({ onExit, spellSystem, session, savedState }: { o
         subStage: 'input' as 'scan' | 'input' | 'processing' | 'complete' | 'incantation' | 'activity',
         isSaved: false,
         aiResponse: '', 
+        aiResponses: {} as Record<string, string>, // Persist collection
         draftInput: '', 
         persistLog: [] as string[],
         persistFinalStage: false,
@@ -367,18 +370,18 @@ const RealityOverwriteSpell = ({ onExit, spellSystem, session, savedState }: { o
     });
 
     const setSectorIndex = (i: number | ((prev: number) => number)) => setSpellState(prev => ({ ...prev, sectorIndex: typeof i === 'function' ? i(prev.sectorIndex) : i }));
-    const setUserInputs = (inputs: Record<string, string> | ((prev: Record<string, string>) => Record<string, string>)) => setSpellState(prev => ({ ...prev, userInputs: typeof inputs === 'function' ? inputs(prev.userInputs) : inputs }));
-    const setOptimizationData = (data: Record<string, string> | ((prev: Record<string, string>) => Record<string, string>)) => setSpellState(prev => ({ ...prev, optimizationData: typeof data === 'function' ? data(prev.optimizationData) : data }));
+    // userInputs is now handled via direct setSpellState updates in handleInputSubmit
     const setSubStage = (s: 'scan' | 'input' | 'processing' | 'complete' | 'incantation' | 'activity') => setSpellState(prev => ({ ...prev, subStage: s }));
     const setIsSaved = (s: boolean) => setSpellState(prev => ({ ...prev, isSaved: s }));
     const setAiResponse = (r: string) => setSpellState(prev => ({ ...prev, aiResponse: r }));
 
-    const { sectorIndex, userInputs, optimizationData, subStage, isSaved, aiResponse, draftInput } = spellState;
+    const { sectorIndex, userInputs, subStage, isSaved, aiResponse, draftInput } = spellState;
     const currentSector = SECTORS[sectorIndex];
 
     useEffect(() => {
         if (isRestored) {
             if (draftInput) setUserInput(draftInput);
+            if (spellState.aiResponses) setAiResponses(spellState.aiResponses);
             
             // Restore Log and Final Stage
             if (spellState.persistLog && spellState.persistLog.length > 0) {
@@ -386,17 +389,15 @@ const RealityOverwriteSpell = ({ onExit, spellSystem, session, savedState }: { o
             }
             if (spellState.persistFinalStage) {
                  setFinalStage(true);
-                 // If we are in final stage, we should be started
                  setStarted(true);
             } else if (sectorIndex > 0) {
                 setStarted(true);
             } else if (spellState.sectorIndex === 6 && spellState.subStage === 'complete') {
-                // Determine if we should be at final stage based on implicit state
                 setFinalStage(true);
                 setStarted(true);
             }
         }
-    }, [isRestored, draftInput, sectorIndex, spellState.persistLog, spellState.persistFinalStage]);
+    }, [isRestored, draftInput, sectorIndex, spellState.persistLog, spellState.persistFinalStage, spellState.aiResponses, spellState.sectorIndex, spellState.subStage]);
     
     // REMOVED BUGGY SYNC EFFECT that was overwriting persistence with empty local state on mount.
     // Instead, we now explicitly update persistence in addToLog and advanceSector.
@@ -441,11 +442,25 @@ const RealityOverwriteSpell = ({ onExit, spellSystem, session, savedState }: { o
                 subStage: 'input', // Start at Input
                 isSaved: true,
                 aiResponse: rData?.ai_response || savedState.incantation || '',
+                aiResponses: rData?.ai_responses || {},
                 draftInput: '',
                 persistLog: rData?.full_log || [],
                 persistFinalStage: false,
                 rehydrated: true
             });
+            // Update local state mirrors
+            setAiResponses(rData?.ai_responses || {});
+            
+            // If we have saved input for this sector, pre-fill it
+            if (rData?.user_inputs?.[SECTORS[sIdx].id]) {
+                setUserInput(rData.user_inputs[SECTORS[sIdx].id]);
+            } else {
+                 // Try to populate from user Inputs based on sector ID
+                 const savedInputs = rData?.user_inputs || {};
+                 if (savedInputs[SECTORS[sIdx].id]) {
+                     setUserInput(savedInputs[SECTORS[sIdx].id]);
+                 }
+            }
             // Do NOT set finalStage or started to true immediately, let them see intro or start flow
             setStarted(false); 
         }
@@ -528,9 +543,30 @@ const RealityOverwriteSpell = ({ onExit, spellSystem, session, savedState }: { o
         playDrone(true, 100 + (sectorIndex * 50));
 
         try {
+        try {
             if (!aiResponse) {
-                const response = await generateRealityOverwrite(currentSector.name, userInput);
+                let response = "";
+                // If rehydrated (replay mode), try to find saved response first
+                if (spellState.rehydrated && aiResponses[currentSector.id]) {
+                     response = aiResponses[currentSector.id];
+                     addToLog(`Replaying cached sequence for ${currentSector.name}.`);
+                } else {
+                     response = await generateRealityOverwrite(currentSector.name, userInput);
+                }
+                
                 setAiResponse(response);
+                
+                // Save to collections
+                const newAiResponses = { ...aiResponses, [currentSector.id]: response };
+                const newUserInputs = { ...userInputs, [currentSector.id]: userInput };
+                
+                setAiResponses(newAiResponses);
+                setSpellState(prev => ({ 
+                    ...prev, 
+                    aiResponse: response,
+                    aiResponses: newAiResponses,
+                    userInputs: newUserInputs
+                }));
             }
             setSubStage('incantation');
             playTone(880, 'sine', 0.5);
@@ -595,6 +631,7 @@ const RealityOverwriteSpell = ({ onExit, spellSystem, session, savedState }: { o
                      sector: SECTORS[sectorIndex],
                      full_log: log,
                      ai_response: aiResponse,
+                     ai_responses: aiResponses, // Save full collection
                      user_inputs: userInputs, // Save all user inputs
                      final_stage: true // Mark as completed
                  }
