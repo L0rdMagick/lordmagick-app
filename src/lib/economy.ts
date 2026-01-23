@@ -65,8 +65,8 @@ export const getWalletStatus = async (userId: string) => {
   
   let displayCredits = data.credits;
   
-  // If user is Initiate and >24h have passed, show 3 (pending reset)
-  if (data.tier === 'initiate' && hoursSinceReset >= 24) {
+  // If user is Initiate and >24h have passed, show 3 (pending reset) IF they have less than 3
+  if (data.tier === 'initiate' && hoursSinceReset >= 24 && data.credits < 3) {
       displayCredits = 3; 
   }
 

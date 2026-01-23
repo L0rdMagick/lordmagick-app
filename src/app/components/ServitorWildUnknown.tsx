@@ -400,7 +400,7 @@ export default function ServitorWildUnknown() {
     const [feedProgress, setFeedProgress] = useState(0);
     const [fallingFood, setFallingFood] = useState<{id: number, left: number, top: number, spriteIndex: number}[]>([]);
 
-    const [showCreditModal, setShowCreditModal] = useState(false);
+// showCreditModal removed
     const [showConfirmSave, setShowConfirmSave] = useState(false);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const [showExitWarning, setShowExitWarning] = useState(false);
@@ -458,8 +458,20 @@ export default function ServitorWildUnknown() {
     }, [supabase]);
 
     const refreshWallet = async (userId: string) => {
-        const w = await getWalletStatus(userId);
-        setWallet(w);
+        try {
+            console.log("Refreshing wallet for user:", userId);
+            const w = await getWalletStatus(userId);
+            console.log("Wallet status received:", w);
+            if (w) {
+                setWallet(w);
+            } else {
+                console.error("Wallet status returned null");
+                // Fallback to avoid 0 if possible, or just accept it
+                setWallet({ credits: 0, tier: 'seeker', isUnlimited: false }); 
+            }
+        } catch (e) {
+            console.error("refreshWallet failed:", e);
+        }
     };
 
     const fetchSavedServitors = async (userId: string) => {
@@ -1673,29 +1685,7 @@ export default function ServitorWildUnknown() {
                 </div>
             )}
 
-            {/* INSUFFICIENT FUNDS MODAL */}
-            {showCreditModal && (
-                 <div className="fixed inset-0 z-500 flex items-center justify-center bg-black/90 p-6 animate-in fade-in">
-                    <div className="bg-[#1a1528] border border-red-500 p-8 rounded text-center max-w-sm w-full">
-                        <Lock className="mx-auto mb-4 text-red-500 w-12 h-12" />
-                        <h2 className="text-red-100 magick-font text-xl mb-2">Insufficient Faestones</h2>
-                        <p className="text-gray-400 text-sm mb-6">
-                            You require more energy to bind this spirit to your Grimoire.
-                        </p>
-                        <div className="flex flex-col gap-3">
-                            <button 
-                                onClick={() => router.push('/store?redirect=/spell-room/servitor-app')} 
-                                className="w-full bg-amber-600 hover:bg-amber-500 text-black font-bold py-3 rounded uppercase tracking-wider flex items-center justify-center gap-2"
-                            >
-                                <Coins size={16} /> Acquire Faestones
-                            </button>
-                            <button onClick={() => setShowCreditModal(false)} className="text-gray-500 hover:text-white text-sm underline">
-                                Close
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+{/* Legacy Modal Removed */}
 
             {/* FEEDING MODAL */}
             {isFeedingActive && feedingStage !== 'chest_anim' && (
