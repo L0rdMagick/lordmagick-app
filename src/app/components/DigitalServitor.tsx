@@ -7,6 +7,8 @@ import { createBrowserClient } from '@supabase/ssr';
 import { checkAndSpendCredits, getWalletStatus, COST_BIND_SERVITOR } from '@/lib/economy';
 import { saveServitorToGrimoire, getMyServitors } from '@/lib/services/spellService';
 
+import { BlockageErrorOverlay } from './economy/BlockageErrorOverlay';
+
 // --- CONSTANTS ---
 
 interface SavedServitor {
@@ -85,7 +87,7 @@ export default function DigitalServitor() {
     // Persistence & Economy State
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const [showExitWarning, setShowExitWarning] = useState(false);
-    const [showCreditModal, setShowCreditModal] = useState(false);
+    const [blockageError, setBlockageError] = useState<string | null>(null);
 
     // Appearance & Audio State
     const [config, setConfig] = useState({
@@ -130,7 +132,7 @@ export default function DigitalServitor() {
 
     // --- Effects ---
 
-    // 1. Init User & Data
+    // 1. Init User & Data & Restore Draft
     useEffect(() => {
         const init = async () => {
             const { data: { user } } = await supabase.auth.getUser();
@@ -139,6 +141,24 @@ export default function DigitalServitor() {
                 refreshCabinet(user.id);
                 const w = await getWalletStatus(user.id);
                 setWallet(w);
+            }
+
+            // CHECK FOR DRAFT (Return from Store)
+            const draft = sessionStorage.getItem('SERVITOR_PENDING_DRAFT');
+            if (draft) {
+                try {
+                    const data = JSON.parse(draft);
+                    if (data) {
+                        setSName(data.sName || "");
+                        setSPurpose(data.sPurpose || "");
+                        setUName(data.uName || "");
+                        if (data.config) setConfig(data.config);
+                        setHasUnsavedChanges(true); // Restore dirty state
+                    }
+                } catch (e) {
+                    console.error("Failed to restore servitor draft", e);
+                }
+                sessionStorage.removeItem('SERVITOR_PENDING_DRAFT');
             }
         };
         init();
@@ -196,17 +216,17 @@ export default function DigitalServitor() {
         // 1. Check & Spend Credits
         const canAfford = await checkAndSpendCredits(user.id, COST_BIND_SERVITOR);
         if (!canAfford) {
-            setShowCreditModal(true);
+            setBlockageError("Insufficient Faestones");
             return;
         }
 
-        // 2. Save to DB
+        // 2. Save to DB - ENSURE ALL DATA IS SAVED
         try {
             await saveServitorToGrimoire(user.id, {
                 name: sName,
                 master_name: uName,
                 purpose: sPurpose,
-                config: config
+                config: config // Full config object
             });
             
             // 3. Success State
@@ -218,6 +238,21 @@ export default function DigitalServitor() {
             console.error("Binding failed:", error);
             if(win) win.alert("The binding ritual failed. Please try again.");
         }
+    };
+
+    const handleGoToStoreWithSave = () => {
+        // Save draft before leaving
+        const draft = {
+            sName,
+            sPurpose,
+            uName,
+            config
+        };
+        sessionStorage.setItem('SERVITOR_PENDING_DRAFT', JSON.stringify(draft));
+        
+        // BlockageErrorOverlay will handle the navigation via router.push or we can do it here if we didn't pass onGoToStore to it.
+        // But since we are passing onGoToStore, we MUST navigate.
+        router.push('/store?redirect=' + encodeURIComponent(window.location.pathname));
     };
 
     const handleLoad = (servitor: SavedServitor) => {
@@ -1544,24 +1579,12 @@ export default function DigitalServitor() {
 
             {/* --- MODALS --- */}
 
-            {/* INSUFFICIENT CREDITS MODAL */}
-            {showCreditModal && (
-                <div className="fixed inset-0 z-500 flex items-center justify-center bg-black/80 backdrop-blur-md p-6">
-                    <div className="bg-[#1a1528] border border-amber-600/50 p-8 rounded-lg max-w-sm w-full text-center shadow-[0_0_50px_rgba(251,191,36,0.3)]">
-                        <Lock className="w-12 h-12 text-amber-500 mx-auto mb-4" />
-                        <h3 className="text-xl font-magical text-amber-100 mb-2">Insufficient Aether</h3>
-                        <p className="text-gray-400 text-sm mb-6">
-                            You need {COST_BIND_SERVITOR} Aether credits to bind this spirit to your Grimoire.
-                        </p>
-                        <button 
-                            onClick={() => setShowCreditModal(false)}
-                            className="w-full bg-amber-900/40 hover:bg-amber-800/40 border border-amber-600 text-amber-50 py-3 uppercase tracking-widest font-magical text-sm transition-colors"
-                        >
-                            Return
-                        </button>
-                    </div>
-                </div>
-            )}
+            {/* BLOCKAGE / INSUFFICIENT FUNDS OVERLAY */}
+            <BlockageErrorOverlay 
+                error={blockageError}
+                onDismiss={() => setBlockageError(null)}
+                onGoToStore={handleGoToStoreWithSave}
+            />
 
             {/* EXIT WARNING MODAL */}
             {showExitWarning && (
