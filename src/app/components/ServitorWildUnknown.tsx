@@ -8,6 +8,10 @@ import {
     Globe, Save, Coins, FolderOpen, ChevronRight, Trash2, AlertTriangle 
 } from 'lucide-react';
 import { createBrowserClient } from '@supabase/ssr';
+import { deductUserCredits } from '@/lib/services/economyService';
+import { updateServitor } from '@/lib/services/spellService';
+import { getWalletStatus } from '@/lib/economy';
+import { BlockageErrorOverlay } from './economy/BlockageErrorOverlay';
 
 // --- 1. ASSET CONFIGURATION ---
 const ASSET_PATH = '/images/Servitor_images/';
@@ -343,12 +347,15 @@ export default function ServitorWildUnknown() {
 
     const [sName, setSName] = useState("");
     const [sPurpose, setSPurpose] = useState("");
+    const [loadedId, setLoadedId] = useState<string | null>(null);
+
     const [user, setUser] = useState<any>(null);
-    const [credits, setCredits] = useState<number | null>(null);
+    const [wallet, setWallet] = useState<{ credits: number, tier: string, isUnlimited: boolean } | null>(null);
     const [savedServitors, setSavedServitors] = useState<any[]>([]);
     
     // Deletion State
-    const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null); 
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+    const [blockageError, setBlockageError] = useState<string | null>(null); 
 
     // --- CATEGORIES DEFINITION ---
     // Applying CategoryDef interface to array to prevent TS errors
@@ -425,16 +432,34 @@ export default function ServitorWildUnknown() {
             const { data: { user } } = await supabase.auth.getUser();
             if (user) {
                 setUser(user);
-                fetchCredits(user.id);
+                refreshWallet(user.id);
                 fetchSavedServitors(user.id);
+            }
+
+            // CHECK FOR DRAFT (Return from Store)
+            const draft = sessionStorage.getItem('WILD_SERVITOR_DRAFT');
+            if (draft) {
+                try {
+                    const data = JSON.parse(draft);
+                    if (data) {
+                        setSName(data.sName || "");
+                        setSPurpose(data.sPurpose || "");
+                        if (data.config) setConfig(data.config);
+                        if (data.loadedId) setLoadedId(data.loadedId);
+                        setHasUnsavedChanges(true); 
+                    }
+                } catch (e) {
+                    console.error("Failed to restore draft", e);
+                }
+                sessionStorage.removeItem('WILD_SERVITOR_DRAFT');
             }
         };
         initUser();
     }, [supabase]);
 
-    const fetchCredits = async (userId: string) => {
-        const { data } = await supabase.from('profiles').select('credits').eq('id', userId).single();
-        if (data) setCredits(data.credits);
+    const refreshWallet = async (userId: string) => {
+        const w = await getWalletStatus(userId);
+        setWallet(w);
     };
 
     const fetchSavedServitors = async (userId: string) => {
@@ -510,25 +535,69 @@ export default function ServitorWildUnknown() {
     };
 
     const confirmSave = async () => {
-        if (!user || credits === null) return;
+        if (!user) return;
 
-        if (credits < SAVE_COST) {
-            setShowConfirmSave(false);
-            setShowCreditModal(true);
-            return;
-        }
-
-        const newBalance = credits - SAVE_COST;
-        const { error: creditError } = await supabase.from('profiles').update({ credits: newBalance }).eq('id', user.id);
+        // CHECK NAME CONFLICTS
+        const nameConflict = savedServitors.find(s => s.name.trim().toLowerCase() === sName.trim().toLowerCase());
+        const loadedServitor = loadedId ? savedServitors.find(s => s.id === loadedId) : null;
         
-        if (creditError) {
-            alert("Transaction failed. The Aether rejects this.");
+        // Scenario A: Update (Free)
+        if (loadedId && loadedServitor && loadedServitor.name.trim().toLowerCase() === sName.trim().toLowerCase()) {
+             if (!window.confirm(`Overwrite your existing servitor "${sName}" with these changes?`)) return;
+
+             try {
+                // For Wild Unknown, we are storing data in 'spells' table but DigitalServitor uses 'servitors' table?
+                // WAIT: ServitorWildUnknown uses 'spells' table (element='Servitor').
+                // DigitalServitor uses 'servitors' table. 
+                // The user asked to apply changes from DigitalServitor to ServitorWildUnknown. 
+                // DigitalServitor uses 'updateServitor' which targets 'servitors' table.
+                // ServitorWildUnknown targets 'spells' table.
+                // I need to use `supabase.from('spells').update(...)` here, OR migrate this app to use `servitors` table?
+                // The prompt was "apply those changes... where applicable".
+                // Migrating tables is risky without explicit instruction. 
+                // I should replicate the LOGIC but target the SPELLS table.
+                
+                const { error } = await supabase.from('spells').update({
+                    name: sName,
+                    intention: sPurpose,
+                    incantation: `I bind the spirit ${sName} to the task: ${sPurpose}`,
+                    ritual_data: {
+                        ...config,
+                        type: 'SERVITOR'
+                    }
+                }).eq('id', loadedId);
+
+                if (error) throw error;
+                
+                alert(`Servitor "${sName}" updated successfully.`);
+                setHasUnsavedChanges(false);
+                setShowConfirmSave(false);
+                fetchSavedServitors(user.id);
+             } catch (error: any) {
+                 console.error("Update failed:", error);
+                 alert("Failed to update servitor: " + error.message);
+             }
+             return;
+        }
+
+        // Scenario B: Create New (Cost)
+        if (nameConflict) {
+            alert(`You already have a servant named "${nameConflict.name}". Please choose a unique name.`);
             return;
         }
 
-        setCredits(newBalance);
+        // 1. Pay
+        const paid = await deductUserCredits(user.id, SAVE_COST);
+        if (!paid) {
+            setShowConfirmSave(false);
+            refreshWallet(user.id);
+            const balance = (wallet && wallet.credits !== undefined) ? (wallet.isUnlimited ? '∞' : wallet.credits) : 'Unknown';
+            setBlockageError(`Insufficient Faestones. Required: ${SAVE_COST}, Available: ${balance}`);
+            return;
+        }
 
-        const { error: saveError } = await supabase.from('spells').insert({
+        // 2. Save
+        const { data, error: saveError } = await supabase.from('spells').insert({
             user_id: user.id,
             name: sName,
             intention: sPurpose,
@@ -538,7 +607,7 @@ export default function ServitorWildUnknown() {
                 ...config,
                 type: 'SERVITOR'
             }
-        });
+        }).select().single();
 
         if (saveError) {
             console.error(saveError);
@@ -548,6 +617,8 @@ export default function ServitorWildUnknown() {
             alert("Bound to Grimoire!");
             setHasUnsavedChanges(false);
             setShowConfirmSave(false);
+            if (data) setLoadedId(data.id);
+            refreshWallet(user.id);
             fetchSavedServitors(user.id);
         }
     };
@@ -570,18 +641,32 @@ export default function ServitorWildUnknown() {
             alert("Failed to release servitor.");
         } else {
             setSavedServitors(prev => prev.filter(s => s.id !== showDeleteConfirm));
+            if (loadedId === showDeleteConfirm) {
+                 setLoadedId(null);
+                 setSName("");
+                 setSPurpose("");
+            }
             setShowDeleteConfirm(null);
             playAudio(AUDIO_PATHS.FEED_COMPLETE); 
         }
     };
 
     const loadServitor = (servitor: any) => {
+        setLoadedId(servitor.id);
         setSName(servitor.name);
         setSPurpose(servitor.intention);
         if (servitor.ritual_data) {
             setConfig(servitor.ritual_data);
         }
         setActiveCategory(null);
+        setHasUnsavedChanges(false);
+        // Save draft immediately when loading to prevent loss if they refresh
+        sessionStorage.setItem('WILD_SERVITOR_DRAFT', JSON.stringify({
+            sName: servitor.name, 
+            sPurpose: servitor.intention, 
+            config: servitor.ritual_data,
+            loadedId: servitor.id
+        }));
     };
 
     const wait = (ms: number) => new Promise(r => setTimeout(r, ms));
@@ -1522,6 +1607,15 @@ export default function ServitorWildUnknown() {
                 </div>
             </div>
 
+            {/* BLOCKAGE ERROR OVERLAY */}
+            {blockageError && (
+                 <BlockageErrorOverlay
+                    error={blockageError}
+                    onDismiss={() => setBlockageError(null)}
+                    redirectPath="/spell-room/servitor-wild-unknown-app"
+                 />
+            )}
+
             {/* CONFIRMATION SAVE MODAL */}
             {showConfirmSave && (
                 <div className="fixed inset-0 z-500 flex items-center justify-center bg-black/90 p-6 animate-in fade-in">
@@ -1535,7 +1629,7 @@ export default function ServitorWildUnknown() {
                         <div className="bg-black/30 p-4 rounded mb-6 text-sm">
                             <div className="flex justify-between text-gray-400 mb-2">
                                 <span>Current Aether:</span>
-                                <span className="text-white font-bold">{credits}</span>
+                                <span className="text-white font-bold">{wallet?.credits || 0}</span>
                             </div>
                             <div className="flex justify-between text-amber-400 font-bold border-t border-gray-700 pt-2">
                                 <span>Cost:</span>
