@@ -59,6 +59,18 @@ export default function GrimoirePage() {
             return `/spell-room/love-spells-app/soul-connect-love-spell?loadId=${spell.id}`;
         }
         
+        // 2. Check ritual_data for embedded type (Chaos Magick saves it here)
+        if (spell.ritual_data) {
+             try {
+                 const data = typeof spell.ritual_data === 'string' ? JSON.parse(spell.ritual_data) : spell.ritual_data;
+                 if (data.type === 'CHAOS') {
+                     return `/spell-room/chaos-magick-spells-app?loadId=${spell.id}`;
+                 }
+             } catch (e) {
+                 console.error('Error parsing ritual_data in getReplayUrl', e);
+             }
+        }
+        
         // 2. Fallback Logic (Legacy Spells / Electric Magick)
         const nameLower = spell.name.toLowerCase();
         
