@@ -52,7 +52,10 @@ export const getWalletStatus = async (userId: string) => {
     .eq('id', userId)
     .single();
 
-  if (error) return null;
+  if (error) {
+      console.error("getWalletStatus Error:", error);
+      return null;
+  }
   
   // Calculate if a reset is pending purely for UI display purposes
   // (The actual reset happens on the next spend action)
