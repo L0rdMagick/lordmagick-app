@@ -691,7 +691,7 @@ const SpellGenerator: React.FC<SpellGeneratorProps> = ({ session, isSubscribed, 
             )}
             <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">What is your desired outcome?</label>
-                <textarea name="outcome" value={formData.outcome} onChange={handleFormChange} required disabled={isReplay} className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:ring-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed" placeholder="e.g., Attract a new creative opportunity"/>
+                <textarea name="outcome" value={formData.outcome} onChange={handleFormChange} required readOnly={isReplay} className={`w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:ring-2 focus:ring-purple-500 ${isReplay ? 'cursor-text opacity-90' : ''}`} placeholder="e.g., Attract a new creative opportunity"/>
             </div>
             <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Who or what is this spell for?</label>
