@@ -6,7 +6,7 @@ import { X, Maximize2, Minimize2, Save, Trash2, BookOpen, Info, AlertTriangle, L
 import { createBrowserClient } from '@supabase/ssr';
 import { getWalletStatus, COST_BIND_SERVITOR } from '@/lib/economy';
 import { deductUserCredits } from '@/lib/services/economyService';
-import { saveServitorToGrimoire, getMyServitors } from '@/lib/services/spellService';
+import { saveServitorToGrimoire, getMyServitors, updateServitor } from '@/lib/services/spellService';
 
 import { BlockageErrorOverlay } from './economy/BlockageErrorOverlay';
 
@@ -76,6 +76,7 @@ export default function DigitalServitor() {
     const [sName, setSName] = useState("");
     const [sPurpose, setSPurpose] = useState("");
     const [uName, setUName] = useState("");
+    const [loadedId, setLoadedId] = useState<string | null>(null);
     
     // User & Cabinet State
     const [user, setUser] = useState<any>(null);
@@ -154,6 +155,7 @@ export default function DigitalServitor() {
                         setSPurpose(data.sPurpose || "");
                         setUName(data.uName || "");
                         if (data.config) setConfig(data.config);
+                        if (data.loadedId) setLoadedId(data.loadedId); // Restore edit session
                         setHasUnsavedChanges(true); // Restore dirty state
                     }
                 } catch (e) {
@@ -214,6 +216,44 @@ export default function DigitalServitor() {
             return;
         }
 
+        // CHECK NAME CONFLICTS
+        const nameConflict = savedServitors.find(s => s.name.trim().toLowerCase() === sName.trim().toLowerCase());
+        
+        // Scenario A: Updating existing servitor (Free)
+        if (loadedId) {
+             // If update name clashes with ANOTHER servitor (not itself)
+             if (nameConflict && nameConflict.id !== loadedId) {
+                 if (win) win.alert(`You already have a different servitor named "${nameConflict.name}". Names must be unique.`);
+                 return;
+             }
+             
+             // Confirm Update
+             if (win && !win.confirm(`Overwrite your existing servitor "${sName}" with these changes?`)) return;
+
+             try {
+                await updateServitor(loadedId, {
+                    name: sName,
+                    master_name: uName,
+                    purpose: sPurpose,
+                    config: config
+                });
+                
+                setHasUnsavedChanges(false);
+                refreshCabinet(user.id);
+                if(win) win.alert(`Servitor "${sName}" updated successfully.`);
+             } catch (error) {
+                 console.error("Update failed:", error);
+                 if(win) win.alert("Failed to update servitor.");
+             }
+             return;
+        }
+
+        // Scenario B: Creating New (Cost)
+        if (nameConflict) {
+            if (win) win.alert(`You already have a servant named "${nameConflict.name}". Please choose a unique name.`);
+            return;
+        }
+
         // 1. Check & Spend Credits (Using Service Logic like WiccaMagick)
         const canAfford = await deductUserCredits(user.id, COST_BIND_SERVITOR);
         
@@ -222,7 +262,7 @@ export default function DigitalServitor() {
             const w = await getWalletStatus(user.id);
             setWallet(w);
 
-            const balance = w ? (w.isUnlimited ? '∞' : w.credits) : 'Unknown';
+            const balance = (w && w.credits !== undefined) ? (w.isUnlimited ? '∞' : w.credits) : 'Unknown';
             const msg = `Insufficient Faestones. Required: ${COST_BIND_SERVITOR}, Available: ${balance}`;
             console.log("Bind Action Failed:", { required: COST_BIND_SERVITOR, available: balance, rawWallet: w });
             
@@ -232,7 +272,7 @@ export default function DigitalServitor() {
 
         // 2. Save to DB - ENSURE ALL DATA IS SAVED
         try {
-            await saveServitorToGrimoire(user.id, {
+            const newServitor = await saveServitorToGrimoire(user.id, {
                 name: sName,
                 master_name: uName,
                 purpose: sPurpose,
@@ -241,6 +281,7 @@ export default function DigitalServitor() {
             
             // 3. Success State
             setHasUnsavedChanges(false);
+            if(newServitor) setLoadedId(newServitor.id); // Switch to edit mode
             refreshCabinet(user.id);
             if(win) win.alert(`Servitor "${sName}" successfully bound to Grimoire.`);
             
@@ -256,7 +297,8 @@ export default function DigitalServitor() {
             sName,
             sPurpose,
             uName,
-            config
+            config,
+            loadedId
         };
         sessionStorage.setItem('SERVITOR_PENDING_DRAFT', JSON.stringify(draft));
         
@@ -267,6 +309,7 @@ export default function DigitalServitor() {
 
     const handleLoad = (servitor: SavedServitor) => {
         // Loading an existing one resets the "dirty" state
+        setLoadedId(servitor.id);
         setSName(servitor.name);
         setUName(servitor.master_name || "");
         setSPurpose(servitor.purpose || "");

@@ -108,6 +108,29 @@ export const saveServitorToGrimoire = async (userId: string, payload: ServitorPa
 };
 
 /**
+ * Updates an existing servitor (Free action).
+ */
+export const updateServitor = async (servitorId: string, payload: ServitorPayload) => {
+    const { data, error } = await supabase
+        .from('servitors')
+        .update({
+            name: payload.name,
+            master_name: payload.master_name,
+            purpose: payload.purpose,
+            config: payload.config
+        })
+        .eq('id', servitorId)
+        .select()
+        .single();
+
+    if (error) {
+        console.error("Error updating servitor:", error);
+        throw new Error("Failed to update servitor entity.");
+    }
+    return data;
+};
+
+/**
  * Fetch all spells for a user.
  */
 export const getSpells = async (userId: string): Promise<Spell[]> => {
