@@ -1580,11 +1580,13 @@ export default function DigitalServitor() {
             {/* --- MODALS --- */}
 
             {/* BLOCKAGE / INSUFFICIENT FUNDS OVERLAY */}
-            <BlockageErrorOverlay 
-                error={blockageError}
-                onDismiss={() => setBlockageError(null)}
-                onGoToStore={handleGoToStoreWithSave}
-            />
+            <React.Suspense fallback={null}>
+                <BlockageErrorOverlay 
+                    error={blockageError}
+                    onDismiss={() => setBlockageError(null)}
+                    onGoToStore={handleGoToStoreWithSave}
+                />
+            </React.Suspense>
 
             {/* EXIT WARNING MODAL */}
             {showExitWarning && (
