@@ -293,7 +293,7 @@ const RitualDisplay: React.FC<RitualDisplayProps> = ({ generatedSpell, onComplet
                 // BUT user hasn't saved yet if they went to store.
                 // So we need 'onRitualFinished'.
                 onRitualFinished(); // NEW CALLBACK 
-                setTimeout(() => setShowButton(true), 4500); 
+                setTimeout(() => setShowButton(true), 2000); // Reduced from 4500ms 
             }, 1000);
         }
     };
@@ -584,7 +584,7 @@ const SpellGenerator: React.FC<SpellGeneratorProps> = ({ session, isSubscribed, 
           incantation: generatedSpell.incantation,
           sigil_url: sigilUrl,
           element: formData.element
-        });
+        }, true); // BYPASS LIMIT = true
         setIsSaved(true);
       } catch (err: any) {
           console.error(err);
