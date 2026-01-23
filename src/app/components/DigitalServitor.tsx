@@ -218,15 +218,12 @@ export default function DigitalServitor() {
 
         // CHECK NAME CONFLICTS
         const nameConflict = savedServitors.find(s => s.name.trim().toLowerCase() === sName.trim().toLowerCase());
+        const loadedServitor = loadedId ? savedServitors.find(s => s.id === loadedId) : null;
         
-        // Scenario A: Updating existing servitor (Free)
-        if (loadedId) {
-             // If update name clashes with ANOTHER servitor (not itself)
-             if (nameConflict && nameConflict.id !== loadedId) {
-                 if (win) win.alert(`You already have a different servitor named "${nameConflict.name}". Names must be unique.`);
-                 return;
-             }
-             
+        // Scenario A: Updating existing servitor (SAME NAME = EDIT)
+        // We only allow "Update" if the name hasn't changed. 
+        // Changing the name implies creating a new entity (as per user request).
+        if (loadedId && loadedServitor && loadedServitor.name.trim().toLowerCase() === sName.trim().toLowerCase()) {
              // Confirm Update
              if (win && !win.confirm(`Overwrite your existing servitor "${sName}" with these changes?`)) return;
 
@@ -249,7 +246,12 @@ export default function DigitalServitor() {
         }
 
         // Scenario B: Creating New (Cost)
+        // If we are here, either:
+        // 1. No loadedId (Brand new)
+        // 2. loadedId exists, but NAME CHANGED (Treat as new)
+
         if (nameConflict) {
+            // If the name exists but it DOESN'T match the loaded ID (logic handled above), it's a conflict
             if (win) win.alert(`You already have a servant named "${nameConflict.name}". Please choose a unique name.`);
             return;
         }
