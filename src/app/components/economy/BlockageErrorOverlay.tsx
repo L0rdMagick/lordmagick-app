@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { Coins } from 'lucide-react';
+import { createPortal } from 'react-dom'; // Corrected import placement
 
 interface BlockageErrorOverlayProps {
     error: string | null;
@@ -35,8 +36,6 @@ export const BlockageErrorOverlay = ({
         
         router.push(`/store?redirect=${encodedRedirect}`);
     };
-    
-    import { createPortal } from 'react-dom'; // Add import
 
     // ... (inside component)
     const [mounted, setMounted] = React.useState(false);
