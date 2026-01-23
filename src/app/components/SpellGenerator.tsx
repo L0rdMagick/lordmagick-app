@@ -190,19 +190,20 @@ interface RitualDisplayProps {
     generatedSpell: GeneratedSpell;
     onComplete: () => void;
     onSave: () => void;
-    onExit: () => void; // NEW
+    onExit: () => void;
     isSaving: boolean;
     isSaved: boolean;
+    isRitualComplete: boolean;
+    onRitualFinished: () => void;
 }
 
-const RitualDisplay: React.FC<RitualDisplayProps> = ({ generatedSpell, onComplete, onSave, onExit, isSaving, isSaved }) => {
-    // ... (keep state hooks same)
-    const [ritualStep, setRitualStep] = useState(0);
+const RitualDisplay: React.FC<RitualDisplayProps> = ({ generatedSpell, onComplete, onSave, onExit, isSaving, isSaved, isRitualComplete, onRitualFinished }) => {
+    const [ritualStep, setRitualStep] = useState(isRitualComplete ? 3 : 0);
     const [holdProgress, setHoldProgress] = useState(0);
     const [isHolding, setIsHolding] = useState(false);
     const [countdown, setCountdown] = useState(7);
     const [isComplete, setIsComplete] = useState(false);
-    const [showButton, setShowButton] = useState(false);
+    const [showButton, setShowButton] = useState(isRitualComplete); // Show buttons immediately if already complete
     const [pressedElements, setPressedElements] = useState<string[]>([]);
     const animationFrameRef = useRef<number | null>(null);
     const startTimeRef = useRef<number | null>(null);
@@ -281,7 +282,17 @@ const RitualDisplay: React.FC<RitualDisplayProps> = ({ generatedSpell, onComplet
             audioManager.playCompletionSound();
             setTimeout(() => {
                 setRitualStep(3);
-                setTimeout(() => setShowButton(true), 4500);
+                // We should notify parent here, but currently no prop for it. 
+                // We will rely on the parent checking 'isSaved', but 'isSaved' happens later.
+                // Actually, we can assume if we are here, we are done. 
+                // BUT we need to persist it.
+                // Let's rely on the parent updating persistence when 'onSave' is clicked? 
+                // No, user might leave BEFORE keeping updates.
+                // Ideally, we pass a callback 'onRitualFinished'.
+                // For now, let's keep it simple: If 'isSaved' is true, we force step 3.
+                // BUT user hasn't saved yet if they went to store.
+                // So we need 'onRitualFinished'.
+                onRitualFinished(); // NEW CALLBACK 
             }, 1000);
         }
     };
@@ -421,10 +432,11 @@ const SpellGenerator: React.FC<SpellGeneratorProps> = ({ session, isSubscribed, 
       formData: { outcome: '', target: 'Self', feeling: 'Hopeful', element: 'Spirit', timing: 'In divine timing', action: 'attract', name: '', } as SpellFormData,
       generatedSpell: null as GeneratedSpell | null,
       isSaved: false,
+      ritualCompleted: false, // NEW STATE
       rehydrated: false
   });
 
-  const { view, formData, generatedSpell, isSaved } = spellState;
+  const { view, formData, generatedSpell, isSaved, ritualCompleted } = spellState;
   
   // Local loading state (transient)
   const [loading, setLoading] = useState(false);
@@ -437,6 +449,7 @@ const SpellGenerator: React.FC<SpellGeneratorProps> = ({ session, isSubscribed, 
   const setFormData = (d: SpellFormData | ((prev: SpellFormData) => SpellFormData)) => setSpellState(prev => ({ ...prev, formData: typeof d === 'function' ? d(prev.formData) : d }));
   const setGeneratedSpell = (s: GeneratedSpell | null) => setSpellState(prev => ({ ...prev, generatedSpell: s }));
   const setIsSaved = (s: boolean) => setSpellState(prev => ({ ...prev, isSaved: s }));
+  const setRitualCompleted = () => setSpellState(prev => ({ ...prev, ritualCompleted: true })); // NEW SETTER
 
   // --- REHYDRATION & STORE RETURN ---
   useEffect(() => {
@@ -479,6 +492,10 @@ const SpellGenerator: React.FC<SpellGeneratorProps> = ({ session, isSubscribed, 
               steps: []
           },
           isSaved: true,
+          ritualCompleted: true, // For replay, it's NOT complete, user wants to PLAY it. But wait, if they replay, they start at 0.
+          // User request: "replay version of the spell not only has all of the user generated text preserved ... but also any ai text too."
+          // User request today: "when they are doing the saved version ... user can only progress ... not try to regenerate"
+          // So replay starts at 0.
           rehydrated: true
       });
   };
@@ -576,6 +593,7 @@ const SpellGenerator: React.FC<SpellGeneratorProps> = ({ session, isSubscribed, 
       setFormData(prev => ({...prev, outcome: '', name: ''}));
       setView('form');
       setIsSaved(false);
+      setSpellState(prev => ({ ...prev, ritualCompleted: false })); // Reset
   }
 
   const renderForm = () => (
@@ -663,7 +681,16 @@ const SpellGenerator: React.FC<SpellGeneratorProps> = ({ session, isSubscribed, 
         case 'form': return renderForm();
         case 'ritual': 
             if (!generatedSpell) return <div>Something went wrong.</div>;
-            return <RitualDisplay generatedSpell={generatedSpell} onComplete={handleRitualComplete} onSave={handleSave} onExit={onBack} isSaving={isSaving} isSaved={isSaved} />;
+            return <RitualDisplay 
+                generatedSpell={generatedSpell} 
+                onComplete={handleRitualComplete} 
+                onSave={handleSave} 
+                onExit={onBack} 
+                isSaving={isSaving} 
+                isSaved={isSaved} 
+                isRitualComplete={ritualCompleted} // Pass persisted state
+                onRitualFinished={setRitualCompleted}
+            />;
         case 'book': return renderBook();
         default: return renderForm();
     }
