@@ -4,7 +4,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { X, Maximize2, Minimize2, Save, Trash2, BookOpen, Info, AlertTriangle, Lock } from 'lucide-react';
 import { createBrowserClient } from '@supabase/ssr';
-import { checkAndSpendCredits, getWalletStatus, COST_BIND_SERVITOR } from '@/lib/economy';
+import { getWalletStatus, COST_BIND_SERVITOR } from '@/lib/economy';
+import { deductUserCredits } from '@/lib/services/economyService';
 import { saveServitorToGrimoire, getMyServitors } from '@/lib/services/spellService';
 
 import { BlockageErrorOverlay } from './economy/BlockageErrorOverlay';
@@ -213,8 +214,9 @@ export default function DigitalServitor() {
             return;
         }
 
-        // 1. Check & Spend Credits
-        const canAfford = await checkAndSpendCredits(user.id, COST_BIND_SERVITOR);
+        // 1. Check & Spend Credits (Using Service Logic like WiccaMagick)
+        const canAfford = await deductUserCredits(user.id, COST_BIND_SERVITOR);
+        
         if (!canAfford) {
             // Refresh wallet to get the latest status for debugging
             const w = await getWalletStatus(user.id);
