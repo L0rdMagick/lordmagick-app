@@ -452,6 +452,30 @@ const SpellGenerator: React.FC<SpellGeneratorProps> = ({ session, isSubscribed, 
   const setIsSaved = (s: boolean) => setSpellState(prev => ({ ...prev, isSaved: s }));
   const setRitualCompleted = () => setSpellState(prev => ({ ...prev, ritualCompleted: true })); // NEW SETTER
 
+  const searchParams = useSearchParams(); // Get URL params
+
+  // --- HANDLE LOADID FROM URL ---
+  useEffect(() => {
+    const loadId = searchParams.get('loadId');
+    if (loadId && !generatedSpell && !loading) {
+       const loadSpell = async () => {
+           setLoading(true);
+           try {
+               const spell = await getSpellById(loadId);
+               if (spell) {
+                   openSavedSpell(spell);
+               }
+           } catch (e) {
+               console.error("Failed to load spell:", e);
+           } finally {
+               setLoading(false);
+           }
+       };
+       loadSpell();
+    }
+  }, [searchParams]);
+
+
   // --- REHYDRATION & STORE RETURN ---
   useEffect(() => {
       const isPending = typeof window !== 'undefined' && sessionStorage.getItem('PENDING_PURCHASE');
@@ -591,7 +615,8 @@ const SpellGenerator: React.FC<SpellGeneratorProps> = ({ session, isSubscribed, 
           intention: generatedSpell.intention,
           incantation: generatedSpell.incantation,
           sigil_url: sigilUrl,
-          element: formData.element
+          element: formData.element,
+          ritual_data: JSON.stringify({ type: 'CHAOS' }) // Stringified JSON to ensure persistence
         }, true); // BYPASS LIMIT = true
         setIsSaved(true);
       } catch (err: any) {
