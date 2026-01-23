@@ -190,11 +190,13 @@ interface RitualDisplayProps {
     generatedSpell: GeneratedSpell;
     onComplete: () => void;
     onSave: () => void;
+    onExit: () => void; // NEW
     isSaving: boolean;
     isSaved: boolean;
 }
 
-const RitualDisplay: React.FC<RitualDisplayProps> = ({ generatedSpell, onComplete, onSave, isSaving, isSaved }) => {
+const RitualDisplay: React.FC<RitualDisplayProps> = ({ generatedSpell, onComplete, onSave, onExit, isSaving, isSaved }) => {
+    // ... (keep state hooks same)
     const [ritualStep, setRitualStep] = useState(0);
     const [holdProgress, setHoldProgress] = useState(0);
     const [isHolding, setIsHolding] = useState(false);
@@ -207,6 +209,7 @@ const RitualDisplay: React.FC<RitualDisplayProps> = ({ generatedSpell, onComplet
     const HOLD_DURATION = 7000;
 
     const animate = useCallback((timestamp: number) => {
+        // ... (keep animate logic same)
         // FIX: Safe window access
         if (typeof (globalThis as any).window === 'undefined') return;
         if (!startTimeRef.current) startTimeRef.current = timestamp;
@@ -229,6 +232,7 @@ const RitualDisplay: React.FC<RitualDisplayProps> = ({ generatedSpell, onComplet
     }, []);
 
     useEffect(() => {
+        // ... (keep useEffect logic same)
         // FIX: Safe window access
         if (typeof (globalThis as any).window === 'undefined') return;
         if (isHolding && !isComplete) {
@@ -250,6 +254,7 @@ const RitualDisplay: React.FC<RitualDisplayProps> = ({ generatedSpell, onComplet
         };
     }, [isHolding, isComplete, animate]);
     
+    // ... (keep event handlers same)
     const handleHoldStart = (e: React.MouseEvent | React.TouchEvent) => {
         audioManager.init();
         if (!isComplete) { e.preventDefault(); setIsHolding(true); audioManager.playHoldSound(); }
@@ -292,7 +297,7 @@ const RitualDisplay: React.FC<RitualDisplayProps> = ({ generatedSpell, onComplet
         return (
             <div className="text-center flex flex-col items-center justify-center min-h-[400px] w-full h-full absolute inset-0 bg-black">
                 <div className="absolute inset-0 bg-linear-to-br from-[#0a092d] to-black animate-smoke-in" style={{ backgroundImage: 'radial-gradient(circle at center, rgba(49, 26, 90, 0.5) 0%, rgba(10, 9, 45, 0) 70%)' }}></div>
-                <div className="relative flex flex-col items-center justify-center animate-fade-in-glow">
+                <div className="relative flex flex-col items-center justify-center animate-fade-in-glow z-10">
                     <GrimoireDecoration className="w-[450px] h-auto text-yellow-400/70" />
                     <div className="my-8">
                         <h2 className="text-6xl font-elven text-yellow-200 tracking-widest" style={{ textShadow: '0 0 10px #fde047' }}>
@@ -305,14 +310,33 @@ const RitualDisplay: React.FC<RitualDisplayProps> = ({ generatedSpell, onComplet
                     </div>
                      <GrimoireDecoration className="w-[450px] h-auto text-yellow-400/70 transform scale-y-[-1]" />
                 </div>
-                <div className={`transition-opacity duration-1000 ${showButton ? 'opacity-100' : 'opacity-0'} flex flex-col gap-4 mt-16`}>
-                    <button onClick={onSave} disabled={isSaved || isSaving} className="w-48 h-12 flex items-center justify-center gap-2 bg-indigo-900/50 border border-indigo-400 text-indigo-100 font-serif rounded hover:bg-indigo-800 disabled:opacity-50 transition-colors">
+                <div className={`relative z-50 transition-opacity duration-1000 ${showButton ? 'opacity-100' : 'opacity-0 pointer-events-none'} flex flex-col gap-4 mt-8 w-64`}>
+                    {/* BUTTON 1: SAVE */}
+                    <button 
+                        onClick={onSave} 
+                        disabled={isSaved || isSaving} 
+                        className="w-full h-12 flex items-center justify-center gap-2 bg-indigo-900/80 border border-indigo-400 text-indigo-100 font-serif rounded hover:bg-indigo-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-[0_0_15px_rgba(129,140,248,0.3)] hover:shadow-[0_0_25px_rgba(129,140,248,0.5)] transform hover:scale-105"
+                    >
                         {isSaved ? <Check size={18} /> : <Save size={18} />}
-                        {isSaved ? "Saved" : isSaving ? "Saving..." : "Save (1 Credit)"}
+                        {isSaved ? "Saved to Grimoire" : isSaving ? "Binding Spell..." : "Save (1 Credit)"}
                     </button>
-                    <StoneTabletButton onClick={onComplete} className="w-48 h-12 font-serif text-lg text-purple-200">
-                        Return
-                    </StoneTabletButton>
+                    
+                    {/* BUTTON 2: RESET / DO AGAIN */}
+                    <button 
+                        onClick={onComplete} 
+                        className="w-full h-12 flex items-center justify-center gap-2 bg-transparent border border-purple-500/50 text-purple-200 font-serif rounded hover:bg-purple-900/30 transition-colors"
+                    >
+                        <Sparkles size={16} />
+                        Cast Another Spell
+                    </button>
+
+                    {/* BUTTON 3: EXIT */}
+                    <button 
+                        onClick={onExit}
+                        className="w-full py-2 text-slate-500 hover:text-white font-mono text-xs uppercase tracking-widest transition-colors mt-2"
+                    >
+                        [ Return to Chamber ]
+                    </button>
                 </div>
             </div>
         )
@@ -639,7 +663,7 @@ const SpellGenerator: React.FC<SpellGeneratorProps> = ({ session, isSubscribed, 
         case 'form': return renderForm();
         case 'ritual': 
             if (!generatedSpell) return <div>Something went wrong.</div>;
-            return <RitualDisplay generatedSpell={generatedSpell} onComplete={handleRitualComplete} onSave={handleSave} isSaving={isSaving} isSaved={isSaved} />;
+            return <RitualDisplay generatedSpell={generatedSpell} onComplete={handleRitualComplete} onSave={handleSave} onExit={onBack} isSaving={isSaving} isSaved={isSaved} />;
         case 'book': return renderBook();
         default: return renderForm();
     }
