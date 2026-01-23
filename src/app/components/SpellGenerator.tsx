@@ -569,8 +569,14 @@ const SpellGenerator: React.FC<SpellGeneratorProps> = ({ session, isSubscribed, 
       setIsSaving(true);
       try {
         const sigilPath = `${session.user.id}/${new Date().toISOString()}.png`;
-        // Handle optional sigilBase64. If missing, we might use a placeholder or handle it differently.
-        const sigilUrl = generatedSpell.sigilBase64 ? await uploadBase64Image(generatedSpell.sigilBase64, sigilPath) : '';
+        let sigilUrl = '';
+        if (generatedSpell.sigilBase64) {
+            if (generatedSpell.sigilBase64.startsWith('http')) {
+                sigilUrl = generatedSpell.sigilBase64;
+            } else {
+                sigilUrl = await uploadBase64Image(generatedSpell.sigilBase64, sigilPath);
+            }
+        }
 
         await saveSpell(session.user.id, {
           name: generatedSpell.title,

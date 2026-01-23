@@ -36,9 +36,15 @@ export const BlockageErrorOverlay = ({
         router.push(`/store?redirect=${encodedRedirect}`);
     };
     
-    if (!error) return null;
+    import { createPortal } from 'react-dom'; // Add import
 
-    return (
+    // ... (inside component)
+    const [mounted, setMounted] = React.useState(false);
+    React.useEffect(() => setMounted(true), []);
+
+    if (!error || !mounted) return null;
+
+    return createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-md p-6">
              <div className="bg-[#1a1a2e] border border-red-500/50 rounded-xl p-8 max-w-sm w-full text-center shadow-[0_0_50px_rgba(220,38,38,0.2)]">
                 {error === "Insufficient Faestones" ? (
@@ -102,6 +108,7 @@ export const BlockageErrorOverlay = ({
                     </>
                 )}
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };
