@@ -485,7 +485,18 @@ const SpellGenerator: React.FC<SpellGeneratorProps> = ({ session, isSubscribed, 
           generatedSpell: {
               title: spell.name,
               intention: spell.intention,
-              incantation: spell.incantation,
+              incantation: (() => {
+                  try {
+                       // Keep it simple: Check if it starts with [
+                       if (spell.incantation.trim().startsWith('[')) {
+                           const parsed = JSON.parse(spell.incantation);
+                           if (Array.isArray(parsed)) return parsed.join('\n');
+                       }
+                       return spell.incantation;
+                  } catch (e) {
+                      return spell.incantation;
+                  }
+              })(),
               sigilBase64: spell.sigil_url || '', // We need to handle URL vs Base64 here. RitualDisplay expects Base64 or URL? It renders as base64 string.
               // Note: Saved spells have URLs. Generated spells have Base64.
               // RitualDisplay line 324: src={`data:image/png;base64,${generatedSpell.sigilBase64}`}
@@ -493,10 +504,7 @@ const SpellGenerator: React.FC<SpellGeneratorProps> = ({ session, isSubscribed, 
               steps: []
           },
           isSaved: true,
-          ritualCompleted: true, // For replay, it's NOT complete, user wants to PLAY it. But wait, if they replay, they start at 0.
-          // User request: "replay version of the spell not only has all of the user generated text preserved ... but also any ai text too."
-          // User request today: "when they are doing the saved version ... user can only progress ... not try to regenerate"
-          // So replay starts at 0.
+          ritualCompleted: false, // Reset to false so user can perform the ritual again
           rehydrated: true
       });
   };
