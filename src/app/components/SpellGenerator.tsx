@@ -293,6 +293,7 @@ const RitualDisplay: React.FC<RitualDisplayProps> = ({ generatedSpell, onComplet
                 // BUT user hasn't saved yet if they went to store.
                 // So we need 'onRitualFinished'.
                 onRitualFinished(); // NEW CALLBACK 
+                setTimeout(() => setShowButton(true), 4500); 
             }, 1000);
         }
     };
