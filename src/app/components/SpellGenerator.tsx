@@ -8,6 +8,8 @@ import type { Session, SpellFormData, GeneratedSpell, Spell } from '@/lib/types'
 import { generateSpellAndSigil, saveSpell, getSpells, uploadBase64Image } from '@/lib/services/geminiService';
 import { getSpellById } from '@/lib/services/spellService'; // NEW
 import { useAetherEconomy } from '@/hooks/useAetherEconomy'; // NEW
+import { useSpellPersistence } from '@/hooks/useSpellPersistence'; // PERSISTENCE
+import { BlockageErrorOverlay } from './economy/BlockageErrorOverlay'; // ECONOMY
 import LoadingSpinner from './LoadingSpinner';
 import { WandIcon, GrimoireFlourish, GrimoireDecoration, StoneTabletButton } from './icons';
 import { Sparkles, Zap, Save, Check, Book, Coins } from 'lucide-react';
@@ -321,7 +323,12 @@ const RitualDisplay: React.FC<RitualDisplayProps> = ({ generatedSpell, onComplet
         <div className={`transition-opacity duration-500 ${ritualStep > 0 ? 'opacity-0 scale-50 pointer-events-none' : 'opacity-100 scale-100'}`}>
             <p className="mb-4 text-lg text-gray-300 font-serif italic">Press and hold the sigil to awaken its power.</p>
             <div className="relative grid place-items-center w-64 h-64 mx-auto cursor-pointer select-none" onMouseDown={handleHoldStart} onMouseUp={handleHoldEnd} onMouseLeave={handleHoldEnd} onTouchStart={handleHoldStart} onTouchEnd={handleHoldEnd}>
-                <img src={`data:image/png;base64,${generatedSpell.sigilBase64}`} alt="Generated Sigil" className={`col-start-1 row-start-1 w-full h-full rounded-full ${isComplete ? 'sigil-exploding' : ''}`} style={{ filter: `drop-shadow(0 0 5px #a855f7)` }}/>
+                <img 
+                    src={generatedSpell.sigilBase64?.startsWith('http') ? generatedSpell.sigilBase64 : `data:image/png;base64,${generatedSpell.sigilBase64}`} 
+                    alt="Generated Sigil" 
+                    className={`col-start-1 row-start-1 w-full h-full rounded-full ${isComplete ? 'sigil-exploding' : ''}`} 
+                    style={{ filter: `drop-shadow(0 0 5px #a855f7)` }}
+                />
                 <svg width={SVG_SIZE} height={SVG_SIZE} className="col-start-1 row-start-1 transform -rotate-90">
                     <circle cx={SVG_SIZE/2} cy={SVG_SIZE/2} r={RADIUS} stroke="rgba(255, 255, 255, 0.2)" strokeWidth={STROKE_WIDTH} fill="transparent" />
                     <circle cx={SVG_SIZE/2} cy={SVG_SIZE/2} r={RADIUS} stroke="white" strokeWidth={STROKE_WIDTH} fill="transparent" strokeDasharray={CIRCUMFERENCE} strokeDashoffset={strokeDashoffset} strokeLinecap="round" className={`transition-opacity duration-300 ${isComplete ? 'opacity-0' : 'opacity-100'}`}/>
@@ -349,7 +356,11 @@ const RitualDisplay: React.FC<RitualDisplayProps> = ({ generatedSpell, onComplet
             <p className="mb-2 text-lg text-gray-300 font-serif italic">Seal the spell.</p>
             <p className="mb-6 text-md text-gray-400">Press each element to complete the ritual.</p>
             <div className="relative w-72 h-72 my-4 mx-auto flex items-center justify-center">
-                <img src={`data:image/png;base64,${generatedSpell.sigilBase64}`} alt="Fading Sigil" className={`w-48 h-48 mx-auto rounded-full transition-all duration-1000 ${pressedElements.length === 5 ? 'opacity-0 scale-150 blur-md' : 'opacity-30'}`}/>
+                <img 
+                    src={generatedSpell.sigilBase64?.startsWith('http') ? generatedSpell.sigilBase64 : `data:image/png;base64,${generatedSpell.sigilBase64}`} 
+                    alt="Fading Sigil" 
+                    className={`w-48 h-48 mx-auto rounded-full transition-all duration-1000 ${pressedElements.length === 5 ? 'opacity-0 scale-150 blur-md' : 'opacity-30'}`}
+                />
                 {elements.map((el, index) => {
                     const angleDeg = (index * 72) - 90;
                     const angleRad = (angleDeg * Math.PI) / 180;
@@ -369,14 +380,84 @@ const RitualDisplay: React.FC<RitualDisplayProps> = ({ generatedSpell, onComplet
 };
 
 const SpellGenerator: React.FC<SpellGeneratorProps> = ({ session, isSubscribed, onBack }) => {
+  /* REPLACED WITH PERSISTENCE
   const [view, setView] = useState<SpellView>('form');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [bookOfShadows, setBookOfShadows] = useState<Spell[]>([]);
   const [formData, setFormData] = useState<SpellFormData>({ outcome: '', target: 'Self', feeling: 'Hopeful', element: 'Spirit', timing: 'In divine timing', action: 'attract', name: '', });
   const [generatedSpell, setGeneratedSpell] = useState<GeneratedSpell | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  */
+
+  // --- ECONOMY & PERSISTENCE ---
+  const economy = useAetherEconomy('chaos-magick-spells-app'); // Passed slug
+  const [economyError, setEconomyError] = useState<string | null>(null);
+  
+  const { state: spellState, setState: setSpellState, clearState, isRestored } = useSpellPersistence('spell_generator_state', {
+      view: 'form' as SpellView,
+      formData: { outcome: '', target: 'Self', feeling: 'Hopeful', element: 'Spirit', timing: 'In divine timing', action: 'attract', name: '', } as SpellFormData,
+      generatedSpell: null as GeneratedSpell | null,
+      isSaved: false,
+      rehydrated: false
+  });
+
+  const { view, formData, generatedSpell, isSaved } = spellState;
+  
+  // Local loading state (transient)
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [bookOfShadows, setBookOfShadows] = useState<Spell[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Helper Setters
+  const setView = (v: SpellView) => setSpellState(prev => ({ ...prev, view: v }));
+  const setFormData = (d: SpellFormData | ((prev: SpellFormData) => SpellFormData)) => setSpellState(prev => ({ ...prev, formData: typeof d === 'function' ? d(prev.formData) : d }));
+  const setGeneratedSpell = (s: GeneratedSpell | null) => setSpellState(prev => ({ ...prev, generatedSpell: s }));
+  const setIsSaved = (s: boolean) => setSpellState(prev => ({ ...prev, isSaved: s }));
+
+  // --- REHYDRATION & STORE RETURN ---
+  useEffect(() => {
+      const isPending = typeof window !== 'undefined' && sessionStorage.getItem('PENDING_PURCHASE');
+      
+      if ((isRestored || isPending) && !spellState.rehydrated) {
+          return; // Wait for restore
+      }
+
+      if (isPending) {
+          sessionStorage.removeItem('PENDING_PURCHASE');
+          // If we returned to 'form' but have data, we stay there? No, user might want to continue.
+          // The state is already restored by useSpellPersistence.
+          // We just need to clear the pending flag.
+      }
+  }, [isRestored, spellState.rehydrated]);
+
+  // Handle Book of Shadows "Open Spell" (Replay)
+  // This needs to update the persistent state too
+  const openSavedSpell = (spell: Spell) => {
+      setSpellState({
+          view: 'ritual',
+          formData: { 
+              outcome: spell.intention, 
+              target: 'Self', 
+              feeling: 'Hopeful', 
+              element: spell.element || 'Spirit', 
+              timing: '', 
+              action: 'attract', 
+              name: spell.name 
+          },
+          generatedSpell: {
+              title: spell.name,
+              intention: spell.intention,
+              incantation: spell.incantation,
+              sigilBase64: spell.sigil_url || '', // We need to handle URL vs Base64 here. RitualDisplay expects Base64 or URL? It renders as base64 string.
+              // Note: Saved spells have URLs. Generated spells have Base64.
+              // RitualDisplay line 324: src={`data:image/png;base64,${generatedSpell.sigilBase64}`}
+              // We need to fix RitualDisplay to handle URLs.
+              steps: []
+          },
+          isSaved: true,
+          rehydrated: true
+      });
+  };
 
   const fetchData = useCallback(async () => {
     if (!isSubscribed) return;
@@ -403,13 +484,28 @@ const SpellGenerator: React.FC<SpellGeneratorProps> = ({ session, isSubscribed, 
 
   const handleGenerateSpell = async (mode: 'standard' | 'ai') => {
     if (!formData.outcome) return;
+    
+    // --- ECONOMY CHECK ---
+    if (mode === 'ai') {
+        const canAfford = await economy.spendAether(session.user.id, 3);
+        if (!canAfford) {
+            setEconomyError("Insufficient Faestones");
+            return;
+        }
+    }
+    // ---------------------
+
     setLoading(true);
     setError(null);
     try {
       // This call should now be valid with the updated geminiService.ts
       const spell = await generateSpellAndSigil(formData, mode);
-      setGeneratedSpell(spell);
-      setView('ritual');
+      setSpellState(prev => ({
+          ...prev,
+          generatedSpell: spell,
+          view: 'ritual',
+          isSaved: false
+      })); // batch update
     } catch (err: any) {
       setError(err.message || "The ethereal planes are busy. Please try again.");
     } finally {
@@ -419,6 +515,15 @@ const SpellGenerator: React.FC<SpellGeneratorProps> = ({ session, isSubscribed, 
 
   const handleSave = async () => {
       if (!generatedSpell || isSaved) return;
+
+      // --- ECONOMY CHECK ---
+      const canAfford = await economy.spendAether(session.user.id, 1);
+      if (!canAfford) {
+          setEconomyError("Insufficient Faestones");
+          return;
+      }
+      // ---------------------
+
       setIsSaving(true);
       try {
         const sigilPath = `${session.user.id}/${new Date().toISOString()}.png`;
@@ -511,11 +616,11 @@ const SpellGenerator: React.FC<SpellGeneratorProps> = ({ session, isSubscribed, 
          ) : (
             <div className="space-y-6">
                 {bookOfShadows.map(spell => (
-                    <div key={spell.id} className="bg-white/5 p-4 rounded-lg flex items-center gap-4 border border-white/10">
+                    <div key={spell.id} onClick={() => openSavedSpell(spell)} className="bg-white/5 p-4 rounded-lg flex items-center gap-4 border border-white/10 cursor-pointer hover:bg-white/10 transition-colors group">
                         {/* FIX: Handle potentially missing sigil_url gracefully if legacy data exists */}
-                        <img src={spell.sigil_url || '/images/placeholder_sigil.png'} alt="Sigil" className="w-24 h-24 rounded-md bg-black object-contain" />
+                        <img src={spell.sigil_url || '/images/placeholder_sigil.png'} alt="Sigil" className="w-24 h-24 rounded-md bg-black object-contain group-hover:scale-105 transition-transform" />
                         <div>
-                            <h3 className="text-xl font-bold font-serif text-gray-200">{spell.name}</h3>
+                            <h3 className="text-xl font-bold font-serif text-gray-200 group-hover:text-purple-300 transition-colors">{spell.name} (REPLAY)</h3>
                             <p className="text-sm text-gray-400">{new Date(spell.created_at).toLocaleDateString()}</p>
                             <p className="italic text-purple-300 mt-2">"{spell.intention}"</p>
                         </div>
@@ -543,6 +648,10 @@ const SpellGenerator: React.FC<SpellGeneratorProps> = ({ session, isSubscribed, 
   return (
     <div>
       {renderContent()}
+      <BlockageErrorOverlay 
+        error={economyError} 
+        onDismiss={() => setEconomyError(null)} 
+      />
     </div>
   );
 };

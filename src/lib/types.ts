@@ -57,6 +57,7 @@ export interface GeneratedSpell {
     sigil_url?: string;
     instructions?: string[];
     sigil_description?: string;
+    steps?: string[];
 }
 
 export interface Spell {
