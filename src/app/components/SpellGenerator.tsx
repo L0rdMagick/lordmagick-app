@@ -12,7 +12,7 @@ import { useSpellPersistence } from '@/hooks/useSpellPersistence'; // PERSISTENC
 import { BlockageErrorOverlay } from './economy/BlockageErrorOverlay'; // ECONOMY
 import LoadingSpinner from './LoadingSpinner';
 import { WandIcon, GrimoireFlourish, GrimoireDecoration, StoneTabletButton } from './icons';
-import { Sparkles, Zap, Save, Check, Book, Coins } from 'lucide-react';
+import { Sparkles, Zap, Save, Check, Book, Coins, RotateCcw } from 'lucide-react';
 import Link from 'next/link';
 
 interface SpellGeneratorProps {
@@ -193,11 +193,13 @@ interface RitualDisplayProps {
     onExit: () => void;
     isSaving: boolean;
     isSaved: boolean;
+    isReplay: boolean;
     isRitualComplete: boolean;
     onRitualFinished: () => void;
+    onRedo: () => void;
 }
 
-const RitualDisplay: React.FC<RitualDisplayProps> = ({ generatedSpell, onComplete, onSave, onExit, isSaving, isSaved, isRitualComplete, onRitualFinished }) => {
+const RitualDisplay: React.FC<RitualDisplayProps> = ({ generatedSpell, onComplete, onSave, onExit, isSaving, isSaved, isReplay, isRitualComplete, onRitualFinished, onRedo }) => {
     const [ritualStep, setRitualStep] = useState(isRitualComplete ? 3 : 0);
     const [holdProgress, setHoldProgress] = useState(0);
     const [isHolding, setIsHolding] = useState(false);
@@ -324,22 +326,35 @@ const RitualDisplay: React.FC<RitualDisplayProps> = ({ generatedSpell, onComplet
                 </div>
                 <div className={`relative z-50 transition-opacity duration-1000 ${showButton ? 'opacity-100' : 'opacity-0 pointer-events-none'} flex flex-col gap-4 mt-8 w-64`}>
                     {/* BUTTON 1: SAVE */}
-                    <button 
-                        onClick={onSave} 
-                        disabled={isSaved || isSaving} 
-                        className="w-full h-12 flex items-center justify-center gap-2 bg-indigo-900/80 border border-indigo-400 text-indigo-100 font-serif rounded hover:bg-indigo-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-[0_0_15px_rgba(129,140,248,0.3)] hover:shadow-[0_0_25px_rgba(129,140,248,0.5)] transform hover:scale-105"
-                    >
-                        {isSaved ? <Check size={18} /> : <Save size={18} />}
-                        {isSaved ? "Saved to Grimoire" : isSaving ? "Binding Spell..." : "Save (1 Credit)"}
-                    </button>
+                    {/* BUTTON 1: SAVE - Only show if not a replay */ }
+                    {!isReplay && (
+                        <button 
+                            onClick={onSave} 
+                            disabled={isSaved || isSaving} 
+                            className="w-full h-12 flex items-center justify-center gap-2 bg-indigo-900/80 border border-indigo-400 text-indigo-100 font-serif rounded hover:bg-indigo-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-[0_0_15px_rgba(129,140,248,0.3)] hover:shadow-[0_0_25px_rgba(129,140,248,0.5)] transform hover:scale-105"
+                        >
+                            {isSaved ? <Check size={18} /> : <Save size={18} />}
+                            {isSaved ? "Saved to Grimoire" : isSaving ? "Binding Spell..." : "Save (1 Credit)"}
+                        </button>
+                    )}
                     
                     {/* BUTTON 2: RESET / DO AGAIN */}
+                    {isReplay && (
+                         <button 
+                            onClick={onRedo} 
+                            className="w-full h-12 flex items-center justify-center gap-2 bg-amber-900/60 border border-amber-500/50 text-amber-200 font-serif rounded hover:bg-amber-800 transition-colors"
+                        >
+                            <RotateCcw size={16} />
+                            Redo This Spell
+                        </button>
+                    )}
+
                     <button 
                         onClick={onComplete} 
                         className="w-full h-12 flex items-center justify-center gap-2 bg-transparent border border-purple-500/50 text-purple-200 font-serif rounded hover:bg-purple-900/30 transition-colors"
                     >
                         <Sparkles size={16} />
-                        Cast Another Spell
+                        {isReplay ? "Start New Spell" : "Cast Another Spell"}
                     </button>
 
                     {/* BUTTON 3: EXIT */}
@@ -433,11 +448,12 @@ const SpellGenerator: React.FC<SpellGeneratorProps> = ({ session, isSubscribed, 
       formData: { outcome: '', target: 'Self', feeling: 'Hopeful', element: 'Spirit', timing: 'In divine timing', action: 'attract', name: '', } as SpellFormData,
       generatedSpell: null as GeneratedSpell | null,
       isSaved: false,
+      isReplay: false, // NEW STATE
       ritualCompleted: false, // NEW STATE
       rehydrated: false
   });
 
-  const { view, formData, generatedSpell, isSaved, ritualCompleted } = spellState;
+  const { view, formData, generatedSpell, isSaved, isReplay, ritualCompleted } = spellState;
   
   // Local loading state (transient)
   const [loading, setLoading] = useState(false);
@@ -450,6 +466,7 @@ const SpellGenerator: React.FC<SpellGeneratorProps> = ({ session, isSubscribed, 
   const setFormData = (d: SpellFormData | ((prev: SpellFormData) => SpellFormData)) => setSpellState(prev => ({ ...prev, formData: typeof d === 'function' ? d(prev.formData) : d }));
   const setGeneratedSpell = (s: GeneratedSpell | null) => setSpellState(prev => ({ ...prev, generatedSpell: s }));
   const setIsSaved = (s: boolean) => setSpellState(prev => ({ ...prev, isSaved: s }));
+  const setIsReplay = (r: boolean) => setSpellState(prev => ({ ...prev, isReplay: r }));
   const setRitualCompleted = () => setSpellState(prev => ({ ...prev, ritualCompleted: true })); // NEW SETTER
 
   const searchParams = useSearchParams(); // Get URL params
@@ -495,17 +512,31 @@ const SpellGenerator: React.FC<SpellGeneratorProps> = ({ session, isSubscribed, 
   // Handle Book of Shadows "Open Spell" (Replay)
   // This needs to update the persistent state too
   const openSavedSpell = (spell: Spell) => {
+      let savedFormData = {
+          outcome: spell.intention,
+          target: 'Self',
+          feeling: 'Hopeful',
+          element: spell.element || 'Spirit',
+          timing: '',
+          action: 'attract',
+          name: spell.name
+      } as SpellFormData;
+
+      // Try to parse full saved form data
+      try {
+          if (spell.ritual_data) {
+              const data = typeof spell.ritual_data === 'string' ? JSON.parse(spell.ritual_data) : spell.ritual_data;
+              if (data.formData) {
+                  savedFormData = { ...savedFormData, ...data.formData };
+              }
+          }
+      } catch (e) {
+          console.error("Error parsing saved spell data", e);
+      }
+
       setSpellState({
-          view: 'ritual',
-          formData: { 
-              outcome: spell.intention, 
-              target: 'Self', 
-              feeling: 'Hopeful', 
-              element: spell.element || 'Spirit', 
-              timing: '', 
-              action: 'attract', 
-              name: spell.name 
-          },
+          view: 'form', // Start at form for replay
+          formData: savedFormData,
           generatedSpell: {
               title: spell.name,
               intention: spell.intention,
@@ -521,14 +552,12 @@ const SpellGenerator: React.FC<SpellGeneratorProps> = ({ session, isSubscribed, 
                       return spell.incantation;
                   }
               })(),
-              sigilBase64: spell.sigil_url || '', // We need to handle URL vs Base64 here. RitualDisplay expects Base64 or URL? It renders as base64 string.
-              // Note: Saved spells have URLs. Generated spells have Base64.
-              // RitualDisplay line 324: src={`data:image/png;base64,${generatedSpell.sigilBase64}`}
-              // We need to fix RitualDisplay to handle URLs.
+              sigilBase64: spell.sigil_url || '', 
               steps: []
           },
           isSaved: true,
-          ritualCompleted: false, // Reset to false so user can perform the ritual again
+          isReplay: true, // Mark as replay
+          ritualCompleted: false, 
           rehydrated: true
       });
   };
@@ -578,7 +607,8 @@ const SpellGenerator: React.FC<SpellGeneratorProps> = ({ session, isSubscribed, 
           ...prev,
           generatedSpell: spell,
           view: 'ritual',
-          isSaved: false
+          isSaved: false,
+          isReplay: false
       })); // batch update
     } catch (err: any) {
       setError(err.message || "The ethereal planes are busy. Please try again.");
@@ -616,7 +646,14 @@ const SpellGenerator: React.FC<SpellGeneratorProps> = ({ session, isSubscribed, 
           incantation: generatedSpell.incantation,
           sigil_url: sigilUrl,
           element: formData.element,
-          ritual_data: JSON.stringify({ type: 'CHAOS' }) // Stringified JSON to ensure persistence
+          ritual_data: JSON.stringify({ 
+              type: 'CHAOS',
+              formData: formData, // Save the form inputs
+              generatedSpell: { // Save generated parts (excluding big strings if possible, but sigil is separate)
+                  title: generatedSpell.title,
+                  steps: generatedSpell.steps
+              }
+          }) 
         }, true); // BYPASS LIMIT = true
         setIsSaved(true);
       } catch (err: any) {
@@ -631,8 +668,10 @@ const SpellGenerator: React.FC<SpellGeneratorProps> = ({ session, isSubscribed, 
       fetchData();
       setGeneratedSpell(null);
       setFormData(prev => ({...prev, outcome: '', name: ''}));
+      setFormData(prev => ({...prev, outcome: '', name: ''}));
       setView('form');
       setIsSaved(false);
+      setIsReplay(false);
       setSpellState(prev => ({ ...prev, ritualCompleted: false })); // Reset
   }
 
@@ -644,46 +683,60 @@ const SpellGenerator: React.FC<SpellGeneratorProps> = ({ session, isSubscribed, 
                 <button onClick={() => setView('book')} className="text-purple-400 hover:text-purple-300">View Book of Shadows &rarr;</button>
             )}
         </div>
-        <div className="space-y-6 bg-white/5 p-6 rounded-lg border border-white/10">
+        <div className={`space-y-6 bg-white/5 p-6 rounded-lg border border-white/10 ${isReplay ? 'opacity-80' : ''}`}>
+            {isReplay && (
+                <div className="bg-amber-900/20 border border-amber-500/30 p-3 rounded text-amber-200 text-sm text-center mb-4 font-mono">
+                    READ-ONLY MODE: REPLAYING SAVE
+                </div>
+            )}
             <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">What is your desired outcome?</label>
-                <textarea name="outcome" value={formData.outcome} onChange={handleFormChange} required className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:ring-2 focus:ring-purple-500" placeholder="e.g., Attract a new creative opportunity"/>
+                <textarea name="outcome" value={formData.outcome} onChange={handleFormChange} required disabled={isReplay} className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:ring-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed" placeholder="e.g., Attract a new creative opportunity"/>
             </div>
             <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Who or what is this spell for?</label>
-                <select name="target" value={formData.target} onChange={handleFormChange} className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-purple-500">
+                <select name="target" value={formData.target} onChange={handleFormChange} disabled={isReplay} className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed">
                     <option className="bg-[#1a1a3d]">Self</option><option className="bg-[#1a1a3d]">Another person</option><option className="bg-[#1a1a3d]">A situation</option><option className="bg-[#1a1a3d]">An object</option><option className="bg-[#1a1a3d]">An energy</option>
                 </select>
             </div>
             <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">How do you feel about this intention?</label>
-                <select name="feeling" value={formData.feeling} onChange={handleFormChange} className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-purple-500">
+                <select name="feeling" value={formData.feeling} onChange={handleFormChange} disabled={isReplay} className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed">
                     <option className="bg-[#1a1a3d]">Hopeful</option><option className="bg-[#1a1a3d]">Determined</option><option className="bg-[#1a1a3d]">Passionate</option><option className="bg-[#1a1a3d]">Calm</option><option className="bg-[#1a1a3d]">Anxious</option><option className="bg-[#1a1a3d]">Wounded</option>
                 </select>
             </div>
             <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Which element feels most aligned?</label>
-                <select name="element" value={formData.element} onChange={handleFormChange} className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-purple-500">
+                <select name="element" value={formData.element} onChange={handleFormChange} disabled={isReplay} className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed">
                     <option className="bg-[#1a1a3d]">Spirit</option><option className="bg-[#1a1a3d]">Fire</option><option className="bg-[#1a1a3d]">Water</option><option className="bg-[#1a1a3d]">Air</option><option className="bg-[#1a1a3d]">Earth</option>
                 </select>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-                <button onClick={() => handleGenerateSpell('standard')} disabled={!formData.outcome} className="flex items-center justify-center gap-2 p-3 bg-slate-800/80 border border-slate-600 rounded-lg hover:bg-slate-700 disabled:opacity-50 text-slate-200">
-                    <Zap className="w-5 h-5" />
-                    <div className="text-left">
-                        <div className="font-bold text-sm">Quick Cast</div>
-                        <div className="text-xs opacity-70">Standard Sigil (Free)</div>
-                    </div>
-                </button>
-                <button onClick={() => handleGenerateSpell('ai')} disabled={!formData.outcome} className="flex items-center justify-center gap-2 p-3 bg-purple-900/60 border border-purple-500 rounded-lg hover:bg-purple-800 disabled:opacity-50 relative overflow-hidden group text-purple-100">
-                    <div className="absolute inset-0 bg-purple-500/10 animate-pulse group-hover:bg-purple-500/20"></div>
-                    <Sparkles className="w-5 h-5" />
-                    <div className="text-left relative z-10">
-                        <div className="font-bold text-sm">Deep Magick</div>
-                        <div className="text-xs opacity-70">AI Sigil + Mantra (3 Credits)</div>
-                    </div>
-                </button>
+                {!isReplay ? (
+                    <>
+                        <button onClick={() => handleGenerateSpell('standard')} disabled={!formData.outcome} className="flex items-center justify-center gap-2 p-3 bg-slate-800/80 border border-slate-600 rounded-lg hover:bg-slate-700 disabled:opacity-50 text-slate-200">
+                            <Zap className="w-5 h-5" />
+                            <div className="text-left">
+                                <div className="font-bold text-sm">Quick Cast</div>
+                                <div className="text-xs opacity-70">Standard Sigil (Free)</div>
+                            </div>
+                        </button>
+                        <button onClick={() => handleGenerateSpell('ai')} disabled={!formData.outcome} className="flex items-center justify-center gap-2 p-3 bg-purple-900/60 border border-purple-500 rounded-lg hover:bg-purple-800 disabled:opacity-50 relative overflow-hidden group text-purple-100">
+                            <div className="absolute inset-0 bg-purple-500/10 animate-pulse group-hover:bg-purple-500/20"></div>
+                            <Sparkles className="w-5 h-5" />
+                            <div className="text-left relative z-10">
+                                <div className="font-bold text-sm">Deep Magick</div>
+                                <div className="text-xs opacity-70">AI Sigil + Mantra (3 Credits)</div>
+                            </div>
+                        </button>
+                    </>
+                ) : (
+                    <button onClick={() => setView('ritual')} className="col-span-2 flex items-center justify-center gap-2 p-4 bg-amber-900/60 border border-amber-500 rounded-lg hover:bg-amber-800 text-amber-100 shadow-[0_0_15px_rgba(245,158,11,0.3)]">
+                        <Sparkles className="w-5 h-5" />
+                        <span className="font-bold text-lg font-serif">Begin Ritual</span>
+                    </button>
+                )}
             </div>
         </div>
       </div>
@@ -728,8 +781,10 @@ const SpellGenerator: React.FC<SpellGeneratorProps> = ({ session, isSubscribed, 
                 onExit={onBack} 
                 isSaving={isSaving} 
                 isSaved={isSaved} 
+                isReplay={isReplay}
                 isRitualComplete={ritualCompleted} // Pass persisted state
                 onRitualFinished={setRitualCompleted}
+                onRedo={() => setView('form')} // Go back to form, preserving data
             />;
         case 'book': return renderBook();
         default: return renderForm();
