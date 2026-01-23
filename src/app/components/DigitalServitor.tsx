@@ -216,7 +216,15 @@ export default function DigitalServitor() {
         // 1. Check & Spend Credits
         const canAfford = await checkAndSpendCredits(user.id, COST_BIND_SERVITOR);
         if (!canAfford) {
-            setBlockageError("Insufficient Faestones");
+            // Refresh wallet to get the latest status for debugging
+            const w = await getWalletStatus(user.id);
+            setWallet(w);
+
+            const balance = w ? (w.isUnlimited ? '∞' : w.credits) : 'Unknown';
+            const msg = `Insufficient Faestones. Required: ${COST_BIND_SERVITOR}, Available: ${balance}`;
+            console.log("Bind Action Failed:", { required: COST_BIND_SERVITOR, available: balance, rawWallet: w });
+            
+            setBlockageError(msg);
             return;
         }
 

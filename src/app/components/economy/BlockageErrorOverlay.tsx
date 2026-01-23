@@ -45,15 +45,17 @@ export const BlockageErrorOverlay = ({
 
     return createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-md p-6">
-             <div className="bg-[#1a1a2e] border border-red-500/50 rounded-xl p-8 max-w-sm w-full text-center shadow-[0_0_50px_rgba(220,38,38,0.2)]">
-                {error === "Insufficient Faestones" ? (
+            <div className="bg-[#1a1a2e] border border-red-500/50 rounded-xl p-8 max-w-sm w-full text-center shadow-[0_0_50px_rgba(220,38,38,0.2)]">
+                {error && error.startsWith("Insufficient Faestones") ? (
                     <>
                         <div className="w-16 h-16 mx-auto mb-4 relative drop-shadow-[0_0_15px_rgba(251,191,36,0.6)] animate-pulse">
                             <Image src="/images/faestones.png" alt="Faestone" layout="fill" objectFit="contain" />
                         </div>
                         <h3 className="text-xl font-serif text-amber-100 mb-2">Your pouch is empty…</h3>
                         <p className="text-purple-200 text-sm mb-6 leading-relaxed">
-                            To expand your grimoire, more Faestones are required. Manifest more?
+                            {error === "Insufficient Faestones" 
+                                ? "To expand your grimoire, more Faestones are required. Manifest more?" 
+                                : error}
                         </p>
                         <div className="flex flex-col gap-3">
                             {showStoreLink && (
