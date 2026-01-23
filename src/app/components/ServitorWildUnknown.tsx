@@ -1628,7 +1628,7 @@ export default function ServitorWildUnknown() {
                         
                         <div className="bg-black/30 p-4 rounded mb-6 text-sm">
                             <div className="flex justify-between text-gray-400 mb-2">
-                                <span>Current Aether:</span>
+                                <span>Current Faestones:</span>
                                 <span className="text-white font-bold">{wallet?.credits || 0}</span>
                             </div>
                             <div className="flex justify-between text-amber-400 font-bold border-t border-gray-700 pt-2">
@@ -1678,7 +1678,7 @@ export default function ServitorWildUnknown() {
                  <div className="fixed inset-0 z-500 flex items-center justify-center bg-black/90 p-6 animate-in fade-in">
                     <div className="bg-[#1a1528] border border-red-500 p-8 rounded text-center max-w-sm w-full">
                         <Lock className="mx-auto mb-4 text-red-500 w-12 h-12" />
-                        <h2 className="text-red-100 magick-font text-xl mb-2">Insufficient Aether</h2>
+                        <h2 className="text-red-100 magick-font text-xl mb-2">Insufficient Faestones</h2>
                         <p className="text-gray-400 text-sm mb-6">
                             You require more energy to bind this spirit to your Grimoire.
                         </p>
@@ -1687,7 +1687,7 @@ export default function ServitorWildUnknown() {
                                 onClick={() => router.push('/store?redirect=/spell-room/servitor-app')} 
                                 className="w-full bg-amber-600 hover:bg-amber-500 text-black font-bold py-3 rounded uppercase tracking-wider flex items-center justify-center gap-2"
                             >
-                                <Coins size={16} /> Acquire Aether
+                                <Coins size={16} /> Acquire Faestones
                             </button>
                             <button onClick={() => setShowCreditModal(false)} className="text-gray-500 hover:text-white text-sm underline">
                                 Close
