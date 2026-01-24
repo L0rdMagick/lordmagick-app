@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { 
     X, Lock, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Plus, Minus, 
     RefreshCw, Move, Eye, EyeOff, Settings, User, ArrowLeftRight, Info, 
-    Globe, Save, Coins, FolderOpen, ChevronRight, Trash2, AlertTriangle 
+    Globe, Save, Coins, FolderOpen, ChevronRight, Trash2, AlertTriangle, CheckCircle 
 } from 'lucide-react';
 import { createBrowserClient } from '@supabase/ssr';
 import { deductUserCredits } from '@/lib/services/economyService';
@@ -403,6 +403,7 @@ export default function ServitorWildUnknown() {
 // showCreditModal removed
     const [showConfirmSave, setShowConfirmSave] = useState(false);
     const [showUpdateConfirm, setShowUpdateConfirm] = useState(false);
+    const [successModal, setSuccessModal] = useState<{show: boolean, type: 'update' | 'bind', message: string} | null>(null);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const [showExitWarning, setShowExitWarning] = useState(false);
     
@@ -541,9 +542,12 @@ export default function ServitorWildUnknown() {
     };
 
     // --- SAVING & DELETION LOGIC ---
-    const handleSaveClick = () => {
+    const handleSaveClick = async () => {
         if (!user) return alert("Please log in to save.");
         if (!sName) return alert("Name your Servitor before saving.");
+
+        // Real-time balance check before showing options
+        await refreshWallet(user.id);
 
         // Check if this is an update (Same ID, Same Name)
         const loadedServitor = loadedId ? savedServitors.find(s => s.id === loadedId) : null;
@@ -570,7 +574,13 @@ export default function ServitorWildUnknown() {
 
             if (error) throw error;
             
-            alert(`Servitor "${sName}" updated successfully.`);
+            // alert(`Servitor "${sName}" updated successfully.`);
+            setSuccessModal({
+                show: true, 
+                type: 'update', 
+                message: `Servitor "${sName}" updated successfully.`
+            });
+
             setHasUnsavedChanges(false);
             setShowUpdateConfirm(false);
             fetchSavedServitors(user.id);
@@ -620,7 +630,14 @@ export default function ServitorWildUnknown() {
             alert("Failed to bind spirit to grimoire. " + saveError.message);
         } else {
             playAudio(AUDIO_PATHS.BIND_ACTIVATE);
-            alert("Bound to Grimoire!");
+            // alert("Bound to Grimoire!");
+            
+            setSuccessModal({
+                show: true,
+                type: 'bind',
+                message: "Bound to Grimoire!"
+            });
+
             setHasUnsavedChanges(false);
             setShowConfirmSave(false);
             if (data) setLoadedId(data.id);
@@ -1676,7 +1693,8 @@ export default function ServitorWildUnknown() {
                         <div className="bg-black/30 p-4 rounded mb-6 text-sm">
                             <div className="flex justify-between text-gray-400 mb-2">
                                 <span>Current Faestones:</span>
-                                <span className="text-white font-bold">{wallet?.credits || 0}</span>
+                                {/* Ensure live balance is shown if possible, or fallback to known state */}
+                                <span className="text-white font-bold">{wallet?.credits !== undefined ? wallet.credits : '...'}</span>
                             </div>
                             <div className="flex justify-between text-amber-400 font-bold border-t border-gray-700 pt-2">
                                 <span>Cost:</span>
@@ -1692,6 +1710,45 @@ export default function ServitorWildUnknown() {
                                 Cancel
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* SUCCESS OVERLAY */}
+            {successModal && successModal.show && (
+                <div className="fixed inset-0 z-[600] flex items-center justify-center bg-black/90 p-6 animate-in fade-in">
+                    <div className={`
+                        bg-[#1a1528] p-8 rounded text-center max-w-sm w-full shadow-[0_0_50px_rgba(0,0,0,0.5)] border
+                        ${successModal.type === 'update' 
+                            ? 'border-cyan-500/50 shadow-[0_0_50px_rgba(34,211,238,0.2)]' 
+                            : 'border-amber-500/50 shadow-[0_0_50px_rgba(251,191,36,0.2)]'}
+                    `}>
+                        <div className={`mx-auto mb-4 w-16 h-16 flex items-center justify-center rounded-full border-2 
+                            ${successModal.type === 'update' ? 'border-cyan-500 text-cyan-400' : 'border-amber-500 text-amber-400'}
+                        `}>
+                            <CheckCircle size={32} />
+                        </div>
+                        
+                        <h2 className={`magick-font text-2xl mb-4 
+                            ${successModal.type === 'update' ? 'text-cyan-100' : 'text-[#FFD700]'}
+                        `}>
+                            {successModal.type === 'update' ? 'Spirit Updated' : 'Spirit Bound'}
+                        </h2>
+                        
+                        <p className="text-gray-300 text-sm mb-6">
+                            {successModal.message}
+                        </p>
+
+                        <button 
+                            onClick={() => setSuccessModal(null)} 
+                            className={`w-full font-bold py-3 rounded uppercase tracking-wider transition-colors
+                                ${successModal.type === 'update' 
+                                    ? 'bg-cyan-900/60 hover:bg-cyan-800/60 border border-cyan-500 text-cyan-100' 
+                                    : 'bg-amber-700 hover:bg-amber-600 text-white'}
+                            `}
+                        >
+                            Return to Ritual
+                        </button>
                     </div>
                 </div>
             )}
