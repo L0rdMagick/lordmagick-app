@@ -454,6 +454,14 @@ export default function ServitorWildUnknown() {
                     console.error("Failed to restore draft", e);
                 }
                 sessionStorage.removeItem('WILD_SERVITOR_DRAFT');
+
+                // Check for pending bind action
+                const pendingBind = sessionStorage.getItem('PENDING_BIND_ACTION');
+                if (pendingBind) {
+                    sessionStorage.removeItem('PENDING_BIND_ACTION');
+                    // Add small delay to ensure assets/loading is settled (optional but smoother)
+                    setTimeout(() => setShowConfirmSave(true), 500);
+                }
             }
         };
         initUser();
@@ -654,6 +662,7 @@ export default function ServitorWildUnknown() {
             loadedId
         };
         sessionStorage.setItem('WILD_SERVITOR_DRAFT', JSON.stringify(draft));
+        sessionStorage.setItem('PENDING_BIND_ACTION', 'true');
         router.push('/store?redirect=' + encodeURIComponent(window.location.pathname));
     };
 
