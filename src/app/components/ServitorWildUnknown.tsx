@@ -478,7 +478,7 @@ export default function ServitorWildUnknown() {
                     if (data && !error) {
                         loadServitor(data);
                         // Clear URL param without reload
-                        router.replace('/spell-room/servitor-wild-unknown-app', { scroll: false });
+                        router.replace('/spell-room/servitors-of-the-wild-unknown', { scroll: false });
                     }
                 } catch (e) {
                     console.error("Failed to load servitor from URL ID", e);
@@ -1677,7 +1677,7 @@ export default function ServitorWildUnknown() {
                     error={blockageError}
                     onDismiss={() => setBlockageError(null)}
                     onGoToStore={handleGoToStoreWithSave}
-                    redirectPath="/spell-room/servitor-wild-unknown-app"
+                    redirectPath="/spell-room/servitors-of-the-wild-unknown"
                  />
             )}
 
