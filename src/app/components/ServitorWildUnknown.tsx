@@ -284,12 +284,13 @@ const ServitorRig = React.memo(({
                     ✨
                 </div>
             )}
-            
-            <div className={`w-full h-full ${wrapperClass}`} style={{ transformStyle: 'preserve-3d' }}>
-                <div className={`servitor-rig relative w-full h-full ${animationClass}`} 
+            {/* RIG CONTAINER: pointer-events-none to prevent image interaction, let clicks pass through if needed (though rig is mostly display) */}
+            <div className="absolute inset-0 pointer-events-none select-none">
+                <div className={`servitor-rig relative w-full h-full ${animationClass} ${wrapperClass}`} 
                     style={{ 
                         transform: globalTransform,
-                        transformOrigin: 'bottom center'
+                        transformOrigin: 'bottom center',
+                        transformStyle: 'preserve-3d'
                     }}>
                     {renderStatic(config.wingIndex, ASSETS.BACK, 'wing', getZ('wing'))}
                     {renderPart(config.legIndex, ASSETS.LEGS, 'leg', getZ('legLeft'), 'limb', 'legLeft')}
@@ -1103,7 +1104,19 @@ export default function ServitorWildUnknown() {
     };
 
     return (
-        <div className="fixed inset-0 w-full h-full bg-[#0f0f1a] text-[#dcdcdc] overflow-hidden select-none font-sans flex flex-col">
+        <div className="fixed inset-0 w-full h-full bg-[#0f0f1a] text-[#dcdcdc] overflow-hidden select-none font-sans flex flex-col"
+            onContextMenu={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            }}
+            style={{ 
+                WebkitTouchCallout: 'none', 
+                WebkitUserSelect: 'none', 
+                userSelect: 'none',
+                touchAction: 'manipulation'
+            }}
+        >
             <style jsx global>{`
                 @import url('https://fonts.googleapis.com/css2?family=MedievalSharp&display=swap');
                 
@@ -1414,7 +1427,7 @@ export default function ServitorWildUnknown() {
                     </div>
                 )}
 
-                <div className={`absolute bottom-[130px] right-[20px] w-32 h-32 z-20 flex flex-col items-center transition-all duration-300 ${!showVessel ? 'scale-0 opacity-0' : 'scale-100 opacity-100 anim-pop-in'}`}
+                <div className={`absolute bottom-[130px] right-[20px] w-32 h-32 z-20 flex flex-col items-center transition-all duration-500 ${!showVessel ? 'scale-0 opacity-0' : 'scale-100 opacity-100 anim-pop-in'}`}
                      style={{ zIndex: feedingStage === 'chest_anim' ? 300 : 20 }}>
                     {((config.offsets as any)[isMobileScreen ? 'vesselMobile' : 'vessel']?.v ?? config.offsets.vessel.v) && (
                         <>
@@ -1661,8 +1674,8 @@ export default function ServitorWildUnknown() {
                             className="ornate-btn flex-1 py-3 text-sm font-bold tracking-widest relative overflow-hidden select-none"
                             style={{ touchAction: 'none', userSelect: 'none', WebkitUserSelect: 'none', WebkitTouchCallout: 'none' }}
                         >
-                            <div className="absolute top-0 left-0 h-full bg-[#FFD700]/30 transition-all duration-75 ease-linear" style={{width: `${awakenProgress}%`}}></div>
-                            <span className="relative z-10 text-center w-full block">{isAwakening ? "Awakening..." : "Hold to Awaken"}</span>
+                            <div className="absolute top-0 left-0 h-full bg-[#FFD700]/30 transition-all duration-75 ease-linear pointer-events-none" style={{width: `${awakenProgress}%`}}></div>
+                            <span className="relative z-10 text-center w-full block pointer-events-none">{isAwakening ? "Awakening..." : "Hold to Awaken"}</span>
                         </button>
                         <button onClick={handleSaveClick} className="ornate-btn flex-1 py-3 text-sm font-bold flex items-center justify-center gap-2">
                            <Save size={16} /> Bind ({SAVE_COST})
