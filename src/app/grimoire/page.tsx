@@ -58,6 +58,9 @@ export default function GrimoirePage() {
         if (spell.tradition === 'LOVE') {
             return `/spell-room/love-spells-app/soul-connect-love-spell?loadId=${spell.id}`;
         }
+        if (spell.element === 'Servitor') {
+             return `/spell-room/servitor-wild-unknown-app?loadId=${spell.id}`;
+        }
         
         // 2. Check ritual_data for embedded type (Chaos Magick saves it here)
         if (spell.ritual_data) {

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { 
     X, Lock, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Plus, Minus, 
     RefreshCw, Move, Eye, EyeOff, Settings, User, ArrowLeftRight, Info, 
@@ -313,7 +313,11 @@ ServitorRig.displayName = 'ServitorRig';
 
 export default function ServitorWildUnknown() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const supabase = createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+
+    // Check for loadId query param
+    const queryLoadId = searchParams.get('loadId');
 
     // --- STATE ---
     const [assetsLoaded, setAssetsLoaded] = useState(false);
@@ -461,6 +465,23 @@ export default function ServitorWildUnknown() {
                     sessionStorage.removeItem('PENDING_BIND_ACTION');
                     // Add small delay to ensure assets/loading is settled (optional but smoother)
                     setTimeout(() => setShowConfirmSave(true), 500);
+                }
+            } else if (queryLoadId) {
+                // If NO draft, but we have a Load ID from URL (e.g. Launch from Grimoire)
+                try {
+                    const { data, error } = await supabase
+                        .from('spells')
+                        .select('*')
+                        .eq('id', queryLoadId)
+                        .single();
+                        
+                    if (data && !error) {
+                        loadServitor(data);
+                        // Clear URL param without reload
+                        router.replace('/spell-room/servitor-wild-unknown-app', { scroll: false });
+                    }
+                } catch (e) {
+                    console.error("Failed to load servitor from URL ID", e);
                 }
             }
         };
