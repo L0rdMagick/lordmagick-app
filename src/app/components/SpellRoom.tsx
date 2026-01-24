@@ -221,7 +221,7 @@ const TraditionButton: React.FC<TraditionButtonProps> = ({ tradition }) => {
                                 {/* Caption Text - Adjusted for wide button */}
                                 {/* Button is w-70% aspect-3/1 -> height is ~23%. Bottom 5%. Space needed ~30% */}
                                 <div className="relative z-10 w-[80%] h-full flex items-center justify-center pb-[40%] mt-4">
-                                    <p className="text-[#3c2f2f] text-center font-serif text-xl md:text-2xl leading-snug font-semibold mix-blend-multiply overflow-y-auto max-h-full scrollbar-hide break-words">
+                                    <p className="text-[#3c2f2f] text-center font-serif text-sm md:text-lg leading-snug font-semibold mix-blend-multiply overflow-y-auto max-h-full scrollbar-hide break-words">
                                         {tradition.caption}
                                     </p>
                                 </div>
