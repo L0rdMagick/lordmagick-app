@@ -46,9 +46,9 @@ export const getWalletStatus = async (userId: string) => {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 
-  const { data, error } = await supabase
+    const { data, error } = await supabase
     .from('profiles')
-    .select('credits, tier, last_reset_at')
+    .select('credits, subscription_tier') // Removed last_reset_at and tier as they don't exist in schema
     .eq('id', userId)
     .single();
 
@@ -57,22 +57,26 @@ export const getWalletStatus = async (userId: string) => {
       return null;
   }
   
-  // Calculate if a reset is pending purely for UI display purposes
-  // (The actual reset happens on the next spend action)
-  const lastReset = new Date(data.last_reset_at).getTime();
-  const now = Date.now();
-  const hoursSinceReset = (now - lastReset) / (1000 * 60 * 60);
+  // Map subscription_tier to tier for app compatibility
+  const tier = data.subscription_tier || 'seeker';
+
+  // Calculate if a reset is pending (Disabled: last_reset_at missing in schema)
+  // const lastReset = new Date(data.last_reset_at).getTime();
+  // const now = Date.now();
+  // const hoursSinceReset = (now - lastReset) / (1000 * 60 * 60);
+
   
   let displayCredits = data.credits;
   
   // If user is Initiate and >24h have passed, show 3 (pending reset) IF they have less than 3
-  if (data.tier === 'initiate' && hoursSinceReset >= 24 && data.credits < 3) {
-      displayCredits = 3; 
-  }
+  // Daily Reset UI logic disabled until last_reset_at column is verified
+  // if (tier === 'initiate' && hoursSinceReset >= 24 && data.credits < 3) {
+  //    displayCredits = 3; 
+  // }
 
   return {
       credits: displayCredits,
-      tier: data.tier,
-      isUnlimited: data.tier === 'adept'
+      tier: tier,
+      isUnlimited: tier === 'adept'
   };
 };
