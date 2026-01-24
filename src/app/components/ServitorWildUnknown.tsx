@@ -635,6 +635,17 @@ export default function ServitorWildUnknown() {
         }
     };
 
+    const handleGoToStoreWithSave = () => {
+        const draft = {
+            sName,
+            sPurpose,
+            config,
+            loadedId
+        };
+        sessionStorage.setItem('WILD_SERVITOR_DRAFT', JSON.stringify(draft));
+        router.push('/store?redirect=' + encodeURIComponent(window.location.pathname));
+    };
+
     const handleDeleteClick = (e: React.MouseEvent, id: string) => {
         e.stopPropagation();
         setShowDeleteConfirm(id);
@@ -1624,6 +1635,7 @@ export default function ServitorWildUnknown() {
                  <BlockageErrorOverlay
                     error={blockageError}
                     onDismiss={() => setBlockageError(null)}
+                    onGoToStore={handleGoToStoreWithSave}
                     redirectPath="/spell-room/servitor-wild-unknown-app"
                  />
             )}
