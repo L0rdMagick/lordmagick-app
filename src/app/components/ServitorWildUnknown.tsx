@@ -1657,8 +1657,9 @@ export default function ServitorWildUnknown() {
                                 stopHold();
                             }}
                             onPointerCancel={(e) => stopHold()}
-                            className="ornate-btn flex-1 py-3 text-sm font-bold tracking-widest relative overflow-hidden"
-                            style={{ touchAction: 'none' }}
+                            onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                            className="ornate-btn flex-1 py-3 text-sm font-bold tracking-widest relative overflow-hidden select-none"
+                            style={{ touchAction: 'none', userSelect: 'none', WebkitUserSelect: 'none', WebkitTouchCallout: 'none' }}
                         >
                             <div className="absolute top-0 left-0 h-full bg-[#FFD700]/30 transition-all duration-75 ease-linear" style={{width: `${awakenProgress}%`}}></div>
                             <span className="relative z-10 text-center w-full block">{isAwakening ? "Awakening..." : "Hold to Awaken"}</span>
@@ -1869,8 +1870,9 @@ export default function ServitorWildUnknown() {
                                         stopHold();
                                     }}
                                     onPointerCancel={(e) => stopHold()}
-                                    style={{ transform: 'translateZ(0) scale(1)', touchAction: 'none' }} 
-                                    className={`w-40 h-40 rounded-full border-4 border-[#FFD700] flex items-center justify-center relative overflow-hidden bg-black/60 shadow-[0_0_50px_#FFD700] transition-opacity duration-300 ${isFeeding ? 'opacity-90' : 'opacity-100'} hover:bg-black/80`}
+                                    onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                                    style={{ transform: 'translateZ(0) scale(1)', touchAction: 'none', userSelect: 'none', WebkitUserSelect: 'none', WebkitTouchCallout: 'none' }} 
+                                    className={`w-40 h-40 rounded-full border-4 border-[#FFD700] flex items-center justify-center relative overflow-hidden bg-black/60 shadow-[0_0_50px_#FFD700] transition-opacity duration-300 ${isFeeding ? 'opacity-90' : 'opacity-100'} hover:bg-black/80 select-none`}
                                 >
                                     <div 
                                         className="absolute bottom-0 left-0 w-full bg-[#FFD700] z-10" 
