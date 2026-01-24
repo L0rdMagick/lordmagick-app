@@ -180,7 +180,7 @@ const TraditionButton: React.FC<TraditionButtonProps> = ({ tradition }) => {
             <Link 
                 href={href} 
                 onClick={handleInteraction}
-                className={`group relative block w-full overflow-hidden rounded-xl bg-black/40 border border-white/10 transition-all duration-300 ${!tradition.isAvailable ? 'cursor-not-allowed grayscale opacity-70' : 'cursor-pointer hover:border-purple-500/50 hover:shadow-[0_0_20px_rgba(168,85,247,0.3)]'}`}
+                className={`group relative block w-full overflow-hidden rounded-xl bg-transparent border border-transparent transition-all duration-300 ${!tradition.isAvailable ? 'cursor-not-allowed grayscale opacity-70' : 'cursor-pointer hover:border-purple-500/50 hover:shadow-[0_0_20px_rgba(168,85,247,0.3)]'}`}
                 role="button"
                 aria-expanded={isTouched} 
                 aria-label={`Open ${tradition.name} Ritual`}
