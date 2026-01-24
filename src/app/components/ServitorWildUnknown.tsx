@@ -402,6 +402,7 @@ export default function ServitorWildUnknown() {
 
 // showCreditModal removed
     const [showConfirmSave, setShowConfirmSave] = useState(false);
+    const [showUpdateConfirm, setShowUpdateConfirm] = useState(false);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const [showExitWarning, setShowExitWarning] = useState(false);
     
@@ -543,7 +544,40 @@ export default function ServitorWildUnknown() {
     const handleSaveClick = () => {
         if (!user) return alert("Please log in to save.");
         if (!sName) return alert("Name your Servitor before saving.");
-        setShowConfirmSave(true);
+
+        // Check if this is an update (Same ID, Same Name)
+        const loadedServitor = loadedId ? savedServitors.find(s => s.id === loadedId) : null;
+        if (loadedId && loadedServitor && loadedServitor.name.trim().toLowerCase() === sName.trim().toLowerCase()) {
+            setShowUpdateConfirm(true); // Open Free Update Modal
+        } else {
+            setShowConfirmSave(true); // Open Paid Creation Modal
+        }
+    };
+
+    const performUpdate = async () => {
+        if (!user || !loadedId) return;
+
+        try {
+            const { error } = await supabase.from('spells').update({
+                name: sName,
+                intention: sPurpose,
+                incantation: `I bind the spirit ${sName} to the task: ${sPurpose}`,
+                ritual_data: {
+                    ...config,
+                    type: 'SERVITOR'
+                }
+            }).eq('id', loadedId);
+
+            if (error) throw error;
+            
+            alert(`Servitor "${sName}" updated successfully.`);
+            setHasUnsavedChanges(false);
+            setShowUpdateConfirm(false);
+            fetchSavedServitors(user.id);
+        } catch (error: any) {
+            console.error("Update failed:", error);
+            alert("Failed to update servitor: " + error.message);
+        }
     };
 
     const confirmSave = async () => {
@@ -551,47 +585,7 @@ export default function ServitorWildUnknown() {
 
         // CHECK NAME CONFLICTS
         const nameConflict = savedServitors.find(s => s.name.trim().toLowerCase() === sName.trim().toLowerCase());
-        const loadedServitor = loadedId ? savedServitors.find(s => s.id === loadedId) : null;
         
-        // Scenario A: Update (Free)
-        if (loadedId && loadedServitor && loadedServitor.name.trim().toLowerCase() === sName.trim().toLowerCase()) {
-             if (!window.confirm(`Overwrite your existing servitor "${sName}" with these changes?`)) return;
-
-             try {
-                // For Wild Unknown, we are storing data in 'spells' table but DigitalServitor uses 'servitors' table?
-                // WAIT: ServitorWildUnknown uses 'spells' table (element='Servitor').
-                // DigitalServitor uses 'servitors' table. 
-                // The user asked to apply changes from DigitalServitor to ServitorWildUnknown. 
-                // DigitalServitor uses 'updateServitor' which targets 'servitors' table.
-                // ServitorWildUnknown targets 'spells' table.
-                // I need to use `supabase.from('spells').update(...)` here, OR migrate this app to use `servitors` table?
-                // The prompt was "apply those changes... where applicable".
-                // Migrating tables is risky without explicit instruction. 
-                // I should replicate the LOGIC but target the SPELLS table.
-                
-                const { error } = await supabase.from('spells').update({
-                    name: sName,
-                    intention: sPurpose,
-                    incantation: `I bind the spirit ${sName} to the task: ${sPurpose}`,
-                    ritual_data: {
-                        ...config,
-                        type: 'SERVITOR'
-                    }
-                }).eq('id', loadedId);
-
-                if (error) throw error;
-                
-                alert(`Servitor "${sName}" updated successfully.`);
-                setHasUnsavedChanges(false);
-                setShowConfirmSave(false);
-                fetchSavedServitors(user.id);
-             } catch (error: any) {
-                 console.error("Update failed:", error);
-                 alert("Failed to update servitor: " + error.message);
-             }
-             return;
-        }
-
         // Scenario B: Create New (Cost)
         if (nameConflict) {
             alert(`You already have a servant named "${nameConflict.name}". Please choose a unique name.`);
@@ -1638,6 +1632,35 @@ export default function ServitorWildUnknown() {
                     onGoToStore={handleGoToStoreWithSave}
                     redirectPath="/spell-room/servitor-wild-unknown-app"
                  />
+            )}
+
+            {/* CONFIRM UPDATE MODAL */}
+            {showUpdateConfirm && (
+                <div className="fixed inset-0 z-500 flex items-center justify-center bg-black/90 p-6 animate-in fade-in">
+                    <div className="bg-[#1a1528] border border-cyan-500/50 p-8 rounded text-center max-w-sm w-full shadow-[0_0_50px_rgba(34,211,238,0.2)]">
+                        <RefreshCw size={48} className="mx-auto mb-4 text-cyan-400" />
+                        <h2 className="text-[#FFD700] magick-font text-2xl mb-2">Update Spirit?</h2>
+                        <p className="text-gray-300 text-sm mb-6">
+                            Overwrite existing servitor "{sName}" with current configuration?
+                        </p>
+                        
+                        <div className="bg-black/30 p-4 rounded mb-6 text-sm">
+                            <div className="flex justify-between text-cyan-400 font-bold border-t border-gray-700 pt-2">
+                                <span>Cost:</span>
+                                <span>Free</span>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col gap-3">
+                            <button onClick={performUpdate} className="w-full bg-cyan-900/60 hover:bg-cyan-800/60 border border-cyan-500 text-cyan-100 font-bold py-3 rounded uppercase tracking-wider transition-colors">
+                                Update & Save
+                            </button>
+                            <button onClick={() => setShowUpdateConfirm(false)} className="text-gray-500 hover:text-white text-sm underline">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
 
             {/* CONFIRMATION SAVE MODAL */}
