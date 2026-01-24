@@ -191,7 +191,7 @@ const TraditionButton: React.FC<TraditionButtonProps> = ({ tradition }) => {
                         src={tradition.image}
                         alt={thumbnailAlt}
                         fill
-                        className={`object-cover transition-transform duration-700 ease-in-out ${tradition.isAvailable ? 'group-hover:scale-110' : ''}`}
+                        className={`object-cover transition-all duration-700 ease-in-out ${tradition.isAvailable ? (isTouched ? 'opacity-0' : 'group-hover:opacity-0') : ''}`}
                     />
                     
                     {/* BINDING OF ISAAC STYLE OVERLAY (Bottom Sheet) */}
