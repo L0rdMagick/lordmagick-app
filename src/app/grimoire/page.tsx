@@ -360,34 +360,30 @@ export default function GrimoirePage() {
     const renderSection = () => (
         <>
             {/* Header Zone */}
-            <div className="absolute z-10 flex items-start justify-between" style={HEADER_ZONE}>
-                {/* Title & Page Number Card */}
-                <div className="flex flex-col items-start px-4 py-2 rounded-lg border border-[#8b4513]/40 bg-[#f4e4bc]/80 backdrop-blur-[2px] shadow-sm max-w-[75%] h-full justify-center">
-                    <h2 className="text-[2.2vh] leading-tight font-serif text-[#3e2c22] font-bold line-clamp-2" style={{ fontFamily: 'Cinzel, serif' }}>
+            <div className="absolute z-10 flex items-end justify-between px-4 pb-2" style={HEADER_ZONE}>
+                {/* Title & Page Number (Text Only) */}
+                <div className="flex flex-col items-start justify-end h-full">
+                    <h2 className="text-[3vh] leading-none font-serif text-[#5c4033] mb-1" style={{ fontFamily: 'Cinzel, serif' }}>
                         {activeSection?.title}
                     </h2>
-                    <div className="w-full h-px bg-[#8b4513]/20 my-1"></div>
-                    <p className="text-[1.1vh] font-mono text-[#5c4033] uppercase tracking-widest font-semibold">
-                        Page {currentPage} / {totalPages}
+                     <p className="text-[1.5vh] italic font-serif text-[#8b4513]/60">
+                        Page {currentPage} of {totalPages}
                     </p>
                 </div>
 
-                 {/* Return Button Card */}
+                 {/* Return Button (Text Only) */}
                 <button 
                     onClick={() => setViewMode('TOC')} 
-                    className="h-full px-3 rounded-lg border border-[#8b4513]/40 bg-[#f4e4bc]/80 backdrop-blur-[2px] hover:bg-[#5c4033] hover:text-[#f4e4bc] hover:border-[#f4e4bc] transition-all duration-300 shadow-sm flex flex-col items-center justify-center group gap-1"
+                    className="h-full flex items-end pb-2 mb-1 text-[1.8vh] font-serif font-bold text-[#3e2c22] underline decoration-[#8b4513]/40 underline-offset-4 hover:text-[#8b4513] transition-colors"
                 >
-                    <RotateCcw size={16} className="text-[#5c4033] group-hover:text-[#f4e4bc]" />
-                    <span className="text-[1vh] font-serif uppercase tracking-wider font-bold text-[#5c4033] group-hover:text-[#f4e4bc]">
-                        Index
-                    </span>
+                    Return to Index
                 </button>
             </div>
 
             {/* Body Zone */}
              <div className="absolute z-10" style={BODY_ZONE}>
-                {/* Grid expands to fill available space. 1 column, 2 rows. Maximize cards. */}
-                <div className="grid grid-cols-1 grid-rows-2 gap-2 w-full h-full justify-items-center items-center p-1">
+                {/* Grid expands to fill available space. 1 column, 2 rows. Reduced gap. */}
+                <div className="grid grid-cols-1 grid-rows-2 gap-1 w-full h-full justify-items-center items-center p-0">
                     {Array.from({ length: 2 }).map((_, idx) => {
                         const spell = currentSpells[idx]; 
                         // Cycle images 1-6
@@ -412,7 +408,7 @@ export default function GrimoirePage() {
                                             
                                             {/* Writable Area - Title Only, Sized to fit */}
                                             <div 
-                                                className="absolute flex flex-col items-center justify-center text-center p-2 z-10 overflow-hidden"
+                                                className="absolute flex flex-col items-center justify-center text-center p-4 z-10 overflow-hidden"
                                                 style={{
                                                     left: '19.25%',
                                                     top: '19.25%',
@@ -420,9 +416,12 @@ export default function GrimoirePage() {
                                                     height: '61.5%'
                                                 }}
                                             >
-                                                <h3 className="font-serif font-bold text-[2vh] md:text-[2.5vh] leading-snug text-[#3e2c22] drop-shadow-sm text-balance max-h-full overflow-hidden flex items-center justify-center">
-                                                    {spell.name}
-                                                </h3>
+                                                {/* Text scale reduced and clamped */}
+                                                <div className="w-full h-full flex items-center justify-center">
+                                                    <h3 className="font-serif font-bold text-[1.4vh] md:text-[1.8vh] leading-tight text-[#3e2c22] drop-shadow-sm text-balance line-clamp-4">
+                                                        {spell.name}
+                                                    </h3>
+                                                </div>
                                             </div>
                                         </div>
                                     </button>
@@ -445,15 +444,14 @@ export default function GrimoirePage() {
         return (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-300">
                 {/* 
-                    Constraint: 
-                    Mobile: 90% width (w-[90vw]).
-                    Desktop: 80% height of available area (approx h-[80vh]).
+                    Constraint: Dimensions match regular page (1529/2048) on all devices
+                    Max height 85vh to fit screen
                 */}
-                <div className="relative w-[90vw] md:w-auto md:h-[80vh] aspect-square shadow-2xl">
+                <div className="relative h-auto w-full max-h-[85vh] aspect-[1529/2048] shadow-2xl">
                     {/* Close Button Outside or Corner */}
                     <button 
                         onClick={onClose} 
-                        className="absolute -top-12 md:-right-12 right-0 z-50 p-2 text-white/50 hover:text-white transition-colors"
+                        className="absolute -top-12 -right-4 md:-right-12 z-50 p-2 text-white/50 hover:text-white transition-colors"
                     >
                         <X size={32} />
                     </button>
@@ -466,7 +464,7 @@ export default function GrimoirePage() {
                         className="object-contain drop-shadow-2xl" 
                     />
                     
-                    {/* Content Area - Same Constraints as Small Card */}
+                    {/* Content Area */}
                     <div 
                         className="absolute flex flex-col items-center text-center p-2 z-10 overflow-hidden"
                         style={{
@@ -477,24 +475,25 @@ export default function GrimoirePage() {
                         }}
                     >
                         <div className="w-full h-full flex flex-col overflow-y-auto custom-scrollbar scrollbar-thin scrollbar-thumb-[#5c4033]/50 pr-1">
-                            <h2 className="font-serif font-bold text-2xl md:text-3xl lg:text-4xl mb-4 text-[#3e2c22] shrink-0">{spell.name}</h2>
+                            {/* Scaled Text for Detail View */}
+                            <h2 className="font-serif font-bold text-[2.5vh] mb-2 text-[#3e2c22] shrink-0 leading-tight">{spell.name}</h2>
                             
-                            <p className="font-serif italic text-sm md:text-base lg:text-lg text-[#5c4033] mb-6 whitespace-pre-wrap shrink-0">
+                            <p className="font-serif italic text-[1.8vh] text-[#5c4033] mb-4 whitespace-pre-wrap shrink-0">
                                 "{spell.intention}"
                             </p>
                             
                             {spell.incantation && (
-                                 <div className="text-xs md:text-sm text-[#8b4513] mb-6 text-left w-full border-t border-[#8b4513]/20 pt-4 shrink-0 font-mono">
+                                 <div className="text-[1.4vh] text-[#8b4513] mb-4 text-left w-full border-t border-[#8b4513]/20 pt-2 shrink-0 font-mono">
                                     {spell.incantation}
                                  </div>
                             )}
 
-                            {/* Push button to bottom if space inside scroll view, or just at end */}
-                            <div className="mt-auto pt-4 w-full shrink-0 sticky bottom-0 bg-transparent pb-1">
+                            {/* Push button to bottom */}
+                            <div className="mt-auto pt-2 w-full shrink-0 sticky bottom-0 bg-transparent pb-1">
                                 {replayUrl && (
                                     <Link 
                                         href={replayUrl}
-                                        className="block w-full py-3 bg-[#5c4033] text-[#d4af37] border border-[#d4af37]/30 font-serif uppercase tracking-widest text-xs md:text-sm rounded hover:bg-[#3e2c22] transition-colors shadow-lg"
+                                        className="block w-full py-[1.5vh] bg-[#5c4033] text-[#d4af37] border border-[#d4af37]/30 font-serif uppercase tracking-widest text-[1.2vh] rounded hover:bg-[#3e2c22] transition-colors shadow-lg"
                                     >
                                         Open Ritual
                                     </Link>
