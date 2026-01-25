@@ -99,8 +99,35 @@ export default function GrimoirePage() {
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     ));
 
-    // ... (useEffect load remains same) ...
-    // ... (Load Data useEffect remains same) ...
+    // Load Data
+    useEffect(() => {
+        const load = async () => {
+            console.log("Grimoire: Starting loading process...");
+            try {
+                const { data: { user }, error: authError } = await supabase.auth.getUser();
+                
+                if (authError) {
+                    console.error("Grimoire: Auth Error", authError);
+                }
+
+                if (user) {
+                    console.log("Grimoire: User found", user.id);
+                    console.log("Grimoire: Fetching spells...");
+                    const data = await getSpells(user.id);
+                    console.log("Grimoire: Spells fetched", data?.length);
+                    setSpells(data || []);
+                } else {
+                    console.log("Grimoire: No user session found.");
+                }
+            } catch (e) {
+                console.error("Grimoire: Failed to load Grimoire", e);
+            } finally {
+                console.log("Grimoire: Loading complete. Setting loading to false.");
+                setLoading(false);
+            }
+        };
+        load();
+    }, [supabase]);
     // Derived Data: Sections
     const sections = useMemo(() => {
         const map = new Map<string, SpellSection>();
