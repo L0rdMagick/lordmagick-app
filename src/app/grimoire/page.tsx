@@ -28,89 +28,7 @@ interface SpellMetadata {
 
 // --- ASSETS & RANDOMIZATION ---
 
-const SPRITE_ASSETS: Record<string, string[]> = {
-    symbols: ['symbols1.png', 'symbols2.png', 'symbols3.png'],
-    tools: ['tools .png', 'tools1.png', 'tools3.png', 'tools4.png'],
-    astrology: ['astrology.png'],
-    crystals: ['crystals.png'],
-    deities: ['deities1.jpeg', 'deities2.jpeg', 'deities3.png'],
-    foods: ['foods.png'],
-    herbs: ['herbs2.png', 'herbs3.png', 'herbs4.png'],
-    offerings: ['offerings1.png', 'offerings2.png', 'offerings3.png', 'offerings4.png'],
-    runes: ['runes.png']
-};
 
-const CATEGORIES = Object.keys(SPRITE_ASSETS);
-
-// Helper to get random sprites based on a seed (stable per page)
-const getPageSprites = (seedKey: string) => {
-
-
-    // Cleaned up hash function
-    const sToN = (str: string) => {
-        let hash = 0;
-        for (let i = 0; i < str.length; i++) {
-            hash = str.charCodeAt(i) + ((hash << 5) - hash);
-        }
-        return Math.abs(hash);
-    };
-
-    const seed = sToN(seedKey);
-    const rand = (offset: number) => {
-        const x = Math.sin(seed + offset) * 10000;
-        return x - Math.floor(x);
-    };
-
-    // 1. Pick 3-4 sprites
-    const count = 3 + Math.floor(rand(1) * 2); // 3 or 4
-    
-    // 2. Pick unique categories
-    const shuffledCats = [...CATEGORIES].sort((a, b) => rand(a.length) - 0.5);
-    const selectedCats = shuffledCats.slice(0, count);
-
-    // 3. Generate Props
-    return selectedCats.map((cat, i) => {
-        const images = SPRITE_ASSETS[cat];
-        const imgIndex = Math.floor(rand(i + 10) * images.length);
-        const image = images[imgIndex];
-        
-        // Pick a random sprite from the 4x4 sheet (0-15)
-        const spriteIndex = Math.floor(rand(i + 99) * 16);
-        
-        // Zones: 0:TL, 1:TR, 2:BL, 3:BR (Effectively corners of the content container)
-        const zone = i % 4; 
-        
-        let position: React.CSSProperties = {};
-        const base = 2; // base padding %, close to edge but not touching
-
-        if (zone === 0) { // TL
-            position = { top: `${base + rand(i)*15}%`, left: `${base + rand(i+1)*10}%` };
-        } else if (zone === 1) { // TR
-            position = { top: `${base + rand(i)*15}%`, right: `${base + rand(i+1)*10}%` };
-        } else if (zone === 2) { // BL
-            position = { bottom: `${base + rand(i)*15}%`, left: `${base + rand(i+1)*10}%` };
-        } else { // BR
-            position = { bottom: `${base + rand(i)*15}%`, right: `${base + rand(i+1)*10}%` };
-        }
-
-        const rotation = (rand(i + 30) * 40) - 20; // -20 to 20
-        const scale = 0.8 + (rand(i + 40) * 0.4); // 0.8 to 1.2
-        const width = 12 + (rand(i + 50) * 8); // 12% to 20% width relative to container
-
-        return {
-            src: `/images/grimoire-images/sprite-sheets/${image}`,
-            style: {
-                ...position,
-                transform: `rotate(${rotation}deg) scale(${scale})`,
-                width: `${width}%`,
-                opacity: 0.85, 
-                zIndex: 0 
-            },
-            id: `${cat}-${i}`,
-            spriteIndex
-        };
-    });
-};
 
 
 // --- HELPER LOGIC ---
@@ -242,15 +160,7 @@ export default function GrimoirePage() {
     const totalPages = activeSection ? Math.ceil(activeSection.spells.length / itemsPerPage) : 0;
     const currentPage = pageOffset + 1;
 
-    // Sprite Generation (Top Level to avoid Hook Rule violations)
-    const spriteSeed = viewMode === 'SECTION' 
-            ? `${activeSectionId}-${pageOffset}`
-            : viewMode === 'TOC' ? 'TOC-PAGE' : 'COVER';
 
-    const pageSprites = useMemo(() => {
-        if (viewMode === 'COVER') return [];
-        return getPageSprites(spriteSeed);
-    }, [spriteSeed, viewMode]);
 
     // --- NAVIGATION HANDLERS ---
     
@@ -372,32 +282,7 @@ export default function GrimoirePage() {
                             height: '82.86%'
                         }}
                     >
-                       {/* Decorative Sprites Layer - Behind Content */}
-                       {pageSprites.map(sprite => {
-                           // Calculate Sprite Sheet Offset (4x4 Grid)
-                           const col = sprite.spriteIndex % 4;
-                           const row = Math.floor(sprite.spriteIndex / 4);
-                           
-                           return (
-                               <div 
-                                   key={sprite.id} 
-                                   className="absolute aspect-square pointer-events-none mix-blend-multiply overflow-hidden" 
-                                   style={sprite.style}
-                               >
-                                   {/* Inner Image scaled to 400% and shifted */}
-                                   <div className="relative w-[400%] h-[400%]" style={{
-                                        transform: `translate(-${col * 25}%, -${row * 25}%)`
-                                   }}>
-                                       <Image 
-                                           src={sprite.src} 
-                                           alt="decoration" 
-                                           fill 
-                                           className="object-contain" 
-                                       />
-                                   </div>
-                               </div>
-                           );
-                       })}
+
 
                        {/* Actual Content */}
                        <div className="relative z-10 w-full h-full flex flex-col">
