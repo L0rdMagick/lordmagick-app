@@ -94,10 +94,10 @@ export default function GrimoirePage() {
     
     const [selectedSpell, setSelectedSpell] = useState<{ spell: Spell, image: string } | null>(null);
 
-    const supabase = createBrowserClient(
+    const [supabase] = useState(() => createBrowserClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
+    ));
 
     // ... (useEffect load remains same) ...
     // ... (Load Data useEffect remains same) ...
