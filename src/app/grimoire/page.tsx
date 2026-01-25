@@ -360,22 +360,22 @@ export default function GrimoirePage() {
     const renderSection = () => (
         <>
             {/* Header Zone */}
-            <div className="absolute z-10 flex items-center px-4 overflow-hidden" style={HEADER_ZONE}>
+            <div className="absolute z-10 grid grid-cols-[3fr_1fr] items-center px-4 overflow-hidden gap-2" style={HEADER_ZONE}>
                 {/* Title & Page Number (75% Width Strict) */}
-                <div className="w-[75%] h-full flex flex-col items-start justify-center pr-2">
-                    <h2 className="w-full text-[2.5vh] leading-none font-serif text-[#5c4033] mb-1 text-left truncate" style={{ fontFamily: 'Cinzel, serif' }}>
+                <div className="flex flex-col items-start justify-center pr-2 h-full overflow-hidden">
+                    <h2 className="w-full text-[2.2vh] leading-tight font-serif text-[#5c4033] mb-1 text-left break-words" style={{ fontFamily: 'Cinzel, serif' }}>
                         {activeSection?.title}
                     </h2>
-                     <p className="text-[1.5vh] italic font-serif text-[#8b4513]/60 truncate w-full text-left">
+                     <p className="text-[1.4vh] italic font-serif text-[#8b4513]/60 w-full text-left">
                         Page {currentPage} of {totalPages}
                     </p>
                 </div>
 
                  {/* Return Button (25% Width Strict) */}
-                <div className="w-[25%] h-full flex items-center justify-end pl-1">
+                <div className="flex items-center justify-end pl-1 h-full">
                     <button 
                         onClick={() => setViewMode('TOC')} 
-                        className="text-[1.8vh] font-serif font-bold text-[#3e2c22] underline decoration-[#8b4513]/40 underline-offset-4 hover:text-[#8b4513] transition-colors whitespace-nowrap"
+                        className="text-[1.6vh] font-serif font-bold text-[#3e2c22] underline decoration-[#8b4513]/40 underline-offset-4 hover:text-[#8b4513] transition-colors text-right leading-tight"
                     >
                         Return to Index
                     </button>
