@@ -447,9 +447,16 @@ export default function GrimoirePage() {
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-300">
                 {/* 
                     Constraint: Dimensions match CUSTOM IMAGE (947/1681)
-                    Max height 85vh to fit screen
+                    Sizing: Fit both 90vw (mobile) and 85vh (desktop) constraints while keeping aspect ratio.
+                    This ensures the DIV exactly matches the size of the rendered image.
                 */}
-                <div className="relative h-auto w-full max-h-[85vh] aspect-[947/1681] shadow-2xl">
+                <div 
+                    className="relative shadow-2xl"
+                    style={{
+                        aspectRatio: '947/1681',
+                        width: 'min(90vw, 85vh * 0.5633)' // 947/1681 approx 0.5633
+                    }}
+                >
                     {/* Close Button Outside or Corner */}
                     <button 
                         onClick={onClose} 
@@ -463,12 +470,12 @@ export default function GrimoirePage() {
                         src="/images/grimoire-images/detailed-spell-info.png"
                         alt={spell.name} 
                         fill 
-                        className="object-contain drop-shadow-2xl" 
+                        className="object-cover rounded-sm" 
                     />
                     
                     {/* Content Area - Adjusted to fit strictly inside the parchment graphic */}
                     <div 
-                        className="absolute flex flex-col items-center text-center z-10 overflow-hidden"
+                        className="absolute flex flex-col items-center text-center z-10 overflow-hidden px-[5px]"
                         style={{
                            left: '15%',
                            top: '18%',
@@ -476,7 +483,7 @@ export default function GrimoirePage() {
                            height: '64%'
                         }}
                     >
-                        <div className="w-full h-full flex flex-col overflow-y-auto custom-scrollbar scrollbar-thin scrollbar-thumb-[#5c4033]/50 pr-1 p-4">
+                        <div className="w-full h-full flex flex-col overflow-y-auto custom-scrollbar scrollbar-thin scrollbar-thumb-[#5c4033]/50 p-2">
                             {/* Scaled Text for Detail View */}
                             <h2 className="font-serif font-bold text-[2.5vh] mb-4 text-[#3e2c22] shrink-0 leading-tight">{spell.name}</h2>
                             
