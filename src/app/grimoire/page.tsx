@@ -136,7 +136,7 @@ export default function GrimoirePage() {
     const activeSection = sections.find(s => s.id === activeSectionId);
     
     // Pagination Logic
-    const itemsPerPage = 6;
+    const itemsPerPage = 2;
     const currentSpells = activeSection 
         ? activeSection.spells.slice(pageOffset * itemsPerPage, (pageOffset + 1) * itemsPerPage)
         : [];
@@ -166,10 +166,8 @@ export default function GrimoirePage() {
                     setActiveSectionId(sections[currentIndex + 1].id);
                     setPageOffset(0);
                 } else {
-                    // End of book? Cycle back to TOC or stay?
-                    // User said "go to next page... continue on to the next section"
-                    // If last page of last section, maybe go back to cover or stay? 
-                    // Let's go back to TOC for closure
+                    // Start over or cycle?
+                    // Go back to TOC
                     setViewMode('TOC');
                     setActiveSectionId(null);
                 }
@@ -342,18 +340,21 @@ export default function GrimoirePage() {
                 </button>
             </header>
 
-            {/* Grid expands to fill available space. 2 columns, 3 rows. Minimal gap (5px). */}
-            <div className="flex-grow grid grid-cols-2 grid-rows-3 gap-[5px] w-full min-h-0 justify-items-center content-center">
-                {Array.from({ length: 6 }).map((_, idx) => {
-                    const spell = currentSpells[idx]; // May be undefined
-                    const cardImage = `/images/grimoire-images/spell-card-${idx + 1}.png`; // 1 to 6
+            {/* Grid expands to fill available space. 1 column, 2 rows. Maximize cards. */}
+            <div className="flex-grow grid grid-cols-1 grid-rows-2 gap-[2vh] w-full h-full justify-items-center items-center overflow-hidden">
+                {Array.from({ length: 2 }).map((_, idx) => {
+                    const spell = currentSpells[idx]; 
+                    // Cycle images 1-6
+                    const imageIndex = ((pageOffset * itemsPerPage + idx) % 6) + 1;
+                    const cardImage = `/images/grimoire-images/spell-card-${imageIndex}.png`;
 
                     return (
                         <div key={idx} className="relative w-full h-full flex items-center justify-center">
                             {spell ? (
                                 <button 
                                     onClick={() => setSelectedSpell(spell)}
-                                    className="relative w-full h-auto aspect-square hover:scale-[1.02] transition-transform duration-300 transform-gpu"
+                                    // Height constrained to prevent overflow, aspect square ensures standard shape
+                                    className="relative h-full w-auto aspect-square hover:scale-[1.02] transition-transform duration-300 transform-gpu"
                                 >
                                     <div className="relative w-full h-full">
                                         <Image 
@@ -361,7 +362,7 @@ export default function GrimoirePage() {
                                             alt={spell.name} 
                                             fill 
                                             className="object-contain drop-shadow-md"
-                                            sizes="(max-width: 768px) 40vw, 25vw"
+                                            sizes="(max-width: 768px) 60vw, 30vw"
                                         />
                                         
                                         {/* 
@@ -378,18 +379,17 @@ export default function GrimoirePage() {
                                                 height: '61.5%'
                                             }}
                                         >
-                                            <h3 className="font-serif font-bold text-[1.2vh] md:text-[1.5vh] mb-[0.5vh] leading-tight text-[#3e2c22] drop-shadow-sm line-clamp-2">
+                                            <h3 className="font-serif font-bold text-[2.5vh] md:text-[3vh] mb-[1vh] leading-tight text-[#3e2c22] drop-shadow-sm line-clamp-2">
                                                 {spell.name}
                                             </h3>
-                                            <p className="text-[0.9vh] md:text-[1vh] leading-tight text-[#5c4033] line-clamp-3 italic opacity-90">
+                                            <p className="text-[1.5vh] md:text-[1.8vh] leading-tight text-[#5c4033] line-clamp-4 italic opacity-90">
                                                 "{spell.intention}"
                                             </p>
                                         </div>
                                     </div>
                                 </button>
                             ) : (
-                                // "No blank cards" - render nothing visible, but keep slot for grid structure
-                                <div className="w-full h-auto aspect-square" />
+                                <div className="h-full w-auto aspect-square" />
                             )}
                         </div>
                     );
