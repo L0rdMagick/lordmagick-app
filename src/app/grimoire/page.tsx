@@ -74,6 +74,9 @@ const getPageSprites = (seedKey: string) => {
         const imgIndex = Math.floor(rand(i + 10) * images.length);
         const image = images[imgIndex];
         
+        // Pick a random sprite from the 4x4 sheet (0-15)
+        const spriteIndex = Math.floor(rand(i + 99) * 16);
+        
         // Zones: 0:TL, 1:TR, 2:BL, 3:BR (Effectively corners of the content container)
         const zone = i % 4; 
         
@@ -103,7 +106,8 @@ const getPageSprites = (seedKey: string) => {
                 opacity: 0.85, 
                 zIndex: 0 
             },
-            id: `${cat}-${i}`
+            id: `${cat}-${i}`,
+            spriteIndex
         };
     });
 };
@@ -369,16 +373,31 @@ export default function GrimoirePage() {
                         }}
                     >
                        {/* Decorative Sprites Layer - Behind Content */}
-                       {pageSprites.map(sprite => (
-                           <div key={sprite.id} className="absolute aspect-square pointer-events-none mix-blend-multiply" style={sprite.style}>
-                               <Image 
-                                   src={sprite.src} 
-                                   alt="decoration" 
-                                   fill 
-                                   className="object-contain" 
-                               />
-                           </div>
-                       ))}
+                       {pageSprites.map(sprite => {
+                           // Calculate Sprite Sheet Offset (4x4 Grid)
+                           const col = sprite.spriteIndex % 4;
+                           const row = Math.floor(sprite.spriteIndex / 4);
+                           
+                           return (
+                               <div 
+                                   key={sprite.id} 
+                                   className="absolute aspect-square pointer-events-none mix-blend-multiply overflow-hidden" 
+                                   style={sprite.style}
+                               >
+                                   {/* Inner Image scaled to 400% and shifted */}
+                                   <div className="relative w-[400%] h-[400%]" style={{
+                                        transform: `translate(-${col * 25}%, -${row * 25}%)`
+                                   }}>
+                                       <Image 
+                                           src={sprite.src} 
+                                           alt="decoration" 
+                                           fill 
+                                           className="object-contain" 
+                                       />
+                                   </div>
+                               </div>
+                           );
+                       })}
 
                        {/* Actual Content */}
                        <div className="relative z-10 w-full h-full flex flex-col">
