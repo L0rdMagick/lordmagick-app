@@ -363,7 +363,10 @@ export default function GrimoirePage() {
             <div className="absolute z-10 grid grid-cols-[3fr_1fr] items-start pt-2 px-4 overflow-hidden gap-2" style={HEADER_ZONE}>
                 {/* Title & Page Number (75% Width Strict) */}
                 <div className="flex flex-col items-start justify-start pr-2 h-full overflow-hidden">
-                    <h2 className="w-full text-[2vh] leading-[1.1] font-serif text-[#5c4033] mb-1 text-left break-words line-clamp-3" style={{ fontFamily: 'Cinzel, serif' }}>
+                    <h2 
+                        className={`w-full ${activeSection?.title && activeSection.title.length > 25 ? 'text-[1.6vh]' : 'text-[2vh]'} leading-[1.1] font-serif text-[#5c4033] mb-1 text-left break-words line-clamp-3`} 
+                        style={{ fontFamily: 'Cinzel, serif' }}
+                    >
                         {activeSection?.title}
                     </h2>
                      <p className="text-[1.4vh] italic font-serif text-[#8b4513]/60 w-full text-left">
@@ -391,6 +394,12 @@ export default function GrimoirePage() {
                         // Cycle images 1-6
                         const imageIndex = ((pageOffset * itemsPerPage + idx) % 6) + 1;
                         const cardImage = `/images/grimoire-images/spell-card-${imageIndex}.png`;
+                        
+                        // Font scaling heuristic
+                        const isLongTitle = spell ? spell.name.length > 25 : false;
+                        const cardTitleSize = isLongTitle
+                             ? "text-[1.5vh] md:text-[1.8vh]" 
+                             : "text-[1.8vh] md:text-[2.2vh]";
 
                         return (
                             <div key={idx} className="relative w-full h-full flex items-center justify-center overflow-hidden">
@@ -418,9 +427,9 @@ export default function GrimoirePage() {
                                                     height: '61.5%'
                                                 }}
                                             >
-                                                {/* Text scale reduced and clamped */}
+                                                {/* Text scale reduced and clamped according to length */}
                                                 <div className="w-full h-full flex items-center justify-center">
-                                                    <h3 className="font-serif font-bold text-[1.4vh] md:text-[1.8vh] leading-tight text-[#3e2c22] drop-shadow-sm text-balance line-clamp-4">
+                                                    <h3 className={`font-serif font-bold ${cardTitleSize} leading-tight text-[#3e2c22] drop-shadow-sm text-balance line-clamp-4`}>
                                                         {spell.name}
                                                     </h3>
                                                 </div>
