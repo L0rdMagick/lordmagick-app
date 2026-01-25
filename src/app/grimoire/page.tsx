@@ -360,10 +360,10 @@ export default function GrimoirePage() {
     const renderSection = () => (
         <>
             {/* Header Zone */}
-            <div className="absolute z-10 flex items-end justify-between px-4 pb-2" style={HEADER_ZONE}>
+            <div className="absolute z-10 flex items-center justify-between px-4 overflow-hidden" style={HEADER_ZONE}>
                 {/* Title & Page Number (Text Only) */}
-                <div className="flex flex-col items-start justify-end h-full">
-                    <h2 className="text-[3vh] leading-none font-serif text-[#5c4033] mb-1" style={{ fontFamily: 'Cinzel, serif' }}>
+                <div className="flex flex-col items-start justify-center h-full max-w-[70%]">
+                    <h2 className="text-[3vh] leading-none font-serif text-[#5c4033] mb-1 text-left" style={{ fontFamily: 'Cinzel, serif' }}>
                         {activeSection?.title}
                     </h2>
                      <p className="text-[1.5vh] italic font-serif text-[#8b4513]/60">
@@ -374,7 +374,7 @@ export default function GrimoirePage() {
                  {/* Return Button (Text Only) */}
                 <button 
                     onClick={() => setViewMode('TOC')} 
-                    className="h-full flex items-end pb-2 mb-1 text-[1.8vh] font-serif font-bold text-[#3e2c22] underline decoration-[#8b4513]/40 underline-offset-4 hover:text-[#8b4513] transition-colors"
+                    className="h-full flex items-center justify-center text-[1.8vh] font-serif font-bold text-[#3e2c22] underline decoration-[#8b4513]/40 underline-offset-4 hover:text-[#8b4513] transition-colors whitespace-nowrap"
                 >
                     Return to Index
                 </button>
