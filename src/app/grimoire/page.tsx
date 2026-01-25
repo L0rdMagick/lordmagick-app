@@ -66,7 +66,7 @@ const getSpellMetadata = (spell: Spell): SpellMetadata => {
         replayUrl = `/spell-room/love-spells-app/soul-connect-love-spell?loadId=${spell.id}`;
     } else if (spell.element === 'Servitor') {
         sectionId = 'servitors';
-        sectionTitle = 'Servitors of the Wild Unknown';
+        sectionTitle = 'Servitors: Wild Unknown';
         replayUrl = `/spell-room/servitors-of-the-wild-unknown?loadId=${spell.id}`;
     } else if (nameLower.includes('reality') || nameLower.includes('neural') || nameLower.includes('data') || nameLower.includes('void') || nameLower.includes('light prism')) {
         sectionId = 'electric-magick';
