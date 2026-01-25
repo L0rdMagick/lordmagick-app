@@ -246,7 +246,7 @@ export default function GrimoirePage() {
 
     const renderBookPage = (content: React.ReactNode) => (
         <div className="flex items-center justify-center h-full w-full">
-            <div className="relative h-full w-auto aspect-[1433/1909] shadow-2xl animate-in zoom-in-95 duration-500 max-w-full">
+            <div className="relative h-full w-auto aspect-[1529/2048] shadow-2xl animate-in zoom-in-95 duration-500 max-w-full">
                 <Image 
                     src="/images/grimoire-images/grimoire-page.png" 
                     alt="Grimoire Page" 
@@ -256,24 +256,41 @@ export default function GrimoirePage() {
                     sizes="(max-height: 100vh) 100vw, 50vw"
                 />
 
-                {/* Content Area */}
-                <div className="absolute inset-[10%] flex flex-col overflow-hidden">
+                {/* 
+                    Content Area 
+                    Source: 1529x2048
+                    Area: 1105x1697 at (253, 176)
+                    
+                    Left: 253/1529 = 16.55%
+                    Top: 176/2048 = 8.59%
+                    Width: 1105/1529 = 72.27%
+                    Height: 1697/2048 = 82.86%
+                */}
+                <div 
+                    className="absolute flex flex-col overflow-hidden"
+                    style={{
+                        left: '16.55%',
+                        top: '8.59%',
+                        width: '72.27%',
+                        height: '82.86%'
+                    }}
+                >
                    {content}
                 </div>
 
-                {/* Navigation */}
+                {/* Navigation - Placed inside margins to prevent cutoff */}
                 <button 
                     onClick={handlePrev}
-                    className="absolute -left-12 md:-left-16 top-1/2 -translate-y-1/2 z-20 p-2 text-[#d4af37] hover:text-[#fff] hover:scale-110 transition-all opacity-70 hover:opacity-100 disabled:opacity-0 drop-shadow-md"
+                    className="absolute left-[2%] top-1/2 -translate-y-1/2 z-20 p-2 text-[#5c4033] hover:text-[#8b4513] hover:scale-110 transition-all opacity-60 hover:opacity-100 disabled:opacity-0 drop-shadow-md"
                     disabled={viewMode === 'COVER'}
                 >
-                    <ArrowLeft size={40} className="md:w-16 md:h-16" strokeWidth={1.5} />
+                    <ArrowLeft size={32} className="md:w-12 md:h-12" strokeWidth={1.5} />
                 </button>
                 <button 
                     onClick={handleNext}
-                    className="absolute -right-12 md:-right-16 top-1/2 -translate-y-1/2 z-20 p-2 text-[#d4af37] hover:text-[#fff] hover:scale-110 transition-all opacity-70 hover:opacity-100 drop-shadow-md"
+                    className="absolute right-[2%] top-1/2 -translate-y-1/2 z-20 p-2 text-[#5c4033] hover:text-[#8b4513] hover:scale-110 transition-all opacity-60 hover:opacity-100 drop-shadow-md"
                 >
-                    <ArrowRight size={40} className="md:w-16 md:h-16" strokeWidth={1.5} />
+                    <ArrowRight size={32} className="md:w-12 md:h-12" strokeWidth={1.5} />
                 </button>
             </div>
         </div>
