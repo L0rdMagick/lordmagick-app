@@ -353,13 +353,27 @@ export default function GrimoirePage() {
 
     const renderSection = () => (
         <div className="flex flex-col h-full w-full">
-             <header className="flex justify-between items-end border-b border-[#8b4513]/20 pb-1 mb-2 shrink-0">
-                <div>
-                    <h2 className="text-[2.5vh] leading-none font-serif text-[#5c4033]" style={{ fontFamily: 'Cinzel, serif' }}>{activeSection?.title}</h2>
-                    <p className="text-[1.2vh] font-mono text-[#8b4513]/60 uppercase tracking-widest mt-1">Page {currentPage} of {totalPages}</p>
+             <header className="flex justify-between items-start mb-4 px-1 shrink-0 gap-2">
+                {/* Title & Page Number Card */}
+                <div className="flex flex-col items-start px-4 py-2 rounded-lg border border-[#8b4513]/40 bg-[#f4e4bc]/80 backdrop-blur-[2px] shadow-sm max-w-[75%]">
+                    <h2 className="text-[2.2vh] leading-tight font-serif text-[#3e2c22] font-bold" style={{ fontFamily: 'Cinzel, serif' }}>
+                        {activeSection?.title}
+                    </h2>
+                    <div className="w-full h-px bg-[#8b4513]/20 my-1"></div>
+                    <p className="text-[1.1vh] font-mono text-[#5c4033] uppercase tracking-widest font-semibold">
+                        Page {currentPage} / {totalPages}
+                    </p>
                 </div>
-                <button onClick={() => setViewMode('TOC')} className="text-[1.5vh] font-serif underline hover:text-[#8b4513] text-[#5c4033]/70">
-                    Return to Index
+
+                {/* Return Button Card */}
+                <button 
+                    onClick={() => setViewMode('TOC')} 
+                    className="px-3 py-2 rounded-lg border border-[#8b4513]/40 bg-[#f4e4bc]/80 backdrop-blur-[2px] hover:bg-[#5c4033] hover:text-[#f4e4bc] hover:border-[#f4e4bc] transition-all duration-300 shadow-sm flex items-center justify-center group"
+                >
+                    <span className="text-[1.2vh] font-serif uppercase tracking-wider font-bold text-[#5c4033] group-hover:text-[#f4e4bc]">
+                        Index
+                    </span>
+                    <RotateCcw size={12} className="ml-2 text-[#5c4033] group-hover:text-[#f4e4bc]" />
                 </button>
             </header>
 
