@@ -466,14 +466,14 @@ export default function GrimoirePage() {
                         className="object-contain drop-shadow-2xl" 
                     />
                     
-                    {/* Content Area - Percentage Based relative to 947x1681 */}
+                    {/* Content Area - Adjusted to fit strictly inside the parchment graphic */}
                     <div 
                         className="absolute flex flex-col items-center text-center z-10 overflow-hidden"
                         style={{
-                           left: '7.8%',
-                           top: '7.3%',
-                           width: '84.4%',
-                           height: '85%'
+                           left: '15%',
+                           top: '18%',
+                           width: '70%',
+                           height: '64%'
                         }}
                     >
                         <div className="w-full h-full flex flex-col overflow-y-auto custom-scrollbar scrollbar-thin scrollbar-thumb-[#5c4033]/50 pr-1 p-4">
