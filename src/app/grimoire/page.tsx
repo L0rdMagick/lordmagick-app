@@ -227,9 +227,9 @@ export default function GrimoirePage() {
     // Layout Constants (Calculated from 1529x2048)
     const HEADER_ZONE = {
         left: '25.11%',
-        top: '11.12%',
+        top: '11.18%', // 229px
         width: '57.75%',
-        height: '11.13%',
+        height: '11.12%', // 227.7px
     };
 
     const BODY_ZONE = {
