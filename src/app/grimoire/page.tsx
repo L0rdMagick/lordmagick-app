@@ -360,10 +360,10 @@ export default function GrimoirePage() {
     const renderSection = () => (
         <>
             {/* Header Zone */}
-            <div className="absolute z-10 grid grid-cols-[3fr_1fr] items-center px-4 overflow-hidden gap-2" style={HEADER_ZONE}>
+            <div className="absolute z-10 grid grid-cols-[3fr_1fr] items-start pt-2 px-4 overflow-hidden gap-2" style={HEADER_ZONE}>
                 {/* Title & Page Number (75% Width Strict) */}
-                <div className="flex flex-col items-start justify-center pr-2 h-full overflow-hidden">
-                    <h2 className="w-full text-[2.2vh] leading-tight font-serif text-[#5c4033] mb-1 text-left break-words" style={{ fontFamily: 'Cinzel, serif' }}>
+                <div className="flex flex-col items-start justify-start pr-2 h-full overflow-hidden">
+                    <h2 className="w-full text-[2vh] leading-[1.1] font-serif text-[#5c4033] mb-1 text-left break-words line-clamp-3" style={{ fontFamily: 'Cinzel, serif' }}>
                         {activeSection?.title}
                     </h2>
                      <p className="text-[1.4vh] italic font-serif text-[#8b4513]/60 w-full text-left">
@@ -372,7 +372,7 @@ export default function GrimoirePage() {
                 </div>
 
                  {/* Return Button (25% Width Strict) */}
-                <div className="flex items-center justify-end pl-1 h-full">
+                <div className="flex items-start justify-end pl-1 h-full pt-1">
                     <button 
                         onClick={() => setViewMode('TOC')} 
                         className="text-[1.6vh] font-serif font-bold text-[#3e2c22] underline decoration-[#8b4513]/40 underline-offset-4 hover:text-[#8b4513] transition-colors text-right leading-tight"
@@ -446,10 +446,10 @@ export default function GrimoirePage() {
         return (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-300">
                 {/* 
-                    Constraint: Dimensions match regular page (1529/2048) on all devices
+                    Constraint: Dimensions match CUSTOM IMAGE (947/1681)
                     Max height 85vh to fit screen
                 */}
-                <div className="relative h-auto w-full max-h-[85vh] aspect-[1529/2048] shadow-2xl">
+                <div className="relative h-auto w-full max-h-[85vh] aspect-[947/1681] shadow-2xl">
                     {/* Close Button Outside or Corner */}
                     <button 
                         onClick={onClose} 
@@ -458,34 +458,34 @@ export default function GrimoirePage() {
                         <X size={32} />
                     </button>
                     
-                    {/* Background Card Image */}
+                    {/* Background Card Image - CUSTOM */}
                     <Image 
-                        src={image} 
+                        src="/images/grimoire-images/detailed-spell-info.png"
                         alt={spell.name} 
                         fill 
                         className="object-contain drop-shadow-2xl" 
                     />
                     
-                    {/* Content Area */}
+                    {/* Content Area - Percentage Based relative to 947x1681 */}
                     <div 
-                        className="absolute flex flex-col items-center text-center p-2 z-10 overflow-hidden"
+                        className="absolute flex flex-col items-center text-center z-10 overflow-hidden"
                         style={{
-                           left: '19.25%',
-                           top: '19.25%',
-                           width: '61.5%',
-                           height: '61.5%'
+                           left: '7.8%',
+                           top: '7.3%',
+                           width: '84.4%',
+                           height: '85%'
                         }}
                     >
-                        <div className="w-full h-full flex flex-col overflow-y-auto custom-scrollbar scrollbar-thin scrollbar-thumb-[#5c4033]/50 pr-1">
+                        <div className="w-full h-full flex flex-col overflow-y-auto custom-scrollbar scrollbar-thin scrollbar-thumb-[#5c4033]/50 pr-1 p-4">
                             {/* Scaled Text for Detail View */}
-                            <h2 className="font-serif font-bold text-[2.5vh] mb-2 text-[#3e2c22] shrink-0 leading-tight">{spell.name}</h2>
+                            <h2 className="font-serif font-bold text-[2.5vh] mb-4 text-[#3e2c22] shrink-0 leading-tight">{spell.name}</h2>
                             
-                            <p className="font-serif italic text-[1.8vh] text-[#5c4033] mb-4 whitespace-pre-wrap shrink-0">
+                            <p className="font-serif italic text-[1.8vh] text-[#5c4033] mb-6 whitespace-pre-wrap shrink-0">
                                 "{spell.intention}"
                             </p>
                             
                             {spell.incantation && (
-                                 <div className="text-[1.4vh] text-[#8b4513] mb-4 text-left w-full border-t border-[#8b4513]/20 pt-2 shrink-0 font-mono">
+                                 <div className="text-[1.6vh] text-[#8b4513] mb-6 text-left w-full border-t border-[#8b4513]/20 pt-4 shrink-0 font-mono">
                                     {spell.incantation}
                                  </div>
                             )}
