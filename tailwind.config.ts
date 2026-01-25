@@ -14,7 +14,12 @@ const config: Config = {
     "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      fontFamily: {
+        medieval: ['var(--font-medieval)'],
+        cinzel: ['var(--font-cinzel)'],
+      },
+    },
   },
   plugins: [
     require('@tailwindcss/typography'),

@@ -519,5 +519,20 @@ export const getTodaysSpellCount = async (userId: string): Promise<number> => {
          return 0; 
     }
     
+    
     return count || 0;
+};
+
+export const deleteSpell = async (userId: string, spellId: string): Promise<boolean> => {
+    const { error } = await supabase
+        .from('spells')
+        .delete()
+        .eq('id', spellId)
+        .eq('user_id', userId);
+
+    if (error) {
+        console.error("Error deleting spell:", error);
+        return false;
+    }
+    return true;
 };

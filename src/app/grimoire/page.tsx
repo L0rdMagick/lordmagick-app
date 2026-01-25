@@ -1,13 +1,11 @@
-"use client";
-
 import React, { useEffect, useState, useMemo } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
-import { getSpells } from '@/lib/services/geminiService';
+import { getSpells, deleteSpell } from '@/lib/services/geminiService';
 import type { Spell } from '@/lib/types';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
 import RoomsButton from '@/app/components/RoomsButton';
 import LoadingSpinner from '@/app/components/LoadingSpinner';
-import { Calendar, X, RotateCcw, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar, X, RotateCcw, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -91,6 +89,7 @@ export default function GrimoirePage() {
     // --- STATE ---
     const [spells, setSpells] = useState<Spell[]>([]);
     const [loading, setLoading] = useState(true);
+    const [currentUserId, setCurrentUserId] = useState<string | null>(null);
     
     // Manifestation Book State
     const [viewMode, setViewMode] = useState<ViewMode>('COVER');
@@ -117,6 +116,7 @@ export default function GrimoirePage() {
 
                 if (user) {
                     console.log("Grimoire: User found", user.id);
+                    setCurrentUserId(user.id);
                     console.log("Grimoire: Fetching spells...");
                     const data = await getSpells(user.id);
                     console.log("Grimoire: Spells fetched", data?.length);
@@ -133,6 +133,15 @@ export default function GrimoirePage() {
         };
         load();
     }, [supabase]);
+
+    const handleSpellDelete = async (spellId: string) => {
+        if (!currentUserId) return;
+        const success = await deleteSpell(currentUserId, spellId);
+        if (success) {
+            setSpells(prev => prev.filter(s => s.id !== spellId));
+            setSelectedSpell(null);
+        }
+    };
 
     // Derived Data: Sections
     const sections = useMemo(() => {
@@ -448,9 +457,10 @@ export default function GrimoirePage() {
     );
 
     // --- ENLARGED CARD MODAL ---
-    const SpellDetailModal = ({ data, onClose }: { data: { spell: Spell, image: string }, onClose: () => void }) => {
+    const SpellDetailModal = ({ data, onClose, onDelete }: { data: { spell: Spell, image: string }, onClose: () => void, onDelete: (id: string) => void }) => {
         const { spell, image } = data;
         const { replayUrl } = getSpellMetadata(spell);
+        const [showConfirm, setShowConfirm] = useState(false);
 
         return (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-300">
@@ -467,12 +477,23 @@ export default function GrimoirePage() {
                     }}
                 >
                     {/* Close Button Outside or Corner */}
-                    <button 
-                        onClick={onClose} 
-                        className="absolute -top-12 -right-4 md:-right-12 z-50 p-2 text-white/50 hover:text-white transition-colors"
-                    >
-                        <X size={32} />
-                    </button>
+                    {!showConfirm && (
+                        <>
+                            <button 
+                                onClick={onClose} 
+                                className="absolute -top-12 -right-4 md:-right-12 z-50 p-2 text-white/50 hover:text-white transition-colors"
+                            >
+                                <X size={32} />
+                            </button>
+                             {/* Delete Button - Top Left - Matching Style */}
+                             <button 
+                                onClick={() => setShowConfirm(true)}
+                                className="absolute -top-12 -left-4 md:-left-12 z-50 p-2 text-white/50 hover:text-red-400 transition-colors"
+                            >
+                                <Trash2 size={24} />
+                            </button>
+                        </>
+                    )}
                     
                     {/* Background Card Image - CUSTOM */}
                     <Image 
@@ -492,32 +513,56 @@ export default function GrimoirePage() {
                            height: '64%'
                         }}
                     >
-                        <div className="w-full h-full flex flex-col overflow-y-auto custom-scrollbar scrollbar-thin scrollbar-thumb-[#5c4033]/50 p-2">
-                            {/* Scaled Text for Detail View */}
-                            <h2 className="font-serif font-bold text-[2.5vh] mb-4 text-[#3e2c22] shrink-0 leading-tight">{spell.name}</h2>
-                            
-                            <p className="font-serif italic text-[1.8vh] text-[#5c4033] mb-6 whitespace-pre-wrap shrink-0">
-                                "{spell.intention}"
-                            </p>
-                            
-                            {spell.incantation && (
-                                 <div className="text-[1.6vh] text-[#8b4513] mb-6 text-left w-full border-t border-[#8b4513]/20 pt-4 shrink-0 font-mono">
-                                    {spell.incantation}
-                                 </div>
-                            )}
-
-                            {/* Push button to bottom */}
-                            <div className="mt-auto pt-2 w-full shrink-0 sticky bottom-0 bg-transparent pb-1">
-                                {replayUrl && (
-                                    <Link 
-                                        href={replayUrl}
-                                        className="block w-full py-[1.5vh] bg-[#5c4033] text-[#d4af37] border border-[#d4af37]/30 font-serif uppercase tracking-widest text-[1.2vh] rounded hover:bg-[#3e2c22] transition-colors shadow-lg"
+                        {showConfirm ? (
+                            <div className="w-full h-full flex flex-col items-center justify-center p-4 animate-in fade-in duration-300">
+                                <h3 className="font-medieval font-bold text-[#3e2c22] text-[2.5vh] mb-4 leading-tight">Burn this Spell?</h3>
+                                <p className="font-medieval italic text-[1.8vh] text-[#5c4033] mb-6 text-balance">
+                                    "This action cannot be undone. The pages will be burned from the Grimoire forever."
+                                </p>
+                                <div className="flex flex-col gap-3 w-full">
+                                    <button 
+                                        onClick={() => onDelete(spell.id)}
+                                        className="w-full py-[1vh] bg-[#8b4513] text-[#f4e4bc] font-medieval uppercase tracking-widest text-[1.5vh] rounded hover:bg-[#5c4033] transition-colors shadow-lg"
                                     >
-                                        Open Ritual
-                                    </Link>
-                                )}
+                                        Yes, Burn It
+                                    </button>
+                                    <button 
+                                        onClick={() => setShowConfirm(false)}
+                                        className="w-full py-[1vh] border border-[#8b4513]/40 text-[#5c4033] font-medieval uppercase tracking-widest text-[1.4vh] rounded hover:bg-[#8b4513]/10 transition-colors"
+                                    >
+                                        Keep It
+                                    </button>
+                                </div>
                             </div>
-                        </div>
+                         ) : (
+                            <div className="w-full h-full flex flex-col overflow-y-auto custom-scrollbar scrollbar-thin scrollbar-thumb-[#5c4033]/50 p-2">
+                                {/* Scaled Text for Detail View */}
+                                <h2 className="font-serif font-bold text-[2.5vh] mb-4 text-[#3e2c22] shrink-0 leading-tight">{spell.name}</h2>
+                                
+                                {/* Intention - Using Medieval font now per user request for "esoteric" body */}
+                                <p className="font-medieval italic text-[2vh] text-[#5c4033] mb-6 whitespace-pre-wrap shrink-0 leading-snug">
+                                    "{spell.intention}"
+                                </p>
+                                
+                                {spell.incantation && (
+                                    <div className="font-medieval text-[1.8vh] text-[#8b4513] mb-6 text-center w-full border-t border-[#8b4513]/20 pt-4 shrink-0 font-medium leading-normal">
+                                        {spell.incantation}
+                                    </div>
+                                )}
+
+                                {/* Push button to bottom */}
+                                <div className="mt-auto pt-2 w-full shrink-0 sticky bottom-0 bg-transparent pb-1">
+                                    {replayUrl && (
+                                        <Link 
+                                            href={replayUrl}
+                                            className="block w-full py-[1.5vh] bg-[#5c4033] text-[#d4af37] border border-[#d4af37]/30 font-serif uppercase tracking-widest text-[1.2vh] rounded hover:bg-[#3e2c22] transition-colors shadow-lg"
+                                        >
+                                            Open Ritual
+                                        </Link>
+                                    )}
+                                </div>
+                            </div>
+                         )}
                     </div>
                 </div>
             </div>
@@ -557,7 +602,7 @@ export default function GrimoirePage() {
                 )}
             </div>
 
-            {selectedSpell && <SpellDetailModal data={selectedSpell} onClose={() => setSelectedSpell(null)} />}
+            {selectedSpell && <SpellDetailModal data={selectedSpell} onClose={() => setSelectedSpell(null)} onDelete={handleSpellDelete} />}
         </main>
     );
 }
