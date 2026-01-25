@@ -92,30 +92,15 @@ export default function GrimoirePage() {
     const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
     const [pageOffset, setPageOffset] = useState(0); // 0-indexed page within a section
     
-    const [selectedSpell, setSelectedSpell] = useState<Spell | null>(null);
+    const [selectedSpell, setSelectedSpell] = useState<{ spell: Spell, image: string } | null>(null);
 
     const supabase = createBrowserClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
 
-    // Load Data
-    useEffect(() => {
-        const load = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user) {
-                try {
-                    const data = await getSpells(user.id);
-                    setSpells(data);
-                } catch (e) {
-                    console.error("Failed to load Grimoire", e);
-                }
-            }
-            setLoading(false);
-        };
-        load();
-    }, [supabase]);
-
+    // ... (useEffect load remains same) ...
+    // ... (Load Data useEffect remains same) ...
     // Derived Data: Sections
     const sections = useMemo(() => {
         const map = new Map<string, SpellSection>();
@@ -128,14 +113,10 @@ export default function GrimoirePage() {
             map.get(sectionId)!.spells.push(spell);
         });
 
-        // Convert to array and sort (maybe alphabetically or by fixed order)
-        // Let's sort alphabetically for now
         return Array.from(map.values()).sort((a, b) => a.title.localeCompare(b.title));
     }, [spells]);
 
     const activeSection = sections.find(s => s.id === activeSectionId);
-    
-    // Pagination Logic
     const itemsPerPage = 2;
     const currentSpells = activeSection 
         ? activeSection.spells.slice(pageOffset * itemsPerPage, (pageOffset + 1) * itemsPerPage)
@@ -166,8 +147,6 @@ export default function GrimoirePage() {
                     setActiveSectionId(sections[currentIndex + 1].id);
                     setPageOffset(0);
                 } else {
-                    // Start over or cycle?
-                    // Go back to TOC
                     setViewMode('TOC');
                     setActiveSectionId(null);
                 }
@@ -254,16 +233,7 @@ export default function GrimoirePage() {
                     sizes="(max-height: 100vh) 100vw, 50vw"
                 />
 
-                {/* 
-                    Content Area 
-                    Source: 1529x2048
-                    Area: 1105x1697 at (253, 176)
-                    
-                    Left: 253/1529 = 16.55%
-                    Top: 176/2048 = 8.59%
-                    Width: 1105/1529 = 72.27%
-                    Height: 1697/2048 = 82.86%
-                */}
+                {/* Content Area */}
                 <div 
                     className="absolute flex flex-col overflow-hidden"
                     style={{
@@ -276,19 +246,23 @@ export default function GrimoirePage() {
                    {content}
                 </div>
 
-                {/* Navigation - Placed inside margins to prevent cutoff */}
-                <button 
-                    onClick={handlePrev}
-                    className="absolute left-[2%] top-1/2 -translate-y-1/2 z-20 p-2 text-[#5c4033] hover:text-[#8b4513] hover:scale-110 transition-all opacity-60 hover:opacity-100 disabled:opacity-0 drop-shadow-md"
-                    disabled={viewMode === 'COVER'}
-                >
-                    <ArrowLeft size={32} className="md:w-12 md:h-12" strokeWidth={1.5} />
-                </button>
+                {/* Navigation */}
+                {/* Left Arrow (Prev) - Hidden only on Cover, always visible otherwise */}
+                {viewMode !== 'COVER' && (
+                    <button 
+                        onClick={handlePrev}
+                        className="absolute left-[2%] top-1/2 -translate-y-1/2 z-20 p-2 text-[#5c4033] hover:text-[#8b4513] hover:scale-110 transition-all opacity-80 hover:opacity-100 drop-shadow-md"
+                    >
+                        <ArrowLeft size={32} className="md:w-16 md:h-16" strokeWidth={1.5} />
+                    </button>
+                )}
+                
+                {/* Right Arrow (Next) */}
                 <button 
                     onClick={handleNext}
-                    className="absolute right-[2%] top-1/2 -translate-y-1/2 z-20 p-2 text-[#5c4033] hover:text-[#8b4513] hover:scale-110 transition-all opacity-60 hover:opacity-100 drop-shadow-md"
+                    className="absolute right-[2%] top-1/2 -translate-y-1/2 z-20 p-2 text-[#5c4033] hover:text-[#8b4513] hover:scale-110 transition-all opacity-80 hover:opacity-100 drop-shadow-md"
                 >
-                    <ArrowRight size={32} className="md:w-12 md:h-12" strokeWidth={1.5} />
+                    <ArrowRight size={32} className="md:w-16 md:h-16" strokeWidth={1.5} />
                 </button>
             </div>
         </div>
@@ -352,8 +326,7 @@ export default function GrimoirePage() {
                         <div key={idx} className="relative w-full h-full flex items-center justify-center">
                             {spell ? (
                                 <button 
-                                    onClick={() => setSelectedSpell(spell)}
-                                    // Height constrained to prevent overflow, aspect square ensures standard shape
+                                    onClick={() => setSelectedSpell({ spell, image: cardImage })}
                                     className="relative h-full w-auto aspect-square hover:scale-[1.02] transition-transform duration-300 transform-gpu"
                                 >
                                     <div className="relative w-full h-full">
@@ -365,11 +338,7 @@ export default function GrimoirePage() {
                                             sizes="(max-width: 768px) 60vw, 30vw"
                                         />
                                         
-                                        {/* 
-                                            Writable Area: 
-                                            - Start: 19.25% (192.5/1000)
-                                            - Size: 61.5% (615/1000)
-                                        */}
+                                        {/* Writable Area - Title Only */}
                                         <div 
                                             className="absolute flex flex-col items-center justify-center text-center p-1 z-10 overflow-hidden"
                                             style={{
@@ -379,12 +348,9 @@ export default function GrimoirePage() {
                                                 height: '61.5%'
                                             }}
                                         >
-                                            <h3 className="font-serif font-bold text-[2.5vh] md:text-[3vh] mb-[1vh] leading-tight text-[#3e2c22] drop-shadow-sm line-clamp-2">
+                                            <h3 className="font-serif font-bold text-[3vh] md:text-[4vh] leading-tight text-[#3e2c22] drop-shadow-sm line-clamp-3">
                                                 {spell.name}
                                             </h3>
-                                            <p className="text-[1.5vh] md:text-[1.8vh] leading-tight text-[#5c4033] line-clamp-4 italic opacity-90">
-                                                "{spell.intention}"
-                                            </p>
                                         </div>
                                     </div>
                                 </button>
@@ -398,74 +364,69 @@ export default function GrimoirePage() {
         </div>
     );
 
-    // --- MODAL (Adapted) ---
-    const SpellDetailModal = ({ spell, onClose }: { spell: Spell, onClose: () => void }) => {
+    // --- ENLARGED CARD MODAL ---
+    const SpellDetailModal = ({ data, onClose }: { data: { spell: Spell, image: string }, onClose: () => void }) => {
+        const { spell, image } = data;
         const { replayUrl } = getSpellMetadata(spell);
 
         return (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-300">
-                <div className="relative bg-[#0f0a1e] border border-amber-900/50 w-full max-w-lg md:max-w-2xl max-h-[90vh] overflow-y-auto rounded-xl shadow-2xl flex flex-col"
-                     style={{ backgroundImage: "url('/images/grimoire-images/grimoire-page.png')", backgroundSize: 'cover' }}
-                >
-                    {/* Dark overlay to make text readable on the page texture */}
-                    <div className="absolute inset-0 bg-[#0f0a1e]/90" />
+                {/* 
+                    Constraint: 
+                    Mobile: 90% width (w-[90vw]).
+                    Desktop: 80% height of available area (approx h-[80vh]).
+                */}
+                <div className="relative w-[90vw] md:w-auto md:h-[80vh] aspect-square shadow-2xl">
+                    {/* Close Button Outside or Corner */}
+                    <button 
+                        onClick={onClose} 
+                        className="absolute -top-12 md:-right-12 right-0 z-50 p-2 text-white/50 hover:text-white transition-colors"
+                    >
+                        <X size={32} />
+                    </button>
                     
-                    <div className="relative z-10 flex flex-col h-full">
-                         {/* Header */}
-                        <div className="sticky top-0 bg-[#0f0a1e]/95 border-b border-white/10 p-6 flex justify-between items-start">
-                            <div>
-                                <h2 className="text-2xl font-serif text-amber-100">{spell.name}</h2>
-                                <div className="flex items-center gap-4 mt-2 text-xs font-mono text-gray-400">
-                                    <span className="flex items-center gap-1"><Calendar size={12}/> {new Date(spell.created_at).toLocaleDateString()}</span>
-                                    <span className="uppercase border border-gray-700 px-2 rounded text-amber-500">{spell.element || 'Universal'}</span>
-                                </div>
-                            </div>
-                            <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors"><X size={24} className="text-amber-500" /></button>
-                        </div>
-
-                        {/* Content */}
-                        <div className="p-8 space-y-6 font-serif text-gray-300 overflow-y-auto">
-                            <div className="text-center p-6 bg-white/5 rounded-lg border border-white/5">
-                                <h3 className="text-xs font-mono text-amber-500 uppercase tracking-widest mb-3">Intention</h3>
-                                <p className="text-lg italic text-white leading-relaxed">"{spell.intention}"</p>
-                            </div>
-
-                            {spell.incantation && (
-                                <div>
-                                    <h3 className="text-xs font-mono text-gray-500 uppercase tracking-widest mb-3 border-b border-gray-800 pb-1">Incantation</h3>
-                                    <div className="whitespace-pre-wrap leading-loose text-amber-50/90 pl-4 border-l-2 border-amber-900/50">
-                                        {spell.incantation}
-                                    </div>
-                                </div>
-                            )}
+                    {/* Background Card Image */}
+                    <Image 
+                        src={image} 
+                        alt={spell.name} 
+                        fill 
+                        className="object-contain drop-shadow-2xl" 
+                    />
+                    
+                    {/* Content Area - Same Constraints as Small Card */}
+                    <div 
+                        className="absolute flex flex-col items-center text-center p-2 z-10 overflow-hidden"
+                        style={{
+                           left: '19.25%',
+                           top: '19.25%',
+                           width: '61.5%',
+                           height: '61.5%'
+                        }}
+                    >
+                        <div className="w-full h-full flex flex-col overflow-y-auto custom-scrollbar scrollbar-thin scrollbar-thumb-[#5c4033]/50 pr-1">
+                            <h2 className="font-serif font-bold text-2xl md:text-3xl lg:text-4xl mb-4 text-[#3e2c22] shrink-0">{spell.name}</h2>
                             
-                            {spell.sigil_url && (
-                                <div className="flex justify-center pt-4 border-t border-white/5">
-                                    <div className="text-center">
-                                        <h3 className="text-xs font-mono text-gray-500 uppercase tracking-widest mb-4">Bound Sigil</h3>
-                                        <div className="relative w-40 h-40 mx-auto">
-                                            <div className="absolute inset-0 bg-amber-500/20 blur-xl rounded-full"></div>
-                                            <img src={spell.sigil_url} alt="Sigil" className="relative z-10 w-full h-full object-contain drop-shadow-[0_0_15px_rgba(251,191,36,0.6)]" />
-                                        </div>
-                                    </div>
-                                </div>
+                            <p className="font-serif italic text-sm md:text-base lg:text-lg text-[#5c4033] mb-6 whitespace-pre-wrap shrink-0">
+                                "{spell.intention}"
+                            </p>
+                            
+                            {spell.incantation && (
+                                 <div className="text-xs md:text-sm text-[#8b4513] mb-6 text-left w-full border-t border-[#8b4513]/20 pt-4 shrink-0 font-mono">
+                                    {spell.incantation}
+                                 </div>
                             )}
 
-                            {/* REPLAY BUTTON */}
-                            {replayUrl && (
-                                <div className="pt-8 border-t border-white/10 flex justify-center">
+                            {/* Push button to bottom if space inside scroll view, or just at end */}
+                            <div className="mt-auto pt-4 w-full shrink-0 sticky bottom-0 bg-transparent pb-1">
+                                {replayUrl && (
                                     <Link 
                                         href={replayUrl}
-                                        className="flex items-center gap-3 px-8 py-4 bg-amber-900/40 border border-amber-500/50 text-amber-100 rounded hover:bg-amber-800/60 hover:border-amber-400 transition-all group w-full justify-center"
+                                        className="block w-full py-3 bg-[#5c4033] text-[#d4af37] border border-[#d4af37]/30 font-serif uppercase tracking-widest text-xs md:text-sm rounded hover:bg-[#3e2c22] transition-colors shadow-lg"
                                     >
-                                        <RotateCcw className="group-hover:-rotate-180 transition-transform duration-500" size={20} />
-                                        <div className="text-left">
-                                            <div className="font-serif font-bold tracking-wide uppercase text-sm">Perform Ritual Again</div>
-                                        </div>
-                                        <ArrowRight size={16} className="opacity-50 group-hover:translate-x-1 transition-transform" />
+                                        Open Ritual
                                     </Link>
-                                </div>
-                            )}
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -507,7 +468,7 @@ export default function GrimoirePage() {
                 )}
             </div>
 
-            {selectedSpell && <SpellDetailModal spell={selectedSpell} onClose={() => setSelectedSpell(null)} />}
+            {selectedSpell && <SpellDetailModal data={selectedSpell} onClose={() => setSelectedSpell(null)} />}
         </main>
     );
 }
