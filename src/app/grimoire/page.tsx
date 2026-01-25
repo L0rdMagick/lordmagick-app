@@ -332,7 +332,7 @@ export default function GrimoirePage() {
 
     const renderSection = () => (
         <div className="flex flex-col h-full w-full">
-             <header className="flex justify-between items-end border-b border-[#8b4513]/20 pb-2 mb-4 shrink-0">
+             <header className="flex justify-between items-end border-b border-[#8b4513]/20 pb-1 mb-2 shrink-0">
                 <div>
                     <h2 className="text-[2.5vh] leading-none font-serif text-[#5c4033]" style={{ fontFamily: 'Cinzel, serif' }}>{activeSection?.title}</h2>
                     <p className="text-[1.2vh] font-mono text-[#8b4513]/60 uppercase tracking-widest mt-1">Page {currentPage} of {totalPages}</p>
@@ -342,19 +342,18 @@ export default function GrimoirePage() {
                 </button>
             </header>
 
-            {/* Grid expands to fill available space, respecting card ratios */}
-            <div className="flex-grow grid grid-cols-2 grid-rows-3 gap-2 md:gap-4 w-full min-h-0">
-                {/* Always render 6 slots, empty ones invoke no action */}
+            {/* Grid expands to fill available space. 2 columns, 3 rows. Minimal gap (5px). */}
+            <div className="flex-grow grid grid-cols-2 grid-rows-3 gap-[5px] w-full min-h-0 justify-items-center content-center">
                 {Array.from({ length: 6 }).map((_, idx) => {
                     const spell = currentSpells[idx]; // May be undefined
                     const cardImage = `/images/grimoire-images/spell-card-${idx + 1}.png`; // 1 to 6
 
                     return (
-                        <div key={idx} className="relative w-full h-full flex items-center justify-center min-h-0">
+                        <div key={idx} className="relative w-full h-full flex items-center justify-center">
                             {spell ? (
                                 <button 
                                     onClick={() => setSelectedSpell(spell)}
-                                    className="relative h-full w-auto aspect-[2/3] hover:scale-105 transition-transform duration-300"
+                                    className="relative w-full h-auto aspect-square hover:scale-[1.02] transition-transform duration-300 transform-gpu"
                                 >
                                     <div className="relative w-full h-full">
                                         <Image 
@@ -362,23 +361,35 @@ export default function GrimoirePage() {
                                             alt={spell.name} 
                                             fill 
                                             className="object-contain drop-shadow-md"
-                                            sizes="15vw"
+                                            sizes="(max-width: 768px) 40vw, 25vw"
                                         />
                                         
-                                        {/* Content Overlay on Card */}
-                                        <div className="absolute inset-0 flex flex-col items-center justify-center p-2 text-center opacity-0 hover:opacity-100 transition-opacity bg-black/60 text-white rounded-lg backdrop-blur-[2px]">
-                                            <h3 className="font-serif font-bold text-[1.5vh] mb-1 leading-tight">{spell.name}</h3>
-                                            <p className="text-[1vh] line-clamp-3 italic">"{spell.intention}"</p>
+                                        {/* 
+                                            Writable Area: 
+                                            - Start: 19.25% (192.5/1000)
+                                            - Size: 61.5% (615/1000)
+                                        */}
+                                        <div 
+                                            className="absolute flex flex-col items-center justify-center text-center p-1 z-10 overflow-hidden"
+                                            style={{
+                                                left: '19.25%',
+                                                top: '19.25%',
+                                                width: '61.5%',
+                                                height: '61.5%'
+                                            }}
+                                        >
+                                            <h3 className="font-serif font-bold text-[1.2vh] md:text-[1.5vh] mb-[0.5vh] leading-tight text-[#3e2c22] drop-shadow-sm line-clamp-2">
+                                                {spell.name}
+                                            </h3>
+                                            <p className="text-[0.9vh] md:text-[1vh] leading-tight text-[#5c4033] line-clamp-3 italic opacity-90">
+                                                "{spell.intention}"
+                                            </p>
                                         </div>
-                                    </div>
-                                    
-                                    {/* Small label below card */}
-                                    <div className="absolute -bottom-4 left-0 right-0 text-center text-[#5c4033] text-[1.2vh] font-serif font-bold truncate opacity-80">
-                                        {spell.name}
                                     </div>
                                 </button>
                             ) : (
-                                <div className="h-full w-auto aspect-[2/3] opacity-20 border border-[#8b4513]/20 rounded-md" />
+                                // "No blank cards" - render nothing visible, but keep slot for grid structure
+                                <div className="w-full h-auto aspect-square" />
                             )}
                         </div>
                     );
