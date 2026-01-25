@@ -44,14 +44,7 @@ const CATEGORIES = Object.keys(SPRITE_ASSETS);
 
 // Helper to get random sprites based on a seed (stable per page)
 const getPageSprites = (seedKey: string) => {
-    // Simple hash to get numbers from string
-    const stringToNum = (str: string) => {
-        let hash = 0;
-        for (let i = 0; i < str.length; i++) {
-            hash = str.charCodeAt(i) + ((hash << 5) - hash);
-        }
-        return Math.warn ? Math.abs(hash) : Math.abs(hash); // abs for safety - wait, Math.warn doesn't exist, remove.
-    };
+
 
     // Cleaned up hash function
     const sToN = (str: string) => {
