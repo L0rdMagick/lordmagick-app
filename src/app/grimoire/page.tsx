@@ -219,12 +219,12 @@ export default function GrimoirePage() {
 
     const renderCover = () => (
         <div className="flex items-center justify-center h-full w-full">
-            <div className="relative h-full w-auto aspect-[1433/1909] shadow-2xl animate-in fade-in duration-700 max-w-full">
+            <div className="relative h-full w-auto aspect-[1529/2048] shadow-2xl animate-in fade-in duration-700 max-w-full">
                 <Image 
                     src="/images/grimoire-images/grimoire-cover.png" 
                     alt="Grimoire Cover" 
                     fill 
-                    className="object-contain"
+                    className="object-fill"
                     priority
                     sizes="(max-height: 100vh) 100vw, 50vw"
                 />
