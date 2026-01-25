@@ -209,29 +209,25 @@ export default function GrimoirePage() {
     // --- RENDERERS ---
 
     const renderCover = () => (
-        <div className="relative h-full w-full flex flex-col items-center justify-center animate-in fade-in duration-700">
-            <div className="relative w-full max-w-md md:max-w-xl aspect-[1433/1909]">
+        <div className="flex items-center justify-center h-full w-full p-4">
+             {/* 
+                Constraint: Fit on one screen. 
+                Use max-h to ensure it doesn't overflow vertically. 
+                Use aspect ratio to maintain shape.
+            */}
+            <div className="relative h-full max-h-[90vh] w-auto aspect-[1433/1909] shadow-2xl animate-in fade-in duration-700">
                 <Image 
                     src="/images/grimoire-images/grimoire-cover.png" 
                     alt="Grimoire Cover" 
                     fill 
-                    className="object-contain drop-shadow-2xl"
+                    className="object-contain"
                     priority
+                    sizes="(max-height: 90vh) 100vw, 50vw"
                 />
                 
-                {/* 
-                    Positioning based on user specs:
-                    Image Dim: 1433 x 1909
-                    Safe Area: 759 x 1088
-                    Pos: 393 (Left), 389 (Top)
-                    
-                    Left %: 27.42%
-                    Top %: 20.37%
-                    Width %: 52.96%
-                    Height %: 57.00%
-                */}
+                {/* Content Overlay - Percentages relative to the CONTAINER (which matches image aspect) */}
                 <div 
-                    className="absolute flex flex-col items-center justify-center text-center p-4 z-10"
+                    className="absolute flex flex-col items-center justify-center text-center z-10"
                     style={{
                         left: '27.42%',
                         top: '20.37%',
@@ -239,12 +235,12 @@ export default function GrimoirePage() {
                         height: '57.00%',
                     }}
                 >
-                    <h1 className="text-3xl md:text-5xl lg:text-6xl font-serif text-[#d4af37] tracking-wider mb-8 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]" style={{ fontFamily: 'Cinzel, serif' }}>
+                    <h1 className="text-[5vh] lg:text-[6vh] leading-tight font-serif text-[#d4af37] tracking-wider mb-[4vh] drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]" style={{ fontFamily: 'Cinzel, serif' }}>
                         Book of<br/>Magick
                     </h1>
                     <button 
                         onClick={() => setViewMode('TOC')}
-                        className="mt-4 md:mt-12 px-6 py-2 md:px-8 md:py-3 bg-black/60 border border-[#d4af37] text-[#d4af37] text-sm md:text-base font-serif uppercase tracking-widest hover:bg-[#d4af37] hover:text-black transition-all duration-300 backdrop-blur-sm"
+                        className="px-6 py-[1.5vh] bg-black/60 border border-[#d4af37] text-[#d4af37] text-[2vh] font-serif uppercase tracking-widest hover:bg-[#d4af37] hover:text-black transition-all duration-300 backdrop-blur-sm whitespace-nowrap"
                     >
                         Open Book
                     </button>
@@ -254,64 +250,63 @@ export default function GrimoirePage() {
     );
 
     const renderBookPage = (content: React.ReactNode) => (
-        <div className="relative w-full max-w-4xl aspect-[3/4] md:aspect-[4/3] lg:aspect-[3/2] mx-auto animate-in zoom-in-95 duration-500 flex items-center justify-center">
-            {/* Background Image of the Page */}
-            <div className="absolute inset-0 z-0">
+        <div className="flex items-center justify-center h-full w-full p-2 md:p-4">
+             {/* 
+                Constraint Constraint: Fit on screen.
+                We use aspect-[3/4] roughly for the open page (or single page).
+                Refined to typical book page ratio.
+             */}
+            <div className="relative h-full max-h-[95vh] w-auto aspect-[1433/1909] shadow-2xl animate-in zoom-in-95 duration-500">
                 <Image 
                     src="/images/grimoire-images/grimoire-page.png" 
                     alt="Grimoire Page" 
                     fill 
-                    className="object-fill md:object-contain drop-shadow-2xl"
+                    className="object-fill"
                     priority
+                    sizes="(max-height: 95vh) 100vw, 50vw"
                 />
-            </div>
-            
-            {/* Content Container - Adjusted to fit within the "paper" area of the image */}
-            {/* Assuming the image is a two-page spread or single page? User said "grimoire-page.png" 
-                If it's a single page vertical, we conform to that. 
-                User said "on the first page... table of contents... on the grimoire-page.png".
-                I'll assume it's a single page background.
-            */}
-            <div className="relative z-10 w-full h-full p-12 md:p-20 flex flex-col overflow-y-auto custom-scrollbar">
-               {content}
-            </div>
 
-            {/* Navigation Controls (Floating or Fixed on Page?) */}
-            {/* "Just click next page" - maybe clickable arrows on sides */}
-            <button 
-                onClick={handlePrev}
-                className="absolute left-2 md:left-8 top-1/2 -translate-y-1/2 z-20 p-3 text-[#5c4033] hover:text-[#8b4513] hover:scale-110 transition-all opacity-70 hover:opacity-100 disabled:opacity-0"
-                disabled={viewMode === 'COVER'}
-            >
-                <ArrowLeft size={48} strokeWidth={1} />
-            </button>
-            <button 
-                onClick={handleNext}
-                className="absolute right-2 md:right-8 top-1/2 -translate-y-1/2 z-20 p-3 text-[#5c4033] hover:text-[#8b4513] hover:scale-110 transition-all opacity-70 hover:opacity-100"
-            >
-                <ArrowRight size={48} strokeWidth={1} />
-            </button>
+                {/* Content Area - Inset to avoid page margins */}
+                <div className="absolute inset-[10%] flex flex-col overflow-hidden">
+                   {content}
+                </div>
+
+                {/* Navigation - Absolute to the BOOK CONTAINER, not the screen */}
+                <button 
+                    onClick={handlePrev}
+                    className="absolute -left-12 md:-left-16 top-1/2 -translate-y-1/2 z-20 p-2 text-[#d4af37] hover:text-[#fff] hover:scale-110 transition-all opacity-70 hover:opacity-100 disabled:opacity-0 drop-shadow-md"
+                    disabled={viewMode === 'COVER'}
+                >
+                    <ArrowLeft size={40} className="md:w-16 md:h-16" strokeWidth={1.5} />
+                </button>
+                <button 
+                    onClick={handleNext}
+                    className="absolute -right-12 md:-right-16 top-1/2 -translate-y-1/2 z-20 p-2 text-[#d4af37] hover:text-[#fff] hover:scale-110 transition-all opacity-70 hover:opacity-100 drop-shadow-md"
+                >
+                    <ArrowRight size={40} className="md:w-16 md:h-16" strokeWidth={1.5} />
+                </button>
+            </div>
         </div>
     );
 
     const renderTOC = () => (
-        <div className="flex flex-col h-full text-[#3e2c22]">
-            <header className="text-center border-b-2 border-[#8b4513]/30 pb-6 mb-8">
-                <h2 className="text-4xl font-serif text-[#5c4033] mb-2" style={{ fontFamily: 'Cinzel, serif' }}>Table of Contents</h2>
-                <div className="text-sm italic font-serif text-[#8b4513]/60">Index of Workings</div>
+        <div className="flex flex-col h-full text-[#3e2c22] p-4">
+            <header className="text-center border-b-2 border-[#8b4513]/30 pb-4 mb-4 shrink-0">
+                <h2 className="text-[3vh] font-serif text-[#5c4033] mb-1" style={{ fontFamily: 'Cinzel, serif' }}>Table of Contents</h2>
+                <div className="text-[1.5vh] italic font-serif text-[#8b4513]/60">Index of Workings</div>
             </header>
             
-            <div className="flex-grow space-y-4 px-4 overflow-y-auto">
+            <div className="flex-grow overflow-y-auto custom-scrollbar pr-2 space-y-2">
                 {sections.length === 0 ? (
-                    <div className="text-center italic opacity-50 mt-20">The Grimoire is empty.</div>
+                    <div className="text-center italic opacity-50 mt-10">The Grimoire is empty.</div>
                 ) : (
                     sections.map((section, idx) => (
                         <button
                             key={section.id}
                             onClick={() => jumpToSection(section.id)}
-                            className="w-full group flex items-center justify-between p-3 border-b border-[#8b4513]/10 hover:bg-[#8b4513]/5 transition-colors"
+                            className="w-full group flex items-center justify-between p-2 border-b border-[#8b4513]/10 hover:bg-[#8b4513]/5 transition-colors text-left"
                         >
-                            <span className="font-serif text-xl group-hover:pl-2 transition-all font-bold text-[#5c4033]">
+                            <span className="font-serif text-[2vh] group-hover:pl-2 transition-all font-bold text-[#5c4033]">
                                 {section.title}
                             </span>
                             <span className="font-mono text-sm text-[#8b4513]/50">
@@ -322,69 +317,61 @@ export default function GrimoirePage() {
                 )}
             </div>
             
-            <div className="mt-auto pt-6 text-center">
-                 <p className="text-xs font-serif italic text-[#8b4513]/40">Select a chapter to begin...</p>
+            <div className="mt-auto pt-4 text-center shrink-0">
+                 <p className="text-[1.2vh] font-serif italic text-[#8b4513]/40">Select a chapter to begin...</p>
             </div>
         </div>
     );
 
     const renderSection = () => (
-        <div className="flex flex-col h-full">
-             <header className="flex justify-between items-end border-b border-[#8b4513]/20 pb-4 mb-6">
+        <div className="flex flex-col h-full w-full">
+             <header className="flex justify-between items-end border-b border-[#8b4513]/20 pb-2 mb-4 shrink-0">
                 <div>
-                    <h2 className="text-3xl font-serif text-[#5c4033]" style={{ fontFamily: 'Cinzel, serif' }}>{activeSection?.title}</h2>
-                    <p className="text-xs font-mono text-[#8b4513]/60 uppercase tracking-widest mt-1">Page {currentPage} of {totalPages}</p>
+                    <h2 className="text-[2.5vh] leading-none font-serif text-[#5c4033]" style={{ fontFamily: 'Cinzel, serif' }}>{activeSection?.title}</h2>
+                    <p className="text-[1.2vh] font-mono text-[#8b4513]/60 uppercase tracking-widest mt-1">Page {currentPage} of {totalPages}</p>
                 </div>
-                <button onClick={() => setViewMode('TOC')} className="text-xs font-serif underline hover:text-[#8b4513] text-[#5c4033]/70">
+                <button onClick={() => setViewMode('TOC')} className="text-[1.5vh] font-serif underline hover:text-[#8b4513] text-[#5c4033]/70">
                     Return to Index
                 </button>
             </header>
 
-            <div className="grid grid-cols-2 grid-rows-3 gap-4 md:gap-8 h-full">
+            {/* Grid expands to fill available space, respecting card ratios */}
+            <div className="flex-grow grid grid-cols-2 grid-rows-3 gap-2 md:gap-4 w-full min-h-0">
                 {/* Always render 6 slots, empty ones invoke no action */}
                 {Array.from({ length: 6 }).map((_, idx) => {
                     const spell = currentSpells[idx]; // May be undefined
                     const cardImage = `/images/grimoire-images/spell-card-${idx + 1}.png`; // 1 to 6
 
                     return (
-                        <div key={idx} className="relative group w-full h-full flex items-center justify-center">
+                        <div key={idx} className="relative w-full h-full flex items-center justify-center min-h-0">
                             {spell ? (
                                 <button 
                                     onClick={() => setSelectedSpell(spell)}
-                                    className="relative w-full h-full hover:scale-105 transition-transform duration-300"
+                                    className="relative h-full w-auto aspect-[2/3] hover:scale-105 transition-transform duration-300"
                                 >
-                                    <div className="relative w-full h-full aspect-[2/3]">
+                                    <div className="relative w-full h-full">
                                         <Image 
                                             src={cardImage} 
                                             alt={spell.name} 
                                             fill 
-                                            className="object-contain drop-shadow-md group-hover:drop-shadow-xl"
+                                            className="object-contain drop-shadow-md"
+                                            sizes="15vw"
                                         />
                                         
                                         {/* Content Overlay on Card */}
-                                        <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 text-white rounded-lg backdrop-blur-[1px]">
-                                            <h3 className="font-serif font-bold text-sm md:text-lg mb-1">{spell.name}</h3>
-                                            <p className="text-[10px] md:text-xs line-clamp-3 italic">"{spell.intention}"</p>
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center p-2 text-center opacity-0 hover:opacity-100 transition-opacity bg-black/60 text-white rounded-lg backdrop-blur-[2px]">
+                                            <h3 className="font-serif font-bold text-[1.5vh] mb-1 leading-tight">{spell.name}</h3>
+                                            <p className="text-[1vh] line-clamp-3 italic">"{spell.intention}"</p>
                                         </div>
                                     </div>
                                     
-                                    {/* Static Title below card if preferred, but user said "information currently showing... when you click... card will be enlarged" 
-                                        Actually, "each of the cards... will have the information that is currently on the cards"
-                                        The previous implementation showed Name, Date, Type. 
-                                        I'll add a subtle label below if space permits, or rely on the image + click.
-                                        User said "appear on the page if associated... no blank cards".
-                                        The image ITSELF is the card.
-                                        I will trust the hover or just the visual.
-                                    */}
-                                    <div className="absolute bottom-2 left-0 right-0 text-center bg-black/60 text-[#d4af37] text-xs font-serif py-1 px-2 rounded mx-4 opacity-80 group-hover:opacity-0 transition-opacity whitespace-nowrap overflow-hidden text-ellipsis">
+                                    {/* Small label below card */}
+                                    <div className="absolute -bottom-4 left-0 right-0 text-center text-[#5c4033] text-[1.2vh] font-serif font-bold truncate opacity-80">
                                         {spell.name}
                                     </div>
                                 </button>
                             ) : (
-                                // Render nothing or placeholder? 
-                                // "only appear on the page if they are associated... there should be no blank cards."
-                                // So we render NOTHING in this slot.
-                                <div />
+                                <div className="h-full w-auto aspect-[2/3] opacity-20 border border-[#8b4513]/20 rounded-md" />
                             )}
                         </div>
                     );
@@ -469,19 +456,28 @@ export default function GrimoirePage() {
     };
 
     return (
-        <main 
-            className="relative h-screen w-full bg-black bg-cover bg-center overflow-hidden flex flex-col" 
-            style={{ backgroundImage: "url('/images/grimoire-images/grimoire-background.jpeg')" }}
-        >
-            <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" />
+        <main className="relative h-screen w-full bg-black overflow-hidden flex flex-col">
+            {/* Responsive Background Image */}
+            <div className="absolute inset-0 z-0">
+                <Image 
+                    src="/images/grimoire-images/grimoire-background.jpeg" 
+                    alt="Sanctuary of Knowledge" 
+                    fill 
+                    quality={100}
+                    className="object-cover"
+                    priority
+                />
+                <div className="absolute inset-0 bg-black/40" />
+            </div>
             
-            {/* Header / Nav - Minimalist to not distract from Book */}
-            <header className="relative z-20 w-full p-4 flex justify-between items-center bg-black/40 backdrop-blur-md border-b border-white/5">
+            {/* Header / Nav - Overlaying content, minimal footprint */}
+            <header className="relative z-20 w-full p-2 md:p-4 flex justify-between items-center bg-gradient-to-b from-black/80 to-transparent">
                 <MagickalBackLink href="/hall" text="Grand Hall" />
                 <RoomsButton />
             </header>
 
-            <div className="relative z-10 flex-grow flex items-center justify-center p-4">
+            {/* Main Content Area - Fully centered, handles the 'One Screen' logic */}
+            <div className="relative z-10 flex-grow flex items-center justify-center p-2 overflow-auto">
                 {loading ? (
                     <LoadingSpinner title="Retrieving the Ancient Tomes..." />
                 ) : (
