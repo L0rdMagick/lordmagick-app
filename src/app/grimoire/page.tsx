@@ -238,6 +238,16 @@ export default function GrimoirePage() {
     const totalPages = activeSection ? Math.ceil(activeSection.spells.length / itemsPerPage) : 0;
     const currentPage = pageOffset + 1;
 
+    // Sprite Generation (Top Level to avoid Hook Rule violations)
+    const spriteSeed = viewMode === 'SECTION' 
+            ? `${activeSectionId}-${pageOffset}`
+            : viewMode === 'TOC' ? 'TOC-PAGE' : 'COVER';
+
+    const pageSprites = useMemo(() => {
+        if (viewMode === 'COVER') return [];
+        return getPageSprites(spriteSeed);
+    }, [spriteSeed, viewMode]);
+
     // --- NAVIGATION HANDLERS ---
     
     const handleNext = () => {
@@ -335,17 +345,7 @@ export default function GrimoirePage() {
     );
 
     const renderBookPage = (content: React.ReactNode) => {
-        // Generate Sprites only if NOT cover
-        // Use seed based on page state to keep them stable
-        const seed = viewMode === 'SECTION' 
-            ? `${activeSectionId}-${pageOffset}`
-            : viewMode === 'TOC' ? 'TOC-PAGE' : 'COVER';
-            
-        const pageSprites = useMemo(() => {
-            if (viewMode === 'COVER') return [];
-            return getPageSprites(seed);
-        }, [seed, viewMode]);
-
+        // Hooks removed from here to prevent violation
         return (
             <div className="flex items-center justify-center h-full w-full">
                 <div className="relative h-full w-auto aspect-[1529/2048] shadow-2xl animate-in zoom-in-95 duration-500 max-w-full">
