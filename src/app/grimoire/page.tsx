@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useEffect, useState, useMemo } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
 import { getSpells, deleteSpell } from '@/lib/services/geminiService';
