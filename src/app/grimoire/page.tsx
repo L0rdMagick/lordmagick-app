@@ -26,6 +26,96 @@ interface SpellMetadata {
     replayUrl: string | null;
 }
 
+// --- ASSETS & RANDOMIZATION ---
+
+const SPRITE_ASSETS: Record<string, string[]> = {
+    symbols: ['symbols1.png', 'symbols2.png', 'symbols3.png'],
+    tools: ['tools .png', 'tools1.png', 'tools3.png', 'tools4.png'],
+    astrology: ['astrology.png'],
+    crystals: ['crystals.png'],
+    deities: ['deities1.jpeg', 'deities2.jpeg', 'deities3.png'],
+    foods: ['foods.png'],
+    herbs: ['herbs2.png', 'herbs3.png', 'herbs4.png'],
+    offerings: ['offerings1.png', 'offerings2.png', 'offerings3.png', 'offerings4.png'],
+    runes: ['runes.png']
+};
+
+const CATEGORIES = Object.keys(SPRITE_ASSETS);
+
+// Helper to get random sprites based on a seed (stable per page)
+const getPageSprites = (seedKey: string) => {
+    // Simple hash to get numbers from string
+    const stringToNum = (str: string) => {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            hash = str.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        return Math.warn ? Math.abs(hash) : Math.abs(hash); // abs for safety - wait, Math.warn doesn't exist, remove.
+    };
+
+    // Cleaned up hash function
+    const sToN = (str: string) => {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            hash = str.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        return Math.abs(hash);
+    };
+
+    const seed = sToN(seedKey);
+    const rand = (offset: number) => {
+        const x = Math.sin(seed + offset) * 10000;
+        return x - Math.floor(x);
+    };
+
+    // 1. Pick 3-4 sprites
+    const count = 3 + Math.floor(rand(1) * 2); // 3 or 4
+    
+    // 2. Pick unique categories
+    const shuffledCats = [...CATEGORIES].sort((a, b) => rand(a.length) - 0.5);
+    const selectedCats = shuffledCats.slice(0, count);
+
+    // 3. Generate Props
+    return selectedCats.map((cat, i) => {
+        const images = SPRITE_ASSETS[cat];
+        const imgIndex = Math.floor(rand(i + 10) * images.length);
+        const image = images[imgIndex];
+        
+        // Zones: 0:TL, 1:TR, 2:BL, 3:BR (Effectively corners of the content container)
+        const zone = i % 4; 
+        
+        let position: React.CSSProperties = {};
+        const base = 2; // base padding %, close to edge but not touching
+
+        if (zone === 0) { // TL
+            position = { top: `${base + rand(i)*15}%`, left: `${base + rand(i+1)*10}%` };
+        } else if (zone === 1) { // TR
+            position = { top: `${base + rand(i)*15}%`, right: `${base + rand(i+1)*10}%` };
+        } else if (zone === 2) { // BL
+            position = { bottom: `${base + rand(i)*15}%`, left: `${base + rand(i+1)*10}%` };
+        } else { // BR
+            position = { bottom: `${base + rand(i)*15}%`, right: `${base + rand(i+1)*10}%` };
+        }
+
+        const rotation = (rand(i + 30) * 40) - 20; // -20 to 20
+        const scale = 0.8 + (rand(i + 40) * 0.4); // 0.8 to 1.2
+        const width = 12 + (rand(i + 50) * 8); // 12% to 20% width relative to container
+
+        return {
+            src: `/images/grimoire-images/sprite-sheets/${image}`,
+            style: {
+                ...position,
+                transform: `rotate(${rotation}deg) scale(${scale})`,
+                width: `${width}%`,
+                opacity: 0.85, 
+                zIndex: 0 
+            },
+            id: `${cat}-${i}`
+        };
+    });
+};
+
+
 // --- HELPER LOGIC ---
 const getSpellMetadata = (spell: Spell): SpellMetadata => {
     // Helper to format title from ID
@@ -141,8 +231,6 @@ export default function GrimoirePage() {
             map.get(sectionId)!.spells.push(spell);
         });
 
-        // Convert to array and sort (maybe alphabetically or by fixed order)
-        // Let's sort alphabetically for now
         return Array.from(map.values()).sort((a, b) => a.title.localeCompare(b.title));
     }, [spells]);
 
@@ -253,56 +341,84 @@ export default function GrimoirePage() {
         </div>
     );
 
-    const renderBookPage = (content: React.ReactNode) => (
-        <div className="flex items-center justify-center h-full w-full">
-            <div className="relative h-full w-auto aspect-[1529/2048] shadow-2xl animate-in zoom-in-95 duration-500 max-w-full">
-                <Image 
-                    src="/images/grimoire-images/grimoire-page.png" 
-                    alt="Grimoire Page" 
-                    fill 
-                    className="object-fill"
-                    priority
-                    sizes="(max-height: 100vh) 100vw, 50vw"
-                />
+    const renderBookPage = (content: React.ReactNode) => {
+        // Generate Sprites only if NOT cover
+        // Use seed based on page state to keep them stable
+        const seed = viewMode === 'SECTION' 
+            ? `${activeSectionId}-${pageOffset}`
+            : viewMode === 'TOC' ? 'TOC-PAGE' : 'COVER';
+            
+        const pageSprites = useMemo(() => {
+            if (viewMode === 'COVER') return [];
+            return getPageSprites(seed);
+        }, [seed, viewMode]);
 
-                {/* Content Area */}
-                <div 
-                    className="absolute flex flex-col overflow-hidden"
-                    style={{
-                        left: '16.55%',
-                        top: '8.59%',
-                        width: '72.27%',
-                        height: '82.86%'
-                    }}
-                >
-                   {content}
-                </div>
+        return (
+            <div className="flex items-center justify-center h-full w-full">
+                <div className="relative h-full w-auto aspect-[1529/2048] shadow-2xl animate-in zoom-in-95 duration-500 max-w-full">
+                    <Image 
+                        src="/images/grimoire-images/grimoire-page.png" 
+                        alt="Grimoire Page" 
+                        fill 
+                        className="object-fill"
+                        priority
+                        sizes="(max-height: 100vh) 100vw, 50vw"
+                    />
 
-                {/* Navigation - Ornate & Smaller */}
-                {/* Left Arrow (Prev) */}
-                {viewMode !== 'COVER' && (
+                    {/* Content Area */}
+                    <div 
+                        className="absolute flex flex-col overflow-hidden"
+                        style={{
+                            left: '16.55%',
+                            top: '8.59%',
+                            width: '72.27%',
+                            height: '82.86%'
+                        }}
+                    >
+                       {/* Decorative Sprites Layer - Behind Content */}
+                       {pageSprites.map(sprite => (
+                           <div key={sprite.id} className="absolute aspect-square pointer-events-none mix-blend-multiply" style={sprite.style}>
+                               <Image 
+                                   src={sprite.src} 
+                                   alt="decoration" 
+                                   fill 
+                                   className="object-contain" 
+                               />
+                           </div>
+                       ))}
+
+                       {/* Actual Content */}
+                       <div className="relative z-10 w-full h-full flex flex-col">
+                           {content}
+                       </div>
+                    </div>
+
+                    {/* Navigation - Ornate & Smaller */}
+                    {/* Left Arrow (Prev) */}
+                    {viewMode !== 'COVER' && (
+                        <button 
+                            onClick={handlePrev}
+                            className="absolute left-[2%] top-1/2 -translate-y-1/2 z-20 group transition-all duration-300 focus:outline-none"
+                        >
+                            <div className="p-2 rounded-full border-2 border-[#8b4513]/60 bg-[#1a120b]/80 text-[#8b4513] group-hover:text-[#d4af37] group-hover:border-[#d4af37] group-hover:bg-black/90 group-hover:shadow-[0_0_15px_rgba(212,175,55,0.4)] transition-all backdrop-blur-[2px]">
+                                <ChevronLeft size={24} className="md:w-6 md:h-6" strokeWidth={2} />
+                            </div>
+                        </button>
+                    )}
+                    
+                    {/* Right Arrow (Next) */}
                     <button 
-                        onClick={handlePrev}
-                        className="absolute left-[2%] top-1/2 -translate-y-1/2 z-20 group transition-all duration-300 focus:outline-none"
+                        onClick={handleNext}
+                        className="absolute right-[2%] top-1/2 -translate-y-1/2 z-20 group transition-all duration-300 focus:outline-none"
                     >
                         <div className="p-2 rounded-full border-2 border-[#8b4513]/60 bg-[#1a120b]/80 text-[#8b4513] group-hover:text-[#d4af37] group-hover:border-[#d4af37] group-hover:bg-black/90 group-hover:shadow-[0_0_15px_rgba(212,175,55,0.4)] transition-all backdrop-blur-[2px]">
-                            <ChevronLeft size={24} className="md:w-6 md:h-6" strokeWidth={2} />
+                            <ChevronRight size={24} className="md:w-6 md:h-6" strokeWidth={2} />
                         </div>
                     </button>
-                )}
-                
-                {/* Right Arrow (Next) */}
-                <button 
-                    onClick={handleNext}
-                    className="absolute right-[2%] top-1/2 -translate-y-1/2 z-20 group transition-all duration-300 focus:outline-none"
-                >
-                    <div className="p-2 rounded-full border-2 border-[#8b4513]/60 bg-[#1a120b]/80 text-[#8b4513] group-hover:text-[#d4af37] group-hover:border-[#d4af37] group-hover:bg-black/90 group-hover:shadow-[0_0_15px_rgba(212,175,55,0.4)] transition-all backdrop-blur-[2px]">
-                        <ChevronRight size={24} className="md:w-6 md:h-6" strokeWidth={2} />
-                    </div>
-                </button>
+                </div>
             </div>
-        </div>
-    );
+        );
+    };
 
    const renderTOC = () => (
         <div className="flex flex-col h-full text-[#3e2c22] p-4">
@@ -482,7 +598,6 @@ export default function GrimoirePage() {
                     className="object-cover"
                     priority
                 />
-                {/* No overlay to prevent blur/darkening */}
             </div>
             
             {/* Header - Completely Transparent & Non-Intrusive */}
