@@ -210,7 +210,7 @@ export default function GrimoirePage() {
 
     const renderCover = () => (
         <div className="relative h-full w-full flex flex-col items-center justify-center animate-in fade-in duration-700">
-            <div className="relative w-full max-w-md md:max-w-xl aspect-[3/4]">
+            <div className="relative w-full max-w-md md:max-w-xl aspect-[1433/1909]">
                 <Image 
                     src="/images/grimoire-images/grimoire-cover.png" 
                     alt="Grimoire Cover" 
@@ -218,13 +218,33 @@ export default function GrimoirePage() {
                     className="object-contain drop-shadow-2xl"
                     priority
                 />
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-8 z-10">
-                    <h1 className="text-4xl md:text-6xl font-serif text-[#d4af37] tracking-wider mb-8 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]" style={{ fontFamily: 'Cinzel, serif' }}>
+                
+                {/* 
+                    Positioning based on user specs:
+                    Image Dim: 1433 x 1909
+                    Safe Area: 759 x 1088
+                    Pos: 393 (Left), 389 (Top)
+                    
+                    Left %: 27.42%
+                    Top %: 20.37%
+                    Width %: 52.96%
+                    Height %: 57.00%
+                */}
+                <div 
+                    className="absolute flex flex-col items-center justify-center text-center p-4 z-10"
+                    style={{
+                        left: '27.42%',
+                        top: '20.37%',
+                        width: '52.96%',
+                        height: '57.00%',
+                    }}
+                >
+                    <h1 className="text-3xl md:text-5xl lg:text-6xl font-serif text-[#d4af37] tracking-wider mb-8 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]" style={{ fontFamily: 'Cinzel, serif' }}>
                         Book of<br/>Magick
                     </h1>
                     <button 
                         onClick={() => setViewMode('TOC')}
-                        className="mt-12 px-8 py-3 bg-black/60 border border-[#d4af37] text-[#d4af37] font-serif uppercase tracking-widest hover:bg-[#d4af37] hover:text-black transition-all duration-300 backdrop-blur-sm"
+                        className="mt-4 md:mt-12 px-6 py-2 md:px-8 md:py-3 bg-black/60 border border-[#d4af37] text-[#d4af37] text-sm md:text-base font-serif uppercase tracking-widest hover:bg-[#d4af37] hover:text-black transition-all duration-300 backdrop-blur-sm"
                     >
                         Open Book
                     </button>
