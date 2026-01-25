@@ -222,6 +222,23 @@ export default function GrimoirePage() {
 
     // --- RENDERERS ---
 
+    // --- RENDERERS ---
+
+    // Layout Constants (Calculated from 1529x2048)
+    const HEADER_ZONE = {
+        left: '25.11%',
+        top: '11.12%',
+        width: '57.75%',
+        height: '11.13%',
+    };
+
+    const BODY_ZONE = {
+        left: '25.11%',
+        top: '22.30%',
+        width: '57.75%',
+        height: '60.30%',
+    };
+
     const renderCover = () => (
         <div className="flex items-center justify-center h-full w-full">
             <div className="relative h-full w-auto aspect-[1529/2048] shadow-2xl animate-in fade-in duration-700 max-w-full">
@@ -272,23 +289,8 @@ export default function GrimoirePage() {
                         sizes="(max-height: 100vh) 100vw, 50vw"
                     />
 
-                    {/* Content Area */}
-                    <div 
-                        className="absolute flex flex-col overflow-hidden"
-                        style={{
-                            left: '16.55%',
-                            top: '8.59%',
-                            width: '72.27%',
-                            height: '82.86%'
-                        }}
-                    >
-
-
-                       {/* Actual Content */}
-                       <div className="relative z-10 w-full h-full flex flex-col">
-                           {content}
-                       </div>
-                    </div>
+                    {/* Content is now responsible for its own positioning within the page */}
+                    {content}
 
                     {/* Navigation - Ornate & Smaller */}
                     {/* Left Arrow (Prev) */}
@@ -318,45 +320,50 @@ export default function GrimoirePage() {
     };
 
    const renderTOC = () => (
-        <div className="flex flex-col h-full text-[#3e2c22] p-4">
-            <header className="text-center border-b-2 border-[#8b4513]/30 pb-4 mb-4 shrink-0">
-                <h2 className="text-[3vh] font-serif text-[#5c4033] mb-1" style={{ fontFamily: 'Cinzel, serif' }}>Table of Contents</h2>
-                <div className="text-[1.5vh] italic font-serif text-[#8b4513]/60">Index of Workings</div>
-            </header>
-            
-            <div className="flex-grow overflow-y-auto custom-scrollbar pr-2 space-y-2">
-                {sections.length === 0 ? (
-                    <div className="text-center italic opacity-50 mt-10">The Grimoire is empty.</div>
-                ) : (
-                    sections.map((section, idx) => (
-                        <button
-                            key={section.id}
-                            onClick={() => jumpToSection(section.id)}
-                            className="w-full group flex items-center justify-between p-2 border-b border-[#8b4513]/10 hover:bg-[#8b4513]/5 transition-colors text-left"
-                        >
-                            <span className="font-serif text-[2vh] group-hover:pl-2 transition-all font-bold text-[#5c4033]">
-                                {section.title}
-                            </span>
-                            <span className="font-mono text-sm text-[#8b4513]/50">
-                                {idx + 1}
-                            </span>
-                        </button>
-                    ))
-                )}
+        <>
+            {/* Header Zone */}
+            <div className="absolute flex flex-col justify-center items-center text-center z-10" style={HEADER_ZONE}>
+                 <header className="border-b-2 border-[#8b4513]/30 pb-2 w-full">
+                    <h2 className="text-[3vh] font-serif text-[#5c4033] mb-1" style={{ fontFamily: 'Cinzel, serif' }}>Table of Contents</h2>
+                    <div className="text-[1.5vh] italic font-serif text-[#8b4513]/60">Index of Workings</div>
+                </header>
             </div>
-            
-            <div className="mt-auto pt-4 text-center shrink-0">
-                 <p className="text-[1.2vh] font-serif italic text-[#8b4513]/40">Select a chapter to begin...</p>
+
+            {/* Body Zone */}
+            <div className="absolute z-10 overflow-hidden" style={BODY_ZONE}>
+                <div className="flex flex-col h-full text-[#3e2c22] p-2">
+                    <div className="flex-grow overflow-y-auto custom-scrollbar pr-2 space-y-2">
+                        {sections.length === 0 ? (
+                            <div className="text-center italic opacity-50 mt-10">The Grimoire is empty.</div>
+                        ) : (
+                            sections.map((section, idx) => (
+                                <button
+                                    key={section.id}
+                                    onClick={() => jumpToSection(section.id)}
+                                    className="w-full group flex items-center justify-between p-2 border-b border-[#8b4513]/10 hover:bg-[#8b4513]/5 transition-colors text-left"
+                                >
+                                    <span className="font-serif text-[2vh] group-hover:pl-2 transition-all font-bold text-[#5c4033]">
+                                        {section.title}
+                                    </span>
+                                    <span className="font-mono text-sm text-[#8b4513]/50">
+                                        {idx + 1}
+                                    </span>
+                                </button>
+                            ))
+                        )}
+                    </div>
+                </div>
             </div>
-        </div>
+        </>
     );
 
     const renderSection = () => (
-        <div className="flex flex-col h-full w-full">
-             <header className="flex justify-between items-start mb-4 px-1 shrink-0 gap-2">
+        <>
+            {/* Header Zone */}
+            <div className="absolute z-10 flex items-start justify-between" style={HEADER_ZONE}>
                 {/* Title & Page Number Card */}
-                <div className="flex flex-col items-start px-4 py-2 rounded-lg border border-[#8b4513]/40 bg-[#f4e4bc]/80 backdrop-blur-[2px] shadow-sm max-w-[75%]">
-                    <h2 className="text-[2.2vh] leading-tight font-serif text-[#3e2c22] font-bold" style={{ fontFamily: 'Cinzel, serif' }}>
+                <div className="flex flex-col items-start px-4 py-2 rounded-lg border border-[#8b4513]/40 bg-[#f4e4bc]/80 backdrop-blur-[2px] shadow-sm max-w-[75%] h-full justify-center">
+                    <h2 className="text-[2.2vh] leading-tight font-serif text-[#3e2c22] font-bold line-clamp-2" style={{ fontFamily: 'Cinzel, serif' }}>
                         {activeSection?.title}
                     </h2>
                     <div className="w-full h-px bg-[#8b4513]/20 my-1"></div>
@@ -365,66 +372,69 @@ export default function GrimoirePage() {
                     </p>
                 </div>
 
-                {/* Return Button Card */}
+                 {/* Return Button Card */}
                 <button 
                     onClick={() => setViewMode('TOC')} 
-                    className="px-3 py-2 rounded-lg border border-[#8b4513]/40 bg-[#f4e4bc]/80 backdrop-blur-[2px] hover:bg-[#5c4033] hover:text-[#f4e4bc] hover:border-[#f4e4bc] transition-all duration-300 shadow-sm flex items-center justify-center group"
+                    className="h-full px-3 rounded-lg border border-[#8b4513]/40 bg-[#f4e4bc]/80 backdrop-blur-[2px] hover:bg-[#5c4033] hover:text-[#f4e4bc] hover:border-[#f4e4bc] transition-all duration-300 shadow-sm flex flex-col items-center justify-center group gap-1"
                 >
-                    <span className="text-[1.2vh] font-serif uppercase tracking-wider font-bold text-[#5c4033] group-hover:text-[#f4e4bc]">
+                    <RotateCcw size={16} className="text-[#5c4033] group-hover:text-[#f4e4bc]" />
+                    <span className="text-[1vh] font-serif uppercase tracking-wider font-bold text-[#5c4033] group-hover:text-[#f4e4bc]">
                         Index
                     </span>
-                    <RotateCcw size={12} className="ml-2 text-[#5c4033] group-hover:text-[#f4e4bc]" />
                 </button>
-            </header>
-
-            {/* Grid expands to fill available space. 1 column, 2 rows. Maximize cards. */}
-            <div className="flex-grow grid grid-cols-1 grid-rows-2 gap-[2vh] w-full h-full justify-items-center items-center overflow-hidden">
-                {Array.from({ length: 2 }).map((_, idx) => {
-                    const spell = currentSpells[idx]; 
-                    // Cycle images 1-6
-                    const imageIndex = ((pageOffset * itemsPerPage + idx) % 6) + 1;
-                    const cardImage = `/images/grimoire-images/spell-card-${imageIndex}.png`;
-
-                    return (
-                        <div key={idx} className="relative w-full h-full flex items-center justify-center">
-                            {spell ? (
-                                <button 
-                                    onClick={() => setSelectedSpell({ spell, image: cardImage })}
-                                    className="relative h-full w-auto aspect-square hover:scale-[1.02] transition-transform duration-300 transform-gpu"
-                                >
-                                    <div className="relative w-full h-full">
-                                        <Image 
-                                            src={cardImage} 
-                                            alt={spell.name} 
-                                            fill 
-                                            className="object-contain drop-shadow-md"
-                                            sizes="(max-width: 768px) 60vw, 30vw"
-                                        />
-                                        
-                                        {/* Writable Area - Title Only, Sized to fit */}
-                                        <div 
-                                            className="absolute flex flex-col items-center justify-center text-center p-2 z-10 overflow-hidden"
-                                            style={{
-                                                left: '19.25%',
-                                                top: '19.25%',
-                                                width: '61.5%',
-                                                height: '61.5%'
-                                            }}
-                                        >
-                                            <h3 className="font-serif font-bold text-[2vh] md:text-[2.5vh] leading-snug text-[#3e2c22] drop-shadow-sm text-balance max-h-full overflow-hidden">
-                                                {spell.name}
-                                            </h3>
-                                        </div>
-                                    </div>
-                                </button>
-                            ) : (
-                                <div className="h-full w-auto aspect-square" />
-                            )}
-                        </div>
-                    );
-                })}
             </div>
-        </div>
+
+            {/* Body Zone */}
+             <div className="absolute z-10" style={BODY_ZONE}>
+                {/* Grid expands to fill available space. 1 column, 2 rows. Maximize cards. */}
+                <div className="grid grid-cols-1 grid-rows-2 gap-2 w-full h-full justify-items-center items-center p-1">
+                    {Array.from({ length: 2 }).map((_, idx) => {
+                        const spell = currentSpells[idx]; 
+                        // Cycle images 1-6
+                        const imageIndex = ((pageOffset * itemsPerPage + idx) % 6) + 1;
+                        const cardImage = `/images/grimoire-images/spell-card-${imageIndex}.png`;
+
+                        return (
+                            <div key={idx} className="relative w-full h-full flex items-center justify-center overflow-hidden">
+                                {spell ? (
+                                    <button 
+                                        onClick={() => setSelectedSpell({ spell, image: cardImage })}
+                                        className="relative h-full w-auto aspect-square hover:scale-[1.02] transition-transform duration-300 transform-gpu"
+                                    >
+                                        <div className="relative w-full h-full">
+                                            <Image 
+                                                src={cardImage} 
+                                                alt={spell.name} 
+                                                fill 
+                                                className="object-contain drop-shadow-md"
+                                                sizes="(max-width: 768px) 60vw, 30vw"
+                                            />
+                                            
+                                            {/* Writable Area - Title Only, Sized to fit */}
+                                            <div 
+                                                className="absolute flex flex-col items-center justify-center text-center p-2 z-10 overflow-hidden"
+                                                style={{
+                                                    left: '19.25%',
+                                                    top: '19.25%',
+                                                    width: '61.5%',
+                                                    height: '61.5%'
+                                                }}
+                                            >
+                                                <h3 className="font-serif font-bold text-[2vh] md:text-[2.5vh] leading-snug text-[#3e2c22] drop-shadow-sm text-balance max-h-full overflow-hidden flex items-center justify-center">
+                                                    {spell.name}
+                                                </h3>
+                                            </div>
+                                        </div>
+                                    </button>
+                                ) : (
+                                    <div className="h-full w-auto aspect-square" />
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+        </>
     );
 
     // --- ENLARGED CARD MODAL ---
