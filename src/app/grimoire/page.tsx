@@ -1,27 +1,105 @@
-// --- START OF FILE src/app/grimoire/page.tsx ---
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
 import { getSpells } from '@/lib/services/geminiService';
 import type { Spell } from '@/lib/types';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
 import RoomsButton from '@/app/components/RoomsButton';
 import LoadingSpinner from '@/app/components/LoadingSpinner';
-import { Book, Calendar, Scroll, Search, X, RotateCcw, ArrowRight } from 'lucide-react';
+import { Calendar, X, RotateCcw, ArrowRight, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
+
+// --- TYPES ---
+type ViewMode = 'COVER' | 'TOC' | 'SECTION';
+
+interface SpellSection {
+    id: string; // unique key, e.g., 'electric-magick'
+    title: string; // Display name, e.g., "Electric Magick"
+    spells: Spell[];
+}
+
+interface SpellMetadata {
+    sectionId: string;
+    sectionTitle: string;
+    replayUrl: string | null;
+}
+
+// --- HELPER LOGIC ---
+const getSpellMetadata = (spell: Spell): SpellMetadata => {
+    // Helper to format title from ID
+    const formatTitle = (id: string) => id.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    
+    // Default
+    let sectionId = 'misc-spells';
+    let sectionTitle = 'Miscellaneous Spells';
+    let replayUrl: string | null = null;
+    let url = '';
+
+    const nameLower = spell.name.toLowerCase();
+    const ritualData = typeof spell.ritual_data === 'string' 
+        ? JSON.parse(spell.ritual_data || '{}') 
+        : (spell.ritual_data || {});
+
+    // 1. Explicit Tradition/Tag Checks
+    if (spell.tradition === 'HOODOO' || spell.tradition === 'VOODOO' || nameLower.includes('hoodoo')) {
+        sectionId = 'hoodoo-rootwork';
+        sectionTitle = 'Hoodoo Rootwork';
+        replayUrl = `/spell-room/hoodoo-rootwork-spells-app?loadId=${spell.id}`;
+    } else if (spell.tradition === 'WICCA' || nameLower.includes('wicca') || nameLower.includes('elemental')) {
+        sectionId = 'wicca-magick';
+        sectionTitle = 'Wicca Magick';
+        replayUrl = `/spell-room/wicca-magick-spells-app?loadId=${spell.id}`;
+    } else if (spell.tradition === 'CHAOS' || ritualData.type === 'CHAOS') {
+        sectionId = 'chaos-magick';
+        sectionTitle = 'Chaos Magick';
+        replayUrl = `/spell-room/chaos-magick-spells-app?loadId=${spell.id}`;
+    } else if (spell.tradition === 'LOVE' || nameLower.includes('love spell') || nameLower.includes('soul connect')) {
+        sectionId = 'love-spells';
+        sectionTitle = 'Love Spells';
+        replayUrl = `/spell-room/love-spells-app/soul-connect-love-spell?loadId=${spell.id}`;
+    } else if (spell.element === 'Servitor') {
+        sectionId = 'servitors';
+        sectionTitle = 'Servitors of the Wild Unknown';
+        replayUrl = `/spell-room/servitors-of-the-wild-unknown?loadId=${spell.id}`;
+    } else if (nameLower.includes('reality') || nameLower.includes('neural') || nameLower.includes('data') || nameLower.includes('void') || nameLower.includes('light prism')) {
+        sectionId = 'electric-magick';
+        sectionTitle = 'Electric Magick';
+        // Precise URL mapping for Electric Magick
+        let spellType = '';
+        if (nameLower.includes('reality')) spellType = 'reality-patch';
+        else if (nameLower.includes('neural')) spellType = 'neural-link';
+        else if (nameLower.includes('data')) spellType = 'data-scry';
+        else if (nameLower.includes('zero')) spellType = 'zero-point-zet';
+        else if (nameLower.includes('void')) spellType = 'void-gate';
+        else if (nameLower.includes('light')) spellType = 'light-prism';
+        
+        replayUrl = `/spell-room/electric-magick-spells-app?spell=${spellType}&loadId=${spell.id}`;
+    }
+
+    return { sectionId, sectionTitle, replayUrl };
+};
+
 
 export default function GrimoirePage() {
+    // --- STATE ---
     const [spells, setSpells] = useState<Spell[]>([]);
     const [loading, setLoading] = useState(true);
+    
+    // Manifestation Book State
+    const [viewMode, setViewMode] = useState<ViewMode>('COVER');
+    const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
+    const [pageOffset, setPageOffset] = useState(0); // 0-indexed page within a section
+    
     const [selectedSpell, setSelectedSpell] = useState<Spell | null>(null);
-    const [filter, setFilter] = useState('');
 
     const supabase = createBrowserClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
 
+    // Load Data
     useEffect(() => {
         const load = async () => {
             const { data: { user } } = await supabase.auth.getUser();
@@ -38,152 +116,332 @@ export default function GrimoirePage() {
         load();
     }, [supabase]);
 
-    const filteredSpells = spells.filter(s => 
-        s.name.toLowerCase().includes(filter.toLowerCase()) || 
-        s.intention.toLowerCase().includes(filter.toLowerCase())
-    );
+    // Derived Data: Sections
+    const sections = useMemo(() => {
+        const map = new Map<string, SpellSection>();
+        
+        spells.forEach(spell => {
+            const { sectionId, sectionTitle } = getSpellMetadata(spell);
+            if (!map.has(sectionId)) {
+                map.set(sectionId, { id: sectionId, title: sectionTitle, spells: [] });
+            }
+            map.get(sectionId)!.spells.push(spell);
+        });
 
-    // HELPER: Determine App URL based on Spell Data
-    const getReplayUrl = (spell: Spell) => {
-        // 1. Explicit Tradition Check
-        if (spell.tradition === 'HOODOO' || spell.tradition === 'VOODOO') {
-            return `/spell-room/hoodoo-rootwork-spells-app?loadId=${spell.id}`;
-        }
-        if (spell.tradition === 'WICCA') {
-            return `/spell-room/wicca-magick-spells-app?loadId=${spell.id}`;
-        }
-        if (spell.tradition === 'CHAOS') {
-            return `/spell-room/chaos-magick-spells-app?loadId=${spell.id}`;
-        }
-        if (spell.tradition === 'LOVE') {
-            return `/spell-room/love-spells-app/soul-connect-love-spell?loadId=${spell.id}`;
-        }
-        if (spell.element === 'Servitor') {
-             return `/spell-room/servitors-of-the-wild-unknown?loadId=${spell.id}`;
-        }
-        
-        // 2. Check ritual_data for embedded type (Chaos Magick saves it here)
-        if (spell.ritual_data) {
-             try {
-                 const data = typeof spell.ritual_data === 'string' ? JSON.parse(spell.ritual_data) : spell.ritual_data;
-                 if (data.type === 'CHAOS') {
-                     return `/spell-room/chaos-magick-spells-app?loadId=${spell.id}`;
-                 }
-             } catch (e) {
-                 console.error('Error parsing ritual_data in getReplayUrl', e);
-             }
-        }
-        
-        // 2. Fallback Logic (Legacy Spells / Electric Magick)
-        const nameLower = spell.name.toLowerCase();
-        
-        // Check for Love Spells that might not have the tradition tag yet
-        if (nameLower.includes('love spell') || nameLower.includes('soul connect') || nameLower.includes('two souls')) {
-             return `/spell-room/love-spells-app/soul-connect-love-spell?loadId=${spell.id}`;
-        }
+        // Convert to array and sort (maybe alphabetically or by fixed order)
+        // Let's sort alphabetically for now
+        return Array.from(map.values()).sort((a, b) => a.title.localeCompare(b.title));
+    }, [spells]);
 
-        if (nameLower.includes('hoodoo') || nameLower.includes('voodoo')) {
-            return `/spell-room/hoodoo-rootwork-spells-app?loadId=${spell.id}`;
+    const activeSection = sections.find(s => s.id === activeSectionId);
+    
+    // Pagination Logic
+    const itemsPerPage = 6;
+    const currentSpells = activeSection 
+        ? activeSection.spells.slice(pageOffset * itemsPerPage, (pageOffset + 1) * itemsPerPage)
+        : [];
+    
+    const totalPages = activeSection ? Math.ceil(activeSection.spells.length / itemsPerPage) : 0;
+    const currentPage = pageOffset + 1;
+
+    // --- NAVIGATION HANDLERS ---
+    
+    const handleNext = () => {
+        if (viewMode === 'COVER') {
+            setViewMode('TOC');
+        } else if (viewMode === 'TOC') {
+            if (sections.length > 0) {
+                setActiveSectionId(sections[0].id);
+                setPageOffset(0);
+                setViewMode('SECTION');
+            }
+        } else if (viewMode === 'SECTION') {
+            // Check if more pages in this section
+            if (currentPage < totalPages) {
+                setPageOffset(prev => prev + 1);
+            } else {
+                // Determine next section
+                const currentIndex = sections.findIndex(s => s.id === activeSectionId);
+                if (currentIndex >= 0 && currentIndex < sections.length - 1) {
+                    setActiveSectionId(sections[currentIndex + 1].id);
+                    setPageOffset(0);
+                } else {
+                    // End of book? Cycle back to TOC or stay?
+                    // User said "go to next page... continue on to the next section"
+                    // If last page of last section, maybe go back to cover or stay? 
+                    // Let's go back to TOC for closure
+                    setViewMode('TOC');
+                    setActiveSectionId(null);
+                }
+            }
         }
-        if (nameLower.includes('wicca') || nameLower.includes('elemental')) {
-            return `/spell-room/wicca-magick-spells-app?loadId=${spell.id}`;
-        }
-        
-        // Electric Magick Apps
-        if (nameLower.includes('reality breach') || nameLower.includes('reality patch')) {
-            return `/spell-room/electric-magick-spells-app?spell=reality-patch&loadId=${spell.id}`;
-        }
-        if (nameLower.includes('neural link')) {
-            return `/spell-room/electric-magick-spells-app?spell=neural-link&loadId=${spell.id}`;
-        }
-        if (nameLower.includes('data scry')) {
-            return `/spell-room/electric-magick-spells-app?spell=data-scry&loadId=${spell.id}`;
-        }
-        if (nameLower.includes('zero point')) {
-             return `/spell-room/electric-magick-spells-app?spell=zero-point-zet&loadId=${spell.id}`;
-        }
-        if (nameLower.includes('void gate')) {
-             return `/spell-room/electric-magick-spells-app?spell=void-gate&loadId=${spell.id}`;
-        }
-        if (nameLower.includes('light prism')) {
-             return `/spell-room/electric-magick-spells-app?spell=light-prism&loadId=${spell.id}`;
-        }
-        
-        return null; // Unknown type
     };
 
+    const handlePrev = () => {
+        if (viewMode === 'COVER') return;
+        if (viewMode === 'TOC') {
+            setViewMode('COVER');
+        } else if (viewMode === 'SECTION') {
+            if (pageOffset > 0) {
+                setPageOffset(prev => prev - 1);
+            } else {
+                // Go to previous section's last page
+                const currentIndex = sections.findIndex(s => s.id === activeSectionId);
+                if (currentIndex > 0) {
+                    const prevSection = sections[currentIndex - 1];
+                    setActiveSectionId(prevSection.id);
+                    const prevPages = Math.ceil(prevSection.spells.length / itemsPerPage);
+                    setPageOffset(Math.max(0, prevPages - 1));
+                } else {
+                    setViewMode('TOC');
+                    setActiveSectionId(null);
+                }
+            }
+        }
+    };
+
+    const jumpToSection = (sectionId: string) => {
+        setActiveSectionId(sectionId);
+        setPageOffset(0);
+        setViewMode('SECTION');
+    };
+
+    // --- RENDERERS ---
+
+    const renderCover = () => (
+        <div className="relative h-full w-full flex flex-col items-center justify-center animate-in fade-in duration-700">
+            <div className="relative w-full max-w-md md:max-w-xl aspect-[3/4]">
+                <Image 
+                    src="/images/grimoire-images/grimoire-cover.png" 
+                    alt="Grimoire Cover" 
+                    fill 
+                    className="object-contain drop-shadow-2xl"
+                    priority
+                />
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-8 z-10">
+                    <h1 className="text-4xl md:text-6xl font-serif text-[#d4af37] tracking-wider mb-8 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]" style={{ fontFamily: 'Cinzel, serif' }}>
+                        Book of<br/>Magick
+                    </h1>
+                    <button 
+                        onClick={() => setViewMode('TOC')}
+                        className="mt-12 px-8 py-3 bg-black/60 border border-[#d4af37] text-[#d4af37] font-serif uppercase tracking-widest hover:bg-[#d4af37] hover:text-black transition-all duration-300 backdrop-blur-sm"
+                    >
+                        Open Book
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+
+    const renderBookPage = (content: React.ReactNode) => (
+        <div className="relative w-full max-w-4xl aspect-[3/4] md:aspect-[4/3] lg:aspect-[3/2] mx-auto animate-in zoom-in-95 duration-500 flex items-center justify-center">
+            {/* Background Image of the Page */}
+            <div className="absolute inset-0 z-0">
+                <Image 
+                    src="/images/grimoire-images/grimoire-page.png" 
+                    alt="Grimoire Page" 
+                    fill 
+                    className="object-fill md:object-contain drop-shadow-2xl"
+                    priority
+                />
+            </div>
+            
+            {/* Content Container - Adjusted to fit within the "paper" area of the image */}
+            {/* Assuming the image is a two-page spread or single page? User said "grimoire-page.png" 
+                If it's a single page vertical, we conform to that. 
+                User said "on the first page... table of contents... on the grimoire-page.png".
+                I'll assume it's a single page background.
+            */}
+            <div className="relative z-10 w-full h-full p-12 md:p-20 flex flex-col overflow-y-auto custom-scrollbar">
+               {content}
+            </div>
+
+            {/* Navigation Controls (Floating or Fixed on Page?) */}
+            {/* "Just click next page" - maybe clickable arrows on sides */}
+            <button 
+                onClick={handlePrev}
+                className="absolute left-2 md:left-8 top-1/2 -translate-y-1/2 z-20 p-3 text-[#5c4033] hover:text-[#8b4513] hover:scale-110 transition-all opacity-70 hover:opacity-100 disabled:opacity-0"
+                disabled={viewMode === 'COVER'}
+            >
+                <ArrowLeft size={48} strokeWidth={1} />
+            </button>
+            <button 
+                onClick={handleNext}
+                className="absolute right-2 md:right-8 top-1/2 -translate-y-1/2 z-20 p-3 text-[#5c4033] hover:text-[#8b4513] hover:scale-110 transition-all opacity-70 hover:opacity-100"
+            >
+                <ArrowRight size={48} strokeWidth={1} />
+            </button>
+        </div>
+    );
+
+    const renderTOC = () => (
+        <div className="flex flex-col h-full text-[#3e2c22]">
+            <header className="text-center border-b-2 border-[#8b4513]/30 pb-6 mb-8">
+                <h2 className="text-4xl font-serif text-[#5c4033] mb-2" style={{ fontFamily: 'Cinzel, serif' }}>Table of Contents</h2>
+                <div className="text-sm italic font-serif text-[#8b4513]/60">Index of Workings</div>
+            </header>
+            
+            <div className="flex-grow space-y-4 px-4 overflow-y-auto">
+                {sections.length === 0 ? (
+                    <div className="text-center italic opacity-50 mt-20">The Grimoire is empty.</div>
+                ) : (
+                    sections.map((section, idx) => (
+                        <button
+                            key={section.id}
+                            onClick={() => jumpToSection(section.id)}
+                            className="w-full group flex items-center justify-between p-3 border-b border-[#8b4513]/10 hover:bg-[#8b4513]/5 transition-colors"
+                        >
+                            <span className="font-serif text-xl group-hover:pl-2 transition-all font-bold text-[#5c4033]">
+                                {section.title}
+                            </span>
+                            <span className="font-mono text-sm text-[#8b4513]/50">
+                                {idx + 1}
+                            </span>
+                        </button>
+                    ))
+                )}
+            </div>
+            
+            <div className="mt-auto pt-6 text-center">
+                 <p className="text-xs font-serif italic text-[#8b4513]/40">Select a chapter to begin...</p>
+            </div>
+        </div>
+    );
+
+    const renderSection = () => (
+        <div className="flex flex-col h-full">
+             <header className="flex justify-between items-end border-b border-[#8b4513]/20 pb-4 mb-6">
+                <div>
+                    <h2 className="text-3xl font-serif text-[#5c4033]" style={{ fontFamily: 'Cinzel, serif' }}>{activeSection?.title}</h2>
+                    <p className="text-xs font-mono text-[#8b4513]/60 uppercase tracking-widest mt-1">Page {currentPage} of {totalPages}</p>
+                </div>
+                <button onClick={() => setViewMode('TOC')} className="text-xs font-serif underline hover:text-[#8b4513] text-[#5c4033]/70">
+                    Return to Index
+                </button>
+            </header>
+
+            <div className="grid grid-cols-2 grid-rows-3 gap-4 md:gap-8 h-full">
+                {/* Always render 6 slots, empty ones invoke no action */}
+                {Array.from({ length: 6 }).map((_, idx) => {
+                    const spell = currentSpells[idx]; // May be undefined
+                    const cardImage = `/images/grimoire-images/spell-card-${idx + 1}.png`; // 1 to 6
+
+                    return (
+                        <div key={idx} className="relative group w-full h-full flex items-center justify-center">
+                            {spell ? (
+                                <button 
+                                    onClick={() => setSelectedSpell(spell)}
+                                    className="relative w-full h-full hover:scale-105 transition-transform duration-300"
+                                >
+                                    <div className="relative w-full h-full aspect-[2/3]">
+                                        <Image 
+                                            src={cardImage} 
+                                            alt={spell.name} 
+                                            fill 
+                                            className="object-contain drop-shadow-md group-hover:drop-shadow-xl"
+                                        />
+                                        
+                                        {/* Content Overlay on Card */}
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 text-white rounded-lg backdrop-blur-[1px]">
+                                            <h3 className="font-serif font-bold text-sm md:text-lg mb-1">{spell.name}</h3>
+                                            <p className="text-[10px] md:text-xs line-clamp-3 italic">"{spell.intention}"</p>
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Static Title below card if preferred, but user said "information currently showing... when you click... card will be enlarged" 
+                                        Actually, "each of the cards... will have the information that is currently on the cards"
+                                        The previous implementation showed Name, Date, Type. 
+                                        I'll add a subtle label below if space permits, or rely on the image + click.
+                                        User said "appear on the page if associated... no blank cards".
+                                        The image ITSELF is the card.
+                                        I will trust the hover or just the visual.
+                                    */}
+                                    <div className="absolute bottom-2 left-0 right-0 text-center bg-black/60 text-[#d4af37] text-xs font-serif py-1 px-2 rounded mx-4 opacity-80 group-hover:opacity-0 transition-opacity whitespace-nowrap overflow-hidden text-ellipsis">
+                                        {spell.name}
+                                    </div>
+                                </button>
+                            ) : (
+                                // Render nothing or placeholder? 
+                                // "only appear on the page if they are associated... there should be no blank cards."
+                                // So we render NOTHING in this slot.
+                                <div />
+                            )}
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+
+    // --- MODAL (Adapted) ---
     const SpellDetailModal = ({ spell, onClose }: { spell: Spell, onClose: () => void }) => {
-        const ritualData = typeof spell.ritual_data === 'string' ? JSON.parse(spell.ritual_data) : spell.ritual_data;
-        const replayUrl = getReplayUrl(spell);
+        const { replayUrl } = getSpellMetadata(spell);
 
         return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
-                <div className="bg-[#0f0a1e] border border-amber-900/50 w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-xl shadow-2xl relative flex flex-col">
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-300">
+                <div className="relative bg-[#0f0a1e] border border-amber-900/50 w-full max-w-lg md:max-w-2xl max-h-[90vh] overflow-y-auto rounded-xl shadow-2xl flex flex-col"
+                     style={{ backgroundImage: "url('/images/grimoire-images/grimoire-page.png')", backgroundSize: 'cover' }}
+                >
+                    {/* Dark overlay to make text readable on the page texture */}
+                    <div className="absolute inset-0 bg-[#0f0a1e]/90" />
                     
-                    {/* Header */}
-                    <div className="sticky top-0 bg-[#0f0a1e] border-b border-white/10 p-6 flex justify-between items-start z-10">
-                        <div>
-                            <h2 className="text-2xl font-serif text-amber-100">{spell.name}</h2>
-                            <div className="flex items-center gap-4 mt-2 text-xs font-mono text-gray-500">
-                                <span className="flex items-center gap-1"><Calendar size={12}/> {new Date(spell.created_at).toLocaleDateString()}</span>
-                                <span className="uppercase border border-gray-700 px-2 rounded">{spell.element || 'Universal'}</span>
-                            </div>
-                        </div>
-                        <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors"><X size={20} className="text-gray-400" /></button>
-                    </div>
-
-                    {/* Content */}
-                    <div className="p-8 space-y-8 font-serif text-gray-300">
-                        <div className="text-center p-6 bg-white/5 rounded-lg border border-white/5">
-                            <h3 className="text-xs font-mono text-amber-500 uppercase tracking-widest mb-3">Intention</h3>
-                            <p className="text-lg italic text-white leading-relaxed">"{spell.intention}"</p>
-                        </div>
-
-                        {spell.incantation && (
+                    <div className="relative z-10 flex flex-col h-full">
+                         {/* Header */}
+                        <div className="sticky top-0 bg-[#0f0a1e]/95 border-b border-white/10 p-6 flex justify-between items-start">
                             <div>
-                                <h3 className="text-xs font-mono text-gray-500 uppercase tracking-widest mb-3 border-b border-gray-800 pb-1">Incantation</h3>
-                                <div className="whitespace-pre-wrap leading-loose text-amber-50/90 pl-4 border-l-2 border-amber-900/50">
-                                    {spell.incantation}
+                                <h2 className="text-2xl font-serif text-amber-100">{spell.name}</h2>
+                                <div className="flex items-center gap-4 mt-2 text-xs font-mono text-gray-400">
+                                    <span className="flex items-center gap-1"><Calendar size={12}/> {new Date(spell.created_at).toLocaleDateString()}</span>
+                                    <span className="uppercase border border-gray-700 px-2 rounded text-amber-500">{spell.element || 'Universal'}</span>
                                 </div>
                             </div>
-                        )}
+                            <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors"><X size={24} className="text-amber-500" /></button>
+                        </div>
 
-                        {/* Visual Data for Replay */}
-                        {ritualData && (
-                            <div className="space-y-6">
-                                {ritualData.psalm && <div className="text-xs font-mono text-gray-400">Scripture: {ritualData.psalm}</div>}
-                                {ritualData.lwa && <div className="text-xs font-mono text-gray-400">Spirit: {ritualData.lwa}</div>}
+                        {/* Content */}
+                        <div className="p-8 space-y-6 font-serif text-gray-300 overflow-y-auto">
+                            <div className="text-center p-6 bg-white/5 rounded-lg border border-white/5">
+                                <h3 className="text-xs font-mono text-amber-500 uppercase tracking-widest mb-3">Intention</h3>
+                                <p className="text-lg italic text-white leading-relaxed">"{spell.intention}"</p>
                             </div>
-                        )}
-                        
-                        {spell.sigil_url && (
-                            <div className="flex justify-center pt-4 border-t border-white/5">
-                                <div className="text-center">
-                                    <h3 className="text-xs font-mono text-gray-500 uppercase tracking-widest mb-4">Bound Sigil</h3>
-                                    <div className="relative w-32 h-32 mx-auto">
-                                        <div className="absolute inset-0 bg-amber-500/20 blur-xl rounded-full"></div>
-                                        <img src={spell.sigil_url} alt="Sigil" className="relative z-10 w-full h-full object-contain drop-shadow-[0_0_10px_rgba(251,191,36,0.5)]" />
+
+                            {spell.incantation && (
+                                <div>
+                                    <h3 className="text-xs font-mono text-gray-500 uppercase tracking-widest mb-3 border-b border-gray-800 pb-1">Incantation</h3>
+                                    <div className="whitespace-pre-wrap leading-loose text-amber-50/90 pl-4 border-l-2 border-amber-900/50">
+                                        {spell.incantation}
                                     </div>
                                 </div>
-                            </div>
-                        )}
-
-                        {/* REPLAY BUTTON */}
-                        {replayUrl && (
-                            <div className="pt-8 border-t border-white/10 flex justify-center">
-                                <Link 
-                                    href={replayUrl}
-                                    className="flex items-center gap-3 px-8 py-4 bg-amber-900/40 border border-amber-500/50 text-amber-100 rounded hover:bg-amber-800/60 hover:border-amber-400 transition-all group"
-                                >
-                                    <RotateCcw className="group-hover:-rotate-180 transition-transform duration-500" size={20} />
-                                    <div className="text-left">
-                                        <div className="font-serif font-bold tracking-wide uppercase text-sm">Perform Ritual Again</div>
-                                        <div className="text-[10px] text-amber-400/70 font-mono">Use saved components • No Aether Cost</div>
+                            )}
+                            
+                            {spell.sigil_url && (
+                                <div className="flex justify-center pt-4 border-t border-white/5">
+                                    <div className="text-center">
+                                        <h3 className="text-xs font-mono text-gray-500 uppercase tracking-widest mb-4">Bound Sigil</h3>
+                                        <div className="relative w-40 h-40 mx-auto">
+                                            <div className="absolute inset-0 bg-amber-500/20 blur-xl rounded-full"></div>
+                                            <img src={spell.sigil_url} alt="Sigil" className="relative z-10 w-full h-full object-contain drop-shadow-[0_0_15px_rgba(251,191,36,0.6)]" />
+                                        </div>
                                     </div>
-                                    <ArrowRight size={16} className="opacity-50 group-hover:translate-x-1 transition-transform" />
-                                </Link>
-                            </div>
-                        )}
+                                </div>
+                            )}
+
+                            {/* REPLAY BUTTON */}
+                            {replayUrl && (
+                                <div className="pt-8 border-t border-white/10 flex justify-center">
+                                    <Link 
+                                        href={replayUrl}
+                                        className="flex items-center gap-3 px-8 py-4 bg-amber-900/40 border border-amber-500/50 text-amber-100 rounded hover:bg-amber-800/60 hover:border-amber-400 transition-all group w-full justify-center"
+                                    >
+                                        <RotateCcw className="group-hover:-rotate-180 transition-transform duration-500" size={20} />
+                                        <div className="text-left">
+                                            <div className="font-serif font-bold tracking-wide uppercase text-sm">Perform Ritual Again</div>
+                                        </div>
+                                        <ArrowRight size={16} className="opacity-50 group-hover:translate-x-1 transition-transform" />
+                                    </Link>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -191,72 +449,26 @@ export default function GrimoirePage() {
     };
 
     return (
-        <main className="relative min-h-screen w-full bg-black bg-cover bg-center p-4 md:p-8" style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}>
-            <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+        <main 
+            className="relative h-screen w-full bg-black bg-cover bg-center overflow-hidden flex flex-col" 
+            style={{ backgroundImage: "url('/images/grimoire-images/grimoire-background.jpeg')" }}
+        >
+            <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" />
             
-            <header className="relative z-20 w-full max-w-7xl mx-auto mb-8">
-                <div className="flex justify-between items-center mb-6">
-                    <MagickalBackLink href="/hall" text="Grand Hall" />
-                    <RoomsButton />
-                </div>
-                <div className="text-center">
-                    <h1 className="text-3xl md:text-5xl font-serif text-amber-200 tracking-wide text-shadow-lg">My Grimoire</h1>
-                    <p className="text-gray-400 mt-2 font-mono text-xs uppercase tracking-widest">Archive of Workings & Manifestations</p>
-                </div>
+            {/* Header / Nav - Minimalist to not distract from Book */}
+            <header className="relative z-20 w-full p-4 flex justify-between items-center bg-black/40 backdrop-blur-md border-b border-white/5">
+                <MagickalBackLink href="/hall" text="Grand Hall" />
+                <RoomsButton />
             </header>
 
-            <div className="relative z-20 max-w-7xl mx-auto min-h-[500px]">
+            <div className="relative z-10 flex-grow flex items-center justify-center p-4">
                 {loading ? (
-                    <LoadingSpinner title="Opening the Archives..." />
+                    <LoadingSpinner title="Retrieving the Ancient Tomes..." />
                 ) : (
                     <>
-                        <div className="mb-8 flex justify-center">
-                            <div className="relative w-full max-w-md">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
-                                <input 
-                                    type="text" 
-                                    placeholder="Search spells by name or intent..." 
-                                    value={filter}
-                                    onChange={(e) => setFilter(e.target.value)}
-                                    className="w-full bg-white/5 border border-white/10 rounded-full py-3 pl-10 pr-4 text-white focus:outline-none focus:border-amber-500/50 transition-colors text-sm"
-                                />
-                            </div>
-                        </div>
-
-                        {filteredSpells.length === 0 ? (
-                            <div className="text-center text-gray-500 py-20 flex flex-col items-center">
-                                <Book size={48} className="mb-4 opacity-20" />
-                                <p>No spells found in your Grimoire.</p>
-                                <p className="text-xs mt-2">Visit the Spell Room to begin your work.</p>
-                            </div>
-                        ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {filteredSpells.map(spell => (
-                                    <div 
-                                        key={spell.id}
-                                        onClick={() => setSelectedSpell(spell)}
-                                        className="group bg-[#0a0a0a] border border-gray-800 hover:border-amber-500/50 rounded-lg p-6 cursor-pointer transition-all hover:shadow-[0_0_20px_rgba(251,191,36,0.1)] hover:-translate-y-1 flex flex-col h-full"
-                                    >
-                                        <div className="flex justify-between items-start mb-4">
-                                            <div className="p-2 bg-white/5 rounded-full text-amber-500 group-hover:text-amber-200 transition-colors">
-                                                <Scroll size={20} />
-                                            </div>
-                                            <span className="text-[10px] font-mono text-gray-600 border border-gray-800 px-2 py-1 rounded group-hover:border-gray-600">
-                                                {new Date(spell.created_at).toLocaleDateString()}
-                                            </span>
-                                        </div>
-                                        
-                                        <h3 className="text-xl font-serif text-gray-200 group-hover:text-white mb-2 line-clamp-1">{spell.name}</h3>
-                                        <p className="text-sm text-gray-500 line-clamp-2 mb-4 grow italic">"{spell.intention}"</p>
-                                        
-                                        <div className="mt-auto pt-4 border-t border-gray-900 flex justify-between items-center text-xs">
-                                            <span className="text-purple-400 font-medium">{spell.element || 'Spirit'}</span>
-                                            <span className="text-gray-600 uppercase tracking-wider group-hover:text-amber-500/80 transition-colors">Open Entry &rarr;</span>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
+                        {viewMode === 'COVER' && renderCover()}
+                        {viewMode === 'TOC' && renderBookPage(renderTOC())}
+                        {viewMode === 'SECTION' && renderBookPage(renderSection())}
                     </>
                 )}
             </div>
