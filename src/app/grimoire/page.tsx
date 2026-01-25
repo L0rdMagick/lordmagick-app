@@ -509,9 +509,9 @@ export default function GrimoirePage() {
                     <div 
                         className="absolute flex flex-col items-center text-center z-10 overflow-hidden px-[5px]"
                         style={{
-                           left: '22%',
+                           left: '20%',
                            top: '18%',
-                           width: '63%',
+                           width: '65%',
                            height: '64%'
                         }}
                     >
