@@ -7,7 +7,7 @@ import type { Spell } from '@/lib/types';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
 import RoomsButton from '@/app/components/RoomsButton';
 import LoadingSpinner from '@/app/components/LoadingSpinner';
-import { Calendar, X, RotateCcw, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Calendar, X, RotateCcw, ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -128,6 +128,7 @@ export default function GrimoirePage() {
         };
         load();
     }, [supabase]);
+
     // Derived Data: Sections
     const sections = useMemo(() => {
         const map = new Map<string, SpellSection>();
@@ -140,10 +141,14 @@ export default function GrimoirePage() {
             map.get(sectionId)!.spells.push(spell);
         });
 
+        // Convert to array and sort (maybe alphabetically or by fixed order)
+        // Let's sort alphabetically for now
         return Array.from(map.values()).sort((a, b) => a.title.localeCompare(b.title));
     }, [spells]);
 
     const activeSection = sections.find(s => s.id === activeSectionId);
+    
+    // Pagination Logic (2 Cards per page)
     const itemsPerPage = 2;
     const currentSpells = activeSection 
         ? activeSection.spells.slice(pageOffset * itemsPerPage, (pageOffset + 1) * itemsPerPage)
@@ -273,23 +278,27 @@ export default function GrimoirePage() {
                    {content}
                 </div>
 
-                {/* Navigation */}
-                {/* Left Arrow (Prev) - Hidden only on Cover, always visible otherwise */}
+                {/* Navigation - Ornate & Smaller */}
+                {/* Left Arrow (Prev) */}
                 {viewMode !== 'COVER' && (
                     <button 
                         onClick={handlePrev}
-                        className="absolute left-[2%] top-1/2 -translate-y-1/2 z-20 p-2 text-[#5c4033] hover:text-[#8b4513] hover:scale-110 transition-all opacity-80 hover:opacity-100 drop-shadow-md"
+                        className="absolute left-[2%] top-1/2 -translate-y-1/2 z-20 group transition-all duration-300 focus:outline-none"
                     >
-                        <ArrowLeft size={32} className="md:w-16 md:h-16" strokeWidth={1.5} />
+                        <div className="p-2 rounded-full border-2 border-[#8b4513]/60 bg-[#1a120b]/80 text-[#8b4513] group-hover:text-[#d4af37] group-hover:border-[#d4af37] group-hover:bg-black/90 group-hover:shadow-[0_0_15px_rgba(212,175,55,0.4)] transition-all backdrop-blur-[2px]">
+                            <ChevronLeft size={24} className="md:w-6 md:h-6" strokeWidth={2} />
+                        </div>
                     </button>
                 )}
                 
                 {/* Right Arrow (Next) */}
                 <button 
                     onClick={handleNext}
-                    className="absolute right-[2%] top-1/2 -translate-y-1/2 z-20 p-2 text-[#5c4033] hover:text-[#8b4513] hover:scale-110 transition-all opacity-80 hover:opacity-100 drop-shadow-md"
+                    className="absolute right-[2%] top-1/2 -translate-y-1/2 z-20 group transition-all duration-300 focus:outline-none"
                 >
-                    <ArrowRight size={32} className="md:w-16 md:h-16" strokeWidth={1.5} />
+                    <div className="p-2 rounded-full border-2 border-[#8b4513]/60 bg-[#1a120b]/80 text-[#8b4513] group-hover:text-[#d4af37] group-hover:border-[#d4af37] group-hover:bg-black/90 group-hover:shadow-[0_0_15px_rgba(212,175,55,0.4)] transition-all backdrop-blur-[2px]">
+                        <ChevronRight size={24} className="md:w-6 md:h-6" strokeWidth={2} />
+                    </div>
                 </button>
             </div>
         </div>
@@ -365,9 +374,9 @@ export default function GrimoirePage() {
                                             sizes="(max-width: 768px) 60vw, 30vw"
                                         />
                                         
-                                        {/* Writable Area - Title Only */}
+                                        {/* Writable Area - Title Only, Sized to fit */}
                                         <div 
-                                            className="absolute flex flex-col items-center justify-center text-center p-1 z-10 overflow-hidden"
+                                            className="absolute flex flex-col items-center justify-center text-center p-2 z-10 overflow-hidden"
                                             style={{
                                                 left: '19.25%',
                                                 top: '19.25%',
@@ -375,7 +384,7 @@ export default function GrimoirePage() {
                                                 height: '61.5%'
                                             }}
                                         >
-                                            <h3 className="font-serif font-bold text-[3vh] md:text-[4vh] leading-tight text-[#3e2c22] drop-shadow-sm line-clamp-3">
+                                            <h3 className="font-serif font-bold text-[2vh] md:text-[2.5vh] leading-snug text-[#3e2c22] drop-shadow-sm text-balance max-h-full overflow-hidden">
                                                 {spell.name}
                                             </h3>
                                         </div>
