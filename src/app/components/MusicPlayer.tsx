@@ -92,7 +92,7 @@ const MusicPlayer = () => {
 
     const categories = Object.keys(tracksByCategory) as Category[];
 
-    // Initialize Audio Context
+    // Initialize Audio Context with global unlock
     useEffect(() => {
         const AudioContextClass = (window as any).AudioContext || (window as any).webkitAudioContext;
         if (AudioContextClass) {
@@ -104,93 +104,42 @@ const MusicPlayer = () => {
             gainNodeRef.current = gainNode;
         }
 
-        // Cleanup
+        const unlockAudio = () => {
+             if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
+                 audioContextRef.current.resume().then(() => {
+                     // If we wanted to ensure play on first click if it failed before:
+                     if (isPlaying && !sourceNodeRef.current && audioBufferRef.current) {
+                         playBuffer(audioBufferRef.current);
+                     }
+                 });
+             }
+             document.removeEventListener('click', unlockAudio);
+             document.removeEventListener('keydown', unlockAudio);
+             document.removeEventListener('touchstart', unlockAudio);
+        };
+
+        document.addEventListener('click', unlockAudio);
+        document.addEventListener('keydown', unlockAudio);
+        document.addEventListener('touchstart', unlockAudio);
+
         return () => {
-             // We want persistence, but if we truly unmount (e.g. app refresh), close it.
-             // In Next.js navigation, Layout might preserve state, but explicit clean up is safer if we want to stop.
-             // However, for background audio, we might NOT want to close it? 
-             // Actually, if the component unmounts, we should probably stop the sound to avoid "ghost" audio.
-             // But since it's in RootLayout, it only unmounts on hard refresh/close.
              if (sourceNodeRef.current) {
                  try { sourceNodeRef.current.stop(); } catch(e) {}
              }
              if (audioContextRef.current?.state !== 'closed') {
                  audioContextRef.current?.close();
              }
+             document.removeEventListener('click', unlockAudio);
+             document.removeEventListener('keydown', unlockAudio);
+             document.removeEventListener('touchstart', unlockAudio);
         };
     }, []);
 
-    // Load and Play Audio
-    const loadAndPlayTrack = async (track: AudioTrack, shouldPlay: boolean) => {
-        if (!audioContextRef.current || !gainNodeRef.current) return;
-        
-        // Stop current source
-        if (sourceNodeRef.current) {
-            try {
-                sourceNodeRef.current.stop();
-                sourceNodeRef.current.disconnect();
-            } catch (e) { /* ignore if already stopped */ }
-            sourceNodeRef.current = null;
-        }
-
-        setIsLoading(true);
-
-        try {
-            const response = await fetch(track.url);
-            const arrayBuffer = await response.arrayBuffer();
-            
-            // Check if context is still valid/loading same track
-            if (currentTrack.url !== track.url) return; 
-
-            const decodedBuffer = await audioContextRef.current.decodeAudioData(arrayBuffer);
-            audioBufferRef.current = decodedBuffer;
-
-            setIsLoading(false);
-
-            if (shouldPlay) {
-                playBuffer(decodedBuffer);
-            }
-        } catch (error) {
-            console.error("Error loading audio:", error);
-            setIsLoading(false);
-            setIsPlaying(false);
-        }
-    };
-
-    const playBuffer = (buffer: AudioBuffer) => {
-        if (!audioContextRef.current || !gainNodeRef.current) return;
-
-        // Resume context if suspended (browser autoplay policy)
-        if (audioContextRef.current.state === 'suspended') {
-            audioContextRef.current.resume();
-        }
-
-        const source = audioContextRef.current.createBufferSource();
-        source.buffer = buffer;
-        source.loop = true; // Seamless looping!
-        source.connect(gainNodeRef.current);
-        source.start(0);
-        sourceNodeRef.current = source;
-        setIsPlaying(true);
-    };
-
-    // Effect to handle track changes
+    // Effect to handle track changes & Auto-play on mount
     useEffect(() => {
-        // Upon track change, load it. If we were playing, play the new one.
-        // For the very first load, we might not want to autoplay unless user interaction occurred?
-        // But the requirement implies persistent background. 
-        // We'll treat the first load as "shouldPlay = false" unless we have an "autoplay" intention.
-        // Or simple logic: if it's the first run, try play? 
-        // Let's stick to: if isPlaying is true, we play. If not, we just load.
-        // BUT for the very first time, isPlaying is false.
-        // Let's force play only if triggered by user or if we decide to autoplay.
-        // The previous code tried to autoplay.
-        
-        const isInitial = !audioBufferRef.current;
-        const autoPlay = isInitial ? true : isPlaying; 
-        
+        // Always try to auto-play, even on first load
+        const autoPlay = true; 
         loadAndPlayTrack(currentTrack, autoPlay);
-
     }, [currentTrack]);
 
 
