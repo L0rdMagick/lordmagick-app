@@ -76,8 +76,8 @@ export default function RoomsMenu() {
         }`}
       />
       <div
-        className={`fixed top-0 right-0 bottom-0 z-50 h-full w-full max-w-sm md:max-w-md transition-transform duration-500 ease-in-out flex flex-col items-center justify-center pointer-events-none ${
-          isOpen ? 'translate-x-0' : 'translate-x-full'
+        className={`fixed top-0 right-0 bottom-0 z-50 h-full w-full max-w-sm md:max-w-md transition-all duration-500 ease-in-out flex flex-col items-center justify-center pointer-events-none ${
+          isOpen ? 'translate-x-0 opacity-100 visible' : 'translate-x-full opacity-0 invisible'
         }`}
       >
         {/* Aspect Ratio Container for Image + Content */}
@@ -87,9 +87,9 @@ export default function RoomsMenu() {
             <button 
                 onClick={closeMenu}
                 aria-label="Close menu"
-                className="absolute top-8 -left-16 z-50 flex items-center justify-center w-12 h-12 rounded-full border-2 border-amber-400/50 bg-black/80 text-amber-300 hover:bg-amber-900/50 hover:border-amber-300 transition-all active:scale-90 shadow-[0_0_15px_rgba(0,0,0,0.8)]"
+                className="absolute top-[13%] right-[20%] z-50 flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-full border-2 border-amber-400/50 bg-black/60 text-amber-300 hover:bg-amber-900/50 hover:border-amber-300 transition-all active:scale-90 shadow-[0_0_10px_rgba(0,0,0,0.5)]"
             >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 md:h-7 md:w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
             </button>
