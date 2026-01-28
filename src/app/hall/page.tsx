@@ -156,7 +156,7 @@ export default function HallPage() {
                   className="relative w-full mx-auto aspect-3/1 h-[10vh] md:h-[18vh]"
                   style={{ 
                     filter: 'drop-shadow(2px 2px 8px rgba(0,0,0,0.8))',
-                    maxWidth: 'min(480px, 80vw)',
+                    maxWidth: 'min(480px, calc(100vw - 160px))', // Ensure space for Music Player (Left) and Balance (Right)
                   }}
                 >
                     <Image src="/images/logo-lordmagick.com.png" alt="LordMagick.com Logo" fill style={{ objectFit: 'contain' }} priority />
