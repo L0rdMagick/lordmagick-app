@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { AUDIO_TRACKS, AudioTrack, Category } from '../utils/audioTracks';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// Icons (using basic SVGs for now, can replace with Lucide or custom later)
+// Icons
 const PlayIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
         <path d="M8 5v14l11-7z" />
@@ -43,7 +43,14 @@ const MusicNoteIcon = () => (
     </svg>
 );
 
-// Whitelisted paths where the player UI should be visible
+const LoadingSpinner = () => (
+    <svg className="animate-spin h-5 w-5 text-amber-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+    </svg>
+);
+
+// Whitelisted paths
 const VISIBLE_PATHS = [
     '/hall',
     '/spell-room',
@@ -54,19 +61,25 @@ const VISIBLE_PATHS = [
 
 const MusicPlayer = () => {
     const pathname = usePathname();
-    const audioRef = useRef<HTMLAudioElement | null>(null);
+    
+    // Web Audio API Refs
+    const audioContextRef = useRef<AudioContext | null>(null);
+    const sourceNodeRef = useRef<AudioBufferSourceNode | null>(null);
+    const gainNodeRef = useRef<GainNode | null>(null);
+    const audioBufferRef = useRef<AudioBuffer | null>(null);
+    
     const [isPlaying, setIsPlaying] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
     const [currentTrack, setCurrentTrack] = useState<AudioTrack>(AUDIO_TRACKS[0]);
-    const [volume, setVolume] = useState(0.3); // Default 30%
+    const [volume, setVolume] = useState(0.3);
     const [isExpanded, setIsExpanded] = useState(false);
     const [activeCategory, setActiveCategory] = useState<Category | 'All'>('All');
     
-    // Check if player UI should be visible
+    // Visibility Check
     const isVisible = useMemo(() => {
         return VISIBLE_PATHS.some(path => pathname?.startsWith(path));
     }, [pathname]);
 
-    // Group tracks by category
     const tracksByCategory = useMemo(() => {
         const groups: Record<string, AudioTrack[]> = {};
         AUDIO_TRACKS.forEach(track => {
@@ -78,61 +91,136 @@ const MusicPlayer = () => {
 
     const categories = Object.keys(tracksByCategory) as Category[];
 
-    // Initialize Audio
+    // Initialize Audio Context
     useEffect(() => {
-        if (!audioRef.current) {
-            audioRef.current = new Audio(currentTrack.url);
-            audioRef.current.loop = true;
-            audioRef.current.volume = volume;
-            
-            // Attempt auto-play on load (might fail due to browser policy)
-             const playPromise = audioRef.current.play();
-             if (playPromise !== undefined) {
-                 playPromise.then(() => {
-                     setIsPlaying(true);
-                 }).catch(error => {
-                     console.log("Autoplay prevented:", error);
-                     setIsPlaying(false);
-                 });
-             }
+        const AudioContextClass = (window as any).AudioContext || (window as any).webkitAudioContext;
+        if (AudioContextClass) {
+            const ctx = new AudioContextClass();
+            audioContextRef.current = ctx;
+            const gainNode = ctx.createGain();
+            gainNode.gain.value = volume;
+            gainNode.connect(ctx.destination);
+            gainNodeRef.current = gainNode;
         }
-        
+
+        // Cleanup
         return () => {
-             // Cleanup handled by component unmount only if app closes, 
-             // but we want persistence across pages, so this is minimal.
+             // We want persistence, but if we truly unmount (e.g. app refresh), close it.
+             // In Next.js navigation, Layout might preserve state, but explicit clean up is safer if we want to stop.
+             // However, for background audio, we might NOT want to close it? 
+             // Actually, if the component unmounts, we should probably stop the sound to avoid "ghost" audio.
+             // But since it's in RootLayout, it only unmounts on hard refresh/close.
+             if (sourceNodeRef.current) {
+                 try { sourceNodeRef.current.stop(); } catch(e) {}
+             }
+             if (audioContextRef.current?.state !== 'closed') {
+                 audioContextRef.current?.close();
+             }
         };
     }, []);
 
-    // Handle Track Change
-    useEffect(() => {
-        if (audioRef.current) {
-            const wasPlaying = isPlaying;
-            audioRef.current.src = currentTrack.url;
-            audioRef.current.volume = volume; // Re-apply volume
-            if (wasPlaying) {
-                audioRef.current.play().catch(e => console.error(e));
-            }
+    // Load and Play Audio
+    const loadAndPlayTrack = async (track: AudioTrack, shouldPlay: boolean) => {
+        if (!audioContextRef.current || !gainNodeRef.current) return;
+        
+        // Stop current source
+        if (sourceNodeRef.current) {
+            try {
+                sourceNodeRef.current.stop();
+                sourceNodeRef.current.disconnect();
+            } catch (e) { /* ignore if already stopped */ }
+            sourceNodeRef.current = null;
         }
-    }, [currentTrack]);
 
-    // Handle Volume Change
-    const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const newVol = parseFloat(e.target.value);
-        setVolume(newVol);
-        if (audioRef.current) {
-            audioRef.current.volume = newVol;
+        setIsLoading(true);
+
+        try {
+            const response = await fetch(track.url);
+            const arrayBuffer = await response.arrayBuffer();
+            
+            // Check if context is still valid/loading same track
+            if (currentTrack.url !== track.url) return; 
+
+            const decodedBuffer = await audioContextRef.current.decodeAudioData(arrayBuffer);
+            audioBufferRef.current = decodedBuffer;
+
+            setIsLoading(false);
+
+            if (shouldPlay) {
+                playBuffer(decodedBuffer);
+            }
+        } catch (error) {
+            console.error("Error loading audio:", error);
+            setIsLoading(false);
+            setIsPlaying(false);
         }
     };
 
-    const togglePlay = () => {
-        if (!audioRef.current) return;
+    const playBuffer = (buffer: AudioBuffer) => {
+        if (!audioContextRef.current || !gainNodeRef.current) return;
+
+        // Resume context if suspended (browser autoplay policy)
+        if (audioContextRef.current.state === 'suspended') {
+            audioContextRef.current.resume();
+        }
+
+        const source = audioContextRef.current.createBufferSource();
+        source.buffer = buffer;
+        source.loop = true; // Seamless looping!
+        source.connect(gainNodeRef.current);
+        source.start(0);
+        sourceNodeRef.current = source;
+        setIsPlaying(true);
+    };
+
+    // Effect to handle track changes
+    useEffect(() => {
+        // Upon track change, load it. If we were playing, play the new one.
+        // For the very first load, we might not want to autoplay unless user interaction occurred?
+        // But the requirement implies persistent background. 
+        // We'll treat the first load as "shouldPlay = false" unless we have an "autoplay" intention.
+        // Or simple logic: if it's the first run, try play? 
+        // Let's stick to: if isPlaying is true, we play. If not, we just load.
+        // BUT for the very first time, isPlaying is false.
+        // Let's force play only if triggered by user or if we decide to autoplay.
+        // The previous code tried to autoplay.
         
+        const isInitial = !audioBufferRef.current;
+        const autoPlay = isInitial ? true : isPlaying; 
+        
+        loadAndPlayTrack(currentTrack, autoPlay);
+
+    }, [currentTrack]);
+
+
+    const togglePlay = () => {
+        if (!audioContextRef.current) return;
+
+        if (audioContextRef.current.state === 'suspended') {
+            audioContextRef.current.resume();
+        }
+
         if (isPlaying) {
-            audioRef.current.pause();
-            setIsPlaying(false);
+             if (sourceNodeRef.current) {
+                try { sourceNodeRef.current.stop(); } catch(e) {}
+             }
+             setIsPlaying(false);
         } else {
-            audioRef.current.play().catch(e => console.error("Play failed:", e));
-            setIsPlaying(true);
+            if (audioBufferRef.current) {
+                playBuffer(audioBufferRef.current);
+            } else {
+                // Buffer not ready? reload
+                loadAndPlayTrack(currentTrack, true);
+            }
+        }
+    };
+
+    // Volume Control
+    const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const newVol = parseFloat(e.target.value);
+        setVolume(newVol);
+        if (gainNodeRef.current) {
+            gainNodeRef.current.gain.value = newVol;
         }
     };
 
@@ -140,16 +228,9 @@ const MusicPlayer = () => {
         if (currentTrack.url === track.url) {
             togglePlay();
         } else {
+            // New track
             setCurrentTrack(track);
-            setIsPlaying(true);
-            // The useEffect will handle the actual source change and playing
-            // however, we need to ensure isPlaying is true immediately so the UI updates
-            if (audioRef.current) {
-                // Short timeout to allow source change to propagate in useEffect
-                setTimeout(() => {
-                    audioRef.current?.play().catch(e => console.error(e));
-                }, 50);
-            }
+            setIsPlaying(true); // Will be handled by useEffect
         }
     };
 
@@ -160,17 +241,8 @@ const MusicPlayer = () => {
         setIsPlaying(true);
     };
 
-    // If not on a visible page, don't render ANYTHING (UI-wise), 
-    // BUT we must keep the component mounted so audio persists.
-    // However, if we return null, the component unmounts? 
-    // No, react component just renders null. 
-    // BUT standard React behavior: returning null renders nothing effectively.
-    // So we wrap the UI in a visibility check.
-    
     return (
         <>
-            {/* Hidden Audio Element Logic is handled in refs/effects, no <audio> tag needed in JSX */}
-            
             <AnimatePresence mode="wait">
                 {isVisible && !isExpanded && (
                     <motion.button
@@ -182,8 +254,8 @@ const MusicPlayer = () => {
                         className="fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full bg-black/80 border border-amber-500/50 text-amber-500 flex items-center justify-center shadow-[0_0_15px_rgba(245,158,11,0.3)] backdrop-blur-sm cursor-pointer hover:shadow-[0_0_20px_rgba(245,158,11,0.5)] transition-shadow"
                         onClick={() => setIsExpanded(true)}
                     >
-                            <div className={`absolute inset-0 rounded-full border border-amber-500/30 ${isPlaying ? 'animate-ping opacity-20' : 'opacity-0'}`} />
-                        <MusicNoteIcon />
+                        <div className={`absolute inset-0 rounded-full border border-amber-500/30 ${isPlaying ? 'animate-ping opacity-20' : 'opacity-0'}`} />
+                         {isLoading ? <LoadingSpinner /> : <MusicNoteIcon />}
                     </motion.button>
                 )}
 
@@ -193,15 +265,15 @@ const MusicPlayer = () => {
                         initial={{ opacity: 0, y: 20, scale: 0.9 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 20, scale: 0.9 }}
-                        className="fixed bottom-6 right-4 left-4 md:left-auto md:right-6 md:w-96 z-50 bg-black/95 border border-amber-900/50 rounded-lg shadow-[0_0_30px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col max-h-[80vh]"
+                         className="fixed bottom-6 right-4 left-4 md:left-auto md:right-6 md:w-96 z-50 bg-black/95 border border-amber-900/50 rounded-lg shadow-[0_0_30px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col max-h-[80vh]"
                     >
                         {/* Header */}
                         <div className="p-4 bg-gradient-to-r from-stone-950 to-stone-900 border-b border-amber-900/30 flex items-center justify-between">
                             <div className="flex flex-col overflow-hidden">
-                                    <h3 className="text-amber-500 font-medieval text-lg truncate pr-2 leading-none">
+                                <h3 className="text-amber-500 font-medieval text-lg truncate pr-2 leading-none">
                                     {currentTrack.name}
-                                    </h3>
-                                    <span className="text-stone-500 text-xs uppercase tracking-wider mt-1">{currentTrack.category}</span>
+                                </h3>
+                                <span className="text-stone-500 text-xs uppercase tracking-wider mt-1">{currentTrack.category}</span>
                             </div>
                             <button 
                                 onClick={() => setIsExpanded(false)}
@@ -214,21 +286,21 @@ const MusicPlayer = () => {
                         {/* Controls */}
                         <div className="p-4 bg-stone-950/50 space-y-4">
                             <div className="flex items-center justify-center gap-6">
-                                    {/* Play/Pause */}
-                                    <button 
+                                {/* Play/Pause */}
+                                <button 
                                     onClick={togglePlay}
                                     className="w-10 h-10 rounded-full bg-amber-900/20 border border-amber-700/50 text-amber-500 flex items-center justify-center hover:bg-amber-900/40 hover:scale-105 transition-all"
-                                    >
-                                    {isPlaying ? <PauseIcon /> : <PlayIcon />}
-                                    </button>
-                                    
-                                    {/* Next */}
-                                    <button 
+                                >
+                                    {isLoading ? <LoadingSpinner /> : (isPlaying ? <PauseIcon /> : <PlayIcon />)}
+                                </button>
+                                
+                                {/* Next */}
+                                <button 
                                     onClick={playNext}
                                     className="text-stone-400 hover:text-amber-500 transition-colors"
-                                    >
+                                >
                                     <NextIcon />
-                                    </button>
+                                </button>
                             </div>
                             
                             {/* Volume */}
@@ -248,12 +320,12 @@ const MusicPlayer = () => {
 
                         {/* Category Filter */}
                         <div className="px-2 pt-2 pb-1 flex flex-wrap gap-2 justify-center">
-                                <button
-                                    onClick={() => setActiveCategory('All')}
-                                    className={`px-3 py-1 text-xs rounded-full border transition-all whitespace-nowrap ${activeCategory === 'All' ? 'bg-amber-900/30 border-amber-700 text-amber-400' : 'border-transparent text-stone-500 hover:text-stone-300'}`}
-                                >
-                                    All
-                                </button>
+                             <button
+                                 onClick={() => setActiveCategory('All')}
+                                 className={`px-3 py-1 text-xs rounded-full border transition-all whitespace-nowrap ${activeCategory === 'All' ? 'bg-amber-900/30 border-amber-700 text-amber-400' : 'border-transparent text-stone-500 hover:text-stone-300'}`}
+                             >
+                                 All
+                             </button>
                             {categories.map(cat => (
                                 <button
                                     key={cat}
