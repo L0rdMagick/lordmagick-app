@@ -5,6 +5,7 @@ import { ReactElement } from "react";
 import "./globals.css";
 import MusicPlayer from "./components/MusicPlayer";
 import { NavMenuProvider } from "./context/NavMenuContext";
+import { MusicPlayerProvider } from "./context/MusicPlayerContext";
 import RoomsMenu from "./components/RoomsMenu";
 
 const cinzel = Cinzel({
@@ -34,9 +35,11 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${cinzel.variable} ${medieval.variable} font-sans bg-black text-white antialiased`}>
         <NavMenuProvider>
-          <MusicPlayer />
-          {children}
-          <RoomsMenu />
+          <MusicPlayerProvider>
+            <MusicPlayer />
+            {children}
+            <RoomsMenu />
+          </MusicPlayerProvider>
         </NavMenuProvider>
         
         {/* MIST OVERLAY CONTAINER */}

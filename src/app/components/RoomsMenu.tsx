@@ -9,6 +9,7 @@ import { Uncial_Antiqua } from 'next/font/google';
 import type { User } from '@supabase/supabase-js';
 import { useNavMenu } from '../context/NavMenuContext';
 import { Coins, Plus } from 'lucide-react'; // Import icons
+import { useMusicPlayer } from '@/app/context/MusicPlayerContext';
 
 const uncialAntiqua = Uncial_Antiqua({ subsets: ['latin'], weight: ['400'] });
 
@@ -24,6 +25,7 @@ const navLinks = [
 
 export default function RoomsMenu() {
   const { isOpen, closeMenu } = useNavMenu();
+  const { setIsExpanded } = useMusicPlayer();
   const [user, setUser] = useState<User | null>(null);
   const [credits, setCredits] = useState<number | null>(null); // Add state for credits
   
@@ -125,7 +127,19 @@ export default function RoomsMenu() {
                   {link.name}
                 </Link>
               ))}
-              <div className="pt-4 mt-4 border-t-2 border-amber-400/50 w-full">
+              <div className="pt-4 mt-4 border-t-2 border-amber-400/50 w-full flex flex-col items-center gap-4">
+                 {/* Music Player Toggle */}
+                 <button
+                    onClick={() => {
+                        setIsExpanded(true);
+                        closeMenu();
+                    }}
+                    className={`${uncialAntiqua.className} text-3xl w-full text-center text-amber-300 hover:text-amber-100 transition-colors`}
+                    style={{ textShadow: '2px 2px 8px rgba(0,0,0,0.9)' }}
+                  >
+                    Music Player
+                  </button>
+
                 {user ? (
                   <button
                     onClick={handleLogout}

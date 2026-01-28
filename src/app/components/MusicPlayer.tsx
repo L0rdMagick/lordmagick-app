@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { usePathname } from 'next/navigation';
 import { AUDIO_TRACKS, AudioTrack, Category } from '../utils/audioTracks';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useMusicPlayer } from '../context/MusicPlayerContext';
 
 // Icons
 const PlayIcon = () => (
@@ -72,7 +73,7 @@ const MusicPlayer = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [currentTrack, setCurrentTrack] = useState<AudioTrack>(AUDIO_TRACKS[0]);
     const [volume, setVolume] = useState(0.3);
-    const [isExpanded, setIsExpanded] = useState(false);
+    const { isExpanded, setIsExpanded } = useMusicPlayer();
     const [activeCategory, setActiveCategory] = useState<Category | 'All'>('All');
     
     // Visibility Check
@@ -244,7 +245,7 @@ const MusicPlayer = () => {
     return (
         <>
             <AnimatePresence mode="wait">
-                {isVisible && !isExpanded && (
+                {isVisible && !isExpanded && pathname === '/hall' && (
                     <motion.button
                         key="minimized"
                         initial={{ scale: 0, opacity: 0 }}
