@@ -190,7 +190,7 @@ const MusicPlayer = () => {
                             initial={{ opacity: 0, y: 20, scale: 0.9 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: 20, scale: 0.9 }}
-                            className="fixed bottom-6 right-6 z-50 w-80 md:w-96 bg-black/95 border border-amber-900/50 rounded-lg shadow-[0_0_30px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col max-h-[80vh]"
+                            className="fixed bottom-6 right-4 left-4 md:left-auto md:right-6 md:w-96 bg-black/95 border border-amber-900/50 rounded-lg shadow-[0_0_30px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col max-h-[80vh]"
                         >
                             {/* Header */}
                             <div className="p-4 bg-gradient-to-r from-stone-950 to-stone-900 border-b border-amber-900/30 flex items-center justify-between">
@@ -244,7 +244,7 @@ const MusicPlayer = () => {
                             </div>
 
                             {/* Category Filter */}
-                            <div className="px-2 pt-2 pb-1 flex gap-1 overflow-x-auto no-scrollbar scroll-smooth">
+                            <div className="px-2 pt-2 pb-1 flex flex-wrap gap-2 justify-center">
                                  <button
                                      onClick={() => setActiveCategory('All')}
                                      className={`px-3 py-1 text-xs rounded-full border transition-all whitespace-nowrap ${activeCategory === 'All' ? 'bg-amber-900/30 border-amber-700 text-amber-400' : 'border-transparent text-stone-500 hover:text-stone-300'}`}
