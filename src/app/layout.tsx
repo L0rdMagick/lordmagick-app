@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { Cinzel, MedievalSharp } from "next/font/google";
 import { ReactElement } from "react";
 import "./globals.css";
-import BackgroundAudio from "./components/BackgroundAudio";
+import MusicPlayer from "./components/MusicPlayer";
 import { NavMenuProvider } from "./context/NavMenuContext";
 import RoomsMenu from "./components/RoomsMenu";
 
@@ -34,7 +34,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${cinzel.variable} ${medieval.variable} font-sans bg-black text-white antialiased`}>
         <NavMenuProvider>
-          <BackgroundAudio />
+          <MusicPlayer />
           {children}
           <RoomsMenu />
         </NavMenuProvider>
