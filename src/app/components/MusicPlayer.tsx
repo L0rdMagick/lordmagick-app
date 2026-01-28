@@ -171,129 +171,125 @@ const MusicPlayer = () => {
         <>
             {/* Hidden Audio Element Logic is handled in refs/effects, no <audio> tag needed in JSX */}
             
-            <AnimatePresence mode="wait">
-                {isVisible && !isExpanded && (
-                    <motion.button
-                        key="minimized"
-                        initial={{ scale: 0, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        exit={{ scale: 0, opacity: 0 }}
-                        whileHover={{ scale: 1.1 }}
-                        className="fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full bg-black/80 border border-amber-500/50 text-amber-500 flex items-center justify-center shadow-[0_0_15px_rgba(245,158,11,0.3)] backdrop-blur-sm cursor-pointer hover:shadow-[0_0_20px_rgba(245,158,11,0.5)] transition-shadow"
-                        onClick={() => setIsExpanded(true)}
-                    >
-                            <div className={`absolute inset-0 rounded-full border border-amber-500/30 ${isPlaying ? 'animate-ping opacity-20' : 'opacity-0'}`} />
-                        <MusicNoteIcon />
-                    </motion.button>
-                )}
+            {isVisible && !isExpanded && (
+                <motion.button
+                    key="minimized"
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    whileHover={{ scale: 1.1 }}
+                    className="fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full bg-black/80 border border-amber-500/50 text-amber-500 flex items-center justify-center shadow-[0_0_15px_rgba(245,158,11,0.3)] backdrop-blur-sm cursor-pointer hover:shadow-[0_0_20px_rgba(245,158,11,0.5)] transition-shadow"
+                    onClick={() => setIsExpanded(true)}
+                >
+                        <div className={`absolute inset-0 rounded-full border border-amber-500/30 ${isPlaying ? 'animate-ping opacity-20' : 'opacity-0'}`} />
+                    <MusicNoteIcon />
+                </motion.button>
+            )}
 
-                {isVisible && isExpanded && (
-                    <motion.div
-                        key="expanded"
-                        initial={{ opacity: 0, y: 20, scale: 0.9 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 20, scale: 0.9 }}
-                        className="fixed bottom-6 right-4 left-4 md:left-auto md:right-6 md:w-96 bg-black/95 border border-amber-900/50 rounded-lg shadow-[0_0_30px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col max-h-[80vh]"
-                    >
-                        {/* Header */}
-                        <div className="p-4 bg-gradient-to-r from-stone-950 to-stone-900 border-b border-amber-900/30 flex items-center justify-between">
-                            <div className="flex flex-col overflow-hidden">
-                                    <h3 className="text-amber-500 font-medieval text-lg truncate pr-2 leading-none">
-                                    {currentTrack.name}
-                                    </h3>
-                                    <span className="text-stone-500 text-xs uppercase tracking-wider mt-1">{currentTrack.category}</span>
-                            </div>
-                            <button 
-                                onClick={() => setIsExpanded(false)}
-                                className="text-stone-400 hover:text-amber-500 transition-colors p-1"
+            {isVisible && isExpanded && (
+                <motion.div
+                    key="expanded"
+                    initial={{ opacity: 0, y: 20, scale: 0.9 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    className="fixed bottom-6 right-4 left-4 md:left-auto md:right-6 md:w-96 bg-black/95 border border-amber-900/50 rounded-lg shadow-[0_0_30px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col max-h-[80vh]"
+                >
+                    {/* Header */}
+                    <div className="p-4 bg-gradient-to-r from-stone-950 to-stone-900 border-b border-amber-900/30 flex items-center justify-between">
+                        <div className="flex flex-col overflow-hidden">
+                                <h3 className="text-amber-500 font-medieval text-lg truncate pr-2 leading-none">
+                                {currentTrack.name}
+                                </h3>
+                                <span className="text-stone-500 text-xs uppercase tracking-wider mt-1">{currentTrack.category}</span>
+                        </div>
+                        <button 
+                            onClick={() => setIsExpanded(false)}
+                            className="text-stone-400 hover:text-amber-500 transition-colors p-1"
+                        >
+                            <CloseIcon />
+                        </button>
+                    </div>
+
+                    {/* Controls */}
+                    <div className="p-4 bg-stone-950/50 space-y-4">
+                        <div className="flex items-center justify-center gap-6">
+                                {/* Play/Pause */}
+                                <button 
+                                onClick={togglePlay}
+                                className="w-10 h-10 rounded-full bg-amber-900/20 border border-amber-700/50 text-amber-500 flex items-center justify-center hover:bg-amber-900/40 hover:scale-105 transition-all"
+                                >
+                                {isPlaying ? <PauseIcon /> : <PlayIcon />}
+                                </button>
+                                
+                                {/* Next */}
+                                <button 
+                                onClick={playNext}
+                                className="text-stone-400 hover:text-amber-500 transition-colors"
+                                >
+                                <NextIcon />
+                                </button>
+                        </div>
+                        
+                        {/* Volume */}
+                        <div className="flex items-center gap-3 px-2">
+                            <VolumeIcon />
+                            <input 
+                                type="range"
+                                min="0"
+                                max="1"
+                                step="0.01"
+                                value={volume}
+                                onChange={handleVolumeChange}
+                                className="w-full h-1 bg-stone-800 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-amber-600 hover:[&::-webkit-slider-thumb]:bg-amber-500 transition-all"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Category Filter */}
+                    <div className="px-2 pt-2 pb-1 flex flex-wrap gap-2 justify-center">
+                            <button
+                                onClick={() => setActiveCategory('All')}
+                                className={`px-3 py-1 text-xs rounded-full border transition-all whitespace-nowrap ${activeCategory === 'All' ? 'bg-amber-900/30 border-amber-700 text-amber-400' : 'border-transparent text-stone-500 hover:text-stone-300'}`}
                             >
-                                <CloseIcon />
+                                All
                             </button>
-                        </div>
+                        {categories.map(cat => (
+                            <button
+                                key={cat}
+                                onClick={() => setActiveCategory(cat)}
+                                className={`px-3 py-1 text-xs rounded-full border transition-all whitespace-nowrap ${activeCategory === cat ? 'bg-amber-900/30 border-amber-700 text-amber-400' : 'border-transparent text-stone-500 hover:text-stone-300'}`}
+                            >
+                                {cat}
+                            </button>
+                        ))}
+                    </div>
 
-                        {/* Controls */}
-                        <div className="p-4 bg-stone-950/50 space-y-4">
-                            <div className="flex items-center justify-center gap-6">
-                                    {/* Play/Pause */}
-                                    <button 
-                                    onClick={togglePlay}
-                                    className="w-10 h-10 rounded-full bg-amber-900/20 border border-amber-700/50 text-amber-500 flex items-center justify-center hover:bg-amber-900/40 hover:scale-105 transition-all"
-                                    >
-                                    {isPlaying ? <PauseIcon /> : <PlayIcon />}
-                                    </button>
-                                    
-                                    {/* Next */}
-                                    <button 
-                                    onClick={playNext}
-                                    className="text-stone-400 hover:text-amber-500 transition-colors"
-                                    >
-                                    <NextIcon />
-                                    </button>
-                            </div>
-                            
-                            {/* Volume */}
-                            <div className="flex items-center gap-3 px-2">
-                                <VolumeIcon />
-                                <input 
-                                    type="range"
-                                    min="0"
-                                    max="1"
-                                    step="0.01"
-                                    value={volume}
-                                    onChange={handleVolumeChange}
-                                    className="w-full h-1 bg-stone-800 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-amber-600 hover:[&::-webkit-slider-thumb]:bg-amber-500 transition-all"
-                                />
-                            </div>
-                        </div>
-
-                        {/* Category Filter */}
-                        <div className="px-2 pt-2 pb-1 flex flex-wrap gap-2 justify-center">
+                    {/* Track List */}
+                    <div className="flex-1 overflow-y-auto min-h-[150px] p-2 space-y-1 bg-black/60 scrollbar-thin scrollbar-thumb-stone-800 scrollbar-track-transparent">
+                        {(activeCategory === 'All' ? AUDIO_TRACKS : tracksByCategory[activeCategory as Category]).map((track, idx) => {
+                            const isCurrent = currentTrack.url === track.url;
+                            return (
                                 <button
-                                    onClick={() => setActiveCategory('All')}
-                                    className={`px-3 py-1 text-xs rounded-full border transition-all whitespace-nowrap ${activeCategory === 'All' ? 'bg-amber-900/30 border-amber-700 text-amber-400' : 'border-transparent text-stone-500 hover:text-stone-300'}`}
+                                    key={track.url + idx}
+                                    onClick={() => playTrack(track)}
+                                    className={`w-full text-left px-3 py-2 rounded flex items-center justify-between text-sm transition-colors ${
+                                        isCurrent 
+                                        ? 'bg-amber-900/20 text-amber-400 border border-amber-900/30' 
+                                        : 'text-stone-400 hover:bg-stone-900 hover:text-stone-200'
+                                    }`}
                                 >
-                                    All
+                                    <span className="truncate">{track.name}</span>
+                                    {isCurrent && isPlaying && (
+                                        <span className="flex gap-[2px] items-end h-3 ml-2">
+                                            <span className="w-[2px] bg-amber-500 animate-[music-bar_0.6s_ease-in-out_infinite]" />
+                                            <span className="w-[2px] bg-amber-500 animate-[music-bar_0.8s_ease-in-out_infinite]" />
+                                            <span className="w-[2px] bg-amber-500 animate-[music-bar_0.5s_ease-in-out_infinite]" />
+                                        </span>
+                                    )}
                                 </button>
-                            {categories.map(cat => (
-                                <button
-                                    key={cat}
-                                    onClick={() => setActiveCategory(cat)}
-                                    className={`px-3 py-1 text-xs rounded-full border transition-all whitespace-nowrap ${activeCategory === cat ? 'bg-amber-900/30 border-amber-700 text-amber-400' : 'border-transparent text-stone-500 hover:text-stone-300'}`}
-                                >
-                                    {cat}
-                                </button>
-                            ))}
-                        </div>
-
-                        {/* Track List */}
-                        <div className="flex-1 overflow-y-auto min-h-[150px] p-2 space-y-1 bg-black/60 scrollbar-thin scrollbar-thumb-stone-800 scrollbar-track-transparent">
-                            {(activeCategory === 'All' ? AUDIO_TRACKS : tracksByCategory[activeCategory as Category]).map((track, idx) => {
-                                const isCurrent = currentTrack.url === track.url;
-                                return (
-                                    <button
-                                        key={track.url + idx}
-                                        onClick={() => playTrack(track)}
-                                        className={`w-full text-left px-3 py-2 rounded flex items-center justify-between text-sm transition-colors ${
-                                            isCurrent 
-                                            ? 'bg-amber-900/20 text-amber-400 border border-amber-900/30' 
-                                            : 'text-stone-400 hover:bg-stone-900 hover:text-stone-200'
-                                        }`}
-                                    >
-                                        <span className="truncate">{track.name}</span>
-                                        {isCurrent && isPlaying && (
-                                            <span className="flex gap-[2px] items-end h-3 ml-2">
-                                                <span className="w-[2px] bg-amber-500 animate-[music-bar_0.6s_ease-in-out_infinite]" />
-                                                <span className="w-[2px] bg-amber-500 animate-[music-bar_0.8s_ease-in-out_infinite]" />
-                                                <span className="w-[2px] bg-amber-500 animate-[music-bar_0.5s_ease-in-out_infinite]" />
-                                            </span>
-                                        )}
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                            );
+                        })}
+                    </div>
+                </motion.div>
+            )}
             
             <style jsx global>{`
                 @keyframes music-bar {
