@@ -251,7 +251,7 @@ const MusicPlayer = () => {
                         animate={{ scale: 1, opacity: 1 }}
                         exit={{ scale: 0, opacity: 0 }}
                         whileHover={{ scale: 1.1 }}
-                        className="fixed top-6 left-6 z-50 w-12 h-12 rounded-full bg-black/80 border border-amber-500/50 text-amber-500 flex items-center justify-center shadow-[0_0_15px_rgba(245,158,11,0.3)] backdrop-blur-sm cursor-pointer hover:shadow-[0_0_20px_rgba(245,158,11,0.5)] transition-shadow"
+                        className="fixed top-6 left-6 z-[9999] w-12 h-12 rounded-full bg-black/80 border border-amber-500/50 text-amber-500 flex items-center justify-center shadow-[0_0_15px_rgba(245,158,11,0.3)] backdrop-blur-sm cursor-pointer hover:shadow-[0_0_20px_rgba(245,158,11,0.5)] transition-shadow"
                         onClick={() => setIsExpanded(true)}
                     >
                         <div className={`absolute inset-0 rounded-full border border-amber-500/30 ${isPlaying ? 'animate-ping opacity-20' : 'opacity-0'}`} />
@@ -265,7 +265,7 @@ const MusicPlayer = () => {
                         initial={{ opacity: 0, y: -20, scale: 0.9 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -20, scale: 0.9 }}
-                         className="fixed top-6 left-4 right-4 md:right-auto md:left-6 md:w-96 z-50 bg-black/95 border border-amber-900/50 rounded-lg shadow-[0_0_30px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col max-h-[80vh]"
+                         className="fixed top-6 left-4 right-4 md:right-auto md:left-6 md:w-96 z-[9999] bg-black/95 border border-amber-900/50 rounded-lg shadow-[0_0_30px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col max-h-[80vh]"
                     >
                         {/* Header */}
                         <div className="p-4 bg-gradient-to-r from-stone-950 to-stone-900 border-b border-amber-900/30 flex items-center justify-between">
