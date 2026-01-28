@@ -141,7 +141,7 @@ export default function HallPage() {
         {credits !== null && (
             <div className="absolute top-6 right-6 z-50 animate-in fade-in slide-in-from-top-4 duration-1000">
                 <div className="flex flex-col items-center gap-1 bg-black/60 backdrop-blur-md border border-amber-500/30 rounded-xl px-3 py-2 shadow-[0_0_15px_rgba(251,191,36,0.2)] group hover:border-amber-400 transition-colors">
-                     <span className="text-[10px] text-amber-200/70 font-mono uppercase tracking-widest leading-none">Faestone</span>
+                     <span className="text-[10px] text-amber-200/70 font-mono uppercase tracking-widest leading-none">Faestones</span>
                      <span className="text-base md:text-lg font-serif text-white font-bold leading-none">{credits}</span>
                     <Link href="/store" className="p-1 mt-1 bg-amber-500/20 rounded-full hover:bg-amber-500/40 text-amber-300 transition-colors" title="Get More Faestones">
                         <Plus size={14} />
@@ -156,7 +156,7 @@ export default function HallPage() {
                   className="relative w-full mx-auto aspect-3/1 h-[10vh] md:h-[18vh]"
                   style={{ 
                     filter: 'drop-shadow(2px 2px 8px rgba(0,0,0,0.8))',
-                    maxWidth: 'min(480px, calc(100vw - 160px))', // Ensure space for Music Player (Left) and Balance (Right)
+                    maxWidth: 'min(480px, calc(100vw - 280px))', // Ensure space for Music Player (Left) and Balance (Right)
                   }}
                 >
                     <Image src="/images/logo-lordmagick.com.png" alt="LordMagick.com Logo" fill style={{ objectFit: 'contain' }} priority />
