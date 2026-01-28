@@ -1,5 +1,5 @@
 ---
-trigger: always_on
+trigger: manual
 ---
 
 whn working on files, only work on one at a time, then once reviewed, ask for
