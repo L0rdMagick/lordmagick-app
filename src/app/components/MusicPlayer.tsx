@@ -92,6 +92,49 @@ const MusicPlayer = () => {
 
     const categories = Object.keys(tracksByCategory) as Category[];
 
+    const playBuffer = (buffer: AudioBuffer) => {
+        if (!audioContextRef.current || !gainNodeRef.current) return;
+        
+        if (sourceNodeRef.current) {
+            try { sourceNodeRef.current.stop(); } catch(e) {}
+        }
+        
+        try {
+            const source = audioContextRef.current.createBufferSource();
+            source.buffer = buffer;
+            source.loop = true;
+            source.connect(gainNodeRef.current);
+            source.start(0);
+            sourceNodeRef.current = source;
+            setIsPlaying(true);
+            setIsLoading(false);
+        } catch(e) {
+            console.error("Play buffer error:", e);
+        }
+    };
+
+    const loadAndPlayTrack = async (track: AudioTrack, autoPlay: boolean) => {
+        if (!audioContextRef.current) return;
+        
+        if (autoPlay) setIsLoading(true);
+        
+        try {
+            const response = await fetch(track.url);
+            const arrayBuffer = await response.arrayBuffer();
+            const audioBuffer = await audioContextRef.current.decodeAudioData(arrayBuffer);
+            audioBufferRef.current = audioBuffer;
+            
+            if (autoPlay) {
+                playBuffer(audioBuffer);
+            } else {
+                setIsLoading(false);
+            }
+        } catch (error) {
+            console.error("Error loading track:", error);
+            setIsLoading(false);
+        }
+    };
+
     // Initialize Audio Context with global unlock
     useEffect(() => {
         const AudioContextClass = (window as any).AudioContext || (window as any).webkitAudioContext;
