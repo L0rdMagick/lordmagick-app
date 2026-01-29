@@ -332,7 +332,7 @@ const MusicPlayer = () => {
                                  className={`px-3 py-1 text-[10px] font-cinzel tracking-wider uppercase rounded border transition-all ${
                                      activeCategory === 'All' 
                                      ? 'bg-amber-900/20 border-amber-700 text-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.1)]' 
-                                     : 'border-transparent text-stone-600 hover:text-stone-300 hover:border-stone-800'
+                                     : 'border-transparent text-stone-500 hover:text-stone-300 hover:border-stone-800'
                                  }`}
                              >
                                  All
@@ -344,7 +344,7 @@ const MusicPlayer = () => {
                                     className={`px-3 py-1 text-[10px] font-cinzel tracking-wider uppercase rounded border transition-all ${
                                         activeCategory === cat 
                                         ? 'bg-amber-900/20 border-amber-700 text-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.1)]' 
-                                        : 'border-transparent text-stone-600 hover:text-stone-300 hover:border-stone-800'
+                                        : 'border-transparent text-stone-500 hover:text-stone-300 hover:border-stone-800'
                                     }`}
                                 >
                                     {cat}
