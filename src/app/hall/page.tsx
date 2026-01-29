@@ -144,9 +144,9 @@ export default function HallPage() {
         
         {/* === HEADER CONTAINER === 
          * Left: 1.5%, Top: 1.15%, Width: 97%, Height: 16.3%
-         * Using Grid to ensure perfect center for Logo, regardless of side element widths
+         * Fixed grid cols to ensure Logo center column always has space 
          */}
-        <div className="absolute z-50 grid grid-cols-[1fr_auto_1fr] md:grid-cols-3 items-center"
+        <div className="absolute z-50 grid grid-cols-3 items-center"
              style={{ 
                  left: '1.5%', 
                  top: '1.15%', 
@@ -210,17 +210,17 @@ export default function HallPage() {
                  </p>
              </div>
             
-             {/* BOTTOM: Buttons Grid - Maximized */}
-             <div className="grid grid-cols-2 md:grid-cols-4 gap-2 w-full flex-grow items-center justify-center">
+             {/* BOTTOM: Buttons Grid - Maximized & Fitting One Screen */}
+             <div className="grid grid-cols-2 md:grid-cols-4 gap-2 w-full flex-1 overflow-hidden min-h-0 items-center justify-center">
                 {portals.map((portal) => (
-                    <div key={portal.title} className="flex flex-col items-center gap-y-1 h-full max-h-[98%] justify-center relative">
-                        <div className="relative w-full max-w-[160px] md:max-w-[200px] aspect-3/1 drop-shadow-[2px_4px_6px_rgba(0,0,0,0.6)] shrink-0 z-10">
+                    <div key={portal.title} className="flex flex-col items-center gap-y-1 h-full justify-center relative min-h-0">
+                        <div className="relative w-full max-w-[160px] md:max-w-[200px] aspect-3/1 drop-shadow-[2px_4px_6px_rgba(0,0,0,0.6)] shrink-0 z-10 basis-auto">
                             <Image src={portal.signImageSrc} alt={`${portal.title} Sign`} fill style={{ objectFit: 'contain' }} />
                         </div>
                         <a 
                           href={portal.href} 
                           onClick={(e) => handlePortalClick(e, portal.href, portal.soundSrc, portal.isExternal)} 
-                          className={`relative w-full h-full max-h-[85%] aspect-3/4 group block cursor-pointer transition-all duration-300 hover:scale-105 active:scale-95`} 
+                          className={`relative w-full h-full flex-1 min-h-0 group block cursor-pointer transition-all duration-300 hover:scale-105 active:scale-95`} 
                         >
                             <div className={`w-full h-full transition-all duration-300 ${portal.glowClass}`}>
                                 <Image 
