@@ -144,24 +144,24 @@ export default function HallPage() {
         
         {/* === HEADER CONTAINER === 
          * Left: 1.5%, Top: 1.15%, Width: 97%, Height: 16.3%
+         * Using Grid to ensure perfect center for Logo, regardless of side element widths
          */}
-        <div className="absolute z-50 flex items-center justify-between"
+        <div className="absolute z-50 grid grid-cols-[1fr_auto_1fr] md:grid-cols-3 items-center"
              style={{ 
                  left: '1.5%', 
                  top: '1.15%', 
                  width: '97%', 
                  height: '16.3%',
-                 // debug: border: '1px solid red' 
              }}>
             
             {/* LEFT: Music Player Button */}
-            <div className="flex-none flex items-center justify-center p-2">
+            <div className="flex items-center justify-start p-2">
                 <MusicPlayerTrigger className="relative !fixed-none !top-auto !left-auto pointer-events-auto" />
             </div>
 
-            {/* CENTER: Logo & Subheader */}
-            <div className="flex-1 flex flex-col items-center justify-center h-full px-4">
-                 <div className="relative w-full h-[70%] max-w-[800px]">
+            {/* CENTER: Logo - Maximized & Centered */}
+            <div className="flex items-center justify-center h-full w-full">
+                 <div className="relative w-full h-[90%] max-w-[800px]">
                     <Image 
                         src="/images/logo-lordmagick.com.png" 
                         alt="LordMagick.com Logo" 
@@ -171,22 +171,18 @@ export default function HallPage() {
                         className="drop-shadow-[2px_2px_8px_rgba(0,0,0,0.8)]"
                     />
                  </div>
-                 <p className="text-amber-300 text-center drop-shadow-[1px_1px_4px_rgba(0,0,0,0.8)] mt-1 whitespace-nowrap overflow-hidden text-ellipsis w-full" 
-                    style={{ fontSize: 'clamp(0.8rem, 2vh, 1.2rem)' }}>
-                     Unlock Ancient Secrets. Master Your Craft.
-                 </p>
             </div>
 
-            {/* RIGHT: Faestones */}
-            <div className="flex-none flex items-center justify-center p-2">
+            {/* RIGHT: Faestones - Aligned End, ensuring visibility */}
+            <div className="flex items-center justify-end p-2 min-w-0">
                 {credits !== null && (
-                    <div className="animate-in fade-in slide-in-from-top-4 duration-1000">
-                        <div className="flex flex-col-reverse md:flex-row items-center justify-center gap-0.5 md:gap-3 bg-gradient-to-br from-stone-900 to-stone-950 border-2 border-amber-700/60 rounded-full px-3 md:px-4 h-12 md:h-14 shadow-[0_0_20px_rgba(0,0,0,0.8)] backdrop-blur-md group hover:border-amber-500 hover:shadow-[0_0_20px_rgba(245,158,11,0.2)] transition-all min-w-[3.5rem] md:min-w-0">
-                             <span className="text-[8px] md:text-xs text-amber-500 font-medieval tracking-widest leading-none drop-shadow-sm opacity-90 md:opacity-100 uppercase translate-y-[-1px] md:translate-y-0">Faestones</span>
+                    <div className="animate-in fade-in slide-in-from-top-4 duration-1000 shrink-0">
+                        <div className="flex flex-col-reverse md:flex-row items-center justify-center gap-0.5 md:gap-3 bg-gradient-to-br from-stone-900 to-stone-950 border-2 border-amber-700/60 rounded-full px-2 md:px-4 h-10 md:h-14 shadow-[0_0_20px_rgba(0,0,0,0.8)] backdrop-blur-md group hover:border-amber-500 hover:shadow-[0_0_20px_rgba(245,158,11,0.2)] transition-all min-w-fit">
+                             <span className="hidden md:block text-[8px] md:text-xs text-amber-500 font-medieval tracking-widest leading-none drop-shadow-sm opacity-90 md:opacity-100 uppercase translate-y-[-1px] md:translate-y-0">Faestones</span>
                              <div className="flex items-center gap-1.5 md:gap-2 translate-y-[-1px] md:translate-y-0">
-                                <span className="text-lg md:text-2xl font-cinzel text-amber-100 font-bold leading-none param-font drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">{credits}</span>
-                                <Link href="/store" className="flex items-center justify-center w-4 h-4 md:w-6 md:h-6 bg-amber-900/40 rounded-full border border-amber-600/50 hover:bg-amber-600 hover:text-white text-amber-400 transition-all transform hover:scale-110" title="Get More Faestones">
-                                    <Plus size={10} className="md:w-[14px] md:h-[14px]" strokeWidth={3} />
+                                <span className="text-sm md:text-2xl font-cinzel text-amber-100 font-bold leading-none param-font drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">{credits}</span>
+                                <Link href="/store" className="flex items-center justify-center w-5 h-5 md:w-6 md:h-6 bg-amber-900/40 rounded-full border border-amber-600/50 hover:bg-amber-600 hover:text-white text-amber-400 transition-all transform hover:scale-110" title="Get More Faestones">
+                                    <Plus size={12} className="md:w-[14px] md:h-[14px]" strokeWidth={3} />
                                 </Link>
                              </div>
                         </div>
@@ -198,25 +194,33 @@ export default function HallPage() {
         {/* === BODY CONTAINER ===
          * Left: 4.5%, Top: 24.3%, Width: 91%, Height: 66.2%
          */}
-        <div className="absolute z-20 flex justify-center items-start"
+        <div className="absolute z-20 flex flex-col justify-start items-center"
              style={{ 
                  left: '4.5%', 
                  top: '24.3%', 
                  width: '91%', 
                  height: '66.2%',
-                 // debug: border: '1px solid blue'
              }}>
+             
+             {/* TOP: Subheader - Moved from Header */}
+             <div className="w-full text-center flex-none mb-1 md:mb-2 z-30">
+                 <p className="text-amber-300 text-center drop-shadow-[1px_1px_4px_rgba(0,0,0,0.8)] whitespace-nowrap overflow-hidden text-ellipsis w-full font-medieval tracking-wide" 
+                    style={{ fontSize: 'clamp(0.8rem, 2vh, 1.2rem)' }}>
+                     Unlock Ancient Secrets. Master Your Craft.
+                 </p>
+             </div>
             
-             <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-4 md:gap-x-8 w-full h-full p-4 items-center">
+             {/* BOTTOM: Buttons Grid - Maximized */}
+             <div className="grid grid-cols-2 md:grid-cols-4 gap-2 w-full flex-grow items-center justify-center">
                 {portals.map((portal) => (
-                    <div key={portal.title} className="flex flex-col items-center gap-y-2 h-[90%] justify-center">
-                        <div className="relative w-full max-w-[200px] aspect-3/1 drop-shadow-[2px_4px_6px_rgba(0,0,0,0.6)]">
+                    <div key={portal.title} className="flex flex-col items-center gap-y-1 h-full max-h-[98%] justify-center relative">
+                        <div className="relative w-full max-w-[160px] md:max-w-[200px] aspect-3/1 drop-shadow-[2px_4px_6px_rgba(0,0,0,0.6)] shrink-0 z-10">
                             <Image src={portal.signImageSrc} alt={`${portal.title} Sign`} fill style={{ objectFit: 'contain' }} />
                         </div>
                         <a 
                           href={portal.href} 
                           onClick={(e) => handlePortalClick(e, portal.href, portal.soundSrc, portal.isExternal)} 
-                          className={`relative w-full max-h-[80%] aspect-3/4 group block cursor-pointer transition-all duration-300 hover:scale-105 active:scale-95`} 
+                          className={`relative w-full h-full max-h-[85%] aspect-3/4 group block cursor-pointer transition-all duration-300 hover:scale-105 active:scale-95`} 
                         >
                             <div className={`w-full h-full transition-all duration-300 ${portal.glowClass}`}>
                                 <Image 
