@@ -3,11 +3,11 @@
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useState, useRef, MouseEvent, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import Sparkle from '../components/Sparkle';
 // ADD IMPORTS
 import { createBrowserClient } from '@supabase/ssr';
-import { Coins, Sparkles, Plus } from 'lucide-react';
+import { Coins, Sparkles, Plus, X } from 'lucide-react';
 import Link from 'next/link';
 
 interface SparkleState { key: number; x: number; y: number; }
@@ -67,6 +67,9 @@ export default function HallPage() {
   const [sparkle, setSparkle] = useState<SparkleState | null>(null);
   const [navigatingTo, setNavigatingTo] = useState<{ href: string; isExternal: boolean } | null>(null);
   const [activePortal, setActivePortal] = useState<string | null>(null); // NEW: Track active portal for enlarged view
+  
+  // Helper to get active portal data
+  const activePortalData = activePortal ? portals.find(p => p.title === activePortal) : null;
   
   // -- NEW STATE FOR CREDITS --
   const [credits, setCredits] = useState<number | null>(null);
@@ -216,7 +219,7 @@ export default function HallPage() {
 
         {/* === BODY CONTAINER ===
          * Left: 4.5%, Top: 24.3%, Width: 91%, Height: 66.2%
-         */}
+         */}{/* === BODY CONTAINER === */}
         <div className="absolute z-20 flex flex-col justify-center items-center"
              style={{ 
                  left: '4.5%', 
@@ -244,17 +247,17 @@ export default function HallPage() {
                             className="flex flex-col items-center gap-y-1 h-full max-h-[98%] justify-center relative z-10 group"
                             onMouseEnter={() => setActivePortal(portal.title)}
                             onMouseLeave={() => setActivePortal(null)}
-                            onClick={() => setActivePortal(activePortal === portal.title ? null : portal.title)} // Tap to toggle on mobile
+                            onClick={() => setActivePortal(portal.title)} // Mobile: Just set active, overlay handles rest
                         >
-                            {/* Sign Image - Visible normally unless obscured by large button, kept for structure */}
-                            <div className={`relative w-full max-w-[160px] md:max-w-[200px] aspect-3/1 drop-shadow-[2px_4px_6px_rgba(0,0,0,0.6)] shrink-0 z-10 pointer-events-none transition-opacity duration-300 ${isActive ? 'opacity-0' : 'opacity-100'}`}>
+                            {/* Sign Image - Always visual, no fade out requested */}
+                            <div className="relative w-full max-w-[160px] md:max-w-[200px] aspect-3/1 drop-shadow-[2px_4px_6px_rgba(0,0,0,0.6)] shrink-0 z-10 pointer-events-none">
                                 <Image src={portal.signImageSrc} alt={`${portal.title} Sign`} fill style={{ objectFit: 'contain' }} />
                             </div>
                             
                             {/* Portal Image / Button Container */}
                             <div className="relative w-full h-full flex-1 min-h-0 z-20 flex flex-col items-center justify-end">
-                                {/* Regular Image (fades out on active) */}
-                                <div className={`relative w-full h-full transition-all duration-300 ${!isActive ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}>
+                                {/* Regular Image (Fades out only on DESKTOP hover) */}
+                                <div className={`relative w-full h-full transition-all duration-300 ${isActive ? 'md:opacity-0 md:scale-95 md:pointer-events-none' : 'opacity-100 scale-100'}`}>
                                     <Image 
                                         src={portal.imageSrc} 
                                         alt={`${portal.title} Portal`} 
@@ -264,8 +267,8 @@ export default function HallPage() {
                                     />
                                 </div>
 
-                                {/* Enlarged Image (fades in on active) */}
-                                <div className={`absolute inset-0 w-full h-full transition-all duration-300 transform origin-bottom ${isActive ? 'opacity-100 scale-110 z-50' : 'opacity-0 scale-90 pointer-events-none'}`}>
+                                {/* DESKTOP ONLY: Enlarged Image (In-Place) */}
+                                <div className={`hidden md:block absolute inset-0 w-full h-full transition-all duration-300 transform origin-bottom ${isActive ? 'opacity-100 scale-110 z-50' : 'opacity-0 scale-90 pointer-events-none'}`}>
                                      <Image 
                                         src={portal.enlargedImageSrc} 
                                         alt={`${portal.title} Enlarged`} 
@@ -275,14 +278,14 @@ export default function HallPage() {
                                     />
                                 </div>
                                 
-                                {/* Enter Button - Appears when active */}
-                                <div className={`absolute -bottom-4 z-[60] transition-all duration-300 ${isActive ? 'translate-y-0 opacity-100 pointer-events-auto' : 'translate-y-4 opacity-0 pointer-events-none'}`}>
+                                {/* DESKTOP ONLY: Enter Button */}
+                                <div className={`hidden md:block absolute -bottom-4 z-[60] transition-all duration-300 ${isActive ? 'translate-y-0 opacity-100 pointer-events-auto' : 'translate-y-4 opacity-0 pointer-events-none'}`}>
                                     <button
                                         onClick={(e) => {
-                                            e.stopPropagation(); // Prevent toggling off active state
+                                            e.stopPropagation(); 
                                             handleEnterClick(e, portal.href, portal.soundSrc, portal.isExternal);
                                         }}
-                                        className="bg-stone-900 border-2 border-amber-600 text-amber-500 font-medieval text-sm md:text-base px-6 py-1 rounded-full shadow-[0_0_15px_rgba(0,0,0,0.9)] hover:bg-stone-800 hover:border-amber-400 hover:text-amber-300 hover:scale-105 transition-all uppercase tracking-widest"
+                                        className="bg-stone-900 border-2 border-amber-600 text-amber-500 font-medieval text-base px-6 py-1 rounded-full shadow-[0_0_15px_rgba(0,0,0,0.9)] hover:bg-stone-800 hover:border-amber-400 hover:text-amber-300 hover:scale-105 transition-all uppercase tracking-widest"
                                     >
                                         Enter
                                     </button>
@@ -294,6 +297,62 @@ export default function HallPage() {
             </div>
 
         </div>
+
+        {/* MOBILE OVERLAY FOR ENLARGED PORTAL */}
+        <AnimatePresence>
+            {activePortalData && (
+                <motion.div 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="md:hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm px-4"
+                    onClick={() => setActivePortal(null)}
+                >
+                    {/* Content Container - 60% Height */}
+                    <motion.div 
+                        initial={{ scale: 0.9, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0.9, opacity: 0 }}
+                        className="relative w-full h-[60%] flex flex-col items-center justify-center"
+                        onClick={() => setActivePortal(null)} // Click content to close (unless button clicked)
+                    >
+                         {/* Close Button */}
+                         <button 
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setActivePortal(null);
+                            }}
+                            className="absolute top-0 right-0 z-[110] p-2 bg-amber-900/20 border border-amber-700 rounded-full text-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.1)] hover:bg-amber-800/40 transition-colors"
+                        >
+                            <X size={24} />
+                        </button>
+
+                        {/* Enlarged Image */}
+                        <div className="relative w-full flex-1 mb-6">
+                             <Image 
+                                src={activePortalData.enlargedImageSrc} 
+                                alt={`${activePortalData.title} Enlarged`} 
+                                fill 
+                                style={{ objectFit: 'contain' }} 
+                                className="drop-shadow-[0_0_35px_rgba(251,191,36,0.8)]"
+                            />
+                        </div>
+
+                        {/* Enter Button */}
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleEnterClick(e as any, activePortalData.href, activePortalData.soundSrc, activePortalData.isExternal);
+                            }}
+                            className="bg-stone-900 border-2 border-amber-600 text-amber-500 font-medieval text-xl px-10 py-3 rounded-full shadow-[0_0_25px_rgba(0,0,0,0.9)] active:scale-95 transition-all uppercase tracking-widest z-[110]"
+                        >
+                            Enter
+                        </button>
+                    </motion.div>
+                </motion.div>
+            )}
+        </AnimatePresence>
+
       </motion.main>
 
       {sparkle && ( <div key={sparkle.key} className="fixed z-50 pointer-events-none" style={{ left: sparkle.x, top: sparkle.y }}><Sparkle onAnimationComplete={handleAnimationComplete} /></div> )}
