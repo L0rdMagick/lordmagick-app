@@ -133,7 +133,7 @@ export default function HallPage() {
         transition={{ ease: 'easeInOut', duration: 2.0 }}
       >
         <div className="fixed inset-0 z-0">
-            <Image src="/images/grand-hall-bg.png" alt="The Grand Hall" fill style={{ objectFit: 'cover' }} quality={100} />
+            <Image src="/images/grand-hall-bg.png" alt="The Grand Hall" fill style={{ objectFit: 'fill' }} quality={100} />
             <div className="absolute inset-0 bg-black/40" />
         </div>
         
