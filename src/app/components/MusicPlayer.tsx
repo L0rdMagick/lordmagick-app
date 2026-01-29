@@ -135,6 +135,12 @@ const MusicPlayer = () => {
         }
     };
 
+    const isPlayingRef = useRef(isPlaying);
+
+    useEffect(() => {
+        isPlayingRef.current = isPlaying;
+    }, [isPlaying]);
+
     // Initialize Audio Context with global unlock
     useEffect(() => {
         const AudioContextClass = (window as any).AudioContext || (window as any).webkitAudioContext;
@@ -148,19 +154,17 @@ const MusicPlayer = () => {
         }
 
         const unlockAudio = () => {
-             if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
+             if (audioContextRef.current && (audioContextRef.current.state === 'suspended' || audioContextRef.current.state === 'interrupted')) {
                  audioContextRef.current.resume().then(() => {
-                     // If we wanted to ensure play on first click if it failed before:
-                     if (isPlaying && !sourceNodeRef.current && audioBufferRef.current) {
+                     // Force playback restart if the UI thinks we are playing but audio was suspended
+                     if (isPlayingRef.current && audioBufferRef.current) {
+                         // We must recreate the source node after resume on some mobile browsers
                          playBuffer(audioBufferRef.current);
                      }
                  });
              }
-             document.removeEventListener('click', unlockAudio);
-             document.removeEventListener('touchstart', unlockAudio);
-             document.removeEventListener('touchend', unlockAudio);
-             document.removeEventListener('pointerdown', unlockAudio);
-             document.removeEventListener('keydown', unlockAudio);
+             const events = ['click', 'touchstart', 'touchend', 'pointerdown', 'keydown'];
+             events.forEach(event => document.removeEventListener(event, unlockAudio));
         };
 
         const events = ['click', 'touchstart', 'touchend', 'pointerdown', 'keydown'];
