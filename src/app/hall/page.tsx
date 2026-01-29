@@ -17,6 +17,7 @@ const portals = [
     title: "Spell Room",
     href: "/spell-room", 
     imageSrc: "/images/portal-spell.png",
+    enlargedImageSrc: "/images/enlarged-portal-spell.png",
     signImageSrc: "/images/spell-room-sign.png",
     glowClass: "group-hover:drop-shadow-[0_0_25px_rgba(168,85,247,0.6)]",
     soundSrc: "/audio/sfx-spell-room-portal.mp3",
@@ -26,6 +27,7 @@ const portals = [
     title: "Oracle Room",
     href: "/oracle-room",
     imageSrc: "/images/portal-oracle.png",
+    enlargedImageSrc: "/images/enlarged-portal-oracle.png",
     signImageSrc: "/images/oracle-room-sign.png",
     glowClass: "group-hover:drop-shadow-[0_0_25px_rgba(34,211,238,0.6)]",
     soundSrc: "/audio/sfx-oracle-room-portal.mp3",
@@ -35,6 +37,7 @@ const portals = [
     title: "The School",
     href: "/the-magick-psychic-school",
     imageSrc: "/images/the-magick-psychic-school.png", 
+    enlargedImageSrc: "/images/enlarged-portal-library.png",
     signImageSrc: "/images/the-magick-school-sign.png", 
     glowClass: "group-hover:drop-shadow-[0_0_25px_rgba(251,146,60,0.6)]",
     soundSrc: "/audio/sfx-library-portal.mp3",
@@ -44,6 +47,7 @@ const portals = [
     title: "Magickal Tools", 
     href: "/magickal-tools", 
     imageSrc: "/images/portal-tools.png",
+    enlargedImageSrc: "/images/enlarged-portal-tools.png",
     signImageSrc: "/images/tools-sign.png",
     glowClass: "group-hover:drop-shadow-[0_0_25px_rgba(74,222,128,0.6)]",
     soundSrc: "/audio/sfx-marketplace-portal.mp3",
@@ -62,6 +66,7 @@ export default function HallPage() {
   const router = useRouter();
   const [sparkle, setSparkle] = useState<SparkleState | null>(null);
   const [navigatingTo, setNavigatingTo] = useState<{ href: string; isExternal: boolean } | null>(null);
+  const [activePortal, setActivePortal] = useState<string | null>(null); // NEW: Track active portal for enlarged view
   
   // -- NEW STATE FOR CREDITS --
   const [credits, setCredits] = useState<number | null>(null);
@@ -103,6 +108,20 @@ export default function HallPage() {
 
   const handlePortalClick = (e: MouseEvent<HTMLAnchorElement>, href: string, soundSrc: string, isExternal: boolean) => {
     e.preventDefault();
+    if (navigatingTo) return;
+    setNavigatingTo({ href, isExternal });
+    
+    const clickSound = portalSoundsRef.current[soundSrc];
+    if (clickSound) {
+      clickSound.currentTime = 0;
+      clickSound.play();
+    }
+    setSparkle({ key: Date.now(), x: e.clientX, y: e.clientY });
+  };
+
+  // Modified: Triggered by "Enter" button logic
+  const handleEnterClick = (e: MouseEvent<HTMLButtonElement>, href: string, soundSrc: string, isExternal: boolean) => {
+    // e.preventDefault(); // Button click doesn't need preventDefault on href usually, but good practice if it bubbles
     if (navigatingTo) return;
     setNavigatingTo({ href, isExternal });
     
@@ -217,29 +236,61 @@ export default function HallPage() {
              {/* BOTTOM: Buttons Grid */}
              {/* Overflow visible to allow hover expansion */}
              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 w-full flex-grow items-center justify-center min-h-0">
-                {portals.map((portal) => (
-                    <div key={portal.title} className="flex flex-col items-center gap-y-1 h-full max-h-[98%] justify-center relative z-10 hover:z-50">
-                        {/* Sign Image - Z-index lower than button on hover */}
-                        <div className="relative w-full max-w-[160px] md:max-w-[200px] aspect-3/1 drop-shadow-[2px_4px_6px_rgba(0,0,0,0.6)] shrink-0 z-10 pointer-events-none">
-                            <Image src={portal.signImageSrc} alt={`${portal.title} Sign`} fill style={{ objectFit: 'contain' }} />
-                        </div>
-                        <a 
-                          href={portal.href} 
-                          onClick={(e) => handlePortalClick(e, portal.href, portal.soundSrc, portal.isExternal)} 
-                          className={`relative w-full h-full flex-1 min-h-0 group block cursor-pointer transition-all duration-300 z-20 hover:scale-110 hover:z-50`} 
+                {portals.map((portal) => {
+                    const isActive = activePortal === portal.title;
+                    return (
+                        <div 
+                            key={portal.title} 
+                            className="flex flex-col items-center gap-y-1 h-full max-h-[98%] justify-center relative z-10 group"
+                            onMouseEnter={() => setActivePortal(portal.title)}
+                            onMouseLeave={() => setActivePortal(null)}
+                            onClick={() => setActivePortal(activePortal === portal.title ? null : portal.title)} // Tap to toggle on mobile
                         >
-                            <div className={`w-full h-full transition-all duration-300 ${portal.glowClass}`}>
-                                <Image 
-                                    src={portal.imageSrc} 
-                                    alt={`${portal.title} Portal`} 
-                                    fill 
-                                    style={{ objectFit: 'contain' }} 
-                                    className="transition-transform duration-300" // Removed group-hover:scale logic as parent scales
-                                />
+                            {/* Sign Image - Visible normally unless obscured by large button, kept for structure */}
+                            <div className={`relative w-full max-w-[160px] md:max-w-[200px] aspect-3/1 drop-shadow-[2px_4px_6px_rgba(0,0,0,0.6)] shrink-0 z-10 pointer-events-none transition-opacity duration-300 ${isActive ? 'opacity-0' : 'opacity-100'}`}>
+                                <Image src={portal.signImageSrc} alt={`${portal.title} Sign`} fill style={{ objectFit: 'contain' }} />
                             </div>
-                        </a>
-                    </div>
-                ))}
+                            
+                            {/* Portal Image / Button Container */}
+                            <div className="relative w-full h-full flex-1 min-h-0 z-20 flex flex-col items-center justify-end">
+                                {/* Regular Image (fades out on active) */}
+                                <div className={`relative w-full h-full transition-all duration-300 ${!isActive ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}>
+                                    <Image 
+                                        src={portal.imageSrc} 
+                                        alt={`${portal.title} Portal`} 
+                                        fill 
+                                        style={{ objectFit: 'contain' }} 
+                                        className="transition-transform duration-300"
+                                    />
+                                </div>
+
+                                {/* Enlarged Image (fades in on active) */}
+                                <div className={`absolute inset-0 w-full h-full transition-all duration-300 transform origin-bottom ${isActive ? 'opacity-100 scale-110 z-50' : 'opacity-0 scale-90 pointer-events-none'}`}>
+                                     <Image 
+                                        src={portal.enlargedImageSrc} 
+                                        alt={`${portal.title} Enlarged`} 
+                                        fill 
+                                        style={{ objectFit: 'contain' }} 
+                                        className="drop-shadow-[0_0_25px_rgba(251,191,36,0.6)]" // Golden glow
+                                    />
+                                </div>
+                                
+                                {/* Enter Button - Appears when active */}
+                                <div className={`absolute -bottom-4 z-[60] transition-all duration-300 ${isActive ? 'translate-y-0 opacity-100 pointer-events-auto' : 'translate-y-4 opacity-0 pointer-events-none'}`}>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation(); // Prevent toggling off active state
+                                            handleEnterClick(e, portal.href, portal.soundSrc, portal.isExternal);
+                                        }}
+                                        className="bg-stone-900 border-2 border-amber-600 text-amber-500 font-medieval text-sm md:text-base px-6 py-1 rounded-full shadow-[0_0_15px_rgba(0,0,0,0.9)] hover:bg-stone-800 hover:border-amber-400 hover:text-amber-300 hover:scale-105 transition-all uppercase tracking-widest"
+                                    >
+                                        Enter
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })}
             </div>
 
         </div>
