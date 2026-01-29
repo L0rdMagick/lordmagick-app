@@ -173,18 +173,22 @@ export default function HallPage() {
                  </div>
             </div>
 
-            {/* RIGHT: Faestones - Aligned End, ensuring visibility */}
+            {/* RIGHT: Faestones - Custom Stacked Mobile Layout */}
             <div className="flex items-center justify-end p-2 min-w-0">
                 {credits !== null && (
                     <div className="animate-in fade-in slide-in-from-top-4 duration-1000 shrink-0">
-                        <div className="flex flex-col-reverse md:flex-row items-center justify-center gap-0.5 md:gap-3 bg-gradient-to-br from-stone-900 to-stone-950 border-2 border-amber-700/60 rounded-full px-2 md:px-4 h-10 md:h-14 shadow-[0_0_20px_rgba(0,0,0,0.8)] backdrop-blur-md group hover:border-amber-500 hover:shadow-[0_0_20px_rgba(245,158,11,0.2)] transition-all min-w-fit">
-                             <span className="hidden md:block text-[8px] md:text-xs text-amber-500 font-medieval tracking-widest leading-none drop-shadow-sm opacity-90 md:opacity-100 uppercase translate-y-[-1px] md:translate-y-0">Faestones</span>
-                             <div className="flex items-center gap-1.5 md:gap-2 translate-y-[-1px] md:translate-y-0">
+                        <div className="flex flex-col md:flex-row-reverse items-center justify-center gap-0 md:gap-3 bg-gradient-to-br from-stone-900 to-stone-950 border-2 border-amber-700/60 rounded-3xl md:rounded-full px-2 md:px-4 py-1 md:py-0 h-auto md:h-14 shadow-[0_0_20px_rgba(0,0,0,0.8)] backdrop-blur-md group hover:border-amber-500 hover:shadow-[0_0_20px_rgba(245,158,11,0.2)] transition-all min-w-fit">
+                             
+                             {/* Number & Plus */}
+                             <div className="flex items-center gap-1.5 md:gap-2">
                                 <span className="text-sm md:text-2xl font-cinzel text-amber-100 font-bold leading-none param-font drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">{credits}</span>
                                 <Link href="/store" className="flex items-center justify-center w-5 h-5 md:w-6 md:h-6 bg-amber-900/40 rounded-full border border-amber-600/50 hover:bg-amber-600 hover:text-white text-amber-400 transition-all transform hover:scale-110" title="Get More Faestones">
                                     <Plus size={12} className="md:w-[14px] md:h-[14px]" strokeWidth={3} />
                                 </Link>
                              </div>
+
+                             {/* Label - Below on Mobile, Left on Desktop */}
+                             <span className="text-[0.5rem] md:text-xs text-amber-500 font-medieval tracking-widest leading-none drop-shadow-sm opacity-90 md:opacity-100 uppercase mt-0.5 md:mt-0 md:translate-y-0">Faestones</span>
                         </div>
                     </div>
                 )}
@@ -194,7 +198,7 @@ export default function HallPage() {
         {/* === BODY CONTAINER ===
          * Left: 4.5%, Top: 24.3%, Width: 91%, Height: 66.2%
          */}
-        <div className="absolute z-20 flex flex-col justify-start items-center"
+        <div className="absolute z-20 flex flex-col justify-center items-center"
              style={{ 
                  left: '4.5%', 
                  top: '24.3%', 
@@ -210,17 +214,19 @@ export default function HallPage() {
                  </p>
              </div>
             
-             {/* BOTTOM: Buttons Grid - Maximized & Fitting One Screen */}
-             <div className="grid grid-cols-2 md:grid-cols-4 gap-2 w-full flex-1 overflow-hidden min-h-0 items-center justify-center">
+             {/* BOTTOM: Buttons Grid */}
+             {/* Overflow visible to allow hover expansion */}
+             <div className="grid grid-cols-2 md:grid-cols-4 gap-2 w-full flex-grow items-center justify-center min-h-0">
                 {portals.map((portal) => (
-                    <div key={portal.title} className="flex flex-col items-center gap-y-1 h-full justify-center relative min-h-0">
-                        <div className="relative w-full max-w-[160px] md:max-w-[200px] aspect-3/1 drop-shadow-[2px_4px_6px_rgba(0,0,0,0.6)] shrink-0 z-10 basis-auto">
+                    <div key={portal.title} className="flex flex-col items-center gap-y-1 h-full max-h-[98%] justify-center relative z-10 hover:z-50">
+                        {/* Sign Image - Z-index lower than button on hover */}
+                        <div className="relative w-full max-w-[160px] md:max-w-[200px] aspect-3/1 drop-shadow-[2px_4px_6px_rgba(0,0,0,0.6)] shrink-0 z-10 pointer-events-none">
                             <Image src={portal.signImageSrc} alt={`${portal.title} Sign`} fill style={{ objectFit: 'contain' }} />
                         </div>
                         <a 
                           href={portal.href} 
                           onClick={(e) => handlePortalClick(e, portal.href, portal.soundSrc, portal.isExternal)} 
-                          className={`relative w-full h-full flex-1 min-h-0 group block cursor-pointer transition-all duration-300 hover:scale-105 active:scale-95`} 
+                          className={`relative w-full h-full flex-1 min-h-0 group block cursor-pointer transition-all duration-300 z-20 hover:scale-110 hover:z-50`} 
                         >
                             <div className={`w-full h-full transition-all duration-300 ${portal.glowClass}`}>
                                 <Image 
@@ -228,7 +234,7 @@ export default function HallPage() {
                                     alt={`${portal.title} Portal`} 
                                     fill 
                                     style={{ objectFit: 'contain' }} 
-                                    className="transition-transform duration-300 group-hover:scale-110" 
+                                    className="transition-transform duration-300" // Removed group-hover:scale logic as parent scales
                                 />
                             </div>
                         </a>
