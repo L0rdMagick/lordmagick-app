@@ -157,13 +157,14 @@ const MusicPlayer = () => {
                  });
              }
              document.removeEventListener('click', unlockAudio);
-             document.removeEventListener('keydown', unlockAudio);
              document.removeEventListener('touchstart', unlockAudio);
+             document.removeEventListener('touchend', unlockAudio);
+             document.removeEventListener('pointerdown', unlockAudio);
+             document.removeEventListener('keydown', unlockAudio);
         };
 
-        document.addEventListener('click', unlockAudio);
-        document.addEventListener('keydown', unlockAudio);
-        document.addEventListener('touchstart', unlockAudio);
+        const events = ['click', 'touchstart', 'touchend', 'pointerdown', 'keydown'];
+        events.forEach(event => document.addEventListener(event, unlockAudio));
 
         return () => {
              if (sourceNodeRef.current) {
@@ -172,9 +173,7 @@ const MusicPlayer = () => {
              if (audioContextRef.current?.state !== 'closed') {
                  audioContextRef.current?.close();
              }
-             document.removeEventListener('click', unlockAudio);
-             document.removeEventListener('keydown', unlockAudio);
-             document.removeEventListener('touchstart', unlockAudio);
+             events.forEach(event => document.removeEventListener(event, unlockAudio));
         };
     }, []);
 
