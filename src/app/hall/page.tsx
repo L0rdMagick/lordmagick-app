@@ -140,12 +140,12 @@ export default function HallPage() {
         {/* -- NEW: CREDIT DISPLAY (TOP RIGHT) -- */}
         {credits !== null && (
             <div className="absolute top-4 right-4 md:top-6 md:right-8 z-50 animate-in fade-in slide-in-from-top-4 duration-1000">
-                <div className="flex flex-col-reverse md:flex-row items-center justify-center gap-0 md:gap-3 bg-gradient-to-br from-stone-900 to-stone-950 border-2 border-amber-700/60 rounded-xl md:rounded-full px-2 py-1 md:px-4 md:py-0 md:h-14 shadow-[0_0_20px_rgba(0,0,0,0.8)] backdrop-blur-md group hover:border-amber-500 hover:shadow-[0_0_20px_rgba(245,158,11,0.2)] transition-all min-w-[3.5rem] md:min-w-0">
-                     <span className="text-[9px] md:text-xs text-amber-500 font-medieval tracking-widest leading-none drop-shadow-sm opacity-90 md:opacity-100 uppercase">Faestones</span>
-                     <div className="flex items-center gap-1.5 md:gap-2">
+                <div className="flex flex-col-reverse md:flex-row items-center justify-center gap-0.5 md:gap-3 bg-gradient-to-br from-stone-900 to-stone-950 border-2 border-amber-700/60 rounded-full px-3 md:px-4 h-12 md:h-14 shadow-[0_0_20px_rgba(0,0,0,0.8)] backdrop-blur-md group hover:border-amber-500 hover:shadow-[0_0_20px_rgba(245,158,11,0.2)] transition-all min-w-[3.5rem] md:min-w-0">
+                     <span className="text-[8px] md:text-xs text-amber-500 font-medieval tracking-widest leading-none drop-shadow-sm opacity-90 md:opacity-100 uppercase translate-y-[-1px] md:translate-y-0">Faestones</span>
+                     <div className="flex items-center gap-1.5 md:gap-2 translate-y-[-1px] md:translate-y-0">
                         <span className="text-lg md:text-2xl font-cinzel text-amber-100 font-bold leading-none param-font drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">{credits}</span>
-                        <Link href="/store" className="flex items-center justify-center w-5 h-5 md:w-6 md:h-6 bg-amber-900/40 rounded-full border border-amber-600/50 hover:bg-amber-600 hover:text-white text-amber-400 transition-all transform hover:scale-110" title="Get More Faestones">
-                            <Plus size={12} className="md:w-[14px] md:h-[14px]" strokeWidth={3} />
+                        <Link href="/store" className="flex items-center justify-center w-4 h-4 md:w-6 md:h-6 bg-amber-900/40 rounded-full border border-amber-600/50 hover:bg-amber-600 hover:text-white text-amber-400 transition-all transform hover:scale-110" title="Get More Faestones">
+                            <Plus size={10} className="md:w-[14px] md:h-[14px]" strokeWidth={3} />
                         </Link>
                      </div>
                 </div>
