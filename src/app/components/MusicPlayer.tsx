@@ -154,23 +154,35 @@ const MusicPlayer = () => {
         }
 
         const unlockAudio = () => {
-             if (audioContextRef.current) {
-                 if (audioContextRef.current.state === 'suspended' || audioContextRef.current.state === 'interrupted') {
-                     audioContextRef.current.resume().then(() => {
-                         // Only if we successfully resumed to 'running' do we remove the listeners
-                         if (audioContextRef.current?.state === 'running') {
-                             events.forEach(event => document.removeEventListener(event, unlockAudio));
-                             
-                             // Force playback restart if the UI thinks we are playing but audio was suspended
-                             if (isPlayingRef.current && audioBufferRef.current) {
-                                 playBuffer(audioBufferRef.current);
-                             }
-                         }
-                     }).catch(e => console.error("Audio resume failed:", e));
-                 } else if (audioContextRef.current.state === 'running') {
-                     // Already running, just clean up
-                     events.forEach(event => document.removeEventListener(event, unlockAudio));
+             const ctx = audioContextRef.current;
+             if (!ctx) return;
+
+             // Always attempt to resume checking state is fragile on some browsers
+             // Resume returns a promise, but we should also handle the source restart synchronously if possible
+             if (ctx.state !== 'running') {
+                 ctx.resume().catch(e => console.error("Audio resume error:", e));
+             }
+
+             // Critical Fix: Call playBuffer synchronously during the event
+             // If we rely on the .then() from resume(), we lose the "user gesture" token in some strict mobile browsers.
+             if (isPlayingRef.current && audioBufferRef.current) {
+                 // Important: We only "restart" if the context was suspended, effectively "waking up" the track
+                 // or if we suspect the previous start() call failed silently.
+                 // We rely on togglePlay or playBuffer to handle cleanup of old source nodes.
+                 // To avoid restarting a track that is actually playing fine (if state was running),
+                 // we might check ctx.state, but since we are here, it likely wasn't running or we want to be sure.
+                 
+                 // However, calling start() multiple times is bad. 
+                 // playBuffer handles stopping the old source.
+                 // We only do this if we are seemingly stuck.
+                 if (ctx.state !== 'running') {
+                    playBuffer(audioBufferRef.current);
                  }
+             }
+
+             // Clean up only if we are truly running
+             if (ctx.state === 'running') {
+                 events.forEach(event => document.removeEventListener(event, unlockAudio));
              }
         };
 
