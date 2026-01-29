@@ -266,7 +266,7 @@ const MusicPlayer = () => {
                         animate={{ scale: 1, opacity: 1 }}
                         exit={{ scale: 0, opacity: 0 }}
                         whileHover={{ scale: 1.1 }}
-                        className="fixed top-6 left-10 z-[9999] w-14 h-14 rounded-full bg-gradient-to-br from-stone-800 to-stone-950 border-2 border-amber-600/80 text-amber-500 flex items-center justify-center shadow-[0_0_20px_rgba(0,0,0,0.6)] cursor-pointer hover:shadow-[0_0_25px_rgba(245,158,11,0.4)] transition-all group"
+                        className="fixed top-4 left-4 md:top-6 md:left-8 z-[9999] w-12 h-12 md:w-14 md:h-14 rounded-full bg-gradient-to-br from-stone-800 to-stone-950 border-2 border-amber-600/80 text-amber-500 flex items-center justify-center shadow-[0_0_20px_rgba(0,0,0,0.6)] cursor-pointer hover:shadow-[0_0_25px_rgba(245,158,11,0.4)] transition-all group"
                         onClick={() => setIsExpanded(true)}
                     >
                         <div className="absolute inset-0 rounded-full border border-amber-500/20" />

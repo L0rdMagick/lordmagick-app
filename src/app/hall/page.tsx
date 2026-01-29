@@ -139,13 +139,15 @@ export default function HallPage() {
         
         {/* -- NEW: CREDIT DISPLAY (TOP RIGHT) -- */}
         {credits !== null && (
-            <div className="absolute top-6 right-6 z-50 animate-in fade-in slide-in-from-top-4 duration-1000">
-                <div className="flex flex-col items-center gap-1 bg-gradient-to-br from-stone-900 to-stone-950 border-2 border-amber-700/60 rounded-xl px-4 py-2 shadow-[0_0_20px_rgba(0,0,0,0.8)] backdrop-blur-md group hover:border-amber-500 hover:shadow-[0_0_20px_rgba(245,158,11,0.2)] transition-all">
-                     <span className="text-xs text-amber-500 font-medieval tracking-widest leading-none drop-shadow-sm">Faestones</span>
-                     <span className="text-xl md:text-2xl font-cinzel text-amber-100 font-bold leading-none py-1 drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">{credits}</span>
-                    <Link href="/store" className="p-1 mt-1 bg-amber-900/30 rounded-full border border-amber-800/50 hover:bg-amber-700/50 hover:border-amber-500 hover:text-amber-200 text-stone-400 transition-all transform hover:scale-110" title="Get More Faestones">
-                        <Plus size={14} />
-                    </Link>
+            <div className="absolute top-4 right-4 md:top-6 md:right-8 z-50 animate-in fade-in slide-in-from-top-4 duration-1000">
+                <div className="flex flex-row items-center gap-3 bg-gradient-to-br from-stone-900 to-stone-950 border-2 border-amber-700/60 rounded-full px-4 h-12 md:h-14 shadow-[0_0_20px_rgba(0,0,0,0.8)] backdrop-blur-md group hover:border-amber-500 hover:shadow-[0_0_20px_rgba(245,158,11,0.2)] transition-all">
+                     <span className="hidden sm:inline-block text-xs text-amber-500 font-medieval tracking-widest leading-none drop-shadow-sm pt-1">Faestones</span>
+                     <div className="flex items-center gap-2">
+                        <span className="text-xl md:text-2xl font-cinzel text-amber-100 font-bold leading-none py-1 drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">{credits}</span>
+                        <Link href="/store" className="flex items-center justify-center w-6 h-6 bg-amber-900/40 rounded-full border border-amber-600/50 hover:bg-amber-600 hover:text-white text-amber-400 transition-all transform hover:scale-110" title="Get More Faestones">
+                            <Plus size={14} strokeWidth={3} />
+                        </Link>
+                     </div>
                 </div>
             </div>
         )}
@@ -153,10 +155,10 @@ export default function HallPage() {
         <div className="relative z-20 flex flex-col items-center w-full max-w-7xl">
             <header className="text-center text-white">
                 <div 
-                  className="relative w-full mx-auto aspect-3/1 h-[10vh] md:h-[18vh]"
+                  className="relative w-full mx-auto aspect-3/1 h-[12vh] md:h-[20vh]"
                   style={{ 
                     filter: 'drop-shadow(2px 2px 8px rgba(0,0,0,0.8))',
-                    maxWidth: 'min(480px, calc(100vw - 230px))', // Ensure space for Music Player (Left) and Balance (Right)
+                    maxWidth: 'min(600px, calc(100vw - 140px))', // Increased logo size allowance
                   }}
                 >
                     <Image src="/images/logo-lordmagick.com.png" alt="LordMagick.com Logo" fill style={{ objectFit: 'contain' }} priority />
