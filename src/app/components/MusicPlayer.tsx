@@ -154,20 +154,27 @@ const MusicPlayer = () => {
         }
 
         const unlockAudio = () => {
-             if (audioContextRef.current && (audioContextRef.current.state === 'suspended' || audioContextRef.current.state === 'interrupted')) {
-                 audioContextRef.current.resume().then(() => {
-                     // Force playback restart if the UI thinks we are playing but audio was suspended
-                     if (isPlayingRef.current && audioBufferRef.current) {
-                         // We must recreate the source node after resume on some mobile browsers
-                         playBuffer(audioBufferRef.current);
-                     }
-                 });
+             if (audioContextRef.current) {
+                 if (audioContextRef.current.state === 'suspended' || audioContextRef.current.state === 'interrupted') {
+                     audioContextRef.current.resume().then(() => {
+                         // Only if we successfully resumed to 'running' do we remove the listeners
+                         if (audioContextRef.current?.state === 'running') {
+                             events.forEach(event => document.removeEventListener(event, unlockAudio));
+                             
+                             // Force playback restart if the UI thinks we are playing but audio was suspended
+                             if (isPlayingRef.current && audioBufferRef.current) {
+                                 playBuffer(audioBufferRef.current);
+                             }
+                         }
+                     }).catch(e => console.error("Audio resume failed:", e));
+                 } else if (audioContextRef.current.state === 'running') {
+                     // Already running, just clean up
+                     events.forEach(event => document.removeEventListener(event, unlockAudio));
+                 }
              }
-             const events = ['click', 'touchstart', 'touchend', 'pointerdown', 'keydown'];
-             events.forEach(event => document.removeEventListener(event, unlockAudio));
         };
 
-        const events = ['click', 'touchstart', 'touchend', 'pointerdown', 'keydown'];
+        const events = ['click', 'touchstart', 'touchend', 'pointerdown', 'keydown', 'scroll'];
         events.forEach(event => document.addEventListener(event, unlockAudio));
 
         return () => {
