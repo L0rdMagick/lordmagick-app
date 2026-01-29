@@ -140,10 +140,10 @@ export default function HallPage() {
         {/* -- NEW: CREDIT DISPLAY (TOP RIGHT) -- */}
         {credits !== null && (
             <div className="absolute top-6 right-6 z-50 animate-in fade-in slide-in-from-top-4 duration-1000">
-                <div className="flex flex-col items-center gap-1 bg-black/60 backdrop-blur-md border border-amber-500/30 rounded-xl px-3 py-2 shadow-[0_0_15px_rgba(251,191,36,0.2)] group hover:border-amber-400 transition-colors">
-                     <span className="text-[10px] text-amber-200/70 font-mono uppercase tracking-widest leading-none">Faestones</span>
-                     <span className="text-base md:text-lg font-serif text-white font-bold leading-none">{credits}</span>
-                    <Link href="/store" className="p-1 mt-1 bg-amber-500/20 rounded-full hover:bg-amber-500/40 text-amber-300 transition-colors" title="Get More Faestones">
+                <div className="flex flex-col items-center gap-1 bg-gradient-to-br from-stone-900 to-stone-950 border-2 border-amber-700/60 rounded-xl px-4 py-2 shadow-[0_0_20px_rgba(0,0,0,0.8)] backdrop-blur-md group hover:border-amber-500 hover:shadow-[0_0_20px_rgba(245,158,11,0.2)] transition-all">
+                     <span className="text-xs text-amber-500 font-medieval tracking-widest leading-none drop-shadow-sm">Faestones</span>
+                     <span className="text-xl md:text-2xl font-cinzel text-amber-100 font-bold leading-none py-1 drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">{credits}</span>
+                    <Link href="/store" className="p-1 mt-1 bg-amber-900/30 rounded-full border border-amber-800/50 hover:bg-amber-700/50 hover:border-amber-500 hover:text-amber-200 text-stone-400 transition-all transform hover:scale-110" title="Get More Faestones">
                         <Plus size={14} />
                     </Link>
                 </div>
