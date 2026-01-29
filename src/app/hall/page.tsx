@@ -177,7 +177,7 @@ export default function HallPage() {
             <div className="flex items-center justify-end p-2 min-w-0">
                 {credits !== null && (
                     <div className="animate-in fade-in slide-in-from-top-4 duration-1000 shrink-0">
-                        <div className="flex flex-col md:flex-row-reverse items-center justify-center gap-0.5 md:gap-3 bg-gradient-to-br from-stone-900 to-stone-950 border-2 border-amber-700/60 rounded-3xl md:rounded-full px-2 md:px-4 py-0 md:py-0 h-12 md:h-14 shadow-[0_0_20px_rgba(0,0,0,0.8)] backdrop-blur-md group hover:border-amber-500 hover:shadow-[0_0_20px_rgba(245,158,11,0.2)] transition-all min-w-fit">
+                        <div className="flex flex-col md:flex-row-reverse items-center justify-center gap-0.5 md:gap-3 bg-gradient-to-br from-stone-900 to-stone-950 border-2 border-amber-700/60 rounded-3xl md:rounded-full px-3 md:px-4 py-0 md:py-0 h-12 md:h-14 shadow-[0_0_20px_rgba(0,0,0,0.8)] backdrop-blur-md group hover:border-amber-500 hover:shadow-[0_0_20px_rgba(245,158,11,0.2)] transition-all min-w-fit">
                              
                              {/* Number & Plus */}
                              <div className="flex items-center gap-1.5 md:gap-2">
