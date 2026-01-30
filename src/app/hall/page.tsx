@@ -267,7 +267,7 @@ export default function HallPage() {
                                         alt={`${portal.title} Portal`} 
                                         fill 
                                         style={{ objectFit: 'contain' }} 
-                                        className="transition-transform duration-[1500ms]"
+                                        className={`transition-transform duration-[1500ms] ${portal.glowClass}`}
                                     />
                                 </div>
 
