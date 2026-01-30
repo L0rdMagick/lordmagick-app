@@ -29,8 +29,94 @@ const imFell = IM_Fell_English_SC({
 });
 
 export const metadata: Metadata = {
-  title: "LordMagick.com",
-  description: "Unlock Ancient Secrets. Master Your Craft.",
+  metadataBase: new URL('https://lordmagick.com'),
+  title: {
+    default: 'LordMagick | Witchcraft Spells, Tarot & Psychic Training',
+    template: '%s | LordMagick',
+  },
+  description: 'Unlocking ancient secrets for the modern mystic. Cast real spells online, receive AI tarot readings, and master witchcraft and psychic abilities in our online school.',
+  keywords: ['Witchcraft', 'Magick', 'Spells', 'Tarot', 'Psychic Training', 'Occult', 'Esoteric', 'Grimoire', 'Online Altar', 'Digital Servitors', 'Wiccan Spells', 'Hoodoo Spells'],
+  authors: [{ name: 'LordMagick' }],
+  creator: 'LordMagick',
+  publisher: 'LordMagick',
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  openGraph: {
+    title: 'LordMagick | Witchcraft Spells, Tarot & Psychic Training',
+    description: 'Enter the Grand Hall to cast spells, consult the oracle, and train your psychic abilities. A complete digital platform for the modern witch.',
+    url: 'https://lordmagick.com',
+    siteName: 'LordMagick',
+    images: [
+      {
+        url: '/images/grand-hall-bg.png',
+        width: 1200,
+        height: 630,
+        alt: 'LordMagick Grand Hall',
+      },
+      {
+        url: '/images/logo-lordmagick.com.png',
+        width: 800,
+        height: 800,
+        alt: 'LordMagick Logo',
+      },
+    ],
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'LordMagick | Witchcraft Spells, Tarot & Psychic Training',
+    description: 'Cast spells, learn magick, and master your psychic potential.',
+    images: ['/images/grand-hall-bg.png'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  alternates: {
+    canonical: 'https://lordmagick.com',
+  },
+};
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'WebSite',
+      '@id': 'https://lordmagick.com/#website',
+      'url': 'https://lordmagick.com',
+      'name': 'LordMagick',
+      'description': 'Online Witchcraft, Tarot, and Psychic Training Platform',
+      'publisher': {
+        '@id': 'https://lordmagick.com/#organization'
+      }
+    },
+    {
+      '@type': 'Organization',
+      '@id': 'https://lordmagick.com/#organization',
+      'name': 'LordMagick',
+      'url': 'https://lordmagick.com',
+      'logo': {
+        '@type': 'ImageObject',
+        'url': 'https://lordmagick.com/images/logo-lordmagick.com.png',
+        'width': 500,
+        'height': 500
+      },
+      'sameAs': [
+        // Add social profiles here if available
+      ]
+    }
+  ]
 };
 
 export default function RootLayout({
@@ -63,6 +149,11 @@ export default function RootLayout({
             <div className="absolute inset-0 w-full h-full bg-[url('/images/mist-overlay.png')] bg-repeat-x animate-[flow-mist_45s_linear_infinite]" />
             <div className="absolute inset-0 w-full h-full bg-[url('/images/mist-overlay.png')] bg-repeat-x animate-[flow-mist-crossfade_45s_linear_infinite]" />
         </div>
+      {/* JSON-LD Structured Data */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
       </body>
     </html>
   );
