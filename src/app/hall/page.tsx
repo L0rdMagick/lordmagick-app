@@ -261,43 +261,46 @@ export default function HallPage() {
                             {/* Portal Image / Button Container */}
                             <div className="relative w-full h-full flex-1 min-h-0 z-20 flex flex-col items-center justify-end">
                                 {/* Regular Image (Fades out only on DESKTOP hover) */}
-                                <div className={`relative w-full h-full transition-all duration-[2000ms] ${isActive ? 'md:opacity-0 md:scale-95 md:pointer-events-none' : 'opacity-100 scale-100'}`}>
+                                <div className={`relative w-full h-full transition-all duration-[1500ms] ${isActive ? 'md:opacity-0 md:scale-95 md:pointer-events-none' : 'opacity-100 scale-100'}`}>
                                     <Image 
                                         src={portal.imageSrc} 
                                         alt={`${portal.title} Portal`} 
                                         fill 
                                         style={{ objectFit: 'contain' }} 
-                                        className="transition-transform duration-[2000ms]"
+                                        className="transition-transform duration-[1500ms]"
                                     />
                                 </div>
 
                                 {/* DESKTOP ONLY: Enlarged Image (In-Place) */}
-                                <div className={`hidden md:block absolute inset-0 w-full h-full transition-all duration-[2000ms] transform origin-bottom ${isActive ? 'opacity-100 scale-110 z-50' : 'opacity-0 scale-90 pointer-events-none'}`}>
-                                     {/* Close Button for Hybrid/Tablet usage */}
-                                     <div className={`absolute -top-2 -right-4 z-[70] transition-opacity duration-300 ${isActive ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-                                         <button 
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setActivePortal(null);
-                                            }}
-                                            className="p-1.5 bg-amber-900/40 border border-amber-700/50 rounded-full text-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.1)] hover:bg-amber-800/60 hover:text-amber-300 transition-colors"
-                                            title="Close"
-                                        >
-                                            <X size={16} />
-                                        </button>
-                                     </div>
+                                <div className={`hidden md:flex absolute inset-0 w-full h-full transition-all duration-[1500ms] transform origin-bottom justify-center ${isActive ? 'opacity-100 scale-110 z-50' : 'opacity-0 scale-90 pointer-events-none'}`}>
+                                     {/* Constrained Wrapper for Image & Button to match Aspect Ratio */}
+                                     <div className="relative h-full aspect-[9/16]">
+                                         {/* Close Button for Hybrid/Tablet usage */}
+                                         <div className={`absolute top-2 right-2 z-[70] transition-opacity duration-300 ${isActive ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+                                             <button 
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setActivePortal(null);
+                                                }}
+                                                className="p-1.5 bg-amber-900/40 border border-amber-700/50 rounded-full text-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.1)] hover:bg-amber-800/60 hover:text-amber-300 transition-colors"
+                                                title="Close"
+                                            >
+                                                <X size={16} />
+                                            </button>
+                                         </div>
 
-                                     <Image 
-                                        src={portal.enlargedImageSrc} 
-                                        alt={`${portal.title} Enlarged`} 
-                                        fill 
-                                        style={{ objectFit: 'contain' }} 
-                                        className="drop-shadow-[0_0_25px_rgba(251,191,36,0.6)]" // Golden glow
-                                    />
+                                         <Image 
+                                            src={portal.enlargedImageSrc} 
+                                            alt={`${portal.title} Enlarged`} 
+                                            fill 
+                                            style={{ objectFit: 'contain' }} 
+                                            className="drop-shadow-[0_0_25px_rgba(251,191,36,0.6)]" // Golden glow
+                                        />
+                                     </div>
                                 </div>
                                 
                                 {/* DESKTOP ONLY: Enter Button */}
-                                <div className={`hidden md:block absolute -bottom-4 z-[60] transition-all duration-[2000ms] ${isActive ? 'translate-y-0 opacity-100 pointer-events-auto' : 'translate-y-4 opacity-0 pointer-events-none'}`}>
+                                <div className={`hidden md:block absolute -bottom-4 z-[60] transition-all duration-[1500ms] ${isActive ? 'translate-y-0 opacity-100 pointer-events-auto' : 'translate-y-4 opacity-0 pointer-events-none'}`}>
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation(); 
@@ -323,7 +326,7 @@ export default function HallPage() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    transition={{ duration: 2.0 }}
+                    transition={{ duration: 1.5 }}
                     className="md:hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm px-4"
                     onClick={() => setActivePortal(null)}
                 >
@@ -332,7 +335,7 @@ export default function HallPage() {
                         initial={{ scale: 0.9, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         exit={{ scale: 0.9, opacity: 0 }}
-                        transition={{ duration: 2.0 }}
+                        transition={{ duration: 1.5 }}
                         className="relative w-full h-[80%] flex flex-col items-center justify-center"
                         onClick={() => setActivePortal(null)} // Click content to close (unless button clicked)
                     >
@@ -375,7 +378,8 @@ export default function HallPage() {
 
       </motion.main>
 
-      {sparkle && ( <div key={sparkle.key} className="fixed z-50 pointer-events-none" style={{ left: sparkle.x, top: sparkle.y }}><Sparkle onAnimationComplete={handleAnimationComplete} /></div> )}
+      {sparkle && ( <div key={sparkle.key} className="fixed z-[120] pointer-events-none" style={{ left: sparkle.x, top: sparkle.y }}><Sparkle onAnimationComplete={handleAnimationComplete} /></div> )}
+
     </>
   );
 }
