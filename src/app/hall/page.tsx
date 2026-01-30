@@ -245,8 +245,12 @@ export default function HallPage() {
                         <div 
                             key={portal.title} 
                             className="flex flex-col items-center gap-y-1 h-full max-h-[98%] justify-center relative z-10 group"
-                            onMouseEnter={() => setActivePortal(portal.title)}
-                            onMouseLeave={() => setActivePortal(null)}
+                            onMouseEnter={() => {
+                                if (window.innerWidth >= 768) setActivePortal(portal.title);
+                            }}
+                            onMouseLeave={() => {
+                                if (window.innerWidth >= 768) setActivePortal(null);
+                            }}
                             onClick={() => setActivePortal(portal.title)} // Mobile: Just set active, overlay handles rest
                         >
                             {/* Sign Image - Always visual, no fade out requested */}
@@ -257,18 +261,18 @@ export default function HallPage() {
                             {/* Portal Image / Button Container */}
                             <div className="relative w-full h-full flex-1 min-h-0 z-20 flex flex-col items-center justify-end">
                                 {/* Regular Image (Fades out only on DESKTOP hover) */}
-                                <div className={`relative w-full h-full transition-all duration-300 ${isActive ? 'md:opacity-0 md:scale-95 md:pointer-events-none' : 'opacity-100 scale-100'}`}>
+                                <div className={`relative w-full h-full transition-all duration-[2000ms] ${isActive ? 'md:opacity-0 md:scale-95 md:pointer-events-none' : 'opacity-100 scale-100'}`}>
                                     <Image 
                                         src={portal.imageSrc} 
                                         alt={`${portal.title} Portal`} 
                                         fill 
                                         style={{ objectFit: 'contain' }} 
-                                        className="transition-transform duration-300"
+                                        className="transition-transform duration-[2000ms]"
                                     />
                                 </div>
 
                                 {/* DESKTOP ONLY: Enlarged Image (In-Place) */}
-                                <div className={`hidden md:block absolute inset-0 w-full h-full transition-all duration-300 transform origin-bottom ${isActive ? 'opacity-100 scale-110 z-50' : 'opacity-0 scale-90 pointer-events-none'}`}>
+                                <div className={`hidden md:block absolute inset-0 w-full h-full transition-all duration-[2000ms] transform origin-bottom ${isActive ? 'opacity-100 scale-110 z-50' : 'opacity-0 scale-90 pointer-events-none'}`}>
                                      <Image 
                                         src={portal.enlargedImageSrc} 
                                         alt={`${portal.title} Enlarged`} 
@@ -279,7 +283,7 @@ export default function HallPage() {
                                 </div>
                                 
                                 {/* DESKTOP ONLY: Enter Button */}
-                                <div className={`hidden md:block absolute -bottom-4 z-[60] transition-all duration-300 ${isActive ? 'translate-y-0 opacity-100 pointer-events-auto' : 'translate-y-4 opacity-0 pointer-events-none'}`}>
+                                <div className={`hidden md:block absolute -bottom-4 z-[60] transition-all duration-[2000ms] ${isActive ? 'translate-y-0 opacity-100 pointer-events-auto' : 'translate-y-4 opacity-0 pointer-events-none'}`}>
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation(); 
@@ -305,15 +309,17 @@ export default function HallPage() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
+                    transition={{ duration: 2.0 }}
                     className="md:hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm px-4"
                     onClick={() => setActivePortal(null)}
                 >
-                    {/* Content Container - 60% Height */}
+                    {/* Content Container - 80% Height */}
                     <motion.div 
                         initial={{ scale: 0.9, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         exit={{ scale: 0.9, opacity: 0 }}
-                        className="relative w-full h-[60%] flex flex-col items-center justify-center"
+                        transition={{ duration: 2.0 }}
+                        className="relative w-full h-[80%] flex flex-col items-center justify-center"
                         onClick={() => setActivePortal(null)} // Click content to close (unless button clicked)
                     >
                          {/* Close Button */}
