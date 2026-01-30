@@ -229,9 +229,9 @@ export default function HallPage() {
              }}>
              
              {/* TOP: Subheader - Moved from Header */}
-             <div className="w-full text-center flex-none mb-1 md:mb-2 z-30">
-                 <p className="text-amber-300 text-center drop-shadow-[1px_1px_4px_rgba(0,0,0,0.8)] whitespace-nowrap overflow-hidden text-ellipsis w-full font-cinzel tracking-wide" 
-                    style={{ fontSize: 'clamp(0.8rem, 2vh, 1.2rem)' }}>
+             <div className="w-full text-center flex-none mb-0.5 md:mb-2 z-30 px-2">
+                 <p className="text-amber-300 text-center drop-shadow-[1px_1px_4px_rgba(0,0,0,0.8)] whitespace-normal md:whitespace-nowrap overflow-visible md:overflow-hidden text-ellipsis w-full font-cinzel tracking-wide leading-tight md:leading-normal" 
+                    style={{ fontSize: 'clamp(0.65rem, 1.8vh, 1.2rem)' }}>
                      Witchcraft Spells, Tarot, Psychic and Magick Training
                  </p>
              </div>
