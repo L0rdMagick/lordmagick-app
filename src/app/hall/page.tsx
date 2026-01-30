@@ -232,7 +232,7 @@ export default function HallPage() {
              <div className="w-full text-center flex-none mb-1 md:mb-2 z-30">
                  <p className="text-amber-300 text-center drop-shadow-[1px_1px_4px_rgba(0,0,0,0.8)] whitespace-nowrap overflow-hidden text-ellipsis w-full font-cinzel tracking-wide" 
                     style={{ fontSize: 'clamp(0.8rem, 2vh, 1.2rem)' }}>
-                     Witchcraft Portals to Digital Spells, AI Tarot, Psychic and Magick Training
+                     Witchcraft Spells, Tarot, Psychic and Magick Training
                  </p>
              </div>
             
