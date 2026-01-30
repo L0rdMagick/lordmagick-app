@@ -277,10 +277,10 @@ const MusicPlayer = () => {
                         <div className="p-4 bg-gradient-to-r from-stone-900 via-stone-950 to-stone-900 border-b border-amber-900/50 flex items-center justify-between relative overflow-hidden">
                             <div className="absolute inset-0 bg-amber-500/5 pointer-events-none" />
                             <div className="flex flex-col relative z-10 overflow-hidden">
-                                <h3 className="text-amber-500 font-medieval text-xl tracking-wide truncate pr-2 leading-none drop-shadow-md">
+                                <h3 className="text-amber-500 font-im-fell text-xl tracking-wide truncate pr-2 leading-none drop-shadow-md">
                                     {currentTrack.name}
                                 </h3>
-                                <span className="text-stone-500 font-cinzel text-xs uppercase tracking-[0.2em] mt-1">{currentTrack.category}</span>
+                                <span className="text-stone-500 font-im-fell text-xs uppercase tracking-[0.2em] mt-1">{currentTrack.category}</span>
                             </div>
                             <button 
                                 onClick={() => setIsExpanded(false)}
@@ -329,7 +329,7 @@ const MusicPlayer = () => {
                         <div className="px-3 py-3 flex flex-wrap gap-2 justify-center bg-stone-950/20">
                              <button
                                  onClick={() => setActiveCategory('All')}
-                                 className={`px-3 py-1 text-[10px] font-cinzel tracking-wider uppercase rounded border transition-all ${
+                                 className={`px-3 py-1 text-[10px] font-im-fell tracking-wider uppercase rounded border transition-all ${
                                      activeCategory === 'All' 
                                      ? 'bg-amber-900/20 border-amber-700 text-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.1)]' 
                                      : 'border-transparent text-stone-500 hover:text-stone-300 hover:border-stone-800'
@@ -341,7 +341,7 @@ const MusicPlayer = () => {
                                 <button
                                     key={cat}
                                     onClick={() => setActiveCategory(cat)}
-                                    className={`px-3 py-1 text-[10px] font-cinzel tracking-wider uppercase rounded border transition-all ${
+                                    className={`px-3 py-1 text-[10px] font-im-fell tracking-wider uppercase rounded border transition-all ${
                                         activeCategory === cat 
                                         ? 'bg-amber-900/20 border-amber-700 text-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.1)]' 
                                         : 'border-transparent text-stone-500 hover:text-stone-300 hover:border-stone-800'
@@ -368,7 +368,7 @@ const MusicPlayer = () => {
                                     >
                                         <div className="flex items-center gap-3 overflow-hidden">
                                             <div className={`w-1.5 h-1.5 rounded-full ${isCurrent ? 'bg-amber-500 shadow-[0_0_5px_rgba(245,158,11,0.8)]' : 'bg-stone-800 group-hover:bg-stone-600'}`} />
-                                            <span className={`truncate font-cinzel text-sm ${isCurrent ? 'text-amber-400' : 'text-stone-400'}`}>{track.name}</span>
+                                            <span className={`truncate font-im-fell text-sm ${isCurrent ? 'text-amber-400' : 'text-stone-400'}`}>{track.name}</span>
                                         </div>
                                         {isCurrent && isPlaying && (
                                             <span className="flex gap-[2px] items-end h-3 ml-2">

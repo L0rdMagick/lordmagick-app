@@ -1,6 +1,6 @@
 // --- START OF FILE src/app/layout.tsx ---
 import type { Metadata } from "next";
-import { Cinzel, MedievalSharp } from "next/font/google";
+import { Cinzel, MedievalSharp, IM_Fell_English_SC } from "next/font/google";
 import { ReactElement } from "react";
 import "./globals.css";
 import MusicPlayer from "./components/MusicPlayer";
@@ -21,6 +21,13 @@ const medieval = MedievalSharp({
   display: 'swap',
 });
 
+const imFell = IM_Fell_English_SC({
+  weight: "400",
+  subsets: ["latin"],
+  variable: '--font-im-fell',
+  display: 'swap',
+});
+
 export const metadata: Metadata = {
   title: "LordMagick.com",
   description: "Unlock Ancient Secrets. Master Your Craft.",
@@ -33,7 +40,7 @@ export default function RootLayout({
 }>): ReactElement {
   return (
     <html lang="en">
-      <body className={`${cinzel.variable} ${medieval.variable} font-sans bg-black text-white antialiased`}>
+      <body className={`${cinzel.variable} ${medieval.variable} ${imFell.variable} font-sans bg-black text-white antialiased`}>
         <NavMenuProvider>
           <MusicPlayerProvider>
             <MusicPlayer />

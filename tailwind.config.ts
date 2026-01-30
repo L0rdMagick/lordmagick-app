@@ -18,6 +18,7 @@ const config: Config = {
       fontFamily: {
         medieval: ['var(--font-medieval)'],
         cinzel: ['var(--font-cinzel)'],
+        'im-fell': ['var(--font-im-fell)'],
       },
     },
   },

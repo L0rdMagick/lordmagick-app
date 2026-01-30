@@ -203,14 +203,14 @@ export default function HallPage() {
                              
                              {/* Number & Plus */}
                              <div className="flex items-center gap-1.5 md:gap-2">
-                                <span className="text-sm md:text-2xl font-cinzel text-amber-100 font-bold leading-none param-font drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">{credits}</span>
+                                <span className="text-sm md:text-2xl font-im-fell text-amber-100 font-bold leading-none param-font drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">{credits}</span>
                                 <Link href="/store" className="flex items-center justify-center w-5 h-5 md:w-6 md:h-6 bg-amber-900/40 rounded-full border border-amber-600/50 hover:bg-amber-600 hover:text-white text-amber-400 transition-all transform hover:scale-110" title="Get More Faestones">
                                     <Plus size={12} className="md:w-[14px] md:h-[14px]" strokeWidth={3} />
                                 </Link>
                              </div>
 
                              {/* Label - Below on Mobile, Left on Desktop */}
-                             <span className="text-[0.5rem] md:text-xs text-amber-500 font-medieval tracking-widest leading-none drop-shadow-sm opacity-90 md:opacity-100 uppercase mt-0.5 md:mt-0 md:translate-y-0">Faestones</span>
+                             <span className="text-[0.5rem] md:text-xs text-amber-500 font-im-fell tracking-widest leading-none drop-shadow-sm opacity-90 md:opacity-100 uppercase mt-0.5 md:mt-0 md:translate-y-0">Faestones</span>
                         </div>
                     </div>
                 )}
@@ -230,7 +230,7 @@ export default function HallPage() {
              
              {/* TOP: Subheader - Moved from Header */}
              <div className="w-full text-center flex-none mb-1 md:mb-2 z-30">
-                 <p className="text-amber-300 text-center drop-shadow-[1px_1px_4px_rgba(0,0,0,0.8)] whitespace-nowrap overflow-hidden text-ellipsis w-full font-medieval tracking-wide" 
+                 <p className="text-amber-300 text-center drop-shadow-[1px_1px_4px_rgba(0,0,0,0.8)] whitespace-nowrap overflow-hidden text-ellipsis w-full font-cinzel tracking-wide" 
                     style={{ fontSize: 'clamp(0.8rem, 2vh, 1.2rem)' }}>
                      Witchcraft Portals to Digital Spells, AI Tarot, Psychic and Magick Training
                  </p>
