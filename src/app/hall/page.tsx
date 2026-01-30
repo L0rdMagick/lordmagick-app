@@ -251,7 +251,7 @@ export default function HallPage() {
                             onMouseLeave={() => {
                                 if (window.innerWidth >= 768) setActivePortal(null);
                             }}
-                            onClick={() => setActivePortal(portal.title)} // Mobile: Just set active, overlay handles rest
+                            onClick={() => setActivePortal(isActive ? null : portal.title)} // Toggle behavior handles both Mobile Open and Desktop/Hybrid Close
                         >
                             {/* Sign Image - Always visual, no fade out requested */}
                             <div className="relative w-full max-w-[160px] md:max-w-[200px] aspect-3/1 drop-shadow-[2px_4px_6px_rgba(0,0,0,0.6)] shrink-0 z-10 pointer-events-none">
@@ -273,6 +273,20 @@ export default function HallPage() {
 
                                 {/* DESKTOP ONLY: Enlarged Image (In-Place) */}
                                 <div className={`hidden md:block absolute inset-0 w-full h-full transition-all duration-[2000ms] transform origin-bottom ${isActive ? 'opacity-100 scale-110 z-50' : 'opacity-0 scale-90 pointer-events-none'}`}>
+                                     {/* Close Button for Hybrid/Tablet usage */}
+                                     <div className={`absolute -top-2 -right-4 z-[70] transition-opacity duration-300 ${isActive ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+                                         <button 
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setActivePortal(null);
+                                            }}
+                                            className="p-1.5 bg-amber-900/40 border border-amber-700/50 rounded-full text-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.1)] hover:bg-amber-800/60 hover:text-amber-300 transition-colors"
+                                            title="Close"
+                                        >
+                                            <X size={16} />
+                                        </button>
+                                     </div>
+
                                      <Image 
                                         src={portal.enlargedImageSrc} 
                                         alt={`${portal.title} Enlarged`} 
