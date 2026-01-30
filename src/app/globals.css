@@ -1,15 +1,36 @@
 @import "tailwindcss";
 
+@theme {
+  --font-chantal: var(--font-chantal); /* Fallback or existing? */
+  --font-medieval: var(--font-medieval);
+  --font-cinzel: var(--font-cinzel);
+  --font-im-fell: var(--font-im-fell);
+}
+
 /* Mist animations remain here */
 @keyframes flow-mist {
-  0% { background-position: 0% 50%; }
-  100% { background-position: 200% 50%; }
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
 }
 @keyframes flow-mist-crossfade {
-  0% { background-position: 0% 50%; opacity: 0; }
-  6% { opacity: 1; }
-  96% { opacity: 1; }
-  100% { background-position: 200% 50%; opacity: 0; }
+  0% {
+    background-position: 0% 50%;
+    opacity: 0;
+  }
+  6% {
+    opacity: 1;
+  }
+  96% {
+    opacity: 1;
+  }
+  100% {
+    background-position: 200% 50%;
+    opacity: 0;
+  }
 }
 
 /* Helper class for the soft top edge */
@@ -22,7 +43,16 @@
 .prose {
   font-size: var(--prose-font-size, 18px);
 }
-.prose p, .prose ul, .prose ol, .prose li, .prose h1, .prose h2, .prose h3, .prose h4, .prose strong, .prose em {
+.prose p,
+.prose ul,
+.prose ol,
+.prose li,
+.prose h1,
+.prose h2,
+.prose h3,
+.prose h4,
+.prose strong,
+.prose em {
   font-size: inherit !important;
   color: inherit !important;
 }
@@ -44,132 +74,166 @@
 }
 /* === END PENTAGRAM TRACING ANIMATION === */
 
-
 /* === BEGIN AI TAROT READER STYLES === */
-#vapiAudio { display: none; }
+#vapiAudio {
+  display: none;
+}
 
 .loading-container .loading-spinner {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 2147483646;
-    background-color: rgba(255, 255, 255, 0.9);
-    border-radius: 10px;
-    padding: 20px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2147483646;
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 .loading-container .loading-spinner:before {
-    content: '';
-    border: 8px solid #f3f3f3;
-    border-top: 8px solid #3498db;
-    border-radius: 50%;
-    width: 50px;
-    height: 50px;
-    animation: spin 1s linear infinite;
-    margin-right: 10px;
+  content: "";
+  border: 8px solid #f3f3f3;
+  border-top: 8px solid #3498db;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite;
+  margin-right: 10px;
 }
 @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 .loading-container .loading-spinner span {
-    font-family: Arial, sans-serif;
-    font-size: 18px;
-    color: #333;
-    font-weight: bold;
+  font-family: Arial, sans-serif;
+  font-size: 18px;
+  color: #333;
+  font-weight: bold;
 }
-.loading-container .hidden { display: none; }
+.loading-container .hidden {
+  display: none;
+}
 
 /* Vapi Button Styling */
 #vapi-support-btn {
-    position: fixed;
-    z-index: 100001 !important;
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    animation: wobble 3s infinite ease-in-out;
-    border-radius: 1rem;
-    overflow: hidden;
-    border: none !important;
-    background-color: transparent !important;
+  position: fixed;
+  z-index: 100001 !important;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  animation: wobble 3s infinite ease-in-out;
+  border-radius: 1rem;
+  overflow: hidden;
+  border: none !important;
+  background-color: transparent !important;
 }
 
-#vapi-support-btn > div { background-color: transparent !important; }
-#vapi-support-btn > div > svg { display: none !important; }
+#vapi-support-btn > div {
+  background-color: transparent !important;
+}
+#vapi-support-btn > div > svg {
+  display: none !important;
+}
 
 .vapi-overlay {
-    position: fixed;
-    z-index: 2147483645;
-    background-color: transparent;
-    border-radius: 1rem;
-    cursor: pointer;
-    animation: wobble 3s infinite ease-in-out;
+  position: fixed;
+  z-index: 2147483645;
+  background-color: transparent;
+  border-radius: 1rem;
+  cursor: pointer;
+  animation: wobble 3s infinite ease-in-out;
 }
 
 #vapi-title, #vapi-subtitle {
-    background-color: rgba(0, 0, 0, 0.6);
-    text-align: center;
-    color: white;
-    padding: 8px 12px;
-    border-radius: 10px;
+  background-color: rgba(0, 0, 0, 0.6);
+  text-align: center;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 10px;
 }
-#vapi-subtitle { font-size: 16px !important; margin-top: 5px; }
+#vapi-subtitle {
+  font-size: 16px !important;
+  margin-top: 5px;
+}
 #vapi-title-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    position: absolute;
-    bottom: 8%;
-    width: 90%;
-    left: 5%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  bottom: 8%;
+  width: 90%;
+  left: 5%;
 }
 
 #vapi-icon-container {
-    position: absolute !important;
-    bottom: 15px !important;
-    left: 15px !important;
-    width: 50px !important;
-    height: 50px !important;
-    background-color: rgba(0, 0, 0, 0.5) !important;
-    border-radius: 50% !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.3) !important;
-    padding: 8px !important;
-    box-sizing: border-box !important;
+  position: absolute !important;
+  bottom: 15px !important;
+  left: 15px !important;
+  width: 50px !important;
+  height: 50px !important;
+  background-color: rgba(0, 0, 0, 0.5) !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3) !important;
+  padding: 8px !important;
+  box-sizing: border-box !important;
 }
-#vapi-icon-container > img { width: 100% !important; height: 100% !important; object-fit: contain !important; }
+#vapi-icon-container > img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+}
 
 /* Card Styles */
 .card-container {
-    position: relative !important;
-    z-index: 1 !important;
-    cursor: pointer !important;
-    perspective: 1000px !important;
-    display: flex !important;
-    justify-content: center !important;
-    align-items: center !important;
-    box-sizing: border-box !important;
-    aspect-ratio: 2 / 3;
+  position: relative !important;
+  z-index: 1 !important;
+  cursor: pointer !important;
+  perspective: 1000px !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  box-sizing: border-box !important;
+  aspect-ratio: 2 / 3;
 }
 .card-image, .card-cover {
-    backface-visibility: hidden !important;
-    transition: transform 0.6s ease, opacity 0.6s ease, visibility 0.6s ease !important;
-    border-radius: 10px !important;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+  backface-visibility: hidden !important;
+  transition:
+    transform 0.6s ease,
+    opacity 0.6s ease,
+    visibility 0.6s ease !important;
+  border-radius: 10px !important;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
-.card-cover { position: absolute; opacity: 1; }
-.card-image { position: relative; opacity: 0; transform: rotateY(180deg); }
-.card-container.flipped .card-cover { transform: rotateY(-180deg); opacity: 0; }
-.card-container.flipped .card-image { transform: rotateY(0deg); opacity: 1; }
+.card-cover {
+  position: absolute;
+  opacity: 1;
+}
+.card-image {
+  position: relative;
+  opacity: 0;
+  transform: rotateY(180deg);
+}
+.card-container.flipped .card-cover {
+  transform: rotateY(-180deg);
+  opacity: 0;
+}
+.card-container.flipped .card-image {
+  transform: rotateY(0deg);
+  opacity: 1;
+}
 
 .card-enlarged-backdrop {
   position: fixed;
@@ -188,7 +252,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 1rem; 
+  padding: 1rem;
   width: 100%;
   height: 100%;
   box-sizing: border-box;
@@ -201,69 +265,80 @@
   width: auto;
   height: auto;
   border-radius: 15px;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.7);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7);
   object-fit: contain;
 }
 
 @keyframes wobble {
-    0%, 100% { transform: rotate(0deg); }
-    20% { transform: rotate(0.7deg); }
-    40% { transform: rotate(-0.7deg); }
-    60% { transform: rotate(0.5deg); }
-    80% { transform: rotate(-0.3deg); }
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  20% {
+    transform: rotate(0.7deg);
+  }
+  40% {
+    transform: rotate(-0.7deg);
+  }
+  60% {
+    transform: rotate(0.5deg);
+  }
+  80% {
+    transform: rotate(-0.3deg);
+  }
 }
 
 .modal {
-    display: none;
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 2147483647;
-    background-color: rgba(255, 255, 255, 0.95);
-    border-radius: 10px;
-    padding: 20px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-    width: 90%;
-    max-width: 500px;
+  display: none;
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2147483647;
+  background-color: rgba(255, 255, 255, 0.95);
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  width: 90%;
+  max-width: 500px;
 }
 .modal-content {
-    font-family: Arial, sans-serif;
-    font-size: 16px;
-    font-weight: bold;
-    color: #333;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
+  font-family: Arial, sans-serif;
+  font-size: 16px;
+  font-weight: bold;
+  color: #333;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
 }
 .modal-content button {
-    font-family: Arial, sans-serif;
-    font-size: 18px;
-    font-weight: bold;
-    margin-top: 15px;
-    padding: 10px 20px;
-    cursor: pointer;
-    border: none;
-    background-color: #3498db;
-    color: white;
-    border-radius: 5px;
-    transition: background-color 0.2s;
+  font-family: Arial, sans-serif;
+  font-size: 18px;
+  font-weight: bold;
+  margin-top: 15px;
+  padding: 10px 20px;
+  cursor: pointer;
+  border: none;
+  background-color: #3498db;
+  color: white;
+  border-radius: 5px;
+  transition: background-color 0.2s;
 }
-.modal-content button:hover { background-color: #2980b9; }
-
+.modal-content button:hover {
+  background-color: #2980b9;
+}
 
 /* === SITEWIDE POPUP PREVENTION (THE FIX) === */
 
 /* 1. Prevent long-press menu on images and links */
 img, a {
   -webkit-touch-callout: none !important; /* iOS Safari */
-  -webkit-user-select: none !important;   /* Safari */
-  -khtml-user-select: none !important;    /* Konqueror HTML */
-  -moz-user-select: none !important;      /* Old Firefox */
-  -ms-user-select: none !important;       /* Internet Explorer/Edge */
-  user-select: none !important;           /* Non-prefixed version */
-  -webkit-user-drag: none !important;     /* Prevent dragging ghost image */
+  -webkit-user-select: none !important; /* Safari */
+  -khtml-user-select: none !important; /* Konqueror HTML */
+  -moz-user-select: none !important; /* Old Firefox */
+  -ms-user-select: none !important; /* Internet Explorer/Edge */
+  user-select: none !important; /* Non-prefixed version */
+  -webkit-user-drag: none !important; /* Prevent dragging ghost image */
 }
 
 /* 2. Prevent text selection generally (can be overridden on specific inputs) */
@@ -277,64 +352,63 @@ body {
   user-select: none;
 }
 
-
 /* === RESPONSIVE LAYOUT === */
 
 @media only screen and (max-width: 767px) {
-    #vapi-support-btn, .vapi-overlay {
-        width: 350px !important;
-        height: 305px !important;
-        top: 6rem !important; 
-        left: 50% !important;
-        transform: translateX(-50%) !important;
-    }
-    .tarot-container {
-        position: fixed;
-        top: calc(305px + 6rem + 20px);
-        left: 20px;
-        right: 20px;
-        bottom: 20px;
-        overflow-y: auto;
-    }
-    .tarot-display {
-        display: grid !important;
-        grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
-        gap: 10px;
-        width: 100% !important;
-    }
+  #vapi-support-btn, .vapi-overlay {
+    width: 350px !important;
+    height: 305px !important;
+    top: 6rem !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+  }
+  .tarot-container {
+    position: fixed;
+    top: calc(305px + 6rem + 20px);
+    left: 20px;
+    right: 20px;
+    bottom: 20px;
+    overflow-y: auto;
+  }
+  .tarot-display {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+    gap: 10px;
+    width: 100% !important;
+  }
 }
 
 @media only screen and (min-width: 768px) {
-    #vapi-support-btn, .vapi-overlay {
-        width: 300px !important;
-        height: 400px !important;
-        top: 7rem !important;
-        left: 50px !important;
-    }
-    .tarot-container {
-        position: fixed;
-        top: 7rem !important;
-        left: calc(300px + 50px + 20px);
-        right: 20px;
-        bottom: 20px;
-        overflow-y: auto;
-    }
-    .tarot-display {
-        display: grid !important;
-        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-        gap: 15px;
-        width: 100% !important;
-    }
+  #vapi-support-btn, .vapi-overlay {
+    width: 300px !important;
+    height: 400px !important;
+    top: 7rem !important;
+    left: 50px !important;
+  }
+  .tarot-container {
+    position: fixed;
+    top: 7rem !important;
+    left: calc(300px + 50px + 20px);
+    right: 20px;
+    bottom: 20px;
+    overflow-y: auto;
+  }
+  .tarot-display {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 15px;
+    width: 100% !important;
+  }
 }
 
 @media only screen and (min-width: 1280px) {
-    #vapi-support-btn, .vapi-overlay {
-        height: 500px !important;
-        top: 7rem !important;
-        left: 150px !important;
-    }
-    .tarot-container {
-        top: 7rem !important;
-        left: calc(300px + 150px + 20px);
-    }
+  #vapi-support-btn, .vapi-overlay {
+    height: 500px !important;
+    top: 7rem !important;
+    left: 150px !important;
+  }
+  .tarot-container {
+    top: 7rem !important;
+    left: calc(300px + 150px + 20px);
+  }
 }
