@@ -19,7 +19,7 @@ const portals = [
     imageSrc: "/images/portal-spell.png",
     enlargedImageSrc: "/images/enlarged-portal-spell.png",
     signImageSrc: "/images/spell-room-sign.png",
-    glowClass: "group-hover:drop-shadow-[0_0_25px_rgba(168,85,247,0.6)]",
+    glowClass: "group-hover:drop-shadow-[0_0_25px_rgba(251,191,36,0.6)]",
     soundSrc: "/audio/sfx-spell-room-portal.mp3",
     isExternal: false,
   },
@@ -29,7 +29,7 @@ const portals = [
     imageSrc: "/images/portal-oracle.png",
     enlargedImageSrc: "/images/enlarged-portal-oracle.png",
     signImageSrc: "/images/oracle-room-sign.png",
-    glowClass: "group-hover:drop-shadow-[0_0_25px_rgba(34,211,238,0.6)]",
+    glowClass: "group-hover:drop-shadow-[0_0_25px_rgba(251,191,36,0.6)]",
     soundSrc: "/audio/sfx-oracle-room-portal.mp3",
     isExternal: false,
   },
@@ -39,7 +39,7 @@ const portals = [
     imageSrc: "/images/the-magick-psychic-school.png", 
     enlargedImageSrc: "/images/enlarged-portal-library.png",
     signImageSrc: "/images/the-magick-school-sign.png", 
-    glowClass: "group-hover:drop-shadow-[0_0_25px_rgba(251,146,60,0.6)]",
+    glowClass: "group-hover:drop-shadow-[0_0_25px_rgba(251,191,36,0.6)]",
     soundSrc: "/audio/sfx-library-portal.mp3",
     isExternal: false,
   },
@@ -49,7 +49,7 @@ const portals = [
     imageSrc: "/images/portal-tools.png",
     enlargedImageSrc: "/images/enlarged-portal-tools.png",
     signImageSrc: "/images/tools-sign.png",
-    glowClass: "group-hover:drop-shadow-[0_0_25px_rgba(74,222,128,0.6)]",
+    glowClass: "group-hover:drop-shadow-[0_0_25px_rgba(251,191,36,0.6)]",
     soundSrc: "/audio/sfx-marketplace-portal.mp3",
     isExternal: false,
   },
@@ -183,14 +183,14 @@ export default function HallPage() {
 
             {/* CENTER: Logo - Maximized & Centered */}
             <div className="flex items-center justify-center h-full w-full">
-                 <div className="relative w-full h-[90%] max-w-[800px]">
+                 <div className="relative w-full h-full">
                     <Image 
                         src="/images/logo-lordmagick.com.png" 
                         alt="LordMagick.com Logo" 
                         fill 
                         style={{ objectFit: 'contain' }} 
                         priority 
-                        className="drop-shadow-[2px_2px_8px_rgba(0,0,0,0.8)]"
+                        className="drop-shadow-[0_0_20px_rgba(255,255,255,0.4)]"
                     />
                  </div>
             </div>
