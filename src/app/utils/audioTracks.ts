@@ -136,6 +136,11 @@ export const AUDIO_TRACKS: AudioTrack[] = [
     url: "https://elxvzcgx7jcl2zqs.public.blob.vercel-storage.com/soft%20harp%20in%20a%20tavern.mp3",
     category: "Instrumental"
   },
+  {
+    name: "Calming Pan Pipe",
+    url: "/audio/bg-ritual-ambience.mp3",
+    category: "Instrumental"
+  },
 
   // Nature
   {

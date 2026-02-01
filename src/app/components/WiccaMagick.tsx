@@ -322,12 +322,12 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
     const [isSaved, setIsSaved] = useState(false);
     const [isReplayMode, setIsReplayMode] = useState(false);
 
-    // Ambience
-    useEffect(() => {
-        const ambience = playAudio('AMBIENCE');
-        ambience.play();
-        return () => ambience.stop();
-    }, []);
+    // Ambience - REMOVED per user request
+    // useEffect(() => {
+    //     const ambience = playAudio('AMBIENCE');
+    //     ambience.play();
+    //     return () => ambience.stop();
+    // }, []);
 
     // --- Autosave Recovery & Hydration ---
     // 1. Save State on Change
