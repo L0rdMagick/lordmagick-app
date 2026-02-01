@@ -131,13 +131,13 @@ export default function GrimoirePage() {
         audio.volume = 0.4;
         switch (type) {
             case 'page-turn':
-                audio.src = '/audio/page-turn.mp3';
+                audio.src = '/audio/sfx-parchment-open.mp3';
                 break;
             case 'book-open-close':
-                audio.src = '/audio/book-close-open.mp3';
+                audio.src = '/audio/sfx-stone-thud.mp3';
                 break;
             case 'select':
-                audio.src = '/audio/sfx-scribing.mp3'; // Recycling as requested if others missing
+                audio.src = '/audio/sfx-scribing.mp3';
                 break;
             case 'magic':
                 audio.src = '/audio/sfx-shimmer.mp3';
@@ -694,10 +694,16 @@ export default function GrimoirePage() {
         const currentCustomContent = customPages[detailPage];
 
         const handleDetailNext = () => {
-             if (detailPage < customPages.length - 1) setDetailPage(p => p + 1);
+             if (detailPage < customPages.length - 1) {
+                 playSound('page-turn');
+                 setDetailPage(p => p + 1);
+             }
         };
         const handleDetailPrev = () => {
-            if (detailPage > 0) setDetailPage(p => p - 1);
+            if (detailPage > 0) {
+                 playSound('page-turn');
+                 setDetailPage(p => p - 1);
+            }
         };
 
         return (
@@ -732,6 +738,29 @@ export default function GrimoirePage() {
                         fill 
                         className="object-cover rounded-sm" 
                     />
+
+                    {/* Navigation Arrows for Custom Spells - Absolute Centered */}
+                    {isCustom && (
+                        <>
+                             {/* Left Arrow */}
+                             <button 
+                                onClick={handleDetailPrev}
+                                disabled={detailPage === 0}
+                                className={`absolute left-[-20px] md:left-[-40px] top-1/2 -translate-y-1/2 z-50 p-2 text-[#8b4513] hover:text-[#d4af37] transition-all ${detailPage === 0 ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+                            >
+                                <ChevronLeft size={48} className="drop-shadow-lg" />
+                            </button>
+                            
+                             {/* Right Arrow */}
+                             <button 
+                                onClick={handleDetailNext}
+                                disabled={detailPage === customPages.length - 1}
+                                className={`absolute right-[-20px] md:right-[-40px] top-1/2 -translate-y-1/2 z-50 p-2 text-[#8b4513] hover:text-[#d4af37] transition-all ${detailPage === customPages.length - 1 ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+                            >
+                                <ChevronRight size={48} className="drop-shadow-lg" />
+                            </button>
+                        </>
+                    )}
                     
                     <div 
                         className="absolute flex flex-col items-center text-center z-10 overflow-hidden px-[5px]"
@@ -791,7 +820,9 @@ export default function GrimoirePage() {
                                 {/* Journal View */}
                                 {isJournal && (
                                     <>
-                                        <div className="text-[1.5vh] text-[#8b4513]/50 mb-2 italic">{ritualData.timestamp}</div>
+                                        <div className="text-[1.5vh] text-[#8b4513]/50 mb-2 italic">
+                                            {ritualData.day && ritualData.date ? `${ritualData.day}, ${ritualData.date}` : ritualData.timestamp}
+                                        </div>
                                         <h2 className="font-serif font-bold text-[2.5vh] mb-4 text-[#3e2c22] shrink-0 leading-tight" style={{ fontFamily: customization.fontFamily }}>{spell.name}</h2>
                                         <div className="font-handwriting text-[2vh] text-[#3e2c22] whitespace-pre-wrap text-left leading-relaxed">
                                             {ritualData.content}
@@ -801,7 +832,7 @@ export default function GrimoirePage() {
 
                                 {/* Custom Spell View (Paginated) */}
                                 {isCustom && currentCustomContent && (
-                                    <div className="flex flex-col h-full"> 
+                                    <div className="flex flex-col h-full animate-in fade-in slide-in-from-right-4 duration-300"> 
                                         {currentCustomContent.type === 'INTRO' && (
                                             <>
                                                 <h2 className="font-serif font-bold text-[2.5vh] mb-4 text-[#3e2c22] leading-tight" style={{ fontFamily: customization.fontFamily }}>{spell.name}</h2>
@@ -820,27 +851,9 @@ export default function GrimoirePage() {
                                                 </p>
                                              </div>
                                         )}
-
-                                        {/* Pagination Controls */}
-                                        <div className="mt-auto flex justify-between pt-4 border-t border-[#8b4513]/20">
-                                            <button 
-                                                onClick={handleDetailPrev} 
-                                                disabled={detailPage === 0}
-                                                className="text-[#8b4513] disabled:opacity-30"
-                                            >
-                                                <ChevronLeft />
-                                            </button>
-                                            <span className="text-xs text-[#8b4513]/50">Step {detailPage + 1} / {customPages.length}</span>
-                                            { detailPage < customPages.length - 1 ? (
-                                                <button 
-                                                    onClick={handleDetailNext}
-                                                    className="text-[#8b4513]"
-                                                >
-                                                    <ChevronRight />
-                                                </button>
-                                            ) : (
-                                                 <div className="w-6" /> // spacer
-                                            )}
+                                        
+                                         <div className="mt-auto text-xs text-[#8b4513]/40 text-center">
+                                            Page {detailPage + 1} of {customPages.length}
                                         </div>
                                     </div>
                                 )}

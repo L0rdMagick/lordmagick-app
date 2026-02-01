@@ -17,6 +17,8 @@ export default function JournalEntryEditor({ userId, onClose, onComplete }: Jour
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
     
+    const [dateStr, setDateStr] = useState(new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }));
+    
     // Audio Ref
     const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -47,9 +49,6 @@ export default function JournalEntryEditor({ userId, onClose, onComplete }: Jour
         if (!title || !content) return;
         setLoading(true);
         try {
-            const now = new Date();
-            const timestamp = now.toLocaleString();
-            
             const finalSpell = await saveSpell(
                 userId,
                 {
@@ -59,7 +58,7 @@ export default function JournalEntryEditor({ userId, onClose, onComplete }: Jour
                     ritual_data: {
                         type: 'JOURNAL', 
                         content: content,
-                        timestamp: timestamp
+                        timestamp: dateStr // User manual date
                     },
                     tradition: 'CUSTOM' as any // Use CUSTOM or add JOURNAL to types if strictly typed
                 },
@@ -98,9 +97,13 @@ export default function JournalEntryEditor({ userId, onClose, onComplete }: Jour
                             placeholder="Entry Title..."
                             className="w-full bg-transparent font-serif font-bold text-[2.2vh] text-[#3e2c22] placeholder:text-[#8b4513]/40 focus:outline-none"
                         />
-                         <div className="text-[1.2vh] text-[#8b4513]/60 italic font-serif mt-1">
-                            {new Date().toLocaleDateString()}
-                        </div>
+                         <input
+                            type="text"
+                            value={dateStr}
+                            onChange={(e) => setDateStr(e.target.value)}
+                            className="w-full bg-transparent text-[1.2vh] text-[#8b4513]/60 italic font-serif mt-1 focus:outline-none focus:text-[#8b4513]"
+                            placeholder="Date..."
+                        />
                     </div>
 
                     {/* Body */}

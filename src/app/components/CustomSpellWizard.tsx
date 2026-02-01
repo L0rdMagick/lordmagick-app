@@ -126,7 +126,7 @@ export default function CustomSpellWizard({ userId, onClose, onComplete }: Custo
                                 value={title}
                                 onChange={(e) => setTitle(e.target.value)}
                                 placeholder="Enter Spell Title..."
-                                className="w-full bg-transparent border-b-2 border-[#8b4513]/50 text-center text-[2.5vh] font-serif text-[#3e2c22] focus:outline-none focus:border-[#d4af37] placeholder:text-[#8b4513]/30"
+                                className="w-full bg-transparent border-b-2 border-[#8b4513]/50 text-left pl-2 text-[2.5vh] font-serif text-[#3e2c22] focus:outline-none focus:border-[#d4af37] placeholder:text-[#8b4513]/30"
                                 autoFocus
                             />
                             <button 
