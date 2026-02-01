@@ -536,3 +536,25 @@ export const deleteSpell = async (userId: string, spellId: string): Promise<bool
     }
     return true;
 };
+
+export const updateSpell = async (userId: string, spellId: string, updates: Partial<Spell> | any): Promise<Spell> => {
+    // Determine if we need to update top-level fields or ritual_data
+    // For simplicity, we assume updates contains the fields to update directly on 'spells' table
+    // or we construct the update object here. 
+    
+    // Check if ritual_data needs merging? simpler to just overwrite usually.
+
+    const { data, error } = await supabase
+        .from('spells')
+        .update(updates)
+        .eq('id', spellId)
+        .eq('user_id', userId)
+        .select()
+        .single();
+
+    if (error) {
+        console.error("Error updating spell:", error);
+        throw new Error("Could not update the Grimoire entry.");
+    }
+    return data as Spell;
+};

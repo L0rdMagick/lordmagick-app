@@ -14,6 +14,32 @@ interface CustomSpellWizardProps {
 
 type WizardStep = 'TITLE' | 'PURPOSE' | 'INGREDIENTS' | 'INSTRUCTIONS' | 'PREVIEW';
 
+// Moved outside to prevent re-renders losing focus
+const Wrapper = ({ 
+    children, 
+    title, 
+    onBack, 
+    isFirstStep 
+}: { 
+    children: React.ReactNode, 
+    title: string, 
+    onBack: () => void, 
+    isFirstStep: boolean 
+}) => (
+    <div className="flex flex-col h-full w-full p-6 text-center text-[#3e2c22]">
+        <h2 className="text-[3vh] font-serif font-bold mb-6 text-[#5c4033]" style={{ fontFamily: 'Cinzel' }}>{title}</h2>
+        <div className="flex-1 flex flex-col items-center justify-center w-full">
+            {children}
+        </div>
+        
+        <div className="mt-auto pt-4 flex justify-between w-full border-t border-[#8b4513]/20">
+            <button onClick={onBack} className="text-[#8b4513] hover:text-black font-serif underline text-sm z-50 relative pointer-events-auto">
+                {isFirstStep ? 'Cancel' : 'Back'}
+            </button>
+        </div>
+    </div>
+);
+
 export default function CustomSpellWizard({ userId, onClose, onComplete }: CustomSpellWizardProps) {
     const [step, setStep] = useState<WizardStep>('TITLE');
     const [loading, setLoading] = useState(false);
@@ -87,21 +113,9 @@ export default function CustomSpellWizard({ userId, onClose, onComplete }: Custo
 
     // --- RENDERERS ---
 
-    const Wrapper = ({ children, title: stepTitle }: { children: React.ReactNode, title: string }) => (
-        <div className="flex flex-col h-full w-full p-6 text-center text-[#3e2c22]">
-            <h2 className="text-[3vh] font-serif font-bold mb-6 text-[#5c4033]" style={{ fontFamily: 'Cinzel' }}>{stepTitle}</h2>
-            <div className="flex-1 flex flex-col items-center justify-center w-full">
-                {children}
-            </div>
-            
-            <div className="mt-auto pt-4 flex justify-between w-full border-t border-[#8b4513]/20">
-                <button onClick={step === 'TITLE' ? onClose : handleBack} className="text-[#8b4513] hover:text-black font-serif underline text-sm">
-                    {step === 'TITLE' ? 'Cancel' : 'Back'}
-                </button>
-                {/* Next button rendered conditionally in children if special logic needed */}
-            </div>
-        </div>
-    );
+    // Removed inner Wrapper logic
+    // const Wrapper = ...
+    // ... replaced by external definition
 
     return (
         <div className="flex items-center justify-center h-full w-full animate-in fade-in duration-500">
@@ -120,7 +134,7 @@ export default function CustomSpellWizard({ userId, onClose, onComplete }: Custo
                     className="absolute inset-0 flex flex-col pt-[20%] pb-[15%] px-[15%]"
                 >
                     {step === 'TITLE' && (
-                        <Wrapper title="Name Your Spell">
+                        <Wrapper title="Name Your Spell" onBack={onClose} isFirstStep={true}>
                              <input 
                                 type="text"
                                 value={title}
@@ -132,7 +146,7 @@ export default function CustomSpellWizard({ userId, onClose, onComplete }: Custo
                             <button 
                                 onClick={handleNext}
                                 disabled={!title}
-                                className="mt-8 px-8 py-2 bg-[#8b4513] text-[#f4e4bc] rounded font-serif uppercase hover:bg-[#5c4033] disabled:opacity-50 transition-colors"
+                                className="mt-8 px-8 py-2 bg-[#8b4513] text-[#f4e4bc] rounded font-serif uppercase hover:bg-[#5c4033] disabled:opacity-50 transition-colors pointer-events-auto relative z-10"
                             >
                                 Next
                             </button>
@@ -140,7 +154,7 @@ export default function CustomSpellWizard({ userId, onClose, onComplete }: Custo
                     )}
 
                     {step === 'PURPOSE' && (
-                        <Wrapper title="Spell Purpose">
+                         <Wrapper title="Spell Purpose" onBack={handleBack} isFirstStep={false}>
                             <textarea
                                 value={purpose}
                                 onChange={(e) => setPurpose(e.target.value)}
@@ -151,7 +165,7 @@ export default function CustomSpellWizard({ userId, onClose, onComplete }: Custo
                              <button 
                                 onClick={handleNext}
                                 disabled={!purpose}
-                                className="mt-8 px-8 py-2 bg-[#8b4513] text-[#f4e4bc] rounded font-serif uppercase hover:bg-[#5c4033] disabled:opacity-50 transition-colors"
+                                className="mt-8 px-8 py-2 bg-[#8b4513] text-[#f4e4bc] rounded font-serif uppercase hover:bg-[#5c4033] disabled:opacity-50 transition-colors pointer-events-auto relative z-10"
                             >
                                 Next
                             </button>
@@ -159,7 +173,7 @@ export default function CustomSpellWizard({ userId, onClose, onComplete }: Custo
                     )}
 
                     {step === 'INGREDIENTS' && (
-                         <Wrapper title="Ingredients">
+                          <Wrapper title="Ingredients" onBack={handleBack} isFirstStep={false}>
                             <textarea
                                 value={ingredients}
                                 onChange={(e) => setIngredients(e.target.value)}
@@ -169,7 +183,7 @@ export default function CustomSpellWizard({ userId, onClose, onComplete }: Custo
                             />
                              <button 
                                 onClick={handleNext}
-                                className="mt-8 px-8 py-2 bg-[#8b4513] text-[#f4e4bc] rounded font-serif uppercase hover:bg-[#5c4033] transition-colors"
+                                className="mt-8 px-8 py-2 bg-[#8b4513] text-[#f4e4bc] rounded font-serif uppercase hover:bg-[#5c4033] transition-colors pointer-events-auto relative z-10"
                             >
                                 Next
                             </button>
@@ -177,7 +191,7 @@ export default function CustomSpellWizard({ userId, onClose, onComplete }: Custo
                     )}
 
                     {step === 'INSTRUCTIONS' && (
-                        <Wrapper title={`Step ${instructions.length + 1}`}>
+                         <Wrapper title={`Step ${instructions.length + 1}`} onBack={handleBack} isFirstStep={false}>
                              <div className="w-full flex-1 flex flex-col gap-4">
                                 <div className="text-left text-sm text-[#8b4513]/60 italic mb-2">
                                     Captured Steps: {instructions.length}
@@ -193,13 +207,13 @@ export default function CustomSpellWizard({ userId, onClose, onComplete }: Custo
                                     <button 
                                         onClick={addInstruction}
                                         disabled={!currentInstruction.trim()}
-                                        className="flex-1 py-2 border border-[#8b4513] text-[#8b4513] hover:bg-[#8b4513]/10 rounded flex items-center justify-center gap-2"
+                                        className="flex-1 py-2 border border-[#8b4513] text-[#8b4513] hover:bg-[#8b4513]/10 rounded flex items-center justify-center gap-2 pointer-events-auto"
                                     >
                                         <Plus size={16} /> Add Step
                                     </button>
                                      <button 
                                         onClick={finishInstructions}
-                                        className="flex-1 py-2 bg-[#8b4513] text-[#f4e4bc] hover:bg-[#5c4033] rounded"
+                                        className="flex-1 py-2 bg-[#8b4513] text-[#f4e4bc] hover:bg-[#5c4033] rounded pointer-events-auto"
                                     >
                                         Finish
                                     </button>

@@ -115,6 +115,7 @@ export default function GrimoirePage() {
     const [pageOffset, setPageOffset] = useState(0); // 0-indexed page within a section
     
     const [selectedSpell, setSelectedSpell] = useState<{ spell: Spell, image: string } | null>(null);
+    const [editingSpell, setEditingSpell] = useState<Spell | null>(null);
     const [transitioning, setTransitioning] = useState(false); // For fade effects
 
     const [supabase] = useState(() => createBrowserClient(
@@ -198,7 +199,14 @@ export default function GrimoirePage() {
     };
 
     const handleSpellCreated = (newSpell: Spell) => {
-        setSpells(prev => [newSpell, ...prev]);
+        setSpells(prev => {
+            const exists = prev.find(s => s.id === newSpell.id);
+            if (exists) {
+                return prev.map(s => s.id === newSpell.id ? newSpell : s);
+            }
+            return [newSpell, ...prev];
+        });
+        setEditingSpell(null);
         setViewMode('TOC'); // Go back to TOC to see it
     };
 
@@ -568,6 +576,10 @@ export default function GrimoirePage() {
                         const cardTitleSize = isLongTitle
                              ? "text-[1.5vh] md:text-[1.8vh]" 
                              : "text-[1.8vh] md:text-[2.2vh]";
+                        
+                        // Safe parsing for ritual data
+                        const ritualData = spell && (typeof spell.ritual_data === 'string' ? JSON.parse(spell.ritual_data) : (spell.ritual_data || {}));
+                        const isJournal = spell && (spell.tradition === 'CUSTOM' as any && ritualData.type === 'JOURNAL');
 
                         return (
                             <div key={idx} className="relative w-full h-full flex items-center justify-center overflow-hidden">
@@ -599,7 +611,14 @@ export default function GrimoirePage() {
                                                 }}
                                             >
                                                 {/* Text scale reduced and clamped according to length */}
-                                                <div className="w-full h-full flex items-center justify-center">
+                                                <div className="w-full h-full flex flex-col items-center justify-center">
+                                                    {/* Date for Journal Entries */}
+                                                    {isJournal && ritualData.timestamp && (
+                                                         <div className="text-[1.2vh] text-[#8b4513]/60 italic font-serif mb-1">
+                                                            {ritualData.timestamp}
+                                                        </div>
+                                                    )}
+                                                    
                                                     <h3 
                                                         className={`font-serif font-bold ${cardTitleSize} leading-tight text-[#3e2c22] drop-shadow-sm text-balance line-clamp-4`}
                                                         style={{ fontFamily: customization.fontFamily }}
@@ -823,7 +842,20 @@ export default function GrimoirePage() {
                                         <div className="text-[1.5vh] text-[#8b4513]/50 mb-2 italic">
                                             {ritualData.day && ritualData.date ? `${ritualData.day}, ${ritualData.date}` : ritualData.timestamp}
                                         </div>
-                                        <h2 className="font-serif font-bold text-[2.5vh] mb-4 text-[#3e2c22] shrink-0 leading-tight" style={{ fontFamily: customization.fontFamily }}>{spell.name}</h2>
+                                        <div className="flex justify-between items-start w-full">
+                                            <h2 className="font-serif font-bold text-[2.5vh] mb-4 text-[#3e2c22] shrink-0 leading-tight" style={{ fontFamily: customization.fontFamily }}>{spell.name}</h2>
+                                            <button 
+                                                onClick={() => {
+                                                    setEditingSpell(spell);
+                                                    onClose(); // Close modal
+                                                    setViewMode('CREATE_JOURNAL');
+                                                }}
+                                                className="text-[#8b4513] hover:text-[#d4af37] p-2 transition-colors"
+                                                title="Edit Entry"
+                                            >
+                                                <PenTool size={16} />
+                                            </button>
+                                        </div>
                                         <div className="font-handwriting text-[2vh] text-[#3e2c22] whitespace-pre-wrap text-left leading-relaxed">
                                             {ritualData.content}
                                         </div>
@@ -897,11 +929,13 @@ export default function GrimoirePage() {
                         {viewMode === 'THE_END' && renderTheEnd()}
 
                         {viewMode === 'CUSTOMIZER' && (
-                             <GrimoireCustomizer 
-                                current={customization} 
-                                onSave={handleCustomizationSave} 
-                                onClose={() => setViewMode('COVER')} 
-                            />
+                            <div className="fixed inset-0 z-50 pointer-events-auto"> 
+                                <GrimoireCustomizer 
+                                    current={customization} 
+                                    onSave={handleCustomizationSave} 
+                                    onClose={() => setViewMode('COVER')} 
+                                />
+                            </div>
                         )}
 
                         {viewMode === 'CREATE_SPELL' && currentUserId && (
@@ -921,8 +955,12 @@ export default function GrimoirePage() {
                                 <div className="h-[95vh] w-auto aspect-[1529/2048]">
                                     <JournalEntryEditor 
                                         userId={currentUserId}
-                                        onClose={() => setViewMode('TOC')}
+                                        onClose={() => {
+                                            setEditingSpell(null);
+                                            setViewMode('TOC');
+                                        }}
                                         onComplete={handleSpellCreated}
+                                        initialData={editingSpell || undefined}
                                     />
                                 </div>
                             </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef } from 'react';
-import { saveSpell } from '@/lib/services/geminiService';
+import { saveSpell, updateSpell } from '@/lib/services/geminiService';
 import { Spell } from '@/lib/types';
 import Image from 'next/image';
 import { Save } from 'lucide-react';
@@ -10,14 +10,32 @@ interface JournalEntryEditorProps {
     userId: string;
     onClose: () => void;
     onComplete: (spell: Spell) => void;
+    initialData?: Spell;
 }
 
-export default function JournalEntryEditor({ userId, onClose, onComplete }: JournalEntryEditorProps) {
+export default function JournalEntryEditor({ userId, onClose, onComplete, initialData }: JournalEntryEditorProps) {
     const [loading, setLoading] = useState(false);
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
     
-    const [dateStr, setDateStr] = useState(new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }));
+    // Initialize date from existing data or current date
+    const [dateStr, setDateStr] = useState(() => {
+        if (initialData?.ritual_data) {
+             const data = typeof initialData.ritual_data === 'string' ? JSON.parse(initialData.ritual_data) : initialData.ritual_data;
+             return data.timestamp || new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        }
+        return new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    });
+
+    // Load initial data
+    React.useEffect(() => {
+        if (initialData) {
+            setTitle(initialData.name);
+            const data = typeof initialData.ritual_data === 'string' ? JSON.parse(initialData.ritual_data) : initialData.ritual_data;
+            setContent(data.content || '');
+            if (data.timestamp) setDateStr(data.timestamp);
+        }
+    }, [initialData]);
     
     // Audio Ref
     const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -49,22 +67,40 @@ export default function JournalEntryEditor({ userId, onClose, onComplete }: Jour
         if (!title || !content) return;
         setLoading(true);
         try {
-            const finalSpell = await saveSpell(
-                userId,
-                {
-                    name: title,
-                    intention: "Journal Entry",
-                    incantation: "", 
-                    ritual_data: {
-                        type: 'JOURNAL', 
-                        content: content,
-                        timestamp: dateStr // User manual date
+            if (initialData?.id) {
+                // Update Existing
+                 const updatedSpell = await updateSpell(
+                    userId,
+                    initialData.id,
+                    {
+                        name: title,
+                        ritual_data: {
+                            type: 'JOURNAL',
+                            content: content,
+                            timestamp: dateStr
+                        }
+                    }
+                );
+                onComplete(updatedSpell);
+            } else {
+                // Create New
+                const finalSpell = await saveSpell(
+                    userId,
+                    {
+                        name: title,
+                        intention: "Journal Entry",
+                        incantation: "", 
+                        ritual_data: {
+                            type: 'JOURNAL', 
+                            content: content,
+                            timestamp: dateStr // User manual date
+                        },
+                        tradition: 'CUSTOM' as any 
                     },
-                    tradition: 'CUSTOM' as any // Use CUSTOM or add JOURNAL to types if strictly typed
-                },
-                true 
-            );
-            onComplete(finalSpell);
+                    true 
+                );
+                onComplete(finalSpell);
+            }
         } catch (e) {
             console.error("Failed to save journal entry", e);
             alert("Failed to save your thoughts.");
