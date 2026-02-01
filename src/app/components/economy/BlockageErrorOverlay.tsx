@@ -24,18 +24,7 @@ export const BlockageErrorOverlay = ({
     const pathname = usePathname();
     const searchParams = useSearchParams();
 
-    const handleGoToStore = () => {
-        if (typeof window !== 'undefined') {
-            sessionStorage.setItem('PENDING_PURCHASE', 'true');
-        }
-        
-        // Construct return URL
-        const currentQuery = searchParams.toString();
-        const returnUrl = currentQuery ? `${pathname}?${currentQuery}` : pathname;
-        const encodedRedirect = encodeURIComponent(returnUrl);
-        
-        router.push(`/store?redirect=${encodedRedirect}`);
-    };
+
 
     // ... (inside component)
     const [mounted, setMounted] = React.useState(false);

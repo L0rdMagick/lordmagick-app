@@ -121,8 +121,10 @@ const jsonLd = {
 
 export default function RootLayout({
   children,
+  modal
 }: Readonly<{
   children: React.ReactNode;
+  modal: React.ReactNode;
 }>): ReactElement {
   return (
     <html lang="en">
@@ -131,6 +133,7 @@ export default function RootLayout({
           <MusicPlayerProvider>
             <MusicPlayer />
             {children}
+            {modal}
             <RoomsMenu />
           </MusicPlayerProvider>
         </NavMenuProvider>

@@ -102,7 +102,7 @@ const FaestonePile = ({ count }: { count: number }) => {
     return null;
 };
 
-function StoreContent() {
+export function StoreContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const haptics = useHaptics();
