@@ -526,6 +526,18 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
         }, LS_AUTOSAVE_KEY);
     };
 
+    const handleCastAnother = () => {
+        playAudio('THUD').play();
+        localStorage.removeItem(LS_AUTOSAVE_KEY);
+        window.location.reload();
+    };
+
+    const handleExit = () => {
+        playAudio('THUD').play();
+        localStorage.removeItem(LS_AUTOSAVE_KEY);
+        router.push('/spell-room');
+    };
+
     const getCurrentIncantation = () => {
         if (!generatedSpell) return "";
         // Use generated spell props primarily; fallback only if missing (which shouldn't happen in valid AI/Replay states)
@@ -582,7 +594,7 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
             case 8: return <Step8_Cone spell={generatedSpell!} onNext={nextStep} />;
             case 9: return <Step9_Sending onNext={nextStep} />;
             case 10: return <Step10_Closing onComplete={nextStep} />;
-            case 11: return <Step11_Result spell={generatedSpell!} onSave={handleSave} isSaving={isSaving} isSaved={isSaved} onReset={() => { playAudio('THUD').play(); window.location.reload(); }} />;
+            case 11: return <Step11_Result spell={generatedSpell!} onSave={handleSave} isSaving={isSaving} isSaved={isSaved} onCastAnother={handleCastAnother} onExit={handleExit} />;
             default: return null;
         }
     };
@@ -1491,7 +1503,7 @@ const Step10_Closing = ({ onComplete }: { onComplete: () => void }) => {
     );
 };
 
-const Step11_Result = ({ spell, onSave, isSaving, isSaved, onReset, saveCost = 5 }: any) => (
+const Step11_Result = ({ spell, onSave, isSaving, isSaved, onCastAnother, onExit, saveCost = 5 }: any) => (
     <div className="flex flex-col items-center justify-center h-full gap-6 text-center max-w-lg mx-auto animate-in fade-in zoom-in duration-700 relative min-h-0">
         <div className="relative z-10 bg-black/40 p-6 rounded-xl backdrop-blur-md border border-purple-500/30 shadow-[0_0_30px_rgba(0,0,0,0.5)]">
             <BookOpen size={48} className="text-amber-200 mb-2 drop-shadow-[0_0_15px_gold] mx-auto" />
@@ -1500,10 +1512,11 @@ const Step11_Result = ({ spell, onSave, isSaving, isSaved, onReset, saveCost = 5
         </div>
 
         <div className="flex flex-col gap-2 w-full px-8 relative z-10 pb-4">
-            <button onClick={onSave} disabled={isSaved || isSaving} className="w-full py-3 bg-indigo-900/80 border border-indigo-500 rounded-lg text-indigo-100 flex items-center justify-center gap-3 hover:bg-indigo-800 transition-colors font-serif text-base backdrop-blur-sm disabled:opacity-50">
+            <button onClick={onSave} disabled={isSaved || isSaving} className="w-full py-3 bg-indigo-900/80 border border-indigo-500 rounded-lg text-indigo-100 flex items-center justify-center gap-3 hover:bg-indigo-800 transition-colors font-serif text-base backdrop-blur-sm disabled:opacity-50 cursor-pointer">
                 {isSaving ? "Scribing..." : (isSaved ? <><Check /> Recorded in Grimoire</> : <><Save /> Save to Grimoire ({saveCost} <div className="w-4 h-4 relative inline-block"><Image src="/images/faestones.png" alt="Faestones" layout="fill" objectFit="contain" /></div>)</>)}
             </button>
-            <button onClick={onReset} className="w-full py-3 bg-gray-800/60 border border-gray-600 rounded-lg text-gray-300 hover:bg-gray-700 transition-colors font-serif backdrop-blur-sm text-sm">Return to Altar</button>
+            <button onClick={onCastAnother} className="w-full py-3 bg-gray-800/60 border border-gray-600 rounded-lg text-gray-300 hover:bg-gray-700 transition-colors font-serif backdrop-blur-sm text-sm cursor-pointer">Cast Another Spell</button>
+            <button onClick={onExit} className="w-full py-3 bg-red-900/30 border border-red-900/50 rounded-lg text-red-300 hover:bg-red-900/50 transition-colors font-serif backdrop-blur-sm text-xs cursor-pointer">Return to Spell Room</button>
         </div>
     </div>
 );
