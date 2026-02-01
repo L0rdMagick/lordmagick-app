@@ -150,11 +150,21 @@ export function StoreContent() {
             const audio = new Audio('/audio/sfx-chaos-activate.mp3');
             audio.volume = 0.5;
             audio.play().catch(() => {});
-            
-            // Clear URL params
-            router.replace('/store');
         }
-    }, [searchParams, haptics, router]);
+    }, [searchParams, haptics]);
+
+    const handleExit = () => {
+        setShowSuccess(false);
+        localStorage.removeItem('aether_return_path');
+        router.replace(activeReturnPath || '/store');
+    };
+
+    useEffect(() => {
+        if (showSuccess) {
+            const timer = setTimeout(handleExit, 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [showSuccess, activeReturnPath, router]);
 
     const handlePurchase = async (pkgId: string) => {
         setLoadingId(pkgId);
@@ -303,18 +313,7 @@ export function StoreContent() {
                                 Your Faestones have been replenished. The cosmos awaits your command.
                             </p>
                             <button 
-                                onClick={() => {
-                                    setShowSuccess(false);
-                                    // Cleanup backup just in case
-                                    localStorage.removeItem('aether_return_path');
-                                    
-                                    if (activeReturnPath) {
-                                        router.replace(activeReturnPath);
-                                    } else {
-                                        // Default behavior
-                                        router.replace('/store'); // Clears success param
-                                    }
-                                }}
+                                onClick={handleExit}
                                 className="w-full py-3 bg-amber-600 hover:bg-amber-500 text-black font-bold uppercase tracking-widest text-xs rounded transition-colors"
                             >
                                 {activeReturnPath ? "Return to Ritual" : "Return to Hall"}
