@@ -174,7 +174,7 @@ export function StoreContent() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
                     packageId: pkgId,
-                    returnPath: redirectParam // Pass it forward!
+                    returnPath: activeReturnPath // Pass it forward!
                 })
             });
 
