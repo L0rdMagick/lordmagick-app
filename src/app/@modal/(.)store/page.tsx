@@ -1,9 +1,10 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 import { StoreContent } from "../../store/page";
+import LoadingSpinner from "../../components/LoadingSpinner";
 
 export default function InterceptedStore() {
     const router = useRouter();
@@ -48,7 +49,9 @@ export default function InterceptedStore() {
                    it might try to force full height. We'll let it fill our container.
                 */}
                 <div className="w-full h-full overflow-y-auto">
-                    <StoreContent />
+                    <Suspense fallback={<div className="h-full flex items-center justify-center"><LoadingSpinner /></div>}>
+                        <StoreContent />
+                    </Suspense>
                 </div>
             </div>
         </div>
