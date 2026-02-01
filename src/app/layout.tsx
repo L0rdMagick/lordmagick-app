@@ -1,6 +1,6 @@
 // --- START OF FILE src/app/layout.tsx ---
 import type { Metadata } from "next";
-import { Cinzel, MedievalSharp, IM_Fell_English_SC } from "next/font/google";
+import { Cinzel, MedievalSharp, IM_Fell_English_SC, Playfair_Display, EB_Garamond, UnifrakturMaguntia } from "next/font/google";
 import { ReactElement } from "react";
 import "./globals.css";
 import MusicPlayer from "./components/MusicPlayer";
@@ -26,6 +26,25 @@ const imFell = IM_Fell_English_SC({
   subsets: ["latin"],
   variable: '--font-im-fell',
   display: 'swap',
+});
+
+const playfair = Playfair_Display({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-playfair',
+});
+
+const ebGaramond = EB_Garamond({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-eb-garamond',
+});
+
+const unifraktur = UnifrakturMaguntia({
+  weight: "400",
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-unifraktur',
 });
 
 export const metadata: Metadata = {
@@ -128,7 +147,7 @@ export default function RootLayout({
 }>): ReactElement {
   return (
     <html lang="en">
-      <body className={`${cinzel.variable} ${medieval.variable} ${imFell.variable} font-sans bg-black text-white antialiased`}>
+      <body className={`${cinzel.variable} ${medieval.variable} ${imFell.variable} ${playfair.variable} ${ebGaramond.variable} ${unifraktur.variable} font-sans bg-black text-white antialiased`}>
         <NavMenuProvider>
           <MusicPlayerProvider>
             <MusicPlayer />

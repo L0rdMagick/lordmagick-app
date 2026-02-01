@@ -1,18 +1,21 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
-import { getSpells, deleteSpell } from '@/lib/services/geminiService';
+import { saveSpell, getSpells, deleteSpell } from '@/lib/services/geminiService';
 import type { Spell } from '@/lib/types';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
 import RoomsButton from '@/app/components/RoomsButton';
 import LoadingSpinner from '@/app/components/LoadingSpinner';
-import { Calendar, X, RotateCcw, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
+import GrimoireCustomizer, { GrimoireCustomization } from '@/app/components/GrimoireCustomizer';
+import CustomSpellWizard from '@/app/components/CustomSpellWizard';
+import JournalEntryEditor from '@/app/components/JournalEntryEditor';
+import { Calendar, X, RotateCcw, ChevronLeft, ChevronRight, Trash2, Settings, PenTool, BookOpen } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 
 // --- TYPES ---
-type ViewMode = 'COVER' | 'TOC' | 'SECTION';
+type ViewMode = 'COVER' | 'TOC' | 'SECTION' | 'THE_END' | 'CUSTOMIZER' | 'CREATE_SPELL' | 'CREATE_JOURNAL';
 
 interface SpellSection {
     id: string; // unique key, e.g., 'electric-magick'
@@ -26,10 +29,14 @@ interface SpellMetadata {
     replayUrl: string | null;
 }
 
-// --- ASSETS & RANDOMIZATION ---
-
-
-
+const DEFAULT_CUSTOMIZATION: GrimoireCustomization = {
+    coverImage: '/images/grimoire-images/grimoire-cover.png',
+    coverTitle: 'Book of Magick',
+    pageStyle: '/images/grimoire-images/grimoire-page.png',
+    fontFamily: 'Cinzel',
+    cardStyle: 'default',
+    detailPageStyle: 'default'
+};
 
 // --- HELPER LOGIC ---
 const getSpellMetadata = (spell: Spell): SpellMetadata => {
@@ -48,7 +55,15 @@ const getSpellMetadata = (spell: Spell): SpellMetadata => {
         : (spell.ritual_data || {});
 
     // 1. Explicit Tradition/Tag Checks
-    if (spell.tradition === 'HOODOO' || spell.tradition === 'VOODOO' || nameLower.includes('hoodoo')) {
+    if (spell.tradition === 'CUSTOM' as any || ritualData.type === 'CUSTOM') {
+        sectionId = 'custom-spells';
+        sectionTitle = 'My Custom Spells';
+        replayUrl = null; // Custom spells open in modal details
+    } else if (spell.tradition === 'CUSTOM' as any || ritualData.type === 'JOURNAL') { // Using 'CUSTOM' as tradition placeholder for journal too if needed, but better separable
+        sectionId = 'journal-entries';
+        sectionTitle = 'Journal Entries';
+        replayUrl = null;
+    } else if (spell.tradition === 'HOODOO' || spell.tradition === 'VOODOO' || nameLower.includes('hoodoo')) {
         sectionId = 'hoodoo-rootwork';
         sectionTitle = 'Hoodoo Rootwork';
         replayUrl = `/spell-room/hoodoo-rootwork-spells-app?loadId=${spell.id}`;
@@ -92,6 +107,7 @@ export default function GrimoirePage() {
     const [spells, setSpells] = useState<Spell[]>([]);
     const [loading, setLoading] = useState(true);
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+    const [customization, setCustomization] = useState<GrimoireCustomization>(DEFAULT_CUSTOMIZATION);
     
     // Manifestation Book State
     const [viewMode, setViewMode] = useState<ViewMode>('COVER');
@@ -99,17 +115,48 @@ export default function GrimoirePage() {
     const [pageOffset, setPageOffset] = useState(0); // 0-indexed page within a section
     
     const [selectedSpell, setSelectedSpell] = useState<{ spell: Spell, image: string } | null>(null);
+    const [transitioning, setTransitioning] = useState(false); // For fade effects
 
     const [supabase] = useState(() => createBrowserClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     ));
 
+    // Audio Refs
+    const audioContextRef = useRef<AudioContext | null>(null);
+
+    // Helper: Play Sound
+    const playSound = (type: 'page-turn' | 'book-open-close' | 'select' | 'magic') => {
+        const audio = new Audio();
+        audio.volume = 0.4;
+        switch (type) {
+            case 'page-turn':
+                audio.src = '/audio/page-turn.mp3';
+                break;
+            case 'book-open-close':
+                audio.src = '/audio/book-close-open.mp3';
+                break;
+            case 'select':
+                audio.src = '/audio/sfx-scribing.mp3'; // Recycling as requested if others missing
+                break;
+            case 'magic':
+                audio.src = '/audio/sfx-shimmer.mp3';
+                break;
+        }
+        audio.play().catch(e => console.log("Audio play prevented", e));
+    };
+
     // Load Data
     useEffect(() => {
         const load = async () => {
             console.log("Grimoire: Starting loading process...");
             try {
+                // Load Customization
+                const savedCustomization = localStorage.getItem('grimoire_customization');
+                if (savedCustomization) {
+                    setCustomization(JSON.parse(savedCustomization));
+                }
+
                 const { data: { user }, error: authError } = await supabase.auth.getUser();
                 
                 if (authError) {
@@ -145,19 +192,46 @@ export default function GrimoirePage() {
         }
     };
 
+    const handleCustomizationSave = (newSettings: GrimoireCustomization) => {
+        setCustomization(newSettings);
+        localStorage.setItem('grimoire_customization', JSON.stringify(newSettings));
+    };
+
+    const handleSpellCreated = (newSpell: Spell) => {
+        setSpells(prev => [newSpell, ...prev]);
+        setViewMode('TOC'); // Go back to TOC to see it
+    };
+
     // Derived Data: Sections
     const sections = useMemo(() => {
         const map = new Map<string, SpellSection>();
         
         spells.forEach(spell => {
             const { sectionId, sectionTitle } = getSpellMetadata(spell);
-            if (!map.has(sectionId)) {
-                map.set(sectionId, { id: sectionId, title: sectionTitle, spells: [] });
+            // Consolidated journal logic (in case tradition varies)
+            const isJournal = sectionId === 'journal-entries' || spell.name === 'Journal Entry';
+            const finalSectionId = isJournal ? 'journal-entries' : sectionId;
+            const finalSectionTitle = isJournal ? 'Journal Entries' : sectionTitle;
+
+            if (!map.has(finalSectionId)) {
+                map.set(finalSectionId, { id: finalSectionId, title: finalSectionTitle, spells: [] });
             }
-            map.get(sectionId)!.spells.push(spell);
+            map.get(finalSectionId)!.spells.push(spell);
         });
 
-        return Array.from(map.values()).sort((a, b) => a.title.localeCompare(b.title));
+        // Sort: Custom Spells last in list before Journal? User asked for Custom Spells last in index list.
+        // Let's sort alphabetically first, then force Custom/Journal to end.
+        let sorted = Array.from(map.values()).sort((a, b) => a.title.localeCompare(b.title));
+        
+        const custom = sorted.find(s => s.id === 'custom-spells');
+        const journal = sorted.find(s => s.id === 'journal-entries');
+        
+        sorted = sorted.filter(s => s.id !== 'custom-spells' && s.id !== 'journal-entries');
+        
+        if (custom) sorted.push(custom);
+        if (journal) sorted.push(journal);
+
+        return sorted;
     }, [spells]);
 
     const activeSection = sections.find(s => s.id === activeSectionId);
@@ -175,63 +249,116 @@ export default function GrimoirePage() {
 
     // --- NAVIGATION HANDLERS ---
     
+    const triggerTransition = (nextStateFn: () => void) => {
+        setTransitioning(true);
+        playSound('page-turn');
+        setTimeout(() => {
+            nextStateFn();
+            // Start fade in
+            setTimeout(() => {
+                setTransitioning(false);
+            }, 100); 
+        }, 1000); // 1s fade out
+    };
+
+    // Special Transition for Book Open/Close
+    const triggerBookAction = (opening: boolean, nextStateFn: () => void) => {
+        setTransitioning(true);
+        playSound('book-open-close');
+        setTimeout(() => {
+            nextStateFn();
+            setTimeout(() => {
+                setTransitioning(false);
+            }, 100);
+        }, 1000);
+    };
+
     const handleNext = () => {
+        if (transitioning) return;
+
         if (viewMode === 'COVER') {
-            setViewMode('TOC');
+            triggerBookAction(true, () => setViewMode('TOC'));
         } else if (viewMode === 'TOC') {
-            if (sections.length > 0) {
-                setActiveSectionId(sections[0].id);
-                setPageOffset(0);
-                setViewMode('SECTION');
+             if (sections.length > 0) {
+                triggerTransition(() => {
+                    setActiveSectionId(sections[0].id);
+                    setPageOffset(0);
+                    setViewMode('SECTION');
+                });
+            } else {
+                 triggerTransition(() => setViewMode('THE_END'));
             }
         } else if (viewMode === 'SECTION') {
             // Check if more pages in this section
             if (currentPage < totalPages) {
-                setPageOffset(prev => prev + 1);
+                 triggerTransition(() => setPageOffset(prev => prev + 1));
             } else {
                 // Determine next section
                 const currentIndex = sections.findIndex(s => s.id === activeSectionId);
                 if (currentIndex >= 0 && currentIndex < sections.length - 1) {
-                    setActiveSectionId(sections[currentIndex + 1].id);
-                    setPageOffset(0);
+                    triggerTransition(() => {
+                        setActiveSectionId(sections[currentIndex + 1].id);
+                        setPageOffset(0);
+                    });
                 } else {
-                    setViewMode('TOC');
-                    setActiveSectionId(null);
+                    // Start of 'The End' Logic
+                    triggerTransition(() => setViewMode('THE_END'));
                 }
             }
+        } else if (viewMode === 'THE_END') {
+             triggerBookAction(false, () => setViewMode('COVER'));
         }
     };
 
     const handlePrev = () => {
+        if (transitioning) return;
         if (viewMode === 'COVER') return;
+        
         if (viewMode === 'TOC') {
-            setViewMode('COVER');
+            triggerBookAction(false, () => setViewMode('COVER'));
         } else if (viewMode === 'SECTION') {
             if (pageOffset > 0) {
-                setPageOffset(prev => prev - 1);
+                 triggerTransition(() => setPageOffset(prev => prev - 1));
             } else {
                 // Go to previous section's last page
                 const currentIndex = sections.findIndex(s => s.id === activeSectionId);
                 if (currentIndex > 0) {
-                    const prevSection = sections[currentIndex - 1];
-                    setActiveSectionId(prevSection.id);
-                    const prevPages = Math.ceil(prevSection.spells.length / itemsPerPage);
-                    setPageOffset(Math.max(0, prevPages - 1));
+                     triggerTransition(() => {
+                        const prevSection = sections[currentIndex - 1];
+                        setActiveSectionId(prevSection.id);
+                        const prevPages = Math.ceil(prevSection.spells.length / itemsPerPage);
+                        setPageOffset(Math.max(0, prevPages - 1));
+                     });
                 } else {
-                    setViewMode('TOC');
-                    setActiveSectionId(null);
+                     triggerTransition(() => {
+                        setViewMode('TOC');
+                        setActiveSectionId(null);
+                     });
                 }
+            }
+        } else if (viewMode === 'THE_END') {
+            // Go back to last page of last section
+            if (sections.length > 0) {
+                 triggerTransition(() => {
+                    const lastSection = sections[sections.length - 1];
+                    setActiveSectionId(lastSection.id);
+                    const lastPages = Math.ceil(lastSection.spells.length / itemsPerPage);
+                    setPageOffset(Math.max(0, lastPages - 1));
+                    setViewMode('SECTION');
+                 });
+            } else {
+                 triggerTransition(() => setViewMode('TOC'));
             }
         }
     };
 
     const jumpToSection = (sectionId: string) => {
-        setActiveSectionId(sectionId);
-        setPageOffset(0);
-        setViewMode('SECTION');
+        triggerTransition(() => {
+            setActiveSectionId(sectionId);
+            setPageOffset(0);
+            setViewMode('SECTION');
+        });
     };
-
-    // --- RENDERERS ---
 
     // --- RENDERERS ---
 
@@ -252,9 +379,9 @@ export default function GrimoirePage() {
 
     const renderCover = () => (
         <div className="flex items-center justify-center h-full w-full">
-            <div className="relative h-full w-auto aspect-[1529/2048] shadow-2xl animate-in fade-in duration-700 max-w-full">
+            <div className={`relative h-full w-auto aspect-[1529/2048] shadow-2xl max-w-full transition-opacity duration-1000 ${transitioning ? 'opacity-0' : 'opacity-100'}`}>
                 <Image 
-                    src="/images/grimoire-images/grimoire-cover.png" 
+                    src={customization.coverImage}
                     alt="Grimoire Cover" 
                     fill 
                     className="object-fill"
@@ -272,27 +399,41 @@ export default function GrimoirePage() {
                         height: '57.00%',
                     }}
                 >
-                    <h1 className="text-[5vh] lg:text-[6vh] leading-tight font-serif text-[#d4af37] tracking-wider mb-[4vh] drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]" style={{ fontFamily: 'Cinzel, serif' }}>
-                        Book of<br/>Magick
+                    <h1 
+                        className="text-[5vh] lg:text-[6vh] leading-tight text-[#d4af37] tracking-wider mb-[4vh] drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]" 
+                        style={{ fontFamily: `${customization.fontFamily}, serif` }}
+                    >
+                        {customization.coverTitle.split(' ').map((word, i) => (
+                           <span key={i} className="block">{word}</span>
+                        ))}
                     </h1>
-                    <button 
-                        onClick={() => setViewMode('TOC')}
-                        className="px-6 py-[1.5vh] bg-black/60 border border-[#d4af37] text-[#d4af37] text-[2vh] font-serif uppercase tracking-widest hover:bg-[#d4af37] hover:text-black transition-all duration-300 backdrop-blur-sm whitespace-nowrap"
+                     <button 
+                        onClick={() => triggerBookAction(true, () => setViewMode('TOC'))}
+                        className="px-6 py-[1.5vh] bg-black/60 border border-[#d4af37] text-[#d4af37] text-[2vh] font-serif uppercase tracking-widest hover:bg-[#d4af37] hover:text-black transition-all duration-300 backdrop-blur-sm whitespace-nowrap mb-4"
+                        style={{ fontFamily: customization.fontFamily }}
                     >
                         Open Book
                     </button>
+
+                    {/* Customization Trigger */}
+                    <button 
+                         onClick={() => setViewMode('CUSTOMIZER')}
+                         className="flex items-center gap-2 text-[#d4af37]/60 hover:text-[#d4af37] transition-colors text-xs font-serif uppercase tracking-widest"
+                    >
+                        <Settings size={14} /> Customize
+                    </button>
+                    
                 </div>
             </div>
         </div>
     );
 
     const renderBookPage = (content: React.ReactNode) => {
-        // Hooks removed from here to prevent violation
         return (
             <div className="flex items-center justify-center h-full w-full">
-                <div className="relative h-full w-auto aspect-[1529/2048] shadow-2xl animate-in zoom-in-95 duration-500 max-w-full">
+                <div className={`relative h-full w-auto aspect-[1529/2048] shadow-2xl max-w-full transition-opacity duration-1000 ${transitioning ? 'opacity-0' : 'opacity-100'}`}>
                     <Image 
-                        src="/images/grimoire-images/grimoire-page.png" 
+                        src={customization.pageStyle} 
                         alt="Grimoire Page" 
                         fill 
                         className="object-fill"
@@ -305,16 +446,14 @@ export default function GrimoirePage() {
 
                     {/* Navigation - Ornate & Smaller */}
                     {/* Left Arrow (Prev) */}
-                    {viewMode !== 'COVER' && (
-                        <button 
-                            onClick={handlePrev}
-                            className="absolute left-[2%] top-1/2 -translate-y-1/2 z-20 group transition-all duration-300 focus:outline-none"
-                        >
-                            <div className="p-2 rounded-full border-2 border-[#8b4513]/60 bg-[#1a120b]/80 text-[#8b4513] group-hover:text-[#d4af37] group-hover:border-[#d4af37] group-hover:bg-black/90 group-hover:shadow-[0_0_15px_rgba(212,175,55,0.4)] transition-all backdrop-blur-[2px]">
-                                <ChevronLeft size={24} className="md:w-6 md:h-6" strokeWidth={2} />
-                            </div>
-                        </button>
-                    )}
+                    <button 
+                        onClick={handlePrev}
+                        className="absolute left-[2%] top-1/2 -translate-y-1/2 z-20 group transition-all duration-300 focus:outline-none"
+                    >
+                        <div className="p-2 rounded-full border-2 border-[#8b4513]/60 bg-[#1a120b]/80 text-[#8b4513] group-hover:text-[#d4af37] group-hover:border-[#d4af37] group-hover:bg-black/90 group-hover:shadow-[0_0_15px_rgba(212,175,55,0.4)] transition-all backdrop-blur-[2px]">
+                            <ChevronLeft size={24} className="md:w-6 md:h-6" strokeWidth={2} />
+                        </div>
+                    </button>
                     
                     {/* Right Arrow (Next) */}
                     <button 
@@ -335,7 +474,7 @@ export default function GrimoirePage() {
             {/* Header Zone */}
             <div className="absolute flex flex-col justify-center items-center text-center z-10" style={HEADER_ZONE}>
                  <header className="border-b-2 border-[#8b4513]/30 pb-2 w-full">
-                    <h2 className="text-[3vh] font-serif text-[#5c4033] mb-1" style={{ fontFamily: 'Cinzel, serif' }}>Table of Contents</h2>
+                    <h2 className="text-[3vh] font-serif text-[#5c4033] mb-1" style={{ fontFamily: customization.fontFamily }}>Table of Contents</h2>
                     <div className="text-[1.5vh] italic font-serif text-[#8b4513]/60">Index of Workings</div>
                 </header>
             </div>
@@ -343,6 +482,24 @@ export default function GrimoirePage() {
             {/* Body Zone */}
             <div className="absolute z-10 overflow-hidden" style={BODY_ZONE}>
                 <div className="flex flex-col h-full text-[#3e2c22] p-2">
+                     {/* Creation Buttons */}
+                     <div className="flex gap-2 mb-4 shrink-0">
+                        <button 
+                            onClick={() => setViewMode('CREATE_SPELL')} 
+                            className="flex-1 py-2 border border-[#8b4513]/40 bg-[#8b4513]/5 hover:bg-[#8b4513]/10 text-[#5c4033] rounded flex flex-col items-center justify-center gap-1 transition-all"
+                        >
+                            <PenTool size={16} />
+                            <span className="text-[1.2vh] uppercase font-bold tracking-wider">Write Spell</span>
+                        </button>
+                        <button 
+                            onClick={() => setViewMode('CREATE_JOURNAL')} 
+                            className="flex-1 py-2 border border-[#8b4513]/40 bg-[#8b4513]/5 hover:bg-[#8b4513]/10 text-[#5c4033] rounded flex flex-col items-center justify-center gap-1 transition-all"
+                        >
+                            <BookOpen size={16} />
+                            <span className="text-[1.2vh] uppercase font-bold tracking-wider">Journal Entry</span>
+                        </button>
+                    </div>
+
                     <div className="flex-grow overflow-y-auto custom-scrollbar pr-2 space-y-2">
                         {sections.length === 0 ? (
                             <div className="text-center italic opacity-50 mt-10">The Grimoire is empty.</div>
@@ -353,7 +510,7 @@ export default function GrimoirePage() {
                                     onClick={() => jumpToSection(section.id)}
                                     className="w-full group flex items-center justify-between p-2 border-b border-[#8b4513]/10 hover:bg-[#8b4513]/5 transition-colors text-left"
                                 >
-                                    <span className="font-serif text-[2vh] group-hover:pl-2 transition-all font-bold text-[#5c4033]">
+                                    <span className="font-serif text-[2vh] group-hover:pl-2 transition-all font-bold text-[#5c4033]" style={{ fontFamily: customization.fontFamily }}>
                                         {section.title}
                                     </span>
                                     <span className="font-mono text-sm text-[#8b4513]/50">
@@ -376,7 +533,7 @@ export default function GrimoirePage() {
                 <div className="flex flex-col items-start justify-start pr-2 h-full overflow-hidden">
                     <h2 
                         className={`w-full ${activeSection?.title && activeSection.title.length > 25 ? 'text-[1.6vh]' : 'text-[2vh]'} leading-[1.1] font-serif text-[#5c4033] mb-1 text-left break-words line-clamp-3`} 
-                        style={{ fontFamily: 'Cinzel, serif' }}
+                        style={{ fontFamily: customization.fontFamily }}
                     >
                         {activeSection?.title}
                     </h2>
@@ -388,7 +545,7 @@ export default function GrimoirePage() {
                  {/* Return Button (25% Width Strict) */}
                 <div className="flex items-start justify-end pl-1 h-full pt-1">
                     <button 
-                        onClick={() => setViewMode('TOC')} 
+                        onClick={() => triggerBookAction(false, () => setViewMode('TOC'))} 
                         className="text-[1.6vh] font-serif font-bold text-[#3e2c22] underline decoration-[#8b4513]/40 underline-offset-4 hover:text-[#8b4513] transition-colors text-right leading-tight"
                     >
                         Return to Index
@@ -416,7 +573,10 @@ export default function GrimoirePage() {
                             <div key={idx} className="relative w-full h-full flex items-center justify-center overflow-hidden">
                                 {spell ? (
                                     <button 
-                                        onClick={() => setSelectedSpell({ spell, image: cardImage })}
+                                        onClick={() => {
+                                            playSound('select');
+                                            setSelectedSpell({ spell, image: cardImage });
+                                        }}
                                         className="relative h-full w-auto aspect-square hover:scale-[1.02] transition-transform duration-300 transform-gpu"
                                     >
                                         <div className="relative w-full h-full">
@@ -440,7 +600,10 @@ export default function GrimoirePage() {
                                             >
                                                 {/* Text scale reduced and clamped according to length */}
                                                 <div className="w-full h-full flex items-center justify-center">
-                                                    <h3 className={`font-serif font-bold ${cardTitleSize} leading-tight text-[#3e2c22] drop-shadow-sm text-balance line-clamp-4`}>
+                                                    <h3 
+                                                        className={`font-serif font-bold ${cardTitleSize} leading-tight text-[#3e2c22] drop-shadow-sm text-balance line-clamp-4`}
+                                                        style={{ fontFamily: customization.fontFamily }}
+                                                    >
                                                         {spell.name}
                                                     </h3>
                                                 </div>
@@ -458,27 +621,94 @@ export default function GrimoirePage() {
         </>
     );
 
+    const renderTheEnd = () => (
+        <div className="flex items-center justify-center h-full w-full">
+             <div className={`relative h-full w-auto aspect-[1529/2048] shadow-2xl max-w-full transition-opacity duration-1000 ${transitioning ? 'opacity-0' : 'opacity-100'}`}>
+                {/* Clean Page for The End */}
+                <Image 
+                    src={customization.pageStyle} 
+                    alt="The End" 
+                    fill 
+                    className="object-fill"
+                    priority
+                />
+                 {/* Navigation - Ornate & Smaller */}
+                 {/* Left Arrow (Prev) */}
+                 <button 
+                    onClick={handlePrev}
+                    className="absolute left-[2%] top-1/2 -translate-y-1/2 z-20 group transition-all duration-300 focus:outline-none"
+                >
+                    <div className="p-2 rounded-full border-2 border-[#8b4513]/60 bg-[#1a120b]/80 text-[#8b4513] group-hover:text-[#d4af37] group-hover:border-[#d4af37] group-hover:bg-black/90 group-hover:shadow-[0_0_15px_rgba(212,175,55,0.4)] transition-all backdrop-blur-[2px]">
+                        <ChevronLeft size={24} className="md:w-6 md:h-6" strokeWidth={2} />
+                    </div>
+                </button>
+                
+                {/* Right Arrow (Next) */}
+                <button 
+                    onClick={handleNext}
+                    className="absolute right-[2%] top-1/2 -translate-y-1/2 z-20 group transition-all duration-300 focus:outline-none"
+                >
+                    <div className="p-2 rounded-full border-2 border-[#8b4513]/60 bg-[#1a120b]/80 text-[#8b4513] group-hover:text-[#d4af37] group-hover:border-[#d4af37] group-hover:bg-black/90 group-hover:shadow-[0_0_15px_rgba(212,175,55,0.4)] transition-all backdrop-blur-[2px]">
+                        <ChevronRight size={24} className="md:w-6 md:h-6" strokeWidth={2} />
+                    </div>
+                </button>
+
+                <div 
+                    className="absolute inset-0 flex items-center justify-center flex-col z-10"
+                >
+                    <h1 
+                        className="text-[8vh] text-[#3e2c22] drop-shadow-sm text-center leading-none" 
+                        style={{ fontFamily: '"IM Fell English SC", serif' }}
+                    >
+                        The End
+                    </h1>
+                     <div className="mt-4 opacity-60">
+                         <MagickalBackLink href="/hall" text="Return to Hall" />
+                     </div>
+                </div>
+            </div>
+        </div>
+    );
+
     // --- ENLARGED CARD MODAL ---
     const SpellDetailModal = ({ data, onClose, onDelete }: { data: { spell: Spell, image: string }, onClose: () => void, onDelete: (id: string) => void }) => {
         const { spell, image } = data;
         const { replayUrl } = getSpellMetadata(spell);
         const [showConfirm, setShowConfirm] = useState(false);
 
+        // Parse ritual data for Custom Spells / Journals
+        const ritualData = typeof spell.ritual_data === 'string' ? JSON.parse(spell.ritual_data) : (spell.ritual_data || {});
+        // Logic to show wizard-like pages for Custom Spells
+        const [detailPage, setDetailPage] = useState(0); 
+        
+        // Is it custom with multiple pages?
+        const isCustom = spell.tradition === 'CUSTOM' as any || ritualData.type === 'CUSTOM';
+        const isJournal = spell.tradition === 'CUSTOM' as any && ritualData.type === 'JOURNAL';
+
+        const customPages = isCustom && ritualData.instructions ? [
+            { type: 'INTRO', content: { purpose: spell.intention, ingredients: ritualData.ingredients } },
+            ...ritualData.instructions.map((inst: string, i: number) => ({ type: 'STEP', step: i + 1, content: inst })),
+        ] : [];
+
+        // Determine view based on page
+        const currentCustomContent = customPages[detailPage];
+
+        const handleDetailNext = () => {
+             if (detailPage < customPages.length - 1) setDetailPage(p => p + 1);
+        };
+        const handleDetailPrev = () => {
+            if (detailPage > 0) setDetailPage(p => p - 1);
+        };
+
         return (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-300">
-                {/* 
-                    Constraint: Dimensions match CUSTOM IMAGE (947/1681)
-                    Sizing: Fit both 90vw (mobile) and 85vh (desktop) constraints while keeping aspect ratio.
-                    This ensures the DIV exactly matches the size of the rendered image.
-                */}
                 <div 
                     className="relative shadow-2xl"
                     style={{
                         aspectRatio: '947/1681',
-                        width: 'min(90vw, 85vh * 0.5633)' // 947/1681 approx 0.5633
+                        width: 'min(90vw, 85vh * 0.5633)'
                     }}
                 >
-                    {/* Close Button Outside or Corner */}
                     {!showConfirm && (
                         <>
                             <button 
@@ -487,7 +717,6 @@ export default function GrimoirePage() {
                             >
                                 <X size={32} />
                             </button>
-                             {/* Delete Button - Top Left - Matching Style */}
                              <button 
                                 onClick={() => setShowConfirm(true)}
                                 className="absolute -top-12 -left-4 md:-left-12 z-50 p-2 text-white/50 hover:text-red-400 transition-colors"
@@ -497,7 +726,6 @@ export default function GrimoirePage() {
                         </>
                     )}
                     
-                    {/* Background Card Image - CUSTOM */}
                     <Image 
                         src="/images/grimoire-images/detailed-spell-info.png"
                         alt={spell.name} 
@@ -505,7 +733,6 @@ export default function GrimoirePage() {
                         className="object-cover rounded-sm" 
                     />
                     
-                    {/* Content Area - Adjusted to fit strictly inside the parchment graphic */}
                     <div 
                         className="absolute flex flex-col items-center text-center z-10 overflow-hidden px-[5px]"
                         style={{
@@ -537,32 +764,86 @@ export default function GrimoirePage() {
                                 </div>
                             </div>
                          ) : (
-                            <div className="w-full h-full flex flex-col overflow-y-auto custom-scrollbar scrollbar-thin scrollbar-thumb-[#5c4033]/50 p-2">
-                                {/* Scaled Text for Detail View */}
-                                <h2 className="font-serif font-bold text-[2.5vh] mb-4 text-[#3e2c22] shrink-0 leading-tight">{spell.name}</h2>
-                                
-                                {/* Intention - Using Medieval font now per user request for "esoteric" body */}
-                                <p className="font-medieval italic text-[2vh] text-[#5c4033] mb-6 whitespace-pre-wrap shrink-0 leading-snug">
-                                    "{spell.intention}"
-                                </p>
-                                
-                                {spell.incantation && (
-                                    <div className="font-medieval text-[1.8vh] text-[#8b4513] mb-6 text-center w-full border-t border-[#8b4513]/20 pt-4 shrink-0 font-medium leading-normal">
-                                        {spell.incantation}
-                                    </div>
+                            <div className="w-full h-full flex flex-col overflow-y-auto custom-scrollbar scrollbar-thin scrollbar-thumb-[#5c4033]/50 p-2 relative">
+                                {/* Regular Spell View */}
+                                {!isCustom && !isJournal && (
+                                    <>
+                                        <h2 className="font-serif font-bold text-[2.5vh] mb-4 text-[#3e2c22] shrink-0 leading-tight" style={{ fontFamily: customization.fontFamily }}>{spell.name}</h2>
+                                        <p className="font-medieval italic text-[2vh] text-[#5c4033] mb-6 whitespace-pre-wrap shrink-0 leading-snug">"{spell.intention}"</p>
+                                        {spell.incantation && (
+                                            <div className="font-medieval text-[1.8vh] text-[#8b4513] mb-6 text-center w-full border-t border-[#8b4513]/20 pt-4 shrink-0 font-medium leading-normal">
+                                                {spell.incantation}
+                                            </div>
+                                        )}
+                                        <div className="mt-auto pt-2 w-full shrink-0 sticky bottom-0 bg-transparent pb-1">
+                                            {replayUrl && (
+                                                <Link 
+                                                    href={replayUrl}
+                                                    className="block w-full py-[1.5vh] bg-[#5c4033] text-[#d4af37] border border-[#d4af37]/30 font-serif uppercase tracking-widest text-[1.2vh] rounded hover:bg-[#3e2c22] transition-colors shadow-lg"
+                                                >
+                                                    Open Ritual
+                                                </Link>
+                                            )}
+                                        </div>
+                                    </>
                                 )}
 
-                                {/* Push button to bottom */}
-                                <div className="mt-auto pt-2 w-full shrink-0 sticky bottom-0 bg-transparent pb-1">
-                                    {replayUrl && (
-                                        <Link 
-                                            href={replayUrl}
-                                            className="block w-full py-[1.5vh] bg-[#5c4033] text-[#d4af37] border border-[#d4af37]/30 font-serif uppercase tracking-widest text-[1.2vh] rounded hover:bg-[#3e2c22] transition-colors shadow-lg"
-                                        >
-                                            Open Ritual
-                                        </Link>
-                                    )}
-                                </div>
+                                {/* Journal View */}
+                                {isJournal && (
+                                    <>
+                                        <div className="text-[1.5vh] text-[#8b4513]/50 mb-2 italic">{ritualData.timestamp}</div>
+                                        <h2 className="font-serif font-bold text-[2.5vh] mb-4 text-[#3e2c22] shrink-0 leading-tight" style={{ fontFamily: customization.fontFamily }}>{spell.name}</h2>
+                                        <div className="font-handwriting text-[2vh] text-[#3e2c22] whitespace-pre-wrap text-left leading-relaxed">
+                                            {ritualData.content}
+                                        </div>
+                                    </>
+                                )}
+
+                                {/* Custom Spell View (Paginated) */}
+                                {isCustom && currentCustomContent && (
+                                    <div className="flex flex-col h-full"> 
+                                        {currentCustomContent.type === 'INTRO' && (
+                                            <>
+                                                <h2 className="font-serif font-bold text-[2.5vh] mb-4 text-[#3e2c22] leading-tight" style={{ fontFamily: customization.fontFamily }}>{spell.name}</h2>
+                                                <h3 className="text-[1.5vh] text-[#8b4513] uppercase font-bold mb-2">Purpose</h3>
+                                                <p className="italic text-[1.8vh] text-[#5c4033] mb-4">"{currentCustomContent.content.purpose}"</p>
+                                                
+                                                <h3 className="text-[1.5vh] text-[#8b4513] uppercase font-bold mb-2">Ingredients</h3>
+                                                <p className="text-[1.8vh] text-[#5c4033] whitespace-pre-wrap">{currentCustomContent.content.ingredients}</p>
+                                            </>
+                                        )}
+                                        {currentCustomContent.type === 'STEP' && (
+                                             <div className="flex flex-col h-full justify-center">
+                                                <h3 className="text-[2vh] text-[#8b4513] uppercase font-bold mb-4 border-b border-[#8b4513]/20 pb-2">Step {currentCustomContent.step}</h3>
+                                                <p className="text-[2.2vh] text-[#3e2c22] leading-relaxed italic font-medieval">
+                                                    {currentCustomContent.content}
+                                                </p>
+                                             </div>
+                                        )}
+
+                                        {/* Pagination Controls */}
+                                        <div className="mt-auto flex justify-between pt-4 border-t border-[#8b4513]/20">
+                                            <button 
+                                                onClick={handleDetailPrev} 
+                                                disabled={detailPage === 0}
+                                                className="text-[#8b4513] disabled:opacity-30"
+                                            >
+                                                <ChevronLeft />
+                                            </button>
+                                            <span className="text-xs text-[#8b4513]/50">Step {detailPage + 1} / {customPages.length}</span>
+                                            { detailPage < customPages.length - 1 ? (
+                                                <button 
+                                                    onClick={handleDetailNext}
+                                                    className="text-[#8b4513]"
+                                                >
+                                                    <ChevronRight />
+                                                </button>
+                                            ) : (
+                                                 <div className="w-6" /> // spacer
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                          )}
                     </div>
@@ -600,6 +881,40 @@ export default function GrimoirePage() {
                         {viewMode === 'COVER' && renderCover()}
                         {viewMode === 'TOC' && renderBookPage(renderTOC())}
                         {viewMode === 'SECTION' && renderBookPage(renderSection())}
+                        {viewMode === 'THE_END' && renderTheEnd()}
+
+                        {viewMode === 'CUSTOMIZER' && (
+                             <GrimoireCustomizer 
+                                current={customization} 
+                                onSave={handleCustomizationSave} 
+                                onClose={() => setViewMode('COVER')} 
+                            />
+                        )}
+
+                        {viewMode === 'CREATE_SPELL' && currentUserId && (
+                            <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center">
+                                <div className="h-[95vh] w-auto aspect-[1529/2048]">
+                                    <CustomSpellWizard 
+                                        userId={currentUserId}
+                                        onClose={() => setViewMode('TOC')}
+                                        onComplete={handleSpellCreated}
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                         {viewMode === 'CREATE_JOURNAL' && currentUserId && (
+                            <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center">
+                                <div className="h-[95vh] w-auto aspect-[1529/2048]">
+                                    <JournalEntryEditor 
+                                        userId={currentUserId}
+                                        onClose={() => setViewMode('TOC')}
+                                        onComplete={handleSpellCreated}
+                                    />
+                                </div>
+                            </div>
+                        )}
+
                     </>
                 )}
             </div>
