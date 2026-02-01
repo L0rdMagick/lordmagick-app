@@ -223,7 +223,7 @@ const IncantationOverlay = ({ text, onConfirm, isVisible, ingredient }: OverlayP
     if (ingredient) {
         spriteName = ingredient.name;
         if (ingredient.name.toLowerCase().includes("candle")) {
-             const colors = ["Red", "Blue", "Green", "Yellow", "Purple", "Black", "Pink", "Orange", "Gold", "Silver"];
+             const colors = ["Red", "Blue", "Green", "Yellow", "Purple", "Black", "Pink", "Orange", "Gold", "Silver", "Brown", "Grey"];
              const foundColor = colors.find(c => ingredient.name.toLowerCase().includes(c.toLowerCase()));
              if (foundColor) spriteName = `${foundColor} Candle`;
         }
@@ -1196,6 +1196,7 @@ const Step6_Summary = ({ spell, onNext }: { spell: GeneratedWiccanSpell, onNext:
                 let spriteName = ing.name;
                 const colors = ["Red", "Blue", "Green", "Yellow", "Purple", "Black", "Pink", "Orange"];
                 if (ing.name.toLowerCase().includes("candle")) {
+                    const colors = ["Red", "Blue", "Green", "Yellow", "Purple", "Black", "Pink", "Orange", "Gold", "Silver", "Brown", "Grey"];
                     const foundColor = colors.find(c => ing.name.toLowerCase().includes(c.toLowerCase()));
                     if (foundColor) spriteName = `${foundColor} Candle`;
                     else spriteName = "White Candle";
@@ -1223,12 +1224,36 @@ const Step7_Ingredients = ({ spell, index, onComplete }: { spell: GeneratedWicca
     
     let spriteName = item.name;
     const isCandle = item.name.toLowerCase().includes("candle");
-    
+    let candleColorValue = "rgba(168, 85, 247, 0.8)"; // Default Purple
+
     if (isCandle) {
-         const colors = ["Red", "Blue", "Green", "Yellow", "Purple", "Black", "Pink", "Orange"];
+         const colors = ["Red", "Blue", "Green", "Yellow", "Purple", "Black", "Pink", "Orange", "Gold", "Silver", "Brown", "Grey"];
          const foundColor = colors.find(c => item.name.toLowerCase().includes(c.toLowerCase()));
-         if (foundColor) spriteName = `${foundColor} Candle`;
-         else spriteName = "White Candle";
+         
+         if (foundColor) {
+             spriteName = `${foundColor} Candle`;
+
+             // Map for dynamic light colors
+             const colorMap: Record<string, string> = {
+                "Red": "rgba(239, 68, 68, 0.9)",
+                "Green": "rgba(34, 197, 94, 0.9)",
+                "Black": "rgba(50, 50, 50, 0.95)", // Needs to be visible against black bg, so dark grey glow
+                "White": "rgba(255, 255, 255, 0.9)",
+                "Pink": "rgba(244, 114, 182, 0.9)",
+                "Blue": "rgba(59, 130, 246, 0.9)",
+                "Yellow": "rgba(253, 224, 71, 0.9)",
+                "Purple": "rgba(168, 85, 247, 0.9)",
+                "Orange": "rgba(249, 115, 22, 0.9)",
+                "Gold": "rgba(255, 215, 0, 0.9)", // Gold
+                "Silver": "rgba(192, 192, 192, 0.9)", // Silver
+                "Brown": "rgba(120, 53, 15, 0.9)",
+                "Grey": "rgba(156, 163, 175, 0.9)",
+             };
+             if (colorMap[foundColor]) candleColorValue = colorMap[foundColor];
+         } else {
+             spriteName = "White Candle";
+             candleColorValue = "rgba(255, 255, 255, 0.9)";
+         }
     }
 
     const sprite = findSprite(spriteName) || findSprite("White Candle")!;
@@ -1264,15 +1289,19 @@ const Step7_Ingredients = ({ spell, index, onComplete }: { spell: GeneratedWicca
             
             <div className="relative w-56 h-56 flex items-center justify-center">
                 
+                {/* Dynamic Background Light - Raised slightly (-mt-8) and Brighter */}
                 <motion.div
                     initial={{ scale: 0, opacity: 0 }}
                     animate={{ 
-                        scale: holding ? 1.5 : 0, 
-                        opacity: holding ? 0.6 : 0 
+                        scale: holding ? 1.8 : 0, // Increased scale
+                        opacity: holding ? 1 : 0 // Increased opacity to full
                     }}
-                    transition={{ duration: 0.5, ease: "easeOut" }}
-                    className="absolute z-0 w-32 h-32 rounded-full bg-radial-gradient from-purple-400 via-amber-300 to-transparent blur-xl"
-                    style={{ background: 'radial-gradient(circle, rgba(168,85,247,0.8) 0%, rgba(251,191,36,0.5) 50%, rgba(0,0,0,0) 80%)' }}
+                    transition={{ duration: 0.3, ease: "easeOut" }}
+                    className="absolute z-0 w-40 h-40 rounded-full blur-2xl -mt-8"
+                    style={{ 
+                        background: `radial-gradient(circle, ${candleColorValue} 0%, rgba(255,255,255,0.2) 60%, rgba(0,0,0,0) 80%)`,
+                        boxShadow: `0 0 40px ${candleColorValue}`
+                    }}
                 />
 
                 <div 
@@ -1284,6 +1313,7 @@ const Step7_Ingredients = ({ spell, index, onComplete }: { spell: GeneratedWicca
                         <Sprite sheetPath={sprite.sheet.path} x={sprite.itemInfo.x} y={sprite.itemInfo.y} spriteWidth={sprite.sheet.spriteSize.width} spriteHeight={sprite.sheet.spriteSize.height} sheetWidth={sprite.sheet.sheetSize.width} sheetHeight={sprite.sheet.sheetSize.height} />
                      </div>
                      
+                     {/* Flame Tip effect also matches color if possible, or keeps orange/gold for flame */}
                      {(isCandle && (holding || complete)) && (
                         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-8 bg-orange-400/50 rounded-full blur-md animate-pulse pointer-events-none" />
                      )}
@@ -1293,15 +1323,16 @@ const Step7_Ingredients = ({ spell, index, onComplete }: { spell: GeneratedWicca
                     <circle cx="50" cy="50" r="48" stroke="rgba(255,255,255,0.1)" strokeWidth="2" fill="transparent" />
                     <motion.circle
                         cx="50" cy="50" r="48"
-                        stroke="rgba(168, 85, 247, 1)" strokeWidth="3" fill="transparent" strokeLinecap="round"
+                        stroke={candleColorValue} 
+                        strokeWidth="3" fill="transparent" strokeLinecap="round"
                         pathLength="1" strokeDasharray="1"
                         initial={{ strokeDashoffset: 1 }}
                         animate={{ strokeDashoffset: complete ? 0 : (holding ? 0 : 1) }}
                         transition={{ duration: complete ? 0 : CHARGE_DURATION_INGREDIENT / 1000, ease: 'linear' }}
-                        className="drop-shadow-[0_0_15px_rgba(168,85,247,0.8)]"
+                        className="drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]"
                     />
                 </svg>
-                {complete && <div className="absolute inset-0 bg-purple-500/30 rounded-full animate-ping z-0" />}
+                {complete && <div className="absolute inset-0 rounded-full animate-ping z-0" style={{ backgroundColor: candleColorValue, opacity: 0.3 }} />}
             </div>
             
             <div className="text-center space-y-1">
