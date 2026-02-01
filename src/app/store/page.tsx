@@ -109,14 +109,31 @@ function StoreContent() {
     const [loadingId, setLoadingId] = useState<string | null>(null);
     const [showSuccess, setShowSuccess] = useState(false);
 
+    // --- Hybrid Redirect State ---
+    const [backupPath, setBackupPath] = useState<string | null>(null);
+
     // --- Stateless Redirect Handlers ---
     const redirectParam = searchParams.get('redirect');
     const returnToParam = searchParams.get('return_to');
     
-    // Logic: If we are post-purchase (success=true), we look for 'return_to'. 
-    // If we are pre-purchase, we look for 'redirect'.
-    // This allows the back button to work correctly in both states.
-    const activeReturnPath = returnToParam || redirectParam;
+    // --- Hybrid Logic: Redundancy ---
+    // 1. Save incoming redirect to LS as backup
+    // 2. Read from LS if no params found
+    useEffect(() => {
+        if (redirectParam) {
+            localStorage.setItem('aether_return_path', redirectParam);
+        } else {
+            // Only load backup if we don't have a direct param active
+            const saved = localStorage.getItem('aether_return_path');
+            if (saved) setBackupPath(saved);
+        }
+    }, [redirectParam]);
+
+    // Logic: 
+    // 1. Post-purchase 'return_to' (Highest Priority - from Stripe)
+    // 2. Pre-purchase 'redirect' (High Priority - direct link)
+    // 3. Backup State (Fallback - from LS if params stripped)
+    const activeReturnPath = returnToParam || redirectParam || backupPath;
 
     // --- NEW: Handle Redirect Logic ---
 
@@ -288,6 +305,9 @@ function StoreContent() {
                             <button 
                                 onClick={() => {
                                     setShowSuccess(false);
+                                    // Cleanup backup just in case
+                                    localStorage.removeItem('aether_return_path');
+                                    
                                     if (activeReturnPath) {
                                         router.replace(activeReturnPath);
                                     } else {
