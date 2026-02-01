@@ -5,7 +5,7 @@ import { stripe, PACKAGES } from '@/lib/stripe';
 
 export async function POST(request: Request) {
   try {
-    const { packageId } = await request.json();
+    const { packageId, returnPath } = await request.json();
     
     // 1. Authenticate User
     const cookieStore = await cookies();
@@ -34,6 +34,12 @@ export async function POST(request: Request) {
     }
 
     const origin = request.headers.get('origin');
+    
+    // Construct Success URL with Return Path
+    let successUrl = `${origin}/store?success=true`;
+    if (returnPath) {
+        successUrl += `&return_to=${encodeURIComponent(returnPath)}`;
+    }
 
     // 3. Create Checkout Session
     const session = await stripe.checkout.sessions.create({
@@ -54,7 +60,7 @@ export async function POST(request: Request) {
         },
       ],
       mode: 'payment',
-      success_url: `${origin}/store?success=true`,
+      success_url: successUrl,
       cancel_url: `${origin}/store?canceled=true`,
       metadata: {
         userId: user.id,

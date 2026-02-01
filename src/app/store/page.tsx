@@ -108,25 +108,18 @@ function StoreContent() {
     const haptics = useHaptics();
     const [loadingId, setLoadingId] = useState<string | null>(null);
     const [showSuccess, setShowSuccess] = useState(false);
-    const [returnPath, setReturnPath] = useState<string | null>(null);
+
+    // --- Stateless Redirect Handlers ---
+    const redirectParam = searchParams.get('redirect');
+    const returnToParam = searchParams.get('return_to');
+    
+    // Logic: If we are post-purchase (success=true), we look for 'return_to'. 
+    // If we are pre-purchase, we look for 'redirect'.
+    // This allows the back button to work correctly in both states.
+    const activeReturnPath = returnToParam || redirectParam;
 
     // --- NEW: Handle Redirect Logic ---
-    useEffect(() => {
-        // 1. Capture incoming redirect/action
-        const redirectParam = searchParams.get('redirect');
-        
-        if (redirectParam) {
-            // Save for post-purchase
-            localStorage.setItem('aether_return_path', redirectParam);
-            setReturnPath(redirectParam);
-        } else {
-            // Check if we already have one pending (e.g. from before checkout)
-            // But only if we are NOT in a fresh session? 
-            // Actually, keep it simple: if 'success' is present, check LS.
-            const saved = localStorage.getItem('aether_return_path');
-            if (saved) setReturnPath(saved);
-        }
-    }, [searchParams]);
+
 
     const supabase = createBrowserClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -162,7 +155,10 @@ function StoreContent() {
             const response = await fetch('/api/shop/checkout', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ packageId: pkgId })
+                body: JSON.stringify({ 
+                    packageId: pkgId,
+                    returnPath: redirectParam // Pass it forward!
+                })
             });
 
             const data = await response.json();
@@ -187,8 +183,8 @@ function StoreContent() {
             <header className="relative z-10 p-4 shrink-0 flex justify-between items-center bg-transparent">
                 <div className="flex items-center gap-4">
                     <MagickalBackLink 
-                        href={returnPath || "/hall"} 
-                        text={returnPath ? "Return to Ritual" : "Grand Hall"} 
+                        href={activeReturnPath || "/hall"} 
+                        text={activeReturnPath ? "Return to Ritual" : "Grand Hall"} 
                     />
                 </div>
                 <div className="flex items-center gap-4">
@@ -292,10 +288,8 @@ function StoreContent() {
                             <button 
                                 onClick={() => {
                                     setShowSuccess(false);
-                                    if (returnPath) {
-                                        // Clear and Redirect
-                                        localStorage.removeItem('aether_return_path');
-                                        router.replace(returnPath);
+                                    if (activeReturnPath) {
+                                        router.replace(activeReturnPath);
                                     } else {
                                         // Default behavior
                                         router.replace('/store'); // Clears success param
@@ -303,7 +297,7 @@ function StoreContent() {
                                 }}
                                 className="w-full py-3 bg-amber-600 hover:bg-amber-500 text-black font-bold uppercase tracking-widest text-xs rounded transition-colors"
                             >
-                                {returnPath ? "Return to Ritual" : "Return to Hall"}
+                                {activeReturnPath ? "Return to Ritual" : "Return to Hall"}
                             </button>
                         </div>
                     </div>
