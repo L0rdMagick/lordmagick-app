@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { BookOpen, Check } from 'lucide-react';
 import Image from 'next/image';
 
@@ -52,12 +52,15 @@ export const SlotPurchaseModal = ({
                             To expand your grimoire, more Faestones are required. Manifest more?
                         </p>
                         <div className="flex flex-col gap-3">
-                            <button onClick={onGoToStore} className="w-full flex items-center justify-center gap-2 py-3 bg-amber-700 hover:bg-amber-600 text-white font-bold rounded uppercase tracking-wider text-xs transition-colors shadow-[0_0_15px_rgba(180,83,9,0.4)]">
+                            <Link 
+                                href="/store"
+                                className="w-full flex items-center justify-center gap-2 py-3 bg-amber-700 hover:bg-amber-600 text-white font-bold rounded uppercase tracking-wider text-xs transition-colors shadow-[0_0_15px_rgba(180,83,9,0.4)]"
+                            >
                                 <div className="w-4 h-4 relative">
                                     <Image src="/images/faestones.png" alt="Token" layout="fill" objectFit="contain" />
                                 </div> 
                                 Manifest Faestones
-                            </button>
+                            </Link>
                             <button onClick={onClose} className="text-gray-400 hover:text-white text-xs font-serif italic tracking-wide">
                                 Close the Portal
                             </button>
