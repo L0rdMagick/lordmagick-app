@@ -60,7 +60,7 @@ export const BlockageErrorOverlay = ({
                                     </button>
                                 ) : (
                                     <Link 
-                                        href="/store"
+                                        href={`/store?redirect=${encodeURIComponent(redirectPath)}`}
                                         onClick={onDismiss}
                                         className="w-full flex items-center justify-center gap-2 py-3 bg-amber-700 hover:bg-amber-600 text-white font-bold rounded uppercase tracking-wider text-xs transition-colors shadow-[0_0_15px_rgba(180,83,9,0.4)]"
                                     >
@@ -86,7 +86,7 @@ export const BlockageErrorOverlay = ({
                         <div className="flex flex-col gap-3">
                             {showStoreLink && (
                                 <Link 
-                                    href="/store"
+                                    href={`/store?redirect=${encodeURIComponent(redirectPath)}`}
                                     onClick={onDismiss}
                                     className="w-full bg-amber-600 hover:bg-amber-500 text-black py-3 uppercase tracking-widest font-magical text-xs rounded transition-colors flex items-center justify-center gap-2"
                                 >

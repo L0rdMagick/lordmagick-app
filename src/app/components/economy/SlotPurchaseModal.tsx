@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { BookOpen, Check } from 'lucide-react';
 import Image from 'next/image';
+import { usePathname } from 'next/navigation';
 
 interface SlotPurchaseModalProps {
     isOpen: boolean;
@@ -21,6 +22,7 @@ export const SlotPurchaseModal = ({
     showSuccess,
     onGoToStore 
 }: SlotPurchaseModalProps) => {
+    const pathname = usePathname();
     
     // Internal mount check to prevent heavy hydration issues if needed, but simple return null is fine
     if (!isOpen) return null;
@@ -53,7 +55,7 @@ export const SlotPurchaseModal = ({
                         </p>
                         <div className="flex flex-col gap-3">
                             <Link 
-                                href="/store"
+                                href={`/store?redirect=${encodeURIComponent(pathname)}`}
                                 onClick={onClose}
                                 className="w-full flex items-center justify-center gap-2 py-3 bg-amber-700 hover:bg-amber-600 text-white font-bold rounded uppercase tracking-wider text-xs transition-colors shadow-[0_0_15px_rgba(180,83,9,0.4)]"
                             >
