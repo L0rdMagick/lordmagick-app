@@ -102,6 +102,16 @@ const getSpellMetadata = (spell: Spell): SpellMetadata => {
 };
 
 
+// --- AUDIO CONFIG ---
+const AUDIO = {
+    PAGE_TURN: '/audio/page-turn.mp3',
+    BOOK_CLOSE_OPEN: '/audio/book-close-open.mp3',
+    SELECT: '/audio/page-turn.mp3', // User requested page turn for card select
+    OPEN_RITUAL: '/audio/sfx-finding-something-2.mp3',
+    WRITE_SPELL: '/audio/sfx-parchment-open.mp3',
+    SAVE_SUCCESS: '/audio/sfx-finding-something-2.mp3', // For confirmation
+};
+
 export default function GrimoirePage() {
     // --- STATE ---
     const [spells, setSpells] = useState<Spell[]>([]);
@@ -263,7 +273,7 @@ export default function GrimoirePage() {
     // Special Transition for Book Open/Close
     const triggerBookAction = (opening: boolean, nextStateFn: () => void) => {
         setTransitioning(true);
-        playSound('book-open-close');
+        playSound('BOOK_CLOSE_OPEN');
         setTimeout(() => {
             nextStateFn();
             setTimeout(() => {
@@ -577,7 +587,7 @@ export default function GrimoirePage() {
                                 {spell ? (
                                     <button 
                                         onClick={() => {
-                                            playSound('select');
+                                            playSound('SELECT');
                                             setSelectedSpell({ spell, image: cardImage });
                                         }}
                                         className="relative h-full w-auto aspect-square hover:scale-[1.02] transition-transform duration-300 transform-gpu"
@@ -705,13 +715,13 @@ export default function GrimoirePage() {
 
         const handleDetailNext = () => {
              if (detailPage < customPages.length - 1) {
-                 playSound('page-turn');
+                 playSound('PAGE_TURN');
                  setDetailPage(p => p + 1);
              }
         };
         const handleDetailPrev = () => {
             if (detailPage > 0) {
-                 playSound('page-turn');
+                 playSound('PAGE_TURN');
                  setDetailPage(p => p - 1);
             }
         };
