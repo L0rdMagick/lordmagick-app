@@ -12,6 +12,7 @@ import JournalEntryEditor from '@/app/components/JournalEntryEditor';
 import { Calendar, X, RotateCcw, ChevronLeft, ChevronRight, Trash2, Settings, PenTool, BookOpen } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 
 // --- TYPES ---
 type ViewMode = 'COVER' | 'TOC' | 'SECTION' | 'THE_END' | 'CUSTOMIZER' | 'CREATE_SPELL' | 'CREATE_JOURNAL';
@@ -149,6 +150,8 @@ export default function GrimoirePage() {
     const [loading, setLoading] = useState(true);
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
     const [customization, setCustomization] = useState<GrimoireCustomization>(DEFAULT_CUSTOMIZATION);
+    const [showExitConfirm, setShowExitConfirm] = useState(false);
+    const router = useRouter();
     
     // Manifestation Book State
     const [viewMode, setViewMode] = useState<ViewMode>('COVER');
@@ -773,7 +776,7 @@ export default function GrimoirePage() {
         };
 
         return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center px-2 py-[10vh] md:p-4 bg-black/90 backdrop-blur-md">
+            <div className="fixed inset-0 z-50 flex items-center justify-center px-2 py-[10vh] md:px-8 md:py-[5vh] bg-black/90 backdrop-blur-md">
                 <div 
                     className="relative shadow-2xl"
                     style={{
@@ -987,11 +990,42 @@ export default function GrimoirePage() {
             </div>
         );
     };
-
+    
+    // --- EXIT CONFIRMATION MODAL ---
+    const ExitConfirmationModal = () => (
+        <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+             <div 
+                className="relative bg-[#1a120b] border-2 border-[#8b4513] p-8 max-w-md w-full text-center shadow-[0_0_50px_rgba(139,69,19,0.3)]"
+                style={{ fontFamily: customization.fontFamily }}
+            >
+                <h3 className="text-[3vh] text-[#d4af37] mb-6 uppercase tracking-widest font-bold">Depart the <br/>Sanctuary?</h3>
+                <p className="text-[#f4e4bc] text-lg mb-8 leading-relaxed italic">
+                    "The threads of fate separate. Are you certain you wish to leave this sanctuary and return to the Grand Hall?"
+                </p>
+                <div className="flex flex-col gap-3">
+                    <button 
+                        onClick={() => router.push('/hall')}
+                        className="w-full py-3 bg-[#8b4513] text-[#f4e4bc] border border-[#d4af37]/50 hover:bg-[#5c4033] hover:border-[#d4af37] transition-all uppercase tracking-widest text-sm font-bold shadow-lg"
+                    >
+                        Depart
+                    </button>
+                    <button 
+                        onClick={() => setShowExitConfirm(false)}
+                        className="w-full py-3 border border-[#8b4513]/50 text-[#8b4513] hover:text-[#d4af37] hover:border-[#d4af37] transition-all uppercase tracking-widest text-sm font-bold"
+                    >
+                        Stay Spoken
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+    
     return (
         // Changed overflow-hidden to overflow-y-auto for failsafe scrolling
         // Used min-h-screen (or h-[100dvh]) to ensure full viewport coverage
         <main className="relative h-[100dvh] w-full bg-black overflow-y-auto flex flex-col">
+            {showExitConfirm && <ExitConfirmationModal />}
+
             {/* Background Image - Fixed & Clean */}
             <div className="absolute inset-0 z-0">
                 <Image 
@@ -1005,9 +1039,9 @@ export default function GrimoirePage() {
             </div>
             
             {/* Exit Button - Fixed Top Right - Resized 50% Smaller */}
-            <Link 
-                href="/hall"
-                className="fixed top-4 right-4 z-50 transition-transform hover:scale-105"
+            <button 
+                onClick={() => setShowExitConfirm(true)}
+                className="fixed top-4 right-4 z-50 transition-transform hover:scale-105 focus:outline-none"
             >
                 <div className="relative w-8 h-8 md:w-10 md:h-10 drop-shadow-lg">
                     <Image
@@ -1017,11 +1051,11 @@ export default function GrimoirePage() {
                         className="object-contain"
                     />
                 </div>
-            </Link>
+            </button>
 
             {/* Main Content - Centered flex container similar to JournalEntryEditor */}
             {/* Added min-h-full to ensure it fills screen but allows scrolling if content pushes it */}
-            <div className="relative z-10 flex-1 flex items-center justify-center px-2 py-[10vh] md:p-8 min-h-full">
+            <div className="relative z-10 flex-1 flex items-center justify-center px-2 py-[10vh] md:px-8 md:py-[5vh] min-h-full">
                 {loading ? (
                     <LoadingSpinner title="Retrieving the Ancient Tomes..." />
                 ) : (
@@ -1044,7 +1078,7 @@ export default function GrimoirePage() {
             )}
 
             {!loading && viewMode === 'CREATE_SPELL' && currentUserId && (
-                <div className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center pointer-events-auto px-2 py-[10vh] md:p-8">
+                <div className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center pointer-events-auto px-2 py-[10vh] md:px-8 md:py-[5vh]">
                     <div className="relative h-full w-full max-w-[90vh] aspect-[1529/2048]">
                         <CustomSpellWizard
                             userId={currentUserId}
@@ -1066,7 +1100,7 @@ export default function GrimoirePage() {
             )}
 
             {!loading && viewMode === 'CREATE_JOURNAL' && currentUserId && (
-                <div className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center pointer-events-auto px-2 py-[10vh] md:p-8">
+                <div className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center pointer-events-auto px-2 py-[10vh] md:px-8 md:py-[5vh]">
                     <div className="relative h-full w-full max-w-[90vh] aspect-[1529/2048]">
                         <JournalEntryEditor 
                             userId={currentUserId}
