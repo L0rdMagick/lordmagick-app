@@ -127,7 +127,7 @@ const SOUND_CONFIG = {
     },
     WRITE_SPELL: { 
         path: '/audio/sfx-parchment-open.mp3', 
-        volume: 3, 
+        volume: 2, 
         description: "Clicking 'Write Spell' or 'Journal Entry' buttons" 
     },
     SAVE_SUCCESS: { 
