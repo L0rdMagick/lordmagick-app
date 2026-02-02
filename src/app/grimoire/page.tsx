@@ -777,28 +777,7 @@ export default function GrimoirePage() {
 
         return (
             <div className="fixed inset-0 z-50 flex items-center justify-center px-2 py-[10vh] md:px-8 md:py-[5vh] bg-black/90 backdrop-blur-md">
-                {/* Global Style Injection for Magick Scrollbar */}
-                <style jsx global>{`
-                    .magick-scrollbar::-webkit-scrollbar {
-                        width: 10px;
-                        background: transparent;
-                    }
-                    .magick-scrollbar::-webkit-scrollbar-track {
-                        background: rgba(139, 69, 19, 0.05);
-                        border-radius: 9999px;
-                        margin: 4px;
-                    }
-                    .magick-scrollbar::-webkit-scrollbar-thumb {
-                        background-color: rgba(139, 69, 19, 0.4);
-                        border-radius: 9999px;
-                        border: 1px solid rgba(92, 64, 51, 0.2);
-                        background-clip: content-box;
-                    }
-                    .magick-scrollbar::-webkit-scrollbar-thumb:hover {
-                        background-color: rgba(139, 69, 19, 0.8);
-                        border-color: rgba(212, 175, 55, 0.4);
-                    }
-                `}</style>
+
 
                 <div className="relative h-full w-full md:w-auto max-w-[90vh] aspect-[1529/2048] shadow-2xl shrink-0">
                     
@@ -1032,6 +1011,28 @@ export default function GrimoirePage() {
         // Changed overflow-hidden to overflow-y-auto for failsafe scrolling
         // Used min-h-screen (or h-[100dvh]) to ensure full viewport coverage
         <main className="relative h-[100dvh] w-full bg-black overflow-y-auto flex flex-col">
+            {/* Global Style Injection for Magick Scrollbar */}
+            <style jsx global>{`
+                .magick-scrollbar::-webkit-scrollbar {
+                    width: 10px;
+                    background: transparent;
+                }
+                .magick-scrollbar::-webkit-scrollbar-track {
+                    background: rgba(139, 69, 19, 0.05);
+                    border-radius: 9999px;
+                    margin: 4px;
+                }
+                .magick-scrollbar::-webkit-scrollbar-thumb {
+                    background-color: rgba(139, 69, 19, 0.4);
+                    border-radius: 9999px;
+                    border: 1px solid rgba(92, 64, 51, 0.2);
+                    background-clip: content-box;
+                }
+                .magick-scrollbar::-webkit-scrollbar-thumb:hover {
+                    background-color: rgba(139, 69, 19, 0.8);
+                    border-color: rgba(212, 175, 55, 0.4);
+                }
+            `}</style>
             {showExitConfirm && <ExitConfirmationModal />}
 
             {/* Background Image - Fixed & Clean */}
