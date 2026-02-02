@@ -48,6 +48,7 @@ export default function GrimoireCustomizer({ current, onSave, onClose }: Grimoir
         '/images/grimoire-images/grimoire-cover3.png',
         '/images/grimoire-images/grimoire-cover4.png',
         '/images/grimoire-images/grimoire-cover5.png',
+        '/images/grimoire-images/grimoire-cover6.png',
     ];
 
     const pageOptions = [
@@ -56,6 +57,7 @@ export default function GrimoireCustomizer({ current, onSave, onClose }: Grimoir
         '/images/grimoire-images/grimoire-page3.png',
         '/images/grimoire-images/grimoire-page4.png',
         '/images/grimoire-images/grimoire-page5.png',
+        '/images/grimoire-images/grimoire-page6.png',
     ];
 
     const handleSave = () => {
@@ -84,7 +86,7 @@ export default function GrimoireCustomizer({ current, onSave, onClose }: Grimoir
                     {/* 1. Cover Image */}
                     <section>
                         <h3 className="text-[#f4e4bc] font-serif text-xl mb-4 border-b border-[#8b4513]/20 pb-2">Grimoire Cover</h3>
-                        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                        <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
                             {coverOptions.map((src, idx) => (
                                 <button 
                                     key={src} 
@@ -124,7 +126,7 @@ export default function GrimoireCustomizer({ current, onSave, onClose }: Grimoir
                     {/* 3. Page Style */}
                     <section>
                         <h3 className="text-[#f4e4bc] font-serif text-xl mb-4 border-b border-[#8b4513]/20 pb-2">Page Parchment</h3>
-                        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                        <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
                             {pageOptions.map((src, idx) => (
                                 <button 
                                     key={src} 

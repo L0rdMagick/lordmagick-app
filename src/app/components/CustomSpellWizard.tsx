@@ -16,6 +16,28 @@ interface CustomSpellWizardProps {
 type WizardStep = 'TITLE' | 'PURPOSE' | 'INGREDIENTS' | 'INSTRUCTIONS' | 'PREVIEW';
 
 // Moved outside to prevent re-renders losing focus
+// --- LAYOUT CONSTANTS ---
+const PAGE_LAYOUT = {
+    TITLE_ZONE: {
+        left: '25.40%', 
+        top: '11.12%', 
+        width: '55.07%', 
+        height: '11.13%',
+        position: 'absolute' as const,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+    },
+    BODY_ZONE: {
+        left: '25.40%', 
+        top: '29.46%', 
+        width: '55.07%', 
+        height: '50.02%',
+        position: 'absolute' as const,
+        overflow: 'hidden'
+    }
+};
+
 const Wrapper = ({ 
     children, 
     title, 
@@ -27,18 +49,25 @@ const Wrapper = ({
     onBack: () => void, 
     isFirstStep: boolean 
 }) => (
-    <div className="flex flex-col h-full w-full p-6 text-center text-[#3e2c22]">
-        <h2 className="text-[3vh] font-serif font-bold mb-6 text-[#5c4033]" style={{ fontFamily: 'Cinzel' }}>{title}</h2>
-        <div className="flex-1 flex flex-col items-center justify-center w-full">
-            {children}
+    <>
+        {/* Title Zone */}
+        <div style={PAGE_LAYOUT.TITLE_ZONE} className="text-center z-10">
+            <h2 className="text-[3vh] font-serif font-bold text-[#5c4033]" style={{ fontFamily: 'Cinzel' }}>{title}</h2>
         </div>
-        
-        <div className="mt-auto pt-4 flex justify-between w-full border-t border-[#8b4513]/20">
-            <button onClick={onBack} className="text-[#8b4513] hover:text-black font-serif underline text-sm z-50 relative pointer-events-auto">
-                {isFirstStep ? 'Cancel' : 'Back'}
-            </button>
+
+        {/* Body Zone */}
+        <div style={PAGE_LAYOUT.BODY_ZONE} className="z-10 flex flex-col">
+            <div className="flex-1 w-full flex flex-col items-center overflow-hidden">
+                {children}
+            </div>
+            
+            <div className="mt-auto pt-4 flex justify-between w-full border-t border-[#8b4513]/20 shrink-0">
+                <button onClick={onBack} className="text-[#8b4513] hover:text-black font-serif underline text-sm pointer-events-auto">
+                    {isFirstStep ? 'Cancel' : 'Back'}
+                </button>
+            </div>
         </div>
-    </div>
+    </>
 );
 
 export default function CustomSpellWizard({ userId, onClose, onComplete, initialData }: CustomSpellWizardProps) {
@@ -201,9 +230,9 @@ export default function CustomSpellWizard({ userId, onClose, onComplete, initial
                 />
                 
                 {/* Content Overlay */}
-                <div 
-                    className="absolute inset-0 flex flex-col pt-[20%] pb-[15%] px-[15%]"
-                >
+                
+                {/* Content Overlay - Now using specific zones via Wrapper */}
+                <div className="absolute inset-0">
                     {step === 'TITLE' && (
                         <Wrapper title="Name Your Spell" onBack={onClose} isFirstStep={true}>
                              <input 
@@ -329,10 +358,13 @@ export default function CustomSpellWizard({ userId, onClose, onComplete, initial
                     )}
 
                     {step === 'PREVIEW' && (
-                        <div className="flex flex-col h-full w-full p-4 overflow-hidden text-[#3e2c22]">
-                            <h2 className="text-[2.5vh] font-bold text-center mb-2 font-serif uppercase border-b border-[#8b4513]/30 pb-2">{title}</h2>
+                        <>
+                            <div style={PAGE_LAYOUT.TITLE_ZONE} className="text-center z-10 flex items-center justify-center border-b border-[#8b4513]/30">
+                                <h2 className="text-[2.5vh] font-bold font-serif uppercase text-[#3e2c22]">{title}</h2>
+                            </div>
                             
-                            <div className="flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-1">
+                            <div style={PAGE_LAYOUT.BODY_ZONE} className="flex flex-col z-10">
+                                <div className="flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-1">
                                 <div>
                                     <h3 className="font-bold text-[#5c4033] text-sm uppercase">Purpose</h3>
                                     <p className="italic text-sm opacity-80">{purpose}</p>
@@ -351,19 +383,20 @@ export default function CustomSpellWizard({ userId, onClose, onComplete, initial
                                         ))}
                                     </ol>
                                 </div>
-                            </div>
+                                </div>
 
-                            <div className="mt-4 pt-2 border-t border-[#8b4513]/30 flex justify-between items-center gap-4">
-                                <button onClick={() => setStep('INSTRUCTIONS')} className="text-sm text-[#8b4513] underline">Edit</button>
-                                <button 
-                                    onClick={handleSave}
-                                    disabled={loading}
-                                    className="flex-1 py-2 bg-[#8b4513] text-[#f4e4bc] font-bold uppercase tracking-widest rounded hover:bg-[#5c4033] transition-colors shadow-lg flex items-center justify-center gap-2"
-                                >
-                                    {loading ? 'Scribing...' : 'Inscribe to Grimoire'} <Save size={16} />
-                                </button>
+                                <div className="mt-4 pt-2 border-t border-[#8b4513]/30 flex justify-between items-center gap-4 shrink-0">
+                                    <button onClick={() => setStep('INSTRUCTIONS')} className="text-sm text-[#8b4513] underline">Edit</button>
+                                    <button 
+                                        onClick={handleSave}
+                                        disabled={loading}
+                                        className="flex-1 py-2 bg-[#8b4513] text-[#f4e4bc] font-bold uppercase tracking-widest rounded hover:bg-[#5c4033] transition-colors shadow-lg flex items-center justify-center gap-2"
+                                    >
+                                        {loading ? 'Scribing...' : 'Inscribe to Grimoire'} <Save size={16} />
+                                    </button>
+                                </div>
                             </div>
-                        </div>
+                        </>
                     )}
                 </div>
             </div>

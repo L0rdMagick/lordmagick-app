@@ -13,6 +13,29 @@ interface JournalEntryEditorProps {
     initialData?: Spell;
 }
 
+// --- LAYOUT CONSTANTS ---
+const PAGE_LAYOUT = {
+    TITLE_ZONE: {
+        left: '25.40%', 
+        top: '11.12%', 
+        width: '55.07%', 
+        height: '11.13%',
+        position: 'absolute' as const,
+        display: 'flex',
+        flexDirection: 'column' as const,
+        justifyContent: 'center'
+    },
+    BODY_ZONE: {
+        left: '25.40%', 
+        top: '29.46%', 
+        width: '55.07%', 
+        height: '50.02%',
+        position: 'absolute' as const,
+        display: 'flex',
+        flexDirection: 'column' as const
+    }
+};
+
 export default function JournalEntryEditor({ userId, onClose, onComplete, initialData }: JournalEntryEditorProps) {
     const [loading, setLoading] = useState(false);
     const [title, setTitle] = useState('');
@@ -121,38 +144,40 @@ export default function JournalEntryEditor({ userId, onClose, onComplete, initia
                 />
                 
                 {/* Content Overlay */}
-                <div 
-                    className="absolute inset-0 flex flex-col pt-[18%] pb-[15%] px-[15%]"
-                >
-                    {/* Header */}
-                    <div className="mb-4 border-b border-[#8b4513]/30 pb-2">
+                {/* Content Overlay */}
+                
+                {/* Title Zone */}
+                <div style={PAGE_LAYOUT.TITLE_ZONE} className="z-10">
+                    <div className="w-full h-full flex flex-col justify-end pb-2 border-b border-[#8b4513]/30">
                         <input 
                             type="text"
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
                             placeholder="Entry Title..."
-                            className="w-full bg-transparent font-serif font-bold text-[2.2vh] text-[#3e2c22] placeholder:text-[#8b4513]/40 focus:outline-none"
+                            className="w-full bg-transparent font-serif font-bold text-[2.2vh] text-[#3e2c22] placeholder:text-[#8b4513]/40 focus:outline-none text-center"
                         />
                          <input
                             type="text"
                             value={dateStr}
                             onChange={(e) => setDateStr(e.target.value)}
-                            className="w-full bg-transparent text-[1.2vh] text-[#8b4513]/60 italic font-serif mt-1 focus:outline-none focus:text-[#8b4513]"
+                            className="w-full bg-transparent text-[1.2vh] text-[#8b4513]/60 italic font-serif mt-1 focus:outline-none focus:text-[#8b4513] text-center"
                             placeholder="Date..."
                         />
                     </div>
+                </div>
 
-                    {/* Body */}
+                {/* Body Zone */}
+                <div style={PAGE_LAYOUT.BODY_ZONE} className="z-10">
                     <textarea 
                         value={content}
                         onChange={handleTextChange}
                         placeholder="Write your thoughts..."
-                        className="flex-1 w-full bg-transparent resize-none focus:outline-none font-handwriting text-[1.8vh] leading-relaxed text-[#2a1f18] placeholder:text-[#8b4513]/30 custom-scrollbar"
-                        style={{ fontFamily: '"Indie Flower", "Patrick Hand", cursive' }} // Fallback or add Google Font
+                        className="flex-1 w-full bg-transparent resize-none focus:outline-none font-handwriting text-[1.8vh] leading-relaxed text-[#2a1f18] placeholder:text-[#8b4513]/30 custom-scrollbar p-2"
+                        style={{ fontFamily: '"Indie Flower", "Patrick Hand", cursive' }} 
                     />
 
                     {/* Footer Actions */}
-                    <div className="mt-4 flex justify-between items-center pt-2 border-t border-[#8b4513]/20">
+                    <div className="mt-2 flex justify-between items-center pt-2 border-t border-[#8b4513]/20 shrink-0">
                         <button onClick={onClose} className="text-[#8b4513] hover:text-red-900 underline text-sm font-serif">Discard</button>
                         <button 
                             onClick={handleSave}
@@ -162,7 +187,6 @@ export default function JournalEntryEditor({ userId, onClose, onComplete, initia
                             {loading ? 'Inscribing...' : 'Save Entry'} <Save size={16} />
                         </button>
                     </div>
-
                 </div>
             </div>
         </div>

@@ -357,19 +357,23 @@ export default function GrimoirePage() {
 
     // --- RENDERERS ---
 
-    // Layout Constants (Calculated from 1529x2048)
-    const HEADER_ZONE = {
-        left: '25.11%',
-        top: '11.18%', // 229px
-        width: '57.75%',
-        height: '11.12%', // 227.7px
-    };
-
-    const BODY_ZONE = {
-        left: '25.11%',
-        top: '22.30%',
-        width: '57.75%',
-        height: '60.30%',
+    // --- LAYOUT CONSTANTS ---
+    // Based on 1529px x 2048px original
+    const PAGE_LAYOUT = {
+        TITLE_ZONE: {
+            left: '25.40%', 
+            top: '11.12%', 
+            width: '55.07%', 
+            height: '11.13%',
+            // debug: '1px solid red' 
+        },
+        BODY_ZONE: {
+            left: '25.40%', 
+            top: '29.46%', 
+            width: '55.07%', 
+            height: '50.02%',
+            // debug: '1px solid blue'
+        }
     };
 
     const renderCover = () => (
@@ -467,7 +471,7 @@ export default function GrimoirePage() {
    const renderTOC = () => (
         <>
             {/* Header Zone */}
-            <div className="absolute flex flex-col justify-center items-center text-center z-10" style={HEADER_ZONE}>
+            <div className="absolute flex flex-col justify-center items-center text-center z-10" style={PAGE_LAYOUT.TITLE_ZONE}>
                  <header className="border-b-2 border-[#8b4513]/30 pb-2 w-full">
                     <h2 className="text-[3vh] font-serif text-[#5c4033] mb-1" style={{ fontFamily: customization.fontFamily }}>Table of Contents</h2>
                     <div className="text-[1.5vh] italic font-serif text-[#8b4513]/60">Index of Workings</div>
@@ -475,7 +479,7 @@ export default function GrimoirePage() {
             </div>
 
             {/* Body Zone */}
-            <div className="absolute z-10 overflow-hidden" style={BODY_ZONE}>
+            <div className="absolute z-10 overflow-hidden" style={PAGE_LAYOUT.BODY_ZONE}>
                 <div className="flex flex-col h-full text-[#3e2c22] p-2">
                      {/* Creation Buttons */}
                      <div className="flex gap-2 mb-4 shrink-0">
@@ -669,17 +673,21 @@ export default function GrimoirePage() {
                 </button>
 
                 <div 
-                    className="absolute inset-0 flex items-center justify-center flex-col z-10"
+                    className="absolute z-10 flex items-center justify-center flex-col"
+                    style={PAGE_LAYOUT.BODY_ZONE}
                 >
                     <h1 
                         className="text-[8vh] text-[#3e2c22] drop-shadow-sm text-center leading-none" 
                         style={{ fontFamily: '"IM Fell English SC", serif' }}
                     >
-                        The End
+                        Finis
                     </h1>
-                     <div className="mt-4 opacity-60">
-                         <MagickalBackLink href="/hall" text="Return to Hall" />
-                     </div>
+                     <button 
+                        onClick={() => setViewMode('COVER')}
+                        className="mt-8 px-6 py-2 border-b border-[#3e2c22] text-[#3e2c22] font-serif hover:text-[#8b4513] hover:border-[#8b4513] transition-colors"
+                    >
+                        Return to Cover
+                    </button>
                 </div>
             </div>
         </div>
