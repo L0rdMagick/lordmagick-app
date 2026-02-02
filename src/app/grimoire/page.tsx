@@ -395,7 +395,7 @@ export default function GrimoirePage() {
                     }}
                 >
                     <h1 
-                        className="text-[5vh] lg:text-[6vh] leading-tight text-[#d4af37] tracking-wider mb-[4vh] drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]" 
+                        className="text-[5vh] lg:text-[6vh] leading-tight text-[#2e1d15]/90 tracking-wider mb-[4vh] drop-shadow-[0_1px_0_rgba(255,255,255,0.2)] [text-shadow:-1px_-1px_2px_rgba(0,0,0,0.8)] mix-blend-multiply" 
                         style={{ fontFamily: `${customization.fontFamily}, serif` }}
                     >
                         {customization.coverTitle.split(' ').map((word, i) => (
