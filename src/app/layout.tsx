@@ -168,8 +168,8 @@ export default function RootLayout({
             WebkitMaskImage: 'linear-gradient(to top, black 40%, transparent 100%)'
           }} 
         >
-            <div className="absolute inset-0 w-full h-full bg-[url('/images/mist-overlay.png')] bg-repeat-x animate-[flow-mist_45s_linear_infinite]" />
             <div className="absolute inset-0 w-full h-full bg-[url('/images/mist-overlay.png')] bg-repeat-x animate-[flow-mist-crossfade_45s_linear_infinite]" />
+            <div className="absolute inset-0 w-full h-full bg-[url('/images/mist-overlay.png')] bg-repeat-x animate-[flow-mist-crossfade_45s_linear_infinite]" style={{ animationDelay: '-22.5s' }} />
         </div>
       {/* JSON-LD Structured Data */}
         <script
