@@ -613,9 +613,9 @@ export default function GrimoirePage() {
                                             >
                                                 {/* Text scale reduced and clamped according to length */}
                                                 <div className="w-full h-full flex flex-col items-center justify-center">
-                                                    {/* Date for Journal Entries - Color darkened for visibility */}
+                                                    {/* Date for Journal Entries - Color High Contrast */}
                                                     {isJournal && ritualData.timestamp && (
-                                                         <div className="text-[1.4vh] text-[#5c4033] font-bold italic font-serif mb-2 z-20 relative">
+                                                         <div className="text-[1.4vh] text-black font-extrabold italic font-serif mb-2 z-20 relative drop-shadow-sm">
                                                             {ritualData.timestamp}
                                                         </div>
                                                     )}
@@ -702,8 +702,8 @@ export default function GrimoirePage() {
         const [detailPage, setDetailPage] = useState(0); 
         
         // Is it custom with multiple pages?
-        const isCustom = spell.tradition === 'CUSTOM' as any || ritualData.type === 'CUSTOM';
-        const isJournal = spell.tradition === 'CUSTOM' as any && ritualData.type === 'JOURNAL';
+        const isJournal = ritualData.type === 'JOURNAL';
+        const isCustom = (spell.tradition === 'CUSTOM' as any || ritualData.type === 'CUSTOM') && !isJournal;
 
         const customPages = isCustom && ritualData.instructions ? [
             { type: 'INTRO', content: { purpose: spell.intention, ingredients: ritualData.ingredients } },
@@ -819,6 +819,7 @@ export default function GrimoirePage() {
                          ) : (
                             <div className="w-full h-full flex flex-col overflow-y-auto custom-scrollbar scrollbar-thin scrollbar-thumb-[#5c4033]/50 p-2 relative">
                                 {/* Regular Spell View */}
+                                {/* Regular Spell View - Fallback */}
                                 {!isCustom && !isJournal && (
                                     <>
                                         <h2 className="font-serif font-bold text-[2.5vh] mb-4 text-[#3e2c22] shrink-0 leading-tight" style={{ fontFamily: customization.fontFamily }}>{spell.name}</h2>
@@ -851,24 +852,22 @@ export default function GrimoirePage() {
                                         <div className="flex justify-between items-start w-full">
                                             <h2 className="font-serif font-bold text-[2.5vh] mb-4 text-[#3e2c22] shrink-0 leading-tight" style={{ fontFamily: customization.fontFamily }}>{spell.name}</h2>
                                             {/* Edit Button for ALL Custom Spells (Generic or Journal) */}
-                                            {isCustom && (
-                                                <button 
-                                                    onClick={() => {
-                                                        setEditingSpell(spell);
-                                                        onClose(); 
-                                                        // Determine mode based on type
-                                                        if (isJournal) {
-                                                            setViewMode('CREATE_JOURNAL');
-                                                        } else {
-                                                            setViewMode('CREATE_SPELL');
-                                                        }
-                                                    }}
-                                                    className="text-[#8b4513] hover:text-[#d4af37] p-2 transition-colors z-[60]"
-                                                    title="Edit Entry"
-                                                >
-                                                    <PenTool size={16} />
-                                                </button>
-                                            )}
+                                            <button 
+                                                onClick={() => {
+                                                    setEditingSpell(spell);
+                                                    onClose(); 
+                                                    // Determine mode based on type
+                                                    if (isJournal) {
+                                                        setViewMode('CREATE_JOURNAL');
+                                                    } else {
+                                                        setViewMode('CREATE_SPELL');
+                                                    }
+                                                }}
+                                                className="text-[#8b4513] hover:text-[#d4af37] p-2 transition-colors z-[60]"
+                                                title="Edit Entry"
+                                            >
+                                                <PenTool size={16} />
+                                            </button>
                                         </div>
                                         <div className="font-handwriting text-[2vh] text-[#3e2c22] whitespace-pre-wrap text-left leading-relaxed">
                                             {ritualData.content}
