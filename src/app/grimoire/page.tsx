@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
-import { saveSpell, getSpells, deleteSpell } from '@/lib/services/geminiService';
+import { saveSpell, getSpells, deleteSpell, getGrimoireSettings, saveGrimoireSettings } from '@/lib/services/geminiService';
 import type { Spell } from '@/lib/types';
 // Imports removed
 import LoadingSpinner from '@/app/components/LoadingSpinner';
@@ -199,14 +199,9 @@ export default function GrimoirePage() {
     // Load Data
     useEffect(() => {
         const load = async () => {
-            console.log("Grimoire: Starting loading process...");
+             console.log("Grimoire: Starting loading process...");
             try {
-                // Load Customization
-                const savedCustomization = localStorage.getItem('grimoire_customization');
-                if (savedCustomization) {
-                    setCustomization(JSON.parse(savedCustomization));
-                }
-
+                // 1. Get User First
                 const { data: { user }, error: authError } = await supabase.auth.getUser();
                 
                 if (authError) {
@@ -216,12 +211,36 @@ export default function GrimoirePage() {
                 if (user) {
                     console.log("Grimoire: User found", user.id);
                     setCurrentUserId(user.id);
-                    console.log("Grimoire: Fetching spells...");
-                    const data = await getSpells(user.id);
+                    
+                    // 2. Load Settings from DB (Parallel with Spells)
+                     console.log("Grimoire: Fetching settings & spells...");
+                    const [settings, data] = await Promise.all([
+                        getGrimoireSettings(user.id),
+                        getSpells(user.id)
+                    ]);
+                    
+                    if (settings) {
+                        console.log("Grimoire: Settings loaded from DB", settings);
+                        setCustomization(settings);
+                        // Update local cache just in case
+                        localStorage.setItem('grimoire_customization', JSON.stringify(settings));
+                    } else {
+                        // Fallback to local storage if DB is empty/new
+                        const savedCustomization = localStorage.getItem('grimoire_customization');
+                        if (savedCustomization) {
+                            setCustomization(JSON.parse(savedCustomization));
+                        }
+                    }
+
                     console.log("Grimoire: Spells fetched", data?.length);
                     setSpells(data || []);
                 } else {
-                    console.log("Grimoire: No user session found.");
+                    console.log("Grimoire: No user session found. Checking Local Storage for customization.");
+                    // Fallback for non-logged in (preview/dev)
+                    const savedCustomization = localStorage.getItem('grimoire_customization');
+                    if (savedCustomization) {
+                        setCustomization(JSON.parse(savedCustomization));
+                    }
                 }
             } catch (e) {
                 console.error("Grimoire: Failed to load Grimoire", e);
@@ -242,9 +261,16 @@ export default function GrimoirePage() {
         }
     };
 
-    const handleCustomizationSave = (newSettings: GrimoireCustomization) => {
+    const handleCustomizationSave = async (newSettings: GrimoireCustomization) => {
         setCustomization(newSettings);
+        // Optimistic update to local storage
         localStorage.setItem('grimoire_customization', JSON.stringify(newSettings));
+        
+        if (currentUserId) {
+            // Persist to DB
+            await saveGrimoireSettings(currentUserId, newSettings);
+            playSound('SAVE_SUCCESS');
+        }
     };
 
     const handleSpellCreated = (newSpell: Spell) => {
@@ -913,9 +939,9 @@ export default function GrimoirePage() {
                                     {/* Regular Spell View */}
                                     {!isCustom && !isJournal && (
                                         <div className="pt-2">
-                                            <p className="font-medieval italic text-[2.2vh] text-[#5c4033] mb-6 whitespace-pre-wrap leading-snug text-center">"{spell.intention}"</p>
+                                            <p className="italic text-[2.2vh] text-[#5c4033] mb-6 whitespace-pre-wrap leading-snug text-center" style={{ fontFamily: customization.fontFamily }}>"{spell.intention}"</p>
                                             {spell.incantation && (
-                                                <div className="font-medieval text-[2vh] text-[#3e2c22] mb-6 text-center w-full border-t border-[#8b4513]/20 pt-4 font-medium leading-normal">
+                                                <div className="text-[2vh] text-[#3e2c22] mb-6 text-center w-full border-t border-[#8b4513]/20 pt-4 font-medium leading-normal" style={{ fontFamily: customization.fontFamily }}>
                                                     {spell.incantation}
                                                 </div>
                                             )}

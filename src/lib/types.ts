@@ -180,4 +180,14 @@ export type AppView =
   | { type: 'subscribe' }
   | { type: 'spell_room' };
 
+// --- Grimoire Types ---
+export interface GrimoireCustomization {
+    coverImage: string;
+    coverTitle: string;
+    pageStyle: string;
+    fontFamily: string;
+    cardStyle: string;
+    detailPageStyle: string;
+}
+
 export type { Session };

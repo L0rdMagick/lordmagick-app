@@ -10,7 +10,8 @@ import type {
     GeneratedWiccanSpell,
     GeneratedLoveSpell,
     NeuralLinkResult,
-    RealityPatchRitualData
+    RealityPatchRitualData,
+    GrimoireCustomization
 } from '../types';
 
 // Initialize the Supabase client for browser usage
@@ -557,4 +558,47 @@ export const updateSpell = async (userId: string, spellId: string, updates: Part
         throw new Error("Could not update the Grimoire entry.");
     }
     return data as Spell;
+};
+
+// ==========================================
+// 7. GRIMOIRE CUSTOMIZATION PERSISTENCE
+// ==========================================
+
+export const getGrimoireSettings = async (userId: string): Promise<GrimoireCustomization | null> => {
+    try {
+        const { data, error } = await supabase
+            .from('profiles')
+            .select('grimoire_settings')
+            .eq('id', userId)
+            .single();
+
+        if (error) {
+            console.error("Error fetching grimoire settings:", error);
+            return null;
+        }
+
+        // Return the JSON object directly
+        return data?.grimoire_settings as GrimoireCustomization || null;
+    } catch (e) {
+        console.error("Exception fetching grimoire settings:", e);
+        return null;
+    }
+};
+
+export const saveGrimoireSettings = async (userId: string, settings: GrimoireCustomization): Promise<boolean> => {
+    try {
+        const { error } = await supabase
+            .from('profiles')
+            .update({ grimoire_settings: settings })
+            .eq('id', userId);
+
+        if (error) {
+            console.error("Error saving grimoire settings:", error);
+            return false;
+        }
+        return true;
+    } catch (e) {
+        console.error("Exception saving grimoire settings:", e);
+        return false;
+    }
 };

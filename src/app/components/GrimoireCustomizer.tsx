@@ -28,7 +28,8 @@ const FONTS = [
     { name: 'EB Garamond', value: '"EB Garamond"' },
     { name: 'Playfair Display', value: '"Playfair Display"' },
     { name: 'IM Fell English SC', value: '"IM Fell English SC"' },
-    { name: 'UnifrakturMaguntia', value: 'UnifrakturMaguntia' }
+    { name: 'UnifrakturMaguntia', value: 'UnifrakturMaguntia' },
+    { name: 'MedievalSharp', value: '"MedievalSharp"' }
 ];
 
 interface GrimoireCustomizerProps {
