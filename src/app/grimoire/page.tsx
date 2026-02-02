@@ -395,7 +395,7 @@ export default function GrimoirePage() {
                     }}
                 >
                     <h1 
-                        className="text-[5vh] lg:text-[6vh] leading-tight text-[#d4af37] tracking-wider mb-[4vh] [text-shadow:-1px_-1px_2px_rgba(0,0,0,0.9),_1px_1px_0px_rgba(255,255,255,0.2)] opacity-95" 
+                        className="text-[5vh] lg:text-[6vh] leading-tight text-[#d4af37] tracking-wider mb-[4vh] [text-shadow:0px_0px_1px_rgba(0,0,0,1),_0px_0px_3px_rgba(0,0,0,1),_0px_0px_5px_rgba(0,0,0,0.5)] opacity-95" 
                         style={{ fontFamily: `${customization.fontFamily}, serif` }}
                     >
                         {customization.coverTitle.split(' ').map((word, i) => (
