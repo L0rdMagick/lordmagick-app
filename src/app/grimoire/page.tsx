@@ -656,23 +656,22 @@ export default function GrimoirePage() {
                                             >
                                                 {/* Text scale reduced and clamped according to length */}
                                                 <div className="w-full h-full flex flex-col items-center justify-center">
-                                                    {/* Date for Journal Entries - Color High Contrast */}
-                                                    {/* Date for Journal Entries - Color High Contrast */}
-                                                    {isJournal && (ritualData.date || ritualData.timestamp) && (
-                                                         <div 
-                                                            className="text-[1.6vh] text-[#3e2c22] font-bold italic mb-2 z-20 relative drop-shadow-sm"
-                                                            style={{ fontFamily: customization.fontFamily }}
-                                                         >
-                                                            {ritualData.date || ritualData.timestamp}
-                                                        </div>
-                                                    )}
-                                                    
                                                     <h3 
                                                         className={`font-serif font-bold ${cardTitleSize} leading-tight text-[#3e2c22] drop-shadow-sm text-balance line-clamp-4`}
                                                         style={{ fontFamily: customization.fontFamily }}
                                                     >
                                                         {spell.name}
                                                     </h3>
+                                                    
+                                                    {/* Date for Journal Entries - Color High Contrast */}
+                                                    {isJournal && (ritualData.date || ritualData.timestamp) && (
+                                                         <div 
+                                                            className="text-[1.6vh] text-[#3e2c22] font-bold italic mt-2 z-20 relative drop-shadow-sm"
+                                                            style={{ fontFamily: customization.fontFamily }}
+                                                         >
+                                                            {ritualData.date || ritualData.timestamp}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
