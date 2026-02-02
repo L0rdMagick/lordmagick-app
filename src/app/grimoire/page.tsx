@@ -127,24 +127,14 @@ export default function GrimoirePage() {
     const audioContextRef = useRef<AudioContext | null>(null);
 
     // Helper: Play Sound
-    const playSound = (type: 'page-turn' | 'book-open-close' | 'select' | 'magic') => {
-        const audio = new Audio();
-        audio.volume = 0.4;
-        switch (type) {
-            case 'page-turn':
-                audio.src = '/audio/sfx-parchment-open.mp3';
-                break;
-            case 'book-open-close':
-                audio.src = '/audio/sfx-stone-thud.mp3';
-                break;
-            case 'select':
-                audio.src = '/audio/sfx-scribing.mp3';
-                break;
-            case 'magic':
-                audio.src = '/audio/sfx-shimmer.mp3';
-                break;
-        }
-        audio.play().catch(e => console.log("Audio play prevented", e));
+    // Helper for playing sounds
+    const playSound = (key: keyof typeof AUDIO) => {
+        const audio = new Audio(AUDIO[key]);
+        audio.volume = 0.5;
+        // Specific volume tweaks if needed
+        if (key === 'BOOK_CLOSE_OPEN') audio.volume = 0.6;
+        if (key === 'OPEN_RITUAL') audio.volume = 0.6;
+        audio.play().catch(e => console.warn("Audio play failed", e));
     };
 
     // Load Data
@@ -208,6 +198,7 @@ export default function GrimoirePage() {
         });
         setEditingSpell(null);
         setViewMode('TOC'); // Go back to TOC to see it
+        playSound('SAVE_SUCCESS');
     };
 
     // Derived Data: Sections
@@ -259,7 +250,7 @@ export default function GrimoirePage() {
     
     const triggerTransition = (nextStateFn: () => void) => {
         setTransitioning(true);
-        playSound('page-turn');
+        playSound('PAGE_TURN');
         setTimeout(() => {
             nextStateFn();
             // Start fade in
@@ -612,9 +603,9 @@ export default function GrimoirePage() {
                                             >
                                                 {/* Text scale reduced and clamped according to length */}
                                                 <div className="w-full h-full flex flex-col items-center justify-center">
-                                                    {/* Date for Journal Entries */}
+                                                    {/* Date for Journal Entries - Color darkened for visibility */}
                                                     {isJournal && ritualData.timestamp && (
-                                                         <div className="text-[1.2vh] text-[#8b4513]/60 italic font-serif mb-1">
+                                                         <div className="text-[1.4vh] text-[#5c4033] font-bold italic font-serif mb-2 z-20 relative">
                                                             {ritualData.timestamp}
                                                         </div>
                                                     )}
@@ -758,25 +749,29 @@ export default function GrimoirePage() {
                         className="object-cover rounded-sm" 
                     />
 
-                    {/* Navigation Arrows for Custom Spells - Absolute Centered */}
+                    {/* Navigation Arrows for Custom Spells - Styled Identical to Main Navigation */ }
                     {isCustom && (
                         <>
                              {/* Left Arrow */}
-                             <button 
+                             <button
                                 onClick={handleDetailPrev}
                                 disabled={detailPage === 0}
-                                className={`absolute left-[-20px] md:left-[-40px] top-1/2 -translate-y-1/2 z-50 p-2 text-[#8b4513] hover:text-[#d4af37] transition-all ${detailPage === 0 ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+                                className={`absolute left-[-20px] md:left-[-40px] top-1/2 -translate-y-1/2 z-50 group transition-all duration-300 focus:outline-none ${detailPage === 0 ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
                             >
-                                <ChevronLeft size={48} className="drop-shadow-lg" />
+                                <div className="p-2 rounded-full border-2 border-[#8b4513]/60 bg-[#1a120b]/80 text-[#8b4513] group-hover:text-[#d4af37] group-hover:border-[#d4af37] group-hover:bg-black/90 group-hover:shadow-[0_0_15px_rgba(212,175,55,0.4)] transition-all backdrop-blur-[2px]">
+                                    <ChevronLeft size={24} className="md:w-6 md:h-6" strokeWidth={2} />
+                                </div>
                             </button>
                             
                              {/* Right Arrow */}
-                             <button 
+                             <button
                                 onClick={handleDetailNext}
                                 disabled={detailPage === customPages.length - 1}
-                                className={`absolute right-[-20px] md:right-[-40px] top-1/2 -translate-y-1/2 z-50 p-2 text-[#8b4513] hover:text-[#d4af37] transition-all ${detailPage === customPages.length - 1 ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+                                className={`absolute right-[-20px] md:right-[-40px] top-1/2 -translate-y-1/2 z-50 group transition-all duration-300 focus:outline-none ${detailPage === customPages.length - 1 ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
                             >
-                                <ChevronRight size={48} className="drop-shadow-lg" />
+                                <div className="p-2 rounded-full border-2 border-[#8b4513]/60 bg-[#1a120b]/80 text-[#8b4513] group-hover:text-[#d4af37] group-hover:border-[#d4af37] group-hover:bg-black/90 group-hover:shadow-[0_0_15px_rgba(212,175,55,0.4)] transition-all backdrop-blur-[2px]">
+                                    <ChevronRight size={24} className="md:w-6 md:h-6" strokeWidth={2} />
+                                </div>
                             </button>
                         </>
                     )}
@@ -827,6 +822,7 @@ export default function GrimoirePage() {
                                             {replayUrl && (
                                                 <Link 
                                                     href={replayUrl}
+                                                    onClick={() => playSound('OPEN_RITUAL')}
                                                     className="block w-full py-[1.5vh] bg-[#5c4033] text-[#d4af37] border border-[#d4af37]/30 font-serif uppercase tracking-widest text-[1.2vh] rounded hover:bg-[#3e2c22] transition-colors shadow-lg"
                                                 >
                                                     Open Ritual
@@ -844,17 +840,25 @@ export default function GrimoirePage() {
                                         </div>
                                         <div className="flex justify-between items-start w-full">
                                             <h2 className="font-serif font-bold text-[2.5vh] mb-4 text-[#3e2c22] shrink-0 leading-tight" style={{ fontFamily: customization.fontFamily }}>{spell.name}</h2>
-                                            <button 
-                                                onClick={() => {
-                                                    setEditingSpell(spell);
-                                                    onClose(); // Close modal
-                                                    setViewMode('CREATE_JOURNAL');
-                                                }}
-                                                className="text-[#8b4513] hover:text-[#d4af37] p-2 transition-colors"
-                                                title="Edit Entry"
-                                            >
-                                                <PenTool size={16} />
-                                            </button>
+                                            {/* Edit Button for ALL Custom Spells (Generic or Journal) */}
+                                            {isCustom && (
+                                                <button 
+                                                    onClick={() => {
+                                                        setEditingSpell(spell);
+                                                        onClose(); 
+                                                        // Determine mode based on type
+                                                        if (isJournal) {
+                                                            setViewMode('CREATE_JOURNAL');
+                                                        } else {
+                                                            setViewMode('CREATE_SPELL');
+                                                        }
+                                                    }}
+                                                    className="text-[#8b4513] hover:text-[#d4af37] p-2 transition-colors z-[60]"
+                                                    title="Edit Entry"
+                                                >
+                                                    <PenTool size={16} />
+                                                </button>
+                                            )}
                                         </div>
                                         <div className="font-handwriting text-[2vh] text-[#3e2c22] whitespace-pre-wrap text-left leading-relaxed">
                                             {ritualData.content}
@@ -941,10 +945,18 @@ export default function GrimoirePage() {
                         {viewMode === 'CREATE_SPELL' && currentUserId && (
                             <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center">
                                 <div className="h-[95vh] w-auto aspect-[1529/2048]">
-                                    <CustomSpellWizard 
+                                    <CustomSpellWizard
                                         userId={currentUserId}
-                                        onClose={() => setViewMode('TOC')}
-                                        onComplete={handleSpellCreated}
+                                        onClose={() => {
+                                            playSound('PAGE_TURN');
+                                            setEditingSpell(null);
+                                            setViewMode('TOC');
+                                        }}
+                                        onComplete={(s) => {
+                                            playSound('SAVE_SUCCESS');
+                                            handleSpellCreated(s);
+                                        }}
+                                        initialData={editingSpell || undefined}
                                     />
                                 </div>
                             </div>
@@ -956,10 +968,14 @@ export default function GrimoirePage() {
                                     <JournalEntryEditor 
                                         userId={currentUserId}
                                         onClose={() => {
+                                            playSound('PAGE_TURN');
                                             setEditingSpell(null);
                                             setViewMode('TOC');
                                         }}
-                                        onComplete={handleSpellCreated}
+                                        onComplete={(s) => {
+                                             playSound('SAVE_SUCCESS');
+                                             handleSpellCreated(s);
+                                        }}
                                         initialData={editingSpell || undefined}
                                     />
                                 </div>

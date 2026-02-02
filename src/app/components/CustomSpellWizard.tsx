@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { saveSpell } from '@/lib/services/geminiService';
+import { saveSpell, updateSpell } from '@/lib/services/geminiService';
 import { Spell } from '@/lib/types';
 import Image from 'next/image';
 import { ChevronRight, ChevronLeft, Save, X, Plus } from 'lucide-react';
@@ -10,6 +10,7 @@ interface CustomSpellWizardProps {
     userId: string;
     onClose: () => void;
     onComplete: (spell: Spell) => void;
+    initialData?: Spell;
 }
 
 type WizardStep = 'TITLE' | 'PURPOSE' | 'INGREDIENTS' | 'INSTRUCTIONS' | 'PREVIEW';
@@ -40,15 +41,28 @@ const Wrapper = ({
     </div>
 );
 
-export default function CustomSpellWizard({ userId, onClose, onComplete }: CustomSpellWizardProps) {
+export default function CustomSpellWizard({ userId, onClose, onComplete, initialData }: CustomSpellWizardProps) {
     const [step, setStep] = useState<WizardStep>('TITLE');
     const [loading, setLoading] = useState(false);
     
-    // Spell Data
-    const [title, setTitle] = useState('');
-    const [purpose, setPurpose] = useState('');
-    const [ingredients, setIngredients] = useState('');
-    const [instructions, setInstructions] = useState<string[]>([]);
+    // Spell Data - Initialize from initialData if present
+    const [title, setTitle] = useState(() => initialData?.name || '');
+    const [purpose, setPurpose] = useState(() => initialData?.intention || '');
+    // Need to parse ritual_data for ingredients/instructions
+    const [ingredients, setIngredients] = useState(() => {
+        if (initialData?.ritual_data) {
+             const data = typeof initialData.ritual_data === 'string' ? JSON.parse(initialData.ritual_data) : initialData.ritual_data;
+             return data.ingredients || '';
+        }
+        return '';
+    });
+    const [instructions, setInstructions] = useState<string[]>(() => {
+         if (initialData?.ritual_data) {
+             const data = typeof initialData.ritual_data === 'string' ? JSON.parse(initialData.ritual_data) : initialData.ritual_data;
+             return data.instructions || [];
+        }
+        return [];
+    });
     const [currentInstruction, setCurrentInstruction] = useState('');
 
     const handleNext = () => {
@@ -87,22 +101,41 @@ export default function CustomSpellWizard({ userId, onClose, onComplete }: Custo
     const handleSave = async () => {
         setLoading(true);
         try {
-            const finalSpell = await saveSpell(
-                userId,
-                {
-                    name: title,
-                    intention: purpose,
-                    incantation: "", // Optional
-                    ritual_data: {
-                        type: 'CUSTOM', // Important for identification
-                        ingredients: ingredients,
-                        instructions: instructions
+            if (initialData?.id) {
+                // Update
+                const updatedSpell = await updateSpell(
+                    userId,
+                    initialData.id,
+                    {
+                        name: title,
+                        intention: purpose,
+                        ritual_data: {
+                            type: 'CUSTOM', // Important for identification
+                            ingredients: ingredients,
+                            instructions: instructions
+                        }
+                    }
+                );
+                onComplete(updatedSpell);
+            } else {
+                // Create New
+                const finalSpell = await saveSpell(
+                    userId,
+                    {
+                        name: title,
+                        intention: purpose,
+                        incantation: "", 
+                        ritual_data: {
+                            type: 'CUSTOM', 
+                            ingredients: ingredients,
+                            instructions: instructions
+                        },
+                        tradition: 'CUSTOM' as any 
                     },
-                    tradition: 'CUSTOM' as any // Force cast if needed
-                },
-                true // Bypass limit? Or check? Let's assume standard flow for now but maybe free?
-            );
-            onComplete(finalSpell);
+                    true 
+                );
+                onComplete(finalSpell);
+            }
         } catch (e) {
             console.error("Failed to save custom spell", e);
             alert("Failed to inscribe the spell into the Grimoire.");
