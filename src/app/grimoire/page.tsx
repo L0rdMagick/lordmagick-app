@@ -658,7 +658,7 @@ export default function GrimoirePage() {
                                                 {/* Text scale reduced and clamped according to length */}
                                                 <div className="w-full h-full flex flex-col items-center justify-center">
                                                     <h3 
-                                                        className={`font-serif font-bold ${cardTitleSize} drop-shadow-sm text-balance line-clamp-3`}
+                                                        className={`font-serif font-bold ${cardTitleSize} text-[#3e2c22] drop-shadow-sm text-balance line-clamp-3`}
                                                         style={{ fontFamily: customization.fontFamily }}
                                                     >
                                                         {spell.name}
