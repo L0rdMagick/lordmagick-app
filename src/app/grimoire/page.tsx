@@ -365,14 +365,14 @@ export default function GrimoirePage() {
             top: '11.12%', 
             width: '55.07%', 
             height: '11.13%',
-            // debug: '1px solid red' 
+            border: '2px dashed red' 
         },
         BODY_ZONE: {
             left: '25.40%', 
             top: '29.46%', 
             width: '55.07%', 
             height: '50.02%',
-            // debug: '1px solid blue'
+            border: '2px dashed blue'
         }
     };
 

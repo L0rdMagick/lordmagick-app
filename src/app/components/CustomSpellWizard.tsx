@@ -26,7 +26,8 @@ const PAGE_LAYOUT = {
         position: 'absolute' as const,
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'center'
+        justifyContent: 'center',
+        border: '2px dashed red'
     },
     BODY_ZONE: {
         left: '25.40%', 
@@ -34,7 +35,8 @@ const PAGE_LAYOUT = {
         width: '55.07%', 
         height: '50.02%',
         position: 'absolute' as const,
-        overflow: 'hidden'
+        overflow: 'hidden',
+        border: '2px dashed blue'
     }
 };
 
