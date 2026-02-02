@@ -221,9 +221,11 @@ export default function GrimoirePage() {
                     
                     if (settings) {
                         console.log("Grimoire: Settings loaded from DB", settings);
-                        setCustomization(settings);
+                        // Merge with defaults to prevent undefined values if DB record is partial/empty
+                        const merged = { ...DEFAULT_CUSTOMIZATION, ...settings };
+                        setCustomization(merged);
                         // Update local cache just in case
-                        localStorage.setItem('grimoire_customization', JSON.stringify(settings));
+                        localStorage.setItem('grimoire_customization', JSON.stringify(merged));
                     } else {
                         // Fallback to local storage if DB is empty/new
                         const savedCustomization = localStorage.getItem('grimoire_customization');
