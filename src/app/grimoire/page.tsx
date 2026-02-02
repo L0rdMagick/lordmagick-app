@@ -426,7 +426,7 @@ export default function GrimoirePage() {
     };
 
     const renderCover = () => (
-        <div className="relative h-full w-auto max-w-[90vh] aspect-[1529/2048] shadow-2xl shrink-0">
+        <div className="relative h-full w-full md:w-auto max-w-[90vh] aspect-[1529/2048] shadow-2xl shrink-0">
             <Image 
                 src={customization.coverImage}
                 alt="Grimoire Cover" 
@@ -476,7 +476,7 @@ export default function GrimoirePage() {
 
     const renderBookPage = (content: React.ReactNode) => {
         return (
-            <div className="relative h-full w-auto max-w-[90vh] aspect-[1529/2048] shadow-2xl shrink-0">
+            <div className="relative h-full w-full md:w-auto max-w-[90vh] aspect-[1529/2048] shadow-2xl shrink-0">
                 <Image 
                     src={customization.pageStyle} 
                     alt="Grimoire Page" 
@@ -689,7 +689,7 @@ export default function GrimoirePage() {
     );
 
     const renderTheEnd = () => (
-        <div className="relative h-full w-auto max-w-[90vh] aspect-[1529/2048] shadow-2xl shrink-0">
+        <div className="relative h-full w-full md:w-auto max-w-[90vh] aspect-[1529/2048] shadow-2xl shrink-0">
             {/* Clean Page for The End */}
             <Image 
                 src={customization.pageStyle} 
@@ -1079,7 +1079,7 @@ export default function GrimoirePage() {
 
             {!loading && viewMode === 'CREATE_SPELL' && currentUserId && (
                 <div className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center pointer-events-auto px-2 py-[10vh] md:px-8 md:py-[5vh]">
-                    <div className="relative h-full w-auto max-w-[90vh] aspect-[1529/2048]">
+                    <div className="relative h-full w-full md:w-auto max-w-[90vh] aspect-[1529/2048]">
                         <CustomSpellWizard
                             userId={currentUserId}
                             onClose={() => {
@@ -1101,7 +1101,7 @@ export default function GrimoirePage() {
 
             {!loading && viewMode === 'CREATE_JOURNAL' && currentUserId && (
                 <div className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center pointer-events-auto px-2 py-[10vh] md:px-8 md:py-[5vh]">
-                    <div className="relative h-full w-auto max-w-[90vh] aspect-[1529/2048]">
+                    <div className="relative h-full w-full md:w-auto max-w-[90vh] aspect-[1529/2048]">
                         <JournalEntryEditor 
                             userId={currentUserId}
                             onClose={() => {
