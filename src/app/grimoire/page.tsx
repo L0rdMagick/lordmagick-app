@@ -107,7 +107,7 @@ const getSpellMetadata = (spell: Spell): SpellMetadata => {
 const SOUND_CONFIG = {
     PAGE_TURN: { 
         path: '/audio/sfx-parchment-open.mp3', 
-        volume: 3, 
+        volume: 2, 
         description: "Flipping pages, Next/Back buttons" 
     },
     BOOK_CLOSE_OPEN: { 
@@ -117,12 +117,12 @@ const SOUND_CONFIG = {
     },
     SELECT: { 
         path: '/audio/sfx-parchment-open.mp3', 
-        volume: 3, 
+        volume: 2, 
         description: "Selecting a spell card (Parchment sound)" 
     },
     OPEN_RITUAL: { 
         path: '/audio/sfx-finding-something-2.mp3', 
-        volume: 2, 
+        volume: 1, 
         description: "Opening a specific ritual detail view" 
     },
     WRITE_SPELL: { 
@@ -132,7 +132,7 @@ const SOUND_CONFIG = {
     },
     SAVE_SUCCESS: { 
         path: '/audio/OG - sfx-shimmer.mp3', 
-        volume: 3, 
+        volume: 1, 
         description: "Successfully saving a spell or journal entry" 
     },
     SCRIBE: { 
