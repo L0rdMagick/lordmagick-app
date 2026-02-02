@@ -167,6 +167,7 @@ export default function GrimoirePage() {
 
     // Audio Refs
     const audioContextRef = useRef<AudioContext | null>(null);
+    const scribeAudioRef = useRef<HTMLAudioElement | null>(null);
 
     // Helper: Play Sound
     // Helper: Play Sound
@@ -175,9 +176,20 @@ export default function GrimoirePage() {
         const config = SOUND_CONFIG[key];
         if (!config) return;
 
+        // Debounce SCRIBE trigger: Strict "1 at a time"
+        if (key === 'SCRIBE') {
+            if (scribeAudioRef.current && !scribeAudioRef.current.paused) {
+                return; // Currently playing, ignore new stroke
+            }
+        }
+
         const audio = new Audio(config.path);
         // Map 1-10 volume to 0.1-1.0
         audio.volume = Math.min(Math.max(config.volume / 10, 0), 1);
+        
+        if (key === 'SCRIBE') {
+            scribeAudioRef.current = audio;
+        }
         
         audio.play().catch(e => console.warn(`Audio play failed for ${key}`, e));
     };
