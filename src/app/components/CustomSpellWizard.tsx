@@ -11,6 +11,7 @@ interface CustomSpellWizardProps {
     onClose: () => void;
     onComplete: (spell: Spell) => void;
     initialData?: Spell;
+    onPlaySound: (key: 'PAGE_TURN' | 'SAVE_SUCCESS' | 'SCRIBE') => void;
 }
 
 type WizardStep = 'TITLE' | 'PURPOSE' | 'INGREDIENTS' | 'INSTRUCTIONS' | 'PREVIEW';
@@ -70,7 +71,7 @@ const Wrapper = ({
     </>
 );
 
-export default function CustomSpellWizard({ userId, onClose, onComplete, initialData }: CustomSpellWizardProps) {
+export default function CustomSpellWizard({ userId, onClose, onComplete, initialData, onPlaySound }: CustomSpellWizardProps) {
     const [step, setStep] = useState<WizardStep>('TITLE');
     const [loading, setLoading] = useState(false);
     
@@ -96,6 +97,7 @@ export default function CustomSpellWizard({ userId, onClose, onComplete, initial
     const [editIndex, setEditIndex] = useState(0);
 
     const handleNext = () => {
+        onPlaySound('PAGE_TURN'); // Transition sound
         if (step === 'TITLE' && title) setStep('PURPOSE');
         else if (step === 'PURPOSE' && purpose) setStep('INGREDIENTS');
         else if (step === 'INGREDIENTS') setStep('INSTRUCTIONS');
@@ -201,6 +203,10 @@ export default function CustomSpellWizard({ userId, onClose, onComplete, initial
                     },
                     true 
                 );
+                // Play sound in parent via onComplete or here? Parent handles it better for consistency, but we can do it here. 
+                // Actually parent does it in handleSpellCreated. So just onComplete here.
+                // But wait, user asked for specific sounds. GrimoirePage uses SAVE_SUCCESS on handleSpellCreated.
+                // So we rely on parent callback chain.
                 onComplete(finalSpell);
             }
         } catch (e) {
@@ -238,7 +244,10 @@ export default function CustomSpellWizard({ userId, onClose, onComplete, initial
                              <input 
                                 type="text"
                                 value={title}
-                                onChange={(e) => setTitle(e.target.value)}
+                                onChange={(e) => {
+                                    setTitle(e.target.value);
+                                    onPlaySound('SCRIBE');
+                                }}
                                 placeholder="Enter Spell Title..."
                                 className="w-full bg-transparent border-b-2 border-[#8b4513]/50 text-left pl-2 text-[2.5vh] font-serif text-[#3e2c22] focus:outline-none focus:border-[#d4af37] placeholder:text-[#8b4513]/30"
                                 autoFocus
@@ -257,7 +266,10 @@ export default function CustomSpellWizard({ userId, onClose, onComplete, initial
                          <Wrapper title="Spell Purpose" onBack={handleBack} isFirstStep={false}>
                             <textarea
                                 value={purpose}
-                                onChange={(e) => setPurpose(e.target.value)}
+                                onChange={(e) => {
+                                    setPurpose(e.target.value);
+                                    onPlaySound('SCRIBE');
+                                }}
                                 placeholder="What is the intention of this working?"
                                 className="w-full h-[30vh] bg-transparent border border-[#8b4513]/30 p-4 font-serif text-[1.8vh] text-[#3e2c22] focus:outline-none focus:border-[#d4af37] resize-none rounded custom-scrollbar placeholder:text-[#8b4513]/30"
                                 autoFocus
@@ -276,7 +288,10 @@ export default function CustomSpellWizard({ userId, onClose, onComplete, initial
                           <Wrapper title="Ingredients" onBack={handleBack} isFirstStep={false}>
                             <textarea
                                 value={ingredients}
-                                onChange={(e) => setIngredients(e.target.value)}
+                                onChange={(e) => {
+                                    setIngredients(e.target.value);
+                                    onPlaySound('SCRIBE');
+                                }}
                                 placeholder="List required items (candles, herbs, crystals...)"
                                 className="w-full h-[30vh] bg-transparent border border-[#8b4513]/30 p-4 font-serif text-[1.8vh] text-[#3e2c22] focus:outline-none focus:border-[#d4af37] resize-none rounded custom-scrollbar placeholder:text-[#8b4513]/30"
                                 autoFocus

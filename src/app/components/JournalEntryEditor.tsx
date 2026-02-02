@@ -11,6 +11,7 @@ interface JournalEntryEditorProps {
     onClose: () => void;
     onComplete: (spell: Spell) => void;
     initialData?: Spell;
+    onPlaySound: (key: 'SCRIBE' | 'SAVE_SUCCESS') => void;
 }
 
 // --- LAYOUT CONSTANTS ---
@@ -36,7 +37,7 @@ const PAGE_LAYOUT = {
     }
 };
 
-export default function JournalEntryEditor({ userId, onClose, onComplete, initialData }: JournalEntryEditorProps) {
+export default function JournalEntryEditor({ userId, onClose, onComplete, initialData, onPlaySound }: JournalEntryEditorProps) {
     const [loading, setLoading] = useState(false);
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
@@ -60,30 +61,11 @@ export default function JournalEntryEditor({ userId, onClose, onComplete, initia
         }
     }, [initialData]);
     
-    // Audio Ref
-    const audioRef = useRef<HTMLAudioElement | null>(null);
-
-    const playScribble = () => {
-        if (!audioRef.current) {
-            audioRef.current = new Audio('/audio/sfx-scribing.mp3');
-            audioRef.current.volume = 0.3;
-        }
-        if (audioRef.current.paused) {
-            audioRef.current.play().catch(e => console.warn("Audio play failed", e));
-        }
-    };
-
-    const stopScribble = () => {
-        // Optional: stop immediately or let it finish. 
-        // Let's not interrupt too abruptly, but maybe pause if they stop typing for a while?
-        // Simpler implementation: just play on keypress
-    };
+    // Audio removed - delegated to onPlaySound
 
     const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         setContent(e.target.value);
-        // Play sound occasionally or debounce?
-        // Let's try playing if it's not playing
-        playScribble();
+        onPlaySound('SCRIBE');
     };
 
     const handleSave = async () => {
@@ -152,7 +134,10 @@ export default function JournalEntryEditor({ userId, onClose, onComplete, initia
                         <input 
                             type="text"
                             value={title}
-                            onChange={(e) => setTitle(e.target.value)}
+                            onChange={(e) => {
+                                setTitle(e.target.value);
+                                onPlaySound('SCRIBE');
+                            }}
                             placeholder="Entry Title..."
                             className="w-full bg-transparent font-serif font-bold text-[2.2vh] text-[#3e2c22] placeholder:text-[#8b4513]/40 focus:outline-none text-center"
                         />

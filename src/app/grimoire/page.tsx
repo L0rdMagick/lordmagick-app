@@ -102,15 +102,47 @@ const getSpellMetadata = (spell: Spell): SpellMetadata => {
 };
 
 
-// --- AUDIO CONFIG ---
-const AUDIO = {
-    PAGE_TURN: '/audio/page-turn.mp3',
-    BOOK_CLOSE_OPEN: '/audio/book-close-open.mp3',
-    SELECT: '/audio/page-turn.mp3', // User requested page turn for card select
-    OPEN_RITUAL: '/audio/sfx-finding-something-2.mp3',
-    WRITE_SPELL: '/audio/sfx-parchment-open.mp3',
-    SAVE_SUCCESS: '/audio/sfx-finding-something-2.mp3', // For confirmation
+// --- AUDIO CONFIGURATION ---
+// User Volume Control (1-10)
+const SOUND_CONFIG = {
+    PAGE_TURN: { 
+        path: '/audio/sfx-parchment-open.mp3', 
+        volume: 6, 
+        description: "Flipping pages, Next/Back buttons" 
+    },
+    BOOK_CLOSE_OPEN: { 
+        path: '/audio/book-close-open.mp3', 
+        volume: 7, 
+        description: "Opening or closing the Grimoire" 
+    },
+    SELECT: { 
+        path: '/audio/sfx-parchment-open.mp3', 
+        volume: 5, 
+        description: "Selecting a spell card (Parchment sound)" 
+    },
+    OPEN_RITUAL: { 
+        path: '/audio/sfx-finding-something-2.mp3', 
+        volume: 6, 
+        description: "Opening a specific ritual detail view" 
+    },
+    WRITE_SPELL: { 
+        path: '/audio/sfx-parchment-open.mp3', 
+        volume: 6, 
+        description: "Clicking 'Write Spell' or 'Journal Entry' buttons" 
+    },
+    SAVE_SUCCESS: { 
+        path: '/audio/OG - sfx-shimmer.mp3', 
+        volume: 7, 
+        description: "Successfully saving a spell or journal entry" 
+    },
+    SCRIBE: { 
+        path: '/audio/sfx-scribing.mp3', 
+        volume: 4, 
+        description: "Writing/Typing sound effect (looping or per stroke)" 
+    }
 };
+
+export type SoundKey = keyof typeof SOUND_CONFIG;
 
 export default function GrimoirePage() {
     // --- STATE ---
@@ -137,14 +169,17 @@ export default function GrimoirePage() {
     const audioContextRef = useRef<AudioContext | null>(null);
 
     // Helper: Play Sound
-    // Helper for playing sounds
-    const playSound = (key: keyof typeof AUDIO) => {
-        const audio = new Audio(AUDIO[key]);
-        audio.volume = 0.5;
-        // Specific volume tweaks if needed
-        if (key === 'BOOK_CLOSE_OPEN') audio.volume = 0.6;
-        if (key === 'OPEN_RITUAL') audio.volume = 0.6;
-        audio.play().catch(e => console.warn("Audio play failed", e));
+    // Helper: Play Sound
+    // Centralized audio handler using SOUND_CONFIG
+    const playSound = (key: SoundKey) => {
+        const config = SOUND_CONFIG[key];
+        if (!config) return;
+
+        const audio = new Audio(config.path);
+        // Map 1-10 volume to 0.1-1.0
+        audio.volume = Math.min(Math.max(config.volume / 10, 0), 1);
+        
+        audio.play().catch(e => console.warn(`Audio play failed for ${key}`, e));
     };
 
     // Load Data
@@ -1004,10 +1039,11 @@ export default function GrimoirePage() {
                                 setViewMode('TOC');
                             }}
                             onComplete={(s) => {
-                                playSound('SAVE_SUCCESS');
+                                // playSound('SAVE_SUCCESS'); // Handled by handleSpellCreated
                                 handleSpellCreated(s);
                             }}
                             initialData={editingSpell || undefined}
+                            onPlaySound={playSound}
                         />
                     </div>
                 </div>
@@ -1028,6 +1064,7 @@ export default function GrimoirePage() {
                                     handleSpellCreated(s);
                             }}
                             initialData={editingSpell || undefined}
+                            onPlaySound={playSound}
                         />
                     </div>
                 </div>
