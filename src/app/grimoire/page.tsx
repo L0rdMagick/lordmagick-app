@@ -751,7 +751,8 @@ export default function GrimoirePage() {
         const [detailPage, setDetailPage] = useState(0); 
         
         // Is it custom with multiple pages?
-        const isJournal = ritualData.type === 'JOURNAL';
+        // Fix logic to ensure journal text type is caught even if tradition is Custom
+        const isJournal = (spell.tradition === 'CUSTOM' as any && ritualData.type === 'JOURNAL') || ritualData.type === 'JOURNAL';
         const isCustom = (spell.tradition === 'CUSTOM' as any || ritualData.type === 'CUSTOM') && !isJournal;
 
         const customPages = isCustom && ritualData.instructions ? [
@@ -777,13 +778,7 @@ export default function GrimoirePage() {
 
         return (
             <div className="fixed inset-0 z-50 flex items-center justify-center px-2 py-[10vh] md:px-8 md:py-[5vh] bg-black/90 backdrop-blur-md">
-                <div 
-                    className="relative shadow-2xl"
-                    style={{
-                        aspectRatio: '947/1681',
-                        width: 'min(90vw, 85vh * 0.5633)'
-                    }}
-                >
+                <div className="relative h-full w-full md:w-auto max-w-[90vh] aspect-[1529/2048] shadow-2xl shrink-0">
                     {!showConfirm && (
                         <>
                             <button 
@@ -801,21 +796,23 @@ export default function GrimoirePage() {
                         </>
                     )}
                     
+                    {/* Standard Page Background */}
                     <Image 
-                        src="/images/grimoire-images/detailed-spell-info.png"
-                        alt={spell.name} 
+                        src={customization.pageStyle}
+                        alt="Grimoire Page" 
                         fill 
-                        className="object-cover rounded-sm" 
+                        className="object-fill" // Use object-fill to match page behavior
+                        priority
                     />
 
-                    {/* Navigation Arrows for Custom Spells - Styled Identical to Main Navigation */ }
+                    {/* Navigation Arrows for Custom Spells */}
                     {isCustom && (
                         <>
                              {/* Left Arrow */}
                              <button
                                 onClick={handleDetailPrev}
                                 disabled={detailPage === 0}
-                                className={`absolute left-[-20px] md:left-[-40px] top-1/2 -translate-y-1/2 z-50 group transition-all duration-300 focus:outline-none ${detailPage === 0 ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+                                className={`absolute left-[2%] top-1/2 -translate-y-1/2 z-50 group transition-all duration-300 focus:outline-none ${detailPage === 0 ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
                             >
                                 <div className="p-2 rounded-full border-2 border-[#8b4513]/60 bg-[#1a120b]/80 text-[#8b4513] group-hover:text-[#d4af37] group-hover:border-[#d4af37] group-hover:bg-black/90 group-hover:shadow-[0_0_15px_rgba(212,175,55,0.4)] transition-all backdrop-blur-[2px]">
                                     <ChevronLeft size={24} className="md:w-6 md:h-6" strokeWidth={2} />
@@ -826,7 +823,7 @@ export default function GrimoirePage() {
                              <button
                                 onClick={handleDetailNext}
                                 disabled={detailPage === customPages.length - 1}
-                                className={`absolute right-[-20px] md:right-[-40px] top-1/2 -translate-y-1/2 z-50 group transition-all duration-300 focus:outline-none ${detailPage === customPages.length - 1 ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+                                className={`absolute right-[2%] top-1/2 -translate-y-1/2 z-50 group transition-all duration-300 focus:outline-none ${detailPage === customPages.length - 1 ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
                             >
                                 <div className="p-2 rounded-full border-2 border-[#8b4513]/60 bg-[#1a120b]/80 text-[#8b4513] group-hover:text-[#d4af37] group-hover:border-[#d4af37] group-hover:bg-black/90 group-hover:shadow-[0_0_15px_rgba(212,175,55,0.4)] transition-all backdrop-blur-[2px]">
                                     <ChevronRight size={24} className="md:w-6 md:h-6" strokeWidth={2} />
@@ -835,156 +832,137 @@ export default function GrimoirePage() {
                         </>
                     )}
                     
-                    <div 
-                        className="absolute flex flex-col items-center text-center z-10 overflow-hidden px-[5px]"
-                        style={{
-                           left: '20%',
-                           top: '18%',
-                           width: '65%',
-                           height: '64%'
-                        }}
-                    >
-                        {showConfirm ? (
-                            <div className="w-full h-full flex flex-col items-center justify-center p-4">
-                                <h3 className="font-medieval font-bold text-[#3e2c22] text-[2.5vh] mb-4 leading-tight">Burn this Spell?</h3>
-                                <p className="font-medieval italic text-[1.8vh] text-[#5c4033] mb-6 text-balance">
-                                    "This action cannot be undone. The pages will be burned from the Grimoire forever."
-                                </p>
-                                <div className="flex flex-col gap-3 w-full">
-                                    <button 
-                                        onClick={() => onDelete(spell.id)}
-                                        className="w-full py-[1vh] bg-[#8b4513] text-[#f4e4bc] font-medieval uppercase tracking-widest text-[1.5vh] rounded hover:bg-[#5c4033] transition-colors shadow-lg"
-                                    >
-                                        Yes, Burn It
-                                    </button>
-                                    <button 
-                                        onClick={() => setShowConfirm(false)}
-                                        className="w-full py-[1vh] border border-[#8b4513]/40 text-[#5c4033] font-medieval uppercase tracking-widest text-[1.4vh] rounded hover:bg-[#8b4513]/10 transition-colors"
-                                    >
-                                        Keep It
-                                    </button>
+                    {/* TITLE ZONE */}
+                    <div style={PAGE_LAYOUT.TITLE_ZONE} className="absolute z-10 flex flex-col items-center justify-end pb-2 border-b border-[#8b4513]/30">
+                         {/* Regular Spell Title */}
+                         {!isCustom && !isJournal && (
+                            <div className="w-full flex items-center justify-center relative">
+                                <h2 className="font-serif font-bold text-[3.5vh] text-[#3e2c22] leading-tight text-center" style={{ fontFamily: customization.fontFamily }}>{spell.name}</h2>
+                            </div>
+                         )}
+
+                         {/* Journal Title & Date */}
+                         {isJournal && (
+                            <div className="w-full flex flex-col items-center text-center">
+                                <h2 className="font-serif font-bold text-[3vh] text-[#3e2c22] leading-tight mb-1" style={{ fontFamily: customization.fontFamily }}>{spell.name}</h2>
+                                <div className="text-[1.8vh] text-[#5c4033] italic" style={{ fontFamily: customization.fontFamily }}>
+                                    {ritualData.day && ritualData.date ? `${ritualData.day}, ${ritualData.date}` : ritualData.timestamp}
                                 </div>
                             </div>
-                         ) : (
-                            <div className="w-full h-full flex flex-col overflow-y-auto custom-scrollbar scrollbar-thin scrollbar-thumb-[#5c4033]/50 p-2 relative">
-                                {/* Regular Spell View */}
-                                {/* Regular Spell View - Fallback */}
-                                {!isCustom && !isJournal && (
-                                    <>
-                                        <div className="flex justify-between items-start w-full">
-                                            <h2 className="font-serif font-bold text-[2.5vh] mb-4 text-[#3e2c22] shrink-0 leading-tight" style={{ fontFamily: customization.fontFamily }}>{spell.name}</h2>
-                                            <button 
-                                                onClick={() => {
-                                                    setEditingSpell(spell);
-                                                    onClose(); 
-                                                    setViewMode('CREATE_SPELL');
-                                                }}
-                                                className="text-[#8b4513] hover:text-[#d4af37] p-2 transition-colors z-[60]"
-                                                title="Edit Spell"
-                                            >
-                                                <PenTool size={16} />
-                                            </button>
-                                        </div>
-                                        <p className="font-medieval italic text-[2vh] text-[#5c4033] mb-6 whitespace-pre-wrap shrink-0 leading-snug">"{spell.intention}"</p>
-                                        {spell.incantation && (
-                                            <div className="font-medieval text-[1.8vh] text-[#8b4513] mb-6 text-center w-full border-t border-[#8b4513]/20 pt-4 shrink-0 font-medium leading-normal">
-                                                {spell.incantation}
-                                            </div>
-                                        )}
-                                        <div className="mt-auto pt-2 w-full shrink-0 sticky bottom-0 bg-transparent pb-1">
-                                            {replayUrl && (
-                                                <Link 
-                                                    href={replayUrl}
-                                                    onClick={() => playSound('OPEN_RITUAL')}
-                                                    className="block w-full py-[1.5vh] bg-[#5c4033] text-[#d4af37] border border-[#d4af37]/30 font-serif uppercase tracking-widest text-[1.2vh] rounded hover:bg-[#3e2c22] transition-colors shadow-lg"
-                                                >
-                                                    Open Ritual
-                                                </Link>
-                                            )}
-                                        </div>
-                                    </>
-                                )}
+                         )}
 
-                                {/* Journal View */}
-                                {isJournal && (
-                                    <>
-                                        <div 
-                                            className="text-[2.2vh] text-[#5c4033] mb-2 italic"
-                                            style={{ fontFamily: customization.fontFamily }}
+                         {/* Custom Spell Title */}
+                         {isCustom && (
+                            <div className="w-full flex items-center justify-center">
+                                <h2 className="font-serif font-bold text-[3.5vh] text-[#3e2c22] leading-tight text-center" style={{ fontFamily: customization.fontFamily }}>{spell.name}</h2>
+                            </div>
+                         )}
+                    </div>
+
+                    {/* BODY ZONE */}
+                    <div style={PAGE_LAYOUT.BODY_ZONE} className="absolute z-10">
+                        <div className="w-full h-full flex flex-col relative">
+                            {showConfirm ? (
+                                <div className="w-full h-full flex flex-col items-center justify-center p-4 text-center">
+                                    <h3 className="font-medieval font-bold text-[#3e2c22] text-[2.5vh] mb-4 leading-tight">Burn this Spell?</h3>
+                                    <p className="font-medieval italic text-[1.8vh] text-[#5c4033] mb-6 text-balance">
+                                        "This action cannot be undone. The pages will be burned from the Grimoire forever."
+                                    </p>
+                                    <div className="flex flex-col gap-3 w-full">
+                                        <button 
+                                            onClick={() => onDelete(spell.id)}
+                                            className="w-full py-[1vh] bg-[#8b4513] text-[#f4e4bc] font-medieval uppercase tracking-widest text-[1.5vh] rounded hover:bg-[#5c4033] transition-colors shadow-lg"
                                         >
-                                            {ritualData.day && ritualData.date ? `${ritualData.day}, ${ritualData.date}` : ritualData.timestamp}
+                                            Yes, Burn It
+                                        </button>
+                                        <button 
+                                            onClick={() => setShowConfirm(false)}
+                                            className="w-full py-[1vh] border border-[#8b4513]/40 text-[#5c4033] font-medieval uppercase tracking-widest text-[1.4vh] rounded hover:bg-[#8b4513]/10 transition-colors"
+                                        >
+                                            Keep It
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="w-full h-full flex flex-col overflow-y-auto custom-scrollbar scrollbar-thin scrollbar-thumb-[#5c4033]/50 p-2">
+                                    {/* Action Buttons (Edit) - Absolute Positioned in Top Right of Body or Inline? Inline might be safer for flow. */}
+                                    <div className="absolute top-0 right-0 z-20">
+                                         <button 
+                                            onClick={() => {
+                                                setEditingSpell(spell);
+                                                onClose(); 
+                                                if (isJournal) setViewMode('CREATE_JOURNAL');
+                                                else setViewMode('CREATE_SPELL');
+                                            }}
+                                            className="text-[#8b4513] hover:text-[#d4af37] p-2 transition-colors"
+                                            title="Edit"
+                                        >
+                                            <PenTool size={16} />
+                                        </button>
+                                    </div>
+
+                                    {/* Regular Spell View */}
+                                    {!isCustom && !isJournal && (
+                                        <div className="pt-2">
+                                            <p className="font-medieval italic text-[2.2vh] text-[#5c4033] mb-6 whitespace-pre-wrap leading-snug text-center">"{spell.intention}"</p>
+                                            {spell.incantation && (
+                                                <div className="font-medieval text-[2vh] text-[#3e2c22] mb-6 text-center w-full border-t border-[#8b4513]/20 pt-4 font-medium leading-normal">
+                                                    {spell.incantation}
+                                                </div>
+                                            )}
+                                            <div className="mt-8 w-full">
+                                                {replayUrl && (
+                                                    <Link 
+                                                        href={replayUrl}
+                                                        onClick={() => playSound('OPEN_RITUAL')}
+                                                        className="block w-full py-[1.5vh] bg-[#5c4033] text-[#d4af37] border border-[#d4af37]/30 font-serif uppercase tracking-widest text-[1.2vh] rounded hover:bg-[#3e2c22] transition-colors shadow-lg text-center"
+                                                    >
+                                                        Open Ritual
+                                                    </Link>
+                                                )}
+                                            </div>
                                         </div>
-                                        <div className="flex justify-between items-start w-full">
-                                            <h2 className="font-serif font-bold text-[2.5vh] mb-4 text-[#3e2c22] shrink-0 leading-tight" style={{ fontFamily: customization.fontFamily }}>{spell.name}</h2>
-                                            {/* Edit Button for ALL Custom Spells (Generic or Journal) */}
-                                            <button 
-                                                onClick={() => {
-                                                    setEditingSpell(spell);
-                                                    onClose(); 
-                                                    // Determine mode based on type
-                                                    if (isJournal) {
-                                                        setViewMode('CREATE_JOURNAL');
-                                                    } else {
-                                                        setViewMode('CREATE_SPELL');
-                                                    }
-                                                }}
-                                                className="text-[#8b4513] hover:text-[#d4af37] p-2 transition-colors z-[60]"
-                                                title="Edit Entry"
-                                            >
-                                                <PenTool size={16} />
-                                            </button>
-                                        </div>
+                                    )}
+
+                                    {/* Journal View */}
+                                    {isJournal && (
                                         <div 
-                                            className="text-[2vh] text-[#3e2c22] whitespace-pre-wrap text-left leading-relaxed"
+                                            className="text-[2.2vh] text-[#3e2c22] whitespace-pre-wrap text-left leading-relaxed pt-2"
                                             style={{ fontFamily: customization.fontFamily }}
                                         >
                                             {ritualData.content}
                                         </div>
-                                    </>
-                                )}
+                                    )}
 
-                                {/* Custom Spell View (Paginated) */}
-                                {isCustom && currentCustomContent && (
-                                    <div className="flex flex-col h-full"> 
-                                        {currentCustomContent.type === 'INTRO' && (
-                                            <>
-                                                <div className="flex justify-between items-start w-full">
-                                                    <h2 className="font-serif font-bold text-[2.5vh] mb-4 text-[#3e2c22] leading-tight" style={{ fontFamily: customization.fontFamily }}>{spell.name}</h2>
-                                                    <button 
-                                                        onClick={() => {
-                                                            setEditingSpell(spell);
-                                                            onClose(); 
-                                                            setViewMode('CREATE_SPELL');
-                                                        }}
-                                                        className="text-[#8b4513] hover:text-[#d4af37] p-2 transition-colors z-[60]"
-                                                        title="Edit Spell"
-                                                    >
-                                                        <PenTool size={16} />
-                                                    </button>
-                                                </div>
-                                                <h3 className="text-[1.5vh] text-[#8b4513] uppercase font-bold mb-2" style={{ fontFamily: customization.fontFamily }}>Purpose</h3>
-                                                <p className="italic text-[1.8vh] text-[#5c4033] mb-4" style={{ fontFamily: customization.fontFamily }}>"{currentCustomContent.content.purpose}"</p>
-                                                
-                                                <h3 className="text-[1.5vh] text-[#8b4513] uppercase font-bold mb-2" style={{ fontFamily: customization.fontFamily }}>Ingredients</h3>
-                                                <p className="text-[1.8vh] text-[#5c4033] whitespace-pre-wrap" style={{ fontFamily: customization.fontFamily }}>{currentCustomContent.content.ingredients}</p>
-                                            </>
-                                        )}
-                                        {currentCustomContent.type === 'STEP' && (
-                                             <div className="flex flex-col h-full justify-center">
-                                                <h3 className="text-[2vh] text-[#8b4513] uppercase font-bold mb-4 border-b border-[#8b4513]/20 pb-2" style={{ fontFamily: customization.fontFamily }}>Step {currentCustomContent.step}</h3>
-                                                <p className="text-[2.2vh] text-[#3e2c22] leading-relaxed italic" style={{ fontFamily: customization.fontFamily }}>
-                                                    {currentCustomContent.content}
-                                                </p>
-                                             </div>
-                                        )}
-                                        
-                                         <div className="mt-auto text-xs text-[#8b4513]/40 text-center">
-                                            Page {detailPage + 1} of {customPages.length}
+                                    {/* Custom Spell View (Paginated) */}
+                                    {isCustom && currentCustomContent && (
+                                        <div className="flex flex-col h-full pt-2"> 
+                                            {currentCustomContent.type === 'INTRO' && (
+                                                <>
+                                                    <h3 className="text-[1.5vh] text-[#8b4513] uppercase font-bold mb-2 text-center" style={{ fontFamily: customization.fontFamily }}>Purpose</h3>
+                                                    <p className="italic text-[2vh] text-[#5c4033] mb-6 text-center" style={{ fontFamily: customization.fontFamily }}>"{currentCustomContent.content.purpose}"</p>
+                                                    
+                                                    <h3 className="text-[1.5vh] text-[#8b4513] uppercase font-bold mb-2 text-center" style={{ fontFamily: customization.fontFamily }}>Ingredients</h3>
+                                                    <p className="text-[2vh] text-[#5c4033] whitespace-pre-wrap text-center" style={{ fontFamily: customization.fontFamily }}>{currentCustomContent.content.ingredients}</p>
+                                                </>
+                                            )}
+                                            {currentCustomContent.type === 'STEP' && (
+                                                 <div className="flex flex-col h-full justify-center text-center">
+                                                    <h3 className="text-[2vh] text-[#8b4513] uppercase font-bold mb-4 border-b border-[#8b4513]/20 pb-2 mx-auto" style={{ fontFamily: customization.fontFamily }}>Step {currentCustomContent.step}</h3>
+                                                    <p className="text-[2.5vh] text-[#3e2c22] leading-relaxed italic" style={{ fontFamily: customization.fontFamily }}>
+                                                        {currentCustomContent.content}
+                                                    </p>
+                                                 </div>
+                                            )}
+                                            
+                                             <div className="mt-auto text-xs text-[#8b4513]/40 text-center pt-4">
+                                                Page {detailPage + 1} of {customPages.length}
+                                            </div>
                                         </div>
-                                    </div>
-                                )}
-                            </div>
-                         )}
+                                    )}
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
