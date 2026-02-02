@@ -942,57 +942,60 @@ export default function GrimoirePage() {
                         {viewMode === 'SECTION' && renderBookPage(renderSection())}
                         {viewMode === 'THE_END' && renderTheEnd()}
 
-                        {viewMode === 'CUSTOMIZER' && (
-                            <GrimoireCustomizer 
-                                current={customization} 
-                                onSave={handleCustomizationSave} 
-                                onClose={() => setViewMode('COVER')} 
-                            />
-                        )}
 
-                        {viewMode === 'CREATE_SPELL' && currentUserId && (
-                            <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center">
-                                <div className="h-[95vh] w-auto aspect-[1529/2048]">
-                                    <CustomSpellWizard
-                                        userId={currentUserId}
-                                        onClose={() => {
-                                            playSound('PAGE_TURN');
-                                            setEditingSpell(null);
-                                            setViewMode('TOC');
-                                        }}
-                                        onComplete={(s) => {
-                                            playSound('SAVE_SUCCESS');
-                                            handleSpellCreated(s);
-                                        }}
-                                        initialData={editingSpell || undefined}
-                                    />
-                                </div>
-                            </div>
-                        )}
-
-                         {viewMode === 'CREATE_JOURNAL' && currentUserId && (
-                            <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center">
-                                <div className="h-[95vh] w-auto aspect-[1529/2048]">
-                                    <JournalEntryEditor 
-                                        userId={currentUserId}
-                                        onClose={() => {
-                                            playSound('PAGE_TURN');
-                                            setEditingSpell(null);
-                                            setViewMode('TOC');
-                                        }}
-                                        onComplete={(s) => {
-                                             playSound('SAVE_SUCCESS');
-                                             handleSpellCreated(s);
-                                        }}
-                                        initialData={editingSpell || undefined}
-                                    />
-                                </div>
-                            </div>
-                        )}
 
                     </>
                 )}
             </div>
+
+            {/* Modals moved to root to avoid stacking context issues */}
+            {!loading && viewMode === 'CUSTOMIZER' && (
+                <GrimoireCustomizer 
+                    current={customization} 
+                    onSave={handleCustomizationSave} 
+                    onClose={() => setViewMode('COVER')} 
+                />
+            )}
+
+            {!loading && viewMode === 'CREATE_SPELL' && currentUserId && (
+                <div className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center pointer-events-auto">
+                    <div className="h-[95vh] w-auto aspect-[1529/2048]">
+                        <CustomSpellWizard
+                            userId={currentUserId}
+                            onClose={() => {
+                                playSound('PAGE_TURN');
+                                setEditingSpell(null);
+                                setViewMode('TOC');
+                            }}
+                            onComplete={(s) => {
+                                playSound('SAVE_SUCCESS');
+                                handleSpellCreated(s);
+                            }}
+                            initialData={editingSpell || undefined}
+                        />
+                    </div>
+                </div>
+            )}
+
+            {!loading && viewMode === 'CREATE_JOURNAL' && currentUserId && (
+                <div className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center pointer-events-auto">
+                    <div className="h-[95vh] w-auto aspect-[1529/2048]">
+                        <JournalEntryEditor 
+                            userId={currentUserId}
+                            onClose={() => {
+                                playSound('PAGE_TURN');
+                                setEditingSpell(null);
+                                setViewMode('TOC');
+                            }}
+                            onComplete={(s) => {
+                                    playSound('SAVE_SUCCESS');
+                                    handleSpellCreated(s);
+                            }}
+                            initialData={editingSpell || undefined}
+                        />
+                    </div>
+                </div>
+            )}
 
             {selectedSpell && <SpellDetailModal data={selectedSpell} onClose={() => setSelectedSpell(null)} onDelete={handleSpellDelete} />}
         </main>
