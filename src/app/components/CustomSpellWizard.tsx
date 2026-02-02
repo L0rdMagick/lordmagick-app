@@ -59,11 +59,11 @@ export default function CustomSpellWizard({ userId, onClose, onComplete, initial
     const [instructions, setInstructions] = useState<string[]>(() => {
          if (initialData?.ritual_data) {
              const data = typeof initialData.ritual_data === 'string' ? JSON.parse(initialData.ritual_data) : initialData.ritual_data;
-             return data.instructions || [];
+             return data.instructions || ['']; // Start with one empty if none
         }
-        return [];
+        return [''];
     });
-    const [currentInstruction, setCurrentInstruction] = useState('');
+    // currentInstruction legacy removed - now directly editing array
 
     const handleNext = () => {
         if (step === 'TITLE' && title) setStep('PURPOSE');
@@ -83,18 +83,27 @@ export default function CustomSpellWizard({ userId, onClose, onComplete, initial
     };
 
     const addInstruction = () => {
-        if (currentInstruction.trim()) {
-            setInstructions(prev => [...prev, currentInstruction.trim()]);
-            setCurrentInstruction('');
-        }
+        setInstructions(prev => [...prev, '']);
+    };
+
+    const updateInstruction = (index: number, value: string) => {
+        const newInst = [...instructions];
+        newInst[index] = value;
+        setInstructions(newInst);
+    };
+
+    const deleteInstruction = (index: number) => {
+        setInstructions(prev => prev.filter((_, i) => i !== index));
     };
 
     const finishInstructions = () => {
-        // Add current if exists
-        if (currentInstruction.trim()) {
-            setInstructions(prev => [...prev, currentInstruction.trim()]);
-            setCurrentInstruction('');
+        // Filter empty
+        const clean = instructions.map(i => i.trim()).filter(i => i.length > 0);
+        if (clean.length === 0) {
+            alert("Please add at least one instruction step.");
+            return;
         }
+        setInstructions(clean);
         setStep('PREVIEW');
     };
 
@@ -224,29 +233,41 @@ export default function CustomSpellWizard({ userId, onClose, onComplete, initial
                     )}
 
                     {step === 'INSTRUCTIONS' && (
-                         <Wrapper title={`Step ${instructions.length + 1}`} onBack={handleBack} isFirstStep={false}>
-                             <div className="w-full flex-1 flex flex-col gap-4">
-                                <div className="text-left text-sm text-[#8b4513]/60 italic mb-2">
-                                    Captured Steps: {instructions.length}
+                         <Wrapper title="Ritual Steps" onBack={handleBack} isFirstStep={false}>
+                             <div className="w-full flex-1 flex flex-col gap-4 overflow-hidden">
+                                <div className="flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-2">
+                                    {instructions.map((inst, idx) => (
+                                        <div key={idx} className="flex gap-2 items-start animate-in fade-in slide-in-from-bottom-2 duration-300">
+                                            <div className="pt-2 text-[#8b4513] font-serif font-bold text-sm w-6 text-right shrink-0">
+                                                {idx + 1}.
+                                            </div>
+                                            <textarea
+                                                value={inst}
+                                                onChange={(e) => updateInstruction(idx, e.target.value)}
+                                                placeholder={`Step ${idx + 1} instructions...`}
+                                                className="flex-1 bg-transparent border border-[#8b4513]/30 p-3 font-serif text-[1.8vh] text-[#3e2c22] focus:outline-none focus:border-[#d4af37] resize-none rounded min-h-[100px]"
+                                                autoFocus={idx === instructions.length - 1}
+                                            />
+                                            <button 
+                                                onClick={() => deleteInstruction(idx)}
+                                                className="p-2 text-[#8b4513]/50 hover:text-red-500 transition-colors mt-2"
+                                                title="Remove Step"
+                                            >
+                                                <X size={16} />
+                                            </button>
+                                        </div>
+                                    ))}
                                 </div>
-                                <textarea
-                                    value={currentInstruction}
-                                    onChange={(e) => setCurrentInstruction(e.target.value)}
-                                    placeholder="Describe this step of the ritual..."
-                                    className="w-full flex-1 bg-transparent border border-[#8b4513]/30 p-4 font-serif text-[1.8vh] text-[#3e2c22] focus:outline-none focus:border-[#d4af37] resize-none rounded custom-scrollbar placeholder:text-[#8b4513]/30"
-                                    autoFocus
-                                />
-                                <div className="flex gap-2 w-full">
+                                <div className="flex gap-2 w-full pt-4 border-t border-[#8b4513]/20 shrink-0">
                                     <button 
                                         onClick={addInstruction}
-                                        disabled={!currentInstruction.trim()}
                                         className="flex-1 py-2 border border-[#8b4513] text-[#8b4513] hover:bg-[#8b4513]/10 rounded flex items-center justify-center gap-2 pointer-events-auto"
                                     >
                                         <Plus size={16} /> Add Step
                                     </button>
                                      <button 
                                         onClick={finishInstructions}
-                                        className="flex-1 py-2 bg-[#8b4513] text-[#f4e4bc] hover:bg-[#5c4033] rounded pointer-events-auto"
+                                        className="flex-1 py-2 bg-[#8b4513] text-[#f4e4bc] hover:bg-[#5c4033] rounded pointer-events-auto shadow-md"
                                     >
                                         Finish
                                     </button>
