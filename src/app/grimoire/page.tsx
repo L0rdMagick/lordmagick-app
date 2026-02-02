@@ -423,7 +423,7 @@ export default function GrimoirePage() {
     };
 
     const renderCover = () => (
-        <div className="relative h-full w-full max-w-[90vh] aspect-[1529/2048] shadow-2xl">
+        <div className="relative h-full w-full max-w-[90vh] aspect-[1529/2048] shadow-2xl shrink-0">
             <Image 
                 src={customization.coverImage}
                 alt="Grimoire Cover" 
@@ -473,7 +473,7 @@ export default function GrimoirePage() {
 
     const renderBookPage = (content: React.ReactNode) => {
         return (
-            <div className="relative h-full w-full max-w-[90vh] aspect-[1529/2048] shadow-2xl">
+            <div className="relative h-full w-full max-w-[90vh] aspect-[1529/2048] shadow-2xl shrink-0">
                 <Image 
                     src={customization.pageStyle} 
                     alt="Grimoire Page" 
@@ -686,7 +686,7 @@ export default function GrimoirePage() {
     );
 
     const renderTheEnd = () => (
-        <div className="relative h-full w-full max-w-[90vh] aspect-[1529/2048] shadow-2xl">
+        <div className="relative h-full w-full max-w-[90vh] aspect-[1529/2048] shadow-2xl shrink-0">
             {/* Clean Page for The End */}
             <Image 
                 src={customization.pageStyle} 
@@ -989,7 +989,9 @@ export default function GrimoirePage() {
     };
 
     return (
-        <main className="relative h-screen w-full bg-black overflow-hidden flex flex-col">
+        // Changed overflow-hidden to overflow-y-auto for failsafe scrolling
+        // Used min-h-screen (or h-[100dvh]) to ensure full viewport coverage
+        <main className="relative h-[100dvh] w-full bg-black overflow-y-auto flex flex-col">
             {/* Background Image - Fixed & Clean */}
             <div className="absolute inset-0 z-0">
                 <Image 
@@ -1002,12 +1004,12 @@ export default function GrimoirePage() {
                 />
             </div>
             
-            {/* Exit Button - Fixed Top Right */}
+            {/* Exit Button - Fixed Top Right - Resized 50% Smaller */}
             <Link 
                 href="/hall"
                 className="fixed top-4 right-4 z-50 transition-transform hover:scale-105"
             >
-                <div className="relative w-16 h-16 md:w-20 md:h-20 drop-shadow-lg">
+                <div className="relative w-8 h-8 md:w-10 md:h-10 drop-shadow-lg">
                     <Image
                         src="/images/grimoire-images/exit-grimoire-button.png"
                         alt="Close Grimoire"
@@ -1018,7 +1020,8 @@ export default function GrimoirePage() {
             </Link>
 
             {/* Main Content - Centered flex container similar to JournalEntryEditor */}
-            <div className="relative z-10 flex-1 flex items-center justify-center p-2 md:p-8 min-h-0 overflow-hidden">
+            {/* Added min-h-full to ensure it fills screen but allows scrolling if content pushes it */}
+            <div className="relative z-10 flex-1 flex items-center justify-center p-2 md:p-8 min-h-full">
                 {loading ? (
                     <LoadingSpinner title="Retrieving the Ancient Tomes..." />
                 ) : (
