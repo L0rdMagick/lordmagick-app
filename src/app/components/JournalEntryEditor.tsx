@@ -120,7 +120,7 @@ export default function JournalEntryEditor({ userId, onClose, onComplete, initia
              <div className="relative h-full w-full shadow-2xl">
                  <Image 
                     src="/images/grimoire-images/grimoire-page.png" 
-                    alt="Grimoire Page" 
+                    alt="Blank Parchment Page for Journal Entry" 
                     fill 
                     className="object-fill"
                     priority

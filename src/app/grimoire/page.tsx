@@ -457,7 +457,7 @@ export default function GrimoirePage() {
         <div className="relative h-full w-full md:w-auto max-w-[90vh] aspect-[1529/2048] shadow-2xl shrink-0">
             <Image 
                 src={customization.coverImage}
-                alt="Grimoire Cover" 
+                alt="Personal Digital Grimoire Cover" 
                 fill 
                 className="object-fill"
                 priority
@@ -507,7 +507,7 @@ export default function GrimoirePage() {
             <div className="relative h-full w-full md:w-auto max-w-[90vh] aspect-[1529/2048] shadow-2xl shrink-0">
                 <Image 
                     src={customization.pageStyle} 
-                    alt="Grimoire Page" 
+                    alt="Aged Parchment Page Texture" 
                     fill 
                     className="object-fill"
                     priority
@@ -721,7 +721,7 @@ export default function GrimoirePage() {
             {/* Clean Page for The End */}
             <Image 
                 src={customization.pageStyle} 
-                alt="The End" 
+                alt="Aged Parchment Page Texture for The End" 
                 fill 
                 className="object-fill"
                 priority
@@ -812,7 +812,7 @@ export default function GrimoirePage() {
                     {/* Standard Page Background */}
                     <Image 
                         src={customization.pageStyle}
-                        alt="Grimoire Page" 
+                        alt="Aged Parchment Page Texture" 
                         fill 
                         className="object-fill" // Use object-fill to match page behavior
                         priority
@@ -1067,7 +1067,7 @@ export default function GrimoirePage() {
             <div className="absolute inset-0 z-0">
                 <Image 
                     src="/images/grimoire-images/grimoire-background.jpeg" 
-                    alt="Sanctuary of Knowledge" 
+                    alt="3D Dark Academia Sanctuary Background with Floating Dust Particles" 
                     fill 
                     quality={100}
                     className="object-cover"

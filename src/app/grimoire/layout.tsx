@@ -1,10 +1,10 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Your Digital Grimoire',
-  description: 'Access your personal Grimoire where all your cast spells, saved rituals, and tarot readings are stored securely. Replay your magickal workings anytime.',
+  title: 'Your Digital Grimoire | Book of Shadows & Journal',
+  description: 'Access your personal Grimoire (Book of Shadows) to store custom spells, rituals, and journal entries. A secure, private space for your magickal journey.',
   robots: {
-    index: false, // User private area, usually better not to index, but if public profiles exist, change to true
+    index: false, // User private area
     follow: false,
   },
 };

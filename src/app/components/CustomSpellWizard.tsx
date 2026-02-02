@@ -234,7 +234,7 @@ export default function CustomSpellWizard({ userId, onClose, onComplete, initial
             <div className="relative h-full w-full shadow-2xl">
                  <Image 
                     src="/images/grimoire-images/grimoire-page.png" 
-                    alt="Grimoire Page" 
+                    alt="Blank Parchment Page for Spell Inscription" 
                     fill 
                     className="object-fill"
                     priority

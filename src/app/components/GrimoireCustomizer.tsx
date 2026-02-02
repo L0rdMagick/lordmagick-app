@@ -98,7 +98,7 @@ export default function GrimoireCustomizer({ current, onSave, onClose }: Grimoir
                                     <div className="absolute inset-0 bg-[#2a1f18] flex items-center justify-center text-[#8b4513] text-xs">
                                         Cover {idx + 1}
                                     </div>
-                                    <Image src={src} alt={`Option ${idx + 1}`} fill className="object-cover" onError={(e) => {
+                                    <Image src={src} alt={`Grimoire Cover Design Variant ${idx + 1}`} fill className="object-cover" onError={(e) => {
                                         // Fallback if image doesn't exist yet
                                         (e.target as HTMLImageElement).src = '/images/grimoire-images/grimoire-cover.png';
                                     }}/>
@@ -137,7 +137,7 @@ export default function GrimoireCustomizer({ current, onSave, onClose }: Grimoir
                                      <div className="absolute inset-0 bg-[#f4e4bc] flex items-center justify-center text-[#8b4513] text-xs">
                                         Page {idx + 1}
                                     </div>
-                                    <Image src={src} alt={`Page ${idx + 1}`} fill className="object-cover" onError={(e) => {
+                                    <Image src={src} alt={`Parchment Paper Texture Variant ${idx + 1}`} fill className="object-cover" onError={(e) => {
                                         (e.target as HTMLImageElement).src = '/images/grimoire-images/grimoire-page.png';
                                     }}/>
                                      {settings.pageStyle === src && (
