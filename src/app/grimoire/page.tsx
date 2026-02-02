@@ -777,6 +777,29 @@ export default function GrimoirePage() {
 
         return (
             <div className="fixed inset-0 z-50 flex items-center justify-center px-2 py-[10vh] md:px-8 md:py-[5vh] bg-black/90 backdrop-blur-md">
+                {/* Global Style Injection for Magick Scrollbar */}
+                <style jsx global>{`
+                    .magick-scrollbar::-webkit-scrollbar {
+                        width: 10px;
+                        background: transparent;
+                    }
+                    .magick-scrollbar::-webkit-scrollbar-track {
+                        background: rgba(139, 69, 19, 0.05);
+                        border-radius: 9999px;
+                        margin: 4px;
+                    }
+                    .magick-scrollbar::-webkit-scrollbar-thumb {
+                        background-color: rgba(139, 69, 19, 0.4);
+                        border-radius: 9999px;
+                        border: 1px solid rgba(92, 64, 51, 0.2);
+                        background-clip: content-box;
+                    }
+                    .magick-scrollbar::-webkit-scrollbar-thumb:hover {
+                        background-color: rgba(139, 69, 19, 0.8);
+                        border-color: rgba(212, 175, 55, 0.4);
+                    }
+                `}</style>
+
                 <div className="relative h-full w-full md:w-auto max-w-[90vh] aspect-[1529/2048] shadow-2xl shrink-0">
                     
                     {/* Standard Page Background */}
@@ -788,19 +811,19 @@ export default function GrimoirePage() {
                         priority
                     />
 
-                    {/* Controls - Moved INSIDE the parchment area to prevent cutoff */}
+                    {/* Controls - Moved to negative top margin to sit ABOVE page in padding area */}
                     {!showConfirm && (
                         <>
                             <button 
                                 onClick={onClose} 
-                                className="absolute top-4 right-4 z-50 p-2 text-[#8b4513]/60 hover:text-[#8b4513] transition-colors"
+                                className="absolute -top-[40px] right-2 md:-right-8 z-[60] p-2 text-white/50 hover:text-white transition-colors"
                                 title="Close"
                             >
-                                <X size={28} />
+                                <X size={32} />
                             </button>
                              <button 
                                 onClick={() => setShowConfirm(true)}
-                                className="absolute top-4 left-4 z-50 p-2 text-[#8b4513]/60 hover:text-[#d32f2f] transition-colors"
+                                className="absolute -top-[40px] left-2 md:-left-8 z-[60] p-2 text-white/50 hover:text-red-400 transition-colors"
                                 title="Delete"
                             >
                                 <Trash2 size={24} />
@@ -836,9 +859,9 @@ export default function GrimoirePage() {
                     )}
                     
                     {/* TITLE ZONE */}
-                    <div style={PAGE_LAYOUT.TITLE_ZONE} className="absolute z-10 flex flex-col items-center justify-end pb-2 border-b border-[#8b4513]/30 relative">
+                    <div style={PAGE_LAYOUT.TITLE_ZONE} className="absolute z-10 flex flex-col items-center justify-end pb-1 relative">
                          
-                         {/* Edit Button - Moved to Top Right of Title Box */}
+                         {/* Edit Button - Top Right Absolute */}
                           <div className="absolute top-0 right-0 z-20">
                                 <button 
                                 onClick={() => {
@@ -854,29 +877,31 @@ export default function GrimoirePage() {
                             </button>
                         </div>
 
-                         {/* Regular Spell Title */}
-                         {!isCustom && !isJournal && (
-                            <div className="w-full flex items-center justify-center relative">
+                         {/* Title Content Container - With Padding to avoid Edit Button */}
+                         <div className="w-full px-8 flex flex-col items-center justify-center">
+                             {/* Regular Spell Title */}
+                             {!isCustom && !isJournal && (
                                 <h2 className="font-serif font-bold text-[3.5vh] text-[#3e2c22] leading-tight text-center" style={{ fontFamily: customization.fontFamily }}>{spell.name}</h2>
-                            </div>
-                         )}
+                             )}
 
-                         {/* Journal Title & Date */}
-                         {isJournal && (
-                            <div className="w-full flex flex-col items-center text-center">
-                                <h2 className="font-serif font-bold text-[3vh] text-[#3e2c22] leading-tight mb-1" style={{ fontFamily: customization.fontFamily }}>{spell.name}</h2>
-                                <div className="text-[1.8vh] text-[#5c4033] italic" style={{ fontFamily: customization.fontFamily }}>
-                                    {ritualData.day && ritualData.date ? `${ritualData.day}, ${ritualData.date}` : ritualData.timestamp}
+                             {/* Journal Title & Date */}
+                             {isJournal && (
+                                <div className="flex flex-col items-center text-center">
+                                    <h2 className="font-serif font-bold text-[3vh] text-[#3e2c22] leading-tight mb-1" style={{ fontFamily: customization.fontFamily }}>{spell.name}</h2>
+                                    <div className="text-[1.8vh] text-[#5c4033] italic" style={{ fontFamily: customization.fontFamily }}>
+                                        {ritualData.day && ritualData.date ? `${ritualData.day}, ${ritualData.date}` : ritualData.timestamp}
+                                    </div>
                                 </div>
-                            </div>
-                         )}
+                             )}
 
-                         {/* Custom Spell Title */}
-                         {isCustom && (
-                            <div className="w-full flex items-center justify-center">
+                             {/* Custom Spell Title */}
+                             {isCustom && (
                                 <h2 className="font-serif font-bold text-[3.5vh] text-[#3e2c22] leading-tight text-center" style={{ fontFamily: customization.fontFamily }}>{spell.name}</h2>
-                            </div>
-                         )}
+                             )}
+                            
+                            {/* Separator Line - Snug under text */}
+                            <div className="w-2/3 h-px bg-[#8b4513]/30 mt-2 mb-1"></div>
+                         </div>
                     </div>
 
                     {/* BODY ZONE */}
@@ -904,14 +929,7 @@ export default function GrimoirePage() {
                                     </div>
                                 </div>
                             ) : (
-                                <div className="w-full h-full flex flex-col overflow-y-auto pr-2 custom-scrollbar 
-                                    [&::-webkit-scrollbar]:w-2 
-                                    [&::-webkit-scrollbar-track]:bg-transparent 
-                                    [&::-webkit-scrollbar-thumb]:bg-[#8b4513]/60 
-                                    [&::-webkit-scrollbar-thumb]:rounded-full 
-                                    [&::-webkit-scrollbar-thumb]:border 
-                                    [&::-webkit-scrollbar-thumb]:border-[#5c4033]/20
-                                    hover:[&::-webkit-scrollbar-thumb]:bg-[#8b4513]">
+                                <div className="w-full h-full flex flex-col overflow-y-auto pr-2 magick-scrollbar">
                                     
                                     {/* Regular Spell View */}
                                     {!isCustom && !isJournal && (
