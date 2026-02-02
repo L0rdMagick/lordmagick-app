@@ -817,7 +817,20 @@ export default function GrimoirePage() {
                                 {/* Regular Spell View - Fallback */}
                                 {!isCustom && !isJournal && (
                                     <>
-                                        <h2 className="font-serif font-bold text-[2.5vh] mb-4 text-[#3e2c22] shrink-0 leading-tight" style={{ fontFamily: customization.fontFamily }}>{spell.name}</h2>
+                                        <div className="flex justify-between items-start w-full">
+                                            <h2 className="font-serif font-bold text-[2.5vh] mb-4 text-[#3e2c22] shrink-0 leading-tight" style={{ fontFamily: customization.fontFamily }}>{spell.name}</h2>
+                                            <button 
+                                                onClick={() => {
+                                                    setEditingSpell(spell);
+                                                    onClose(); 
+                                                    setViewMode('CREATE_SPELL');
+                                                }}
+                                                className="text-[#8b4513] hover:text-[#d4af37] p-2 transition-colors z-[60]"
+                                                title="Edit Spell"
+                                            >
+                                                <PenTool size={16} />
+                                            </button>
+                                        </div>
                                         <p className="font-medieval italic text-[2vh] text-[#5c4033] mb-6 whitespace-pre-wrap shrink-0 leading-snug">"{spell.intention}"</p>
                                         {spell.incantation && (
                                             <div className="font-medieval text-[1.8vh] text-[#8b4513] mb-6 text-center w-full border-t border-[#8b4513]/20 pt-4 shrink-0 font-medium leading-normal">
@@ -881,7 +894,20 @@ export default function GrimoirePage() {
                                     <div className="flex flex-col h-full"> 
                                         {currentCustomContent.type === 'INTRO' && (
                                             <>
-                                                <h2 className="font-serif font-bold text-[2.5vh] mb-4 text-[#3e2c22] leading-tight" style={{ fontFamily: customization.fontFamily }}>{spell.name}</h2>
+                                                <div className="flex justify-between items-start w-full">
+                                                    <h2 className="font-serif font-bold text-[2.5vh] mb-4 text-[#3e2c22] leading-tight" style={{ fontFamily: customization.fontFamily }}>{spell.name}</h2>
+                                                    <button 
+                                                        onClick={() => {
+                                                            setEditingSpell(spell);
+                                                            onClose(); 
+                                                            setViewMode('CREATE_SPELL');
+                                                        }}
+                                                        className="text-[#8b4513] hover:text-[#d4af37] p-2 transition-colors z-[60]"
+                                                        title="Edit Spell"
+                                                    >
+                                                        <PenTool size={16} />
+                                                    </button>
+                                                </div>
                                                 <h3 className="text-[1.5vh] text-[#8b4513] uppercase font-bold mb-2">Purpose</h3>
                                                 <p className="italic text-[1.8vh] text-[#5c4033] mb-4">"{currentCustomContent.content.purpose}"</p>
                                                 
