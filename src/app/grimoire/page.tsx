@@ -122,7 +122,7 @@ const SOUND_CONFIG = {
     },
     OPEN_RITUAL: { 
         path: '/audio/sfx-finding-something-2.mp3', 
-        volume: 1, 
+        volume: 2, 
         description: "Opening a specific ritual detail view" 
     },
     WRITE_SPELL: { 
