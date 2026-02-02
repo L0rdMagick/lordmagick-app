@@ -126,7 +126,7 @@ export default function GrimoirePage() {
     
     const [selectedSpell, setSelectedSpell] = useState<{ spell: Spell, image: string } | null>(null);
     const [editingSpell, setEditingSpell] = useState<Spell | null>(null);
-    const [transitioning, setTransitioning] = useState(false); // For fade effects
+    const [transitioning, setTransitioning] = useState(false); // Deprecated but kept to avoid breaking other refs if any
 
     const [supabase] = useState(() => createBrowserClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -259,32 +259,19 @@ export default function GrimoirePage() {
     // --- NAVIGATION HANDLERS ---
     
     const triggerTransition = (nextStateFn: () => void) => {
-        setTransitioning(true);
+        // Instant transition, sound only
         playSound('PAGE_TURN');
-        setTimeout(() => {
-            nextStateFn();
-            // Start fade in
-            setTimeout(() => {
-                setTransitioning(false);
-            }, 100); 
-        }, 1000); // 1s fade out
+        nextStateFn();
     };
 
     // Special Transition for Book Open/Close
     const triggerBookAction = (opening: boolean, nextStateFn: () => void) => {
-        setTransitioning(true);
+        // Instant transition, sound only
         playSound('BOOK_CLOSE_OPEN');
-        setTimeout(() => {
-            nextStateFn();
-            setTimeout(() => {
-                setTransitioning(false);
-            }, 100);
-        }, 1000);
+        nextStateFn();
     };
 
     const handleNext = () => {
-        if (transitioning) return;
-
         if (viewMode === 'COVER') {
             triggerBookAction(true, () => setViewMode('TOC'));
         } else if (viewMode === 'TOC') {
@@ -320,7 +307,6 @@ export default function GrimoirePage() {
     };
 
     const handlePrev = () => {
-        if (transitioning) return;
         if (viewMode === 'COVER') return;
         
         if (viewMode === 'TOC') {
@@ -388,7 +374,7 @@ export default function GrimoirePage() {
 
     const renderCover = () => (
         <div className="flex items-center justify-center h-full w-full">
-            <div className={`relative h-full w-auto aspect-[1529/2048] shadow-2xl max-w-full transition-opacity duration-1000 ${transitioning ? 'opacity-0' : 'opacity-100'}`}>
+            <div className="relative h-full w-auto aspect-[1529/2048] shadow-2xl max-w-full">
                 <Image 
                     src={customization.coverImage}
                     alt="Grimoire Cover" 
@@ -440,7 +426,7 @@ export default function GrimoirePage() {
     const renderBookPage = (content: React.ReactNode) => {
         return (
             <div className="flex items-center justify-center h-full w-full">
-                <div className={`relative h-full w-auto aspect-[1529/2048] shadow-2xl max-w-full transition-opacity duration-1000 ${transitioning ? 'opacity-0' : 'opacity-100'}`}>
+                <div className="relative h-full w-auto aspect-[1529/2048] shadow-2xl max-w-full">
                     <Image 
                         src={customization.pageStyle} 
                         alt="Grimoire Page" 
@@ -494,14 +480,20 @@ export default function GrimoirePage() {
                      {/* Creation Buttons */}
                      <div className="flex gap-2 mb-4 shrink-0">
                         <button 
-                            onClick={() => setViewMode('CREATE_SPELL')} 
+                            onClick={() => {
+                                playSound('WRITE_SPELL');
+                                setViewMode('CREATE_SPELL');
+                            }} 
                             className="flex-1 py-2 border border-[#8b4513]/40 bg-[#8b4513]/5 hover:bg-[#8b4513]/10 text-[#5c4033] rounded flex flex-col items-center justify-center gap-1 transition-all"
                         >
                             <PenTool size={16} />
                             <span className="text-[1.2vh] uppercase font-bold tracking-wider">Write Spell</span>
                         </button>
                         <button 
-                            onClick={() => setViewMode('CREATE_JOURNAL')} 
+                            onClick={() => {
+                                playSound('WRITE_SPELL');
+                                setViewMode('CREATE_JOURNAL');
+                            }} 
                             className="flex-1 py-2 border border-[#8b4513]/40 bg-[#8b4513]/5 hover:bg-[#8b4513]/10 text-[#5c4033] rounded flex flex-col items-center justify-center gap-1 transition-all"
                         >
                             <BookOpen size={16} />
@@ -615,7 +607,10 @@ export default function GrimoirePage() {
                                                 <div className="w-full h-full flex flex-col items-center justify-center">
                                                     {/* Date for Journal Entries - Color High Contrast */}
                                                     {isJournal && ritualData.timestamp && (
-                                                         <div className="text-[1.4vh] text-black font-extrabold italic font-serif mb-2 z-20 relative drop-shadow-sm">
+                                                         <div 
+                                                            className="text-[1.4vh] text-black font-extrabold italic font-serif mb-2 z-20 relative drop-shadow-sm"
+                                                            style={{ fontFamily: customization.fontFamily }}
+                                                         >
                                                             {ritualData.timestamp}
                                                         </div>
                                                     )}
@@ -643,7 +638,7 @@ export default function GrimoirePage() {
 
     const renderTheEnd = () => (
         <div className="flex items-center justify-center h-full w-full">
-             <div className={`relative h-full w-auto aspect-[1529/2048] shadow-2xl max-w-full transition-opacity duration-1000 ${transitioning ? 'opacity-0' : 'opacity-100'}`}>
+             <div className="relative h-full w-auto aspect-[1529/2048] shadow-2xl max-w-full">
                 {/* Clean Page for The End */}
                 <Image 
                     src={customization.pageStyle} 
@@ -727,7 +722,7 @@ export default function GrimoirePage() {
         };
 
         return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-300">
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
                 <div 
                     className="relative shadow-2xl"
                     style={{
@@ -796,7 +791,7 @@ export default function GrimoirePage() {
                         }}
                     >
                         {showConfirm ? (
-                            <div className="w-full h-full flex flex-col items-center justify-center p-4 animate-in fade-in duration-300">
+                            <div className="w-full h-full flex flex-col items-center justify-center p-4">
                                 <h3 className="font-medieval font-bold text-[#3e2c22] text-[2.5vh] mb-4 leading-tight">Burn this Spell?</h3>
                                 <p className="font-medieval italic text-[1.8vh] text-[#5c4033] mb-6 text-balance">
                                     "This action cannot be undone. The pages will be burned from the Grimoire forever."
@@ -846,7 +841,10 @@ export default function GrimoirePage() {
                                 {/* Journal View */}
                                 {isJournal && (
                                     <>
-                                        <div className="text-[1.5vh] text-[#8b4513]/50 mb-2 italic">
+                                        <div 
+                                            className="text-[1.5vh] text-[#8b4513]/50 mb-2 italic"
+                                            style={{ fontFamily: customization.fontFamily }}
+                                        >
                                             {ritualData.day && ritualData.date ? `${ritualData.day}, ${ritualData.date}` : ritualData.timestamp}
                                         </div>
                                         <div className="flex justify-between items-start w-full">
@@ -869,7 +867,10 @@ export default function GrimoirePage() {
                                                 <PenTool size={16} />
                                             </button>
                                         </div>
-                                        <div className="font-handwriting text-[2vh] text-[#3e2c22] whitespace-pre-wrap text-left leading-relaxed">
+                                        <div 
+                                            className="text-[2vh] text-[#3e2c22] whitespace-pre-wrap text-left leading-relaxed"
+                                            style={{ fontFamily: customization.fontFamily }}
+                                        >
                                             {ritualData.content}
                                         </div>
                                     </>
@@ -877,7 +878,7 @@ export default function GrimoirePage() {
 
                                 {/* Custom Spell View (Paginated) */}
                                 {isCustom && currentCustomContent && (
-                                    <div className="flex flex-col h-full animate-in fade-in slide-in-from-right-4 duration-300"> 
+                                    <div className="flex flex-col h-full"> 
                                         {currentCustomContent.type === 'INTRO' && (
                                             <>
                                                 <h2 className="font-serif font-bold text-[2.5vh] mb-4 text-[#3e2c22] leading-tight" style={{ fontFamily: customization.fontFamily }}>{spell.name}</h2>
