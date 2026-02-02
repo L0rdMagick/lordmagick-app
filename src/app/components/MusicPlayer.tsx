@@ -57,7 +57,8 @@ const VISIBLE_PATHS = [
     '/spell-room',
     '/oracle-room',
     '/the-magick-psychic-school',
-    '/magickal-tools'
+    '/magickal-tools',
+    '/grimoire'
 ];
 
 const MusicPlayer = () => {
