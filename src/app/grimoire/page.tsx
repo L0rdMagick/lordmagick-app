@@ -4,8 +4,7 @@ import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
 import { saveSpell, getSpells, deleteSpell } from '@/lib/services/geminiService';
 import type { Spell } from '@/lib/types';
-import MagickalBackLink from '@/app/components/MagickalBackLink';
-import RoomsButton from '@/app/components/RoomsButton';
+// Imports removed
 import LoadingSpinner from '@/app/components/LoadingSpinner';
 import GrimoireCustomizer, { GrimoireCustomization } from '@/app/components/GrimoireCustomizer';
 import CustomSpellWizard from '@/app/components/CustomSpellWizard';
@@ -424,93 +423,89 @@ export default function GrimoirePage() {
     };
 
     const renderCover = () => (
-        <div className="flex items-center justify-center h-full w-full">
-            <div className="relative h-full w-auto aspect-[1529/2048] shadow-2xl max-w-full">
-                <Image 
-                    src={customization.coverImage}
-                    alt="Grimoire Cover" 
-                    fill 
-                    className="object-fill"
-                    priority
-                    sizes="(max-height: 100vh) 100vw, 50vw"
-                />
-                
-                {/* Content Overlay */}
-                <div 
-                    className="absolute flex flex-col items-center justify-center text-center z-10"
-                    style={{
-                        left: '27.42%',
-                        top: '20.37%',
-                        width: '52.96%',
-                        height: '57.00%',
-                    }}
+        <div className="relative h-full w-full max-w-[90vh] aspect-[1529/2048] shadow-2xl">
+            <Image 
+                src={customization.coverImage}
+                alt="Grimoire Cover" 
+                fill 
+                className="object-fill"
+                priority
+                sizes="(max-height: 100vh) 100vw, 50vw"
+            />
+            
+            {/* Content Overlay */}
+            <div 
+                className="absolute flex flex-col items-center justify-center text-center z-10"
+                style={{
+                    left: '27.42%',
+                    top: '20.37%',
+                    width: '52.96%',
+                    height: '57.00%',
+                }}
+            >
+                <h1 
+                    className="text-[5vh] lg:text-[6vh] leading-tight text-[#d4af37] tracking-wider mb-[4vh] [text-shadow:0px_0px_1px_rgba(0,0,0,1),_0px_0px_3px_rgba(0,0,0,1),_0px_0px_5px_rgba(0,0,0,0.5)] opacity-95" 
+                    style={{ fontFamily: `${customization.fontFamily}, serif` }}
                 >
-                    <h1 
-                        className="text-[5vh] lg:text-[6vh] leading-tight text-[#d4af37] tracking-wider mb-[4vh] [text-shadow:0px_0px_1px_rgba(0,0,0,1),_0px_0px_3px_rgba(0,0,0,1),_0px_0px_5px_rgba(0,0,0,0.5)] opacity-95" 
-                        style={{ fontFamily: `${customization.fontFamily}, serif` }}
-                    >
-                        {customization.coverTitle.split(' ').map((word, i) => (
-                           <span key={i} className="block">{word}</span>
-                        ))}
-                    </h1>
-                     <button 
-                        onClick={() => triggerBookAction(true, () => setViewMode('TOC'))}
-                        className="px-6 py-[1.5vh] bg-black/60 border border-[#d4af37] text-[#d4af37] text-[2vh] font-serif uppercase tracking-widest hover:bg-[#d4af37] hover:text-black transition-all duration-300 backdrop-blur-sm whitespace-nowrap mb-4"
-                        style={{ fontFamily: customization.fontFamily }}
-                    >
-                        Open Book
-                    </button>
-
-                    {/* Customization Trigger */}
+                    {customization.coverTitle.split(' ').map((word, i) => (
+                        <span key={i} className="block">{word}</span>
+                    ))}
+                </h1>
                     <button 
-                         onClick={() => setViewMode('CUSTOMIZER')}
-                         className="flex items-center gap-2 text-[#d4af37]/60 hover:text-[#d4af37] transition-colors text-xs font-serif uppercase tracking-widest"
-                    >
-                        <Settings size={14} /> Customize
-                    </button>
-                    
-                </div>
+                    onClick={() => triggerBookAction(true, () => setViewMode('TOC'))}
+                    className="px-6 py-[1.5vh] bg-black/60 border border-[#d4af37] text-[#d4af37] text-[2vh] font-serif uppercase tracking-widest hover:bg-[#d4af37] hover:text-black transition-all duration-300 backdrop-blur-sm whitespace-nowrap mb-4"
+                    style={{ fontFamily: customization.fontFamily }}
+                >
+                    Open Book
+                </button>
+
+                {/* Customization Trigger */}
+                <button 
+                        onClick={() => setViewMode('CUSTOMIZER')}
+                        className="flex items-center gap-2 text-[#d4af37]/60 hover:text-[#d4af37] transition-colors text-xs font-serif uppercase tracking-widest"
+                >
+                    <Settings size={14} /> Customize
+                </button>
+                
             </div>
         </div>
     );
 
     const renderBookPage = (content: React.ReactNode) => {
         return (
-            <div className="flex items-center justify-center h-full w-full">
-                <div className="relative h-full w-auto aspect-[1529/2048] shadow-2xl max-w-full">
-                    <Image 
-                        src={customization.pageStyle} 
-                        alt="Grimoire Page" 
-                        fill 
-                        className="object-fill"
-                        priority
-                        sizes="(max-height: 100vh) 100vw, 50vw"
-                    />
+            <div className="relative h-full w-full max-w-[90vh] aspect-[1529/2048] shadow-2xl">
+                <Image 
+                    src={customization.pageStyle} 
+                    alt="Grimoire Page" 
+                    fill 
+                    className="object-fill"
+                    priority
+                    sizes="(max-height: 100vh) 100vw, 50vw"
+                />
 
-                    {/* Content is now responsible for its own positioning within the page */}
-                    {content}
+                {/* Content is now responsible for its own positioning within the page */}
+                {content}
 
-                    {/* Navigation - Ornate & Smaller */}
-                    {/* Left Arrow (Prev) */}
-                    <button 
-                        onClick={handlePrev}
-                        className="absolute left-[2%] top-1/2 -translate-y-1/2 z-20 group transition-all duration-300 focus:outline-none"
-                    >
-                        <div className="p-2 rounded-full border-2 border-[#8b4513]/60 bg-[#1a120b]/80 text-[#8b4513] group-hover:text-[#d4af37] group-hover:border-[#d4af37] group-hover:bg-black/90 group-hover:shadow-[0_0_15px_rgba(212,175,55,0.4)] transition-all backdrop-blur-[2px]">
-                            <ChevronLeft size={24} className="md:w-6 md:h-6" strokeWidth={2} />
-                        </div>
-                    </button>
-                    
-                    {/* Right Arrow (Next) */}
-                    <button 
-                        onClick={handleNext}
-                        className="absolute right-[2%] top-1/2 -translate-y-1/2 z-20 group transition-all duration-300 focus:outline-none"
-                    >
-                        <div className="p-2 rounded-full border-2 border-[#8b4513]/60 bg-[#1a120b]/80 text-[#8b4513] group-hover:text-[#d4af37] group-hover:border-[#d4af37] group-hover:bg-black/90 group-hover:shadow-[0_0_15px_rgba(212,175,55,0.4)] transition-all backdrop-blur-[2px]">
-                            <ChevronRight size={24} className="md:w-6 md:h-6" strokeWidth={2} />
-                        </div>
-                    </button>
-                </div>
+                {/* Navigation - Ornate & Smaller */}
+                {/* Left Arrow (Prev) */}
+                <button 
+                    onClick={handlePrev}
+                    className="absolute left-[2%] top-1/2 -translate-y-1/2 z-20 group transition-all duration-300 focus:outline-none"
+                >
+                    <div className="p-2 rounded-full border-2 border-[#8b4513]/60 bg-[#1a120b]/80 text-[#8b4513] group-hover:text-[#d4af37] group-hover:border-[#d4af37] group-hover:bg-black/90 group-hover:shadow-[0_0_15px_rgba(212,175,55,0.4)] transition-all backdrop-blur-[2px]">
+                        <ChevronLeft size={24} className="md:w-6 md:h-6" strokeWidth={2} />
+                    </div>
+                </button>
+                
+                {/* Right Arrow (Next) */}
+                <button 
+                    onClick={handleNext}
+                    className="absolute right-[2%] top-1/2 -translate-y-1/2 z-20 group transition-all duration-300 focus:outline-none"
+                >
+                    <div className="p-2 rounded-full border-2 border-[#8b4513]/60 bg-[#1a120b]/80 text-[#8b4513] group-hover:text-[#d4af37] group-hover:border-[#d4af37] group-hover:bg-black/90 group-hover:shadow-[0_0_15px_rgba(212,175,55,0.4)] transition-all backdrop-blur-[2px]">
+                        <ChevronRight size={24} className="md:w-6 md:h-6" strokeWidth={2} />
+                    </div>
+                </button>
             </div>
         );
     };
@@ -691,54 +686,52 @@ export default function GrimoirePage() {
     );
 
     const renderTheEnd = () => (
-        <div className="flex items-center justify-center h-full w-full">
-             <div className="relative h-full w-auto aspect-[1529/2048] shadow-2xl max-w-full">
-                {/* Clean Page for The End */}
-                <Image 
-                    src={customization.pageStyle} 
-                    alt="The End" 
-                    fill 
-                    className="object-fill"
-                    priority
-                />
-                 {/* Navigation - Ornate & Smaller */}
-                 {/* Left Arrow (Prev) */}
-                 <button 
-                    onClick={handlePrev}
-                    className="absolute left-[2%] top-1/2 -translate-y-1/2 z-20 group transition-all duration-300 focus:outline-none"
-                >
-                    <div className="p-2 rounded-full border-2 border-[#8b4513]/60 bg-[#1a120b]/80 text-[#8b4513] group-hover:text-[#d4af37] group-hover:border-[#d4af37] group-hover:bg-black/90 group-hover:shadow-[0_0_15px_rgba(212,175,55,0.4)] transition-all backdrop-blur-[2px]">
-                        <ChevronLeft size={24} className="md:w-6 md:h-6" strokeWidth={2} />
-                    </div>
-                </button>
-                
-                {/* Right Arrow (Next) */}
+        <div className="relative h-full w-full max-w-[90vh] aspect-[1529/2048] shadow-2xl">
+            {/* Clean Page for The End */}
+            <Image 
+                src={customization.pageStyle} 
+                alt="The End" 
+                fill 
+                className="object-fill"
+                priority
+            />
+                {/* Navigation - Ornate & Smaller */}
+                {/* Left Arrow (Prev) */}
                 <button 
-                    onClick={handleNext}
-                    className="absolute right-[2%] top-1/2 -translate-y-1/2 z-20 group transition-all duration-300 focus:outline-none"
-                >
-                    <div className="p-2 rounded-full border-2 border-[#8b4513]/60 bg-[#1a120b]/80 text-[#8b4513] group-hover:text-[#d4af37] group-hover:border-[#d4af37] group-hover:bg-black/90 group-hover:shadow-[0_0_15px_rgba(212,175,55,0.4)] transition-all backdrop-blur-[2px]">
-                        <ChevronRight size={24} className="md:w-6 md:h-6" strokeWidth={2} />
-                    </div>
-                </button>
-
-                <div 
-                    className="absolute z-10 flex items-center justify-center flex-col"
-                    style={PAGE_LAYOUT.BODY_ZONE}
-                >
-                    <h1 
-                        className="text-[8vh] text-[#3e2c22] drop-shadow-sm text-center leading-none" 
-                        style={{ fontFamily: '"IM Fell English SC", serif' }}
-                    >
-                        Finis
-                    </h1>
-                     <button 
-                        onClick={() => setViewMode('COVER')}
-                        className="mt-8 px-6 py-2 border-b border-[#3e2c22] text-[#3e2c22] font-serif hover:text-[#8b4513] hover:border-[#8b4513] transition-colors"
-                    >
-                        Return to Cover
-                    </button>
+                onClick={handlePrev}
+                className="absolute left-[2%] top-1/2 -translate-y-1/2 z-20 group transition-all duration-300 focus:outline-none"
+            >
+                <div className="p-2 rounded-full border-2 border-[#8b4513]/60 bg-[#1a120b]/80 text-[#8b4513] group-hover:text-[#d4af37] group-hover:border-[#d4af37] group-hover:bg-black/90 group-hover:shadow-[0_0_15px_rgba(212,175,55,0.4)] transition-all backdrop-blur-[2px]">
+                    <ChevronLeft size={24} className="md:w-6 md:h-6" strokeWidth={2} />
                 </div>
+            </button>
+            
+            {/* Right Arrow (Next) */}
+            <button 
+                onClick={handleNext}
+                className="absolute right-[2%] top-1/2 -translate-y-1/2 z-20 group transition-all duration-300 focus:outline-none"
+            >
+                <div className="p-2 rounded-full border-2 border-[#8b4513]/60 bg-[#1a120b]/80 text-[#8b4513] group-hover:text-[#d4af37] group-hover:border-[#d4af37] group-hover:bg-black/90 group-hover:shadow-[0_0_15px_rgba(212,175,55,0.4)] transition-all backdrop-blur-[2px]">
+                    <ChevronRight size={24} className="md:w-6 md:h-6" strokeWidth={2} />
+                </div>
+            </button>
+
+            <div 
+                className="absolute z-10 flex items-center justify-center flex-col"
+                style={PAGE_LAYOUT.BODY_ZONE}
+            >
+                <h1 
+                    className="text-[8vh] text-[#3e2c22] drop-shadow-sm text-center leading-none" 
+                    style={{ fontFamily: '"IM Fell English SC", serif' }}
+                >
+                    Finis
+                </h1>
+                    <button 
+                    onClick={() => setViewMode('COVER')}
+                    className="mt-8 px-6 py-2 border-b border-[#3e2c22] text-[#3e2c22] font-serif hover:text-[#8b4513] hover:border-[#8b4513] transition-colors"
+                >
+                    Return to Cover
+                </button>
             </div>
         </div>
     );
@@ -1009,14 +1002,23 @@ export default function GrimoirePage() {
                 />
             </div>
             
-            {/* Header - Completely Transparent & Non-Intrusive */}
-            <header className="relative z-20 w-full p-2 md:p-4 flex justify-between items-center bg-transparent flex-none">
-                <MagickalBackLink href="/hall" text="Grand Hall" />
-                <RoomsButton />
-            </header>
+            {/* Exit Button - Fixed Top Right */}
+            <Link 
+                href="/hall"
+                className="fixed top-4 right-4 z-50 transition-transform hover:scale-105"
+            >
+                <div className="relative w-16 h-16 md:w-20 md:h-20 drop-shadow-lg">
+                    <Image
+                        src="/images/grimoire-images/exit-grimoire-button.png"
+                        alt="Close Grimoire"
+                        fill
+                        className="object-contain"
+                    />
+                </div>
+            </Link>
 
-            {/* Main Content - Flex-1 ensures it strictly fills remaining space without scrolling */}
-            <div className="relative z-10 flex-1 flex items-center justify-center p-2 md:p-4 min-h-0 overflow-hidden">
+            {/* Main Content - Centered flex container similar to JournalEntryEditor */}
+            <div className="relative z-10 flex-1 flex items-center justify-center p-2 md:p-8 min-h-0 overflow-hidden">
                 {loading ? (
                     <LoadingSpinner title="Retrieving the Ancient Tomes..." />
                 ) : (
@@ -1025,9 +1027,6 @@ export default function GrimoirePage() {
                         {viewMode === 'TOC' && renderBookPage(renderTOC())}
                         {viewMode === 'SECTION' && renderBookPage(renderSection())}
                         {viewMode === 'THE_END' && renderTheEnd()}
-
-
-
                     </>
                 )}
             </div>
