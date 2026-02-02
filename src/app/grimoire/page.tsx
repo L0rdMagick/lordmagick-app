@@ -623,7 +623,8 @@ export default function GrimoirePage() {
                         
                         // Safe parsing for ritual data
                         const ritualData = spell && (typeof spell.ritual_data === 'string' ? JSON.parse(spell.ritual_data) : (spell.ritual_data || {}));
-                        const isJournal = spell && (spell.tradition === 'CUSTOM' as any && ritualData.type === 'JOURNAL');
+
+                        const isJournal = spell && (ritualData.type === 'JOURNAL');
 
                         return (
                             <div key={idx} className="relative w-full h-full flex items-center justify-center overflow-hidden">
@@ -666,7 +667,7 @@ export default function GrimoirePage() {
                                                     {/* Date for Journal Entries - Color High Contrast */}
                                                     {isJournal && (ritualData.date || ritualData.timestamp) && (
                                                          <div 
-                                                            className="text-[1.6vh] text-[#3e2c22] font-bold italic mt-2 z-20 relative drop-shadow-sm"
+                                                            className="text-[1.6vh] text-[#3e2c22] font-bold italic mt-2 z-50 relative drop-shadow-sm"
                                                             style={{ fontFamily: customization.fontFamily }}
                                                          >
                                                             {ritualData.date || ritualData.timestamp}
