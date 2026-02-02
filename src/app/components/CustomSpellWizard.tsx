@@ -11,7 +11,7 @@ interface CustomSpellWizardProps {
     onClose: () => void;
     onComplete: (spell: Spell) => void;
     initialData?: Spell;
-    onPlaySound: (key: 'PAGE_TURN' | 'SAVE_SUCCESS' | 'SCRIBE') => void;
+    onPlaySound: (key: 'PAGE_TURN' | 'SAVE_SUCCESS' | 'SCRIBE' | 'BOOK_CLOSE_OPEN') => void;
 }
 
 type WizardStep = 'TITLE' | 'PURPOSE' | 'INGREDIENTS' | 'INSTRUCTIONS' | 'PREVIEW';
@@ -133,6 +133,7 @@ export default function CustomSpellWizard({ userId, onClose, onComplete, initial
             setInstructions([...newInst, currentVal]);
         }
         setEditIndex(prev => prev + 1);
+        onPlaySound('PAGE_TURN');
     };
 
     const handleDeleteStep = () => {
@@ -145,6 +146,7 @@ export default function CustomSpellWizard({ userId, onClose, onComplete, initial
     };
 
     const handleFinish = (currentVal: string) => {
+        onPlaySound('BOOK_CLOSE_OPEN');
         let finalInst = [...instructions];
         // Save current if valid
         if (currentVal.trim()) {
