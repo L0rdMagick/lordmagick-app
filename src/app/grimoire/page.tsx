@@ -618,8 +618,8 @@ export default function GrimoirePage() {
                         // Font scaling heuristic
                         const isLongTitle = spell ? spell.name.length > 25 : false;
                         const cardTitleSize = isLongTitle
-                             ? "text-[1.5vh] md:text-[1.8vh]" 
-                             : "text-[1.8vh] md:text-[2.2vh]";
+                             ? "text-[1.3vh] md:text-[1.6vh]" 
+                             : "text-[1.6vh] md:text-[2.0vh]";
                         
                         // Safe parsing for ritual data
                         const ritualData = spell && (typeof spell.ritual_data === 'string' ? JSON.parse(spell.ritual_data) : (spell.ritual_data || {}));
@@ -657,7 +657,7 @@ export default function GrimoirePage() {
                                                 {/* Text scale reduced and clamped according to length */}
                                                 <div className="w-full h-full flex flex-col items-center justify-center">
                                                     <h3 
-                                                        className={`font-serif font-bold ${cardTitleSize} leading-tight text-[#3e2c22] drop-shadow-sm text-balance line-clamp-4`}
+                                                        className={`font-serif font-bold ${cardTitleSize} leading-tight text-[#3e2c22] drop-shadow-sm text-balance line-clamp-3`}
                                                         style={{ fontFamily: customization.fontFamily }}
                                                     >
                                                         {spell.name}
