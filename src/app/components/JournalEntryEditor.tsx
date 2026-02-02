@@ -166,12 +166,12 @@ export default function JournalEntryEditor({ userId, onClose, onComplete, initia
                     />
 
                     {/* Footer Actions */}
-                    <div className="mt-2 flex justify-between items-center pt-2 border-t border-[#8b4513]/20 shrink-0">
-                        <button onClick={onClose} className="text-[#8b4513] hover:text-red-900 underline text-sm" style={{ fontFamily }}>Discard</button>
+                    <div className="mt-2 flex justify-between items-center pt-2 border-t border-[#8b4513]/20 shrink-0 gap-2">
+                        <button onClick={onClose} className="text-[#8b4513] hover:text-red-900 underline text-xs md:text-sm" style={{ fontFamily }}>Discard</button>
                         <button 
                             onClick={handleSave}
                             disabled={loading || !title || !content}
-                            className="flex items-center gap-2 px-6 py-2 bg-[#8b4513] text-[#f4e4bc] rounded uppercase text-sm hover:bg-[#5c4033] shadow-md transition-all disabled:opacity-50"
+                            className="flex items-center gap-1 px-3 py-2 bg-[#8b4513] text-[#f4e4bc] rounded uppercase text-xs md:text-sm hover:bg-[#5c4033] shadow-md transition-all disabled:opacity-50"
                             style={{ fontFamily }}
                         >
                             {loading ? 'Inscribing...' : 'Save Entry'} <Save size={16} />

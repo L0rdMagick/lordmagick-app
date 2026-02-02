@@ -364,18 +364,18 @@ export default function CustomSpellWizard({ userId, onClose, onComplete, initial
                                             )}
                                         </div>
 
-                                        <div className="mt-8 flex gap-4 w-full">
+                                        <div className="mt-8 flex gap-2 w-full">
                                             <button 
                                                 onClick={() => handleNextInstruction(currentVal)}
                                                 disabled={!currentVal.trim()}
-                                                className="flex-1 py-2 px-4 bg-[#8b4513] text-[#f4e4bc] rounded uppercase hover:bg-[#5c4033] disabled:opacity-50 transition-colors pointer-events-auto shadow-md"
+                                                className="flex-1 py-2 px-2 bg-[#8b4513] text-[#f4e4bc] rounded uppercase text-xs md:text-sm hover:bg-[#5c4033] disabled:opacity-50 transition-colors pointer-events-auto shadow-md"
                                                 style={{ fontFamily }}
                                             >
                                                 Next Page
                                             </button>
                                              <button 
                                                 onClick={() => handleFinish(currentVal)}
-                                                className="py-2 px-6 border border-[#8b4513] text-[#8b4513] rounded uppercase hover:bg-[#8b4513]/10 pointer-events-auto"
+                                                className="py-2 px-3 border border-[#8b4513] text-[#8b4513] rounded uppercase text-xs md:text-sm hover:bg-[#8b4513]/10 pointer-events-auto"
                                                 style={{ fontFamily }}
                                             >
                                                 Finish
