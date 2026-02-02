@@ -63,7 +63,8 @@ export default function CustomSpellWizard({ userId, onClose, onComplete, initial
         }
         return [''];
     });
-    // currentInstruction legacy removed - now directly editing array
+    // Pagination Index for Instructions
+    const [editIndex, setEditIndex] = useState(0);
 
     const handleNext = () => {
         if (step === 'TITLE' && title) setStep('PURPOSE');
@@ -78,32 +79,60 @@ export default function CustomSpellWizard({ userId, onClose, onComplete, initial
     const handleBack = () => {
         if (step === 'PURPOSE') setStep('TITLE');
         else if (step === 'INGREDIENTS') setStep('PURPOSE');
-        else if (step === 'INSTRUCTIONS') setStep('INGREDIENTS');
+        else if (step === 'INSTRUCTIONS') {
+            if (editIndex > 0) {
+                setEditIndex(prev => prev - 1);
+            } else {
+                setStep('INGREDIENTS');
+            }
+        }
         else if (step === 'PREVIEW') setStep('INSTRUCTIONS');
     };
 
-    const addInstruction = () => {
-        setInstructions(prev => [...prev, '']);
-    };
-
-    const updateInstruction = (index: number, value: string) => {
+    const handleNextInstruction = (currentVal: string) => {
+        if (!currentVal.trim()) return;
+        
         const newInst = [...instructions];
-        newInst[index] = value;
+        // If editing existing
+        if (editIndex < newInst.length) {
+            newInst[editIndex] = currentVal;
+            setInstructions(newInst);
+        } else {
+            // Append new
+            setInstructions([...newInst, currentVal]);
+        }
+        setEditIndex(prev => prev + 1);
+    };
+
+    const handleDeleteStep = () => {
+        const newInst = instructions.filter((_, i) => i !== editIndex);
         setInstructions(newInst);
+        // Adjust index if needed (stay on same index unless it was last)
+        if (editIndex >= newInst.length && editIndex > 0) {
+            setEditIndex(editIndex - 1);
+        }
     };
 
-    const deleteInstruction = (index: number) => {
-        setInstructions(prev => prev.filter((_, i) => i !== index));
-    };
+    const handleFinish = (currentVal: string) => {
+        let finalInst = [...instructions];
+        // Save current if valid
+        if (currentVal.trim()) {
+            if (editIndex < finalInst.length) {
+                finalInst[editIndex] = currentVal;
+            } else {
+                finalInst.push(currentVal);
+            }
+        }
 
-    const finishInstructions = () => {
-        // Filter empty
-        const clean = instructions.map(i => i.trim()).filter(i => i.length > 0);
-        if (clean.length === 0) {
+        // Clean empty
+        finalInst = finalInst.map(i => i.trim()).filter(i => i.length > 0);
+        
+        if (finalInst.length === 0) {
             alert("Please add at least one instruction step.");
             return;
         }
-        setInstructions(clean);
+
+        setInstructions(finalInst);
         setStep('PREVIEW');
     };
 
@@ -233,46 +262,69 @@ export default function CustomSpellWizard({ userId, onClose, onComplete, initial
                     )}
 
                     {step === 'INSTRUCTIONS' && (
-                         <Wrapper title="Ritual Steps" onBack={handleBack} isFirstStep={false}>
-                             <div className="w-full flex-1 flex flex-col gap-4 overflow-hidden">
-                                <div className="flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-2">
-                                    {instructions.map((inst, idx) => (
-                                        <div key={idx} className="flex gap-2 items-start animate-in fade-in slide-in-from-bottom-2 duration-300">
-                                            <div className="pt-2 text-[#8b4513] font-serif font-bold text-sm w-6 text-right shrink-0">
-                                                {idx + 1}.
-                                            </div>
-                                            <textarea
-                                                value={inst}
-                                                onChange={(e) => updateInstruction(idx, e.target.value)}
-                                                placeholder={`Step ${idx + 1} instructions...`}
-                                                className="flex-1 bg-transparent border border-[#8b4513]/30 p-3 font-serif text-[1.8vh] text-[#3e2c22] focus:outline-none focus:border-[#d4af37] resize-none rounded min-h-[100px]"
-                                                autoFocus={idx === instructions.length - 1}
-                                            />
+                         <Wrapper title={`Step ${editIndex + 1}`} onBack={handleBack} isFirstStep={false}>
+                             {(() => {
+                                 // Local render logic for current step
+                                 const currentVal = instructions[editIndex] || '';
+                                 const isNew = editIndex === instructions.length;
+
+                                 return (
+                                     <div className="w-full h-full flex flex-col items-center">
+                                         <textarea
+                                            value={currentVal}
+                                            onChange={(e) => {
+                                                // Live update state to prevent loss if clicking Finish vs Next
+                                                const val = e.target.value;
+                                                const newInst = [...instructions];
+                                                // If new, ensure array is big enough or just local? 
+                                                // Better to just update local array state immediately
+                                                if (editIndex < newInst.length) {
+                                                    newInst[editIndex] = val;
+                                                    setInstructions(newInst);
+                                                } else {
+                                                    // For "New" step, we might need to append immediately to let typing happen?
+                                                    // Actually, if we type in "New" step, we should probably append an empty string first?
+                                                    // Let's rely on controlled input. 
+                                                    // Use `setInstructions` to grow array if typing in new slot?
+                                                    setInstructions([...newInst, val]);
+                                                }
+                                            }}
+                                            placeholder="Describe this step of the ritual..."
+                                            className="w-full h-[30vh] bg-transparent border border-[#8b4513]/30 p-4 font-serif text-[2vh] text-[#3e2c22] focus:outline-none focus:border-[#d4af37] resize-none rounded custom-scrollbar placeholder:text-[#8b4513]/30"
+                                            autoFocus
+                                        />
+                                        
+                                        <div className="mt-4 flex gap-4 w-full justify-center">
+                                            {/* Delete Button (only if existing step or typing) */}
+                                            {instructions.length > 0 && (
+                                                <button 
+                                                    onClick={handleDeleteStep}
+                                                    className="p-2 text-[#8b4513]/50 hover:text-red-500 transition-colors"
+                                                    title="Delete Page"
+                                                >
+                                                    <X size={24} />
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        <div className="mt-8 flex gap-4 w-full">
                                             <button 
-                                                onClick={() => deleteInstruction(idx)}
-                                                className="p-2 text-[#8b4513]/50 hover:text-red-500 transition-colors mt-2"
-                                                title="Remove Step"
+                                                onClick={() => handleNextInstruction(currentVal)}
+                                                disabled={!currentVal.trim()}
+                                                className="flex-1 py-2 px-4 bg-[#8b4513] text-[#f4e4bc] rounded font-serif uppercase hover:bg-[#5c4033] disabled:opacity-50 transition-colors pointer-events-auto shadow-md"
                                             >
-                                                <X size={16} />
+                                                Next Page
+                                            </button>
+                                             <button 
+                                                onClick={() => handleFinish(currentVal)}
+                                                className="py-2 px-6 border border-[#8b4513] text-[#8b4513] rounded font-serif uppercase hover:bg-[#8b4513]/10 pointer-events-auto"
+                                            >
+                                                Finish
                                             </button>
                                         </div>
-                                    ))}
-                                </div>
-                                <div className="flex gap-2 w-full pt-4 border-t border-[#8b4513]/20 shrink-0">
-                                    <button 
-                                        onClick={addInstruction}
-                                        className="flex-1 py-2 border border-[#8b4513] text-[#8b4513] hover:bg-[#8b4513]/10 rounded flex items-center justify-center gap-2 pointer-events-auto"
-                                    >
-                                        <Plus size={16} /> Add Step
-                                    </button>
-                                     <button 
-                                        onClick={finishInstructions}
-                                        className="flex-1 py-2 bg-[#8b4513] text-[#f4e4bc] hover:bg-[#5c4033] rounded pointer-events-auto shadow-md"
-                                    >
-                                        Finish
-                                    </button>
-                                </div>
-                             </div>
+                                     </div>
+                                 );
+                             })()}
                         </Wrapper>
                     )}
 
