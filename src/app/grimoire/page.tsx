@@ -773,7 +773,7 @@ export default function GrimoirePage() {
         };
 
         return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-2 md:p-4 bg-black/90 backdrop-blur-md">
+            <div className="fixed inset-0 z-50 flex items-center justify-center px-2 py-[10vh] md:p-4 bg-black/90 backdrop-blur-md">
                 <div 
                     className="relative shadow-2xl"
                     style={{
@@ -1021,7 +1021,7 @@ export default function GrimoirePage() {
 
             {/* Main Content - Centered flex container similar to JournalEntryEditor */}
             {/* Added min-h-full to ensure it fills screen but allows scrolling if content pushes it */}
-            <div className="relative z-10 flex-1 flex items-center justify-center p-2 md:p-8 min-h-full">
+            <div className="relative z-10 flex-1 flex items-center justify-center px-2 py-[10vh] md:p-8 min-h-full">
                 {loading ? (
                     <LoadingSpinner title="Retrieving the Ancient Tomes..." />
                 ) : (
@@ -1044,7 +1044,7 @@ export default function GrimoirePage() {
             )}
 
             {!loading && viewMode === 'CREATE_SPELL' && currentUserId && (
-                <div className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center pointer-events-auto p-2 md:p-8">
+                <div className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center pointer-events-auto px-2 py-[10vh] md:p-8">
                     <div className="relative h-full w-full max-w-[90vh] aspect-[1529/2048]">
                         <CustomSpellWizard
                             userId={currentUserId}
@@ -1066,7 +1066,7 @@ export default function GrimoirePage() {
             )}
 
             {!loading && viewMode === 'CREATE_JOURNAL' && currentUserId && (
-                <div className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center pointer-events-auto p-2 md:p-8">
+                <div className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center pointer-events-auto px-2 py-[10vh] md:p-8">
                     <div className="relative h-full w-full max-w-[90vh] aspect-[1529/2048]">
                         <JournalEntryEditor 
                             userId={currentUserId}
