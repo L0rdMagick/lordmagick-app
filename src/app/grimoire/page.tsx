@@ -648,10 +648,10 @@ export default function GrimoirePage() {
                                             <div 
                                                 className="absolute flex flex-col items-center justify-center text-center p-4 z-10 overflow-hidden"
                                                 style={{
-                                                    left: '19.25%',
-                                                    top: '19.25%',
-                                                    width: '61.5%',
-                                                    height: '61.5%'
+                                                    left: '20.9%',
+                                                    top: '15.84%',
+                                                    width: '58.01%',
+                                                    height: '66.45%'
                                                 }}
                                             >
                                                 {/* Text scale reduced and clamped according to length */}
@@ -999,7 +999,7 @@ export default function GrimoirePage() {
             >
                 <h3 className="text-[3vh] text-[#d4af37] mb-6 uppercase tracking-widest font-bold">Depart the <br/>Sanctuary?</h3>
                 <p className="text-[#f4e4bc] text-lg mb-8 leading-relaxed italic">
-                    "The threads of fate separate. Are you certain you wish to leave this sanctuary and return to the Grand Hall?"
+                    The threads of fate separate. Are you certain you wish to leave this sanctuary and return to the Grand Hall?
                 </p>
                 <div className="flex flex-col gap-3">
                     <button 
