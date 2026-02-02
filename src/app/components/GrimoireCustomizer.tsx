@@ -64,14 +64,15 @@ export default function GrimoireCustomizer({ current, onSave, onClose }: Grimoir
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
             <div className="bg-[#1a120b] border border-[#8b4513] rounded-lg w-full max-w-4xl h-[90vh] flex flex-col shadow-2xl overflow-hidden">
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-[#8b4513]/30 bg-[#0f0a06]">
                     <h2 className="text-[#d4af37] font-serif text-2xl" style={{ fontFamily: 'Cinzel' }}>Customize Grimoire</h2>
                     <button 
                         onClick={onClose} 
-                        className="text-[#8b4513] hover:text-[#d4af37] transition-colors pointer-events-auto z-[60] cursor-pointer"
+                        className="p-2 text-[#8b4513] hover:text-[#d4af37] transition-colors pointer-events-auto z-[110] cursor-pointer relative"
+                        aria-label="Close Customizer"
                     >
                         <X size={24} />
                     </button>

@@ -943,13 +943,11 @@ export default function GrimoirePage() {
                         {viewMode === 'THE_END' && renderTheEnd()}
 
                         {viewMode === 'CUSTOMIZER' && (
-                            <div className="fixed inset-0 z-50 pointer-events-auto"> 
-                                <GrimoireCustomizer 
-                                    current={customization} 
-                                    onSave={handleCustomizationSave} 
-                                    onClose={() => setViewMode('COVER')} 
-                                />
-                            </div>
+                            <GrimoireCustomizer 
+                                current={customization} 
+                                onSave={handleCustomizationSave} 
+                                onClose={() => setViewMode('COVER')} 
+                            />
                         )}
 
                         {viewMode === 'CREATE_SPELL' && currentUserId && (
