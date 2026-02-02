@@ -12,6 +12,7 @@ interface JournalEntryEditorProps {
     onComplete: (spell: Spell) => void;
     initialData?: Spell;
     onPlaySound: (key: 'SCRIBE' | 'SAVE_SUCCESS') => void;
+    fontFamily: string;
 }
 
 // --- LAYOUT CONSTANTS ---
@@ -37,7 +38,7 @@ const PAGE_LAYOUT = {
     }
 };
 
-export default function JournalEntryEditor({ userId, onClose, onComplete, initialData, onPlaySound }: JournalEntryEditorProps) {
+export default function JournalEntryEditor({ userId, onClose, onComplete, initialData, onPlaySound, fontFamily }: JournalEntryEditorProps) {
     const [loading, setLoading] = useState(false);
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
@@ -139,14 +140,16 @@ export default function JournalEntryEditor({ userId, onClose, onComplete, initia
                                 onPlaySound('SCRIBE');
                             }}
                             placeholder="Entry Title..."
-                            className="w-full bg-transparent font-serif font-bold text-[2.2vh] text-[#3e2c22] placeholder:text-[#8b4513]/40 focus:outline-none text-center"
+                            className="w-full bg-transparent font-bold text-[2.2vh] text-[#3e2c22] placeholder:text-[#8b4513]/40 focus:outline-none text-center"
+                            style={{ fontFamily }}
                         />
                          <input
                             type="text"
                             value={dateStr}
                             onChange={(e) => setDateStr(e.target.value)}
-                            className="w-full bg-transparent text-[1.2vh] text-[#8b4513]/60 italic font-serif mt-1 focus:outline-none focus:text-[#8b4513] text-center"
+                            className="w-full bg-transparent text-[1.2vh] text-[#8b4513]/60 italic mt-1 focus:outline-none focus:text-[#8b4513] text-center"
                             placeholder="Date..."
+                            style={{ fontFamily }}
                         />
                     </div>
                 </div>
@@ -157,17 +160,19 @@ export default function JournalEntryEditor({ userId, onClose, onComplete, initia
                         value={content}
                         onChange={handleTextChange}
                         placeholder="Write your thoughts..."
-                        className="flex-1 w-full bg-transparent resize-none focus:outline-none font-handwriting text-[1.8vh] leading-relaxed text-[#2a1f18] placeholder:text-[#8b4513]/30 custom-scrollbar p-2"
-                        style={{ fontFamily: '"Indie Flower", "Patrick Hand", cursive' }} 
+                        // Increased font size by ~50% (1.8vh -> 2.7vh)
+                        className="flex-1 w-full bg-transparent resize-none focus:outline-none text-[2.7vh] leading-relaxed text-[#2a1f18] placeholder:text-[#8b4513]/30 custom-scrollbar p-2"
+                        style={{ fontFamily }} 
                     />
 
                     {/* Footer Actions */}
                     <div className="mt-2 flex justify-between items-center pt-2 border-t border-[#8b4513]/20 shrink-0">
-                        <button onClick={onClose} className="text-[#8b4513] hover:text-red-900 underline text-sm font-serif">Discard</button>
+                        <button onClick={onClose} className="text-[#8b4513] hover:text-red-900 underline text-sm" style={{ fontFamily }}>Discard</button>
                         <button 
                             onClick={handleSave}
                             disabled={loading || !title || !content}
-                            className="flex items-center gap-2 px-6 py-2 bg-[#8b4513] text-[#f4e4bc] rounded font-serif uppercase text-sm hover:bg-[#5c4033] shadow-md transition-all disabled:opacity-50"
+                            className="flex items-center gap-2 px-6 py-2 bg-[#8b4513] text-[#f4e4bc] rounded uppercase text-sm hover:bg-[#5c4033] shadow-md transition-all disabled:opacity-50"
+                            style={{ fontFamily }}
                         >
                             {loading ? 'Inscribing...' : 'Save Entry'} <Save size={16} />
                         </button>

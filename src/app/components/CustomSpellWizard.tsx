@@ -12,6 +12,7 @@ interface CustomSpellWizardProps {
     onComplete: (spell: Spell) => void;
     initialData?: Spell;
     onPlaySound: (key: 'PAGE_TURN' | 'SAVE_SUCCESS' | 'SCRIBE' | 'BOOK_CLOSE_OPEN') => void;
+    fontFamily: string;
 }
 
 type WizardStep = 'TITLE' | 'PURPOSE' | 'INGREDIENTS' | 'INSTRUCTIONS' | 'PREVIEW';
@@ -43,17 +44,19 @@ const Wrapper = ({
     children, 
     title, 
     onBack, 
-    isFirstStep 
+    isFirstStep,
+    fontFamily
 }: { 
     children: React.ReactNode, 
     title: string, 
     onBack: () => void, 
-    isFirstStep: boolean 
+    isFirstStep: boolean,
+    fontFamily: string
 }) => (
     <>
         {/* Title Zone */}
         <div style={PAGE_LAYOUT.TITLE_ZONE} className="text-center z-10">
-            <h2 className="text-[3vh] font-serif font-bold text-[#5c4033]" style={{ fontFamily: 'Cinzel' }}>{title}</h2>
+            <h2 className="text-[3vh] font-bold text-[#5c4033]" style={{ fontFamily }}>{title}</h2>
         </div>
 
         {/* Body Zone */}
@@ -63,7 +66,7 @@ const Wrapper = ({
             </div>
             
             <div className="mt-auto pt-4 flex justify-between w-full border-t border-[#8b4513]/20 shrink-0">
-                <button onClick={onBack} className="text-[#8b4513] hover:text-black font-serif underline text-sm pointer-events-auto">
+                <button onClick={onBack} className="text-[#8b4513] hover:text-black underline text-sm pointer-events-auto" style={{ fontFamily }}>
                     {isFirstStep ? 'Cancel' : 'Back'}
                 </button>
             </div>
@@ -71,7 +74,7 @@ const Wrapper = ({
     </>
 );
 
-export default function CustomSpellWizard({ userId, onClose, onComplete, initialData, onPlaySound }: CustomSpellWizardProps) {
+export default function CustomSpellWizard({ userId, onClose, onComplete, initialData, onPlaySound, fontFamily }: CustomSpellWizardProps) {
     const [step, setStep] = useState<WizardStep>('TITLE');
     const [loading, setLoading] = useState(false);
     
@@ -242,7 +245,7 @@ export default function CustomSpellWizard({ userId, onClose, onComplete, initial
                 {/* Content Overlay - Now using specific zones via Wrapper */}
                 <div className="absolute inset-0">
                     {step === 'TITLE' && (
-                        <Wrapper title="Name Your Spell" onBack={onClose} isFirstStep={true}>
+                        <Wrapper title="Name Your Spell" onBack={onClose} isFirstStep={true} fontFamily={fontFamily}>
                              <input 
                                 type="text"
                                 value={title}
@@ -251,13 +254,15 @@ export default function CustomSpellWizard({ userId, onClose, onComplete, initial
                                     onPlaySound('SCRIBE');
                                 }}
                                 placeholder="Enter Spell Title..."
-                                className="w-full bg-transparent border-b-2 border-[#8b4513]/50 text-left pl-2 text-[2.5vh] font-serif text-[#3e2c22] focus:outline-none focus:border-[#d4af37] placeholder:text-[#8b4513]/30"
+                                className="w-full bg-transparent border-b-2 border-[#8b4513]/50 text-left pl-2 text-[2.5vh] text-[#3e2c22] focus:outline-none focus:border-[#d4af37] placeholder:text-[#8b4513]/30"
+                                style={{ fontFamily }}
                                 autoFocus
                             />
                             <button 
                                 onClick={handleNext}
                                 disabled={!title}
-                                className="mt-8 px-8 py-2 bg-[#8b4513] text-[#f4e4bc] rounded font-serif uppercase hover:bg-[#5c4033] disabled:opacity-50 transition-colors pointer-events-auto relative z-10"
+                                className="mt-8 px-8 py-2 bg-[#8b4513] text-[#f4e4bc] rounded uppercase hover:bg-[#5c4033] disabled:opacity-50 transition-colors pointer-events-auto relative z-10"
+                                style={{ fontFamily }}
                             >
                                 Next
                             </button>
@@ -265,7 +270,7 @@ export default function CustomSpellWizard({ userId, onClose, onComplete, initial
                     )}
 
                     {step === 'PURPOSE' && (
-                         <Wrapper title="Spell Purpose" onBack={handleBack} isFirstStep={false}>
+                         <Wrapper title="Spell Purpose" onBack={handleBack} isFirstStep={false} fontFamily={fontFamily}>
                             <textarea
                                 value={purpose}
                                 onChange={(e) => {
@@ -273,13 +278,15 @@ export default function CustomSpellWizard({ userId, onClose, onComplete, initial
                                     onPlaySound('SCRIBE');
                                 }}
                                 placeholder="What is the intention of this working?"
-                                className="w-full h-[30vh] bg-transparent border border-[#8b4513]/30 p-4 font-serif text-[1.8vh] text-[#3e2c22] focus:outline-none focus:border-[#d4af37] resize-none rounded custom-scrollbar placeholder:text-[#8b4513]/30"
+                                className="w-full h-[30vh] bg-transparent border border-[#8b4513]/30 p-4 text-[1.8vh] text-[#3e2c22] focus:outline-none focus:border-[#d4af37] resize-none rounded custom-scrollbar placeholder:text-[#8b4513]/30"
+                                style={{ fontFamily }}
                                 autoFocus
                             />
                              <button 
                                 onClick={handleNext}
                                 disabled={!purpose}
-                                className="mt-8 px-8 py-2 bg-[#8b4513] text-[#f4e4bc] rounded font-serif uppercase hover:bg-[#5c4033] disabled:opacity-50 transition-colors pointer-events-auto relative z-10"
+                                className="mt-8 px-8 py-2 bg-[#8b4513] text-[#f4e4bc] rounded uppercase hover:bg-[#5c4033] disabled:opacity-50 transition-colors pointer-events-auto relative z-10"
+                                style={{ fontFamily }}
                             >
                                 Next
                             </button>
@@ -287,7 +294,7 @@ export default function CustomSpellWizard({ userId, onClose, onComplete, initial
                     )}
 
                     {step === 'INGREDIENTS' && (
-                          <Wrapper title="Ingredients" onBack={handleBack} isFirstStep={false}>
+                          <Wrapper title="Ingredients" onBack={handleBack} isFirstStep={false} fontFamily={fontFamily}>
                             <textarea
                                 value={ingredients}
                                 onChange={(e) => {
@@ -295,12 +302,14 @@ export default function CustomSpellWizard({ userId, onClose, onComplete, initial
                                     onPlaySound('SCRIBE');
                                 }}
                                 placeholder="List required items (candles, herbs, crystals...)"
-                                className="w-full h-[30vh] bg-transparent border border-[#8b4513]/30 p-4 font-serif text-[1.8vh] text-[#3e2c22] focus:outline-none focus:border-[#d4af37] resize-none rounded custom-scrollbar placeholder:text-[#8b4513]/30"
+                                className="w-full h-[30vh] bg-transparent border border-[#8b4513]/30 p-4 text-[1.8vh] text-[#3e2c22] focus:outline-none focus:border-[#d4af37] resize-none rounded custom-scrollbar placeholder:text-[#8b4513]/30"
+                                style={{ fontFamily }}
                                 autoFocus
                             />
                              <button 
                                 onClick={handleNext}
-                                className="mt-8 px-8 py-2 bg-[#8b4513] text-[#f4e4bc] rounded font-serif uppercase hover:bg-[#5c4033] transition-colors pointer-events-auto relative z-10"
+                                className="mt-8 px-8 py-2 bg-[#8b4513] text-[#f4e4bc] rounded uppercase hover:bg-[#5c4033] transition-colors pointer-events-auto relative z-10"
+                                style={{ fontFamily }}
                             >
                                 Next
                             </button>
@@ -308,7 +317,7 @@ export default function CustomSpellWizard({ userId, onClose, onComplete, initial
                     )}
 
                     {step === 'INSTRUCTIONS' && (
-                         <Wrapper title={`Step ${editIndex + 1}`} onBack={handleBack} isFirstStep={false}>
+                         <Wrapper title={`Step ${editIndex + 1}`} onBack={handleBack} isFirstStep={false} fontFamily={fontFamily}>
                              {(() => {
                                  // Local render logic for current step
                                  const currentVal = instructions[editIndex] || '';
@@ -336,7 +345,8 @@ export default function CustomSpellWizard({ userId, onClose, onComplete, initial
                                                 }
                                             }}
                                             placeholder="Describe this step of the ritual..."
-                                            className="w-full h-[30vh] bg-transparent border border-[#8b4513]/30 p-4 font-serif text-[2vh] text-[#3e2c22] focus:outline-none focus:border-[#d4af37] resize-none rounded custom-scrollbar placeholder:text-[#8b4513]/30"
+                                            className="w-full h-[30vh] bg-transparent border border-[#8b4513]/30 p-4 text-[2vh] text-[#3e2c22] focus:outline-none focus:border-[#d4af37] resize-none rounded custom-scrollbar placeholder:text-[#8b4513]/30"
+                                            style={{ fontFamily }}
                                             autoFocus
                                         />
                                         
@@ -357,13 +367,15 @@ export default function CustomSpellWizard({ userId, onClose, onComplete, initial
                                             <button 
                                                 onClick={() => handleNextInstruction(currentVal)}
                                                 disabled={!currentVal.trim()}
-                                                className="flex-1 py-2 px-4 bg-[#8b4513] text-[#f4e4bc] rounded font-serif uppercase hover:bg-[#5c4033] disabled:opacity-50 transition-colors pointer-events-auto shadow-md"
+                                                className="flex-1 py-2 px-4 bg-[#8b4513] text-[#f4e4bc] rounded uppercase hover:bg-[#5c4033] disabled:opacity-50 transition-colors pointer-events-auto shadow-md"
+                                                style={{ fontFamily }}
                                             >
                                                 Next Page
                                             </button>
                                              <button 
                                                 onClick={() => handleFinish(currentVal)}
-                                                className="py-2 px-6 border border-[#8b4513] text-[#8b4513] rounded font-serif uppercase hover:bg-[#8b4513]/10 pointer-events-auto"
+                                                className="py-2 px-6 border border-[#8b4513] text-[#8b4513] rounded uppercase hover:bg-[#8b4513]/10 pointer-events-auto"
+                                                style={{ fontFamily }}
                                             >
                                                 Finish
                                             </button>
@@ -377,14 +389,14 @@ export default function CustomSpellWizard({ userId, onClose, onComplete, initial
                     {step === 'PREVIEW' && (
                         <>
                             <div style={PAGE_LAYOUT.TITLE_ZONE} className="text-center z-10 flex items-center justify-center border-b border-[#8b4513]/30">
-                                <h2 className="text-[2.5vh] font-bold font-serif uppercase text-[#3e2c22]">{title}</h2>
+                                <h2 className="text-[2.5vh] font-bold uppercase text-[#3e2c22]" style={{ fontFamily }}>{title}</h2>
                             </div>
                             
                             <div style={PAGE_LAYOUT.BODY_ZONE} className="flex flex-col z-10">
-                                <div className="flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-1">
-                                <div>
+                                <div className="flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-1" style={{ fontFamily }}>
+                                <div style={{ fontFamily }}>
                                     <h3 className="font-bold text-[#5c4033] text-sm uppercase">Purpose</h3>
-                                    <p className="italic text-sm opacity-80">{purpose}</p>
+                                    <p className="italic text-sm opacity-80" style={{ fontFamily }}>{purpose}</p>
                                 </div>
                                 {ingredients && (
                                     <div>

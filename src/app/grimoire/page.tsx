@@ -107,7 +107,7 @@ const getSpellMetadata = (spell: Spell): SpellMetadata => {
 const SOUND_CONFIG = {
     PAGE_TURN: { 
         path: '/audio/sfx-parchment-open.mp3', 
-        volume: 6, 
+        volume: 3, 
         description: "Flipping pages, Next/Back buttons" 
     },
     BOOK_CLOSE_OPEN: { 
@@ -117,27 +117,27 @@ const SOUND_CONFIG = {
     },
     SELECT: { 
         path: '/audio/sfx-parchment-open.mp3', 
-        volume: 5, 
+        volume: 3, 
         description: "Selecting a spell card (Parchment sound)" 
     },
     OPEN_RITUAL: { 
         path: '/audio/sfx-finding-something-2.mp3', 
-        volume: 6, 
+        volume: 2, 
         description: "Opening a specific ritual detail view" 
     },
     WRITE_SPELL: { 
         path: '/audio/sfx-parchment-open.mp3', 
-        volume: 6, 
+        volume: 3, 
         description: "Clicking 'Write Spell' or 'Journal Entry' buttons" 
     },
     SAVE_SUCCESS: { 
         path: '/audio/OG - sfx-shimmer.mp3', 
-        volume: 7, 
+        volume: 3, 
         description: "Successfully saving a spell or journal entry" 
     },
     SCRIBE: { 
         path: '/audio/sfx-scribing.mp3', 
-        volume: 4, 
+        volume: 2, 
         description: "Writing/Typing sound effect (looping or per stroke)" 
     }
 };
@@ -953,17 +953,17 @@ export default function GrimoirePage() {
                                                         <PenTool size={16} />
                                                     </button>
                                                 </div>
-                                                <h3 className="text-[1.5vh] text-[#8b4513] uppercase font-bold mb-2">Purpose</h3>
-                                                <p className="italic text-[1.8vh] text-[#5c4033] mb-4">"{currentCustomContent.content.purpose}"</p>
+                                                <h3 className="text-[1.5vh] text-[#8b4513] uppercase font-bold mb-2" style={{ fontFamily: customization.fontFamily }}>Purpose</h3>
+                                                <p className="italic text-[1.8vh] text-[#5c4033] mb-4" style={{ fontFamily: customization.fontFamily }}>"{currentCustomContent.content.purpose}"</p>
                                                 
-                                                <h3 className="text-[1.5vh] text-[#8b4513] uppercase font-bold mb-2">Ingredients</h3>
-                                                <p className="text-[1.8vh] text-[#5c4033] whitespace-pre-wrap">{currentCustomContent.content.ingredients}</p>
+                                                <h3 className="text-[1.5vh] text-[#8b4513] uppercase font-bold mb-2" style={{ fontFamily: customization.fontFamily }}>Ingredients</h3>
+                                                <p className="text-[1.8vh] text-[#5c4033] whitespace-pre-wrap" style={{ fontFamily: customization.fontFamily }}>{currentCustomContent.content.ingredients}</p>
                                             </>
                                         )}
                                         {currentCustomContent.type === 'STEP' && (
                                              <div className="flex flex-col h-full justify-center">
-                                                <h3 className="text-[2vh] text-[#8b4513] uppercase font-bold mb-4 border-b border-[#8b4513]/20 pb-2">Step {currentCustomContent.step}</h3>
-                                                <p className="text-[2.2vh] text-[#3e2c22] leading-relaxed italic font-medieval">
+                                                <h3 className="text-[2vh] text-[#8b4513] uppercase font-bold mb-4 border-b border-[#8b4513]/20 pb-2" style={{ fontFamily: customization.fontFamily }}>Step {currentCustomContent.step}</h3>
+                                                <p className="text-[2.2vh] text-[#3e2c22] leading-relaxed italic" style={{ fontFamily: customization.fontFamily }}>
                                                     {currentCustomContent.content}
                                                 </p>
                                              </div>
@@ -1044,6 +1044,7 @@ export default function GrimoirePage() {
                             }}
                             initialData={editingSpell || undefined}
                             onPlaySound={playSound}
+                            fontFamily={customization.fontFamily}
                         />
                     </div>
                 </div>
@@ -1065,6 +1066,7 @@ export default function GrimoirePage() {
                             }}
                             initialData={editingSpell || undefined}
                             onPlaySound={playSound}
+                            fontFamily={customization.fontFamily}
                         />
                     </div>
                 </div>
