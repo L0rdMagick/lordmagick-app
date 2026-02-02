@@ -751,7 +751,6 @@ export default function GrimoirePage() {
         const [detailPage, setDetailPage] = useState(0); 
         
         // Is it custom with multiple pages?
-        // Fix logic to ensure journal text type is caught even if tradition is Custom
         const isJournal = (spell.tradition === 'CUSTOM' as any && ritualData.type === 'JOURNAL') || ritualData.type === 'JOURNAL';
         const isCustom = (spell.tradition === 'CUSTOM' as any || ritualData.type === 'CUSTOM') && !isJournal;
 
@@ -779,22 +778,6 @@ export default function GrimoirePage() {
         return (
             <div className="fixed inset-0 z-50 flex items-center justify-center px-2 py-[10vh] md:px-8 md:py-[5vh] bg-black/90 backdrop-blur-md">
                 <div className="relative h-full w-full md:w-auto max-w-[90vh] aspect-[1529/2048] shadow-2xl shrink-0">
-                    {!showConfirm && (
-                        <>
-                            <button 
-                                onClick={onClose} 
-                                className="absolute -top-12 -right-4 md:-right-12 z-50 p-2 text-white/50 hover:text-white transition-colors"
-                            >
-                                <X size={32} />
-                            </button>
-                             <button 
-                                onClick={() => setShowConfirm(true)}
-                                className="absolute -top-12 -left-4 md:-left-12 z-50 p-2 text-white/50 hover:text-red-400 transition-colors"
-                            >
-                                <Trash2 size={24} />
-                            </button>
-                        </>
-                    )}
                     
                     {/* Standard Page Background */}
                     <Image 
@@ -804,6 +787,26 @@ export default function GrimoirePage() {
                         className="object-fill" // Use object-fill to match page behavior
                         priority
                     />
+
+                    {/* Controls - Moved INSIDE the parchment area to prevent cutoff */}
+                    {!showConfirm && (
+                        <>
+                            <button 
+                                onClick={onClose} 
+                                className="absolute top-4 right-4 z-50 p-2 text-[#8b4513]/60 hover:text-[#8b4513] transition-colors"
+                                title="Close"
+                            >
+                                <X size={28} />
+                            </button>
+                             <button 
+                                onClick={() => setShowConfirm(true)}
+                                className="absolute top-4 left-4 z-50 p-2 text-[#8b4513]/60 hover:text-[#d32f2f] transition-colors"
+                                title="Delete"
+                            >
+                                <Trash2 size={24} />
+                            </button>
+                        </>
+                    )}
 
                     {/* Navigation Arrows for Custom Spells */}
                     {isCustom && (
@@ -833,7 +836,24 @@ export default function GrimoirePage() {
                     )}
                     
                     {/* TITLE ZONE */}
-                    <div style={PAGE_LAYOUT.TITLE_ZONE} className="absolute z-10 flex flex-col items-center justify-end pb-2 border-b border-[#8b4513]/30">
+                    <div style={PAGE_LAYOUT.TITLE_ZONE} className="absolute z-10 flex flex-col items-center justify-end pb-2 border-b border-[#8b4513]/30 relative">
+                         
+                         {/* Edit Button - Moved to Top Right of Title Box */}
+                          <div className="absolute top-0 right-0 z-20">
+                                <button 
+                                onClick={() => {
+                                    setEditingSpell(spell);
+                                    onClose(); 
+                                    if (isJournal) setViewMode('CREATE_JOURNAL');
+                                    else setViewMode('CREATE_SPELL');
+                                }}
+                                className="text-[#8b4513] hover:text-[#d4af37] p-1 transition-colors hover:scale-110"
+                                title="Edit"
+                            >
+                                <PenTool size={18} />
+                            </button>
+                        </div>
+
                          {/* Regular Spell Title */}
                          {!isCustom && !isJournal && (
                             <div className="w-full flex items-center justify-center relative">
@@ -884,23 +904,15 @@ export default function GrimoirePage() {
                                     </div>
                                 </div>
                             ) : (
-                                <div className="w-full h-full flex flex-col overflow-y-auto custom-scrollbar scrollbar-thin scrollbar-thumb-[#5c4033]/50 p-2">
-                                    {/* Action Buttons (Edit) - Absolute Positioned in Top Right of Body or Inline? Inline might be safer for flow. */}
-                                    <div className="absolute top-0 right-0 z-20">
-                                         <button 
-                                            onClick={() => {
-                                                setEditingSpell(spell);
-                                                onClose(); 
-                                                if (isJournal) setViewMode('CREATE_JOURNAL');
-                                                else setViewMode('CREATE_SPELL');
-                                            }}
-                                            className="text-[#8b4513] hover:text-[#d4af37] p-2 transition-colors"
-                                            title="Edit"
-                                        >
-                                            <PenTool size={16} />
-                                        </button>
-                                    </div>
-
+                                <div className="w-full h-full flex flex-col overflow-y-auto pr-2 custom-scrollbar 
+                                    [&::-webkit-scrollbar]:w-2 
+                                    [&::-webkit-scrollbar-track]:bg-transparent 
+                                    [&::-webkit-scrollbar-thumb]:bg-[#8b4513]/60 
+                                    [&::-webkit-scrollbar-thumb]:rounded-full 
+                                    [&::-webkit-scrollbar-thumb]:border 
+                                    [&::-webkit-scrollbar-thumb]:border-[#5c4033]/20
+                                    hover:[&::-webkit-scrollbar-thumb]:bg-[#8b4513]">
+                                    
                                     {/* Regular Spell View */}
                                     {!isCustom && !isJournal && (
                                         <div className="pt-2">
