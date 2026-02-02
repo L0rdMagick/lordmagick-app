@@ -533,7 +533,8 @@ export default function GrimoirePage() {
     const renderSection = () => (
         <>
             {/* Header Zone */}
-            <div className="absolute z-10 grid grid-cols-[3fr_1fr] items-start pt-2 px-4 overflow-hidden gap-2" style={HEADER_ZONE}>
+            {/* Header Zone */}
+            <div className="absolute z-10 grid grid-cols-[3fr_1fr] items-start pt-2 px-4 overflow-hidden gap-2" style={PAGE_LAYOUT.TITLE_ZONE}>
                 {/* Title & Page Number (75% Width Strict) */}
                 <div className="flex flex-col items-start justify-start pr-2 h-full overflow-hidden">
                     <h2 
@@ -559,7 +560,8 @@ export default function GrimoirePage() {
             </div>
 
             {/* Body Zone */}
-             <div className="absolute z-10" style={BODY_ZONE}>
+            {/* Body Zone */}
+             <div className="absolute z-10" style={PAGE_LAYOUT.BODY_ZONE}>
                 {/* Grid expands to fill available space. 1 column, 2 rows. Reduced gap. */}
                 <div className="grid grid-cols-1 grid-rows-2 gap-1 w-full h-full justify-items-center items-center p-0">
                     {Array.from({ length: 2 }).map((_, idx) => {
