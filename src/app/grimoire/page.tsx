@@ -659,12 +659,13 @@ export default function GrimoirePage() {
                                                 {/* Text scale reduced and clamped according to length */}
                                                 <div className="w-full h-full flex flex-col items-center justify-center">
                                                     {/* Date for Journal Entries - Color High Contrast */}
-                                                    {isJournal && ritualData.timestamp && (
+                                                    {/* Date for Journal Entries - Color High Contrast */}
+                                                    {isJournal && (ritualData.date || ritualData.timestamp) && (
                                                          <div 
-                                                            className="text-[1.4vh] text-black font-extrabold italic font-serif mb-2 z-20 relative drop-shadow-sm"
+                                                            className="text-[1.6vh] text-[#3e2c22] font-bold italic mb-2 z-20 relative drop-shadow-sm"
                                                             style={{ fontFamily: customization.fontFamily }}
                                                          >
-                                                            {ritualData.timestamp}
+                                                            {ritualData.date || ritualData.timestamp}
                                                         </div>
                                                     )}
                                                     
@@ -912,7 +913,7 @@ export default function GrimoirePage() {
                                 {isJournal && (
                                     <>
                                         <div 
-                                            className="text-[1.5vh] text-[#8b4513]/50 mb-2 italic"
+                                            className="text-[2.2vh] text-[#5c4033] mb-2 italic"
                                             style={{ fontFamily: customization.fontFamily }}
                                         >
                                             {ritualData.day && ritualData.date ? `${ritualData.day}, ${ritualData.date}` : ritualData.timestamp}

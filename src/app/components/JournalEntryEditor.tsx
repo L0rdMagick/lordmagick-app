@@ -147,7 +147,7 @@ export default function JournalEntryEditor({ userId, onClose, onComplete, initia
                             type="text"
                             value={dateStr}
                             onChange={(e) => setDateStr(e.target.value)}
-                            className="w-full bg-transparent text-[1.2vh] text-[#8b4513]/60 italic mt-1 focus:outline-none focus:text-[#8b4513] text-center"
+                            className="w-full bg-transparent text-[1.8vh] text-[#5c4033] italic mt-1 focus:outline-none focus:text-[#3e2c22] text-center"
                             placeholder="Date..."
                             style={{ fontFamily }}
                         />
