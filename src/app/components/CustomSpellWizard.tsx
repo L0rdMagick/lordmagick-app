@@ -343,6 +343,7 @@ export default function CustomSpellWizard({ userId, onClose, onComplete, initial
                                                     // Use `setInstructions` to grow array if typing in new slot?
                                                     setInstructions([...newInst, val]);
                                                 }
+                                                onPlaySound('SCRIBE');
                                             }}
                                             placeholder="Describe this step of the ritual..."
                                             className="w-full h-[30vh] bg-transparent border border-[#8b4513]/30 p-4 text-[2vh] text-[#3e2c22] focus:outline-none focus:border-[#d4af37] resize-none rounded custom-scrollbar placeholder:text-[#8b4513]/30"

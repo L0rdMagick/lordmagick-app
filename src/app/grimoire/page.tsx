@@ -136,7 +136,7 @@ const SOUND_CONFIG = {
         description: "Successfully saving a spell or journal entry" 
     },
     SCRIBE: { 
-        path: '/audio/sfx-scribing.mp3', 
+        path: '/audio/grimoire-writing.mp3', 
         volume: 2, 
         description: "Writing/Typing sound effect (looping or per stroke)" 
     }
