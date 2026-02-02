@@ -17,7 +17,7 @@ interface JournalEntryEditorProps {
 const PAGE_LAYOUT = {
     TITLE_ZONE: {
         left: '25.40%', 
-        top: '11.12%', 
+        top: '18.33%', 
         width: '55.07%', 
         height: '11.13%',
         position: 'absolute' as const,

@@ -362,17 +362,17 @@ export default function GrimoirePage() {
     const PAGE_LAYOUT = {
         TITLE_ZONE: {
             left: '25.40%', 
-            top: '11.12%', 
+            top: '18.33%', 
             width: '55.07%', 
             height: '11.13%',
-            border: '2px dashed red' 
+            // debug: '1px solid red' 
         },
         BODY_ZONE: {
             left: '25.40%', 
             top: '29.46%', 
             width: '55.07%', 
             height: '50.02%',
-            border: '2px dashed blue'
+            // debug: '1px solid blue'
         }
     };
 
