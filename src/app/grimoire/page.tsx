@@ -277,17 +277,17 @@ export default function GrimoirePage() {
             map.get(finalSectionId)!.spells.push(spell);
         });
 
-        // Sort: Custom Spells last in list before Journal? User asked for Custom Spells last in index list.
-        // Let's sort alphabetically first, then force Custom/Journal to end.
+        // Sort: Journal Entries -> My Custom Spells -> Others (Alphabetical)
         let sorted = Array.from(map.values()).sort((a, b) => a.title.localeCompare(b.title));
         
-        const custom = sorted.find(s => s.id === 'custom-spells');
         const journal = sorted.find(s => s.id === 'journal-entries');
+        const custom = sorted.find(s => s.id === 'custom-spells');
         
         sorted = sorted.filter(s => s.id !== 'custom-spells' && s.id !== 'journal-entries');
         
-        if (custom) sorted.push(custom);
-        if (journal) sorted.push(journal);
+        // Add strictly in this order: Journal, Custom, then others
+        if (custom) sorted.unshift(custom);
+        if (journal) sorted.unshift(journal);
 
         return sorted;
     }, [spells]);
@@ -550,7 +550,7 @@ export default function GrimoirePage() {
                         </button>
                     </div>
 
-                    <div className="flex-grow overflow-y-auto custom-scrollbar pr-2 space-y-2">
+                    <div className="flex-grow overflow-y-auto magick-scrollbar pr-2 space-y-2">
                         {sections.length === 0 ? (
                             <div className="text-center italic opacity-50 mt-10">The Grimoire is empty.</div>
                         ) : (
