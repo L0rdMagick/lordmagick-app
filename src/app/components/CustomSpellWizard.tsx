@@ -220,7 +220,7 @@ export default function CustomSpellWizard({ userId, onClose, onComplete, initial
     return (
         <div className="flex items-center justify-center h-full w-full animate-in fade-in duration-500">
              {/* Uses the standard Grimoire Page Look */}
-            <div className="relative h-full w-auto aspect-[1529/2048] shadow-2xl max-w-full">
+            <div className="relative h-full w-full shadow-2xl">
                  <Image 
                     src="/images/grimoire-images/grimoire-page.png" 
                     alt="Grimoire Page" 

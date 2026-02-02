@@ -994,8 +994,8 @@ export default function GrimoirePage() {
             )}
 
             {!loading && viewMode === 'CREATE_SPELL' && currentUserId && (
-                <div className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center pointer-events-auto">
-                    <div className="h-[95vh] w-auto aspect-[1529/2048]">
+                <div className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center pointer-events-auto p-4 md:p-8">
+                    <div className="relative h-full w-full max-w-[90vh] aspect-[1529/2048]">
                         <CustomSpellWizard
                             userId={currentUserId}
                             onClose={() => {
@@ -1014,8 +1014,8 @@ export default function GrimoirePage() {
             )}
 
             {!loading && viewMode === 'CREATE_JOURNAL' && currentUserId && (
-                <div className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center pointer-events-auto">
-                    <div className="h-[95vh] w-auto aspect-[1529/2048]">
+                <div className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center pointer-events-auto p-4 md:p-8">
+                    <div className="relative h-full w-full max-w-[90vh] aspect-[1529/2048]">
                         <JournalEntryEditor 
                             userId={currentUserId}
                             onClose={() => {
