@@ -568,64 +568,64 @@ export default function GeoViewingPage() {
                     </div>
 
                     {/* 2. CENTER COLUMN (RESULTS DATA) */}
-                    {/* Desktop: Middle 1/3. Mobile: Top Auto-Height (No Overlap) */}
-                    <div className="shrink-0 md:h-full md:w-1/3 bg-slate-950 flex flex-col relative z-20 shadow-2xl border-b md:border-b-0 border-white/10 order-first md:order-none overflow-y-auto">
-                        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-6">
+                    {/* Desktop: Middle 1/3. Mobile: Top 25% Fixed Height */}
+                    <div className="shrink-0 h-[25%] md:h-full md:w-1/3 bg-slate-950 flex flex-col relative z-20 shadow-2xl border-b md:border-b-0 border-white/10 order-first md:order-none overflow-y-auto">
+                        <div className="flex-1 flex flex-col items-center justify-center p-2 text-center space-y-2">
                             
                             {/* Detailed Results Text */}
-                            <div className="space-y-4 w-full max-w-xs mx-auto">
-                                <div className="space-y-1">
-                                    <p className="text-[10px] uppercase font-black tracking-widest text-indigo-400">Your Selection</p>
-                                    <h3 className="text-lg md:text-xl font-bold text-white">
-                                        {isGeocoding ? <Loader2 size={16} className="animate-spin inline text-slate-500" /> : userPlaceName}
+                            <div className="space-y-2 w-full max-w-xs mx-auto flex items-center justify-between gap-4 md:block md:space-y-4">
+                                <div className="space-y-0.5 text-left md:text-center">
+                                    <p className="text-[8px] md:text-[10px] uppercase font-black tracking-widest text-indigo-400">Your Selection</p>
+                                    <h3 className="text-xs md:text-xl font-bold text-white truncate max-w-[120px] md:max-w-none">
+                                        {isGeocoding ? <Loader2 size={12} className="animate-spin inline text-slate-500" /> : userPlaceName}
                                     </h3>
                                 </div>
                                 
-                                <div className="w-full h-px bg-white/10" />
+                                <div className="hidden md:block w-full h-px bg-white/10" />
 
-                                <div className="space-y-1">
-                                    <p className="text-[10px] uppercase font-black tracking-widest text-purple-400">The Psychic Target</p>
-                                    <h3 className="text-lg md:text-xl font-bold text-white">
-                                        {target?.name}, {target?.region}
+                                <div className="space-y-0.5 text-right md:text-center">
+                                    <p className="text-[8px] md:text-[10px] uppercase font-black tracking-widest text-purple-400">Psychic Target</p>
+                                    <h3 className="text-xs md:text-xl font-bold text-white truncate max-w-[120px] md:max-w-none">
+                                        {target?.name}
                                     </h3>
                                 </div>
                             </div>
 
-                            {/* Distance Metrics */}
-                            <div className="w-full max-w-xs bg-slate-900/50 rounded-2xl border border-white/5 p-4 md:p-6 backdrop-blur-sm">
-                                <div className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 mb-2">Distance Variance</div>
-                                <div className="flex flex-col items-center gap-1">
-                                    <div className="text-4xl md:text-5xl font-black text-white tracking-tighter tabular-nums leading-none">
+                            {/* Distance Metrics Compact */}
+                            <div className="w-full max-w-xs bg-slate-900/50 rounded-xl md:rounded-2xl border border-white/5 p-2 md:p-6 backdrop-blur-sm flex md:block items-center justify-center gap-2">
+                                <div className="text-[8px] md:text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 md:mb-2">Variance:</div>
+                                <div className="flex items-baseline gap-1">
+                                    <div className="text-lg md:text-5xl font-black text-white tracking-tighter tabular-nums leading-none">
                                         {Math.round(distance).toLocaleString()}
-                                        <span className="text-sm ml-1 text-slate-500 font-sans font-normal">mi</span>
+                                        <span className="text-[10px] md:text-sm ml-0.5 text-slate-500 font-sans font-normal">mi</span>
                                     </div>
-                                    <div className="text-sm font-bold text-slate-600 font-mono">
+                                    <div className="text-[10px] md:text-sm font-bold text-slate-600 font-mono">
                                         / {Math.round(distance * 1.60934).toLocaleString()} km
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Actions */}
-                            <div className="flex gap-3 w-full max-w-xs pt-2">
+                            {/* Actions Compact */}
+                            <div className="flex gap-2 w-full max-w-xs pt-0 md:pt-2">
                                 <button 
                                     onClick={() => setShowResultCard(false)}
-                                    className="flex-1 py-3 px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2"
+                                    className="flex-1 py-1.5 md:py-3 px-3 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg md:rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5"
                                 >
-                                    <MapIcon size={14} /> See Map
+                                    <MapIcon size={12} className="md:w-3.5 md:h-3.5" /> See Map
                                 </button>
                                 <button 
                                     onClick={() => startGame(gameMode!)}
-                                    className="flex-1 py-3 px-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-indigo-500/20 transition-all flex items-center justify-center gap-2"
+                                    className="flex-1 py-1.5 md:py-3 px-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg md:rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest shadow-lg shadow-indigo-500/20 transition-all flex items-center justify-center gap-1.5"
                                 >
-                                    Next Target <ArrowRight size={14} />
+                                    Next <ArrowRight size={12} className="md:w-3.5 md:h-3.5" />
                                 </button>
                             </div>
 
                         </div>
                     </div>
 
-                    {/* MOBILE MAPS CONTAINER - Flex Grow to fill remaining space */}
-                    <div className="flex-1 flex flex-col md:hidden min-h-0">
+                    {/* MOBILE MAPS CONTAINER - Fills remaining 75% */}
+                    <div className="flex-1 flex flex-col md:hidden min-h-0 h-[75%]">
                          {/* Target Map */}
                         <div className="flex-1 border-b border-white/10 relative">
                              <StreetViewPanel coords={resultLocations.target} title={target?.name || "Target"} label="TARGET RESONANCE" className="h-full w-full" />
