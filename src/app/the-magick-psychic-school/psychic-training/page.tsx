@@ -9,6 +9,12 @@ import RoomsButton from '@/app/components/RoomsButton';
 // Data configuration with CORRECTED LINKS based on original code
 const psychicTools = [
   {
+    title: "Geo Viewing",
+    href: "/the-magick-psychic-school/psychic-training/geo-viewing",
+    image: "/images/psychic-school/psychic-geo-location.png",
+    description: "Transcend physical distance. Project your consciousness to any point on the globe. Train your remote viewing capability by locking onto coordinates and validating your psychic sight against reality."
+  },
+  {
     title: "The Gaze",
     href: "/the-magick-psychic-school/psychic-training/the-gaze",
     image: "/images/psychic-school/the_gaze_thumb_circle.jpg",
