@@ -562,33 +562,40 @@ export default function GeoViewingPage() {
            <div className="absolute inset-0 z-[100] bg-slate-950/80 backdrop-blur-md flex items-center justify-center animate-in fade-in duration-300 overflow-hidden">
                 <div className="w-full h-full max-w-[1920px] mx-auto flex flex-col md:flex-row relative">
                     
-                    {/* MOBILE LAYOUT: FLEX-COL */}
-                    {/* DESKTOP LAYOUT: 3-COL GRID */}
-
-                    {/* 1. LEFT COLUMN (TARGET 360) - DESKTOP ONLY (On Mobile it's Middle) */}
-                    <div className="hidden md:block md:w-1/3 border-r border-white/10 relative h-1/2 md:h-full">
+                    {/* 1. LEFT COLUMN (TARGET 360) - DESKTOP ONLY */}
+                    <div className="hidden md:block md:w-1/3 border-r border-white/10 relative h-full">
                         <StreetViewPanel coords={resultLocations.target} title={target?.name || "Target"} label="TARGET RESONANCE" className="h-full w-full" />
                     </div>
 
                     {/* 2. CENTER COLUMN (RESULTS DATA) */}
-                    {/* On Desktop: Center. On Mobile: Top */}
-                    <div className="h-1/3 md:h-full md:w-1/3 bg-slate-950 flex flex-col relative z-20 shadow-2xl border-b md:border-b-0 border-white/10 order-first md:order-none">
+                    {/* Desktop: Middle 1/3. Mobile: Top Auto-Height (No Overlap) */}
+                    <div className="shrink-0 md:h-full md:w-1/3 bg-slate-950 flex flex-col relative z-20 shadow-2xl border-b md:border-b-0 border-white/10 order-first md:order-none overflow-y-auto">
                         <div className="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-6">
                             
-                            {/* Header Info */}
-                            <div className="space-y-2">
-                                <div className="text-[9px] font-black uppercase tracking-[0.3em] text-indigo-500">Analysis Complete</div>
-                                <h3 className="text-xl md:text-2xl font-bold text-white flex items-center justify-center gap-2">
-                                    {isGeocoding ? <Loader2 size={16} className="animate-spin text-slate-500" /> : userPlaceName}
-                                </h3>
-                                <p className="text-[10px] text-slate-500 font-mono tracking-wider">USER SENSED LOCATION</p>
+                            {/* Detailed Results Text */}
+                            <div className="space-y-4 w-full max-w-xs mx-auto">
+                                <div className="space-y-1">
+                                    <p className="text-[10px] uppercase font-black tracking-widest text-indigo-400">Your Selection</p>
+                                    <h3 className="text-lg md:text-xl font-bold text-white">
+                                        {isGeocoding ? <Loader2 size={16} className="animate-spin inline text-slate-500" /> : userPlaceName}
+                                    </h3>
+                                </div>
+                                
+                                <div className="w-full h-px bg-white/10" />
+
+                                <div className="space-y-1">
+                                    <p className="text-[10px] uppercase font-black tracking-widest text-purple-400">The Psychic Target</p>
+                                    <h3 className="text-lg md:text-xl font-bold text-white">
+                                        {target?.name}, {target?.region}
+                                    </h3>
+                                </div>
                             </div>
 
                             {/* Distance Metrics */}
-                            <div className="w-full max-w-xs bg-slate-900/50 rounded-2xl border border-white/5 p-6 backdrop-blur-sm">
+                            <div className="w-full max-w-xs bg-slate-900/50 rounded-2xl border border-white/5 p-4 md:p-6 backdrop-blur-sm">
                                 <div className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 mb-2">Distance Variance</div>
                                 <div className="flex flex-col items-center gap-1">
-                                    <div className="text-4xl md:text-5xl font-black text-white tracking-tighter tabular-nums">
+                                    <div className="text-4xl md:text-5xl font-black text-white tracking-tighter tabular-nums leading-none">
                                         {Math.round(distance).toLocaleString()}
                                         <span className="text-sm ml-1 text-slate-500 font-sans font-normal">mi</span>
                                     </div>
@@ -599,7 +606,7 @@ export default function GeoViewingPage() {
                             </div>
 
                             {/* Actions */}
-                            <div className="flex flex-col sm:flex-row gap-3 w-full max-w-xs pt-4">
+                            <div className="flex gap-3 w-full max-w-xs pt-2">
                                 <button 
                                     onClick={() => setShowResultCard(false)}
                                     className="flex-1 py-3 px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2"
@@ -617,15 +624,21 @@ export default function GeoViewingPage() {
                         </div>
                     </div>
 
-                    {/* MOBILE ONLY: TARGET 360 (Middle) */}
-                    <div className="md:hidden h-1/3 w-full border-t border-b border-white/10 relative">
-                         <StreetViewPanel coords={resultLocations.target} title={target?.name || "Target"} label="TARGET RESONANCE" className="h-full w-full" />
+                    {/* MOBILE MAPS CONTAINER - Flex Grow to fill remaining space */}
+                    <div className="flex-1 flex flex-col md:hidden min-h-0">
+                         {/* Target Map */}
+                        <div className="flex-1 border-b border-white/10 relative">
+                             <StreetViewPanel coords={resultLocations.target} title={target?.name || "Target"} label="TARGET RESONANCE" className="h-full w-full" />
+                        </div>
+                        {/* User Map */}
+                        <div className="flex-1 relative">
+                            <StreetViewPanel coords={resultLocations.user} title={userPlaceName} label="YOUR SELECTION" className="h-full w-full" />
+                        </div>
                     </div>
 
-                    {/* 3. RIGHT COLUMN (USER 360) */}
-                    {/* On Desktop: Right. On Mobile: Bottom */}
-                    <div className="h-1/3 md:h-full md:w-1/3 border-l md:border-t-0 border-white/10 relative order-last">
-                        <StreetViewPanel coords={resultLocations.user} title={userPlaceName} label="YOUR PROJECTION" className="h-full w-full" />
+                    {/* 3. RIGHT COLUMN (USER 360) - DESKTOP ONLY */}
+                    <div className="hidden md:block md:w-1/3 border-l border-white/10 relative h-full order-last">
+                        <StreetViewPanel coords={resultLocations.user} title={userPlaceName} label="YOUR SELECTION" className="h-full w-full" />
                     </div>
 
                 </div>
