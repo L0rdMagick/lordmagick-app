@@ -413,22 +413,32 @@ export default function GeoViewingPage() {
         </div>
 
         {gameState !== 'CATEGORY_SELECT' && (
-          <button 
-            onClick={() => setGameState('CATEGORY_SELECT')} 
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-black uppercase tracking-widest text-[8px] md:text-[9px] transition-all shadow-lg shrink-0"
-          >
-            <RefreshCw size={10} />
-            <span>Reset</span>
-          </button>
+          <div className="flex items-center gap-2">
+             {gameState === 'REVEALED' && (
+                <button 
+                  onClick={() => startGame(gameMode!)} 
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-black uppercase tracking-widest text-[8px] md:text-[9px] transition-all shadow-lg shrink-0"
+                >
+                  <ArrowRight size={10} />
+                  <span>Next</span>
+                </button>
+             )}
+             <button 
+                onClick={() => setGameState('CATEGORY_SELECT')} 
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg font-black uppercase tracking-widest text-[8px] md:text-[9px] transition-all shadow-lg shrink-0 border border-white/5"
+              >
+                <RefreshCw size={10} />
+                <span>Reset</span>
+            </button>
+          </div>
         )}
       </div>
 
       <div className="flex-1 relative bg-slate-950 overflow-hidden">
         <GoogleMapComponent onLoad={(map: any) => { mapRef.current = map; }} />
 
-        {/* --- CATEGORY SELECTOR OVERLAY --- */}
         {gameState === 'CATEGORY_SELECT' && (
-          <div className="absolute inset-0 z-40 bg-slate-950/95 backdrop-blur-2xl overflow-y-auto px-4 py-8">
+          <div className="absolute inset-0 z-40 bg-slate-950/50 backdrop-blur-md overflow-y-auto px-4 py-8">
             <div className="w-full max-w-4xl mx-auto">
                 {/* Same Category Selector content */}
                 <div className="text-center mb-8 space-y-2">
@@ -458,9 +468,8 @@ export default function GeoViewingPage() {
           </div>
         )}
 
-        {/* --- PROTOCOL SELECTOR --- */}
         {gameState === 'MODE_SELECT' && (
-          <div className="absolute inset-0 z-40 bg-slate-950/90 backdrop-blur-xl flex flex-col items-center justify-center p-6 overflow-y-auto">
+          <div className="absolute inset-0 z-40 bg-slate-950/50 backdrop-blur-md flex flex-col items-center justify-center p-6 overflow-y-auto">
             <div className="w-full max-w-sm space-y-6">
                 {/* Same Mode Selector Content */}
                 <button onClick={() => setGameState('CATEGORY_SELECT')} className="flex items-center gap-2 text-[9px] text-slate-500 hover:text-white uppercase font-black transition-colors">
