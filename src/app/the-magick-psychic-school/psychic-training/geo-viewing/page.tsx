@@ -178,7 +178,7 @@ export default function GeoViewingPage() {
 
     const script = document.createElement('script');
     script.id = scriptId;
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=geometry,places&loading=async&v=weekly`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=geometry,places&v=weekly`;
     script.async = true;
     script.onload = () => {
       if (window.google && window.google.maps) {
