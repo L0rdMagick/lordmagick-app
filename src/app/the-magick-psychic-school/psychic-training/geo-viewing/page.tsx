@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   Loader2, Zap, Timer, MapPin, Eye, Trophy, RefreshCw, Compass, 
   Search, Globe, AlertCircle, MousePointer2, ExternalLink, X, 
-  BarChart3, Target, Crosshair, Plus, Minus, Camera, Landmark, Mountain, Building2, History, Dices, ChevronLeft
+  BarChart3, Target, Crosshair, Plus, Minus, Camera, Landmark, Mountain, Building2, History, Dices, ChevronLeft, Map as MapIcon, ArrowRight
 } from 'lucide-react';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
 
@@ -74,6 +74,66 @@ declare global {
   }
 }
 
+// --- SUB-COMPONENT: STREET VIEW PANEL ---
+function StreetViewPanel({ coords, title, className, label }: { coords: { lat: number, lng: number }, title: string, className?: string, label?: string }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    if (!coords || !containerRef.current || !window.google || !window.google.maps) return;
+    
+    const sv = new window.google.maps.StreetViewService();
+    // Standard Street View setup
+    const pano = new window.google.maps.StreetViewPanorama(containerRef.current, {
+        position: coords,
+        pov: { heading: 165, pitch: 0 },
+        zoom: 1,
+        addressControl: false,
+        showRoadLabels: false,
+        motionTracking: true,
+        linksControl: false,
+        panControl: true,
+        enableCloseButton: false,
+    });
+
+    // Use a large radius to find *something* if exact coord has no view
+    sv.getPanorama({ location: coords, radius: 500000 }, (data: any, status: any) => {
+        if (status === "OK") {
+            pano.setPano(data.location.pano);
+        } else {
+            console.warn(`Street View not found for ${title}`);
+            setError(true);
+        }
+    });
+
+  }, [coords, title]);
+
+  return (
+    <div className={`relative bg-black/50 overflow-hidden ${className}`}>
+        {/* Label Overlay */}
+        <div className="absolute top-0 left-0 right-0 p-3 bg-linear-to-b from-black/80 to-transparent z-10 flex justify-between items-start pointer-events-none">
+            <div>
+                {label && <div className="text-[9px] font-black uppercase tracking-widest text-indigo-400 mb-0.5">{label}</div>}
+                <div className="text-xs font-bold text-white drop-shadow-md truncate max-w-[200px]">{title}</div>
+            </div>
+            <div className="p-1.5 bg-black/40 backdrop-blur-md rounded-lg border border-white/10 text-white/70">
+                <Camera size={14} />
+            </div>
+        </div>
+
+        {/* Panorama Container */}
+        {error ? (
+            <div className="w-full h-full flex flex-col items-center justify-center text-slate-500 bg-slate-900 border border-white/5">
+                <Camera size={24} className="mb-2 opacity-50" />
+                <span className="text-[10px] uppercase tracking-widest">No Visual Feed</span>
+            </div>
+        ) : (
+            <div ref={containerRef} className="w-full h-full grayscale-[0.2]" />
+        )}
+    </div>
+  );
+}
+
 export default function GeoViewingPage() {
   const [gameState, setGameState] = useState('CATEGORY_SELECT'); 
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -85,8 +145,10 @@ export default function GeoViewingPage() {
   const [loading, setLoading] = useState(true);
   const [isGeocoding, setIsGeocoding] = useState(false);
   const [showResultCard, setShowResultCard] = useState(false);
-  const [streetViewData, setStreetViewData] = useState<{ active: boolean; coords: any; title: string }>({ active: false, coords: null, title: "" });
   
+  // Storing locations for the result view
+  const [resultLocations, setResultLocations] = useState<{target: any, user: any} | null>(null);
+
   // Search State
   const [locationSearch, setLocationSearch] = useState("");
   const [isSearching, setIsSearching] = useState(false);
@@ -97,7 +159,6 @@ export default function GeoViewingPage() {
   const geocoderRef = useRef<any>(null);
   const placesRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
-  const svContainerRef = useRef<HTMLDivElement>(null);
 
   // Load Google Maps API
   useEffect(() => {
@@ -139,30 +200,6 @@ export default function GeoViewingPage() {
       placesRef.current = new window.google.maps.places.PlacesService(mapRef.current);
     }
   }, [loading, gameState]);
-
-  // Street View Panorama Logic
-  useEffect(() => {
-    if (streetViewData.active && svContainerRef.current && googleRef.current) {
-      const sv = new googleRef.current.maps.StreetViewService();
-      const pano = new googleRef.current.maps.StreetViewPanorama(svContainerRef.current, {
-        position: streetViewData.coords,
-        pov: { heading: 165, pitch: 0 },
-        zoom: 1,
-        addressControl: false,
-        showRoadLabels: false,
-        motionTracking: true,
-      });
-      // INCREASED RADIUS FOR BETTER COVERAGE
-      sv.getPanorama({ location: streetViewData.coords, radius: 500000 }, (data: any, status: any) => {
-        if (status === "OK") {
-            pano.setPano(data.location.pano);
-        } else {
-            console.warn("Street View not found nearby.");
-            // Fallback or retry with larger radius if needed, or just show a message
-        }
-      });
-    }
-  }, [streetViewData.active, streetViewData.coords]);
 
   const currentPool = useMemo(() => {
     if (!selectedCategory) return [];
@@ -242,7 +279,7 @@ export default function GeoViewingPage() {
     setRawCoords("");
     setLocationSearch("");
     setShowResultCard(false);
-    setStreetViewData({ active: false, coords: null, title: "" });
+    setResultLocations(null);
     markersRef.current.forEach(m => m.setMap(null));
     markersRef.current = [];
 
@@ -273,7 +310,11 @@ export default function GeoViewingPage() {
     const targetLatLng = new googleRef.current.maps.LatLng(finalTarget.lat, finalTarget.lng);
     const distMeters = googleRef.current.maps.geometry.spherical.computeDistanceBetween(latLng, targetLatLng);
     
-    setDistance(distMeters * 0.000621371);
+    setDistance(distMeters * 0.000621371); // Miles
+    setResultLocations({
+        target: { lat: finalTarget.lat, lng: finalTarget.lng },
+        user: { lat: latLng.lat(), lng: latLng.lng() }
+    });
     setRawCoords(`${latLng.lat().toFixed(4)}, ${latLng.lng().toFixed(4)}`);
     setGameState('REVEALED');
     setShowResultCard(true);
@@ -298,7 +339,7 @@ export default function GeoViewingPage() {
     const userMarker = new googleRef.current.maps.Marker({
       position: latLng,
       map: mapRef.current,
-      label: { text: "YOU", color: "white", fontWeight: "bold", fontSize: "14px", className: "map-label-you" }, // Improved Label
+      label: { text: "YOU", color: "white", fontWeight: "bold", fontSize: "14px", className: "map-label-you" }, 
       animation: googleRef.current.maps.Animation.DROP,
       cursor: 'pointer',
       icon: {
@@ -310,17 +351,15 @@ export default function GeoViewingPage() {
         strokeColor: "#FFFFFF",
       }
     });
-    userMarker.addListener('click', () => setStreetViewData({ active: true, coords: latLng, title: "Sensed Location Panorama" }));
-
+    
     const targetMarker = new googleRef.current.maps.Marker({
       position: targetLatLng,
       map: mapRef.current,
       icon: { path: googleRef.current.maps.SymbolPath.CIRCLE, scale: 14, fillColor: "#6366f1", fillOpacity: 1, strokeWeight: 4, strokeColor: "#ffffff" },
       cursor: 'pointer',
-      label: { text: "TARGET", color: "#6366f1", fontWeight: "bold", fontSize: "14px", className: "map-label-target" } // Added Label for Clarity
+      label: { text: "TARGET", color: "#6366f1", fontWeight: "bold", fontSize: "14px", className: "map-label-target" }
     });
-    targetMarker.addListener('click', () => setStreetViewData({ active: true, coords: targetLatLng, title: `Target: ${finalTarget.name}` }));
-
+    
     markersRef.current = [userMarker, targetMarker];
     const bounds = new window.google.maps.LatLngBounds();
     bounds.extend(latLng);
@@ -391,7 +430,8 @@ export default function GeoViewingPage() {
         {gameState === 'CATEGORY_SELECT' && (
           <div className="absolute inset-0 z-40 bg-slate-950/95 backdrop-blur-2xl overflow-y-auto px-4 py-8">
             <div className="w-full max-w-4xl mx-auto">
-              <div className="text-center mb-8 space-y-2">
+                {/* Same Category Selector content */}
+                <div className="text-center mb-8 space-y-2">
                 <div className="inline-block px-3 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[8px] font-black uppercase tracking-[0.3em]">System Initialization</div>
                 <h2 className="text-2xl md:text-4xl font-black text-white uppercase tracking-tight leading-none">Select Sensing Focus</h2>
                 <p className="text-slate-500 text-[10px] md:text-xs">Calibrate perception to an atmospheric frequency.</p>
@@ -422,7 +462,8 @@ export default function GeoViewingPage() {
         {gameState === 'MODE_SELECT' && (
           <div className="absolute inset-0 z-40 bg-slate-950/90 backdrop-blur-xl flex flex-col items-center justify-center p-6 overflow-y-auto">
             <div className="w-full max-w-sm space-y-6">
-              <button onClick={() => setGameState('CATEGORY_SELECT')} className="flex items-center gap-2 text-[9px] text-slate-500 hover:text-white uppercase font-black transition-colors">
+                {/* Same Mode Selector Content */}
+                <button onClick={() => setGameState('CATEGORY_SELECT')} className="flex items-center gap-2 text-[9px] text-slate-500 hover:text-white uppercase font-black transition-colors">
                 <ChevronLeft size={12} /> Back to Focus
               </button>
               <div className="text-center space-y-1">
@@ -507,72 +548,99 @@ export default function GeoViewingPage() {
           </div>
         )}
 
-        {/* --- REVEALED PHASE --- */}
-        {gameState === 'REVEALED' && !streetViewData.active && (
-          <>
-            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 w-full px-4 flex justify-center">
-              <button onClick={openInGoogleMaps} className="bg-slate-950/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 text-[8px] text-slate-300 hover:text-white flex items-center gap-2 shadow-xl shrink-0 truncate max-w-[280px]">
-                <Globe size={10} className="text-indigo-400" />Sensed: <span className="font-bold">{rawCoords}</span><ExternalLink size={10} />
-              </button>
-            </div>
+        {/* --- REVEALED PHASE (RESULT CARD) --- */}
+        {showResultCard && distance !== null && resultLocations && (
+           <div className="absolute inset-0 z-[100] bg-slate-950/80 backdrop-blur-md flex items-center justify-center animate-in fade-in duration-300 overflow-hidden">
+                <div className="w-full h-full max-w-[1920px] mx-auto flex flex-col md:flex-row relative">
+                    
+                    {/* MOBILE LAYOUT: FLEX-COL */}
+                    {/* DESKTOP LAYOUT: 3-COL GRID */}
 
-            {showResultCard && distance !== null && (
-              <div className="absolute inset-0 z-40 flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-[2px] overflow-y-auto">
-                <div className="bg-slate-950 border border-white/10 p-5 md:p-8 rounded-[2rem] shadow-2xl text-center pointer-events-auto w-full max-w-sm animate-in slide-in-from-bottom-10 relative my-auto">
-                  <button onClick={() => setShowResultCard(false)} className="absolute top-4 right-4 p-1.5 text-slate-500 hover:text-white transition-colors"><X size={16} /></button>
-                  <div className="space-y-4 md:space-y-5">
-                    <p className="text-slate-500 uppercase text-[7px] font-black tracking-[0.4em]">Sensing Analysis</p>
-                    <h3 className="text-xs md:text-sm font-bold text-indigo-400 min-h-[1rem]">
-                      {isGeocoding ? <Loader2 size={12} className="animate-spin mx-auto" /> : userPlaceName}
-                    </h3>
-                    <div className="py-4 md:py-6 bg-white/5 rounded-xl border border-white/5">
-                      <p className="text-slate-500 uppercase text-[7px] font-black tracking-[0.4em] mb-1">Variance</p>
-                      <h2 className="text-4xl md:text-5xl font-black text-white tracking-tighter tabular-nums leading-none">
-                        {Math.round(distance).toLocaleString()}
-                        <span className="text-[10px] ml-1 text-slate-500 tracking-normal font-sans uppercase">mi</span>
-                      </h2>
+                    {/* 1. LEFT COLUMN (TARGET 360) - DESKTOP ONLY (On Mobile it's Middle) */}
+                    <div className="hidden md:block md:w-1/3 border-r border-white/10 relative h-1/2 md:h-full">
+                        <StreetViewPanel coords={resultLocations.target} title={target?.name || "Target"} label="TARGET RESONANCE" className="h-full w-full" />
                     </div>
-                    <p className="text-[9px] md:text-xs text-slate-400 italic">Target Resonance: <span className="text-white font-black">{target?.name}</span></p>
-                    <div className="grid grid-cols-2 gap-2 pt-2">
-                       {/* Street View Inspector */}
-                      <button onClick={() => setStreetViewData({ active: true, coords: new googleRef.current.maps.LatLng(target?.lat, target?.lng), title: `Target: ${target?.name}` })} className="py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-lg font-black uppercase tracking-widest text-[8px]">
-                        Inspect Target
-                      </button>
-                      
-                      <button onClick={() => startGame(gameMode!)} className="py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-black uppercase tracking-widest text-[8px]">Next</button>
+
+                    {/* 2. CENTER COLUMN (RESULTS DATA) */}
+                    {/* On Desktop: Center. On Mobile: Top */}
+                    <div className="h-1/3 md:h-full md:w-1/3 bg-slate-950 flex flex-col relative z-20 shadow-2xl border-b md:border-b-0 border-white/10 order-first md:order-none">
+                        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-6">
+                            
+                            {/* Header Info */}
+                            <div className="space-y-2">
+                                <div className="text-[9px] font-black uppercase tracking-[0.3em] text-indigo-500">Analysis Complete</div>
+                                <h3 className="text-xl md:text-2xl font-bold text-white flex items-center justify-center gap-2">
+                                    {isGeocoding ? <Loader2 size={16} className="animate-spin text-slate-500" /> : userPlaceName}
+                                </h3>
+                                <p className="text-[10px] text-slate-500 font-mono tracking-wider">USER SENSED LOCATION</p>
+                            </div>
+
+                            {/* Distance Metrics */}
+                            <div className="w-full max-w-xs bg-slate-900/50 rounded-2xl border border-white/5 p-6 backdrop-blur-sm">
+                                <div className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 mb-2">Distance Variance</div>
+                                <div className="flex flex-col items-center gap-1">
+                                    <div className="text-4xl md:text-5xl font-black text-white tracking-tighter tabular-nums">
+                                        {Math.round(distance).toLocaleString()}
+                                        <span className="text-sm ml-1 text-slate-500 font-sans font-normal">mi</span>
+                                    </div>
+                                    <div className="text-sm font-bold text-slate-600 font-mono">
+                                        / {Math.round(distance * 1.60934).toLocaleString()} km
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex flex-col sm:flex-row gap-3 w-full max-w-xs pt-4">
+                                <button 
+                                    onClick={() => setShowResultCard(false)}
+                                    className="flex-1 py-3 px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2"
+                                >
+                                    <MapIcon size={14} /> See Map
+                                </button>
+                                <button 
+                                    onClick={() => startGame(gameMode!)}
+                                    className="flex-1 py-3 px-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-indigo-500/20 transition-all flex items-center justify-center gap-2"
+                                >
+                                    Next Target <ArrowRight size={14} />
+                                </button>
+                            </div>
+
+                        </div>
                     </div>
-                  </div>
+
+                    {/* MOBILE ONLY: TARGET 360 (Middle) */}
+                    <div className="md:hidden h-1/3 w-full border-t border-b border-white/10 relative">
+                         <StreetViewPanel coords={resultLocations.target} title={target?.name || "Target"} label="TARGET RESONANCE" className="h-full w-full" />
+                    </div>
+
+                    {/* 3. RIGHT COLUMN (USER 360) */}
+                    {/* On Desktop: Right. On Mobile: Bottom */}
+                    <div className="h-1/3 md:h-full md:w-1/3 border-l md:border-t-0 border-white/10 relative order-last">
+                        <StreetViewPanel coords={resultLocations.user} title={userPlaceName} label="YOUR PROJECTION" className="h-full w-full" />
+                    </div>
+
                 </div>
-              </div>
-            )}
-
-            {!showResultCard && (
-              <div className="absolute bottom-24 md:bottom-8 left-6 z-40">
-                <button onClick={() => setShowResultCard(true)} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white p-3 rounded-full shadow-2xl border border-white/10 transition-all active:scale-90"><BarChart3 size={16} /><span className="text-[9px] font-black uppercase tracking-widest hidden md:inline">Analytics</span></button>
-              </div>
-            )}
-          </>
+           </div>
         )}
 
-        {/* --- STREET VIEW MODAL --- */}
-        {streetViewData.active && (
-          <div className="absolute inset-0 z-[100] bg-slate-950 animate-in fade-in duration-300">
-            <div className="absolute top-4 left-4 z-[110] flex items-center gap-3 bg-slate-950/80 backdrop-blur-md p-2 px-4 rounded-lg border border-white/10 shadow-2xl max-w-[calc(100%-80px)]">
-              <Camera size={14} className="text-indigo-400 shrink-0" />
-              <div className="min-w-0"><h3 className="text-[9px] md:text-xs font-bold text-white truncate">{streetViewData.title}</h3></div>
-            </div>
-            <button onClick={() => setStreetViewData({ ...streetViewData, active: false })} className="absolute top-4 right-4 z-[110] p-2 bg-white text-slate-950 rounded-lg hover:bg-red-500 hover:text-white transition-all shadow-2xl active:scale-90"><X size={16} /></button>
-            <div ref={svContainerRef} className="w-full h-full grayscale-[0.2]" />
-          </div>
+        {/* --- REVEALED HUD BUTTON (If card closed) --- */}
+        {gameState === 'REVEALED' && !showResultCard && (
+           <div className="absolute bottom-24 md:bottom-8 left-6 z-40 animate-in zoom-in duration-300">
+             <button onClick={() => setShowResultCard(true)} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white p-3 rounded-full shadow-2xl border border-white/10 transition-all active:scale-90 hover:scale-105">
+                <BarChart3 size={16} />
+                <span className="text-[9px] font-black uppercase tracking-widest hidden md:inline">View Analysis</span>
+             </button>
+           </div>
         )}
+
       </div>
 
       {/* FOOTER BAR */}
       <div className="flex-none h-8 px-4 bg-slate-950 border-t border-white/5 flex justify-between items-center text-[7px] md:text-[8px] text-slate-600 uppercase tracking-[0.2em] font-black z-50">
         <div className="truncate">Protocol: {gameState === 'TARGETING' ? 'SENSING' : 'ANALYSIS'}</div>
         <div className="truncate px-2 flex items-center gap-2">
-          <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
-          Signal Active
+          {gameState === 'TARGETING' && <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />}
+          {gameState === 'TARGETING' ? 'Signal Active' : 'Data Locked'}
         </div>
         <div className="hidden sm:block">Ref: WGS84</div>
       </div>
