@@ -58,7 +58,8 @@ declare global {
 }
 
 // --- SUB-COMPONENT: STREET VIEW PANEL ---
-function StreetViewPanel({ coords, title, className, label }: { coords: { lat: number, lng: number }, title: string, className?: string, label?: string }) {
+// --- SUB-COMPONENT: STREET VIEW PANEL ---
+function StreetViewPanel({ coords, title, className, label, searchQuery }: { coords: { lat: number, lng: number }, title: string, className?: string, label?: string, searchQuery?: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState(false);
 
@@ -66,9 +67,11 @@ function StreetViewPanel({ coords, title, className, label }: { coords: { lat: n
     if (!coords || !containerRef.current || !window.google || !window.google.maps) return;
     
     const sv = new window.google.maps.StreetViewService();
+    const geocoder = new window.google.maps.Geocoder();
+
     // Standard Street View setup
     const pano = new window.google.maps.StreetViewPanorama(containerRef.current, {
-        position: coords,
+        position: coords, // Default init
         pov: { heading: 165, pitch: 0 },
         zoom: 1,
         addressControl: false,
@@ -77,19 +80,45 @@ function StreetViewPanel({ coords, title, className, label }: { coords: { lat: n
         linksControl: false,
         panControl: true,
         enableCloseButton: false,
+        visible: false // Start hidden until we find a pano
     });
 
-    // Use a large radius to find *something* if exact coord has no view
-    sv.getPanorama({ location: coords, radius: 500000 }, (data: any, status: any) => {
-        if (status === "OK") {
-            pano.setPano(data.location.pano);
-        } else {
-            console.warn(`Street View not found for ${title}`);
-            setError(true);
-        }
-    });
+    const processPano = (location: any, radius: number) => {
+        sv.getPanorama({ location, radius }, (data: any, status: any) => {
+            if (status === "OK") {
+                pano.setPano(data.location.pano);
+                pano.setVisible(true);
+                setError(false);
+            } else {
+                console.warn(`Street View not found for ${title} at loc`, location);
+                // If we failed with search loc, try original coords as fallback if they differ?
+                if (searchQuery && location !== coords) {
+                     // recurse with original coords as last ditch
+                     processPano(coords, 500000);
+                } else {
+                    setError(true);
+                }
+            }
+        });
+    };
 
-  }, [coords, title]);
+    if (searchQuery) {
+        geocoder.geocode({ address: searchQuery }, (results: any, status: any) => {
+            if (status === "OK" && results[0]) {
+                // Use the geocored location for Street View lookup
+                // Use a smaller radius for name-based lookups to get specific, then widen? 
+                // Google default results usually imply the "best" spot is at the geometry.location
+                processPano(results[0].geometry.location, 50000);
+            } else {
+                // Fallback to coords
+                processPano(coords, 500000);
+            }
+        });
+    } else {
+        processPano(coords, 500000);
+    }
+
+  }, [coords, title, searchQuery]);
 
   return (
     <div className={`relative bg-black/50 overflow-hidden ${className}`}>
@@ -253,6 +282,16 @@ export default function GeoViewingPage() {
   const selectCategory = (catId: string) => {
     setSelectedCategory(catId);
     setGameState('MODE_SELECT');
+  };
+
+  const getTargetCategory = (t: any) => {
+    if (!t) return null;
+    for (const [cat, list] of Object.entries(TARGET_DATA)) {
+       if (list.includes(t)) return cat;
+       // Fallback for reference mismatch
+       if (list.some((item: any) => item.name === t.name && item.region === t.region)) return cat;
+    }
+    return null;
   };
 
   const startGame = (mode: string) => {
@@ -620,8 +659,15 @@ export default function GeoViewingPage() {
                 <div className="w-full h-full max-w-[1920px] mx-auto flex flex-col md:flex-row relative">
                     
                     {/* 1. LEFT COLUMN (TARGET 360) - DESKTOP ONLY */}
+                    {/* 1. LEFT COLUMN (TARGET 360) - DESKTOP ONLY */}
                     <div className="hidden md:block md:w-1/3 border-r border-white/10 relative h-full">
-                        <StreetViewPanel coords={resultLocations.target} title={target ? `${target.name}, ${target.region}` : "Target"} label="TARGET RESONANCE" className="h-full w-full" />
+                        <StreetViewPanel 
+                            coords={resultLocations.target} 
+                            title={target ? `${target.name}, ${target.region}` : "Target"} 
+                            label="TARGET RESONANCE" 
+                            className="h-full w-full"
+                            searchQuery={target && ['NATURAL', 'URBAN'].includes(getTargetCategory(target) || '') ? `${target.name}, ${target.region}` : undefined}
+                        />
                     </div>
 
                     {/* 2. CENTER COLUMN (RESULTS DATA) */}
