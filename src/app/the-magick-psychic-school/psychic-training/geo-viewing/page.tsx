@@ -438,13 +438,13 @@ export default function GeoViewingPage() {
         <GoogleMapComponent onLoad={(map: any) => { mapRef.current = map; }} />
 
         {gameState === 'CATEGORY_SELECT' && (
-          <div className="absolute inset-0 z-40 bg-slate-950/50 backdrop-blur-md overflow-y-auto px-4 py-8">
+          <div className="absolute inset-0 z-40 bg-slate-950/20 backdrop-blur-sm overflow-y-auto px-4 py-8">
             <div className="w-full max-w-4xl mx-auto">
                 {/* Same Category Selector content */}
                 <div className="text-center mb-8 space-y-2">
-                <div className="inline-block px-3 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[8px] font-black uppercase tracking-[0.3em]">System Initialization</div>
-                <h2 className="text-2xl md:text-4xl font-black text-white uppercase tracking-tight leading-none">Select Sensing Focus</h2>
-                <p className="text-slate-500 text-[10px] md:text-xs">Calibrate perception to an atmospheric frequency.</p>
+                <div className="inline-block px-3 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[8px] font-black uppercase tracking-[0.3em] shadow-lg bg-slate-950/80 backdrop-blur-md">System Initialization</div>
+                <h2 className="text-2xl md:text-4xl font-black text-white uppercase tracking-tight leading-none drop-shadow-lg">Select Sensing Focus</h2>
+                <p className="text-slate-200 text-[10px] md:text-xs drop-shadow-md font-bold">Calibrate perception to an atmospheric frequency.</p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 w-full">
@@ -452,7 +452,7 @@ export default function GeoViewingPage() {
                   <button 
                     key={cat.id}
                     onClick={() => selectCategory(cat.id)}
-                    className="group flex items-center gap-4 p-4 bg-slate-900 border border-white/5 rounded-2xl hover:bg-slate-800 hover:border-indigo-500/50 transition-all text-left"
+                    className="group flex items-center gap-4 p-4 bg-slate-900/90 backdrop-blur-md border border-white/10 rounded-2xl hover:bg-slate-800/90 hover:border-indigo-500/50 transition-all text-left shadow-2xl"
                   >
                     <div className={`p-3 bg-slate-950 rounded-lg ${cat.color} group-hover:scale-110 transition-transform shrink-0`}>
                       <cat.icon size={20} className="md:w-6 md:h-6" />
@@ -469,27 +469,27 @@ export default function GeoViewingPage() {
         )}
 
         {gameState === 'MODE_SELECT' && (
-          <div className="absolute inset-0 z-40 bg-slate-950/50 backdrop-blur-md flex flex-col items-center justify-center p-6 overflow-y-auto">
+          <div className="absolute inset-0 z-40 bg-slate-950/20 backdrop-blur-sm flex flex-col items-center justify-center p-6 overflow-y-auto">
             <div className="w-full max-w-sm space-y-6">
                 {/* Same Mode Selector Content */}
                 <button onClick={() => setGameState('CATEGORY_SELECT')} className="flex items-center gap-2 text-[9px] text-slate-500 hover:text-white uppercase font-black transition-colors">
                 <ChevronLeft size={12} /> Back to Focus
               </button>
               <div className="text-center space-y-1">
-                <h2 className="text-2xl font-black text-white uppercase tracking-tight leading-none">Choose Strategy</h2>
-                <p className="text-indigo-400 text-[9px] uppercase font-bold tracking-widest pt-1">
+                <h2 className="text-2xl font-black text-white uppercase tracking-tight leading-none drop-shadow-lg">Choose Strategy</h2>
+                <p className="text-indigo-400 text-[9px] uppercase font-bold tracking-widest pt-1 drop-shadow-md bg-slate-950/50 inline-block px-2 rounded-lg">
                   Focusing: {CATEGORIES.find(c => c.id === selectedCategory)?.label}
                 </p>
               </div>
               <div className="grid gap-3">
-                <button onClick={() => startGame('RETRO_SENSING')} className="group flex items-center gap-4 p-4 md:p-6 bg-slate-900 border border-white/5 rounded-2xl hover:border-indigo-500/50 transition-all text-left">
+                <button onClick={() => startGame('RETRO_SENSING')} className="group flex items-center gap-4 p-4 md:p-6 bg-slate-900/90 backdrop-blur-md border border-white/10 rounded-2xl hover:border-indigo-500/50 transition-all text-left shadow-2xl">
                   <div className="p-3 bg-indigo-500/10 rounded-lg group-hover:bg-indigo-500 text-indigo-400 group-hover:text-white transition-all shrink-0"><Timer size={20} /></div>
                   <div className="min-w-0">
                     <div className="font-black text-xs md:text-sm text-white uppercase">Retro-Sensing</div>
                     <div className="text-[9px] text-slate-500 italic mt-0.5">Divine an existing target.</div>
                   </div>
                 </button>
-                <button onClick={() => startGame('PRECOGNITION')} className="group flex items-center gap-4 p-4 md:p-6 bg-slate-900 border border-white/5 rounded-2xl hover:border-purple-500/50 transition-all text-left">
+                <button onClick={() => startGame('PRECOGNITION')} className="group flex items-center gap-4 p-4 md:p-6 bg-slate-900/90 backdrop-blur-md border border-white/10 rounded-2xl hover:border-purple-500/50 transition-all text-left shadow-2xl">
                   <div className="p-3 bg-purple-500/10 rounded-lg group-hover:bg-purple-500 text-purple-400 group-hover:text-white transition-all shrink-0"><Zap size={20} /></div>
                   <div className="min-w-0">
                     <div className="font-black text-xs md:text-sm text-white uppercase">Precognition</div>
