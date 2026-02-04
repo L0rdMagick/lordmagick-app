@@ -56,8 +56,8 @@ const BLIND_STYLE = [
   { featureType: "administrative", stylers: [{ visibility: "off" }] },
   { featureType: "road", stylers: [{ visibility: "off" }] },
   { featureType: "poi", stylers: [{ visibility: "off" }] },
-  { featureType: "water", stylers: [{ color: "#bfdbfe" }] }, // Light Blue (Blue-200)
-  { featureType: "landscape", stylers: [{ color: "#f8fafc" }] } // White/Slate-50
+  { featureType: "water", stylers: [{ color: "#C0ADDC" }] }, // Wisteria
+  { featureType: "landscape", stylers: [{ color: "#4B0082" }] } // Indigo
 ];
 
 const REVEALED_STYLE = [
@@ -701,7 +701,7 @@ function GoogleMapComponent({ onLoad }: { onLoad: (map: any) => void }) {
   useEffect(() => {
     if (containerRef.current && window.google) {
       const map = new window.google.maps.Map(containerRef.current, {
-        center: { lat: 20, lng: 0 }, zoom: 2.5, disableDefaultUI: true, backgroundColor: '#f8fafc', styles: BLIND_STYLE, clickableIcons: false, draggable: true, scrollwheel: true, disableDoubleClickZoom: false
+        center: { lat: 20, lng: 0 }, zoom: 2.5, disableDefaultUI: true, backgroundColor: '#C0ADDC', styles: BLIND_STYLE, clickableIcons: false, draggable: true, scrollwheel: true, disableDoubleClickZoom: false
       });
       onLoad(map);
     }
