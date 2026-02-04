@@ -174,8 +174,8 @@ export default function GeoViewingPage() {
 
   const currentPool = useMemo(() => {
     if (!selectedCategory) return [];
-    if (selectedCategory === 'RANDOM') return Object.values(TARGET_LIBRARY).flat();
-    return TARGET_LIBRARY[selectedCategory] || [];
+    if (selectedCategory === 'RANDOM') return Object.values(TARGET_DATA).flat();
+    return TARGET_DATA[selectedCategory] || [];
   }, [selectedCategory]);
 
   const handleZoom = (delta: number) => {
