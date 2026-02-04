@@ -116,6 +116,7 @@ export default function GeoViewingPage() {
   const [loading, setLoading] = useState(true);
   const [isGeocoding, setIsGeocoding] = useState(false);
   const [showResultCard, setShowResultCard] = useState(false);
+  const [mapLayer, setMapLayer] = useState<'BLIND' | 'GEOGRAPHY' | 'POLITICAL' | 'COMBINED'>('BLIND');
   
   // Storing locations for the result view
   const [resultLocations, setResultLocations] = useState<{target: any, user: any} | null>(null);
@@ -264,6 +265,40 @@ export default function GeoViewingPage() {
     } else {
       setTarget(null);
     }
+  };
+
+  const handleLayerChange = (layer: 'BLIND' | 'GEOGRAPHY' | 'POLITICAL' | 'COMBINED') => {
+    setMapLayer(layer);
+    if (!mapRef.current) return;
+
+    let options: any = {};
+    
+    switch (layer) {
+        case 'BLIND':
+            options = { mapTypeId: 'roadmap', styles: BLIND_STYLE };
+            break;
+        case 'GEOGRAPHY':
+            // Terrain map type, labels hidden manually via styles
+            options = { 
+                mapTypeId: 'terrain', 
+                styles: [
+                    { elementType: "labels", stylers: [{ visibility: "off" }] },
+                    { featureType: "administrative", stylers: [{ visibility: "off" }] },
+                    { featureType: "road", stylers: [{ visibility: "off" }] },
+                    { featureType: "poi", stylers: [{ visibility: "off" }] },
+                ]
+            };
+            break;
+        case 'POLITICAL':
+             // Roadmap default (Politics/Labels visible)
+            options = { mapTypeId: 'roadmap', styles: [] };
+            break;
+        case 'COMBINED':
+            // Terrain default (Politics + Geo visible)
+            options = { mapTypeId: 'terrain', styles: [] };
+            break;
+    }
+    mapRef.current.setOptions(options);
   };
 
   const handleConfirmLocation = () => {
@@ -523,6 +558,24 @@ export default function GeoViewingPage() {
                   {isSearching ? <Loader2 size={10} className="animate-spin" /> : 'Go'}
                 </button>
               </form>
+            </div>
+
+            {/* --- MAP LAYER CONTROLS --- */}
+            <div className="absolute top-4 right-4 z-30 flex flex-col gap-2">
+                <div className="bg-slate-950/80 backdrop-blur-md p-1.5 rounded-xl border border-white/10 shadow-2xl flex flex-col gap-1">
+                    <button onClick={() => handleLayerChange('BLIND')} className={`p-2 rounded-lg transition-all ${mapLayer === 'BLIND' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white hover:bg-white/5'}`} title="Blind Protocol">
+                        <Eye size={16} />
+                    </button>
+                    <button onClick={() => handleLayerChange('GEOGRAPHY')} className={`p-2 rounded-lg transition-all ${mapLayer === 'GEOGRAPHY' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white hover:bg-white/5'}`} title="Geography (Terrain)">
+                        <Mountain size={16} />
+                    </button>
+                    <button onClick={() => handleLayerChange('POLITICAL')} className={`p-2 rounded-lg transition-all ${mapLayer === 'POLITICAL' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white hover:bg-white/5'}`} title="Political (Labels)">
+                        <Globe size={16} />
+                    </button>
+                    <button onClick={() => handleLayerChange('COMBINED')} className={`p-2 rounded-lg transition-all ${mapLayer === 'COMBINED' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white hover:bg-white/5'}`} title="Combined (Atlas)">
+                        <MapIcon size={16} />
+                    </button>
+                </div>
             </div>
 
             <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center">
