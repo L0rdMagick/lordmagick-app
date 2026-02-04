@@ -587,10 +587,10 @@ export default function GeoViewingPage() {
 
             <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center">
               <div className="relative flex items-center justify-center">
-                <div className="absolute w-12 h-12 md:w-20 md:h-20 border border-indigo-500/30 rounded-full animate-pulse" />
-                <div className="absolute w-6 md:w-8 h-px bg-indigo-400/50" />
-                <div className="absolute h-6 md:h-8 w-px bg-indigo-400/50" />
-                <Crosshair className="text-indigo-400 w-4 h-4 md:w-5 md:h-5 animate-spin-slow opacity-60" />
+                <div className="absolute w-12 h-12 md:w-20 md:h-20 border border-[#FDFD96]/30 rounded-full animate-pulse" />
+                <div className="absolute w-6 md:w-8 h-px bg-[#FDFD96]/50" />
+                <div className="absolute h-6 md:h-8 w-px bg-[#FDFD96]/50" />
+                <Crosshair className="text-[#FDFD96] w-4 h-4 md:w-5 md:h-5 animate-spin-slow opacity-60" />
               </div>
             </div>
 
