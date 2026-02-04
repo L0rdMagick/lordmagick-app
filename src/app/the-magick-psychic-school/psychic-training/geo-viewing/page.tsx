@@ -326,10 +326,27 @@ export default function GeoViewingPage() {
         if (gStatus === "OK" && results[0]) {
           const comp = results[0].address_components;
           const country = comp.find((c: any) => c.types.includes("country"))?.long_name;
-          const city = comp.find((c: any) => c.types.includes("locality") || comp.find((ci: any) => ci.types.includes("administrative_area_level_1")))?.long_name;
-          setUserPlaceName(city ? `${city}, ${country}` : country || results[0].formatted_address);
+          const city = comp.find((c: any) => c.types.includes("locality") || c.types.includes("administrative_area_level_1") || c.types.includes("postal_town"))?.long_name;
+          const landmark = comp.find((c: any) => c.types.includes("point_of_interest") || c.types.includes("establishment") || c.types.includes("neighborhood"))?.long_name;
+          
+          let parts = [];
+          if (country) parts.push(country);
+          if (city && city !== country) parts.push(city);
+          if (landmark && landmark !== city && landmark !== country) parts.push(landmark);
+          
+          // Fallback if only country or nothing
+          if (parts.length === 0) {
+             // Check formatted address for non-plus code
+             if (results[0].formatted_address && !results[0].formatted_address.includes('+')) {
+                 parts.push(results[0].formatted_address);
+             } else {
+                 parts.push("Unknown Location");
+             }
+          }
+
+          setUserPlaceName(parts.join(", "));
         } else {
-          setUserPlaceName("Atmospheric Region");
+          setUserPlaceName("Unknown Location");
         }
       });
     }
@@ -477,7 +494,7 @@ export default function GeoViewingPage() {
               </button>
               <div className="text-center space-y-1">
                 <h2 className="text-2xl font-black text-white uppercase tracking-tight leading-none drop-shadow-lg">Choose Strategy</h2>
-                <p className="text-indigo-400 text-[9px] uppercase font-bold tracking-widest pt-1 drop-shadow-md bg-slate-950/50 inline-block px-2 rounded-lg">
+                <p className="text-white text-[9px] uppercase font-bold tracking-widest pt-1 drop-shadow-md bg-black inline-block px-2 rounded-lg border border-white/20">
                   Focusing: {CATEGORIES.find(c => c.id === selectedCategory)?.label}
                 </p>
               </div>
@@ -647,10 +664,10 @@ export default function GeoViewingPage() {
 
         {/* --- REVEALED HUD BUTTON (If card closed) --- */}
         {gameState === 'REVEALED' && !showResultCard && (
-           <div className="absolute bottom-24 md:bottom-8 left-6 z-40 animate-in zoom-in duration-300">
-             <button onClick={() => setShowResultCard(true)} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white p-3 rounded-full shadow-2xl border border-white/10 transition-all active:scale-90 hover:scale-105">
+           <div className="absolute bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 min-w-max z-40 animate-in zoom-in duration-300 pointer-events-auto">
+             <button onClick={() => setShowResultCard(true)} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-full shadow-2xl border border-white/10 transition-all active:scale-95 hover:scale-105">
                 <BarChart3 size={16} />
-                <span className="text-[9px] font-black uppercase tracking-widest hidden md:inline">View Analysis</span>
+                <span className="text-[10px] md:text-xs font-black uppercase tracking-widest">View Results</span>
              </button>
            </div>
         )}
