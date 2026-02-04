@@ -561,7 +561,7 @@ export default function GeoViewingPage() {
                     
                     {/* 1. LEFT COLUMN (TARGET 360) - DESKTOP ONLY */}
                     <div className="hidden md:block md:w-1/3 border-r border-white/10 relative h-full">
-                        <StreetViewPanel coords={resultLocations.target} title={target?.name || "Target"} label="TARGET RESONANCE" className="h-full w-full" />
+                        <StreetViewPanel coords={resultLocations.target} title={target ? `${target.name}, ${target.region}` : "Target"} label="TARGET RESONANCE" className="h-full w-full" />
                     </div>
 
                     {/* 2. CENTER COLUMN (RESULTS DATA) */}
@@ -585,6 +585,9 @@ export default function GeoViewingPage() {
                                     <h3 className="text-xs md:text-xl font-bold text-white truncate max-w-[120px] md:max-w-none">
                                         {target?.name}
                                     </h3>
+                                    <p className="text-[9px] md:text-[10px] text-slate-400 font-bold uppercase tracking-wider truncate">
+                                        {target?.region}
+                                    </p>
                                 </div>
                             </div>
 
