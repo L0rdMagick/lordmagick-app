@@ -432,25 +432,34 @@ export default function GeoViewingPage() {
     const userMarker = new googleRef.current.maps.Marker({
       position: latLng,
       map: mapRef.current,
-      label: { text: "YOU", color: "white", fontWeight: "bold", fontSize: "14px", className: "map-label-you" }, 
+      label: { text: "YOU", color: "#FACC15", fontWeight: "bold", fontSize: "14px", className: "map-label-you" }, 
       animation: googleRef.current.maps.Animation.DROP,
       cursor: 'pointer',
       icon: {
         path: googleRef.current.maps.SymbolPath.CIRCLE,
-        scale: 8,
-        fillColor: "#F43F5E",
+        scale: 10,
+        fillColor: "#FACC15",
         fillOpacity: 1,
         strokeWeight: 2,
         strokeColor: "#FFFFFF",
+        labelOrigin: new googleRef.current.maps.Point(0, -25)
       }
     });
     
     const targetMarker = new googleRef.current.maps.Marker({
       position: targetLatLng,
       map: mapRef.current,
-      icon: { path: googleRef.current.maps.SymbolPath.CIRCLE, scale: 14, fillColor: "#6366f1", fillOpacity: 1, strokeWeight: 4, strokeColor: "#ffffff" },
+      icon: { 
+        path: googleRef.current.maps.SymbolPath.CIRCLE, 
+        scale: 10, 
+        fillColor: "#4ADE80", 
+        fillOpacity: 1, 
+        strokeWeight: 2, 
+        strokeColor: "#ffffff",
+        labelOrigin: new googleRef.current.maps.Point(0, -25)
+      },
       cursor: 'pointer',
-      label: { text: "TARGET", color: "#6366f1", fontWeight: "bold", fontSize: "14px", className: "map-label-target" }
+      label: { text: "TARGET", color: "#4ADE80", fontWeight: "bold", fontSize: "14px", className: "map-label-target" }
     });
     
     markersRef.current = [userMarker, targetMarker];
