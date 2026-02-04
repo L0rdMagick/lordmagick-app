@@ -441,7 +441,16 @@ export default function GeoViewingPage() {
                 </button>
              )}
              <button 
-                onClick={() => setGameState('CATEGORY_SELECT')} 
+                onClick={() => {
+                  setGameState('CATEGORY_SELECT');
+                  setShowResultCard(false);
+                  setResultLocations(null);
+                  setDistance(null);
+                  setTarget(null);
+                  if (mapRef.current) {
+                      mapRef.current.setOptions({ styles: BLIND_STYLE, center: { lat: 20, lng: 0 }, zoom: 2.5 });
+                  }
+                }} 
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg font-black uppercase tracking-widest text-[8px] md:text-[9px] transition-all shadow-lg shrink-0 border border-white/5"
               >
                 <RefreshCw size={10} />
