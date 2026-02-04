@@ -561,7 +561,7 @@ export default function GeoViewingPage() {
             </div>
 
             {/* --- MAP LAYER CONTROLS --- */}
-            <div className="absolute top-4 right-4 z-30 flex flex-col gap-2">
+            <div className="absolute top-20 md:top-4 right-4 z-30 flex flex-col gap-2">
                 <div className="bg-slate-950/80 backdrop-blur-md p-1.5 rounded-xl border border-white/10 shadow-2xl flex flex-col gap-1">
                     <button onClick={() => handleLayerChange('BLIND')} className={`p-2 rounded-lg transition-all ${mapLayer === 'BLIND' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white hover:bg-white/5'}`} title="Blind Protocol">
                         <Eye size={16} />
