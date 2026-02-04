@@ -7,41 +7,12 @@ import {
   BarChart3, Target, Crosshair, Plus, Minus, Camera, Landmark, Mountain, Building2, History, Dices, ChevronLeft, Map as MapIcon, ArrowRight
 } from 'lucide-react';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
+import { TARGET_DATA } from './targetData';
 
 // --- CONFIGURATION & LIBRARY ---
 const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ""; 
 
-const TARGET_LIBRARY: Record<string, { name: string; lat: number; lng: number; region: string }[]> = {
-  ANCIENT: [
-    { name: "Great Pyramid of Giza", lat: 29.9792, lng: 31.1342, region: "Egypt" },
-    { name: "Stonehenge", lat: 51.1789, lng: -1.8262, region: "UK" },
-    { name: "Machu Picchu", lat: -13.1631, lng: -72.5450, region: "Peru" },
-    { name: "Easter Island Moai", lat: -27.1127, lng: -109.3497, region: "Chile" },
-    { name: "The Colosseum", lat: 41.8902, lng: 12.4922, region: "Italy" },
-    { name: "Angkor Wat", lat: 13.4125, lng: 103.8670, region: "Cambodia" }
-  ],
-  ARCHITECTURAL: [
-    { name: "Eiffel Tower", lat: 48.8584, lng: 2.2945, region: "France" },
-    { name: "Taj Mahal", lat: 27.1751, lng: 78.0421, region: "India" },
-    { name: "Burj Khalifa", lat: 25.1972, lng: 55.2744, region: "UAE" },
-    { name: "Sydney Opera House", lat: -33.8568, lng: 151.2153, region: "Australia" },
-    { name: "Empire State Building", lat: 40.7484, lng: -73.9857, region: "USA" }
-  ],
-  NATURAL: [
-    { name: "Mount Everest", lat: 27.9881, lng: 86.9250, region: "Nepal" },
-    { name: "Grand Canyon", lat: 36.1070, lng: -112.1130, region: "USA" },
-    { name: "Victoria Falls", lat: -17.9243, lng: 25.8572, region: "Zambia/Zimbabwe" },
-    { name: "Mount Fuji", lat: 35.3606, lng: 138.7274, region: "Japan" },
-    { name: "Great Barrier Reef", lat: -18.2871, lng: 147.6992, region: "Australia" }
-  ],
-  URBAN: [
-    { name: "Times Square", lat: 40.7580, lng: -73.9855, region: "USA" },
-    { name: "Shibuya Crossing", lat: 35.6595, lng: 139.7004, region: "Japan" },
-    { name: "Piccadilly Circus", lat: 51.5101, lng: -0.1342, region: "UK" },
-    { name: "Red Square", lat: 55.7539, lng: 37.6208, region: "Russia" },
-    { name: "Copacabana Beach", lat: -22.9714, lng: -43.1823, region: "Brazil" }
-  ]
-};
+
 
 const CATEGORIES = [
   { id: 'ANCIENT', label: 'Ancient Wonders', icon: History, color: 'text-amber-400', desc: 'Ancient Resonance' },
