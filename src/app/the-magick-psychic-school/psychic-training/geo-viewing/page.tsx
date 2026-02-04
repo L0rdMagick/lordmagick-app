@@ -63,6 +63,8 @@ function StreetViewPanel({ coords, title, className, label, searchQuery }: { coo
   const containerRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState(false);
 
+  const panoRef = useRef<any>(null);
+
   useEffect(() => {
     if (!coords || !containerRef.current || !window.google || !window.google.maps) return;
     
@@ -70,6 +72,11 @@ function StreetViewPanel({ coords, title, className, label, searchQuery }: { coo
     const geocoder = new window.google.maps.Geocoder();
 
     // Standard Street View setup
+    // Clean up previous instance if exists (though usually we just unmount, but safety first)
+    if (panoRef.current) {
+        panoRef.current.setVisible(false);
+    }
+
     const pano = new window.google.maps.StreetViewPanorama(containerRef.current, {
         position: coords, // Default init
         pov: { heading: 165, pitch: 0 },
@@ -82,6 +89,8 @@ function StreetViewPanel({ coords, title, className, label, searchQuery }: { coo
         enableCloseButton: false,
         visible: false // Start hidden until we find a pano
     });
+    
+    panoRef.current = pano;
 
     const processPano = (location: any, radius: number) => {
         sv.getPanorama({ location, radius }, (data: any, status: any) => {
@@ -105,18 +114,22 @@ function StreetViewPanel({ coords, title, className, label, searchQuery }: { coo
     if (searchQuery) {
         geocoder.geocode({ address: searchQuery }, (results: any, status: any) => {
             if (status === "OK" && results[0]) {
-                // Use the geocored location for Street View lookup
-                // Use a smaller radius for name-based lookups to get specific, then widen? 
-                // Google default results usually imply the "best" spot is at the geometry.location
                 processPano(results[0].geometry.location, 50000);
             } else {
-                // Fallback to coords
                 processPano(coords, 500000);
             }
         });
     } else {
         processPano(coords, 500000);
     }
+
+    return () => {
+        if (panoRef.current) {
+            panoRef.current.unbindAll();
+            panoRef.current.setVisible(false);
+            panoRef.current = null;
+        }
+    };
 
   }, [coords, title, searchQuery]);
 
@@ -160,7 +173,7 @@ export default function GeoViewingPage() {
   const [mapLayer, setMapLayer] = useState<'BLIND' | 'GEOGRAPHY' | 'POLITICAL' | 'COMBINED'>('BLIND');
   
   // Storing locations for the result view
-  const [resultLocations, setResultLocations] = useState<{target: any, user: any} | null>(null);
+  const [resultLocations, setResultLocations] = useState<{target: any, user: any, userLabel?: string} | null>(null);
 
   // Search State
   const [locationSearch, setLocationSearch] = useState("");
@@ -307,7 +320,9 @@ export default function GeoViewingPage() {
     markersRef.current = [];
 
     if (mapRef.current) {
-      mapRef.current.setOptions({ styles: BLIND_STYLE, center: { lat: 20, lng: 0 }, zoom: 2.5 });
+      handleLayerChange(mapLayer); // Respect user's layer choice on reset
+      mapRef.current.setCenter({ lat: 20, lng: 0 });
+      mapRef.current.setZoom(2.5);
     }
 
     if (mode === 'RETRO_SENSING') {
@@ -326,6 +341,7 @@ export default function GeoViewingPage() {
     
     switch (layer) {
         case 'BLIND':
+            // Blind: No labels, Custom Colors
             options = { mapTypeId: 'roadmap', styles: BLIND_STYLE };
             break;
         case 'GEOGRAPHY':
@@ -392,11 +408,19 @@ export default function GeoViewingPage() {
              if (results[0].formatted_address && !results[0].formatted_address.includes('+')) {
                  parts.push(results[0].formatted_address);
              } else {
-                 parts.push("Unknown Location");
+                 // Try to force get at least country from ANY result
+                 const fallbackCountry = results.find((r: any) => r.types.includes('country'));
+                 if (fallbackCountry) parts.push(fallbackCountry.formatted_address);
+                 else parts.push("Unknown Location");
              }
           }
 
-          setUserPlaceName(parts.join(", "));
+          const finalName = parts.join(", ");
+          setUserPlaceName(finalName);
+          
+          // Update resultLocations with the found name for the SV panel
+          setResultLocations(prev => prev ? ({ ...prev, userLabel: finalName }) : null);
+
         } else {
           setUserPlaceName("Unknown Location");
         }
@@ -499,8 +523,13 @@ export default function GeoViewingPage() {
                   setResultLocations(null);
                   setDistance(null);
                   setTarget(null);
+                  setDistance(null);
+                  setTarget(null);
                   if (mapRef.current) {
-                      mapRef.current.setOptions({ styles: BLIND_STYLE, center: { lat: 20, lng: 0 }, zoom: 2.5 });
+                      // Re-apply current map layer preferences instead of forcing BLIND_STYLE
+                      handleLayerChange(mapLayer); 
+                      mapRef.current.setCenter({ lat: 20, lng: 0 });
+                      mapRef.current.setZoom(2.5);
                   }
                 }} 
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg font-black uppercase tracking-widest text-[8px] md:text-[9px] transition-all shadow-lg shrink-0 border border-white/5"
@@ -744,7 +773,13 @@ export default function GeoViewingPage() {
 
                     {/* 3. RIGHT COLUMN (USER 360) - DESKTOP ONLY */}
                     <div className="hidden md:block md:w-1/3 border-l border-white/10 relative h-full order-last">
-                        <StreetViewPanel coords={resultLocations.user} title={userPlaceName} label="YOUR SELECTION" className="h-full w-full" />
+                        <StreetViewPanel 
+                            coords={resultLocations.user} 
+                            title={resultLocations.userLabel || "Your Selection"} 
+                            label="YOUR RESONANCE" 
+                            className="h-full w-full"
+                            searchQuery={resultLocations.userLabel} // Try to find SV by name if coords fail
+                        />
                     </div>
 
                 </div>
