@@ -22,13 +22,25 @@ const CATEGORIES = [
   { id: 'RANDOM', label: 'Total Flux', icon: Dices, color: 'text-slate-400', desc: 'Atmospheric Variance' }
 ];
 
+const MAP_COLORS = [
+  { featureType: "water", stylers: [{ color: "#C0ADDC" }] }, // Wisteria
+  { featureType: "landscape", stylers: [{ color: "#4B0082" }] } // Indigo
+];
+
 const BLIND_STYLE = [
+  ...MAP_COLORS,
   { elementType: "labels", stylers: [{ visibility: "off" }] },
   { featureType: "administrative", stylers: [{ visibility: "off" }] },
   { featureType: "road", stylers: [{ visibility: "off" }] },
   { featureType: "poi", stylers: [{ visibility: "off" }] },
-  { featureType: "water", stylers: [{ color: "#C0ADDC" }] }, // Wisteria
-  { featureType: "landscape", stylers: [{ color: "#4B0082" }] } // Indigo
+];
+
+const POLITICAL_STYLE = [
+  ...MAP_COLORS,
+  { elementType: "labels", stylers: [{ visibility: "on" }] },
+  { featureType: "administrative", stylers: [{ visibility: "on" }] },
+  { featureType: "road", stylers: [{ visibility: "off" }] }, // Keep clean, just labels
+  { featureType: "poi", stylers: [{ visibility: "off" }] },
 ];
 
 const REVEALED_STYLE = [
@@ -278,24 +290,19 @@ export default function GeoViewingPage() {
             options = { mapTypeId: 'roadmap', styles: BLIND_STYLE };
             break;
         case 'GEOGRAPHY':
-            // Terrain map type, labels hidden manually via styles
+            // Terrain with custom colors, no labels
             options = { 
                 mapTypeId: 'terrain', 
-                styles: [
-                    { elementType: "labels", stylers: [{ visibility: "off" }] },
-                    { featureType: "administrative", stylers: [{ visibility: "off" }] },
-                    { featureType: "road", stylers: [{ visibility: "off" }] },
-                    { featureType: "poi", stylers: [{ visibility: "off" }] },
-                ]
+                styles: BLIND_STYLE
             };
             break;
         case 'POLITICAL':
-             // Roadmap default (Politics/Labels visible)
-            options = { mapTypeId: 'roadmap', styles: [] };
+             // Roadmap with custom colors + labels
+            options = { mapTypeId: 'roadmap', styles: POLITICAL_STYLE };
             break;
         case 'COMBINED':
-            // Terrain default (Politics + Geo visible)
-            options = { mapTypeId: 'terrain', styles: [] };
+            // Terrain with custom colors + labels
+            options = { mapTypeId: 'terrain', styles: POLITICAL_STYLE };
             break;
     }
     mapRef.current.setOptions(options);
