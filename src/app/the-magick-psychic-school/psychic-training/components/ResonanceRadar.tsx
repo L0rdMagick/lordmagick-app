@@ -16,7 +16,7 @@ type ResonanceRadarProps = {
   title?: string;
 };
 
-export default function ResonanceRadar({ categories, size = 240, title = "Soul Resonance" }: ResonanceRadarProps) {
+export default function ResonanceRadar({ categories, size = 240, title }: ResonanceRadarProps) {
     const center = size / 2;
     const radius = (size / 2) - 40; // Padding for labels
     
@@ -45,10 +45,12 @@ export default function ResonanceRadar({ categories, size = 240, title = "Soul R
     if (categories.length < 3) return null; // Radar needs at least 3 points to look good
 
     return (
-        <div className="flex flex-col items-center justify-center py-4 relative">
-             <h4 className="text-amber-200 font-serif text-lg flex items-center gap-2 mb-2 uppercase tracking-widest">
-                <Sparkles size={16}/> {title}
-            </h4>
+        <div className="flex flex-col items-center justify-center py-2 relative">
+             {title && (
+                <h4 className="text-amber-200 font-serif text-lg flex items-center gap-2 mb-2 uppercase tracking-widest">
+                    <Sparkles size={16}/> {title}
+                </h4>
+             )}
             
             <svg width={size} height={size} className="overflow-visible">
                 {/* Grid Rings */}
