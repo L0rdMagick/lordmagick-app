@@ -432,8 +432,8 @@ export default function PsiTrainer() {
               chance={0.25} 
               appName="Psi Trainer"
               radarData={[
-                { id: 'DEVIL', label: 'THREAT', value: stats.breakdown?.DEVIL?.total ? stats.breakdown.DEVIL.hits / stats.breakdown.DEVIL.total : 0, color: '#f87171' },
-                { id: 'ANGEL', label: 'SAFETY', value: stats.breakdown?.ANGEL?.total ? stats.breakdown.ANGEL.hits / stats.breakdown.ANGEL.total : 0, color: '#60a5fa' },
+                { id: 'DEVIL', label: 'THREAT', value: stats.breakdown?.DEVIL?.attempts ? stats.breakdown.DEVIL.hits / stats.breakdown.DEVIL.attempts : 0, color: '#f87171' },
+                { id: 'ANGEL', label: 'SAFETY', value: stats.breakdown?.ANGEL?.attempts ? stats.breakdown.ANGEL.hits / stats.breakdown.ANGEL.attempts : 0, color: '#60a5fa' },
                 // Dummy values to make radar triangle if needed, or just 2 points? Radar needs 3.
                 // Psi Trainer only has 2 categories.
                 // We'll add a "Flow" and "Focus" metric based on streak?
