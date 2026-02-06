@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
 import { TARGET_DATA } from './targetData';
+import PsychicStatsModal from '../components/PsychicStatsModal';
 
 // --- CONFIGURATION & LIBRARY ---
 const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ""; 
@@ -179,6 +180,11 @@ export default function GeoViewingPage() {
   const [locationSearch, setLocationSearch] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState("");
+
+  // Session Statistics
+  const [sessionStats, setSessionStats] = useState({ hits: 0, trials: 0 });
+  const HIT_THRESHOLD_MILES = 500; // Define what counts as a "Hit"
+  const PROBABILITY = 0.05; // Estimated probability of landing within threshold randomly
 
   const mapRef = useRef<any>(null);
   const googleRef = useRef<any>(null);
@@ -377,8 +383,16 @@ export default function GeoViewingPage() {
 
     const targetLatLng = new googleRef.current.maps.LatLng(finalTarget.lat, finalTarget.lng);
     const distMeters = googleRef.current.maps.geometry.spherical.computeDistanceBetween(latLng, targetLatLng);
+    const distMiles = distMeters * 0.000621371;
     
-    setDistance(distMeters * 0.000621371); // Miles
+    setDistance(distMiles); // Miles
+
+    // Update Statistics
+    const isHit = distMiles <= HIT_THRESHOLD_MILES;
+    setSessionStats(prev => ({
+        hits: prev.hits + (isHit ? 1 : 0),
+        trials: prev.trials + 1
+    }));
     setResultLocations({
         target: { lat: finalTarget.lat, lng: finalTarget.lng },
         user: { lat: latLng.lat(), lng: latLng.lng() }
@@ -645,7 +659,7 @@ export default function GeoViewingPage() {
             </div>
 
             {/* --- MAP LAYER CONTROLS --- */}
-            <div className="absolute top-20 md:top-4 right-4 z-30 flex flex-col gap-2">
+            <div className="absolute top-24 md:top-24 right-4 z-30 flex flex-col gap-2">
                 <div className="bg-slate-950/80 backdrop-blur-md p-1.5 rounded-xl border border-white/10 shadow-2xl flex flex-col gap-1">
                     <button onClick={() => handleLayerChange('BLIND')} className={`p-2 rounded-lg transition-all ${mapLayer === 'BLIND' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white hover:bg-white/5'}`} title="Blind Protocol">
                         <Eye size={16} />
@@ -661,6 +675,14 @@ export default function GeoViewingPage() {
                     </button>
                 </div>
             </div>
+
+            {/* STATS MODAL */}
+            <PsychicStatsModal 
+                hits={sessionStats.hits} 
+                trials={sessionStats.trials} 
+                chance={PROBABILITY} 
+                appName="Geo Viewing" 
+            />
 
             <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center">
               <div className="relative flex items-center justify-center">
@@ -738,16 +760,21 @@ export default function GeoViewingPage() {
                             {/* Distance Metrics Compact */}
                             <div className="w-full max-w-xs bg-slate-900/50 rounded-xl md:rounded-2xl border border-white/5 p-2 md:p-6 backdrop-blur-sm flex md:block items-center justify-center gap-2">
                                 <div className="text-[8px] md:text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 md:mb-2">Variance:</div>
-                                <div className="flex items-baseline gap-1">
-                                    <div className="text-lg md:text-5xl font-black text-white tracking-tighter tabular-nums leading-none">
-                                        {Math.round(distance).toLocaleString()}
-                                        <span className="text-[10px] md:text-sm ml-0.5 text-slate-500 font-sans font-normal">mi</span>
+                                    <div className="flex items-baseline gap-1">
+                                        <div className="text-lg md:text-5xl font-black text-white tracking-tighter tabular-nums leading-none">
+                                            {Math.round(distance).toLocaleString()}
+                                            <span className="text-[10px] md:text-sm ml-0.5 text-slate-500 font-sans font-normal">mi</span>
+                                        </div>
+                                        <div className="text-[10px] md:text-sm font-bold text-slate-600 font-mono">
+                                            / {Math.round(distance * 1.60934).toLocaleString()} km
+                                        </div>
                                     </div>
-                                    <div className="text-[10px] md:text-sm font-bold text-slate-600 font-mono">
-                                        / {Math.round(distance * 1.60934).toLocaleString()} km
-                                    </div>
+                                    {distance <= HIT_THRESHOLD_MILES ? (
+                                        <div className="text-emerald-400 font-black uppercase tracking-widest text-xs mt-1">Target Acquired (Hit)</div>
+                                    ) : (
+                                        <div className="text-slate-500 font-black uppercase tracking-widest text-xs mt-1">Signal Lost (Miss)</div>
+                                    )}
                                 </div>
-                            </div>
 
                             {/* Actions Compact */}
                             <div className="flex gap-2 w-full max-w-xs pt-0 md:pt-2">

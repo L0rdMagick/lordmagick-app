@@ -11,333 +11,20 @@ import {
 import { createBrowserClient } from '@supabase/ssr';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
 import { useHaptics } from '@/hooks/useHaptics';
+import PsychicStatsModal from '../components/PsychicStatsModal';
+import { calculateZScore } from '../utils/psychicStats';
 
 /**
  * --- 1. MATH & HELPERS (GOLD STANDARD) ---
  */
 
-const calculatePsiScore = (hits: number, trials: number, chance: number) => {
-  if (trials === 0) return 0;
-  const expected = trials * chance;
-  const stdDev = Math.sqrt(trials * chance * (1 - chance));
-  return (hits - expected) / stdDev;
-};
-
-const erf = (x: number) => {
-  // Approximation of the error function
-  const a1 =  0.254829592;
-  const a2 = -0.284496736;
-  const a3 =  1.421413741;
-  const a4 = -1.453152027;
-  const a5 =  1.061405429;
-  const p  =  0.3275911;
-  const sign = (x < 0) ? -1 : 1;
-  x = Math.abs(x);
-  const t = 1.0 / (1.0 + p * x);
-  const y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
-  return sign * y;
-};
-
-const calculateProbability = (z: number) => {
-  const pValue = 0.5 * (1 - erf(Math.abs(z) / Math.sqrt(2)));
-  if (pValue <= 0) return "1 in ∞";
-  const oneInX = 1 / pValue;
-  if (oneInX > 1000000) return `1 in ${(oneInX / 1000000).toFixed(1)}M`;
-  if (oneInX > 1000) return `1 in ${(oneInX / 1000).toFixed(1)}k`;
-  if (oneInX < 2) return "1 in 2";
-  return `1 in ${Math.round(oneInX)}`;
-};
-
-const getPsiTier = (z: number) => {
-  // POSITIVE (Psi-Hitting)
-  if (z >= 4.0) return { name: "The Oracle", color: "text-amber-300 shadow-amber-500/50" };
-  if (z >= 3.0) return { name: "The Medium", color: "text-purple-300 shadow-purple-500/50" };
-  if (z >= 1.96) return { name: "The Clairvoyant", color: "text-pink-300 shadow-pink-500/50" };
-  if (z >= 1.65) return { name: "The Channel", color: "text-indigo-300 shadow-indigo-500/50" };
-  if (z >= 1.0) return { name: "The Adept", color: "text-cyan-300 shadow-cyan-500/50" };
-  if (z >= 0.5) return { name: "The Spark", color: "text-teal-300 shadow-teal-500/50" };
-  if (z >= 0.0) return { name: "The Initiate", color: "text-slate-200" };
-
-  // NEGATIVE (Psi-Missing)
-  if (z <= -4.0) return { name: "The Void", color: "text-slate-500" };
-  if (z <= -3.0) return { name: "The Shadow", color: "text-slate-400" };
-  if (z <= -2.0) return { name: "The Mirror", color: "text-slate-400" };
-  if (z <= -1.0) return { name: "The Blocker", color: "text-slate-400" };
-  if (z <= -0.5) return { name: "The Dreamer", color: "text-slate-400" };
-  
-  return { name: "The Sleeper", color: "text-slate-300" };
-};
+// Local stats logic removed in favor of shared utilities
 
 /**
  * --- 2. SUB-COMPONENTS ---
  */
 
-const RadarChart = ({ stats, categories }: { stats: any, categories: any[] }) => {
-    const size = 200;
-    const center = size / 2;
-    const radius = 70; 
-    
-    const points = categories.map((cat, i) => {
-        const angle = (Math.PI * 2 * i) / categories.length - Math.PI / 2;
-        const stat = stats[cat.id] || { hits: 0, attempts: 0 };
-        const percentage = stat.attempts > 0 ? (stat.hits / stat.attempts) : 0;
-        const dist = radius * percentage; 
-        
-        return [
-            center + dist * Math.cos(angle),
-            center + dist * Math.sin(angle)
-        ];
-    });
-
-    const pathData = points.length > 0 
-        ? points.map((p, i) => (i === 0 ? 'M' : 'L') + p[0] + ',' + p[1]).join(' ') + 'Z'
-        : '';
-
-    return (
-        <div className="flex flex-col items-center justify-center py-4">
-            <h4 className="text-amber-200 font-serif text-lg flex items-center gap-2 mb-2">
-                <Sparkles size={16}/> Intuition Field
-            </h4>
-            <div className="relative">
-                <svg width={size} height={size} className="overflow-visible">
-                    {[0.25, 0.5, 0.75, 1].map((scale, k) => (
-                        <polygon 
-                            key={k}
-                            points={categories.map((_, i) => {
-                                const angle = (Math.PI * 2 * i) / categories.length - Math.PI / 2;
-                                const r = radius * scale;
-                                return `${center + r * Math.cos(angle)},${center + r * Math.sin(angle)}`;
-                            }).join(' ')}
-                            fill="none"
-                            stroke="#333"
-                            strokeWidth="1"
-                        />
-                    ))}
-                    {categories.map((_, i) => {
-                        const angle = (Math.PI * 2 * i) / categories.length - Math.PI / 2;
-                        return (
-                            <line 
-                                key={i}
-                                x1={center} y1={center}
-                                x2={center + radius * Math.cos(angle)}
-                                y2={center + radius * Math.sin(angle)}
-                                stroke="#333"
-                                strokeWidth="1"
-                            />
-                        );
-                    })}
-                    <path d={pathData} fill="rgba(99, 102, 241, 0.3)" stroke="#6366f1" strokeWidth="2" />
-                    
-                    {categories.map((cat, i) => {
-                        const angle = (Math.PI * 2 * i) / categories.length - Math.PI / 2;
-                        const labelRadius = radius + 20;
-                        const x = center + labelRadius * Math.cos(angle);
-                        const y = center + labelRadius * Math.sin(angle);
-                        return (
-                            <text 
-                                key={cat.id} 
-                                x={x} y={y} 
-                                textAnchor="middle" 
-                                dominantBaseline="middle" 
-                                fill={cat.color}
-                                fontSize="10"
-                                fontWeight="bold"
-                                className="uppercase font-mono"
-                            >
-                                {cat.name}
-                            </text>
-                        );
-                    })}
-                </svg>
-                <div className="text-[10px] text-slate-500 text-center mt-2 italic">Threat vs Safety Resonance</div>
-            </div>
-        </div>
-    );
-};
-
-const StatsGrid = ({ stats, categories }: { stats: any, categories: any[] }) => {
-    return (
-        <div className="grid grid-cols-2 gap-3 mt-4">
-            {categories.map((cat) => {
-                const stat = stats[cat.id] || { hits: 0, attempts: 0 };
-                const percentage = stat.attempts > 0 ? Math.round((stat.hits / stat.attempts) * 100) : 0;
-                return (
-                    <div key={cat.id} className="bg-slate-900/50 border border-white/5 rounded p-3 flex flex-col items-center justify-center min-h-20">
-                        <span className={`text-[10px] uppercase tracking-widest mb-1 ${cat.color}`}>{cat.name}</span>
-                        <span className={`text-xl font-bold font-mono ${percentage > 0 ? 'text-white' : 'text-slate-600'}`}>{percentage}%</span>
-                        <span className="text-[9px] text-slate-500 mt-1">{stat.hits}/{stat.attempts}</span>
-                    </div>
-                );
-            })}
-        </div>
-    );
-};
-
-// --- 3. MAIN MODAL (Gold Standard with Adept Gate) ---
-const PsiStatsModal = ({ stats, deckSize, onClose, breakdown }: { stats: any, deckSize: number, onClose: () => void, breakdown: any }) => {
-    const [supabase] = useState(() => createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!));
-    const [lifetimeStats, setLifetimeStats] = useState({ hits: 0, trials: 0 });
-    const [loadingLifetime, setLoadingLifetime] = useState(false);
-    
-    // Monetization
-    const [isSubscribed, setIsSubscribed] = useState(false);
-    const [loadingProfile, setLoadingProfile] = useState(true);
-    
-    const sessionTrials = stats.trials;
-    const sessionHits = stats.hits;
-    const chance = 1 / deckSize;
-    const sessionAccuracy = sessionTrials > 0 ? (sessionHits / sessionTrials) * 100 : 0;
-    const sessionZ = calculatePsiScore(sessionHits, sessionTrials, chance);
-    const sessionProb = calculateProbability(sessionZ);
-    const sessionTier = getPsiTier(sessionZ);
-
-    const categories = [
-        { id: 'DEVIL', name: 'Threat', color: '#f87171' },
-        { id: 'ANGEL', name: 'Safety', color: '#60a5fa' }
-    ];
-
-    // Check Subscription
-    useEffect(() => {
-        const checkProfile = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user) {
-                const { data } = await supabase.from('profiles').select('is_subscribed').eq('id', user.id).single();
-                if(data?.is_subscribed) setIsSubscribed(true);
-            }
-            setLoadingProfile(false);
-        }
-        checkProfile();
-    }, [supabase]);
-  
-    // Fetch History (Only triggers, actual data display is gated in render)
-    useEffect(() => {
-        const fetchHistory = async () => {
-          setLoadingLifetime(true);
-          const { data: { user } } = await supabase.auth.getUser();
-          if (!user) { setLoadingLifetime(false); return; }
-          
-          const { data, error } = await supabase
-            .from('reports')
-            .select('chart_data')
-            .eq('user_id', user.id)
-            .eq('category', 'training')
-            .eq('name', 'Psi Trainer');
-
-          if (!error && data) {
-              let h = 0; let t = 0;
-              data.forEach((row: any) => { 
-                  const chart = row.chart_data; 
-                  if (chart) { 
-                      h += chart.hits || 0; 
-                      t += chart.trials || 0; 
-                  } 
-              });
-              setLifetimeStats({ hits: h + sessionHits, trials: t + sessionTrials });
-          }
-          setLoadingLifetime(false);
-        };
-        fetchHistory();
-    }, [sessionHits, sessionTrials, supabase]);
-  
-    const lifeAccuracy = lifetimeStats.trials > 0 ? (lifetimeStats.hits / lifetimeStats.trials) * 100 : 0;
-    const lifeZ = calculatePsiScore(lifetimeStats.hits, lifetimeStats.trials, chance);
-    const lifeProb = calculateProbability(lifeZ);
-    const lifeTier = getPsiTier(lifeZ);
-  
-    return createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/95 backdrop-blur-md p-4 animate-in fade-in duration-300" style={{ zIndex: 9999 }} onClick={onClose}>
-            <div className="max-w-3xl w-full bg-slate-900 border border-indigo-500/20 rounded-xl p-6 relative max-h-[90dvh] overflow-y-auto shadow-[0_0_50px_rgba(99,102,241,0.2)]" onClick={(e) => e.stopPropagation()}>
-                
-                {/* Sticky Header */}
-                <div className="sticky top-0 bg-slate-900/95 backdrop-blur z-10 pb-4 mb-4 border-b border-white/5 flex justify-between items-center">
-                    <h2 className="text-2xl font-serif text-white flex items-center gap-2">
-                        <Activity className="text-indigo-400" /> Performance Analysis
-                    </h2>
-                    <button onClick={onClose} className="text-slate-400 hover:text-white p-1 hover:bg-white/10 rounded-full transition-colors"><X /></button>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                    {/* CURRENT SESSION */}
-                    <div className="bg-black/20 rounded-lg p-4 border border-white/5">
-                        <h3 className="text-xs uppercase tracking-[0.2em] text-indigo-400 mb-4 text-center">Current Session</h3>
-                        <div className="space-y-2 text-sm font-mono">
-                            <div className="flex justify-between border-b border-white/5 pb-1"><span>Hits / Trials</span> <span className="text-white">{sessionHits} / {sessionTrials}</span></div>
-                            <div className="flex justify-between border-b border-white/5 pb-1"><span>Accuracy</span> <span className="text-white">{sessionAccuracy.toFixed(1)}%</span></div>
-                            <div className="flex justify-between border-b border-white/5 pb-1"><span>Psi Score (Z)</span> <span className={sessionTier.color.split(' ')[0]}>{sessionZ.toFixed(2)}</span></div>
-                            <div className="flex justify-between"><span>Probability</span> <span className="text-green-300">{sessionProb}</span></div>
-                            <div className={`mt-2 text-center text-xs font-bold uppercase tracking-widest ${sessionTier.color}`}>{sessionTier.name}</div>
-                        </div>
-                    </div>
-
-                    {/* LIFETIME RECORD (MONETIZED GATE) */}
-                    <div className="bg-black/20 rounded-lg p-4 border border-white/5 relative overflow-hidden">
-                        <h3 className="text-xs uppercase tracking-[0.2em] text-amber-300 mb-4 text-center">Lifetime Record</h3>
-                        
-                        {loadingLifetime || loadingProfile ? (
-                            <div className="absolute inset-0 flex items-center justify-center"><Sparkles className="animate-spin text-indigo-500"/></div>
-                        ) : isSubscribed ? (
-                             // SUBSCRIBED CONTENT
-                            <div className="space-y-2 text-sm font-mono">
-                                <div className="flex justify-between border-b border-white/5 pb-1"><span>Hits / Trials</span> <span className="text-white">{lifetimeStats.hits} / {lifetimeStats.trials}</span></div>
-                                <div className="flex justify-between border-b border-white/5 pb-1"><span>Accuracy</span> <span className="text-white">{lifeAccuracy.toFixed(1)}%</span></div>
-                                <div className="flex justify-between border-b border-white/5 pb-1"><span>Psi Score (Z)</span> <span className={lifeTier.color.split(' ')[0]}>{lifeZ.toFixed(2)}</span></div>
-                                <div className="flex justify-between"><span>Probability</span> <span className="text-green-300">{lifeProb}</span></div>
-                                <div className={`mt-2 text-center text-xs font-bold uppercase tracking-widest ${lifeTier.color}`}>{lifeTier.name}</div>
-                            </div>
-                        ) : (
-                            // LOCKED CONTENT
-                            <>
-                                <div className="space-y-2 text-sm font-mono blur-sm select-none opacity-50">
-                                    <div className="flex justify-between border-b border-white/5 pb-1"><span>Hits / Trials</span> <span className="text-white">???? / ????</span></div>
-                                    <div className="flex justify-between border-b border-white/5 pb-1"><span>Accuracy</span> <span className="text-white">??.?%</span></div>
-                                    <div className="flex justify-between border-b border-white/5 pb-1"><span>Psi Score (Z)</span> <span className="text-slate-400">0.00</span></div>
-                                </div>
-                                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-xs z-10 p-4 text-center">
-                                    <Lock className="text-amber-400 mb-2 w-8 h-8 animate-pulse" />
-                                    <p className="text-amber-200 font-serif text-sm tracking-widest mb-4">ADEPT ACCESS REQUIRED</p>
-                                    <button className="px-6 py-2 bg-amber-900/30 border border-amber-500/50 text-amber-300 text-xs font-bold uppercase tracking-wider hover:bg-amber-800/40 transition-all rounded shadow-lg shadow-amber-900/20">
-                                        Unlock Lifetime Analysis
-                                    </button>
-                                </div>
-                            </>
-                        )}
-                    </div>
-                </div>
-
-                {/* VISUALIZATION */}
-                <div className="mb-8 border-t border-white/10 pt-6">
-                    <RadarChart stats={breakdown} categories={categories} />
-                    <StatsGrid stats={breakdown} categories={categories} />
-                </div>
-                
-                {/* DEFINITIONS LEGEND */}
-                <div className="grid md:grid-cols-2 gap-8 border-t border-white/10 pt-6">
-                    <div>
-                        <h4 className="text-xs uppercase tracking-widest text-amber-400 mb-3 pb-2">Psi-Hitting (Positive)</h4>
-                        <div className="space-y-2 text-xs text-slate-400">
-                            <div><strong className="text-amber-200">The Oracle (Z &ge; 4.0)</strong> - World Class Anomaly</div>
-                            <div><strong className="text-purple-300">The Medium (Z &ge; 3.0)</strong> - Highly Significant</div>
-                            <div><strong className="text-pink-300">The Clairvoyant (Z &ge; 1.96)</strong> - Significant (p &lt; 0.05)</div>
-                            <div><strong className="text-indigo-300">The Channel (Z &ge; 1.65)</strong> - Tapping into flow</div>
-                            <div><strong className="text-cyan-300">The Adept (Z &ge; 1.0)</strong> - Above Chance</div>
-                        </div>
-                    </div>
-                    <div>
-                        <h4 className="text-xs uppercase tracking-widest text-blue-400 mb-3 pb-2">Psi-Missing (Negative)</h4>
-                        <div className="space-y-2 text-xs text-slate-400">
-                            <div><strong className="text-slate-300">The Sleeper (Z &lt; 0.0)</strong> - Just below baseline</div>
-                            <div><strong className="text-slate-300">The Dreamer (Z &lt; -0.5)</strong> -  Intuition active but blocking</div>
-                            <div><strong className="text-slate-300">The Blocker (Z &lt; -1.0)</strong> - Dodging targets. Logic fighting gut</div>
-                            <div><strong className="text-slate-400">The Mirror (Z &le; -2.0)</strong> - Significant Avoidance</div>
-                            <div><strong className="text-slate-500">The Shadow (Z &le; -3.0)</strong> - Highly Significant Displacement</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>,
-        document.body
-    );
-};
+// Sub-components removed (replaced by shared PsychicStatsModal)
 
 /**
  * --- AUDIO ENGINE ---
@@ -521,7 +208,7 @@ export default function PsiTrainer() {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [showInstructions, setShowInstructions] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
-  const [showStatsModal, setShowStatsModal] = useState(false);
+  // showStatsModal removed as it is handled by the shared component internally
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
@@ -624,7 +311,7 @@ export default function PsiTrainer() {
         const newTrials = prev.trials + 1;
         const newStreak = isHit ? prev.streak + 1 : 0;
         const chance = 1 / deckSize;
-        const z = calculatePsiScore(newHits, newTrials, chance);
+        const z = calculateZScore(newHits, newTrials, chance);
         
         // Update Breakdown
         const newBreakdown = { ...prev.breakdown };
@@ -717,7 +404,6 @@ export default function PsiTrainer() {
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,#020617_90%)] z-0 opacity-80 pointer-events-none"></div>
 
       {showInstructions && <InstructionModal onClose={() => { setShowInstructions(false); startNewRound(); }} mode={gameMode} />}
-      {showStatsModal && mounted && <PsiStatsModal stats={stats} deckSize={deckSize} onClose={() => setShowStatsModal(false)} breakdown={stats.breakdown} />}
 
       {/* HEADER */}
       <header className="shrink-0 z-30 px-3 py-2 md:p-4 border-b border-slate-800 bg-slate-900/50 backdrop-blur-sm flex flex-col md:flex-row justify-between items-center gap-2">
@@ -738,29 +424,22 @@ export default function PsiTrainer() {
              </div>
         </div>
         
-        {/* STATS WIDGET - UPDATED FOR MONETIZATION UI CONSISTENCY */}
-        <div 
-            onClick={() => setShowStatsModal(true)}
-            className="group flex flex-col md:flex-row items-end md:items-center bg-slate-900/80 hover:bg-slate-800 border border-indigo-500/20 hover:border-indigo-500/50 rounded-lg px-4 py-2 cursor-pointer transition-all duration-300 relative min-w-[120px]"
-        >
-             <div className="absolute -top-3 right-0 bg-indigo-900 border border-indigo-500 text-[9px] font-bold px-2 py-0.5 rounded text-white tracking-widest shadow-md opacity-0 group-hover:opacity-100 transition-opacity">
-               TAP INFO
-             </div>
-             <div className="absolute top-1 right-1 text-indigo-400 group-hover:text-white opacity-0 group-hover:opacity-100 transition-opacity">
-               <ChevronsUp size={12} />
-             </div>
-
-             <div className="flex items-center gap-4">
-                 <div className="flex flex-col items-center leading-none">
-                    <span className="text-[9px] text-slate-500 uppercase tracking-wider">Acc</span>
-                    <span className={`font-mono font-bold ${getAccuracy() > 25 ? 'text-green-400' : 'text-slate-300'}`}>{getAccuracy()}%</span>
-                 </div>
-                 <div className="w-px h-6 bg-slate-700"></div>
-                 <div className="flex flex-col items-center leading-none">
-                    <span className="text-[9px] text-slate-500 uppercase tracking-wider">Strk</span>
-                    <span className="font-mono font-bold text-amber-400">{stats.streak}</span>
-                 </div>
-             </div>
+        {/* SHARED STATS MODAL INTEGRATION */}
+        <div className="relative z-50">
+           <PsychicStatsModal 
+              hits={stats.hits} 
+              trials={stats.trials} 
+              chance={0.25} 
+              appName="Psi Trainer"
+              radarData={[
+                { id: 'DEVIL', label: 'THREAT', value: stats.breakdown?.DEVIL?.total ? stats.breakdown.DEVIL.hits / stats.breakdown.DEVIL.total : 0, color: '#f87171' },
+                { id: 'ANGEL', label: 'SAFETY', value: stats.breakdown?.ANGEL?.total ? stats.breakdown.ANGEL.hits / stats.breakdown.ANGEL.total : 0, color: '#60a5fa' },
+                // Dummy values to make radar triangle if needed, or just 2 points? Radar needs 3.
+                // Psi Trainer only has 2 categories.
+                // We'll add a "Flow" and "Focus" metric based on streak?
+                { id: 'FLOW', label: 'FLOW', value: Math.min(1, stats.streak / 10), color: '#a78bfa' } 
+              ]}
+           />
         </div>
             
         <div className="hidden md:flex items-center gap-1 ml-4 pl-4 border-l border-slate-700">

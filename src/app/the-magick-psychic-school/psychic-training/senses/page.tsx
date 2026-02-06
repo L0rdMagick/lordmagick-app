@@ -4,13 +4,13 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { 
-  Settings, RefreshCw, Eye, Check, X, BarChart2, ArrowLeft, 
-  Sparkles, Moon, Sun, Lock, Volume2, VolumeX, Home, LogOut, HelpCircle,
-  Save, Trash2, Cloud
+  Settings, RefreshCw, Eye, Check, X, 
+  Sparkles, Moon, Sun, Lock, LogOut, HelpCircle
 } from 'lucide-react';
 import { createBrowserClient } from '@supabase/ssr';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
 import { useHaptics } from '@/hooks/useHaptics';
+import PsychicStatsModal from '../components/PsychicStatsModal';
 
 // --- CONFIGURATION & CATEGORY DEFINITIONS ---
 
@@ -1518,187 +1518,7 @@ export default function SensesApp() {
     );
   };
 
-  const StatsView = () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const calculateAvg = (arr: any[]) => arr.length > 0 ? Math.round(arr.reduce((acc, curr) => acc + curr.score.percentage, 0) / arr.length) : 0;
-    
-    const lifetimeAvg = calculateAvg(history);
-    const sessionAvg = calculateAvg(sessionHistory);
 
-    // Monetization Logic
-    const [isSubscribed, setIsSubscribed] = useState(false);
-    const [loadingProfile, setLoadingProfile] = useState(true);
-
-    useEffect(() => {
-        const checkProfile = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user) {
-                const { data } = await supabase.from('profiles').select('is_subscribed').eq('id', user.id).single();
-                if(data?.is_subscribed) setIsSubscribed(true);
-            }
-            setLoadingProfile(false);
-        }
-        checkProfile();
-    }, []);
-
-    const handleSaveToCloud = async () => {
-        setSaving(true);
-        setSaveMessage("Attuning to Cloud...");
-        try {
-          const { data: { user } } = await supabase.auth.getUser();
-          if (!user) {
-            setSaveMessage("LOGIN REQUIRED");
-            setTimeout(() => setSaveMessage(null), 3000);
-            setSaving(false);
-            return;
-          }
-
-          // Gated Save
-          if (!isSubscribed) {
-              setSaveMessage("ADEPT ACCESS REQUIRED");
-              setTimeout(() => setSaveMessage(null), 3000);
-              setSaving(false);
-              return;
-          }
-          
-          const { error } = await supabase
-            .from('reports')
-            .insert({
-              user_id: user.id,
-              name: 'Remote Viewing Trainer',
-              category: 'training', 
-              chart_data: { history, sessionHistory }, 
-              report_content: `Session Completed. Lifetime Avg: ${lifetimeAvg}%. Session Avg: ${sessionAvg}%. Total Visions: ${history.length}.`,
-            });
-          if (error) throw error;
-          setSaveMessage("Energy Captured");
-        } catch (e) {
-          console.error(e);
-          setSaveMessage("UPLOAD FAILED");
-        } finally {
-          setTimeout(() => setSaveMessage(null), 3000);
-          setSaving(false);
-        }
-    };
-
-    const clearStats = () => {
-        if(confirm("Are you sure you want to erase all local lifetime records? This cannot be undone.")) {
-            setHistory([]);
-            setSessionHistory([]);
-            localStorage.removeItem('senses_history_v7_complete');
-        }
-    };
-
-    return (
-      <div className="w-full max-w-4xl mx-auto space-y-6 animate-in slide-in-from-right duration-500">
-        <div className="flex items-center justify-between mb-8 border-b border-slate-800 pb-4">
-          <button onClick={() => setView('welcome')} className="text-slate-400 hover:text-white flex items-center gap-2 transition-colors">
-            <ArrowLeft className="w-4 h-4" /> Back to Gate
-          </button>
-          <h2 className="text-xl font-serif tracking-widest text-amber-500">AKASHIC RECORDS</h2>
-        </div>
-
-        {/* Stats Summary Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            {/* Session Stats */}
-            <div className="bg-slate-900/50 p-6 rounded-lg border border-indigo-500/20">
-                <h3 className="text-sm text-indigo-300 uppercase tracking-widest mb-4">Current Session</h3>
-                <div className="grid grid-cols-2 gap-4 text-center">
-                    <div>
-                        <div className="text-4xl font-light text-white mb-1 font-serif">{sessionHistory.length}</div>
-                        <div className="text-xs text-slate-400 uppercase">Visions</div>
-                    </div>
-                    <div>
-                        <div className="text-4xl font-light text-indigo-400 mb-1 font-serif">{sessionAvg}%</div>
-                        <div className="text-xs text-slate-400 uppercase">Accuracy</div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Lifetime Stats (Adept Gate) */}
-            <div className="bg-slate-900/50 p-6 rounded-lg border border-amber-500/20 relative overflow-hidden">
-                <h3 className="text-sm text-amber-500/80 uppercase tracking-widest mb-4">Lifetime (Local)</h3>
-                
-                {loadingProfile ? (
-                    <div className="absolute inset-0 flex items-center justify-center"><Sparkles className="animate-spin text-amber-500"/></div>
-                ) : isSubscribed ? (
-                    <div className="grid grid-cols-2 gap-4 text-center">
-                        <div>
-                            <div className="text-4xl font-light text-white mb-1 font-serif">{history.length}</div>
-                            <div className="text-xs text-slate-400 uppercase">Total Visions</div>
-                        </div>
-                        <div>
-                            <div className="text-4xl font-light text-amber-500 mb-1 font-serif">{lifetimeAvg}%</div>
-                            <div className="text-xs text-slate-400 uppercase">Avg Resonance</div>
-                        </div>
-                    </div>
-                ) : (
-                    // LOCKED
-                    <>
-                        <div className="grid grid-cols-2 gap-4 text-center blur-sm opacity-50 select-none">
-                            <div>
-                                <div className="text-4xl font-light text-white mb-1 font-serif">{history.length}</div>
-                                <div className="text-xs text-slate-400 uppercase">Total Visions</div>
-                            </div>
-                            <div>
-                                <div className="text-4xl font-light text-amber-500 mb-1 font-serif">??%</div>
-                                <div className="text-xs text-slate-400 uppercase">Avg Resonance</div>
-                            </div>
-                        </div>
-                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-xs z-10 p-4 text-center">
-                            <Lock className="text-amber-400 mb-2 w-8 h-8 animate-pulse" />
-                            <p className="text-amber-200 font-serif text-sm tracking-widest mb-4">ADEPT ACCESS REQUIRED</p>
-                            <button className="px-6 py-2 bg-amber-900/30 border border-amber-500/50 text-amber-300 text-xs font-bold uppercase tracking-wider hover:bg-amber-800/40 transition-all rounded shadow-lg shadow-amber-900/20">
-                                Unlock Lifetime Analysis
-                            </button>
-                        </div>
-                    </>
-                )}
-            </div>
-        </div>
-
-        {/* Actions */}
-        <div className="flex justify-end gap-4 border-b border-slate-800 pb-6 mb-6">
-            <button 
-                onClick={clearStats}
-                className="flex items-center gap-2 px-4 py-2 rounded border border-red-900/50 text-red-400 hover:bg-red-950/30 text-sm uppercase tracking-wider transition-colors"
-            >
-                <Trash2 className="w-4 h-4" /> Erase Local Stats
-            </button>
-            <button 
-                onClick={handleSaveToCloud}
-                disabled={saving}
-                className="flex items-center gap-2 px-4 py-2 rounded bg-indigo-900/50 border border-indigo-500/30 text-indigo-200 hover:bg-indigo-800/50 text-sm uppercase tracking-wider transition-colors"
-            >
-                {saving ? <Sparkles className="w-4 h-4 animate-spin" /> : <Cloud className="w-4 h-4" />}
-                {saving ? "SAVING..." : "SAVE TO CLOUD"}
-            </button>
-            {saveMessage && <span className="flex items-center text-xs text-indigo-400 animate-pulse">{saveMessage}</span>}
-        </div>
-
-        {/* List View */}
-        <div className="space-y-3">
-            <h3 className="text-sm text-slate-400 uppercase tracking-widest mb-4">Recent History Log</h3>
-            {history.length === 0 ? (
-                <div className="text-center py-12 text-slate-500 italic font-serif">The records are empty. Begin your training.</div>
-            ) : (
-                history.map((record, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-4 bg-slate-900/30 rounded border border-slate-800 hover:border-indigo-500/30 transition-colors">
-                        <div className="flex items-center gap-4">
-                             <div className={`w-2 h-2 rounded-full ${record.score.percentage >= 60 ? 'bg-emerald-500' : 'bg-red-500'}`}></div>
-                             <div>
-                                 <div className="text-slate-300 text-base font-serif">Vision Log #{idx + 1}</div>
-                                 <div className="text-xs text-slate-500 uppercase">{record.pool}</div>
-                             </div>
-                        </div>
-                        <div className="font-mono text-amber-500 text-lg">{record.score.percentage}%</div>
-                    </div>
-                ))
-            )}
-        </div>
-      </div>
-    );
-  };
 
   const SettingsModal = () => {
     if (!showSettings) return null;
@@ -1796,94 +1616,71 @@ export default function SensesApp() {
   }
 
   // --- RENDER ---
-  return (
-    <main className="relative min-h-screen w-full bg-slate-950 text-slate-200 font-sans selection:bg-amber-500/30 selection:text-amber-100 overflow-hidden flex flex-col">
-      {/* Background Ambience */}
-      <div className="fixed inset-0 z-0 pointer-events-none">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(49,46,129,0.2),rgba(2,6,23,1))]" />
-          <div className="absolute top-0 left-0 right-0 h-px bg-linear-to-r from-transparent via-indigo-500/20 to-transparent" />
-      </div>
-      
-      {/* Header */}
-      <header className="relative z-10 px-6 py-4 flex items-center justify-between border-b border-indigo-900/10 backdrop-blur-sm">
-        <div className="flex items-center gap-6">
-           {view === 'welcome' ? (
-               <MagickalBackLink href="/the-magick-psychic-school/psychic-training" text="Return" className="text-sm text-indigo-400/50 hover:text-amber-400 transition-colors" />
-           ) : (
-               <button 
-                onClick={() => setView('welcome')}
-                className="flex items-center gap-2 text-sm text-indigo-400/50 hover:text-amber-400 transition-colors"
-               >
-                   <Home className="w-4 h-4" /> Home
-               </button>
-           )}
+    // Aggregate Session Stats
+    const sessionHits = sessionHistory.reduce((acc, curr) => acc + curr.score.matched, 0);
+    const sessionTrials = sessionHistory.reduce((acc, curr) => acc + curr.score.total, 0);
+
+    return (
+        <div className="min-h-screen bg-slate-950 text-slate-200 font-sans selection:bg-purple-500/30 overflow-x-hidden pb-12">
+            <style jsx global>{`
+                @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Inter:wght@300;400;500;600&display=swap');
+                
+                :root {
+                    --font-serif: 'Cinzel', serif;
+                    --font-sans: 'Inter', sans-serif;
+                }
+                
+                .font-serif { font-family: var(--font-serif); }
+                .font-sans { font-family: var(--font-sans); }
+            `}</style>
+            
+            {/* Background Effects */}
+            <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-900/20 via-slate-950 to-slate-950 pointer-events-none z-0" />
+            <div className="fixed inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-10 pointer-events-none z-0" />
+
+            {/* Top Navigation */}
+            <nav className="relative z-50 flex items-center justify-between px-6 py-4 border-b border-white/5 bg-slate-950/50 backdrop-blur-sm">
+                <MagickalBackLink href="/the-magick-psychic-school/psychic-training" text="Exit" className="text-xs text-slate-500 hover:text-indigo-400" />
+                
+                <PsychicStatsModal 
+                    hits={sessionHits}
+                    trials={sessionTrials}
+                    chance={0.25} 
+                    appName="Senses (Remote Viewing)"
+                    className="relative z-50"
+                    radarData={POOLS.filter(p => p.id !== 'all').map(pool => {
+                        const poolLogs = sessionHistory.filter(l => l.pool === pool.id);
+                        const poolHits = poolLogs.reduce((acc, curr) => acc + curr.score.matched, 0);
+                        const poolTrials = poolLogs.reduce((acc, curr) => acc + curr.score.total, 0);
+                        const accuracy = poolTrials > 0 ? Math.round((poolHits / poolTrials) * 100) : 0;
+                        
+                        return {
+                            subject: pool.id.charAt(0).toUpperCase() + pool.id.slice(1),
+                            A: accuracy,
+                            fullMark: 100,
+                            color: "#fbbf24" // amber-400
+                        };
+                    })}
+                />
+
+                <div className="flex items-center gap-4">
+                     <button onClick={() => setShowInstructions(true)} className="p-2 text-slate-500 hover:text-white transition-colors">
+                         <HelpCircle className="w-5 h-5" />
+                     </button>
+                     <button onClick={() => setShowSettings(true)} className="p-2 text-slate-500 hover:text-white transition-colors">
+                         <Settings className="w-5 h-5" />
+                     </button>
+                </div>
+            </nav>
+
+            <main className="relative z-10 p-6 flex flex-col items-center min-h-[80vh]">
+                {view === 'welcome' && <WelcomeView />}
+                {view === 'game' && <GameView />}
+            </main>
+
+            <SettingsModal />
+            <InstructionModal />
+
         </div>
-        
-        <div className="flex items-center gap-2">
-           <button 
-             onClick={() => setShowInstructions(true)} 
-             className="p-2 hover:bg-slate-900 rounded-full transition-colors text-indigo-400/50 hover:text-amber-400"
-             title="Instructions"
-           >
-             <HelpCircle className="w-6 h-6" />
-           </button>
-
-           <button 
-             onClick={() => setShowSettings(true)} 
-             className="p-2 hover:bg-slate-900 rounded-full transition-colors text-indigo-400/50 hover:text-indigo-300"
-             title="Settings"
-           >
-             <Settings className="w-6 h-6" />
-           </button>
-           
-           <button 
-             onClick={() => setView('stats')} 
-             className="p-2 hover:bg-slate-900 rounded-full transition-colors text-indigo-400/50 hover:text-amber-500"
-             title="Akashic Records"
-           >
-             <BarChart2 className="w-6 h-6" />
-           </button>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <div className="relative z-10 grow flex flex-col p-4 md:p-8 overflow-y-auto custom-scrollbar">
-        {view === 'welcome' && <WelcomeView />}
-        {view === 'game' && currentLevel && <GameView />}
-        {view === 'result' && <ResultView />}
-        {view === 'stats' && <StatsView />}
-      </div>
-
-      <SettingsModal />
-      <InstructionModal />
-
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap');
-        
-        .font-serif {
-            font-family: 'Playfair Display', serif;
-        }
-        
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 6px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: #020617; 
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #1e1b4b; 
-          border-radius: 3px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: #312e81; 
-        }
-        
-        .radial-gradient-mask {
-            mask-image: radial-gradient(circle, black 40%, transparent 70%);
-        }
-      `}</style>
-    </main>
-  );
+    );
 }
-
-// --- END OF FILE page.tsx ---

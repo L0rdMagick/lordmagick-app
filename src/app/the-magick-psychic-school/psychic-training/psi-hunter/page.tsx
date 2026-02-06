@@ -11,6 +11,9 @@ import { createBrowserClient } from '@supabase/ssr';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
 import { useHaptics } from '@/hooks/useHaptics';
 
+import PsychicStatsModal from '../components/PsychicStatsModal';
+import { calculateZScore } from '../utils/psychicStats';
+
 /**
  * --- ASSET CONFIGURATION ---
  */
@@ -41,63 +44,8 @@ const CHARACTERS: CharacterAssets[] = CHARACTER_KEYS.map(key => ({
 
 /**
  * --- PSI MATH ENGINE (Binary 50/50) ---
+ * Local logic removed in favor of shared utilities
  */
-const calculatePsiScore = (hits: number, trials: number) => {
-  if (trials === 0) return 0;
-  const chance = 0.5; // Binary choice
-  const expected = trials * chance;
-  const stdDev = Math.sqrt(trials * chance * (1 - chance));
-  return (hits - expected) / stdDev;
-};
-
-const erf = (x: number) => {
-  const a1 =  0.254829592;
-  const a2 = -0.284496736;
-  const a3 =  1.421413741;
-  const a4 = -1.453152027;
-  const a5 =  1.061405429;
-  const p  =  0.3275911;
-
-  const sign = (x < 0) ? -1 : 1;
-  x = Math.abs(x);
-
-  const t = 1.0 / (1.0 + p * x);
-  const y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
-
-  return sign * y;
-};
-
-const calculateProbability = (z: number) => {
-  const pValue = 0.5 * (1 - erf(Math.abs(z) / Math.sqrt(2)));
-  if (pValue <= 0) return "1 in ∞"; 
-  const oneInX = 1 / pValue;
-  
-  if (oneInX > 1000000) return `1 in ${(oneInX / 1000000).toFixed(1)}M`;
-  if (oneInX > 1000) return `1 in ${(oneInX / 1000).toFixed(1)}k`;
-  if (oneInX < 2) return "1 in 2";
-  return `1 in ${Math.round(oneInX)}`;
-};
-
-const getPsiTier = (z: number) => {
-  // POSITIVE SCALE (Psi-Hitting)
-  if (z >= 4.0) return { name: "The Oracle", color: "text-amber-300 shadow-amber-500/50" };
-  if (z >= 3.0) return { name: "The Medium", color: "text-purple-300 shadow-purple-500/50" };
-  if (z >= 1.96) return { name: "The Clairvoyant", color: "text-pink-300 shadow-pink-500/50" };
-  if (z >= 1.65) return { name: "The Channel", color: "text-indigo-300 shadow-indigo-500/50" };
-  if (z >= 1.0) return { name: "The Adept", color: "text-cyan-300 shadow-cyan-500/50" };
-  if (z >= 0.5) return { name: "The Spark", color: "text-teal-300 shadow-teal-500/50" };
-  if (z >= 0.0) return { name: "The Initiate", color: "text-slate-200" };
-
-  // NEGATIVE SCALE (Psi-Missing)
-  if (z <= -4.0) return { name: "The Void", color: "text-slate-500" };
-  if (z <= -3.0) return { name: "The Shadow", color: "text-slate-400" };
-  if (z <= -2.0) return { name: "The Mirror", color: "text-slate-400" };
-  if (z <= -1.0) return { name: "The Blocker", color: "text-slate-400" };
-  if (z <= -0.5) return { name: "The Dreamer", color: "text-slate-400" };
-  
-  // Just below baseline
-  return { name: "The Sleeper", color: "text-slate-300" };
-};
 
 /**
  * --- AUDIO ENGINE ---
@@ -254,205 +202,7 @@ const InstructionModal = ({ onClose }: { onClose: () => void }) => (
     </div>
 );
 
-const PsiStats = ({ stats, level }: { stats: any, level: number }) => {
-    const [supabase] = useState(() => createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    ));
-    const [showModal, setShowModal] = useState(false);
-    
-    // Monetization Logic
-    const [isSubscribed, setIsSubscribed] = useState(false);
-    const [loadingProfile, setLoadingProfile] = useState(true);
-
-    // Lifetime Stats
-    const [lifetimeStats, setLifetimeStats] = useState({ hits: 0, trials: 0 });
-    const [loadingLifetime, setLoadingLifetime] = useState(false);
-    
-    // Stats
-    const { hits: sessionHits, trials: sessionTrials } = stats;
-    const sessionAccuracy = sessionTrials > 0 ? (sessionHits / sessionTrials) * 100 : 0;
-    const sessionZ = calculatePsiScore(sessionHits, sessionTrials);
-    const sessionProb = calculateProbability(sessionZ);
-    const sessionTier = getPsiTier(sessionZ);
-
-    // Check Profile
-    useEffect(() => {
-        const checkProfile = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user) {
-                const { data } = await supabase.from('profiles').select('is_subscribed').eq('id', user.id).single();
-                if(data?.is_subscribed) setIsSubscribed(true);
-            }
-            setLoadingProfile(false);
-        }
-        checkProfile();
-    }, [supabase]);
-
-    // Fetch Lifetime (Triggered on modal open)
-    useEffect(() => {
-      if (showModal) {
-          const fetchHistory = async () => {
-              setLoadingLifetime(true);
-              const { data: { user } } = await supabase.auth.getUser();
-              if (!user) { setLoadingLifetime(false); return; }
-
-              const { data, error } = await supabase
-                  .from('reports')
-                  .select('chart_data')
-                  .eq('user_id', user.id)
-                  .eq('category', 'training') 
-                  .eq('name', 'Friend or Foe');
-
-              if (!error && data) {
-                  let h = 0; 
-                  let t = 0;
-                  data.forEach((row: any) => {
-                      const chart = row.chart_data;
-                      if (chart) {
-                          h += chart.hits || 0;
-                          t += chart.trials || 0;
-                      }
-                  });
-                  setLifetimeStats({ hits: h + sessionHits, trials: t + sessionTrials });
-              }
-              setLoadingLifetime(false);
-          };
-          fetchHistory();
-      }
-    }, [showModal, sessionHits, sessionTrials, supabase]);
-
-    // Lifetime Calcs
-    const lifeAccuracy = lifetimeStats.trials > 0 ? (lifetimeStats.hits / lifetimeStats.trials) * 100 : 0;
-    const lifeZ = calculatePsiScore(lifetimeStats.hits, lifetimeStats.trials);
-    const lifeProb = calculateProbability(lifeZ);
-    const lifeTier = getPsiTier(lifeZ);
-
-    return (
-      <>
-        <div 
-          onClick={() => setShowModal(true)}
-          className="cursor-pointer group flex flex-col items-end justify-center bg-purple-950/30 hover:bg-purple-900/50 border border-purple-500/20 hover:border-purple-500/50 rounded-lg px-3 py-1 transition-all duration-300 min-w-24 h-[50px] relative"
-        >
-            <div className="absolute -top-3 right-0 bg-purple-900 border border-purple-500 text-[9px] font-bold px-2 py-0.5 rounded text-white tracking-widest shadow-md opacity-0 group-hover:opacity-100 transition-opacity">
-              TAP INFO
-            </div>
-            <div className="absolute top-1 right-1 text-purple-400 group-hover:text-white opacity-0 group-hover:opacity-100 transition-opacity">
-              <ChevronsUp size={12} />
-            </div>
-
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-mono text-purple-400">LVL {level}</span>
-              <div className="w-px h-3 bg-purple-500/20"></div>
-              <span className="text-xl font-mono font-bold text-slate-200 group-hover:text-white transition-colors">
-                  {sessionAccuracy.toFixed(0)}%
-              </span>
-            </div>
-            <div className="text-[9px] text-slate-500 uppercase tracking-widest group-hover:text-purple-300 transition-colors">
-              Z: {sessionZ.toFixed(2)}
-            </div>
-        </div>
-  
-        {showModal && (
-          <div 
-              className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-xl p-4 animate-in fade-in duration-300"
-              onClick={() => setShowModal(false)}
-          >
-            <div 
-              className="max-w-4xl w-full bg-slate-900 border border-purple-500/20 rounded-xl p-6 relative max-h-[90vh] overflow-y-auto shadow-[0_0_50px_rgba(168,85,247,0.2)]"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <button onClick={() => setShowModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white"><X /></button>
-              <h2 className="text-2xl font-serif text-white mb-6 flex items-center gap-2">
-                <Activity className="text-purple-400" /> Performance Analysis
-              </h2>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                  {/* CURRENT SESSION */}
-                  <div className="bg-black/20 rounded-lg p-4 border border-white/5">
-                      <h3 className="text-xs uppercase tracking-[0.2em] text-purple-400 mb-4 text-center">Current Session</h3>
-                      <div className="space-y-2 text-sm font-mono text-slate-300">
-                          <div className="flex justify-between border-b border-white/5 pb-1"><span>Hits / Trials</span> <span className="text-white">{sessionHits} / {sessionTrials}</span></div>
-                          <div className="flex justify-between border-b border-white/5 pb-1"><span>Accuracy</span> <span className="text-white">{sessionAccuracy.toFixed(1)}%</span></div>
-                          <div className="flex justify-between border-b border-white/5 pb-1"><span>Psi Score (Z)</span> <span className={sessionZ >= 0 ? "text-amber-300" : "text-slate-400"}>{sessionZ.toFixed(2)}</span></div>
-                          <div className="flex justify-between"><span>Probability</span> <span className="text-green-300">{sessionProb}</span></div>
-                          <div className="mt-4 text-center text-xs font-bold uppercase tracking-widest text-white border border-purple-500/30 py-1">{sessionTier.name}</div>
-                      </div>
-                  </div>
-
-                  {/* LIFETIME (MONETIZED) */}
-                  <div className="bg-black/20 rounded-lg p-4 border border-white/5 relative overflow-hidden">
-                      <h3 className="text-xs uppercase tracking-[0.2em] text-amber-300 mb-4 text-center">Lifetime Record</h3>
-                      
-                      {loadingLifetime || loadingProfile ? (
-                          <div className="absolute inset-0 flex flex-col items-center justify-center">
-                              <Sparkles className="animate-spin text-purple-500 mb-2"/>
-                              <span className="text-[10px] text-purple-500 font-mono tracking-widest animate-pulse">Attuning to Cloud...</span>
-                          </div>
-                      ) : isSubscribed ? (
-                          <div className="space-y-2 text-sm font-mono text-slate-300">
-                              <div className="flex justify-between border-b border-white/5 pb-1"><span>Hits / Trials</span> <span className="text-white">{lifetimeStats.hits} / {lifetimeStats.trials}</span></div>
-                              <div className="flex justify-between border-b border-white/5 pb-1"><span>Accuracy</span> <span className="text-white">{lifeAccuracy.toFixed(1)}%</span></div>
-                              <div className="flex justify-between border-b border-white/5 pb-1"><span>Psi Score (Z)</span> <span className={lifeZ >= 0 ? "text-amber-300" : "text-slate-400"}>{lifeZ.toFixed(2)}</span></div>
-                              <div className="flex justify-between"><span>Probability</span> <span className="text-green-300">{lifeProb}</span></div>
-                              <div className="mt-4 text-center text-xs font-bold uppercase tracking-widest text-white border border-purple-500/30 py-1">{lifeTier.name}</div>
-                          </div>
-                      ) : (
-                          // LOCKED
-                          <>
-                              <div className="space-y-2 text-sm font-mono blur-sm opacity-50 select-none text-slate-300">
-                                  <div className="flex justify-between border-b border-white/5 pb-1"><span>Hits / Trials</span> <span className="text-white">???? / ????</span></div>
-                                  <div className="flex justify-between border-b border-white/5 pb-1"><span>Accuracy</span> <span className="text-white">??.?%</span></div>
-                                  <div className="flex justify-between border-b border-white/5 pb-1"><span>Psi Score (Z)</span> <span className="text-slate-400">0.00</span></div>
-                              </div>
-                              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-xs z-10 p-4 text-center">
-                                  <Lock className="text-amber-400 mb-2 w-8 h-8 animate-pulse" />
-                                  <p className="text-amber-200 font-serif text-sm tracking-widest mb-4">ADEPT ACCESS REQUIRED</p>
-                                  <button className="px-6 py-2 bg-amber-900/30 border border-amber-500/50 text-amber-300 text-xs font-bold uppercase tracking-wider hover:bg-amber-800/40 transition-all rounded shadow-lg shadow-amber-900/20">
-                                      Unlock Lifetime Analysis
-                                  </button>
-                              </div>
-                          </>
-                      )}
-                  </div>
-              </div>
-
-              {/* DEFINITIONS LEGEND */}
-              <div className="grid md:grid-cols-2 gap-8 border-t border-white/10 pt-6">
-                  {/* Positive Column */}
-                  <div>
-                      <h4 className="text-xs uppercase tracking-widest text-amber-400 mb-3 pb-2 border-b border-white/5">Psi-Hitting (Positive)</h4>
-                      <div className="space-y-3 text-xs font-mono">
-                          <div><strong className="text-amber-200 block">The Oracle (Z &ge; 4.0)</strong><span className="text-slate-400">World Class Anomaly (1 in 31,000+).</span></div>
-                          <div><strong className="text-purple-300 block">The Medium (Z &ge; 3.0)</strong><span className="text-slate-400">Highly Significant (1 in 740).</span></div>
-                          <div><strong className="text-pink-300 block">The Clairvoyant (Z &ge; 1.96)</strong><span className="text-slate-400">Statistically Significant (p &lt; 0.05).</span></div>
-                          <div><strong className="text-indigo-300 block">The Channel (Z &ge; 1.65)</strong><span className="text-slate-400">Tapping into something real (1 in 20).</span></div>
-                          <div><strong className="text-cyan-300 block">The Adept (Z &ge; 1.0)</strong><span className="text-slate-400">Finding flow. Beating odds of 1 in 6.</span></div>
-                          <div><strong className="text-teal-300 block">The Spark (Z &ge; 0.5)</strong><span className="text-slate-400">Pulse of intuition. Nudging past average.</span></div>
-                          <div><strong className="text-slate-200 block">The Initiate (Z &ge; 0.0)</strong><span className="text-slate-500">Above baseline. Better than random.</span></div>
-                      </div>
-                  </div>
-                  
-                  {/* Negative Column */}
-                  <div>
-                      <h4 className="text-xs uppercase tracking-widest text-blue-400 mb-3 pb-2 border-b border-white/5">Psi-Missing (Negative)</h4>
-                      <div className="space-y-3 text-xs font-mono">
-                          <div><strong className="text-slate-300 block">The Sleeper (Z &lt; 0.0)</strong><span className="text-slate-500">Just below baseline. Stop over-analyzing.</span></div>
-                          <div><strong className="text-slate-400 block">The Dreamer (Z &le; -0.5)</strong><span className="text-slate-500">Drifting. Intuition active but unfocused.</span></div>
-                          <div><strong className="text-slate-400 block">The Blocker (Z &le; -1.0)</strong><span className="text-slate-500">Dodging targets. Logic fighting gut.</span></div>
-                          <div><strong className="text-slate-400 block">The Mirror (Z &le; -2.0)</strong><span className="text-slate-500">Significant Avoidance. Flipping the signal.</span></div>
-                          <div><strong className="text-slate-500 block">The Shadow (Z &le; -3.0)</strong><span className="text-slate-600">Highly Significant Displacement. Inverted.</span></div>
-                          <div><strong className="text-slate-500 block">The Void (Z &le; -4.0)</strong><span className="text-slate-600">World Class Anomaly. Total suppression.</span></div>
-                      </div>
-                  </div>
-              </div>
-
-            </div>
-          </div>
-        )}
-      </>
-    );
-};
+// Local PsiStats removed in favor of PsychicStatsModal
 
 /**
  * --- GAME LOGIC & MAIN APP ---
@@ -715,7 +465,12 @@ export default function FriendOrFoeApp() {
                 LEVEL <span className="text-purple-400 font-bold text-lg">{level}</span>
             </div>
           </div>
-          <PsiStats stats={stats} level={level} />
+          <PsychicStatsModal 
+              hits={stats.hits} 
+              trials={stats.trials} 
+              chance={0.5} 
+              appName="Friend or Foe" 
+          />
       </div>
 
       {/* MAIN GAME AREA - STRICT FLEX FIT & OVERFLOW HANDLING */}

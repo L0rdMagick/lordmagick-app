@@ -11,18 +11,10 @@ import {
 import { createBrowserClient } from '@supabase/ssr';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
 import { useHaptics } from '@/hooks/useHaptics';
+import PsychicStatsModal from '../components/PsychicStatsModal';
+import { calculateZScore } from '../utils/psychicStats';
 
-/* --- STATS ENGINE --- */
-const calculatePsiScore = (hits: number, trials: number, chance: number) => {
-  if (trials === 0) return 0;
-  const expected = trials * chance;
-  const stdDev = Math.sqrt(trials * chance * (1 - chance));
-  return (hits - expected) / stdDev;
-};
-const erf = (x: number) => { const a1 = 0.254829592, a2 = -0.284496736, a3 = 1.421413741, a4 = -1.453152027, a5 = 1.061405429, p = 0.3275911; const sign = (x < 0) ? -1 : 1; x = Math.abs(x); const t = 1.0 / (1.0 + p * x); return sign * (1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-x * x)); };
-const calculateProbability = (z: number) => { const p = 0.5 * (1 - erf(Math.abs(z) / Math.sqrt(2))); return p <= 0 ? "1 in ∞" : `1 in ${Math.round(1/p)}`; };
-const getPsiTier = (z: number) => { if(z>=4)return {name:"The Singularity",color:"text-cyan-300"}; if(z>=3)return {name:"Human Polygraph",color:"text-cyan-400"}; if(z>=1.96)return {name:"Pattern Recognizer",color:"text-green-300"}; if(z>=1.0)return {name:"Analyst",color:"text-teal-300"}; if(z>=0)return {name:"Observer",color:"text-slate-200"}; return {name:"Desynchronized",color:"text-slate-600"}; };
-
+// Local stats logic removed in favor of shared utilities
 /* --- AUDIO ENGINE --- */
 const useAudioEngine = () => {
   const audioCtxRef = useRef<any>(null);
@@ -159,271 +151,6 @@ const Waveform = ({ intensity = 1, isPaused = false }) => {
     };
   }, [intensity, isPaused]);
   return <canvas ref={canvasRef} className="w-full h-32 md:h-48" />;
-};
-
-/* --- STATS COMPONENT & MODAL (ADAPTED FOR VERITAS) --- */
-
-const VeritasStats = ({ 
-  history, 
-  onTogglePause,
-  variant = 'widget'
-}: { 
-  history: any[], 
-  onTogglePause?: (paused: boolean) => void,
-  variant?: 'widget' | 'link'
-}) => {
-  const [supabase] = useState(() => createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  ));
-  const [showModal, setShowModal] = useState(false);
-  const [lifetimeStats, setLifetimeStats] = useState({ hits: 0, trials: 0 });
-  const [loadingLifetime, setLoadingLifetime] = useState(false);
-  const [mounted, setMounted] = useState(false);
-  
-  // Monetization
-  const [isSubscribed, setIsSubscribed] = useState(false);
-  const [loadingProfile, setLoadingProfile] = useState(true);
-
-  useEffect(() => { setMounted(true); }, []);
-
-  // Handle Pausing
-  useEffect(() => {
-    if (onTogglePause) {
-        onTogglePause(showModal);
-    }
-  }, [showModal, onTogglePause]);
-
-  // Calculations
-  const sessionTrials = history.length;
-  const sessionHits = history.filter(h => h.correct).length;
-  const streak = history.reduce((acc, curr) => curr.correct ? acc + 1 : 0, 0);
-  const chance = 0.5;
-
-  const sessionAccuracy = sessionTrials > 0 ? (sessionHits / sessionTrials) * 100 : 0;
-  const sessionZ = calculatePsiScore(sessionHits, sessionTrials, chance);
-  const sessionProb = calculateProbability(sessionZ);
-  const sessionTier = getPsiTier(sessionZ);
-
-  // Matrix
-  const tp = history.filter(h => h.actual === true && h.correct).length;
-  const fn = history.filter(h => h.actual === true && !h.correct).length;
-  const tn = history.filter(h => h.actual === false && h.correct).length;
-  const fp = history.filter(h => h.actual === false && !h.correct).length;
-
-  useEffect(() => {
-    const checkProfile = async () => {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-            const { data } = await supabase.from('profiles').select('is_subscribed').eq('id', user.id).single();
-            if(data?.is_subscribed) setIsSubscribed(true);
-        }
-        setLoadingProfile(false);
-    }
-    checkProfile();
-  }, [supabase]);
-
-  useEffect(() => {
-    if (showModal) {
-      const fetchHistory = async () => {
-        setLoadingLifetime(true);
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) { setLoadingLifetime(false); return; }
-
-        const { data, error } = await supabase
-            .from('reports')
-            .select('chart_data')
-            .eq('user_id', user.id)
-            .eq('category', 'training') 
-            .eq('name', 'Veritas');
-
-        if (!error && data) {
-            let h = 0; 
-            let t = 0;
-            data.forEach((row: any) => {
-                const chart = row.chart_data;
-                if (chart) {
-                   h += chart.hits || 0;
-                   t += chart.total || 0;
-                }
-            });
-            setLifetimeStats({ hits: h + sessionHits, trials: t + sessionTrials });
-        }
-        setLoadingLifetime(false);
-      };
-      fetchHistory();
-    }
-  }, [showModal, sessionHits, sessionTrials, supabase]);
-
-  const lifeAccuracy = lifetimeStats.trials > 0 ? (lifetimeStats.hits / lifetimeStats.trials) * 100 : 0;
-  const lifeZ = calculatePsiScore(lifetimeStats.hits, lifetimeStats.trials, chance);
-  const lifeProb = calculateProbability(lifeZ);
-  const lifeTier = getPsiTier(lifeZ);
-
-  const ModalContent = () => (
-    <div 
-      className="fixed inset-0 flex items-center justify-center bg-black/95 backdrop-blur-md z-100 p-0 md:p-4 animate-in fade-in duration-300"
-      style={{ zIndex: 9999 }}
-      onClick={() => setShowModal(false)}
-    >
-      <div 
-        className="w-full h-full md:h-auto md:max-h-[95vh] md:max-w-5xl bg-[#0a0a0a] border-0 md:border md:border-cyan-500/30 p-6 relative overflow-y-auto shadow-[0_0_50px_rgba(34,211,238,0.1)] flex flex-col font-mono"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex justify-between items-center mb-6 sticky top-0 bg-[#0a0a0a]/95 backdrop-blur z-10 py-2 border-b border-cyan-500/20 pb-4 md:border-0">
-          <h2 className="text-2xl text-cyan-400 flex items-center gap-2 font-bold tracking-widest">
-            <Activity size={24}/> DIAGNOSTIC REPORT
-          </h2>
-          <button onClick={() => setShowModal(false)} className="text-gray-500 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-full">
-            <X size={24}/>
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          {/* Current Session */}
-          <div className="bg-cyan-950/10 border border-cyan-500/20 p-4 rounded-sm">
-            <h3 className="text-xs uppercase tracking-[0.2em] text-cyan-400 mb-4 text-center">Current Session</h3>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between border-b border-white/5 pb-1"><span>Hits / Trials</span> <span className="text-white">{sessionHits} / {sessionTrials}</span></div>
-              <div className="flex justify-between border-b border-white/5 pb-1"><span>Accuracy</span> <span className="text-white">{sessionAccuracy.toFixed(1)}%</span></div>
-              <div className="flex justify-between border-b border-white/5 pb-1"><span>Psi Score (Z)</span> <span className={sessionZ >= 0 ? "text-cyan-300" : "text-fuchsia-400"}>{sessionZ.toFixed(2)}</span></div>
-              <div className="flex justify-between"><span>Probability</span> <span className="text-green-300">{sessionProb}</span></div>
-              <div className="mt-4 text-center text-xs font-bold uppercase tracking-widest text-white border border-cyan-500/30 py-1">{sessionTier.name}</div>
-            </div>
-          </div>
-
-          {/* Lifetime (Monetized) */}
-          <div className="bg-cyan-950/10 border border-cyan-500/20 p-4 rounded-sm relative overflow-hidden">
-            <h3 className="text-xs uppercase tracking-[0.2em] text-green-400 mb-4 text-center">Lifetime Record</h3>
-            
-            {loadingLifetime || loadingProfile ? (
-               <div className="absolute inset-0 flex items-center justify-center"><Sparkles className="animate-spin text-cyan-500"/></div>
-            ) : isSubscribed ? (
-               // Subscribed Content
-               <div className="space-y-2 text-sm">
-                   <div className="flex justify-between border-b border-white/5 pb-1"><span>Hits / Trials</span> <span className="text-white">{lifetimeStats.hits} / {lifetimeStats.trials}</span></div>
-                   <div className="flex justify-between border-b border-white/5 pb-1"><span>Accuracy</span> <span className="text-white">{lifeAccuracy.toFixed(1)}%</span></div>
-                   <div className="flex justify-between border-b border-white/5 pb-1"><span>Psi Score (Z)</span> <span className={lifeZ >= 0 ? "text-cyan-300" : "text-fuchsia-400"}>{lifeZ.toFixed(2)}</span></div>
-                   <div className="flex justify-between"><span>Probability</span> <span className="text-green-300">{lifeProb}</span></div>
-                   <div className="mt-4 text-center text-xs font-bold uppercase tracking-widest text-white border border-cyan-500/30 py-1">{lifeTier.name}</div>
-               </div>
-            ) : (
-                // Locked Content (Adept Gate)
-                <>
-                    <div className="space-y-2 text-sm blur-sm opacity-50 select-none">
-                       <div className="flex justify-between border-b border-white/5 pb-1"><span>Hits / Trials</span> <span className="text-white">???? / ????</span></div>
-                       <div className="flex justify-between border-b border-white/5 pb-1"><span>Accuracy</span> <span className="text-white">??.?%</span></div>
-                       <div className="flex justify-between border-b border-white/5 pb-1"><span>Psi Score (Z)</span> <span className="text-fuchsia-400">0.00</span></div>
-                    </div>
-                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-xs z-10 p-4 text-center">
-                        <Lock className="text-cyan-400 mb-2 w-8 h-8 animate-pulse" />
-                        <p className="text-cyan-200 font-serif text-sm tracking-widest mb-4">ADEPT ACCESS REQUIRED</p>
-                        <button className="px-6 py-2 bg-cyan-900/30 border border-cyan-500/50 text-cyan-300 text-xs font-bold uppercase tracking-wider hover:bg-cyan-800/40 transition-all rounded shadow-lg shadow-cyan-900/20">
-                            Unlock Lifetime Analysis
-                        </button>
-                    </div>
-                </>
-            )}
-          </div>
-        </div>
-
-        {/* Matrix */}
-        <div className="border border-white/10 p-4 bg-black/50 mb-6">
-           <h4 className="text-xs uppercase tracking-widest text-gray-500 mb-4 text-center">Performance Matrix</h4>
-           <div className="grid grid-cols-3 gap-1 text-xs">
-              <div className="col-span-1"></div>
-              <div className="text-center py-2 bg-green-900/20 text-green-400 font-bold">GUESS: TRUTH</div>
-              <div className="text-center py-2 bg-fuchsia-900/20 text-fuchsia-400 font-bold">GUESS: LIE</div>
-              
-              <div className="flex items-center justify-center bg-cyan-900/20 text-cyan-400 font-bold p-2">WAS TRUTH</div>
-              <div className="bg-white/5 p-4 text-center text-xl font-mono text-white">{tp}</div>
-              <div className="bg-white/5 p-4 text-center text-xl font-mono text-gray-500">{fn}</div>
-
-              <div className="flex items-center justify-center bg-fuchsia-900/20 text-fuchsia-400 font-bold p-2">WAS LIE</div>
-              <div className="bg-white/5 p-4 text-center text-xl font-mono text-gray-500">{fp}</div>
-              <div className="bg-white/5 p-4 text-center text-xl font-mono text-white">{tn}</div>
-           </div>
-        </div>
-
-        {/* Definitions Legend */}
-        <div className="grid md:grid-cols-2 gap-8 border-t border-white/10 pt-6">
-            <div>
-                <h4 className="text-xs uppercase tracking-widest text-cyan-400 mb-3 pb-2 border-b border-white/5">Psi-Hitting (Positive)</h4>
-                <div className="space-y-3 text-xs">
-                    <div><strong className="text-cyan-300 block">The Singularity (Z &ge; 4.0)</strong><span className="text-gray-500">World Class Anomaly (1 in 31,000+).</span></div>
-                    <div><strong className="text-cyan-400 block">Human Polygraph (Z &ge; 3.0)</strong><span className="text-gray-500">Highly Significant (1 in 740).</span></div>
-                    <div><strong className="text-green-300 block">Pattern Recognizer (Z &ge; 1.96)</strong><span className="text-gray-500">Statistically Significant (p &lt; 0.05).</span></div>
-                    <div><strong className="text-emerald-300 block">Truth Seeker (Z &ge; 1.65)</strong><span className="text-gray-500">Tapping into something real (1 in 20).</span></div>
-                    <div><strong className="text-teal-300 block">Analyst (Z &ge; 1.0)</strong><span className="text-gray-500">Finding flow. Beating odds of 1 in 6.</span></div>
-                    <div><strong className="text-slate-200 block">Observer (Z &ge; 0.5)</strong><span className="text-gray-500">Pulse of intuition. Nudging past average.</span></div>
-                    <div><strong className="text-slate-400 block">Calibrating (Z &ge; 0.0)</strong><span className="text-gray-600">Above baseline. Better than random.</span></div>
-                </div>
-            </div>
-            <div>
-                <h4 className="text-xs uppercase tracking-widest text-fuchsia-400 mb-3 pb-2 border-b border-white/5">Psi-Missing (Negative)</h4>
-                <div className="space-y-3 text-xs">
-                    <div><strong className="text-slate-500 block">Desynchronized (Z &lt; 0.0)</strong><span className="text-gray-600">Just below baseline. Stop over-analyzing.</span></div>
-                    <div><strong className="text-slate-500 block">Signal Noise (Z &le; -0.5)</strong><span className="text-gray-600">Drifting. Intuition active but unfocused.</span></div>
-                    <div><strong className="text-pink-400 block">Cognitive Dissonance (Z &le; -1.0)</strong><span className="text-gray-600">Dodging targets. Logic fighting gut.</span></div>
-                    <div><strong className="text-fuchsia-400 block">Reality Inversion (Z &le; -2.0)</strong><span className="text-gray-600">Significant Avoidance. Flipping the signal.</span></div>
-                    <div><strong className="text-fuchsia-500 block">Glitch in Matrix (Z &le; -3.0)</strong><span className="text-gray-600">Highly Significant Displacement. Inverted.</span></div>
-                    <div><strong className="text-fuchsia-600 block">System Failure (Z &le; -4.0)</strong><span className="text-gray-600">World Class Anomaly. Total suppression.</span></div>
-                </div>
-            </div>
-        </div>
-
-      </div>
-    </div>
-  );
-
-  if (variant === 'link') {
-    return (
-      <>
-        <button 
-          onClick={() => setShowModal(true)}
-          className="text-gray-500 hover:text-white font-mono text-xs tracking-widest flex items-center gap-2 transition-colors"
-        >
-          <BarChart2 size={14} /> VIEW LIFETIME RECORD
-        </button>
-        {showModal && mounted && createPortal(<ModalContent />, document.body)}
-      </>
-    );
-  }
-
-  // Widget Variant (Default)
-  return (
-    <>
-      <div 
-        onClick={() => setShowModal(true)}
-        className="flex flex-col items-center gap-1 bg-cyan-950/20 hover:bg-cyan-900/40 border border-cyan-500/30 hover:border-cyan-400 rounded cursor-pointer transition-all group p-2 min-w-[200px] relative"
-      >
-        <div className="absolute -top-3 right-0 bg-cyan-900 border border-cyan-500 text-[9px] font-bold px-2 py-0.5 rounded text-white tracking-widest shadow-md opacity-0 group-hover:opacity-100 transition-opacity">
-            TAP INFO
-        </div>
-        <div className="absolute top-1 right-1 text-cyan-400 group-hover:text-white opacity-0 group-hover:opacity-100 transition-opacity">
-            <ChevronsUp size={12} />
-        </div>
-
-        <div className="flex items-center gap-6 w-full justify-center">
-            <div className="flex items-center gap-3 border-r border-cyan-500/30 pr-4">
-                <span className="text-yellow-400 font-bold flex items-center gap-1 font-mono"><Trophy size={14} /> {streak}</span>
-            </div>
-            <div className="flex flex-col items-center">
-                <span className="text-[9px] text-cyan-500/70 uppercase tracking-widest font-mono">Accuracy</span>
-                <span className={`text-sm font-bold font-mono ${sessionAccuracy > 50 ? 'text-green-400' : 'text-gray-400'}`}>{sessionAccuracy.toFixed(0)}%</span>
-            </div>
-            <div className="flex flex-col items-center">
-                <span className="text-[9px] text-cyan-500/70 uppercase tracking-widest font-mono">Psi (Z)</span>
-                <span className={`text-sm font-bold font-mono ${sessionZ >= 0 ? 'text-cyan-300' : 'text-fuchsia-400'}`}>{sessionZ.toFixed(2)}</span>
-            </div>
-        </div>
-        <div className="w-full text-center border-t border-cyan-500/10 pt-1 mt-1">
-             <span className="text-[9px] font-bold text-cyan-600 group-hover:text-cyan-300 tracking-[0.2em]">SEE ALL STATS</span>
-        </div>
-      </div>
-      {showModal && mounted && createPortal(<ModalContent />, document.body)}
-    </>
-  );
 };
 
 /* --- MAIN VERITAS APP --- */
@@ -799,6 +526,30 @@ export default function VeritasApp() {
     </div>
   );
 
+  /* --- LOGIC --- */
+  
+  // Helper to get stats object
+  const getStatsProps = (historyArr: any[]) => {
+      const hits = historyArr.filter(h => h.correct).length;
+      const trials = historyArr.length;
+      const chance = 0.5;
+      
+      const tp = historyArr.filter(h => h.actual === true && h.correct).length;
+      const tn = historyArr.filter(h => h.actual === false && h.correct).length;
+      const fp = historyArr.filter(h => h.actual === false && !h.correct).length;
+      const fn = historyArr.filter(h => h.actual === true && !h.correct).length;
+
+      return {
+          hits,
+          trials,
+          chance,
+          matrixData: {
+              tp, tn, fp, fn,
+              labels: ["TRUTH", "LIE"] as [string, string]
+          }
+      };
+  };
+
   const renderMenu = () => (
     // Updated container to allow scrolling on mobile while centering contents
     <div className="w-full h-full overflow-y-auto custom-scrollbar">
@@ -830,7 +581,9 @@ export default function VeritasApp() {
 
         <div className="flex flex-wrap justify-center gap-6 items-center">
           {/* Link to Detailed Stats */}
-          <VeritasStats history={[]} variant="link" />
+          <div className="relative">
+             <PsychicStatsModal {...getStatsProps([])} appName="Veritas" className="relative group flex items-center gap-2 cursor-pointer" />
+          </div>
 
           <div className="hidden md:block w-px h-4 bg-white/20"></div>
 
@@ -890,8 +643,8 @@ export default function VeritasApp() {
         </div>
 
         {/* Stats Widget */}
-        <div onClick={(e) => e.stopPropagation()}>
-            <VeritasStats history={history} onTogglePause={handleStatsPause} variant="widget" />
+        <div onClick={(e) => e.stopPropagation()} className="relative z-50">
+            <PsychicStatsModal {...getStatsProps(history)} appName="Veritas" />
         </div>
       </div>
 
@@ -990,8 +743,8 @@ export default function VeritasApp() {
             <span className="text-[10px] uppercase tracking-widest text-gray-500">Incorrect</span>
          </div>
       </div>
-      <div className="w-full flex-none flex justify-center py-8">
-          <VeritasStats history={history} variant="widget"/>
+      <div className="w-full flex-none flex justify-center py-8 relative">
+           <PsychicStatsModal {...getStatsProps(history)} appName="Veritas" />
       </div>
       <button 
         onClick={() => setGameState('MENU')}
