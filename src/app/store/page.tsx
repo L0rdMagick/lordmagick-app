@@ -51,7 +51,7 @@ const FaestonePile = ({ count }: { count: number }) => {
     if (count === 1) {
         return (
             <div className="relative w-16 h-16 mb-6 group-hover:scale-110 transition-transform duration-500">
-                <Image src="/images/faestones.png" alt="Faestone" layout="fill" objectFit="contain" />
+                <Image src="/images/faestones.png" alt="Faestone: Magickal Currency Token" layout="fill" objectFit="contain" />
             </div>
         );
     }
@@ -60,13 +60,13 @@ const FaestonePile = ({ count }: { count: number }) => {
         return (
             <div className="relative w-32 h-20 mb-6 group-hover:scale-110 transition-transform duration-500">
                 <div className="absolute left-0 bottom-0 w-14 h-14 rotate-[-15deg] z-10">
-                    <Image src="/images/faestones.png" alt="Faestone" layout="fill" objectFit="contain" />
+                    <Image src="/images/faestones.png" alt="Faestone: Magickal Currency Token" layout="fill" objectFit="contain" />
                 </div>
                 <div className="absolute left-8 bottom-2 w-16 h-16 z-20">
-                    <Image src="/images/faestones.png" alt="Faestone" layout="fill" objectFit="contain" />
+                    <Image src="/images/faestones.png" alt="Faestone: Magickal Currency Token" layout="fill" objectFit="contain" />
                 </div>
                 <div className="absolute right-0 bottom-1 w-14 h-14 rotate-[15deg] z-10">
-                    <Image src="/images/faestones.png" alt="Faestone" layout="fill" objectFit="contain" />
+                    <Image src="/images/faestones.png" alt="Faestone: Magickal Currency Token" layout="fill" objectFit="contain" />
                 </div>
             </div>
         );
@@ -77,24 +77,24 @@ const FaestonePile = ({ count }: { count: number }) => {
             <div className="relative w-40 h-24 mb-6 group-hover:scale-110 transition-transform duration-500">
                 {/* Back Row */}
                 <div className="absolute left-2 bottom-6 w-14 h-14 rotate-[-45deg] opacity-90 blur-[1px]">
-                     <Image src="/images/faestones.png" alt="Faestone" layout="fill" objectFit="contain" />
+                     <Image src="/images/faestones.png" alt="Faestone: Magickal Currency Token" layout="fill" objectFit="contain" />
                 </div>
                 <div className="absolute left-14 bottom-8 w-14 h-14 rotate-[10deg] opacity-90">
-                     <Image src="/images/faestones.png" alt="Faestone" layout="fill" objectFit="contain" />
+                     <Image src="/images/faestones.png" alt="Faestone: Magickal Currency Token" layout="fill" objectFit="contain" />
                 </div>
                 <div className="absolute right-4 bottom-5 w-14 h-14 rotate-[60deg] opacity-90 blur-[1px]">
-                     <Image src="/images/faestones.png" alt="Faestone" layout="fill" objectFit="contain" />
+                     <Image src="/images/faestones.png" alt="Faestone: Magickal Currency Token" layout="fill" objectFit="contain" />
                 </div>
                 
                 {/* Front Row */}
                  <div className="absolute left-0 bottom-0 w-16 h-16 rotate-[-10deg] z-20">
-                     <Image src="/images/faestones.png" alt="Faestone" layout="fill" objectFit="contain" />
+                     <Image src="/images/faestones.png" alt="Faestone: Magickal Currency Token" layout="fill" objectFit="contain" />
                 </div>
                 <div className="absolute left-10 -bottom-2 w-20 h-20 z-30 drop-shadow-xl">
-                     <Image src="/images/faestones.png" alt="Faestone" layout="fill" objectFit="contain" />
+                     <Image src="/images/faestones.png" alt="Faestone: Magickal Currency Token" layout="fill" objectFit="contain" />
                 </div>
                 <div className="absolute right-0 bottom-1 w-16 h-16 rotate-[25deg] z-20">
-                     <Image src="/images/faestones.png" alt="Faestone" layout="fill" objectFit="contain" />
+                     <Image src="/images/faestones.png" alt="Faestone: Magickal Currency Token" layout="fill" objectFit="contain" />
                 </div>
             </div>
         );
@@ -306,7 +306,7 @@ export function StoreContent() {
                         <div className="absolute inset-0 bg-amber-500/10 animate-pulse" />
                         <div className="relative z-10">
                             <div className="w-20 h-20 bg-amber-500/20 rounded-full flex items-center justify-center mx-auto mb-6 border border-amber-500">
-                                <div className="w-12 h-12 relative animate-pulse"><Image src="/images/faestones.png" alt="Faestones" layout="fill" objectFit="contain" /></div>
+                                <div className="w-12 h-12 relative animate-pulse"><Image src="/images/faestones.png" alt="Faestones: Magickal Currency Tokens" layout="fill" objectFit="contain" /></div>
                             </div>
                             <h2 className="text-2xl font-serif text-white mb-2">Transmutation Complete</h2>
                             <p className="text-gray-400 text-sm mb-8">

@@ -47,7 +47,7 @@ export const SlotPurchaseModal = ({
                 ) : showAetherWarning ? (
                     <>
                         <div className="w-16 h-16 mx-auto mb-4 relative drop-shadow-[0_0_15px_rgba(251,191,36,0.6)] animate-pulse">
-                            <Image src="/images/faestones.png" alt="Faestone" layout="fill" objectFit="contain" />
+                            <Image src="/images/faestones.png" alt="Faestone Token" layout="fill" objectFit="contain" />
                         </div>
                         <h3 className="text-xl font-serif text-amber-100 mb-2">Your pouch is empty…</h3>
                         <p className="text-purple-200 text-sm mb-6 leading-relaxed">
@@ -60,7 +60,7 @@ export const SlotPurchaseModal = ({
                                 className="w-full flex items-center justify-center gap-2 py-3 bg-amber-700 hover:bg-amber-600 text-white font-bold rounded uppercase tracking-wider text-xs transition-colors shadow-[0_0_15px_rgba(180,83,9,0.4)]"
                             >
                                 <div className="w-4 h-4 relative">
-                                    <Image src="/images/faestones.png" alt="Token" layout="fill" objectFit="contain" />
+                                    <Image src="/images/faestones.png" alt="Faestone Token" layout="fill" objectFit="contain" />
                                 </div> 
                                 Manifest Faestones
                             </Link>
@@ -79,7 +79,7 @@ export const SlotPurchaseModal = ({
                         <div className="flex flex-col gap-3">
                             <button onClick={onPurchase} disabled={isProcessing} className="w-full flex items-center justify-center gap-2 py-3 bg-purple-900 border border-purple-500 hover:bg-purple-800 text-purple-100 font-bold rounded uppercase tracking-wider text-xs transition-all disabled:opacity-50 shadow-[0_0_20px_rgba(88,28,135,0.4)]">
                                 {isProcessing ? "Weaving Pages..." : (
-                                    <span className="flex items-center gap-2">Add Pages (10 <div className="w-3 h-3 relative inline-block align-middle"><Image src="/images/faestones.png" alt="FS" layout="fill" objectFit="contain" /></div>)</span>
+                                    <span className="flex items-center gap-2">Add Pages (10 <div className="w-3 h-3 relative inline-block align-middle"><Image src="/images/faestones.png" alt="Faestone Token" layout="fill" objectFit="contain" /></div>)</span>
                                 )}
                             </button>
                             <button onClick={onClose} className="text-gray-500 hover:text-gray-300 text-xs font-serif italic">

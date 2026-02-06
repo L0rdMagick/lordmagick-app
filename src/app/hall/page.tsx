@@ -160,7 +160,7 @@ export default function HallPage() {
         transition={{ ease: 'easeInOut', duration: 2.0 }}
       >
         <div className="fixed inset-0 z-0">
-            <Image src="/images/grand-hall-bg.png" alt="The Grand Hall" fill style={{ objectFit: 'fill' }} quality={100} />
+            <Image src="/images/grand-hall-bg.png" alt="LordMagick Grand Hall Sanctuary with Floating Candles" fill style={{ objectFit: 'fill' }} quality={100} />
             <div className="absolute inset-0 bg-black/40" />
         </div>
         
@@ -255,7 +255,7 @@ export default function HallPage() {
                         >
                             {/* Sign Image - Always visual, no fade out requested */}
                             <div className="relative w-full max-w-[160px] md:max-w-[200px] aspect-3/1 drop-shadow-[2px_4px_6px_rgba(0,0,0,0.6)] shrink-0 z-10 pointer-events-none">
-                                <Image src={portal.signImageSrc} alt={`${portal.title} Sign`} fill style={{ objectFit: 'contain' }} />
+                                <Image src={portal.signImageSrc} alt={`${portal.title} Portal Sign`} fill style={{ objectFit: 'contain' }} />
                             </div>
                             
                             {/* Portal Image / Button Container */}

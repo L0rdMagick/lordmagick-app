@@ -242,10 +242,10 @@ const Step0_Crossroads: React.FC<{ onSelectPath: (path: RitualPath) => void }> =
     <div className="relative w-full h-full flex flex-col items-center justify-center">
         <div className="relative z-10 flex flex-row items-center justify-center gap-4 md:gap-16">
             <button onClick={() => onSelectPath('hoodoo')} className="relative w-40 h-56 md:w-64 md:h-80 transition-transform duration-300 hover:scale-105 active:scale-95">
-                <Image src={`${ASSET_PATH}/ui-button-hoodoo-path.png`} alt="Hoodoo Rootwork Path" layout="fill" objectFit="contain" />
+                <Image src={`${ASSET_PATH}/ui-button-hoodoo-path.png`} alt="Hoodoo Rootwork Path Selection Button" layout="fill" objectFit="contain" />
             </button>
             <button onClick={() => onSelectPath('voodoo')} className="relative w-40 h-56 md:w-64 md:h-80 transition-transform duration-300 hover:scale-105 active:scale-95">
-                <Image src={`${ASSET_PATH}/ui-button-voodoo-path.png`} alt="Voodoo Lwa Service Path" layout="fill" objectFit="contain" />
+                <Image src={`${ASSET_PATH}/ui-button-voodoo-path.png`} alt="Voodoo Lwa Service Path Selection Button" layout="fill" objectFit="contain" />
             </button>
         </div>
     </div>
@@ -284,18 +284,18 @@ const HoodooStep1_Ancestors: React.FC<StepComponentProps> = ({ onNext }) => {
     return (
         <StepContainer stageTitle="Honor the Ancestors" instruction={holdProgress > 0 || isLit ? incantation : "Press and hold the candle to light it, and say the conjuration on the screen as you do."} button={isLit && <RitualButton onClick={onNext} className="animate-pulse">Continue</RitualButton>}>
             <div onMouseDown={handleHoldStart} onMouseUp={handleHoldEnd} onMouseLeave={handleHoldEnd} onTouchStart={handleHoldStart} onTouchEnd={handleHoldEnd} onContextMenu={(e) => e.preventDefault()} className="relative w-64 h-80 mx-auto cursor-pointer select-none">
-                <Image src={`${ASSET_PATH}/hoodoo-altar-base.png`} alt="Ancestor Altar" layout="fill" objectFit="contain" />
+                <Image src={`${ASSET_PATH}/hoodoo-altar-base.png`} alt="Traditional Hoodoo Ancestor Altar Table" layout="fill" objectFit="contain" />
                 <AnimatePresence>
                 {!isLit ? (
                      <motion.div key="unlit" className="absolute inset-0" exit={{ opacity: 0 }}>
-                        <Image src={`${ASSET_PATH}/hoodoo-ancestor-candle-unlit.png`} alt="Unlit Candle" layout="fill" objectFit="contain" />
+                        <Image src={`${ASSET_PATH}/hoodoo-ancestor-candle-unlit.png`} alt="Unlit Altar Candle" layout="fill" objectFit="contain" />
                         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-3/4 h-2 bg-black/30 rounded-full overflow-hidden">
                             <motion.div className="h-full bg-amber-400" initial={{width: '0%'} as any} animate={{width: `${holdProgress}%`} as any} transition={{duration: 0.05}}/>
                         </div>
                      </motion.div>
                 ) : (
                     <motion.div key="lit" className="absolute inset-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                        <Image src={`${ASSET_PATH}/hoodoo-ancestor-candle-lit.gif`} alt="Lit Candle" layout="fill" objectFit="contain" unoptimized />
+                        <Image src={`${ASSET_PATH}/hoodoo-ancestor-candle-lit.gif`} alt="Burning Ritual Candle" layout="fill" objectFit="contain" unoptimized />
                     </motion.div>
                 )}
                 </AnimatePresence>
@@ -308,7 +308,7 @@ const HoodooStep2_Petition: React.FC<{ cost: number; petition: string; setPetiti
     <StepContainer stageTitle="Write Your Petition" instruction="State your intention for this Work. Be clear and direct.">
         <div className="relative w-full h-full max-w-md mx-auto flex flex-col items-center justify-center gap-4">
             <div className="relative w-full aspect-square @container">
-                <Image src={`${ASSET_PATH}/hoodoo-petition-paper.png`} alt="Petition Paper" layout="fill" objectFit="contain" />
+                <Image src={`${ASSET_PATH}/hoodoo-petition-paper.png`} alt="Aged Parchment Petition Paper" layout="fill" objectFit="contain" />
                 <div className="absolute p-4" style={{ left: '15%', top: '25%', width: '70%', height: '50%' }}>
                     <textarea 
                         value={petition} 
@@ -360,7 +360,7 @@ const HoodooStep3_FindVerse: React.FC<{ onOpenReader: (psalm: string) => void; s
             <div className="w-full max-w-4xl flex flex-col md:flex-row items-center justify-start md:justify-around gap-4 h-full max-h-[50vh] md:max-h-none overflow-y-auto md:overflow-visible p-4">
                 {selections.map(psalm => (
                     <div key={psalm} onClick={() => onOpenReader(psalm)} className={`relative w-64 aspect-4/3 cursor-pointer group transition-all duration-300 shrink-0 ${selectedPsalm === psalm ? 'scale-105' : 'scale-100'}`}>
-                        <Image src={`${ASSET_PATH}/ui-psalm-book.png`} alt="Book of Psalms" layout="fill" objectFit="contain" />
+                        <Image src={`${ASSET_PATH}/ui-psalm-book.png`} alt="Biblical Book of Psalms for Hoodoo Workings" layout="fill" objectFit="contain" />
                         <div className={`absolute inset-0 flex items-center justify-center p-8 rounded-lg transition-colors ${selectedPsalm === psalm ? 'bg-amber-300/20' : ''}`}>
                             <p className={`text-center font-serif text-xl group-hover:text-black ${selectedPsalm === psalm ? 'text-black font-bold' : 'text-gray-800'}`}>{psalm}</p>
                         </div>
@@ -401,7 +401,7 @@ const HoodooStep5_FixJar: React.FC<{ onNext: () => void, selections: MateriaSele
     return (
         <StepContainer stageTitle="Fix the Jar" instruction={instructionText} button={isCharged ? <RitualButton onClick={onNext} className="animate-pulse">{index < selections.length - 1 ? "Next Ingredient" : "Seal the Jar"}</RitualButton> : <div/>}>
             <div className="relative w-full h-full max-w-md aspect-square mx-auto">
-                <Image src={`${ASSET_PATH}/hoodoo-jar-empty.png`} alt="Empty Spell Jar" layout="fill" objectFit="contain" priority />
+                <Image src={`${ASSET_PATH}/hoodoo-jar-empty.png`} alt="Empty Glass Spell Jar for Moyo Bag" layout="fill" objectFit="contain" priority />
                 
                 <FilledContainer items={selections} count={isCharged ? index + 1 : index} variant="hoodoo_empty" />
 
@@ -432,7 +432,7 @@ const HoodooStep6_SealJar: React.FC<{ onNext: () => void, selections: MateriaSel
                     animate={isSent ? { scale: [1, 1.2, 0], opacity: [1, 1, 0], filter: ["brightness(1)", "brightness(2)", "brightness(10)"], y: [0, -50, -500] } : {}}
                     transition={{ duration: 2, ease: "easeInOut" }}
                  >
-                    <Image src={`${ASSET_PATH}/hoodoo-jar-fixed.png`} alt="Fixed Jar" layout="fill" objectFit="contain" className="z-0"/>
+                    <Image src={`${ASSET_PATH}/hoodoo-jar-fixed.png`} alt="Fixed and Sealed Spell Jar" layout="fill" objectFit="contain" className="z-0"/>
                     <div className="absolute inset-0 z-10"><FilledContainer variant="hoodoo_fixed" items={selections} count={selections.length} /></div>
                     {!isSealed && (
                         <div className="absolute inset-0 z-20 flex items-center justify-center">
@@ -462,7 +462,7 @@ const VoodooStep2_StateNeed: React.FC<{ cost: number; petition: string; setPetit
     <StepContainer stageTitle="State Your Need" instruction="Clearly present your petition to the spirits.">
         <div className="relative w-full h-full max-w-md mx-auto flex flex-col items-center justify-center gap-4">
              <div className="relative w-full aspect-square @container">
-                <Image src={`${ASSET_PATH}/voodoo-petition-scroll.png`} alt="Petition Scroll" layout="fill" objectFit="contain" />
+                <Image src={`${ASSET_PATH}/voodoo-petition-scroll.png`} alt="Aged Parchment Petition Paper" layout="fill" objectFit="contain" />
                 <div className="absolute p-4" style={{ left: '22%', top: '30%', width: '56%', height: '40%' }}>
                     <textarea 
                         value={petition} 
@@ -556,7 +556,7 @@ const VoodooStep5_MakeOffering: React.FC<{ onNext: () => void, selections: Mater
     return (
         <StepContainer stageTitle="Make the Offering" instruction={instructionText} button={isCharged ? <RitualButton onClick={onNext} className="animate-pulse">{index < selections.length - 1 ? "Next Offering" : "Seal the Offering"}</RitualButton> : <div/>}>
             <div className="relative w-full h-full max-w-md aspect-square mx-auto">
-                <Image src={`${ASSET_PATH}/voodoo-offering-bottle.png`} alt="Empty Offering Bottle" layout="fill" objectFit="contain" priority />
+                <Image src={`${ASSET_PATH}/voodoo-offering-bottle.png`} alt="Empty Rum Bottle Offering" layout="fill" objectFit="contain" priority />
                 <FilledContainer variant="voodoo_empty" items={selections} count={isCharged ? index + 1 : index} />
                 {!isCharged && spriteData && (
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-2/3 z-20">
@@ -580,7 +580,7 @@ const VoodooStep6_SealBottle: React.FC<{ onNext: () => void; selections: Materia
         <StepContainer stageTitle="Consecrate the Vessel" instruction={`I seal this gift for ${lwa}. Accept this offering and open the way.`}>
              <div className="relative w-full h-full max-w-md aspect-square mx-auto flex items-center justify-center">
                 <motion.div className="relative w-full h-full" animate={isSent ? { scale: [1, 1.2, 0], opacity: [1, 1, 0], filter: ["brightness(1)", "brightness(2)", "brightness(10)"], y: [0, -50, -500] } : {}} transition={{ duration: 2, ease: "easeInOut" }}>
-                    <Image src={`${ASSET_PATH}/voodoo-offering-bottle-filled.png`} alt="Filled Offering Bottle" layout="fill" objectFit="contain" className="z-0" />
+                    <Image src={`${ASSET_PATH}/voodoo-offering-bottle-filled.png`} alt="Rum Bottle Offering for the Spirits" layout="fill" objectFit="contain" className="z-0" />
                     <div className="absolute inset-0 z-10"><FilledContainer variant="voodoo_filled" items={selections} count={selections.length} /></div>
                     {!isSealed && (
                         <div className="absolute inset-0 z-20 flex items-center justify-center">
@@ -634,7 +634,7 @@ const Step8_Manifestation: React.FC<{ affirmation: string, path: RitualPath, onC
                         )}
                     </div>
                     <div className="relative w-1/2 aspect-square @container">
-                        <Image src={`${ASSET_PATH}/hoodoo-petition-paper.png`} alt="Affirmation Parchment" layout="fill" objectFit="contain"/>
+                        <Image src={`${ASSET_PATH}/hoodoo-petition-paper.png`} alt="Completed Petition Parchment" layout="fill" objectFit="contain"/>
                         <div className="absolute inset-0 flex items-center justify-center p-[22%]"><p className="text-center text-[#3a291c] font-serif font-semibold" style={{fontSize: 'clamp(0.7rem, 4.5cqw, 1.2rem)'}}>{affirmation}</p></div>
                     </div>
                 </div>

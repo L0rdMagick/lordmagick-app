@@ -246,7 +246,7 @@ const IncantationOverlay = ({ text, onConfirm, isVisible, ingredient }: OverlayP
                         initial={{ scale: 0.95, y: 10 }} animate={{ scale: 1, y: 0 }}
                         className="relative w-full max-w-md h-auto aspect-958/860 flex flex-col items-center justify-center filter drop-shadow-2xl"
                     >
-                        <Image src={`${ASSET_PATH}/wicca_incantation_scroll.png`} alt="Incantation" layout="fill" objectFit="contain" priority />
+                        <Image src={`${ASSET_PATH}/wicca_incantation_scroll.png`} alt="Ancient Wiccan Incantation Scroll" layout="fill" objectFit="contain" priority />
                         
                         {/* Changed container to use proper flex column structure for scrolling */}
                         <div className="absolute inset-0 flex flex-col items-center p-8 md:p-12 text-center">
@@ -631,7 +631,7 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
 
             {ritualStep === 11 && (
                  <div className="absolute inset-0 z-0 animate-in fade-in duration-1000">
-                    <Image src={`${ASSET_PATH}/wicca_spell_manifestation.png`} layout="fill" objectFit="cover" alt="Manifestation" />
+                    <Image src={`${ASSET_PATH}/wicca_spell_manifestation.png`} layout="fill" objectFit="cover" alt="Magickal Spell Manifestation Visualization" />
                     <div className="absolute inset-0 bg-black/40" />
                  </div>
             )}
@@ -701,7 +701,7 @@ const Step0_Intro = ({ onNext }: { onNext: () => void }) => (
              <p className="text-purple-300/80 font-serif italic text-sm md:text-xl">"Speak the words to unlock the path."</p>
         </div>
         <div className="relative w-full max-w-lg flex-1 min-h-[150px] my-2">
-            <Image src={`${ASSET_PATH}/wicca_intro_instructions.png`} layout="fill" objectFit="contain" alt="Intro" priority />
+            <Image src={`${ASSET_PATH}/wicca_intro_instructions.png`} layout="fill" objectFit="contain" alt="Wicca Magick Instructions Scroll" priority />
         </div>
         <div className="shrink-0 mb-2 md:mb-6">
             <button onClick={onNext} className="px-10 py-4 bg-purple-900/40 border border-purple-400/50 rounded-full text-purple-100 hover:bg-purple-800/60 transition-all font-serif uppercase tracking-widest backdrop-blur-md shadow-[0_0_20px_rgba(168,85,247,0.3)] text-lg md:text-xl">
@@ -755,7 +755,7 @@ const Step1_Intention = ({ intention, setIntention, situation, setSituation, onB
                     src={`${ASSET_PATH}/wicca_scroll_intention.png`} 
                     layout="fill"
                     objectFit="contain"
-                    alt="Scroll" 
+                    alt="Intention Scribing Scroll" 
                     priority
                     className="drop-shadow-xl"
                 />

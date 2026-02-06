@@ -72,7 +72,7 @@ export default function TarotReadingLandingPage() {
               <div className="relative w-full h-80 mb-4 overflow-hidden rounded-lg">
                 <Image 
                   src={reader.imageSrc} 
-                  alt={`Image of ${reader.name}`} 
+                  alt={`${reader.name} - ${reader.title}`} 
                   fill 
                   style={{ objectFit: 'cover', objectPosition: 'center' }} 
                 />

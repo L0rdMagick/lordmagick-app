@@ -40,7 +40,7 @@ export default function TarotDecksPage() {
                 <div className="relative aspect-3/4 w-full overflow-hidden rounded-lg shadow-2xl shadow-black/50 transform transition-all duration-300 group-hover:scale-105 group-hover:-translate-y-2 border border-white/10 group-hover:border-amber-400/50">
                     <Image 
                         src={product.coverImage}
-                        alt={`${product.name} cover`}
+                        alt={`${product.name} Tarot Deck Cover Art`}
                         fill
                         sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                         style={{ objectFit: 'cover' }}

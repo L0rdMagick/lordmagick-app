@@ -49,6 +49,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const schoolRoutes = [
     '/the-magick-psychic-school/magick-training',
     '/the-magick-psychic-school/psychic-training',
+    '/the-magick-psychic-school/psychic-training/geo-viewing',
     '/the-magick-psychic-school/the-magick-library',
   ].map((route) => ({
     url: `${baseUrl}${route}`,

@@ -92,7 +92,7 @@ export default function PsychicTrainingPage() {
                 <div className="relative h-64 w-64 md:h-80 md:w-80 bg-black rounded-lg overflow-hidden border border-amber-900/50">
                     <Image 
                         src="/images/psychic-school/psychic_explorer.jpg" 
-                        alt="Psychic Explorer" 
+                        alt="Psychic Explorer Training Visual" 
                         fill
                         className="object-cover"
                     />
