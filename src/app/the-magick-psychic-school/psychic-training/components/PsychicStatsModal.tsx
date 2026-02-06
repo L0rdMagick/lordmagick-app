@@ -77,40 +77,40 @@ export default function PsychicStatsModal({ hits, trials, chance, appName, matri
         </button>
 
         {/* CONTENT ROW */}
-        <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
+        <div className="flex flex-col md:flex-row flex-1 overflow-hidden min-h-0">
             {/* LEFT COLUMN: STATS BOARD */}
-            <div className="flex-1 p-6 md:p-8 flex flex-col gap-6 border-b md:border-b-0 md:border-r border-white/10 relative overflow-y-auto custom-scrollbar">
-                <div className="flex items-center gap-2 mb-2">
-                    <Activity className="text-indigo-500" size={20} />
-                    <h2 className="text-xl font-serif text-white">Performance</h2>
+            <div className="flex-1 p-5 md:p-6 flex flex-col gap-4 border-b md:border-b-0 md:border-r border-white/10 relative overflow-y-auto custom-scrollbar">
+                <div className="flex items-center gap-2 mb-0">
+                    <Activity className="text-indigo-500" size={18} />
+                    <h2 className="text-lg font-serif text-white">Performance</h2>
                 </div>
     
                 {/* Session Header */}
-                <div className="grid grid-cols-2 gap-x-8 gap-y-2 border-b border-white/5 pb-6">
-                    <div className="text-xs font-black uppercase tracking-widest text-indigo-300 mb-1 col-span-2">Current Session</div>
+                <div className="grid grid-cols-2 gap-x-6 gap-y-1 border-b border-white/5 pb-4">
+                    <div className="text-[10px] font-black uppercase tracking-widest text-indigo-300 mb-1 col-span-2">Current Session</div>
                     
-                    <div className="flex justify-between items-center py-1">
-                        <span className="text-slate-400 text-sm font-bold">Hits / Trials</span>
-                        <span className="text-white text-lg font-mono font-bold">{hits} / {trials}</span>
+                    <div className="flex justify-between items-center py-0.5">
+                        <span className="text-slate-400 text-xs font-bold">Hits / Trials</span>
+                        <span className="text-white text-base font-mono font-bold">{hits} / {trials}</span>
                     </div>
                     
-                    <div className="flex justify-between items-center py-1">
-                         <span className="text-slate-400 text-sm font-bold">Accuracy</span>
-                         <span className="text-white text-lg font-mono font-bold">{accuracy.toFixed(1)}%</span>
+                    <div className="flex justify-between items-center py-0.5">
+                         <span className="text-slate-400 text-xs font-bold">Accuracy</span>
+                         <span className="text-white text-base font-mono font-bold">{accuracy.toFixed(1)}%</span>
                     </div>
 
-                    <div className="flex justify-between items-center py-1">
-                         <span className="text-slate-400 text-sm font-bold">Psi Score (Z)</span>
-                         <span className={`text-lg font-mono font-bold ${zScore >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{zScore.toFixed(2)}</span>
+                    <div className="flex justify-between items-center py-0.5">
+                         <span className="text-slate-400 text-xs font-bold">Psi Score (Z)</span>
+                         <span className={`text-base font-mono font-bold ${zScore >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{zScore.toFixed(2)}</span>
                     </div>
 
-                    <div className="flex justify-between items-center py-1">
-                         <span className="text-slate-400 text-sm font-bold">Probability</span>
-                         <span className="text-indigo-300 text-lg font-mono font-bold">{probabilityLabel}</span>
+                    <div className="flex justify-between items-center py-0.5">
+                         <span className="text-slate-400 text-xs font-bold">Probability</span>
+                         <span className="text-indigo-300 text-base font-mono font-bold">{probabilityLabel}</span>
                     </div>
 
-                    <div className="col-span-2 text-center mt-4">
-                        <div className={`text-sm font-black uppercase tracking-[0.3em] ${rank.color}`}>{rank.title}</div>
+                    <div className="col-span-2 text-center mt-2">
+                        <div className={`text-xs font-black uppercase tracking-[0.3em] ${rank.color}`}>{rank.title}</div>
                     </div>
                 </div>
 
@@ -119,10 +119,10 @@ export default function PsychicStatsModal({ hits, trials, chance, appName, matri
                 {radarData && radarData.length > 0 && (
                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                         {radarData.map(cat => (
-                            <div key={cat.id} className="bg-white/5 rounded p-3 flex flex-col items-center justify-center border border-white/5 text-center">
-                                <span className="text-[9px] uppercase font-black tracking-widest text-slate-500 mb-1">{cat.label}</span>
-                                <span className="text-lg font-black text-white">{Math.round(cat.value || 0)}%</span>
-                                <span className="text-[9px] text-slate-600 font-mono">{cat.hits}/{cat.total}</span>
+                            <div key={cat.id} className="bg-white/5 rounded p-2 flex flex-col items-center justify-center border border-white/5 text-center">
+                                <span className="text-[8px] uppercase font-black tracking-widest text-slate-500 mb-0.5">{cat.label}</span>
+                                <span className="text-base font-black text-white">{Math.round(cat.value || 0)}%</span>
+                                <span className="text-[8px] text-slate-600 font-mono">{cat.hits}/{cat.total}</span>
                             </div>
                         ))}
                      </div>
@@ -130,48 +130,48 @@ export default function PsychicStatsModal({ hits, trials, chance, appName, matri
 
                 {/* If Binary Matrix Data */}
                 {matrixData && matrixData.labels && (
-                    <div className="bg-black/40 rounded-xl border border-white/5 overflow-hidden mt-2">
-                        <div className="text-[9px] uppercase font-black tracking-widest text-center py-2 bg-white/5 text-slate-400 border-b border-white/5">Performance Matrix</div>
-                        <div className="grid grid-cols-[auto_1fr_1fr] text-xs">
-                             <div className="p-2"></div>
-                             <div className="p-2 text-center font-bold text-emerald-400 border-b border-white/5 border-l border-white/5">Guess: {matrixData.labels[0]}</div>
-                             <div className="p-2 text-center font-bold text-rose-400 border-b border-white/5 border-l border-white/5">Guess: {matrixData.labels[1]}</div>
+                    <div className="bg-black/40 rounded-xl border border-white/5 overflow-hidden mt-1">
+                        <div className="text-[8px] uppercase font-black tracking-widest text-center py-1.5 bg-white/5 text-slate-400 border-b border-white/5">Performance Matrix</div>
+                        <div className="grid grid-cols-[auto_1fr_1fr] text-[10px]">
+                             <div className="p-1.5"></div>
+                             <div className="p-1.5 text-center font-bold text-emerald-400 border-b border-white/5 border-l border-white/5">Guess: {matrixData.labels[0]}</div>
+                             <div className="p-1.5 text-center font-bold text-rose-400 border-b border-white/5 border-l border-white/5">Guess: {matrixData.labels[1]}</div>
 
-                             <div className="p-2 font-bold text-cyan-400 text-right flex items-center justify-end border-b border-white/5">Was {matrixData.labels[0]}</div>
-                             <div className="p-4 text-center text-xl font-bold text-white border-b border-white/5 border-l border-white/5 bg-white/5">{matrixData.tp}</div>
-                             <div className="p-4 text-center text-xl font-bold text-slate-500 border-b border-white/5 border-l border-white/5">{matrixData.fn}</div>
+                             <div className="p-1.5 font-bold text-cyan-400 text-right flex items-center justify-end border-b border-white/5">Was {matrixData.labels[0]}</div>
+                             <div className="p-3 text-center text-lg font-bold text-white border-b border-white/5 border-l border-white/5 bg-white/5">{matrixData.tp}</div>
+                             <div className="p-3 text-center text-lg font-bold text-slate-500 border-b border-white/5 border-l border-white/5">{matrixData.fn}</div>
 
-                             <div className="p-2 font-bold text-fuchsia-400 text-right flex items-center justify-end">Was {matrixData.labels[1]}</div>
-                             <div className="p-4 text-center text-xl font-bold text-slate-500 border-l border-white/5">{matrixData.fp}</div>
-                             <div className="p-4 text-center text-xl font-bold text-white border-l border-white/5 bg-white/5">{matrixData.tn}</div>
+                             <div className="p-1.5 font-bold text-fuchsia-400 text-right flex items-center justify-end">Was {matrixData.labels[1]}</div>
+                             <div className="p-3 text-center text-lg font-bold text-slate-500 border-l border-white/5">{matrixData.fp}</div>
+                             <div className="p-3 text-center text-lg font-bold text-white border-l border-white/5 bg-white/5">{matrixData.tn}</div>
                         </div>
                     </div>
                 )}
             </div>
     
             {/* RIGHT COLUMN: RADAR & LOCK */}
-            <div className="flex-1 bg-black/50 p-6 md:p-8 flex flex-col items-center justify-start text-center space-y-8 relative overflow-hidden border-l border-white/10">
+            <div className="flex-1 bg-black/50 p-5 md:p-6 flex flex-col items-center justify-center text-center space-y-4 relative overflow-hidden border-l border-white/10">
                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-indigo-900/10 via-slate-950/80 to-slate-950 pointer-events-none" />
 
                  {/* Radar Chart */}
                  {radarData && radarData.length >= 3 && (
                      <div className="relative z-10 w-full flex flex-col items-center">
-                        <div className="flex items-center gap-2 mb-4 text-amber-100/80">
-                            <Activity size={16} className="text-amber-400" /> {/* Changed from Sparkles to Activity */}
-                            <h3 className="font-serif text-lg">Soul Resonance</h3>
+                        <div className="flex items-center gap-2 mb-2 text-amber-100/80">
+                            <Activity size={14} className="text-amber-400" />
+                            <h3 className="font-serif text-base">Soul Resonance</h3>
                         </div>
-                        <div className="bg-slate-900/50 rounded-2xl p-4 border border-white/5 backdrop-blur-sm w-full max-w-xs aspect-square flex items-center justify-center">
-                            <ResonanceRadar categories={radarData} size={220} />
+                        <div className="bg-slate-900/50 rounded-2xl p-2 border border-white/5 backdrop-blur-sm w-full max-w-[200px] aspect-square flex items-center justify-center">
+                            <ResonanceRadar categories={radarData} size={160} />
                         </div>
-                        <p className="text-[10px] text-slate-500 mt-2 font-mono uppercase tracking-widest">Intuition Resonance Field</p>
+                        <p className="text-[9px] text-slate-500 mt-1 font-mono uppercase tracking-widest">Intuition Resonance Field</p>
                      </div>
                  )}
 
                  {/* Lifetime Lock */}
-                 <div className="relative z-10 bg-slate-900/80 p-6 rounded-2xl border border-amber-500/20 shadow-xl max-w-sm w-full mx-auto mt-auto">
-                    <Lock className="w-8 h-8 text-amber-500/80 mb-3 mx-auto" />
-                    <h3 className="text-xs font-black text-amber-100 uppercase tracking-widest mb-1">Adept Access Required</h3>
-                    <button className="mt-4 w-full py-2 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/50 text-amber-400 rounded-lg font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-2">
+                 <div className="relative z-10 bg-slate-900/80 p-4 rounded-xl border border-amber-500/20 shadow-xl max-w-sm w-full mx-auto mt-auto">
+                    <Lock className="w-6 h-6 text-amber-500/80 mb-2 mx-auto" />
+                    <h3 className="text-[10px] font-black text-amber-100 uppercase tracking-widest mb-1">Adept Access Required</h3>
+                    <button className="mt-2 w-full py-1.5 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/50 text-amber-400 rounded-lg font-black uppercase tracking-widest text-[9px] flex items-center justify-center gap-2">
                         UNLOCK LIFETIME ANALYSIS
                     </button>
                  </div>
@@ -179,21 +179,20 @@ export default function PsychicStatsModal({ hits, trials, chance, appName, matri
         </div>
 
         {/* FOOTER: DEFINITIONS LEGEND */}
-        <div className="w-full bg-slate-950/50 border-t border-white/10 p-6 md:px-8 grid grid-cols-1 md:grid-cols-2 gap-8 overflow-y-auto max-h-[300px]">
+        <div className="w-full bg-slate-950/50 border-t border-white/10 p-4 md:px-6 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 overflow-y-auto max-h-[30vh]">
            {/* HITTING */}
            <div>
-              <h4 className="text-[9px] font-black uppercase tracking-[0.2em] text-amber-400 mb-3 flex items-center gap-2">
+              <h4 className="text-[9px] font-black uppercase tracking-[0.2em] text-amber-400 mb-2 flex items-center gap-2">
                   <span className="w-1.5 h-1.5 bg-amber-400 rounded-full"></span> Psi-Hitting (Positive)
               </h4>
-              <div className="space-y-1">
+              <div className="grid grid-cols-1 gap-0.5">
                  {PSI_RANKS.filter(r => r.tier === 'HITTING').map(r => (
-                     <div key={r.title} className="flex flex-col md:flex-row md:items-baseline md:justify-between text-[10px] group cursor-default hover:bg-white/5 p-1.5 rounded transition-colors">
-                        <div>
+                     <div key={r.title} className="flex justify-between items-center text-[9px] group cursor-default hover:bg-white/5 px-2 py-1 rounded transition-colors">
+                        <div className="flex items-center gap-2 truncate">
                             <span className={`font-black uppercase tracking-wider ${r.color}`}>{r.title}</span>
-                            <span className="mx-2 text-slate-600 hidden md:inline">|</span>
-                            <span className="text-slate-400 font-medium">{r.description}</span>
+                            <span className="text-slate-500 hidden sm:inline truncate max-w-[150px]">{r.description}</span>
                         </div>
-                        <span className="font-mono font-bold text-slate-600 text-[9px] mt-1 md:mt-0">Z &ge; {r.minZ}</span>
+                        <span className="font-mono font-bold text-slate-600 whitespace-nowrap ml-2">Z &ge; {r.minZ}</span>
                      </div>
                  ))}
               </div>
@@ -201,18 +200,17 @@ export default function PsychicStatsModal({ hits, trials, chance, appName, matri
 
            {/* MISSING */}
            <div>
-              <h4 className="text-[9px] font-black uppercase tracking-[0.2em] text-rose-400 mb-3 flex items-center gap-2">
+              <h4 className="text-[9px] font-black uppercase tracking-[0.2em] text-rose-400 mb-2 flex items-center gap-2">
                  <span className="w-1.5 h-1.5 bg-rose-400 rounded-full"></span> Psi-Missing (Negative)
               </h4>
-              <div className="space-y-1">
+              <div className="grid grid-cols-1 gap-0.5">
                  {PSI_RANKS.filter(r => r.tier === 'MISSING').map(r => (
-                    <div key={r.title} className="flex flex-col md:flex-row md:items-baseline md:justify-between text-[10px] group cursor-default hover:bg-white/5 p-1.5 rounded transition-colors">
-                        <div>
+                    <div key={r.title} className="flex justify-between items-center text-[9px] group cursor-default hover:bg-white/5 px-2 py-1 rounded transition-colors">
+                        <div className="flex items-center gap-2 truncate">
                             <span className={`font-black uppercase tracking-wider ${r.color}`}>{r.title}</span>
-                            <span className="mx-2 text-slate-600 hidden md:inline">|</span>
-                            <span className="text-slate-400 font-medium">{r.description}</span>
+                            <span className="text-slate-500 hidden sm:inline truncate max-w-[150px]">{r.description}</span>
                         </div>
-                        <span className="font-mono font-bold text-slate-600 text-[9px] mt-1 md:mt-0">Z &le; {r.maxZ}</span>
+                        <span className="font-mono font-bold text-slate-600 whitespace-nowrap ml-2">Z &le; {r.maxZ}</span>
                     </div>
                  ))}
               </div>
