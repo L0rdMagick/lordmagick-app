@@ -380,7 +380,7 @@ export default function TheGazeApp() {
       const fp = history.filter(h => h.actual === 'AWAY' && h.guess === 'STARE').length;
       const fn = history.filter(h => h.actual === 'STARE' && h.guess === 'AWAY').length;
       return {
-          labels: ['Staring', 'Away'],
+          labels: ['Staring', 'Away'] as [string, string],
           tp, tn, fp, fn
       };
   }, [history]);
