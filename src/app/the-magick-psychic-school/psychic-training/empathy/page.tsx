@@ -567,9 +567,9 @@ export default function EmpathyApp() {
                   radarData={EMOTIONS.map(emo => {
                       const stat = stats[emo.id] || { hits: 0, attempts: 0 };
                       return {
-                          subject: emo.name,
-                          A: stat.attempts > 0 ? Math.round((stat.hits / stat.attempts) * 100) : 0,
-                          fullMark: 100,
+                          id: emo.id,
+                          label: emo.name,
+                          value: stat.attempts > 0 ? Math.round((stat.hits / stat.attempts) * 100) : 0,
                           color: emo.color
                       };
                   })}

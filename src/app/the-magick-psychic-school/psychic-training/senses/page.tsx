@@ -1655,9 +1655,9 @@ export default function SensesApp() {
                         const accuracy = poolTrials > 0 ? Math.round((poolHits / poolTrials) * 100) : 0;
                         
                         return {
-                            subject: pool.id.charAt(0).toUpperCase() + pool.id.slice(1),
-                            A: accuracy,
-                            fullMark: 100,
+                            id: pool.id,
+                            label: pool.id.charAt(0).toUpperCase() + pool.id.slice(1),
+                            value: accuracy,
                             color: "#fbbf24" // amber-400
                         };
                     })}
