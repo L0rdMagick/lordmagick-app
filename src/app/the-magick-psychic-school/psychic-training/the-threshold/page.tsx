@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   Settings, HelpCircle, Eye, X, 
-  Trash2, RotateCcw, Lock
+  Trash2, RotateCcw, Lock, Check
 } from 'lucide-react';
 import { createBrowserClient } from '@supabase/ssr';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
@@ -159,6 +159,19 @@ const playSound = (type: string) => {
 };
 
 // --- COMPONENTS ---
+
+// 2. Door Component
+const Door = ({ isOpen }: { isOpen: boolean }) => (
+  <div className={`absolute inset-0 pointer-events-none transition-all duration-1000 ease-in-out z-20 ${isOpen ? 'opacity-0' : 'opacity-100'}`}>
+     <div className={`absolute left-0 top-0 bottom-0 w-1/2 bg-neutral-900 border-r-2 border-dashed border-neutral-700 transition-transform duration-1000 ease-in-out origin-left ${isOpen ? '-rotate-y-90 -translate-x-full' : 'rotate-y-0 translate-x-0'}`} />
+     <div className={`absolute right-0 top-0 bottom-0 w-1/2 bg-neutral-900 border-l-2 border-dashed border-neutral-700 transition-transform duration-1000 ease-in-out origin-right ${isOpen ? 'rotate-y-90 translate-x-full' : 'rotate-y-0 translate-x-0'}`} />
+     
+     {/* Lock Icon */}
+     <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 transition-all duration-500 ${isOpen ? 'scale-0 opacity-0' : 'scale-100 opacity-100 delay-500'}`}>
+        <Lock className="text-yellow-500 w-16 h-16 drop-shadow-[0_0_15px_rgba(234,179,8,0.5)]" />
+     </div>
+  </div>
+);
 
 // 3. Instruction Modal
 const InstructionModal = ({ onClose }: { onClose: () => void }) => (
