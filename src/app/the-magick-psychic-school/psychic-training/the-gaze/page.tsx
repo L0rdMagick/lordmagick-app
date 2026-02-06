@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   Eye, EyeOff, Play, RotateCcw, HelpCircle, X, Trophy, 
@@ -10,6 +10,8 @@ import {
 import { createBrowserClient } from '@supabase/ssr';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
 import { useHaptics } from '@/hooks/useHaptics';
+import PsychicStatsModal from '../components/PsychicStatsModal';
+import { RadarCategory } from '../components/ResonanceRadar';
 
 // --- DATA ASSETS ---
 const IMAGE_BASE_PATH = '/images/the-gaze/';
@@ -65,60 +67,6 @@ const PHRASES = [
 ];
 
 const TIMER_DURATION = 5000;
-
-// --- STATS ENGINE ---
-
-const calculatePsiScore = (hits: number, trials: number, chance: number) => {
-  if (trials === 0) return 0;
-  const expected = trials * chance;
-  const stdDev = Math.sqrt(trials * chance * (1 - chance));
-  return (hits - expected) / stdDev;
-};
-
-const erf = (x: number) => {
-  const a1 =  0.254829592;
-  const a2 = -0.284496736;
-  const a3 =  1.421413741;
-  const a4 = -1.453152027;
-  const a5 =  1.061405429;
-  const p  =  0.3275911;
-
-  const sign = (x < 0) ? -1 : 1;
-  x = Math.abs(x);
-
-  const t = 1.0 / (1.0 + p * x);
-  const y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
-
-  return sign * y;
-};
-
-const calculateProbability = (z: number) => {
-  const pValue = 0.5 * (1 - erf(Math.abs(z) / Math.sqrt(2)));
-  if (pValue <= 0) return "1 in ∞"; 
-  const oneInX = 1 / pValue;
-  
-  if (oneInX > 1000000) return `1 in ${(oneInX / 1000000).toFixed(1)}M`;
-  if (oneInX > 1000) return `1 in ${(oneInX / 1000).toFixed(1)}k`;
-  if (oneInX < 2) return "1 in 2";
-  return `1 in ${Math.round(oneInX)}`;
-};
-
-const getPsiTier = (z: number) => {
-  if (z >= 4.0) return { name: "The Oracle", color: "text-amber-300 shadow-amber-500/50" };
-  if (z >= 3.0) return { name: "The Medium", color: "text-purple-300 shadow-purple-500/50" };
-  if (z >= 1.96) return { name: "The Clairvoyant", color: "text-pink-300 shadow-pink-500/50" };
-  if (z >= 1.65) return { name: "The Channel", color: "text-indigo-300 shadow-indigo-500/50" };
-  if (z >= 1.0) return { name: "The Adept", color: "text-cyan-300 shadow-cyan-500/50" };
-  if (z >= 0.5) return { name: "The Spark", color: "text-teal-300 shadow-teal-500/50" };
-  if (z >= 0.0) return { name: "The Initiate", color: "text-slate-200" };
-  
-  if (z <= -4.0) return { name: "The Void", color: "text-slate-500" };
-  if (z <= -3.0) return { name: "The Shadow", color: "text-slate-400" };
-  if (z <= -2.0) return { name: "The Mirror", color: "text-slate-400" };
-  if (z <= -1.0) return { name: "The Blocker", color: "text-slate-400" };
-  if (z <= -0.5) return { name: "The Dreamer", color: "text-slate-400" };
-  return { name: "The Sleeper", color: "text-slate-300" };
-};
 
 // --- AUDIO ENGINE ---
 
@@ -278,242 +226,6 @@ const InstructionModal = ({ onClose }: { onClose: () => void }) => (
   </div>
 );
 
-const PsiStats = ({ stats, variant = 'floating' }: { stats: any, variant?: 'floating' | 'header' }) => {
-    const [supabase] = useState(() => createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    ));
-    const [showModal, setShowModal] = useState(false);
-    const [lifetimeStats, setLifetimeStats] = useState({ hits: 0, trials: 0 });
-    const [loadingLifetime, setLoadingLifetime] = useState(false);
-    const [mounted, setMounted] = useState(false); // ADDED MOUNTED STATE
-
-    // Monetization Logic
-    const [isSubscribed, setIsSubscribed] = useState(false);
-    const [loadingProfile, setLoadingProfile] = useState(true);
-
-    const sessionTrials = stats.total;
-    const sessionHits = stats.hits;
-    const chance = 0.5; // Binary choice (1 in 2)
-    
-    const sessionAccuracy = sessionTrials > 0 ? (sessionHits / sessionTrials) * 100 : 0;
-    const sessionZ = calculatePsiScore(sessionHits, sessionTrials, chance);
-    const sessionProb = calculateProbability(sessionZ);
-    const sessionTier = getPsiTier(sessionZ);
-  
-    useEffect(() => {
-        setMounted(true); // SET MOUNTED
-    }, []);
-
-    // Check user subscription status
-    useEffect(() => {
-        const checkProfile = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user) {
-                const { data } = await supabase.from('profiles').select('is_subscribed').eq('id', user.id).single();
-                if(data?.is_subscribed) setIsSubscribed(true);
-            }
-            setLoadingProfile(false);
-        }
-        checkProfile();
-    }, [supabase]);
-
-    useEffect(() => {
-      if (showModal) {
-        const fetchHistory = async () => {
-          setLoadingLifetime(true);
-          const { data: { user } } = await supabase.auth.getUser();
-          if (!user) {
-              setLoadingLifetime(false);
-              return;
-          }
-  
-          const { data, error } = await supabase
-              .from('reports')
-              .select('chart_data')
-              .eq('user_id', user.id)
-              .eq('category', 'training') 
-              .eq('name', 'The Gaze');
-  
-          if (!error && data) {
-              let h = 0; 
-              let t = 0;
-              data.forEach((row: any) => {
-                  const chart = row.chart_data;
-                  if (chart) {
-                     h += chart.hits || 0;
-                     t += chart.total || 0;
-                  }
-              });
-              setLifetimeStats({ hits: h + sessionHits, trials: t + sessionTrials });
-          }
-          setLoadingLifetime(false);
-        };
-        fetchHistory();
-      }
-    }, [showModal, sessionHits, sessionTrials, supabase]);
-  
-    const lifeAccuracy = lifetimeStats.trials > 0 ? (lifetimeStats.hits / lifetimeStats.trials) * 100 : 0;
-    const lifeZ = calculatePsiScore(lifetimeStats.hits, lifetimeStats.trials, chance);
-    const lifeProb = calculateProbability(lifeZ);
-    const lifeTier = getPsiTier(lifeZ);
-
-    const containerClasses = variant === 'header' 
-      ? "flex items-center gap-6 px-4 py-1 hover:bg-white/5 rounded-lg cursor-pointer transition-colors border border-transparent hover:border-white/10 group"
-      : "cursor-pointer group flex flex-col items-end justify-center bg-slate-800/90 hover:bg-slate-700/90 border border-purple-500/20 hover:border-purple-500/50 rounded-lg px-3 py-1 transition-all duration-300 min-w-20 h-[50px] relative";
-
-    const TriggerContent = () => (
-      <>
-        {variant === 'header' ? (
-           <div className="flex items-center gap-6" title="Click to view full stats">
-              <div className="flex items-center gap-3 border-r border-gray-700 pr-4">
-                  <span className="text-yellow-400 font-bold flex items-center gap-1"><Trophy size={14} /> {stats.streak}</span>
-              </div>
-              <div className="flex flex-col items-center">
-                  <span className="text-[10px] text-gray-400 uppercase tracking-widest">Accuracy</span>
-                  <span className={`text-sm font-bold font-mono ${sessionAccuracy > 50 ? 'text-green-400' : 'text-gray-300'}`}>{sessionAccuracy.toFixed(0)}%</span>
-              </div>
-              <div className="flex flex-col items-center">
-                  <span className="text-[10px] text-gray-400 uppercase tracking-widest">Psi (Z)</span>
-                  <span className={`text-sm font-bold font-mono ${sessionZ >= 0 ? 'text-purple-300' : 'text-gray-400'}`}>{sessionZ.toFixed(2)}</span>
-              </div>
-              <div className="pl-4 border-l border-gray-700/50">
-                  <Maximize2 size={16} className="text-gray-500 group-hover:text-white transition-colors" />
-              </div>
-           </div>
-        ) : (
-           <>
-             <div className="absolute -top-3 right-0 bg-purple-900 border border-purple-500 text-[9px] font-bold px-2 py-0.5 rounded text-white tracking-widest shadow-md">
-               TAP INFO
-             </div>
-             <div className="absolute top-1 right-1 text-purple-400 group-hover:text-white">
-               <ChevronsUp size={12} />
-             </div>
-             
-             <div className="flex items-center gap-2 mt-1">
-              <span className="text-xs font-mono text-purple-400 group-hover:text-purple-300 transition-colors">N: {sessionTrials}</span>
-              <div className="w-px h-3 bg-purple-500/20"></div>
-              <span className="text-xl font-mono font-bold text-slate-200 group-hover:text-white transition-colors">
-                  {sessionAccuracy.toFixed(0)}%
-              </span>
-            </div>
-            <div className="text-[9px] text-slate-500 uppercase tracking-widest group-hover:text-purple-300 transition-colors">
-              Z: {sessionZ.toFixed(2)}
-            </div>
-           </>
-        )}
-      </>
-    );
-  
-    const ModalContent = () => (
-        <div 
-            className="fixed inset-0 flex items-center justify-center bg-black/95 backdrop-blur-xl p-0 md:p-4 animate-in fade-in duration-300"
-            style={{ zIndex: 9999 }}
-            onClick={() => setShowModal(false)}
-        >
-          <div 
-            className="w-full h-full md:h-auto md:max-h-[95vh] md:max-w-4xl bg-slate-900 border-0 md:border md:border-purple-500/20 rounded-none md:rounded-xl p-6 relative overflow-y-auto shadow-[0_0_50px_rgba(168,85,247,0.2)] flex flex-col"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex justify-between items-center mb-6 sticky top-0 bg-slate-900/95 backdrop-blur z-10 py-2 border-b border-white/5 md:border-0 md:static">
-               <h2 className="text-2xl font-serif text-white flex items-center gap-2">
-                  <Activity className="text-purple-400" /> Performance
-               </h2>
-               <button onClick={() => setShowModal(false)} className="p-2 bg-slate-800 rounded-full hover:bg-slate-700 text-slate-300 hover:text-white transition-colors">
-                  <X size={20}/>
-               </button>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-              {/* CURRENT */}
-              <div className="bg-black/20 rounded-lg p-4 border border-white/5">
-                <h3 className="text-xs uppercase tracking-[0.2em] text-purple-400 mb-4 text-center">Current Session</h3>
-                <div className="space-y-2 text-sm font-mono">
-                  <div className="flex justify-between border-b border-white/5 pb-1"><span>Hits / Trials</span> <span className="text-white">{sessionHits} / {sessionTrials}</span></div>
-                  <div className="flex justify-between border-b border-white/5 pb-1"><span>Accuracy</span> <span className="text-white">{sessionAccuracy.toFixed(1)}%</span></div>
-                  <div className="flex justify-between border-b border-white/5 pb-1"><span>Psi Score (Z)</span> <span className={sessionZ >= 0 ? "text-amber-300" : "text-slate-400"}>{sessionZ.toFixed(2)}</span></div>
-                  <div className="flex justify-between"><span>Probability</span> <span className="text-green-300">{sessionProb}</span></div>
-                  <div className="mt-2 text-center text-xs font-bold uppercase tracking-widest text-white">{sessionTier.name}</div>
-                </div>
-              </div>
-
-              {/* LIFETIME (MONETIZED) */}
-              <div className="bg-black/20 rounded-lg p-4 border border-white/5 relative overflow-hidden">
-                 <h3 className="text-xs uppercase tracking-[0.2em] text-amber-300 mb-4 text-center">Lifetime Record</h3>
-                 
-                 {loadingLifetime || loadingProfile ? (
-                    <div className="absolute inset-0 flex items-center justify-center"><Sparkles className="animate-spin text-purple-500"/></div>
-                 ) : isSubscribed ? (
-                    // SUBSCRIBED CONTENT
-                    <div className="space-y-2 text-sm font-mono">
-                        <div className="flex justify-between border-b border-white/5 pb-1"><span>Hits / Trials</span> <span className="text-white">{lifetimeStats.hits} / {lifetimeStats.trials}</span></div>
-                        <div className="flex justify-between border-b border-white/5 pb-1"><span>Accuracy</span> <span className="text-white">{lifeAccuracy.toFixed(1)}%</span></div>
-                        <div className="flex justify-between border-b border-white/5 pb-1"><span>Psi Score (Z)</span> <span className={lifeZ >= 0 ? "text-amber-300" : "text-slate-400"}>{lifeZ.toFixed(2)}</span></div>
-                        <div className="flex justify-between"><span>Probability</span> <span className="text-green-300">{lifeProb}</span></div>
-                        <div className="mt-2 text-center text-xs font-bold uppercase tracking-widest text-white">{lifeTier.name}</div>
-                    </div>
-                 ) : (
-                    // LOCKED CONTENT
-                    <>
-                        {/* Blurry Background */}
-                        <div className="space-y-2 text-sm font-mono blur-sm select-none opacity-50">
-                            <div className="flex justify-between border-b border-white/5 pb-1"><span>Hits / Trials</span> <span className="text-white">???? / ????</span></div>
-                            <div className="flex justify-between border-b border-white/5 pb-1"><span>Accuracy</span> <span className="text-white">??.?%</span></div>
-                            <div className="flex justify-between border-b border-white/5 pb-1"><span>Psi Score (Z)</span> <span className="text-slate-400">0.00</span></div>
-                        </div>
-                        
-                        {/* Lock Overlay */}
-                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-xs z-10 p-4 text-center">
-                            <Lock className="text-amber-400 mb-2 w-8 h-8 animate-pulse" />
-                            <p className="text-amber-200 font-serif text-sm tracking-widest mb-4">ADEPT ACCESS REQUIRED</p>
-                            <button className="px-6 py-2 bg-amber-900/30 border border-amber-500/50 text-amber-300 text-xs font-bold uppercase tracking-wider hover:bg-amber-800/40 transition-all rounded shadow-lg shadow-amber-900/20">
-                                Unlock Lifetime Analysis
-                            </button>
-                        </div>
-                    </>
-                 )}
-              </div>
-            </div>
-
-            {/* Definitions Legend */}
-            <div className="grid md:grid-cols-2 gap-8 border-t border-white/10 pt-6">
-              <div>
-                  <h4 className="text-xs uppercase tracking-widest text-amber-400 mb-3 pb-2">Psi-Hitting (Positive)</h4>
-                  <div className="space-y-3 text-xs text-slate-400">
-                      <div><strong className="text-amber-200 block">The Oracle (Z &ge; 4.0)</strong> World Class Anomaly</div>
-                      <div><strong className="text-purple-300 block">The Medium (Z &ge; 3.0)</strong> Highly Significant</div>
-                      <div><strong className="text-pink-300 block">The Clairvoyant (Z &ge; 1.96)</strong> Significant (p &lt; 0.05)</div>
-                      <div><strong className="text-indigo-300 block">The Channel (Z &ge; 1.65)</strong> Tapping into flow</div>
-                      <div><strong className="text-cyan-300 block">The Adept (Z &ge; 1.0)</strong> Above Chance</div>
-                      <div><strong className="text-teal-300 block">The Spark (Z &ge; 0.5)</strong> Pulse of intuition</div>
-                  </div>
-              </div>
-              <div>
-                  <h4 className="text-xs uppercase tracking-widest text-blue-400 mb-3 pb-2">Psi-Missing (Negative)</h4>
-                  <div className="space-y-3 text-xs text-slate-400">
-                      <div><strong className="text-slate-300 block">The Sleeper (Z &lt; 0.0)</strong> Just below baseline</div>
-                      <div><strong className="text-slate-300 block">The Blocker (Z &le; -1.0)</strong> Logic fighting gut</div>
-                      <div><strong className="text-slate-400 block">The Mirror (Z &le; -2.0)</strong> Significant Avoidance</div>
-                      <div><strong className="text-slate-500 block">The Shadow (Z &le; -3.0)</strong> Highly Significant Displacement</div>
-                      <div><strong className="text-slate-500 block">The Void (Z &le; -4.0)</strong> Total Suppression</div>
-                  </div>
-              </div>
-          </div>
-
-          </div>
-        </div>
-    );
-
-    return (
-      <>
-        <div onClick={() => setShowModal(true)} className={containerClasses}>
-            <TriggerContent />
-        </div>
-        {showModal && mounted && createPortal(<ModalContent />, document.body)}
-      </>
-    );
-};
-
 const CircularTimer = ({ duration, onComplete, isActive }: { duration: number, onComplete: () => void, isActive: boolean }) => {
   const [progress, setProgress] = useState(0);
   const [secondsLeft, setSecondsLeft] = useState(Math.ceil(duration / 1000));
@@ -607,7 +319,7 @@ export default function TheGazeApp() {
 
   const [gameState, setGameState] = useState<'IDLE' | 'FOCUSING' | 'DECIDING' | 'REVEAL'>('IDLE');
   const [showInstructions, setShowInstructions] = useState(true);
-  const [stats, setStats] = useState({ hits: 0, total: 0, streak: 0 });
+  const [history, setHistory] = useState<any[]>([]); // New History Tracking
   const [sessionId, setSessionId] = useState<string | null>(null);
   
   // Game Configuration
@@ -639,8 +351,63 @@ export default function TheGazeApp() {
 
   const toggleSound = () => setSoundEnabled(!soundEnabled);
 
+  // Derive Stats from History
+  const stats = useMemo(() => {
+      const hits = history.filter(h => h.isCorrect).length;
+      return { 
+          hits, 
+          trials: history.length, 
+          streak: history.length > 0 && history[history.length-1].isCorrect 
+              ? history.filter(h => h.isCorrect).length // Simple streak logic needs refining? Or just rely on component calc?
+              // Actually PsychicStatsModal doesn't take 'streak' yet, but internal component does.
+              // Let's count current streak manually.
+               : 0 
+      };
+      
+      // Calculate real streak
+      let s = 0;
+      for (let i = history.length - 1; i >= 0; i--) {
+          if (history[i].isCorrect) s++;
+          else break;
+      }
+      return { hits, trials: history.length, streak: s };
+  }, [history]);
+
+  // Derived Matrix Data
+  const matrixData = useMemo(() => {
+      const tp = history.filter(h => h.actual === 'STARE' && h.guess === 'STARE').length;
+      const tn = history.filter(h => h.actual === 'AWAY' && h.guess === 'AWAY').length;
+      const fp = history.filter(h => h.actual === 'AWAY' && h.guess === 'STARE').length;
+      const fn = history.filter(h => h.actual === 'STARE' && h.guess === 'AWAY').length;
+      return {
+          labels: ['Staring', 'Away'],
+          tp, tn, fp, fn
+      };
+  }, [history]);
+
+  // Derived Radar Data
+  const radarData: RadarCategory[] = useMemo(() => {
+      const positiveTrials = history.filter(h => h.actual === 'STARE').length;
+      const negativeTrials = history.filter(h => h.actual === 'AWAY').length;
+
+      const sensitivity = positiveTrials > 0 ? (matrixData.tp / positiveTrials) * 100 : 0;
+      const specificity = negativeTrials > 0 ? (matrixData.tn / negativeTrials) * 100 : 0;
+
+      return [
+          { id: 'sense', label: 'Sensitivity (Hit Rate)', value: sensitivity, color: '#facc15' }, // Yellow
+          { id: 'spec', label: 'Specificity (Reject Rate)', value: specificity, color: '#22d3ee' }, // Cyan
+          // Add dummy/overall for triangular shape preference? 
+          { id: 'acc', label: 'Overall Accuracy', value: stats.trials > 0 ? (stats.hits / stats.trials) * 100 : 0, color: '#a78bfa' } // Purple
+      ];
+  }, [history, matrixData, stats]);
+
+
   // AUTO-SAVE LOGIC
-  const saveSessionStats = async (newStats: typeof stats) => {
+  const saveSessionStats = async (finalStats: typeof stats) => {
+      // Simplified save logic just to keep backend updated with hits/trials
+      // We are not saving full history details to 'chart_data' JSON here to keep it simple, 
+      // but users requested consistent visuals. 
+      // The old logic saved {hits, total, streak}. We can keep that structure.
       setSaveMessage("Attuning to Cloud...");
       try {
         const { data: { user } } = await supabase.auth.getUser();
@@ -649,12 +416,14 @@ export default function TheGazeApp() {
             return;
         }
 
+        const statsToSave = { hits: finalStats.hits, total: finalStats.trials, streak: finalStats.streak };
+
         if (sessionId) {
             const { error } = await supabase
                 .from('reports')
                 .update({ 
-                    chart_data: newStats,
-                    report_content: `Auto-saved session. Trials: ${newStats.total}. Hits: ${newStats.hits}. Mode: ${filterMode}.`
+                    chart_data: statsToSave,
+                    report_content: `Auto-saved session. Trials: ${finalStats.trials}. Hits: ${finalStats.hits}. Mode: ${filterMode}.`
                 })
                 .eq('id', sessionId);
             if (error) throw error;
@@ -665,7 +434,7 @@ export default function TheGazeApp() {
                     user_id: user.id,
                     name: 'The Gaze',
                     category: 'training',
-                    chart_data: newStats,
+                    chart_data: statsToSave,
                     report_content: `New session started. Mode: ${filterMode}.`
                 })
                 .select()
@@ -709,6 +478,10 @@ export default function TheGazeApp() {
     setUserGuess(guess);
     setGameState('REVEAL');
     
+    // Logic: 
+    // Subject Staring + Guess Stare = HIT
+    // Subject Away + Guess Away = HIT
+    // Otherwise Miss
     const isCorrect = (guess === 'STARE' && currentSubject.isStaring) || (guess === 'AWAY' && !currentSubject.isStaring);
     
     if (isCorrect) {
@@ -719,18 +492,35 @@ export default function TheGazeApp() {
       haptics.triggerLight(); // FAIL HAPTIC
     }
 
-    const newStats = {
-      hits: isCorrect ? stats.hits + 1 : stats.hits,
-      total: stats.total + 1,
-      streak: isCorrect ? stats.streak + 1 : 0
+    const newResult = {
+        actual: currentSubject.isStaring ? 'STARE' : 'AWAY',
+        guess: guess,
+        isCorrect,
+        timestamp: Date.now()
     };
+    
+    const newHistory = [...history, newResult];
+    setHistory(newHistory);
 
-    setStats(newStats);
-    saveSessionStats(newStats);
+    // Calculate new stats for saving (saving needs total, hits, etc)
+    const newHits = newHistory.filter(h => h.isCorrect).length;
+    let s = 0;
+      for (let i = newHistory.length - 1; i >= 0; i--) {
+          if (newHistory[i].isCorrect) s++;
+          else break;
+      }
+    
+    const newStatsForSave = {
+        hits: newHits,
+        trials: newHistory.length,
+        streak: s
+    };
+    
+    saveSessionStats(newStatsForSave as any); // Type assertion for simple object
   };
 
   const handleResetSession = () => {
-    setStats({ hits: 0, total: 0, streak: 0 });
+    setHistory([]);
     setSessionId(null);
     setGameState('IDLE');
     setShowSettings(false);
@@ -769,16 +559,21 @@ export default function TheGazeApp() {
   return (
     <main className="relative min-h-screen w-full bg-black bg-cover bg-center overflow-hidden flex flex-col font-sans" style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}>
       <div className="absolute inset-0 bg-[#0a0a0a]/90 backdrop-blur-sm z-0" />
+      
+      {/* Standardized Stats Modal */}
+      <PsychicStatsModal 
+          hits={stats.hits} 
+          trials={stats.trials} 
+          chance={0.5} 
+          appName="The Gaze"
+          matrixData={matrixData}
+          radarData={radarData}
+      />
 
       {/* Header */}
       <header className="relative z-20 px-6 py-4 flex justify-between items-center border-b border-gray-800/50 bg-[#0a0a0a]/50">
         <div className="flex items-center gap-4">
           <MagickalBackLink href="/the-magick-psychic-school/psychic-training" text="Exit Training" className="text-sm" />
-        </div>
-
-        {/* Desktop Stats (Hidden on mobile) */}
-        <div className="hidden md:flex items-center">
-            <PsiStats stats={stats} variant="header" />
         </div>
 
         <div className="flex items-center gap-2">
@@ -800,20 +595,6 @@ export default function TheGazeApp() {
       {/* Main Game Area */}
       <div className="relative z-10 flex-1 flex flex-col items-center justify-center p-6 gap-6">
         
-        {/* Mobile Stats HUD (In-flow to prevent overlap) */}
-        <div className="md:hidden w-full flex justify-center order-first">
-           <div className="flex items-center gap-4 px-6 py-2 bg-gray-900/80 rounded-full border border-gray-800 shadow-xl backdrop-blur-sm">
-             <div className="flex flex-col items-center">
-               <span className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Streak</span>
-               <span className="text-lg font-mono font-bold text-yellow-400 flex items-center gap-1">
-                 <Trophy size={14} /> {stats.streak}
-               </span>
-             </div>
-             <div className="w-px h-8 bg-gray-800"></div>
-             <PsiStats stats={stats} variant="floating" />
-           </div>
-        </div>
-
         <div className="relative w-full max-w-md flex flex-col items-center justify-center min-h-[400px]">
           
           {/* IDLE STATE */}
