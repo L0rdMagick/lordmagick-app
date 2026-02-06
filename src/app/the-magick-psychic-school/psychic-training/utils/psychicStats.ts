@@ -10,23 +10,23 @@ export type PsiRank = {
 };
 
 export const PSI_RANKS: PsiRank[] = [
-  // PSI-HITTING
-  { title: "The Oracle", tier: 'HITTING', description: "World Class Anomaly (1 in 31,000+)", color: "text-amber-400", minZ: 4.0 },
-  { title: "The Medium", tier: 'HITTING', description: "Highly Significant (1 in 740)", color: "text-purple-400", minZ: 3.0 },
-  { title: "The Clairvoyant", tier: 'HITTING', description: "Statistically Significant (p < 0.05)", color: "text-indigo-400", minZ: 1.96 },
-  { title: "The Channel", tier: 'HITTING', description: "Tapping into something real (1 in 20)", color: "text-blue-400", minZ: 1.65 },
+  // PSI-HITTING (Positive)
+  { title: "The Oracle", tier: 'HITTING', description: "World Class Anomaly (1 in 31,000+).", color: "text-amber-400", minZ: 4.0 },
+  { title: "The Medium", tier: 'HITTING', description: "Highly Significant (1 in 740).", color: "text-purple-400", minZ: 3.0 },
+  { title: "The Clairvoyant", tier: 'HITTING', description: "Statistically Significant (p < 0.05).", color: "text-indigo-400", minZ: 1.96 },
+  { title: "The Channel", tier: 'HITTING', description: "Tapping into something real (1 in 20).", color: "text-blue-400", minZ: 1.65 },
   { title: "The Adept", tier: 'HITTING', description: "Finding flow. Beating odds of 1 in 6.", color: "text-emerald-400", minZ: 1.0 },
   { title: "The Spark", tier: 'HITTING', description: "Pulse of intuition. Nudging past average.", color: "text-teal-400", minZ: 0.5 },
   { title: "The Initiate", tier: 'HITTING', description: "Above baseline. Better than random.", color: "text-slate-200", minZ: 0.0 },
 
-  // PSI-MISSING (Order matters for checking logic, usually checked descending or by range)
-  // We'll use a finder function that checks <= thresholds for negatives.
-  { title: "Desynchronized", tier: 'MISSING', description: "Just below baseline. Stop over-analyzing.", color: "text-slate-400", maxZ: -0.00000001 }, // slightly below 0
-  { title: "Signal Noise", tier: 'MISSING', description: "Drifting. Intuition active but unfocused.", color: "text-orange-400", maxZ: -0.5 },
-  { title: "Cognitive Dissonance", tier: 'MISSING', description: "Dodging targets. Logic fighting gut.", color: "text-red-400", maxZ: -1.0 },
-  { title: "Reality Inversion", tier: 'MISSING', description: "Significant Avoidance. Flipping the signal.", color: "text-rose-500", maxZ: -2.0 },
+  // PSI-MISSING (Negative)
+  // Ordered by severity (logic below finds the 'deepest' match)
+  { title: "The Void", tier: 'MISSING', description: "World Class Anomaly. Total suppression.", color: "text-slate-600", maxZ: -4.0 },
   { title: "The Shadow", tier: 'MISSING', description: "Highly Significant Displacement. Inverted.", color: "text-fuchsia-500", maxZ: -3.0 },
-  { title: "The Void", tier: 'MISSING', description: "World Class Anomaly. Total suppression.", color: "text-slate-600", maxZ: -4.0 }
+  { title: "Reality Inversion", tier: 'MISSING', description: "Significant Avoidance. Flipping the signal.", color: "text-rose-500", maxZ: -2.0 },
+  { title: "Cognitive Dissonance", tier: 'MISSING', description: "Dodging targets. Logic fighting gut.", color: "text-red-400", maxZ: -1.0 },
+  { title: "Signal Noise", tier: 'MISSING', description: "Drifting. Intuition active but unfocused.", color: "text-orange-400", maxZ: -0.5 },
+  { title: "Desynchronized", tier: 'MISSING', description: "Just below baseline. Stop over-analyzing.", color: "text-slate-400", maxZ: -0.0000001 }
 ];
 
 /**
