@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { Trophy, Maximize2, Minimize2, Activity, Lock } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import { Trophy, Maximize2, Minimize2, Activity, Lock, X } from 'lucide-react';
 import { calculateZScore, getPsiRank, calculatePValue } from '../utils/psychicStats';
 import ResonanceRadar, { RadarCategory } from './ResonanceRadar';
 
@@ -55,15 +56,34 @@ export default function PsychicStatsModal({ hits, trials, chance, appName, matri
   }
 
   // --- EXPANDED VIEW ---
-  return (
-    <div className="fixed inset-0 z-[100] bg-slate-950/90 backdrop-blur-xl flex items-center justify-center p-4 animate-in fade-in duration-200">
-      <div className="w-full max-w-5xl bg-slate-900 border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row max-h-[90vh] overflow-y-auto md:overflow-hidden">
+
+  // Use Portal to escape any parent transforms/z-index issues
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
+    <div 
+      className="fixed inset-0 z-[9999] bg-slate-950/90 backdrop-blur-xl flex items-center justify-center p-4 animate-in fade-in duration-200"
+      onClick={() => setIsExpanded(false)} // Backdrop click
+    >
+      <div 
+        className="w-full max-w-5xl bg-slate-900 border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row max-h-[90vh] overflow-y-auto md:overflow-hidden relative"
+        onClick={(e) => e.stopPropagation()} // Prevent close on content click
+      >
         
+        {/* Close Button (X) */}
+        <button 
+          onClick={() => setIsExpanded(false)}
+          className="absolute top-4 right-4 z-50 p-2 bg-black/20 hover:bg-red-500/20 text-slate-400 hover:text-white rounded-full transition-all"
+        >
+            <X size={20} />
+        </button>
+
         {/* LEFT COLUMN: CURRENT SESSION */}
         <div className="flex-1 p-6 md:p-8 flex flex-col gap-6 border-b md:border-b-0 md:border-r border-white/10 relative overflow-y-auto custom-scrollbar">
+            {/* Alternative Minimize Button (Legacy) - Optional, but keeping for symmetry if desired, or removing since we have X now. User asked for X. */}
             <button 
               onClick={() => setIsExpanded(false)}
-              className="absolute top-4 left-4 p-2 text-slate-500 hover:text-white transition-colors"
+              className="absolute top-4 left-4 p-2 text-slate-500 hover:text-white transition-colors md:hidden"
             >
                <Minimize2 size={16} />
             </button>
@@ -154,6 +174,7 @@ export default function PsychicStatsModal({ hits, trials, chance, appName, matri
         </div>
 
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
