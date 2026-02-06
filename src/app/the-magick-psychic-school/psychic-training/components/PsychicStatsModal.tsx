@@ -77,10 +77,10 @@ export default function PsychicStatsModal({ hits, trials, chance, appName, matri
         </button>
 
         {/* CONTENT ROW */}
-        <div className="flex flex-col md:flex-row flex-1 overflow-hidden min-h-0">
+        <div className="flex flex-col md:flex-row flex-1 overflow-hidden min-h-0 bg-slate-900/50">
             {/* LEFT COLUMN: STATS BOARD */}
-            <div className="flex-1 p-5 md:p-6 flex flex-col gap-4 border-b md:border-b-0 md:border-r border-white/10 relative overflow-y-auto custom-scrollbar">
-                <div className="flex items-center gap-2 mb-0">
+            <div className="flex-1 p-4 md:p-6 flex flex-col gap-4 border-b md:border-b-0 md:border-r border-white/5 relative overflow-y-auto custom-scrollbar">
+                <div className="flex items-center gap-2 mb-0 sticky top-0 bg-slate-900/95 backdrop-blur z-10 py-1">
                     <Activity className="text-indigo-500" size={18} />
                     <h2 className="text-lg font-serif text-white">Performance</h2>
                 </div>
@@ -115,61 +115,65 @@ export default function PsychicStatsModal({ hits, trials, chance, appName, matri
                 </div>
 
                 {/* VISUALS: Matrix OR Resonance Grid */}
-                {/* If we have radar data, show the resonance grid blocks */}
-                {radarData && radarData.length > 0 && (
-                     <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                        {radarData.map(cat => (
-                            <div key={cat.id} className="bg-white/5 rounded p-2 flex flex-col items-center justify-center border border-white/5 text-center">
-                                <span className="text-[8px] uppercase font-black tracking-widest text-slate-500 mb-0.5">{cat.label}</span>
-                                <span className="text-base font-black text-white">{Math.round(cat.value || 0)}%</span>
-                                <span className="text-[8px] text-slate-600 font-mono">{cat.hits}/{cat.total}</span>
+                {/* If we have radar data, show the resonances in a compact grid */}
+                <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar pt-2">
+                    {radarData && radarData.length > 0 && (
+                         <div className="grid grid-cols-2 gap-2 mb-2">
+                            {radarData.map(cat => (
+                                <div key={cat.id} className="bg-white/5 rounded p-2 flex flex-col items-center justify-center border border-white/5 text-center min-h-[60px]">
+                                    <span className="text-[8px] uppercase font-black tracking-widest text-slate-500 mb-0.5">{cat.label}</span>
+                                    <span className="text-sm font-black text-white">{Math.round(cat.value || 0)}%</span>
+                                    <div className="w-full bg-white/10 h-0.5 mt-1 rounded-full overflow-hidden">
+                                        <div className="h-full bg-indigo-500" style={{ width: `${Math.min((cat.value || 0), 100)}%` }}></div>
+                                    </div>
+                                </div>
+                            ))}
+                         </div>
+                    )}
+
+                    {/* If Binary Matrix Data */}
+                    {matrixData && matrixData.labels && (
+                        <div className="bg-black/40 rounded-xl border border-white/5 overflow-hidden mt-1">
+                            <div className="text-[8px] uppercase font-black tracking-widest text-center py-1.5 bg-white/5 text-slate-400 border-b border-white/5">Performance Matrix</div>
+                            <div className="grid grid-cols-[auto_1fr_1fr] text-[10px]">
+                                 <div className="p-1.5"></div>
+                                 <div className="p-1.5 text-center font-bold text-emerald-400 border-b border-white/5 border-l border-white/5">Guess: {matrixData.labels[0]}</div>
+                                 <div className="p-1.5 text-center font-bold text-rose-400 border-b border-white/5 border-l border-white/5">Guess: {matrixData.labels[1]}</div>
+
+                                 <div className="p-1.5 font-bold text-cyan-400 text-right flex items-center justify-end border-b border-white/5">Was {matrixData.labels[0]}</div>
+                                 <div className="p-3 text-center text-lg font-bold text-white border-b border-white/5 border-l border-white/5 bg-white/5">{matrixData.tp}</div>
+                                 <div className="p-3 text-center text-lg font-bold text-slate-500 border-b border-white/5 border-l border-white/5">{matrixData.fn}</div>
+
+                                 <div className="p-1.5 font-bold text-fuchsia-400 text-right flex items-center justify-end">Was {matrixData.labels[1]}</div>
+                                 <div className="p-3 text-center text-lg font-bold text-slate-500 border-l border-white/5">{matrixData.fp}</div>
+                                 <div className="p-3 text-center text-lg font-bold text-white border-l border-white/5 bg-white/5">{matrixData.tn}</div>
                             </div>
-                        ))}
-                     </div>
-                )}
-
-                {/* If Binary Matrix Data */}
-                {matrixData && matrixData.labels && (
-                    <div className="bg-black/40 rounded-xl border border-white/5 overflow-hidden mt-1">
-                        <div className="text-[8px] uppercase font-black tracking-widest text-center py-1.5 bg-white/5 text-slate-400 border-b border-white/5">Performance Matrix</div>
-                        <div className="grid grid-cols-[auto_1fr_1fr] text-[10px]">
-                             <div className="p-1.5"></div>
-                             <div className="p-1.5 text-center font-bold text-emerald-400 border-b border-white/5 border-l border-white/5">Guess: {matrixData.labels[0]}</div>
-                             <div className="p-1.5 text-center font-bold text-rose-400 border-b border-white/5 border-l border-white/5">Guess: {matrixData.labels[1]}</div>
-
-                             <div className="p-1.5 font-bold text-cyan-400 text-right flex items-center justify-end border-b border-white/5">Was {matrixData.labels[0]}</div>
-                             <div className="p-3 text-center text-lg font-bold text-white border-b border-white/5 border-l border-white/5 bg-white/5">{matrixData.tp}</div>
-                             <div className="p-3 text-center text-lg font-bold text-slate-500 border-b border-white/5 border-l border-white/5">{matrixData.fn}</div>
-
-                             <div className="p-1.5 font-bold text-fuchsia-400 text-right flex items-center justify-end">Was {matrixData.labels[1]}</div>
-                             <div className="p-3 text-center text-lg font-bold text-slate-500 border-l border-white/5">{matrixData.fp}</div>
-                             <div className="p-3 text-center text-lg font-bold text-white border-l border-white/5 bg-white/5">{matrixData.tn}</div>
                         </div>
-                    </div>
-                )}
+                    )}
+                </div>
             </div>
     
             {/* RIGHT COLUMN: RADAR & LOCK */}
-            <div className="flex-1 bg-black/50 p-5 md:p-6 flex flex-col items-center justify-center text-center space-y-4 relative overflow-hidden border-l border-white/10">
+            <div className="flex-1 bg-black/50 p-4 md:p-6 flex flex-col items-center justify-center text-center space-y-4 relative overflow-hidden border-l border-white/10">
                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-indigo-900/10 via-slate-950/80 to-slate-950 pointer-events-none" />
 
                  {/* Radar Chart */}
                  {radarData && radarData.length >= 3 && (
-                     <div className="relative z-10 w-full flex flex-col items-center">
-                        <div className="flex items-center gap-2 mb-2 text-amber-100/80">
+                     <div className="relative z-10 w-full flex flex-col items-center justify-center flex-1 min-h-0">
+                        <div className="flex items-center gap-2 mb-2 text-amber-100/80 shrink-0">
                             <Activity size={14} className="text-amber-400" />
                             <h3 className="font-serif text-base">Soul Resonance</h3>
                         </div>
-                        <div className="bg-slate-900/50 rounded-2xl p-2 border border-white/5 backdrop-blur-sm w-full max-w-[200px] aspect-square flex items-center justify-center">
-                            <ResonanceRadar categories={radarData} size={160} />
+                        <div className="bg-slate-900/50 rounded-2xl p-2 border border-white/5 backdrop-blur-sm w-full max-w-[240px] aspect-square flex items-center justify-center shrink-1">
+                            <ResonanceRadar categories={radarData} size={200} />
                         </div>
-                        <p className="text-[9px] text-slate-500 mt-1 font-mono uppercase tracking-widest">Intuition Resonance Field</p>
+                        <p className="text-[9px] text-slate-500 mt-2 font-mono uppercase tracking-widest shrink-0">Intuition Resonance Field</p>
                      </div>
                  )}
 
                  {/* Lifetime Lock */}
-                 <div className="relative z-10 bg-slate-900/80 p-4 rounded-xl border border-amber-500/20 shadow-xl max-w-sm w-full mx-auto mt-auto">
-                    <Lock className="w-6 h-6 text-amber-500/80 mb-2 mx-auto" />
+                 <div className="relative z-10 bg-slate-900/80 p-3 md:p-4 rounded-xl border border-amber-500/20 shadow-xl max-w-sm w-full mx-auto mt-auto shrink-0">
+                    <Lock className="w-5 h-5 text-amber-500/80 mb-2 mx-auto" />
                     <h3 className="text-[10px] font-black text-amber-100 uppercase tracking-widest mb-1">Adept Access Required</h3>
                     <button className="mt-2 w-full py-1.5 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/50 text-amber-400 rounded-lg font-black uppercase tracking-widest text-[9px] flex items-center justify-center gap-2">
                         UNLOCK LIFETIME ANALYSIS
@@ -179,20 +183,20 @@ export default function PsychicStatsModal({ hits, trials, chance, appName, matri
         </div>
 
         {/* FOOTER: DEFINITIONS LEGEND */}
-        <div className="w-full bg-slate-950/50 border-t border-white/10 p-4 md:px-6 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 overflow-y-auto max-h-[30vh]">
+        <div className="w-full bg-slate-950 border-t border-white/10 p-3 md:px-6 md:py-4 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 overflow-y-auto max-h-[25vh] shrink-0">
            {/* HITTING */}
            <div>
-              <h4 className="text-[9px] font-black uppercase tracking-[0.2em] text-amber-400 mb-2 flex items-center gap-2">
+              <h4 className="text-[9px] font-black uppercase tracking-[0.2em] text-amber-400 mb-2 flex items-center gap-2 sticky top-0 bg-slate-950 z-10 py-1">
                   <span className="w-1.5 h-1.5 bg-amber-400 rounded-full"></span> Psi-Hitting (Positive)
               </h4>
               <div className="grid grid-cols-1 gap-0.5">
                  {PSI_RANKS.filter(r => r.tier === 'HITTING').map(r => (
                      <div key={r.title} className="flex justify-between items-center text-[9px] group cursor-default hover:bg-white/5 px-2 py-1 rounded transition-colors">
-                        <div className="flex items-center gap-2 truncate">
-                            <span className={`font-black uppercase tracking-wider ${r.color}`}>{r.title}</span>
-                            <span className="text-slate-500 hidden sm:inline truncate max-w-[150px]">{r.description}</span>
+                        <div className="flex items-center gap-2 truncate min-w-0">
+                            <span className={`font-black uppercase tracking-wider ${r.color} shrink-0`}>{r.title}</span>
+                            <span className="text-slate-500 hidden sm:inline truncate">{r.description}</span>
                         </div>
-                        <span className="font-mono font-bold text-slate-600 whitespace-nowrap ml-2">Z &ge; {r.minZ}</span>
+                        <span className="font-mono font-bold text-slate-600 whitespace-nowrap ml-2 shrink-0">Z &ge; {r.minZ}</span>
                      </div>
                  ))}
               </div>
@@ -200,17 +204,17 @@ export default function PsychicStatsModal({ hits, trials, chance, appName, matri
 
            {/* MISSING */}
            <div>
-              <h4 className="text-[9px] font-black uppercase tracking-[0.2em] text-rose-400 mb-2 flex items-center gap-2">
+              <h4 className="text-[9px] font-black uppercase tracking-[0.2em] text-rose-400 mb-2 flex items-center gap-2 sticky top-0 bg-slate-950 z-10 py-1">
                  <span className="w-1.5 h-1.5 bg-rose-400 rounded-full"></span> Psi-Missing (Negative)
               </h4>
               <div className="grid grid-cols-1 gap-0.5">
                  {PSI_RANKS.filter(r => r.tier === 'MISSING').map(r => (
                     <div key={r.title} className="flex justify-between items-center text-[9px] group cursor-default hover:bg-white/5 px-2 py-1 rounded transition-colors">
-                        <div className="flex items-center gap-2 truncate">
-                            <span className={`font-black uppercase tracking-wider ${r.color}`}>{r.title}</span>
-                            <span className="text-slate-500 hidden sm:inline truncate max-w-[150px]">{r.description}</span>
+                        <div className="flex items-center gap-2 truncate min-w-0">
+                            <span className={`font-black uppercase tracking-wider ${r.color} shrink-0`}>{r.title}</span>
+                            <span className="text-slate-500 hidden sm:inline truncate">{r.description}</span>
                         </div>
-                        <span className="font-mono font-bold text-slate-600 whitespace-nowrap ml-2">Z &le; {r.maxZ}</span>
+                        <span className="font-mono font-bold text-slate-600 whitespace-nowrap ml-2 shrink-0">Z &le; {r.maxZ}</span>
                     </div>
                  ))}
               </div>
