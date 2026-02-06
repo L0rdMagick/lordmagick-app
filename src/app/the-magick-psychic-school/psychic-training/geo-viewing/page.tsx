@@ -499,16 +499,26 @@ export default function GeoViewingPage() {
   };
   
   // Derived Radar Data
+  // Derived Radar Data
   const radarData = useMemo(() => {
-    return Object.entries(categoryStats).map(([catId, stats]) => {
-        const catConfig = CATEGORIES.find(c => c.id === catId);
+    // Tailwind to Hex mapping for chart
+    const colorMap: Record<string, string> = {
+        'text-amber-400': '#fbbf24',
+        'text-blue-400': '#60a5fa',
+        'text-emerald-400': '#34d399',
+        'text-purple-400': '#c084fc',
+        'text-slate-400': '#94a3b8'
+    };
+
+    return CATEGORIES.filter(c => c.id !== 'RANDOM').map(catConfig => {
+        const stats = categoryStats[catConfig.id] || { hits: 0, total: 0 };
         return {
-            id: catId,
-            label: catConfig?.label || catId,
-            value: (stats.hits / stats.total) * 100,
+            id: catConfig.id,
+            label: catConfig.label,
+            value: stats.total > 0 ? (stats.hits / stats.total) * 100 : 0,
             hits: stats.hits,
             total: stats.total,
-            color: catConfig?.color ? catConfig.color.replace('text-', '#') : '#facc15' // Simple approximate color mapping or ideally usage of specific hex
+            color: colorMap[catConfig.color] || '#facc15'
         };
     });
   }, [categoryStats]);
