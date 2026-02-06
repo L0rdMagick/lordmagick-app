@@ -1,3 +1,5 @@
+"use client";
+
 // ... imports
 import React, { useState, useEffect, useMemo } from 'react';
 import { Eye, Brain, Activity, RotateCcw } from 'lucide-react';
