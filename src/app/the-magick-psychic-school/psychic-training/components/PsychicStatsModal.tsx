@@ -83,7 +83,7 @@ export default function PsychicStatsModal({ hits, trials, chance, appName, matri
         </button>
 
         {/* CONTENT ROW */}
-        <div className="flex flex-col md:flex-row flex-1 min-h-0 bg-slate-900/50">
+        <div className="flex flex-col md:flex-row md:flex-1 md:min-h-0 bg-slate-900/50">
             {/* LEFT COLUMN: STATS BOARD */}
             <div className="flex-none md:flex-1 p-4 md:p-6 flex flex-col gap-4 border-b md:border-b-0 md:border-r border-white/5 relative md:overflow-y-auto custom-scrollbar shrink-0 pb-10 md:pb-6">
                 <div className="flex items-center gap-2 mb-0 sticky top-0 bg-slate-900/95 backdrop-blur z-10 py-1">
