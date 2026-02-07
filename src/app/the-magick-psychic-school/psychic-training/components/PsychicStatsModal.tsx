@@ -162,13 +162,13 @@ export default function PsychicStatsModal({ hits, trials, chance, appName, matri
             </div>
     
             {/* RIGHT COLUMN: RADAR & LOCK */}
-            <div className="flex-none md:flex-1 bg-black/50 p-6 md:p-6 flex flex-col items-center justify-center text-center space-y-4 relative md:overflow-hidden border-l border-white/10 shrink-0 min-h-[300px] md:min-h-0">
+            <div className="flex-none md:flex-1 bg-black/50 p-6 md:p-6 flex flex-col items-center md:items-center justify-start md:justify-center text-center space-y-4 relative md:overflow-hidden border-l border-white/10 shrink-0 min-h-[300px] md:min-h-0 pt-10 md:pt-6">
                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-indigo-900/10 via-slate-950/80 to-slate-950 pointer-events-none" />
 
                  {/* Radar Chart */}
                  {radarData && radarData.length >= 3 && (
                      <div className="relative z-10 w-full flex flex-col items-center justify-center md:flex-1 md:min-h-0 py-4">
-                        <div className="flex items-center gap-2 mb-2 text-amber-100/80 shrink-0">
+                        <div className="flex items-center gap-2 mb-4 text-amber-100/80 shrink-0 transform translate-y-2 md:translate-y-0">
                             <Activity size={14} className="text-amber-400" />
                             <h3 className="font-serif text-base">Soul Resonance</h3>
                         </div>
