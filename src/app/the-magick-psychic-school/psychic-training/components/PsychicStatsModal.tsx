@@ -77,9 +77,9 @@ export default function PsychicStatsModal({ hits, trials, chance, appName, matri
         </button>
 
         {/* CONTENT ROW */}
-        <div className="flex flex-col md:flex-row flex-1 overflow-hidden min-h-0 bg-slate-900/50">
+        <div className="flex flex-col md:flex-row flex-1 overflow-y-auto md:overflow-hidden min-h-0 bg-slate-900/50">
             {/* LEFT COLUMN: STATS BOARD */}
-            <div className="flex-1 p-4 md:p-6 flex flex-col gap-4 border-b md:border-b-0 md:border-r border-white/5 relative overflow-y-auto custom-scrollbar">
+            <div className="flex-none md:flex-1 p-4 md:p-6 flex flex-col gap-4 border-b md:border-b-0 md:border-r border-white/5 relative md:overflow-y-auto custom-scrollbar shrink-0">
                 <div className="flex items-center gap-2 mb-0 sticky top-0 bg-slate-900/95 backdrop-blur z-10 py-1">
                     <Activity className="text-indigo-500" size={18} />
                     <h2 className="text-lg font-serif text-white">Performance</h2>
@@ -116,7 +116,7 @@ export default function PsychicStatsModal({ hits, trials, chance, appName, matri
 
                 {/* VISUALS: Matrix OR Resonance Grid */}
                 {/* If we have radar data, show the resonances in a compact grid */}
-                <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar pt-2">
+                <div className="flex-1 min-h-0 pt-2">
                     {radarData && radarData.length > 0 && (
                          <div className="grid grid-cols-2 gap-2 mb-2">
                             {radarData.map(cat => (
@@ -154,12 +154,12 @@ export default function PsychicStatsModal({ hits, trials, chance, appName, matri
             </div>
     
             {/* RIGHT COLUMN: RADAR & LOCK */}
-            <div className="flex-1 bg-black/50 p-4 md:p-6 flex flex-col items-center justify-center text-center space-y-4 relative overflow-hidden border-l border-white/10">
+            <div className="flex-none md:flex-1 bg-black/50 p-6 md:p-6 flex flex-col items-center justify-center text-center space-y-4 relative md:overflow-hidden border-l border-white/10 shrink-0 min-h-[300px] md:min-h-0">
                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-indigo-900/10 via-slate-950/80 to-slate-950 pointer-events-none" />
 
                  {/* Radar Chart */}
                  {radarData && radarData.length >= 3 && (
-                     <div className="relative z-10 w-full flex flex-col items-center justify-center flex-1 min-h-0">
+                     <div className="relative z-10 w-full flex flex-col items-center justify-center flex-1 min-h-0 py-4">
                         <div className="flex items-center gap-2 mb-2 text-amber-100/80 shrink-0">
                             <Activity size={14} className="text-amber-400" />
                             <h3 className="font-serif text-base">Soul Resonance</h3>
@@ -172,7 +172,7 @@ export default function PsychicStatsModal({ hits, trials, chance, appName, matri
                  )}
 
                  {/* Lifetime Lock */}
-                 <div className="relative z-10 bg-slate-900/80 p-3 md:p-4 rounded-xl border border-amber-500/20 shadow-xl max-w-sm w-full mx-auto mt-auto shrink-0">
+                 <div className="relative z-10 bg-slate-900/80 p-3 md:p-4 rounded-xl border border-amber-500/20 shadow-xl max-w-sm w-full mx-auto mt-auto shrink-0 mb-4 md:mb-0">
                     <Lock className="w-5 h-5 text-amber-500/80 mb-2 mx-auto" />
                     <h3 className="text-[10px] font-black text-amber-100 uppercase tracking-widest mb-1">Adept Access Required</h3>
                     <button className="mt-2 w-full py-1.5 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/50 text-amber-400 rounded-lg font-black uppercase tracking-widest text-[9px] flex items-center justify-center gap-2">
@@ -183,7 +183,7 @@ export default function PsychicStatsModal({ hits, trials, chance, appName, matri
         </div>
 
         {/* FOOTER: DEFINITIONS LEGEND */}
-        <div className="w-full bg-slate-950 border-t border-white/10 p-3 md:px-6 md:py-4 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 overflow-y-auto max-h-[25vh] shrink-0">
+        <div className="w-full bg-slate-950 border-t border-white/10 p-3 md:px-6 md:py-4 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 overflow-y-auto max-h-[25vh] shrink-0 sticky bottom-0 z-20">
            {/* HITTING */}
            <div>
               <h4 className="text-[9px] font-black uppercase tracking-[0.2em] text-amber-400 mb-2 flex items-center gap-2 sticky top-0 bg-slate-950 z-10 py-1">
