@@ -162,18 +162,18 @@ export default function PsychicStatsModal({ hits, trials, chance, appName, matri
             </div>
     
             {/* RIGHT COLUMN: RADAR & LOCK */}
-            <div className="flex-none md:flex-1 bg-black/50 p-6 md:p-6 flex flex-col items-center md:items-center justify-start md:justify-center text-center space-y-4 relative md:overflow-hidden border-l border-white/10 shrink-0 min-h-[300px] md:min-h-0 pt-10 md:pt-6">
+            <div className="flex-none md:flex-1 bg-black/50 p-6 md:p-6 flex flex-col items-center md:items-center justify-start md:justify-center text-center space-y-4 relative md:overflow-hidden border-l border-white/10 shrink-0 min-h-[300px] md:min-h-0 pt-14 md:pt-6">
                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-indigo-900/10 via-slate-950/80 to-slate-950 pointer-events-none" />
 
                  {/* Radar Chart */}
                  {radarData && radarData.length >= 3 && (
                      <div className="relative z-10 w-full flex flex-col items-center justify-center md:flex-1 md:min-h-0 py-4">
-                        <div className="flex items-center gap-2 mb-4 text-amber-100/80 shrink-0 transform translate-y-2 md:translate-y-0">
+                        <div className="flex items-center gap-2 mb-6 text-amber-100/80 shrink-0 transform translate-y-0 md:translate-y-0">
                             <Activity size={14} className="text-amber-400" />
                             <h3 className="font-serif text-base">Soul Resonance</h3>
                         </div>
-                        <div className="bg-slate-900/50 rounded-2xl p-2 border border-white/5 backdrop-blur-sm w-full max-w-[240px] aspect-square flex items-center justify-center shrink-0">
-                            <ResonanceRadar categories={radarData || []} size={200} />
+                        <div className="bg-slate-900/50 rounded-2xl p-2 border border-white/5 backdrop-blur-sm w-full max-w-[320px] aspect-square flex items-center justify-center shrink-0">
+                            <ResonanceRadar categories={radarData || []} size={280} />
                         </div>
                         <p className="text-[9px] text-slate-500 mt-2 font-mono uppercase tracking-widest shrink-0">Intuition Resonance Field</p>
                      </div>
