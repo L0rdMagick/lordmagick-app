@@ -189,7 +189,7 @@ export default function PsychicStatsModal({ hits, trials, chance, appName, matri
         </div>
 
         {/* FOOTER: DEFINITIONS LEGEND */}
-        <div className="w-full bg-slate-950 border-t border-white/10 p-3 md:px-6 md:py-4 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 md:overflow-y-auto md:max-h-[25vh] shrink-0 sticky bottom-0 z-20">
+        <div className="w-full bg-slate-950 border-t border-white/10 p-3 md:px-6 md:py-4 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 md:overflow-y-auto md:max-h-[25vh] shrink-0 md:sticky md:bottom-0 z-20">
            {/* HITTING */}
            <div>
               <h4 className="text-[9px] font-black uppercase tracking-[0.2em] text-amber-400 mb-2 flex items-center gap-2 sticky top-0 bg-slate-950 z-10 py-1">
