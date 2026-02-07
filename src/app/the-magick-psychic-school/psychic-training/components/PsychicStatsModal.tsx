@@ -122,8 +122,7 @@ export default function PsychicStatsModal({ hits, trials, chance, appName, matri
 
                 {/* VISUALS: Matrix OR Resonance Grid */}
                 {/* If we have radar data, show the resonances in a compact grid */}
-                {/* VISUALS: Matrix OR Resonance Grid */}
-                {/* If we have radar data, show the resonances in a compact grid */}
+                
                 <div className="md:flex-1 md:min-h-0 pt-2 w-full">
                     {radarData && radarData.length > 0 && (
                          <div className="grid grid-cols-2 gap-2 mb-2">
@@ -175,9 +174,6 @@ export default function PsychicStatsModal({ hits, trials, chance, appName, matri
                         <div className="bg-slate-900/50 rounded-2xl p-2 border border-white/5 backdrop-blur-sm w-full md:max-w-[400px] aspect-square flex items-center justify-center shrink-0 relative z-10">
                             <ResonanceRadar categories={radarData || []} size={340} />
                         </div>
-                        <p className="text-[9px] text-slate-500 mt-2 font-mono uppercase tracking-widest shrink-0">Intuition Resonance Field</p>
-                     </div>
-                 )}
                         <p className="text-[9px] text-slate-500 mt-2 font-mono uppercase tracking-widest shrink-0">Intuition Resonance Field</p>
                      </div>
                  )}
