@@ -45,85 +45,87 @@ export default function ResonanceRadar({ categories, size = 240, title }: Resona
     if (categories.length < 3) return null; // Radar needs at least 3 points to look good
 
     return (
-        <div className="flex flex-col items-center justify-center py-2 relative">
+        <div className="flex flex-col items-center justify-center py-2 relative w-full h-full min-h-0">
              {title && (
-                <h4 className="text-amber-200 font-serif text-lg flex items-center gap-2 mb-2 uppercase tracking-widest">
+                <h4 className="text-amber-200 font-serif text-lg flex items-center gap-2 mb-2 uppercase tracking-widest shrink-0">
                     <Sparkles size={16}/> {title}
                 </h4>
              )}
             
-            <svg width={size} height={size} className="overflow-visible">
-                {/* Grid Rings */}
-                {[0.25, 0.5, 0.75, 1].map((scale, k) => (
-                    <polygon 
-                        key={k}
-                        points={categories.map((_, i) => {
-                            const angle = (Math.PI * 2 * i) / categories.length - Math.PI / 2;
-                            const r = radius * scale;
-                            return `${center + r * Math.cos(angle)},${center + r * Math.sin(angle)}`;
-                        }).join(' ')}
-                        fill="none"
-                        stroke="rgba(255,255,255,0.1)"
-                        strokeWidth="1"
-                    />
-                ))}
-                
-                {/* Axes */}
-                {categories.map((_, i) => {
-                    const angle = (Math.PI * 2 * i) / categories.length - Math.PI / 2;
-                    return (
-                        <line 
-                            key={i}
-                            x1={center} y1={center}
-                            x2={center + radius * Math.cos(angle)}
-                            y2={center + radius * Math.sin(angle)}
+            <div className="flex-1 min-h-0 w-full flex items-center justify-center relative aspect-square">
+                <svg viewBox={`0 0 ${size} ${size}`} className="overflow-visible w-full h-full max-w-full max-h-full" preserveAspectRatio="xMidYMid meet">
+                    {/* Grid Rings */}
+                    {[0.25, 0.5, 0.75, 1].map((scale, k) => (
+                        <polygon 
+                            key={k}
+                            points={categories.map((_, i) => {
+                                const angle = (Math.PI * 2 * i) / categories.length - Math.PI / 2;
+                                const r = radius * scale;
+                                return `${center + r * Math.cos(angle)},${center + r * Math.sin(angle)}`;
+                            }).join(' ')}
+                            fill="none"
                             stroke="rgba(255,255,255,0.1)"
                             strokeWidth="1"
                         />
-                    );
-                })}
+                    ))}
+                    
+                    {/* Axes */}
+                    {categories.map((_, i) => {
+                        const angle = (Math.PI * 2 * i) / categories.length - Math.PI / 2;
+                        return (
+                            <line 
+                                key={i}
+                                x1={center} y1={center}
+                                x2={center + radius * Math.cos(angle)}
+                                y2={center + radius * Math.sin(angle)}
+                                stroke="rgba(255,255,255,0.1)"
+                                strokeWidth="1"
+                            />
+                        );
+                    })}
 
-                {/* Data Shape */}
-                <path d={pathData} fill="rgba(236, 72, 153, 0.2)" stroke="#ec4899" strokeWidth="2" filter="drop-shadow(0 0 4px rgba(236, 72, 153, 0.5))" />
-                
-                {/* Labels */}
-                {categories.map((cat, i) => {
-                    const angle = (Math.PI * 2 * i) / categories.length - Math.PI / 2;
-                    const labelRadius = radius + 20;
-                    const x = center + labelRadius * Math.cos(angle);
-                    const y = center + labelRadius * Math.sin(angle);
+                    {/* Data Shape */}
+                    <path d={pathData} fill="rgba(236, 72, 153, 0.2)" stroke="#ec4899" strokeWidth="2" filter="drop-shadow(0 0 4px rgba(236, 72, 153, 0.5))" />
                     
-                    // Simple alignment adjustment based on position
-                    const anchor = Math.abs(x - center) < 5 ? 'middle' : x > center ? 'start' : 'end';
-                    
-                    return (
-                        <g key={cat.id}>
-                            <text 
-                                x={x} y={y} 
-                                textAnchor={anchor} 
-                                dominantBaseline="middle" 
-                                fill={cat.value && cat.value > 0 ? cat.color : "#64748b"}
-                                fontSize="10"
-                                fontWeight="bold"
-                                className="uppercase font-mono"
-                            >
-                                {cat.label}
-                            </text>
-                             {/* Optional Value Label */}
-                             <text 
-                                x={x} y={y + 12} 
-                                textAnchor={anchor} 
-                                dominantBaseline="middle" 
-                                fill="white"
-                                fontSize="10"
-                                className="font-mono"
-                            >
-                                {cat.value !== undefined ? `${Math.round(cat.value > 1 ? cat.value : cat.value*100)}%` : ''}
-                            </text>
-                        </g>
-                    );
-                })}
-            </svg>
+                    {/* Labels */}
+                    {categories.map((cat, i) => {
+                        const angle = (Math.PI * 2 * i) / categories.length - Math.PI / 2;
+                        const labelRadius = radius + 20;
+                        const x = center + labelRadius * Math.cos(angle);
+                        const y = center + labelRadius * Math.sin(angle);
+                        
+                        // Simple alignment adjustment based on position
+                        const anchor = Math.abs(x - center) < 5 ? 'middle' : x > center ? 'start' : 'end';
+                        
+                        return (
+                            <g key={cat.id}>
+                                <text 
+                                    x={x} y={y} 
+                                    textAnchor={anchor} 
+                                    dominantBaseline="middle" 
+                                    fill={cat.value && cat.value > 0 ? cat.color : "#64748b"}
+                                    fontSize="10"
+                                    fontWeight="bold"
+                                    className="uppercase font-mono"
+                                >
+                                    {cat.label}
+                                </text>
+                                 {/* Optional Value Label */}
+                                 <text 
+                                    x={x} y={y + 12} 
+                                    textAnchor={anchor} 
+                                    dominantBaseline="middle" 
+                                    fill="white"
+                                    fontSize="10"
+                                    className="font-mono"
+                                >
+                                    {cat.value !== undefined ? `${Math.round(cat.value > 1 ? cat.value : cat.value*100)}%` : ''}
+                                </text>
+                            </g>
+                        );
+                    })}
+                </svg>
+            </div>
         </div>
     );
 }
