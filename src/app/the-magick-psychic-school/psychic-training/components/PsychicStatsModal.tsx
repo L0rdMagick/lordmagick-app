@@ -72,7 +72,7 @@ export default function PsychicStatsModal({ hits, trials, chance, appName, matri
       onClick={() => setIsExpanded(false)}
     >
       <div 
-        className="w-full md:max-w-5xl bg-slate-900 border-x md:border border-white/10 md:rounded-2xl shadow-2xl flex flex-col min-h-screen md:min-h-0 md:max-h-[90vh] relative overflow-visible md:overflow-hidden"
+        className="w-[90%] md:w-[70%] max-w-none bg-slate-900 border-x md:border border-white/10 md:rounded-2xl shadow-2xl flex flex-col min-h-[50vh] max-h-[90vh] md:max-h-[85vh] relative overflow-visible md:overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         <button 
@@ -83,9 +83,9 @@ export default function PsychicStatsModal({ hits, trials, chance, appName, matri
         </button>
 
         {/* CONTENT ROW */}
-        <div className="flex flex-col md:flex-row md:flex-1 md:min-h-0 bg-slate-900/50">
+        <div className="flex flex-col md:flex-row md:flex-1 md:min-h-0 bg-slate-900/50 overflow-hidden">
             {/* LEFT COLUMN: STATS BOARD */}
-            <div className="flex-none md:flex-1 p-4 md:p-6 flex flex-col gap-4 border-b md:border-b-0 md:border-r border-white/5 relative overflow-y-auto md:overflow-hidden shrink-1 min-h-[300px] md:min-h-0 pb-10 md:pb-6">
+            <div className="flex-none md:flex-1 p-4 md:p-6 flex flex-col gap-4 border-b md:border-b-0 md:border-r border-white/5 relative overflow-y-auto custom-scrollbar shrink-1 min-h-[300px] md:min-h-0 pb-10 md:pb-6">
                 <div className="flex items-center gap-2 mb-0 sticky top-0 bg-slate-900/95 backdrop-blur z-10 py-1 shrink-0">
                     <Activity className="text-indigo-500" size={18} />
                     <h2 className="text-lg font-serif text-white">Performance</h2>
@@ -121,7 +121,7 @@ export default function PsychicStatsModal({ hits, trials, chance, appName, matri
                 </div>
 
                 {/* VISUALS: Matrix OR Resonance Grid */}
-                <div className="md:flex-1 md:min-h-0 pt-2 w-full flex flex-col justify-start overflow-hidden hover:overflow-y-auto custom-scrollbar">
+                <div className="md:flex-1 md:min-h-0 pt-2 w-full flex flex-col justify-start shrink-0">
                     {radarData && radarData.length > 0 && (
                          <div className="grid grid-cols-2 gap-2 mb-2 shrink-0">
                             {radarData.map(cat => (
@@ -159,7 +159,7 @@ export default function PsychicStatsModal({ hits, trials, chance, appName, matri
             </div>
     
             {/* RIGHT COLUMN: RADAR & LOCK */}
-            <div className="flex-none md:flex-1 bg-black/50 p-6 md:p-6 flex flex-col items-center md:items-center justify-start md:justify-center text-center space-y-4 relative overflow-y-auto md:overflow-hidden border-l border-white/10 shrink-1 min-h-[300px] md:min-h-0 pt-14 md:pt-6">
+            <div className="flex-none md:flex-1 bg-black/50 p-6 md:p-6 flex flex-col items-center md:items-center justify-start md:justify-center text-center space-y-4 relative overflow-y-auto custom-scrollbar border-l border-white/10 shrink-1 min-h-[300px] md:min-h-0 pt-14 md:pt-6">
                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-indigo-900/10 via-slate-950/80 to-slate-950 pointer-events-none fixed" />
 
                  {/* Radar Chart - Flexible Container */}
