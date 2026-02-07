@@ -24,6 +24,11 @@ type PsychicStatsProps = {
 
 export default function PsychicStatsModal({ hits, trials, chance, appName, matrixData, radarData, className }: PsychicStatsProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const zScore = (hits !== undefined && trials !== undefined) ? calculateZScore(hits, trials, chance) : 0;
   const accuracy = trials > 0 ? (hits / trials) * 100 : 0;
@@ -58,11 +63,6 @@ export default function PsychicStatsModal({ hits, trials, chance, appName, matri
   }
 
   // --- EXPANDED VIEW ---
-  // --- EXPANDED VIEW ---
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   if (!mounted || typeof document === 'undefined' || !document.body) return null;
 
