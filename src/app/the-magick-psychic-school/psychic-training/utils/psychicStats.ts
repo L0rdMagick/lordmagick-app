@@ -11,7 +11,7 @@ export type PsiRank = {
 
 export const PSI_RANKS: PsiRank[] = [
   // PSI-HITTING (Positive)
-  { title: "The Oracle", tier: 'HITTING', description: "World Class Anomaly (1 in 31,000+).", color: "text-amber-400", minZ: 4.0 },
+  { title: "The Oracl e", tier: 'HITTING', description: "World Class Anomaly (1 in 31,000+).", color: "text-amber-400", minZ: 4.0 },
   { title: "The Medium", tier: 'HITTING', description: "Highly Significant (1 in 740).", color: "text-purple-400", minZ: 3.0 },
   { title: "The Clairvoyant", tier: 'HITTING', description: "Statistically Significant (p < 0.05).", color: "text-indigo-400", minZ: 1.96 },
   { title: "The Channel", tier: 'HITTING', description: "Tapping into something real (1 in 20).", color: "text-blue-400", minZ: 1.65 },
