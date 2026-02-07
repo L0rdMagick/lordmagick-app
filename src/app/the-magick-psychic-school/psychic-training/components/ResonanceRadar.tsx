@@ -104,7 +104,7 @@ export default function ResonanceRadar({ categories, size = 240, title }: Resona
                                     textAnchor={anchor} 
                                     dominantBaseline="middle" 
                                     fill={cat.value && cat.value > 0 ? cat.color : "#64748b"}
-                                    fontSize="10"
+                                    fontSize="15"
                                     fontWeight="bold"
                                     className="uppercase font-mono"
                                 >
@@ -112,11 +112,11 @@ export default function ResonanceRadar({ categories, size = 240, title }: Resona
                                 </text>
                                  {/* Optional Value Label */}
                                  <text 
-                                    x={x} y={y + 12} 
+                                    x={x} y={y + 18} 
                                     textAnchor={anchor} 
                                     dominantBaseline="middle" 
                                     fill="white"
-                                    fontSize="10"
+                                    fontSize="15"
                                     className="font-mono"
                                 >
                                     {cat.value !== undefined ? `${Math.round(cat.value > 1 ? cat.value : cat.value*100)}%` : ''}
