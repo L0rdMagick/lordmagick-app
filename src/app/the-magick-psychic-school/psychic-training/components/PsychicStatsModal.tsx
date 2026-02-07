@@ -168,11 +168,11 @@ export default function PsychicStatsModal({ hits, trials, chance, appName, matri
                  {/* Radar Chart */}
                  {radarData && radarData.length >= 3 && (
                      <div className="relative z-10 w-full flex flex-col items-center justify-center md:flex-1 md:min-h-0 py-4">
-                        <div className="flex items-center gap-2 mb-6 text-amber-100/80 shrink-0 transform translate-y-0 md:translate-y-0">
+                        <div className="flex items-center gap-2 mb-2 md:mb-6 text-amber-100/80 shrink-0 transform translate-y-0 relative z-20">
                             <Activity size={14} className="text-amber-400" />
                             <h3 className="font-serif text-base">Soul Resonance</h3>
                         </div>
-                        <div className="bg-slate-900/50 rounded-2xl p-2 border border-white/5 backdrop-blur-sm w-full max-w-[320px] aspect-square flex items-center justify-center shrink-0">
+                        <div className="bg-slate-900/50 rounded-2xl p-2 border border-white/5 backdrop-blur-sm w-full md:max-w-[320px] aspect-square flex items-center justify-center shrink-0 relative z-10">
                             <ResonanceRadar categories={radarData || []} size={280} />
                         </div>
                         <p className="text-[9px] text-slate-500 mt-2 font-mono uppercase tracking-widest shrink-0">Intuition Resonance Field</p>
