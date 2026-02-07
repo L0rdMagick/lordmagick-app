@@ -122,7 +122,9 @@ export default function PsychicStatsModal({ hits, trials, chance, appName, matri
 
                 {/* VISUALS: Matrix OR Resonance Grid */}
                 {/* If we have radar data, show the resonances in a compact grid */}
-                <div className="flex-1 min-h-0 pt-2">
+                {/* VISUALS: Matrix OR Resonance Grid */}
+                {/* If we have radar data, show the resonances in a compact grid */}
+                <div className="md:flex-1 md:min-h-0 pt-2 w-full">
                     {radarData && radarData.length > 0 && (
                          <div className="grid grid-cols-2 gap-2 mb-2">
                             {radarData.map(cat => (
@@ -165,12 +167,12 @@ export default function PsychicStatsModal({ hits, trials, chance, appName, matri
 
                  {/* Radar Chart */}
                  {radarData && radarData.length >= 3 && (
-                     <div className="relative z-10 w-full flex flex-col items-center justify-center flex-1 min-h-0 py-4">
+                     <div className="relative z-10 w-full flex flex-col items-center justify-center md:flex-1 md:min-h-0 py-4">
                         <div className="flex items-center gap-2 mb-2 text-amber-100/80 shrink-0">
                             <Activity size={14} className="text-amber-400" />
                             <h3 className="font-serif text-base">Soul Resonance</h3>
                         </div>
-                        <div className="bg-slate-900/50 rounded-2xl p-2 border border-white/5 backdrop-blur-sm w-full max-w-[240px] aspect-square flex items-center justify-center shrink-1">
+                        <div className="bg-slate-900/50 rounded-2xl p-2 border border-white/5 backdrop-blur-sm w-full max-w-[240px] aspect-square flex items-center justify-center shrink-0">
                             <ResonanceRadar categories={radarData || []} size={200} />
                         </div>
                         <p className="text-[9px] text-slate-500 mt-2 font-mono uppercase tracking-widest shrink-0">Intuition Resonance Field</p>
