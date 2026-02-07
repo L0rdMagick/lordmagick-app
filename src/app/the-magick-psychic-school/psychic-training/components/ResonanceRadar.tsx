@@ -18,7 +18,7 @@ type ResonanceRadarProps = {
 
 export default function ResonanceRadar({ categories, size = 240, title }: ResonanceRadarProps) {
     const center = size / 2;
-    const radius = (size / 2) - 40; // Padding for labels
+    const radius = (size / 2) - 55; // Increased padding for labels (was 40)
     
     // Calculate points
     const points = categories.map((cat, i) => {

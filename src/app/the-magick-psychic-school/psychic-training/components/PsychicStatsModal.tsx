@@ -58,28 +58,34 @@ export default function PsychicStatsModal({ hits, trials, chance, appName, matri
   }
 
   // --- EXPANDED VIEW ---
-  if (typeof document === 'undefined') return null;
+  // --- EXPANDED VIEW ---
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted || typeof document === 'undefined' || !document.body) return null;
 
   return createPortal(
     <div 
-      className="fixed inset-0 z-[9999] bg-slate-950/90 backdrop-blur-xl flex items-center justify-center p-4 animate-in fade-in duration-200"
+      className="fixed inset-0 z-[9999] bg-slate-950/90 backdrop-blur-xl flex md:items-center justify-center p-0 md:p-4 animate-in fade-in duration-200 overflow-y-auto md:overflow-hidden"
       onClick={() => setIsExpanded(false)}
     >
       <div 
-        className="w-full max-w-5xl bg-slate-900 border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] relative"
+        className="w-full md:max-w-5xl bg-slate-900 border-x md:border border-white/10 md:rounded-2xl shadow-2xl flex flex-col min-h-screen md:min-h-0 md:max-h-[90vh] relative overflow-visible md:overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         <button 
           onClick={() => setIsExpanded(false)}
-          className="absolute top-4 right-4 z-50 p-2 bg-black/20 hover:bg-rose-500/20 text-slate-400 hover:text-white rounded-full transition-all"
+          className="fixed md:absolute top-4 right-4 z-50 p-2 bg-black/40 md:bg-black/20 hover:bg-rose-500/20 text-slate-400 hover:text-white rounded-full transition-all backdrop-blur-md"
         >
             <X size={20} />
         </button>
 
         {/* CONTENT ROW */}
-        <div className="flex flex-col md:flex-row flex-1 overflow-y-auto md:overflow-hidden min-h-0 bg-slate-900/50">
+        <div className="flex flex-col md:flex-row flex-1 min-h-0 bg-slate-900/50">
             {/* LEFT COLUMN: STATS BOARD */}
-            <div className="flex-none md:flex-1 p-4 md:p-6 flex flex-col gap-4 border-b md:border-b-0 md:border-r border-white/5 relative md:overflow-y-auto custom-scrollbar shrink-0">
+            <div className="flex-none md:flex-1 p-4 md:p-6 flex flex-col gap-4 border-b md:border-b-0 md:border-r border-white/5 relative md:overflow-y-auto custom-scrollbar shrink-0 pb-10 md:pb-6">
                 <div className="flex items-center gap-2 mb-0 sticky top-0 bg-slate-900/95 backdrop-blur z-10 py-1">
                     <Activity className="text-indigo-500" size={18} />
                     <h2 className="text-lg font-serif text-white">Performance</h2>
@@ -165,7 +171,7 @@ export default function PsychicStatsModal({ hits, trials, chance, appName, matri
                             <h3 className="font-serif text-base">Soul Resonance</h3>
                         </div>
                         <div className="bg-slate-900/50 rounded-2xl p-2 border border-white/5 backdrop-blur-sm w-full max-w-[240px] aspect-square flex items-center justify-center shrink-1">
-                            <ResonanceRadar categories={radarData} size={200} />
+                            <ResonanceRadar categories={radarData || []} size={200} />
                         </div>
                         <p className="text-[9px] text-slate-500 mt-2 font-mono uppercase tracking-widest shrink-0">Intuition Resonance Field</p>
                      </div>
@@ -183,7 +189,7 @@ export default function PsychicStatsModal({ hits, trials, chance, appName, matri
         </div>
 
         {/* FOOTER: DEFINITIONS LEGEND */}
-        <div className="w-full bg-slate-950 border-t border-white/10 p-3 md:px-6 md:py-4 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 overflow-y-auto max-h-[25vh] shrink-0 sticky bottom-0 z-20">
+        <div className="w-full bg-slate-950 border-t border-white/10 p-3 md:px-6 md:py-4 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 md:overflow-y-auto md:max-h-[25vh] shrink-0 sticky bottom-0 z-20">
            {/* HITTING */}
            <div>
               <h4 className="text-[9px] font-black uppercase tracking-[0.2em] text-amber-400 mb-2 flex items-center gap-2 sticky top-0 bg-slate-950 z-10 py-1">
