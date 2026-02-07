@@ -19,7 +19,7 @@ const CATEGORIES = [
   { id: 'ANCIENT', label: 'Ancient Wonders', icon: History, color: 'text-amber-400', desc: 'Ancient Resonance' },
   { id: 'ARCHITECTURAL', label: 'Architecture', icon: Landmark, color: 'text-blue-400', desc: 'Monumental Intent' },
   { id: 'NATURAL', label: 'Nature', icon: Mountain, color: 'text-emerald-400', desc: 'Geological Spikes' },
-  { id: 'URBAN', label: 'Urban Centers', icon: Building2, color: 'text-purple-400', desc: 'Human Clusters' },
+  { id: 'URBAN', label: 'Cities', icon: Building2, color: 'text-purple-400', desc: 'Human Clusters' },
   { id: 'RANDOM', label: 'Total Flux', icon: Dices, color: 'text-slate-400', desc: 'Atmospheric Variance' }
 ];
 
