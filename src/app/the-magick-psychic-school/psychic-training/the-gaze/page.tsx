@@ -581,14 +581,21 @@ export default function TheGazeApp() {
       
       {/* Header */}
       <header className="relative z-20 px-2 md:px-6 py-[3px] flex justify-between items-center border-b border-gray-800/50 bg-[#0a0a0a]/50">
-        <div className="flex items-center gap-4">
-          <MagickalBackLink href="/the-magick-psychic-school/psychic-training" text="Exit Training" className="text-sm" />
+        <div className="flex items-center gap-4 relative z-10 pointer-events-auto">
+          <div className="md:hidden">
+              <MagickalBackLink href="/the-magick-psychic-school/psychic-training" text="" className="text-sm" />
+          </div>
+          <div className="hidden md:block">
+              <MagickalBackLink href="/the-magick-psychic-school/psychic-training" text="Exit Training" className="text-sm" />
+          </div>
         </div>
 
-        <div className="flex items-center gap-1 md:gap-2">
-            <h1 className="font-bold text-xl tracking-wider text-transparent bg-clip-text bg-linear-to-r from-cyan-200 to-purple-200 hidden lg:block">
-                THE GAZE
-            </h1>
+        {/* Centered Title (Large Screens Only) */}
+        <h1 className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 font-bold text-xl tracking-wider text-transparent bg-clip-text bg-linear-to-r from-cyan-200 to-purple-200 hidden lg:block z-0 pointer-events-none">
+            THE GAZE
+        </h1>
+
+        <div className="flex items-center gap-1 md:gap-2 relative z-10 pointer-events-auto">
             {/* Standardized Stats Modal */}
             <PsychicStatsModal 
                 {...fullStats}
