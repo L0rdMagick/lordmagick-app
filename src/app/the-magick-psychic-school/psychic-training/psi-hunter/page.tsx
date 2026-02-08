@@ -473,29 +473,49 @@ export default function FriendOrFoeApp() {
 
       {showInstructions && <InstructionModal onClose={() => { setShowInstructions(false); startRound(1); }} />}
 
-      {/* HEADER - Fixed Height */}
-      <header className="relative z-20 flex justify-between items-center px-4 py-3 border-b border-purple-900/30 backdrop-blur-sm bg-slate-950/60 shrink-0 h-16">
-        <div className="flex items-center gap-4">
-            <MagickalBackLink href="/the-magick-psychic-school/psychic-training" text="Exit" className="text-xs text-slate-500 hover:text-purple-400" />
-            <div className="w-px h-6 bg-slate-800 hidden md:block"></div>
-            <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded bg-purple-950 border border-purple-800 flex items-center justify-center">
-                    <Heart size={16} className="text-purple-400" />
-                </div>
-                <span className="font-serif tracking-widest text-lg font-bold text-slate-200 hidden md:block">
-                    FRIEND OR FOE
-                </span>
+      {/* HEADER - Consistent Flex Layout */}
+      <header className="relative z-20 flex justify-between items-center px-4 py-[3px] border-b border-purple-900/30 backdrop-blur-sm bg-slate-950/60 shrink-0 min-h-[54px]">
+        
+        {/* Left: Back Link */}
+        <div className="flex items-center gap-4 relative z-10 pointer-events-auto shrink-0">
+            <div className="md:hidden">
+                <MagickalBackLink href="/the-magick-psychic-school/psychic-training" text="" className="text-xs text-slate-500 hover:text-purple-400" />
+            </div>
+            <div className="hidden md:block">
+                <MagickalBackLink href="/the-magick-psychic-school/psychic-training" text="Exit" className="text-xs text-slate-500 hover:text-purple-400" />
             </div>
         </div>
-        
-        <div className="flex gap-2">
-           <button onClick={() => setShowInstructions(true)} className="p-2 hover:bg-slate-800 rounded transition-colors text-slate-500">
+
+        {/* Center: Title (Desktop Only) */}
+        <div className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 items-center gap-3 pointer-events-none z-0">
+             <div className="w-8 h-8 rounded bg-purple-950 border border-purple-800 flex items-center justify-center">
+                <Heart size={16} className="text-purple-400" />
+            </div>
+            <span className="font-serif tracking-widest text-lg font-bold text-slate-200">
+                FRIEND OR FOE
+            </span>
+        </div>
+
+        {/* Right: Modal + Buttons */}
+        <div className="flex items-center gap-1 md:gap-2 z-10 pointer-events-auto flex-1 justify-end min-w-0">
+            <PsychicStatsModal 
+                  hits={stats.hits} 
+                  trials={stats.trials} 
+                  chance={0.5} 
+                  appName="Friend or Foe"
+                  matrixData={matrixData}
+                  radarData={matrixData.radarData}
+                  maxStreak={matrixData.maxStreak}
+                  className="static transform-none z-30 w-full max-w-[230px] md:w-64 md:max-w-none shrink"
+            />
+            
+           <button onClick={() => setShowInstructions(true)} className="hidden md:block p-2 hover:bg-slate-800 rounded transition-colors text-slate-500 shrink-0">
              <Info size={20} />
            </button>
-           <button onClick={toggleSound} className="p-2 hover:bg-slate-800 rounded transition-colors text-slate-500">
+           <button onClick={toggleSound} className="p-2 hover:bg-slate-800 rounded transition-colors text-slate-500 shrink-0">
             {soundEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />}
           </button>
-          <button onClick={() => setShowSettings(!showSettings)} className={`p-2 rounded transition-colors ${showSettings ? 'bg-purple-900/50 text-purple-200' : 'hover:bg-slate-800 text-slate-500'}`}>
+          <button onClick={() => setShowSettings(!showSettings)} className={`p-2 rounded transition-colors ${showSettings ? 'bg-purple-900/50 text-purple-200' : 'hover:bg-slate-800 text-slate-500 shrink-0'}`}>
             <Settings size={20} />
           </button>
         </div>
@@ -509,15 +529,7 @@ export default function FriendOrFoeApp() {
                 LEVEL <span className="text-purple-400 font-bold text-lg">{level}</span>
             </div>
           </div>
-          <PsychicStatsModal 
-              hits={stats.hits} 
-              trials={stats.trials} 
-              chance={0.5} 
-              appName="Friend or Foe"
-              matrixData={matrixData}
-              radarData={matrixData.radarData}
-              maxStreak={matrixData.maxStreak}
-          />
+
       </div>
 
       {/* MAIN GAME AREA - STRICT FLEX FIT & OVERFLOW HANDLING */}
