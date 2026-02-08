@@ -42,7 +42,7 @@ export default function PsychicStatsModal({ hits, trials, chance, appName, matri
       <div className={className}>
         <button 
           onClick={() => setIsExpanded(true)}
-          className="group relative bg-slate-900/90 backdrop-blur-md border border-white/10 rounded-xl p-1.5 shadow-2xl hover:border-indigo-500/50 transition-all flex items-center gap-1.5 md:gap-4 text-left w-[230px] md:w-64 max-w-none"
+          className="group relative bg-slate-900/90 backdrop-blur-md border border-white/10 rounded-xl p-1.5 shadow-2xl hover:border-indigo-500/50 transition-all flex items-center gap-1.5 md:gap-4 text-left w-full max-w-[230px] md:w-64 md:max-w-none"
         >
           <div className="p-1.5 md:p-2 bg-indigo-500/10 rounded-lg group-hover:bg-indigo-500 text-indigo-400 group-hover:text-white transition-all shrink-0">
              <Trophy size={14} className="md:w-5 md:h-5" />
