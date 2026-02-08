@@ -538,22 +538,47 @@ export default function EmpathyApp() {
       {showInstructions && <InstructionModal onClose={handleStart} />}
 
       {/* HEADER - Fixed at top */}
-      <header className="relative z-20 flex justify-between items-center px-4 py-3 border-b border-white/5 backdrop-blur-sm bg-black/40 shrink-0 h-16">
-        <div className="flex items-center gap-4">
-            <MagickalBackLink href="/the-magick-psychic-school/psychic-training" text="Exit" className="text-xs text-slate-400 hover:text-white" />
+      <header className="relative z-20 flex justify-between items-center px-4 py-[3px] border-b border-white/5 backdrop-blur-sm bg-black/40 shrink-0 min-h-[54px]">
+        <div className="flex items-center gap-4 relative z-10 pointer-events-auto">
+            <div className="md:hidden">
+                <MagickalBackLink href="/the-magick-psychic-school/psychic-training" text="" className="text-xs text-slate-400 hover:text-white" />
+            </div>
+            <div className="hidden md:block">
+                <MagickalBackLink href="/the-magick-psychic-school/psychic-training" text="Exit" className="text-xs text-slate-400 hover:text-white" />
+            </div>
+
             <div className="w-px h-6 bg-white/20 hidden md:block"></div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 hidden md:flex">
                 <div className="w-8 h-8 rounded-full bg-linear-to-tr from-purple-500 to-amber-300 flex items-center justify-center">
                     <Eye size={16} className="text-black" />
                 </div>
-                <span className="font-serif tracking-widest text-lg font-bold bg-clip-text text-transparent bg-linear-to-r from-slate-200 to-slate-400 hidden md:block">
+                <span className="font-serif tracking-widest text-lg font-bold bg-clip-text text-transparent bg-linear-to-r from-slate-200 to-slate-400">
                     EMPATHY
                 </span>
             </div>
         </div>
+
+        {/* Centered Modal */}
+        <PsychicStatsModal 
+            hits={Object.values(stats).reduce((acc: number, curr: any) => acc + (curr.hits || 0), 0)}
+            trials={Object.values(stats).reduce((acc: number, curr: any) => acc + (curr.attempts || 0), 0)}
+            chance={1 / deckSize}
+            appName="Empathy Training"
+            radarData={EMOTIONS.map(emo => {
+                const stat = stats[emo.id] || { hits: 0, attempts: 0 };
+                return {
+                    id: emo.id,
+                    label: emo.name,
+                    value: stat.attempts > 0 ? Math.round((stat.hits / stat.attempts) * 100) : 0,
+                    color: emo.color
+                };
+            })}
+            maxStreak={maxStreak}
+            className="absolute left-1/2 top-[2px] -translate-x-1/2 md:static md:transform-none z-30"
+        />
         
-        <div className="flex gap-2">
-           <button onClick={() => setShowInstructions(true)} className="p-2 hover:bg-white/10 rounded-full transition-colors text-slate-400">
+        <div className="flex gap-1 md:gap-2 relative z-10 pointer-events-auto">
+           <button onClick={() => setShowInstructions(true)} className="hidden md:block p-2 hover:bg-white/10 rounded-full transition-colors text-slate-400">
              <Info size={20} />
            </button>
            <button onClick={toggleSound} className="p-2 hover:bg-white/10 rounded-full transition-colors text-slate-400">
@@ -574,25 +599,7 @@ export default function EmpathyApp() {
              <h1 className="text-lg md:text-4xl font-serif text-slate-100">{targetEmotion?.name.toUpperCase()}</h1>
           </div>
 
-          {/* Stats Widget */}
-          <div className="ml-auto relative z-30 pointer-events-auto">
-              <PsychicStatsModal 
-                  hits={Object.values(stats).reduce((acc: number, curr: any) => acc + (curr.hits || 0), 0)}
-                  trials={Object.values(stats).reduce((acc: number, curr: any) => acc + (curr.attempts || 0), 0)}
-                  chance={1 / deckSize}
-                  appName="Empathy Training"
-                  radarData={EMOTIONS.map(emo => {
-                      const stat = stats[emo.id] || { hits: 0, attempts: 0 };
-                      return {
-                          id: emo.id,
-                          label: emo.name,
-                          value: stat.attempts > 0 ? Math.round((stat.hits / stat.attempts) * 100) : 0,
-                          color: emo.color
-                      };
-                  })}
-                  maxStreak={maxStreak}
-              />
-          </div>
+
       </div>
 
       {/* "TAP TO CONTINUE" - Invisible Layer covering whole screen when revealed */}
