@@ -42,21 +42,21 @@ export default function PsychicStatsModal({ hits, trials, chance, appName, matri
       <div className={className}>
         <button 
           onClick={() => setIsExpanded(true)}
-          className="group relative bg-slate-900/90 backdrop-blur-md border border-white/10 rounded-xl p-1.5 shadow-2xl hover:border-indigo-500/50 transition-all flex items-center gap-4 text-left w-64"
+          className="group relative bg-slate-900/90 backdrop-blur-md border border-white/10 rounded-xl p-1.5 shadow-2xl hover:border-indigo-500/50 transition-all flex items-center gap-2 md:gap-4 text-left w-auto md:w-64 max-w-[160px] md:max-w-none"
         >
-          <div className="p-2 bg-indigo-500/10 rounded-lg group-hover:bg-indigo-500 text-indigo-400 group-hover:text-white transition-all">
-             <Trophy size={20} />
+          <div className="p-2 bg-indigo-500/10 rounded-lg group-hover:bg-indigo-500 text-indigo-400 group-hover:text-white transition-all shrink-0">
+             <Trophy size={16} className="md:w-5 md:h-5" />
           </div>
           <div className="flex-1 min-w-0">
-             <div className="flex items-center justify-between mb-0.5">
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Session</span>
-                <Maximize2 size={10} className="text-slate-600 group-hover:text-white transition-colors" />
+             <div className="flex items-center justify-between mb-0.5 gap-1">
+                <span className="text-[8px] md:text-[10px] font-black uppercase tracking-widest text-slate-500 truncate">Session</span>
+                <Maximize2 size={10} className="text-slate-600 group-hover:text-white transition-colors shrink-0" />
              </div>
-             <div className="flex items-baseline justify-between">
-                <div className="text-lg font-black text-white leading-none">{hits} <span className="text-xs text-slate-500 font-bold">/ {trials}</span></div>
-                <div className={`text-sm font-bold ${zScore >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>Z: {zScore.toFixed(2)}</div>
+             <div className="flex items-baseline justify-between gap-2">
+                <div className="text-sm md:text-lg font-black text-white leading-none truncate">{hits} <span className="text-[10px] md:text-xs text-slate-500 font-bold">/ {trials}</span></div>
+                <div className={`text-xs md:text-sm font-bold ${zScore >= 0 ? 'text-emerald-400' : 'text-rose-400'} shrink-0`}>Z: {zScore.toFixed(2)}</div>
              </div>
-             <div className={`text-[9px] font-black uppercase tracking-wider mt-1 truncate ${rank.color}`}>{rank.title}</div>
+             <div className={`text-[8px] md:text-[9px] font-black uppercase tracking-wider mt-0.5 md:mt-1 truncate ${rank.color}`}>{rank.title}</div>
           </div>
         </button>
       </div>

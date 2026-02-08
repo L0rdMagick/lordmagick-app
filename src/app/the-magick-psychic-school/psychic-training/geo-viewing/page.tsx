@@ -558,7 +558,7 @@ export default function GeoViewingPage() {
     <div className="flex flex-col h-[100dvh] bg-slate-900 font-sans text-slate-100 overflow-hidden select-none relative">
       
       {/* HEADER HUD */}
-      <div className="flex-none py-[3px] min-h-[54px] px-4 bg-slate-950 border-b border-white/5 flex justify-between items-center z-50 shadow-2xl relative">
+      <div className="flex-none py-[3px] min-h-[54px] px-2 md:px-4 bg-slate-950 border-b border-white/5 flex justify-between items-center z-50 shadow-2xl relative">
         <div className="flex items-center gap-3 relative z-10 pointer-events-auto">
           <div className="md:hidden">
               <MagickalBackLink href="/the-magick-psychic-school/psychic-training" text="" />
@@ -569,10 +569,10 @@ export default function GeoViewingPage() {
 
           <div className="w-px h-8 bg-white/10 mx-2 hidden md:block"></div>
 
-          <div className="p-1.5 bg-indigo-500/10 rounded-lg border border-indigo-500/20 shrink-0">
+          <div className="hidden md:block p-1.5 bg-indigo-500/10 rounded-lg border border-indigo-500/20 shrink-0">
             <Compass className="text-indigo-400 w-5 h-5" />
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 hidden md:block">
             <h1 className="text-[10px] md:text-sm font-black tracking-tighter bg-gradient-to-r from-indigo-300 to-purple-300 bg-clip-text text-transparent uppercase truncate">
               CVT: Geo Viewing
             </h1>
@@ -605,7 +605,7 @@ export default function GeoViewingPage() {
                   className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-black uppercase tracking-widest text-[8px] md:text-[9px] transition-all shadow-lg shrink-0"
                 >
                   <ArrowRight size={10} />
-                  <span>Next</span>
+                  <span className="hidden md:inline">Next</span>
                 </button>
              )}
              <button 
@@ -627,7 +627,7 @@ export default function GeoViewingPage() {
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg font-black uppercase tracking-widest text-[8px] md:text-[9px] transition-all shadow-lg shrink-0 border border-white/5"
               >
                 <RefreshCw size={10} />
-                <span>Reset</span>
+                <span className="hidden md:inline">Reset</span>
             </button>
           </div>
         )}
