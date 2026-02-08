@@ -563,6 +563,15 @@ export default function GeoViewingPage() {
           <div className="md:hidden">
               <MagickalBackLink href="/the-magick-psychic-school/psychic-training" text="" />
           </div>
+          
+          {selectedCategory && (
+            <div className="md:hidden flex flex-col leading-[0.8] ml-1 pointer-events-none">
+                {CATEGORIES.find(c => c.id === selectedCategory)?.label.split(' ').map((word, i) => (
+                <span key={i} className="text-[8px] font-black uppercase tracking-tighter text-indigo-400 drop-shadow-md">{word}</span>
+                ))}
+            </div>
+          )}
+
           <div className="hidden md:block">
               <MagickalBackLink href="/the-magick-psychic-school/psychic-training" text="Laboratorium" />
           </div>
