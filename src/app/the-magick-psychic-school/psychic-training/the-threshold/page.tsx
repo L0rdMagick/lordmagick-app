@@ -238,6 +238,34 @@ export default function TheThresholdApp() {
     return max;
   }, [history]);
 
+  // Pre-calculate target-to-category mapping for O(1) lookup
+  const targetToCategory = React.useMemo(() => {
+      const map: Record<string, string> = {};
+      Object.values(CATEGORIES).forEach(cat => {
+          cat.items.forEach(item => {
+              map[item.id] = cat.id;
+          });
+      });
+      return map;
+  }, []);
+
+  const radarData = React.useMemo(() => {
+      return Object.values(CATEGORIES).map(cat => {
+          // Filter history for trials where the target was in this category
+          const catTrials = history.filter(h => targetToCategory[h.target] === cat.id);
+          const hits = catTrials.filter(h => h.correct).length;
+          const total = catTrials.length;
+          
+          return {
+              id: cat.id,
+              label: cat.name,
+              value: total > 0 ? (hits / total) * 100 : 0,
+              color: cat.color,
+              fullMark: 100
+          };
+      });
+  }, [history, targetToCategory]);
+
   const currentCategory = CATEGORIES[categoryKey];
 
   // Haptics Hook
@@ -406,13 +434,14 @@ export default function TheThresholdApp() {
         </div>
         
         <div className="flex justify-center w-1/3 text-center">
-           <PsychicStatsModal 
-              hits={history.filter(h => h.correct).length}
-              trials={history.length}
-              chance={0.25}
-              appName="Door Vision"
-              maxStreak={maxStreak}
-           />
+            <PsychicStatsModal 
+               hits={history.filter(h => h.correct).length}
+               trials={history.length}
+               chance={0.25}
+               appName="Door Vision"
+               maxStreak={maxStreak}
+               radarData={radarData}
+            />
         </div>
 
         <div className="flex items-center justify-end gap-2 w-1/3">
