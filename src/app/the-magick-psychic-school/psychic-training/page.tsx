@@ -61,6 +61,12 @@ const psychicTools = [
     href: "/the-magick-psychic-school/psychic-training/psi-trainer", // Original: Psi-Trainer
     image: "/images/psychic-school/good_vs_evil_thumb_circle.jpg",
     description: "The oldest duality: Light and Dark. Train your soul to pierce the veil of appearance and detect the true nature of a spirit. Whether seeking the Angel or spotting the Devil, learn to recognize the energy even when it hides in plain sight."
+  },
+  {
+    title: "Number Recall",
+    href: "/the-magick-psychic-school/psychic-training/number-recall",
+    image: "/images/psychic-school/number-recall-card.jpg",
+    description: "Channels open? Test your numerical intuition. Divine the hidden numbers behind the veil. From single digits to complex strings, train your mind to recall information from the ether before it's revealed."
   }
 ];
 
