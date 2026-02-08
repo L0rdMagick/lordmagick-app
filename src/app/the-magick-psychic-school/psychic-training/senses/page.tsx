@@ -1102,6 +1102,39 @@ export default function SensesApp() {
   const [history, setHistory] = useState<any[]>([]); // Lifetime local
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [sessionHistory, setSessionHistory] = useState<any[]>([]); // Current session
+
+  const maxStreak = React.useMemo(() => {
+    let max = 0;
+    let current = 0;
+    // Iterate through sessionHistory in reverse chronological order (newest first) 
+    // Wait, sessionHistory is set as [newRecord, ...prev], so index 0 is newest.
+    // To calculate streak correctly, we should iterate from oldest to newest.
+    // Let's reverse a copy of the array.
+    const chronological = [...sessionHistory].reverse();
+    
+    chronological.forEach(h => {
+        // Check if 'score' object exists and has percentage >= 50 which counts as a hit in Senses app logic?
+        // In submitGuesses: if (scoreData.percentage >= 50) haptics.triggerHeavy() ...
+        // The record has `score: { matched, total, percentage }`.
+        // Let's use percentage >= 50 as a "win" condition for streak, or perfect match?
+        // Senses is about descriptors. Getting >50% is good. 
+        // However, in other apps it's binary correct/incorrect.
+        // Let's check how 'correct' is defined in other apps.
+        // In Psi-Hunter/Veritas it's direct match.
+        // In Senses, it's fuzzy.
+        // Let's look at `submitGuesses`: "if (scoreData.percentage >= 50) { haptics.triggerHeavy(); } else { haptics.triggerLight(); }"
+        // So >= 50% seems to be the success threshold.
+        const isWin = h.score.percentage >= 50;
+        
+        if (isWin) {
+            current++;
+            if (current > max) max = current;
+        } else {
+            current = 0;
+        }
+    });
+    return max;
+  }, [sessionHistory]);
   
   const [selectedPool, setSelectedPool] = useState('all');
   const [cardBack, setCardBack] = useState('hypnotic'); // Default set to Hypnotic
@@ -1645,8 +1678,10 @@ export default function SensesApp() {
                 <PsychicStatsModal 
                     hits={sessionHits}
                     trials={sessionTrials}
+                    trials={sessionTrials}
                     chance={0.25} 
                     appName="Senses (Remote Viewing)"
+                    maxStreak={maxStreak}
                     className="relative z-50"
                     radarData={POOLS.filter(p => p.id !== 'all').map(pool => {
                         const poolLogs = sessionHistory.filter(l => l.pool === pool.id);

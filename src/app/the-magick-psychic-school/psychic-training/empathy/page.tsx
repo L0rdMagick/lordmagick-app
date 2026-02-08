@@ -268,6 +268,21 @@ export default function EmpathyApp() {
   const [targetEmotion, setTargetEmotion] = useState<any>(null);
   const [cards, setCards] = useState<any[]>([]);
   const [stats, setStats] = useState<any>({});
+  const [history, setHistory] = useState<any[]>([]);
+
+  const maxStreak = React.useMemo(() => {
+    let max = 0;
+    let current = 0;
+    history.forEach(h => {
+        if (h.correct) {
+            current++;
+            if (current > max) max = current;
+        } else {
+            current = 0;
+        }
+    });
+    return max;
+  }, [history]);
   
   const [feedback, setFeedback] = useState<{type: 'hit'|'miss'} | null>(null);
 
@@ -440,6 +455,8 @@ export default function EmpathyApp() {
       return newStats;
     });
 
+    setHistory(prev => [...prev, { correct: isMatch, timestamp: Date.now() }]);
+
     if (isMatch) {
       audio.playSuccess();
       haptics.triggerHeavy(); // HAPTIC: SUCCESS
@@ -573,6 +590,7 @@ export default function EmpathyApp() {
                           color: emo.color
                       };
                   })}
+                  maxStreak={maxStreak}
               />
           </div>
       </div>

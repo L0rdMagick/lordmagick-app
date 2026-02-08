@@ -224,6 +224,20 @@ export default function TheThresholdApp() {
   const [history, setHistory] = useState<any[]>([]);
   const [sessionId, setSessionId] = useState<string | null>(null);
 
+  const maxStreak = React.useMemo(() => {
+    let max = 0;
+    let current = 0;
+    history.forEach(h => {
+        if (h.correct) {
+            current++;
+            if (current > max) max = current;
+        } else {
+            current = 0;
+        }
+    });
+    return max;
+  }, [history]);
+
   const currentCategory = CATEGORIES[categoryKey];
 
   // Haptics Hook
@@ -397,6 +411,7 @@ export default function TheThresholdApp() {
               trials={history.length}
               chance={0.25}
               appName="Door Vision"
+              maxStreak={maxStreak}
            />
         </div>
 

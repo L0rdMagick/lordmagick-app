@@ -185,6 +185,20 @@ export default function StatisticalEyeApp() {
       });
   }, [history]);
 
+  const maxStreak = useMemo(() => {
+    let max = 0;
+    let current = 0;
+    history.forEach(h => {
+        if (h.correct) {
+            current++;
+            if (current > max) max = current;
+        } else {
+            current = 0;
+        }
+    });
+    return max;
+  }, [history]);
+
   return (
     <main className="relative min-h-screen w-full bg-black bg-cover bg-center p-8 flex flex-col overflow-hidden" style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}>
       <div className="absolute inset-0 bg-[#09090b]/95 backdrop-blur-sm z-0" />
@@ -202,6 +216,7 @@ export default function StatisticalEyeApp() {
         chance={CHANCE_PROBABILITY}
         appName={`Statistical Eye (${mode})`}
         radarData={radarData}
+        maxStreak={maxStreak}
       />
 
       {/* Header */}

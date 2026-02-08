@@ -184,6 +184,21 @@ export default function GeoViewingPage() {
   // Session Statistics
   const [sessionStats, setSessionStats] = useState({ hits: 0, trials: 0 });
   const [categoryStats, setCategoryStats] = useState<Record<string, { hits: number, total: number }>>({});
+  const [history, setHistory] = useState<any[]>([]);
+
+  const maxStreak = useMemo(() => {
+    let max = 0;
+    let current = 0;
+    history.forEach(h => {
+        if (h.correct) {
+            current++;
+            if (current > max) max = current;
+        } else {
+            current = 0;
+        }
+    });
+    return max;
+  }, [history]);
 
   const HIT_THRESHOLD_MILES = 500; // Define what counts as a "Hit"
   const PROBABILITY = 0.05; // Estimated probability of landing within threshold randomly
@@ -407,6 +422,8 @@ export default function GeoViewingPage() {
             }
         }));
     }
+
+    setHistory(prev => [...prev, { correct: isHit, timestamp: Date.now() }]);
 
     setResultLocations({
         target: { lat: finalTarget.lat, lng: finalTarget.lng },
@@ -723,6 +740,7 @@ export default function GeoViewingPage() {
                 chance={PROBABILITY} 
                 appName="Geo Viewing" 
                 radarData={radarData}
+                maxStreak={maxStreak}
             />
 
             <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center">
