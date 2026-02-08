@@ -741,6 +741,7 @@ export default function GeoViewingPage() {
                 appName="Geo Viewing" 
                 radarData={radarData}
                 maxStreak={maxStreak}
+                className="absolute top-4 right-4 z-50"
             />
 
             <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center">

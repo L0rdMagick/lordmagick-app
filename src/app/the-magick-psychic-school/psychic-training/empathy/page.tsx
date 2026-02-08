@@ -591,6 +591,7 @@ export default function EmpathyApp() {
                       };
                   })}
                   maxStreak={maxStreak}
+                  className="absolute top-4 right-4 z-50"
               />
           </div>
       </div>

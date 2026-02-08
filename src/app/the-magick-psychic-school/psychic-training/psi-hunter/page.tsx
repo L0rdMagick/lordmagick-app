@@ -517,6 +517,7 @@ export default function FriendOrFoeApp() {
               matrixData={matrixData}
               radarData={matrixData.radarData}
               maxStreak={matrixData.maxStreak}
+              className="absolute top-4 right-4 z-50"
           />
       </div>
 

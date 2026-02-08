@@ -432,6 +432,7 @@ export default function PsiTrainer() {
               chance={0.25} 
               appName="Psi Trainer"
               maxStreak={stats.bestStreak}
+              className="absolute top-4 right-4 z-50"
               radarData={[
                 { id: 'DEVIL', label: 'THREAT', value: stats.breakdown?.DEVIL?.attempts ? (stats.breakdown.DEVIL.hits / stats.breakdown.DEVIL.attempts) * 100 : 0, color: '#f87171' },
                 { id: 'ANGEL', label: 'SAFETY', value: stats.breakdown?.ANGEL?.attempts ? (stats.breakdown.ANGEL.hits / stats.breakdown.ANGEL.attempts) * 100 : 0, color: '#60a5fa' },

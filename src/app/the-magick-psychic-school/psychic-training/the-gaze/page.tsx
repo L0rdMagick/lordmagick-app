@@ -583,6 +583,7 @@ export default function TheGazeApp() {
       <PsychicStatsModal 
           {...fullStats}
           appName="The Gaze"
+          className="absolute top-4 right-4 z-50"
       />
 
       {/* Header */}

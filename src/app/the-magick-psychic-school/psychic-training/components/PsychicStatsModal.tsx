@@ -39,7 +39,7 @@ export default function PsychicStatsModal({ hits, trials, chance, appName, matri
   // --- MINIMIZED VIEW ---
   if (!isExpanded) {
     return (
-      <div className={className || "absolute top-4 right-4 z-50"}>
+      <div className={className}>
         <button 
           onClick={() => setIsExpanded(true)}
           className="group relative bg-slate-900/90 backdrop-blur-md border border-white/10 rounded-xl p-3 shadow-2xl hover:border-indigo-500/50 transition-all flex items-center gap-4 text-left w-64"

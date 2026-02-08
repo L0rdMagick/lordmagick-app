@@ -662,7 +662,7 @@ export default function VeritasApp() {
 
         {/* Stats Widget */}
         <div onClick={(e) => e.stopPropagation()} className="relative z-50">
-            <PsychicStatsModal {...getStatsProps(history)} appName="Veritas" />
+            <PsychicStatsModal {...getStatsProps(history)} appName="Veritas" className="absolute top-4 right-4 z-50" />
         </div>
       </div>
 
