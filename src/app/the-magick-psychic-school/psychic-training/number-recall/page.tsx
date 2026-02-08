@@ -209,12 +209,24 @@ export default function NumberRecallApp() {
     if (e) e.preventDefault();
     if (!userGuess || gameState === 'REVEALED') return;
 
-    const isCorrect = userGuess === targetNumber;
+    // Normalize inputs to ensure length matches complexity (e.g. "5" -> "05" for 2 digits)
+    const targetNorm = targetNumber.padStart(numDigits, '0');
+    const guessNorm = userGuess.padStart(numDigits, '0');
+
+    let matches = 0;
+    for (let i = 0; i < numDigits; i++) {
+        if (targetNorm[i] === guessNorm[i]) matches++;
+    }
+
+    const isPerfect = matches === numDigits;
     
     // Play Effects
-    if (isCorrect) {
+    if (isPerfect) {
         audio.playSound('success');
         haptics.triggerHeavy();
+    } else if (matches > 0) {
+        audio.playSound('click'); // Partial success
+        haptics.triggerLight();
     } else {
         audio.playSound('fail');
         haptics.triggerLight();
@@ -225,10 +237,11 @@ export default function NumberRecallApp() {
     // Record Stats
     const newRecord = {
       trial: history.length + 1,
-      target: targetNumber,
-      guess: userGuess,
+      target: targetNorm,
+      guess: guessNorm,
       digits: numDigits,
-      correct: isCorrect,
+      matches: matches,
+      perfect: isPerfect,
       timestamp: Date.now()
     };
     
@@ -249,14 +262,18 @@ export default function NumberRecallApp() {
 
   // Stats derivations
   const stats = useMemo(() => {
-    const hits = history.filter(h => h.correct).length;
-    const trials = history.length;
+    // New Logic: Sum of digit matches
+    const hits = history.reduce((acc, h) => acc + (h.matches || 0), 0);
+    // New Logic: Sum of total digits challenged
+    const trials = history.reduce((acc, h) => acc + (h.digits || 0), 0);
     
-    // Max Streak
+    // Max Streak (based on perfect rounds)
     let max = 0;
     let current = 0;
     history.forEach(h => {
-        if (h.correct) {
+        // Fallback for old history if mixed (h.correct vs h.perfect)
+        const isWin = h.perfect !== undefined ? h.perfect : h.correct;
+        if (isWin) {
             current++;
             if (current > max) max = current;
         } else {
@@ -269,28 +286,23 @@ export default function NumberRecallApp() {
 
   // Radar Data - Group by Digits
   const radarData: RadarCategory[] = useMemo(() => {
-     // We want to show performance per digit count.
-     // Categories like "1 Digit", "2 Digits", etc. might be too many for radar (max 6 usually good).
-     // Let's group: "Low (1-3)", "Mid (4-6)", "High (7-10)"?
-     // Or just top 5 most played digit counts?
-     // Let's stick to simple grouping for now or just standard categories.
-     // The prompt asked: "for the soul resonance information, we can just use % success that is categorized by the number of digits tested."
-     
-     // Let's dynamically create categories for digits present in history.
-     const digitGroups: Record<number, { hits: number, total: number }> = {};
+     const digitGroups: Record<number, { matches: number, totalDigits: number }> = {};
      history.forEach(h => {
-        if (!digitGroups[h.digits]) digitGroups[h.digits] = { hits: 0, total: 0 };
-        digitGroups[h.digits].total++;
-        if (h.correct) digitGroups[h.digits].hits++;
+        if (!digitGroups[h.digits]) digitGroups[h.digits] = { matches: 0, totalDigits: 0 };
+        
+        // Use matches for hits, digits for total trials
+        const matchCount = h.matches !== undefined ? h.matches : (h.correct ? h.digits : 0); // fallback for legacy
+        digitGroups[h.digits].totalDigits += h.digits;
+        digitGroups[h.digits].matches += matchCount;
      });
 
      const categories: RadarCategory[] = Object.keys(digitGroups).map(d => {
         const digits = parseInt(d);
-        const { hits, total } = digitGroups[digits];
+        const { matches, totalDigits } = digitGroups[digits];
         return {
             id: `D${digits}`,
             label: `${digits} ${digits === 1 ? 'Digit' : 'Digits'}`,
-            value: total > 0 ? (hits / total) * 100 : 0,
+            value: totalDigits > 0 ? (matches / totalDigits) * 100 : 0,
             fullMark: 100,
             color: digits <= 3 ? '#22d3ee' : digits <= 6 ? '#a78bfa' : '#f472b6'
         };
@@ -310,9 +322,8 @@ export default function NumberRecallApp() {
   }, [history]);
 
   // Calculate current chance for modal
-  // This is tricky because chance changes per trial. 
-  // We can pass the "current" chance (1 / 10^digits).
-  const currentChance = 1 / Math.pow(10, numDigits);
+  // Fixed base chance for digits (0-9) is always 0.1
+  const currentChance = 0.1;
 
   return (
     <main className="relative h-dvh w-full bg-slate-950 text-slate-100 font-sans flex flex-col overflow-hidden" style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}>
@@ -352,7 +363,7 @@ export default function NumberRecallApp() {
             <PsychicStatsModal 
                hits={stats.hits} 
                trials={stats.trials} 
-               chance={currentChance} // Note: This is imperfect for mixed history, but good for current context
+               chance={0.1} // Fixed base chance for digits (0-9)
                appName="Number Recall"
                maxStreak={stats.maxStreak}
                radarData={radarData}
