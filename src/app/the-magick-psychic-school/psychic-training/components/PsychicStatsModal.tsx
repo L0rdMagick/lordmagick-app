@@ -171,45 +171,29 @@ export default function PsychicStatsModal({ hits, trials, chance, appName, matri
                </div>
             </div>
 
-            {/* 4. 2x2 TABLE (RADAR DATA PERCENTAGES) */}
-            <div className="w-full">
-                 {radarData && radarData.length > 0 && (
-                     <div className="grid grid-cols-2 gap-4">
-                        {radarData.map(cat => (
-                            <div key={cat.id} className="bg-slate-900/50 rounded-xl p-4 flex flex-col items-center justify-center border border-white/20 text-center shadow-md">
-                                <span className="text-[9px] uppercase font-black tracking-widest text-slate-500 mb-1">{cat.label}</span>
-                                <span className="text-2xl font-black text-white">{Math.round(cat.value || 0)}%</span>
-                                <div className="w-full bg-white/10 h-1 mt-2 rounded-full overflow-hidden">
-                                    <div className="h-full bg-indigo-500" style={{ width: `${Math.min((cat.value || 0), 100)}%` }}></div>
-                                </div>
-                            </div>
-                        ))}
-                     </div>
-                 )}
-                 {/* Matrix Fallback - Wrapped in Card */}
-                 {matrixData && matrixData.labels && (
-                     <div className="bg-slate-900/50 rounded-xl border border-white/20 overflow-hidden shadow-md">
-                        <div className="text-[8px] uppercase font-black tracking-widest text-center py-2 bg-white/5 text-slate-400 border-b border-white/5">Performance Matrix</div>
-                        <div className="grid grid-cols-[auto_1fr_1fr] text-[10px]">
-                             <div className="p-2"></div>
-                             <div className="p-2 text-center font-bold text-emerald-400 border-b border-white/5 border-l border-white/5">Guess: {matrixData.labels[0]}</div>
-                             <div className="p-2 text-center font-bold text-rose-400 border-b border-white/5 border-l border-white/5">Guess: {matrixData.labels[1]}</div>
+            {/* 4. PERFORMANCE MATRIX (2x2 CONFUSION TABLE) */}
+            {matrixData && matrixData.labels && (
+                <div className="w-full bg-slate-900/50 rounded-xl border border-white/20 overflow-hidden shadow-md">
+                   <div className="text-[8px] uppercase font-black tracking-widest text-center py-2 bg-white/5 text-slate-400 border-b border-white/5">Performance Matrix</div>
+                   <div className="grid grid-cols-[auto_1fr_1fr] text-[10px]">
+                        <div className="p-2"></div>
+                        <div className="p-2 text-center font-bold text-emerald-400 border-b border-white/5 border-l border-white/5">Guess: {matrixData.labels[0]}</div>
+                        <div className="p-2 text-center font-bold text-rose-400 border-b border-white/5 border-l border-white/5">Guess: {matrixData.labels[1]}</div>
 
-                             <div className="p-2 font-bold text-cyan-400 text-right flex items-center justify-end border-b border-white/5">Was {matrixData.labels[0]}</div>
-                             <div className="p-4 text-center text-lg font-bold text-white border-b border-white/5 border-l border-white/5 bg-white/5">{matrixData.tp}</div>
-                             <div className="p-4 text-center text-lg font-bold text-slate-500 border-b border-white/5 border-l border-white/5">{matrixData.fn}</div>
+                        <div className="p-2 font-bold text-cyan-400 text-right flex items-center justify-end border-b border-white/5">Was {matrixData.labels[0]}</div>
+                        <div className="p-4 text-center text-lg font-bold text-white border-b border-white/5 border-l border-white/5 bg-white/5">{matrixData.tp}</div>
+                        <div className="p-4 text-center text-lg font-bold text-slate-500 border-b border-white/5 border-l border-white/5">{matrixData.fn}</div>
 
-                             <div className="p-2 font-bold text-fuchsia-400 text-right flex items-center justify-end">Was {matrixData.labels[1]}</div>
-                             <div className="p-4 text-center text-lg font-bold text-slate-500 border-l border-white/5">{matrixData.fp}</div>
-                             <div className="p-4 text-center text-lg font-bold text-white border-l border-white/5 bg-white/5">{matrixData.tn}</div>
-                        </div>
-                     </div>
-                 )}
-            </div>
+                        <div className="p-2 font-bold text-fuchsia-400 text-right flex items-center justify-end">Was {matrixData.labels[1]}</div>
+                        <div className="p-4 text-center text-lg font-bold text-slate-500 border-l border-white/5">{matrixData.fp}</div>
+                        <div className="p-4 text-center text-lg font-bold text-white border-l border-white/5 bg-white/5">{matrixData.tn}</div>
+                   </div>
+                </div>
+            )}
 
-            {/* 5. SOUL RESONANCE (SPIDERWEB CHART) - Wrapped in Card (Implicitly via the container or explicit wrapper) */}
+            {/* 5. SOUL RESONANCE (SPIDERWEB CHART + PERCENTAGES) */}
             <div className="w-full bg-slate-900/50 rounded-xl border border-white/20 p-4 md:p-6 shadow-md flex flex-col items-center justify-center">
-                 {radarData && radarData.length >= 3 && (
+                 {radarData && radarData.length > 0 && (
                      <div className="relative z-10 w-full flex flex-col items-center justify-center">
                         <div className="flex items-center gap-2 mb-4 text-amber-100/80 shrink-0">
                             <Activity size={16} className="text-amber-400" />
@@ -218,11 +202,26 @@ export default function PsychicStatsModal({ hits, trials, chance, appName, matri
                         
                         <p className="text-[10px] text-slate-500 mb-6 font-mono uppercase tracking-widest text-center">Intuition Resonance Field</p>
 
-                        <div className="bg-slate-950/30 rounded-2xl p-4 border border-white/5 backdrop-blur-sm w-full max-w-[400px] aspect-square flex items-center justify-center shadow-inner relative">
-                             {/* Background Gradient for Chart */}
-                             <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-indigo-900/10 via-transparent to-transparent opacity-50 rounded-2xl pointer-events-none" />
-                            <ResonanceRadar categories={radarData || []} size={340} />
+                        {/* RADAR PERCENTAGES (Moved Here) */}
+                        <div className="grid grid-cols-3 gap-2 w-full mb-6">
+                            {radarData.map(cat => (
+                                <div key={cat.id} className="bg-slate-950/50 rounded-lg p-2 flex flex-col items-center justify-center border border-white/10 text-center">
+                                    <span className="text-[7px] uppercase font-black tracking-widest text-slate-500 mb-0.5 truncate w-full">{cat.label}</span>
+                                    <span className="text-sm font-black text-white">{Math.round(cat.value || 0)}%</span>
+                                    <div className="w-full bg-white/10 h-0.5 mt-1 rounded-full overflow-hidden">
+                                        <div className="h-full bg-indigo-500" style={{ width: `${Math.min((cat.value || 0), 100)}%` }}></div>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
+
+                        {radarData.length >= 3 && (
+                            <div className="bg-slate-950/30 rounded-2xl p-4 border border-white/5 backdrop-blur-sm w-full max-w-[400px] aspect-square flex items-center justify-center shadow-inner relative">
+                                 {/* Background Gradient for Chart */}
+                                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-indigo-900/10 via-transparent to-transparent opacity-50 rounded-2xl pointer-events-none" />
+                                <ResonanceRadar categories={radarData || []} size={340} />
+                            </div>
+                        )}
                      </div>
                  )}
             </div>
