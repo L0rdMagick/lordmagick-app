@@ -363,11 +363,11 @@ export default function NumberRecallApp() {
         </div>
       </header>
 
-      {/* MAIN CONTENT */}
-      <div className="flex-1 relative z-10 flex flex-col items-center justify-center p-2 min-h-0 overflow-y-auto">
+      {/* MAIN CONTENT - Mobile Optimized */}
+      <div className="flex-1 relative z-10 flex flex-col items-center justify-center p-2 min-h-0 overflow-y-auto overflow-x-hidden w-full max-w-full">
         
         {/* CARD AREA - Compacted */}
-        <div className="relative w-40 h-60 md:w-64 md:h-96 perspective-1000 my-2 md:my-6 shrink-0">
+        <div className="relative w-40 h-60 md:w-64 md:h-96 perspective-1000 my-2 md:my-6 shrink-0 max-w-full">
             <div className={`relative w-full h-full transition-transform duration-700 transform-style-3d ${gameState === 'REVEALED' ? 'rotate-y-180' : ''}`}>
                {/* FRONT (HIDDEN) */}
                <div className={`absolute inset-0 w-full h-full backface-hidden rounded-xl border-2 border-indigo-500/30 shadow-2xl ${CARD_BACKS.find(cb => cb.id === cardBack)?.css || 'bg-slate-900'} flex items-center justify-center`}>
@@ -379,7 +379,7 @@ export default function NumberRecallApp() {
                {/* BACK (REVEALED) */}
                <div className="absolute inset-0 w-full h-full backface-hidden rotate-y-180 bg-slate-900 rounded-xl border-2 border-indigo-400 flex flex-col items-center justify-center shadow-[0_0_50px_rgba(99,102,241,0.3)]">
                     <span className="text-xs font-mono text-slate-500 uppercase tracking-widest mb-4">Target Signal</span>
-                    <div className="text-5xl md:text-7xl font-black text-white tracking-tighter drop-shadow-lg text-center break-all px-2">
+                    <div className="text-5xl md:text-7xl font-black text-white tracking-tighter drop-shadow-lg text-center break-all px-2 overflow-hidden w-full">
                         {targetNumber}
                     </div>
                     {userGuess && (
@@ -393,24 +393,24 @@ export default function NumberRecallApp() {
         </div>
 
         {/* CONTROLS AREA - Compacted */}
-        <div className="w-full max-w-md space-y-3 md:space-y-6">
+        <div className="w-full max-w-xs md:max-w-md space-y-3 md:space-y-6 px-2">
             
-            {/* INPUT & SUBMIT */}
-            <form onSubmit={handleSubmit} className="flex gap-2">
+            {/* INPUT & SUBMIT - 1.5 ratio Grid */}
+            <form onSubmit={handleSubmit} className="grid grid-cols-[1.5fr_1fr] gap-2 w-full">
                 <input 
                   type="number" 
                   value={userGuess}
                   onChange={(e) => setUserGuess(e.target.value)}
                   disabled={gameState === 'REVEALED'}
                   placeholder="?"
-                  className="flex-1 bg-slate-900/80 border border-slate-700 rounded-lg px-4 py-3 text-center text-xl font-mono text-white placeholder:text-slate-600 focus:outline-none focus:border-indigo-500 transition-colors"
+                  className="bg-slate-900/80 border border-slate-700 rounded-lg px-2 py-3 text-center text-xl font-mono text-white placeholder:text-slate-600 focus:outline-none focus:border-indigo-500 transition-colors w-full min-w-0"
                   autoFocus
                 />
                 {gameState === 'WAITING' ? (
                   <button 
                     type="submit"
                     disabled={!userGuess}
-                    className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 rounded-lg font-bold uppercase tracking-widest transition-all shadow-lg hover:shadow-indigo-500/30 active:scale-95"
+                    className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-2 py-3 rounded-lg font-bold uppercase tracking-widest transition-all shadow-lg hover:shadow-indigo-500/30 active:scale-95 text-sm md:text-base w-full overflow-hidden text-ellipsis whitespace-nowrap"
                   >
                     Reveal
                   </button>
@@ -418,7 +418,7 @@ export default function NumberRecallApp() {
                   <button 
                     type="button"
                     onClick={() => startNewRound()}
-                    className="bg-slate-700 hover:bg-slate-600 text-white px-6 rounded-lg font-bold uppercase tracking-widest transition-all flex items-center gap-2"
+                    className="bg-slate-700 hover:bg-slate-600 text-white px-2 py-3 rounded-lg font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2 text-sm md:text-base w-full"
                   >
                     <RefreshCw size={18} /> Next
                   </button>
@@ -490,7 +490,7 @@ export default function NumberRecallApp() {
 
                     <div className="pt-4 border-t border-slate-800 space-y-3">
                         <button onClick={handleResetSession} className="w-full py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700 flex items-center justify-center gap-2 text-xs font-bold tracking-widest">
-                            <RotateCcw size={14} /> RESET PROTOCOL
+                            <RotateCcw size={14} /> COMMIT
                         </button>
                     </div>
                 </div>
