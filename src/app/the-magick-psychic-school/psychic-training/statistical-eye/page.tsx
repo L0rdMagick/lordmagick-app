@@ -31,6 +31,11 @@ const CARD_BACKS = [
     id: 'gold', 
     name: 'Golden Metal', 
     css: "bg-linear-to-br from-yellow-700 via-yellow-200 to-yellow-800" 
+  },
+  {
+    id: 'classic',
+    name: 'Classic',
+    css: "bg-zinc-900"
   }
 ];
 
