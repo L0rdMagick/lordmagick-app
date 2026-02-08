@@ -600,8 +600,9 @@ export default function TheGazeApp() {
             <PsychicStatsModal 
                 {...fullStats}
                 appName="The Gaze"
+                className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 md:static md:transform-none z-30"
             />
-            <button onClick={() => setShowInstructions(true)} className="p-2 hover:bg-gray-800 rounded-full transition-colors text-gray-400 hover:text-white" title="Instructions">
+            <button onClick={() => setShowInstructions(true)} className="hidden md:block p-2 hover:bg-gray-800 rounded-full transition-colors text-gray-400 hover:text-white" title="Instructions">
               <HelpCircle size={20} />
             </button>
             <button onClick={toggleSound} className="p-2 hover:bg-gray-800 rounded-full transition-colors text-gray-400 hover:text-white">
