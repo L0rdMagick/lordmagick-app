@@ -1678,7 +1678,6 @@ export default function SensesApp() {
                 <PsychicStatsModal 
                     hits={sessionHits}
                     trials={sessionTrials}
-                    trials={sessionTrials}
                     chance={0.25} 
                     appName="Senses (Remote Viewing)"
                     maxStreak={maxStreak}
