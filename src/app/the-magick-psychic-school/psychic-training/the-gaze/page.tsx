@@ -579,15 +579,8 @@ export default function TheGazeApp() {
     <main className="relative min-h-screen w-full bg-black bg-cover bg-center overflow-hidden flex flex-col font-sans" style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}>
       <div className="absolute inset-0 bg-[#0a0a0a]/90 backdrop-blur-sm z-0" />
       
-      {/* Standardized Stats Modal */}
-      <PsychicStatsModal 
-          {...fullStats}
-          appName="The Gaze"
-          className="absolute top-4 right-4 z-50"
-      />
-
       {/* Header */}
-      <header className="relative z-20 px-6 py-4 flex justify-between items-center border-b border-gray-800/50 bg-[#0a0a0a]/50">
+      <header className="relative z-20 px-6 py-[3px] flex justify-between items-center border-b border-gray-800/50 bg-[#0a0a0a]/50">
         <div className="flex items-center gap-4">
           <MagickalBackLink href="/the-magick-psychic-school/psychic-training" text="Exit Training" className="text-sm" />
         </div>
@@ -596,6 +589,11 @@ export default function TheGazeApp() {
             <h1 className="font-bold text-xl tracking-wider text-transparent bg-clip-text bg-linear-to-r from-cyan-200 to-purple-200 hidden lg:block">
                 THE GAZE
             </h1>
+            {/* Standardized Stats Modal */}
+            <PsychicStatsModal 
+                {...fullStats}
+                appName="The Gaze"
+            />
             <button onClick={() => setShowInstructions(true)} className="p-2 hover:bg-gray-800 rounded-full transition-colors text-gray-400 hover:text-white" title="Instructions">
               <HelpCircle size={20} />
             </button>

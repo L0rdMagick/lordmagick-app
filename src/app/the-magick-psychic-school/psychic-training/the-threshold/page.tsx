@@ -428,7 +428,7 @@ export default function TheThresholdApp() {
       {showInstructions && <InstructionModal onClose={() => setShowInstructions(false)} />}
       
       {/* Header */}
-      <header className="relative z-40 p-3 md:p-4 flex items-center justify-between border-b border-white/10 bg-neutral-900/50 backdrop-blur-md h-16">
+      <header className="relative z-40 py-[3px] px-3 md:px-4 flex items-center justify-between border-b border-white/10 bg-neutral-900/50 backdrop-blur-md min-h-[54px]">
         <div className="flex items-center gap-4 w-1/3">
           <MagickalBackLink href="/the-magick-psychic-school/psychic-training" text="Exit" className="text-sm" />
         </div>

@@ -641,7 +641,7 @@ export default function VeritasApp() {
         </div>
       )}
 
-      <div className="flex-none flex flex-col md:flex-row justify-between items-center font-mono text-xs text-white/40 tracking-widest mb-4 z-40 gap-4">
+      <div className="flex-none flex flex-col md:flex-row justify-between items-center font-mono text-xs text-white/40 tracking-widest py-[3px] z-40 gap-4">
         <div className="flex items-center gap-6">
           <button 
             onClick={(e) => { e.stopPropagation(); setGameState('MENU'); }}
@@ -662,7 +662,7 @@ export default function VeritasApp() {
 
         {/* Stats Widget */}
         <div onClick={(e) => e.stopPropagation()} className="relative z-50">
-            <PsychicStatsModal {...getStatsProps(history)} appName="Veritas" className="absolute top-4 right-4 z-50" />
+            <PsychicStatsModal {...getStatsProps(history)} appName="Veritas" />
         </div>
       </div>
 

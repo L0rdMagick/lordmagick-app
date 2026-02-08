@@ -502,7 +502,7 @@ export default function FriendOrFoeApp() {
       </header>
 
       {/* HUD - Fixed Height */}
-      <div className="shrink-0 w-full flex items-center justify-between px-4 py-2 relative z-20 h-14">
+      <div className="shrink-0 w-full flex items-center justify-between px-4 py-[3px] relative z-20 h-14">
           <div className="flex flex-col justify-center">
             <span className="text-[9px] uppercase tracking-widest text-slate-500">Status</span>
             <div className="text-sm font-mono tracking-wider text-slate-300">
@@ -517,7 +517,6 @@ export default function FriendOrFoeApp() {
               matrixData={matrixData}
               radarData={matrixData.radarData}
               maxStreak={matrixData.maxStreak}
-              className="absolute top-4 right-4 z-50"
           />
       </div>
 

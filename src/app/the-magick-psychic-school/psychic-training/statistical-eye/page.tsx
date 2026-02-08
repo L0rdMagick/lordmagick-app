@@ -210,18 +210,7 @@ export default function StatisticalEyeApp() {
         .rotate-y-180 { transform: rotateY(180deg); }
       `}</style>
       
-      <PsychicStatsModal 
-        hits={stats.hits} 
-        trials={stats.trials} 
-        chance={CHANCE_PROBABILITY}
-        appName={`Statistical Eye (${mode})`}
-        radarData={radarData}
-        maxStreak={maxStreak}
-        className="absolute top-4 right-4 z-50"
-      />
-
-      {/* Header */}
-      <header className="relative z-10 w-full max-w-4xl mx-auto border-b border-zinc-800 pb-4 mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
+      <header className="relative z-10 w-full max-w-4xl mx-auto border-b border-zinc-800 pb-[3px] pt-[3px] mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
         <div className="flex items-center gap-4">
             <MagickalBackLink href="/the-magick-psychic-school/psychic-training" text="Exit" className="text-xs text-zinc-500 hover:text-zinc-300" />
             <div className="flex items-center gap-2">
@@ -232,6 +221,14 @@ export default function StatisticalEyeApp() {
             </div>
         </div>
         <div className="flex items-center gap-2">
+             <PsychicStatsModal 
+                hits={stats.hits} 
+                trials={stats.trials} 
+                chance={CHANCE_PROBABILITY}
+                appName={`Statistical Eye (${mode})`}
+                radarData={radarData}
+                maxStreak={maxStreak}
+             />
              <button onClick={resetGame} className="px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white rounded text-[10px] uppercase font-bold tracking-wider transition-colors flex items-center gap-2">
                 <RotateCcw size={12} /> Reset
              </button>

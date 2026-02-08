@@ -406,7 +406,7 @@ export default function PsiTrainer() {
       {showInstructions && <InstructionModal onClose={() => { setShowInstructions(false); startNewRound(); }} mode={gameMode} />}
 
       {/* HEADER */}
-      <header className="shrink-0 z-30 px-3 py-2 md:p-4 border-b border-slate-800 bg-slate-900/50 backdrop-blur-sm flex flex-col md:flex-row justify-between items-center gap-2">
+      <header className="shrink-0 z-30 px-3 py-[3px] border-b border-slate-800 bg-slate-900/50 backdrop-blur-sm flex flex-col md:flex-row justify-between items-center gap-2">
         <div className="flex items-center w-full md:w-auto justify-between">
              <div className="flex items-center gap-2 md:gap-3">
                <MagickalBackLink href="/the-magick-psychic-school/psychic-training" text="Exit" className="text-xs text-slate-400 hover:text-white" />
@@ -432,7 +432,6 @@ export default function PsiTrainer() {
               chance={0.25} 
               appName="Psi Trainer"
               maxStreak={stats.bestStreak}
-              className="absolute top-4 right-4 z-50"
               radarData={[
                 { id: 'DEVIL', label: 'THREAT', value: stats.breakdown?.DEVIL?.attempts ? (stats.breakdown.DEVIL.hits / stats.breakdown.DEVIL.attempts) * 100 : 0, color: '#f87171' },
                 { id: 'ANGEL', label: 'SAFETY', value: stats.breakdown?.ANGEL?.attempts ? (stats.breakdown.ANGEL.hits / stats.breakdown.ANGEL.attempts) * 100 : 0, color: '#60a5fa' },

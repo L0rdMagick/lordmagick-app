@@ -566,7 +566,7 @@ export default function EmpathyApp() {
       </header>
 
       {/* TOP BAR: Target Info & Scorecard in Flow */}
-      <div className="shrink-0 w-full flex items-start justify-between px-4 py-1 relative z-20 min-h-[60px] md:min-h-20">
+      <div className="shrink-0 w-full flex items-start justify-between px-4 py-[3px] relative z-20 min-h-[60px] md:min-h-20">
           
           {/* Target Info */}
           <div className="flex flex-col items-start md:items-center justify-center md:absolute md:inset-0 md:pointer-events-none z-0">
@@ -591,7 +591,6 @@ export default function EmpathyApp() {
                       };
                   })}
                   maxStreak={maxStreak}
-                  className="absolute top-4 right-4 z-50"
               />
           </div>
       </div>

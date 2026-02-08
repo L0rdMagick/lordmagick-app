@@ -1672,7 +1672,7 @@ export default function SensesApp() {
             <div className="fixed inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-10 pointer-events-none z-0" />
 
             {/* Top Navigation */}
-            <nav className="relative z-50 flex items-center justify-between px-6 py-4 border-b border-white/5 bg-slate-950/50 backdrop-blur-sm">
+            <nav className="relative z-50 flex items-center justify-between px-6 py-[3px] border-b border-white/5 bg-slate-950/50 backdrop-blur-sm">
                 <MagickalBackLink href="/the-magick-psychic-school/psychic-training" text="Exit" className="text-xs text-slate-500 hover:text-indigo-400" />
                 
                 <PsychicStatsModal 
