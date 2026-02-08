@@ -558,8 +558,8 @@ export default function GeoViewingPage() {
     <div className="flex flex-col h-[100dvh] bg-slate-900 font-sans text-slate-100 overflow-hidden select-none relative">
       
       {/* HEADER HUD */}
-      <div className="flex-none h-14 md:h-16 px-4 bg-slate-950 border-b border-white/5 flex justify-between items-center z-50 shadow-2xl relative">
-        <div className="flex items-center gap-3">
+      <div className="flex-none py-[3px] min-h-[54px] px-4 bg-slate-950 border-b border-white/5 flex justify-between items-center z-50 shadow-2xl relative">
+        <div className="flex items-center gap-3 relative z-10 pointer-events-auto">
           <div className="md:hidden">
               <MagickalBackLink href="/the-magick-psychic-school/psychic-training" text="" />
           </div>
@@ -585,8 +585,20 @@ export default function GeoViewingPage() {
           </div>
         </div>
 
+        {/* CENTERED STATS MODAL */}
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
+            <PsychicStatsModal 
+                hits={sessionStats.hits} 
+                trials={sessionStats.trials} 
+                chance={PROBABILITY} 
+                appName="Geo Viewing" 
+                radarData={radarData}
+                maxStreak={maxStreak}
+            />
+        </div>
+
         {gameState !== 'CATEGORY_SELECT' && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 relative z-10 pointer-events-auto">
              {gameState === 'REVEALED' && (
                 <button 
                   onClick={() => startGame(gameMode!)} 
@@ -733,16 +745,7 @@ export default function GeoViewingPage() {
                 </div>
             </div>
 
-            {/* STATS MODAL */}
-            <PsychicStatsModal 
-                hits={sessionStats.hits} 
-                trials={sessionStats.trials} 
-                chance={PROBABILITY} 
-                appName="Geo Viewing" 
-                radarData={radarData}
-                maxStreak={maxStreak}
-                className="absolute top-[3px] right-[3px] z-50"
-            />
+
 
             <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center">
               <div className="relative flex items-center justify-center">
