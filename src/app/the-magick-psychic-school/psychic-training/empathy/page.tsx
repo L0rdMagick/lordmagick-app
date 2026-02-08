@@ -597,8 +597,8 @@ export default function EmpathyApp() {
           
           {/* Target Info */}
           <div className="flex flex-col items-start md:items-center justify-center md:absolute md:inset-0 md:pointer-events-none z-0">
-             <p className="text-slate-500 text-[9px] md:text-[10px] uppercase tracking-[0.2em] mb-1">Target Frequency</p>
-             <h1 className="text-lg md:text-4xl font-serif text-slate-100">{targetEmotion?.name.toUpperCase()}</h1>
+             <p className="text-slate-500 text-[13.5px] md:text-[10px] uppercase tracking-[0.2em] mb-1">Target Frequency</p>
+             <h1 className="text-[27px] md:text-4xl font-serif text-slate-100">{targetEmotion?.name.toUpperCase()}</h1>
           </div>
 
 
