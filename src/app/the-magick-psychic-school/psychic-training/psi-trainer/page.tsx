@@ -406,44 +406,46 @@ export default function PsiTrainer() {
       {showInstructions && <InstructionModal onClose={() => { setShowInstructions(false); startNewRound(); }} mode={gameMode} />}
 
       {/* HEADER */}
-      <header className="shrink-0 z-30 px-3 py-[3px] border-b border-slate-800 bg-slate-900/50 backdrop-blur-sm flex flex-col md:flex-row justify-between items-center gap-2">
-        <div className="flex items-center w-full md:w-auto justify-between">
-             <div className="flex items-center gap-2 md:gap-3">
-               <MagickalBackLink href="/the-magick-psychic-school/psychic-training" text="Exit" className="text-xs text-slate-400 hover:text-white" />
-               <div className="h-4 w-px bg-slate-700"></div>
-               <Brain className="w-5 h-5 md:w-6 md:h-6 text-indigo-400" />
-               <h1 className="text-lg md:text-xl font-bold bg-clip-text text-transparent bg-linear-to-r from-indigo-400 to-purple-400">
-                 Psi-Trainer
-               </h1>
-             </div>
-             
-             <div className="flex md:hidden gap-1 items-center">
-               <button onClick={toggleSound} className="p-2 text-slate-400 hover:text-white">{soundEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}</button>
-               <button onClick={() => setShowInstructions(true)} className="p-2 text-slate-400 hover:text-white"><Info size={18} /></button>
-               <button onClick={() => setShowSettings(!showSettings)} className="p-2 text-slate-400 hover:text-white"><Settings size={18}/></button>
-             </div>
+      {/* HEADER */}
+      <header className="shrink-0 z-30 px-4 py-[3px] border-b border-slate-800 bg-slate-900/50 backdrop-blur-sm flex justify-between items-center min-h-[54px]">
+        
+        {/* Left: Back Link */}
+        <div className="flex items-center gap-4 relative z-10 pointer-events-auto shrink-0">
+             <div className="md:hidden">
+                <MagickalBackLink href="/the-magick-psychic-school/psychic-training" text="" className="text-xs text-slate-400 hover:text-white" />
+            </div>
+            <div className="hidden md:block">
+                <MagickalBackLink href="/the-magick-psychic-school/psychic-training" text="Exit" className="text-xs text-slate-400 hover:text-white" />
+            </div>
+        </div>
+
+        {/* Center: Title (Desktop Only) */}
+        <div className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 items-center gap-2 pointer-events-none z-0">
+            <Brain className="w-5 h-5 text-indigo-400" />
+            <h1 className="text-lg font-bold bg-clip-text text-transparent bg-linear-to-r from-indigo-400 to-purple-400">
+                Psi-Trainer
+            </h1>
         </div>
         
-        {/* SHARED STATS MODAL INTEGRATION */}
-        <div className="relative z-50">
-           <PsychicStatsModal 
-              hits={stats.hits} 
-              trials={stats.trials} 
-              chance={0.25} 
-              appName="Psi Trainer"
-              maxStreak={stats.bestStreak}
-              radarData={[
-                { id: 'DEVIL', label: 'THREAT', value: stats.breakdown?.DEVIL?.attempts ? (stats.breakdown.DEVIL.hits / stats.breakdown.DEVIL.attempts) * 100 : 0, color: '#f87171' },
-                { id: 'ANGEL', label: 'SAFETY', value: stats.breakdown?.ANGEL?.attempts ? (stats.breakdown.ANGEL.hits / stats.breakdown.ANGEL.attempts) * 100 : 0, color: '#60a5fa' },
-                { id: 'ACC', label: 'COMBINED', value: stats.trials > 0 ? (stats.hits / stats.trials) * 100 : 0, color: '#a78bfa' } 
-              ]}
-           />
-        </div>
+        {/* Right: Modal + Buttons */}
+        <div className="flex items-center gap-1 md:gap-2 z-10 pointer-events-auto flex-1 justify-end min-w-0">
+            <PsychicStatsModal 
+               hits={stats.hits} 
+               trials={stats.trials} 
+               chance={0.25} 
+               appName="Psi Trainer"
+               maxStreak={stats.bestStreak}
+               radarData={[
+                 { id: 'DEVIL', label: 'THREAT', value: stats.breakdown?.DEVIL?.attempts ? (stats.breakdown.DEVIL.hits / stats.breakdown.DEVIL.attempts) * 100 : 0, color: '#f87171' },
+                 { id: 'ANGEL', label: 'SAFETY', value: stats.breakdown?.ANGEL?.attempts ? (stats.breakdown.ANGEL.hits / stats.breakdown.ANGEL.attempts) * 100 : 0, color: '#60a5fa' },
+                 { id: 'ACC', label: 'COMBINED', value: stats.trials > 0 ? (stats.hits / stats.trials) * 100 : 0, color: '#a78bfa' } 
+               ]}
+               className="static transform-none z-30 w-full max-w-[230px] md:w-64 md:max-w-none shrink"
+            />
             
-        <div className="hidden md:flex items-center gap-1 ml-4 pl-4 border-l border-slate-700">
-            <button onClick={toggleSound} className="p-2 hover:bg-slate-800 rounded text-slate-400">{soundEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}</button>
-            <button onClick={() => setShowInstructions(true)} className="p-2 hover:bg-slate-800 rounded text-slate-400"><Info size={18} /></button>
-            <button onClick={() => setShowSettings(!showSettings)} className="p-2 hover:bg-slate-800 rounded text-slate-400"><Settings size={18} /></button>
+            <button onClick={toggleSound} className="p-2 hover:bg-slate-800 rounded text-slate-400 shrink-0">{soundEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}</button>
+            <button onClick={() => setShowInstructions(true)} className="hidden md:block p-2 hover:bg-slate-800 rounded text-slate-400 shrink-0"><Info size={18} /></button>
+            <button onClick={() => setShowSettings(!showSettings)} className="p-2 hover:bg-slate-800 rounded text-slate-400 shrink-0"><Settings size={18} /></button>
         </div>
       </header>
 
