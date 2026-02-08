@@ -19,10 +19,11 @@ type PsychicStatsProps = {
     labels?: [string, string];
   };
   radarData?: RadarCategory[];
+  maxStreak?: number;
   className?: string;
 };
 
-export default function PsychicStatsModal({ hits, trials, chance, appName, matrixData, radarData, className }: PsychicStatsProps) {
+export default function PsychicStatsModal({ hits, trials, chance, appName, matrixData, radarData, maxStreak, className }: PsychicStatsProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -126,6 +127,14 @@ export default function PsychicStatsModal({ hits, trials, chance, appName, matri
                          <span className="text-slate-400 text-xs font-bold">Probability</span>
                          <span className="text-indigo-300 text-base font-mono font-bold">{probabilityLabel}</span>
                     </div>
+
+                    {/* MAX STREAK ADDITION */}
+                    {maxStreak !== undefined && (
+                        <div className="flex justify-between items-center py-2 border-b border-white/5">
+                             <span className="text-slate-400 text-xs font-bold">Max Streak</span>
+                             <span className="text-amber-400 text-base font-mono font-bold">{maxStreak}</span>
+                        </div>
+                    )}
                 </div>
             </div>
 

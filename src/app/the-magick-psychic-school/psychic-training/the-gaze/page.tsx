@@ -373,33 +373,52 @@ export default function TheGazeApp() {
       return { hits, trials: history.length, streak: s };
   }, [history]);
 
-  // Derived Matrix Data
-  const matrixData = useMemo(() => {
+  // Derive Full Stats Package (including Radar & Matrix)
+  const fullStats = useMemo(() => {
+      // Basic Counts
+      const hits = history.filter(h => h.isCorrect).length;
+      const trials = history.length;
+      const chance = 0.5;
+
+      // Matrix Data
       const tp = history.filter(h => h.actual === 'STARE' && h.guess === 'STARE').length;
       const tn = history.filter(h => h.actual === 'AWAY' && h.guess === 'AWAY').length;
       const fp = history.filter(h => h.actual === 'AWAY' && h.guess === 'STARE').length;
       const fn = history.filter(h => h.actual === 'STARE' && h.guess === 'AWAY').length;
+
+      // Calculate Max Streak
+      let maxStreak = 0;
+      let currentStreak = 0;
+      history.forEach(h => {
+          if (h.isCorrect) {
+              currentStreak++;
+              if (currentStreak > maxStreak) maxStreak = currentStreak;
+          } else {
+              currentStreak = 0;
+          }
+      });
+
+      // Radar Data
+      const sensitivity = (tp + fn) > 0 ? (tp / (tp + fn)) * 100 : 0;
+      const specificity = (tn + fp) > 0 ? (tn / (tn + fp)) * 100 : 0;
+      const accuracy = trials > 0 ? (hits / trials) * 100 : 0;
+
       return {
-          labels: ['Staring', 'Away'] as [string, string],
-          tp, tn, fp, fn
+          hits,
+          trials,
+          chance,
+          matrixData: {
+              tp, tn, fp, fn, 
+              labels: ["TARGET", "TRAP"] as [string, string]
+          },
+          radarData: [
+              { id: 'sense', label: 'Sensitivity', value: sensitivity, color: '#facc15' },
+              { id: 'spec', label: 'Specificity', value: specificity, color: '#22d3ee' },
+              { id: 'acc', label: 'Combined', value: accuracy, color: '#a78bfa' }
+          ],
+          maxStreak
       };
   }, [history]);
-
-  // Derived Radar Data
-  const radarData: RadarCategory[] = useMemo(() => {
-      const positiveTrials = history.filter(h => h.actual === 'STARE').length;
-      const negativeTrials = history.filter(h => h.actual === 'AWAY').length;
-
-      const sensitivity = positiveTrials > 0 ? (matrixData.tp / positiveTrials) * 100 : 0;
-      const specificity = negativeTrials > 0 ? (matrixData.tn / negativeTrials) * 100 : 0;
-
-      return [
-          { id: 'sense', label: 'Sensitivity (Hit Rate)', value: sensitivity, color: '#facc15' }, // Yellow
-          { id: 'spec', label: 'Specificity (Reject Rate)', value: specificity, color: '#22d3ee' }, // Cyan
-          // Add dummy/overall for triangular shape preference? 
-          { id: 'acc', label: 'Overall Accuracy', value: stats.trials > 0 ? (stats.hits / stats.trials) * 100 : 0, color: '#a78bfa' } // Purple
-      ];
-  }, [history, matrixData, stats]);
 
 
   // AUTO-SAVE LOGIC
@@ -562,12 +581,8 @@ export default function TheGazeApp() {
       
       {/* Standardized Stats Modal */}
       <PsychicStatsModal 
-          hits={stats.hits} 
-          trials={stats.trials} 
-          chance={0.5} 
+          {...fullStats}
           appName="The Gaze"
-          matrixData={matrixData}
-          radarData={radarData}
       />
 
       {/* Header */}

@@ -245,14 +245,27 @@ export default function FriendOrFoeApp() {
       const specificity = (tn + fp) > 0 ? (tn / (tn + fp)) * 100 : 0;
       const accuracy = history.length > 0 ? ((tp + tn) / history.length) * 100 : 0;
 
+      // Calculate Max Streak
+      let maxStreak = 0;
+      let currentStreak = 0;
+      history.forEach(h => {
+          if (h.correct) {
+              currentStreak++;
+              if (currentStreak > maxStreak) maxStreak = currentStreak;
+          } else {
+              currentStreak = 0;
+          }
+      });
+
       return {
           labels: ['Angelic', 'Demonic'] as [string, string],
           tp, tn, fp, fn,
           radarData: [
-              { id: 'sense', label: 'Sensitivity', value: sensitivity, color: '#facc15' },
-              { id: 'spec', label: 'Specificity', value: specificity, color: '#22d3ee' },
-              { id: 'acc', label: 'Accuracy', value: accuracy, color: '#a78bfa' }
-          ]
+              { id: 'sense', label: 'Angelic Sense', value: sensitivity, color: '#facc15' },
+              { id: 'spec', label: 'Demonic Alert', value: specificity, color: '#22d3ee' },
+              { id: 'acc', label: 'Combined', value: accuracy, color: '#a78bfa' }
+          ],
+          maxStreak
       };
   }, [history]);
 
@@ -503,6 +516,7 @@ export default function FriendOrFoeApp() {
               appName="Friend or Foe"
               matrixData={matrixData}
               radarData={matrixData.radarData}
+              maxStreak={matrixData.maxStreak}
           />
       </div>
 

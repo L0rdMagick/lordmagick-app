@@ -539,6 +539,18 @@ export default function VeritasApp() {
       const fp = historyArr.filter(h => h.actual === false && !h.correct).length;
       const fn = historyArr.filter(h => h.actual === true && !h.correct).length;
 
+      // Calculate Max Streak
+      let maxStreak = 0;
+      let currentStreak = 0;
+      history.forEach(h => {
+          if (h.correct) {
+              currentStreak++;
+              if (currentStreak > maxStreak) maxStreak = currentStreak;
+          } else {
+              currentStreak = 0;
+          }
+      });
+
       return {
           hits,
           trials,
@@ -548,10 +560,11 @@ export default function VeritasApp() {
               labels: ["TRUTH", "LIE"] as [string, string]
           },
           radarData: [
-              { id: 'sense', label: 'Sensitivity', value: (tp + fn) > 0 ? (tp / (tp + fn)) * 100 : 0, color: '#facc15' },
-              { id: 'spec', label: 'Specificity', value: (tn + fp) > 0 ? (tn / (tn + fp)) * 100 : 0, color: '#22d3ee' },
-              { id: 'acc', label: 'Accuracy', value: trials > 0 ? (hits / trials) * 100 : 0, color: '#a78bfa' }
-          ]
+              { id: 'sense', label: 'Truth Sense', value: (tp + fn) > 0 ? (tp / (tp + fn)) * 100 : 0, color: '#facc15' },
+              { id: 'spec', label: 'Lie Detect', value: (tn + fp) > 0 ? (tn / (tn + fp)) * 100 : 0, color: '#22d3ee' },
+              { id: 'acc', label: 'Combined', value: trials > 0 ? (hits / trials) * 100 : 0, color: '#a78bfa' }
+          ],
+          maxStreak
       };
   };
 
