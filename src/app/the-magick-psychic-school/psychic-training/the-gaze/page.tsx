@@ -595,7 +595,7 @@ export default function TheGazeApp() {
             THE GAZE
         </h1>
 
-        <div className="flex items-center gap-1 md:gap-2 relative z-10 pointer-events-auto">
+        <div className="flex items-center gap-1 md:gap-2 z-10 pointer-events-auto">
             {/* Standardized Stats Modal */}
             <PsychicStatsModal 
                 {...fullStats}
