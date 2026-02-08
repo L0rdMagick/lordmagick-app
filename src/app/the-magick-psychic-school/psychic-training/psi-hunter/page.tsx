@@ -233,6 +233,18 @@ export default function FriendOrFoeApp() {
 
   // Stats
   const [stats, setStats] = useState({ trials: 0, hits: 0 });
+  const [history, setHistory] = useState<any[]>([]); // New History Tracking
+
+  const matrixData = React.useMemo(() => {
+      const tp = history.filter(h => h.actual === 'good' && h.guess === 'good').length;
+      const tn = history.filter(h => h.actual === 'evil' && h.guess === 'evil').length;
+      const fp = history.filter(h => h.actual === 'evil' && h.guess === 'good').length;
+      const fn = history.filter(h => h.actual === 'good' && h.guess === 'evil').length;
+      return {
+          labels: ['Angelic', 'Demonic'] as [string, string],
+          tp, tn, fp, fn
+      };
+  }, [history]);
 
   const audio = useAudioEngine();
   const haptics = useHaptics();
@@ -317,6 +329,15 @@ export default function FriendOrFoeApp() {
         hits: prev.hits + roundHits,
         trials: prev.trials + roundTrials
     }));
+
+    // Update History for Matrix
+    const newHistoryItems = cards.map(c => ({
+        actual: c.target,
+        guess: c.guess,
+        correct: c.target === c.guess,
+        timestamp: Date.now()
+    }));
+    setHistory(prev => [...prev, ...newHistoryItems]);
 
     // Feedback
     audio.playReveal(allCorrect);
@@ -469,7 +490,8 @@ export default function FriendOrFoeApp() {
               hits={stats.hits} 
               trials={stats.trials} 
               chance={0.5} 
-              appName="Friend or Foe" 
+              appName="Friend or Foe"
+              matrixData={matrixData}
           />
       </div>
 

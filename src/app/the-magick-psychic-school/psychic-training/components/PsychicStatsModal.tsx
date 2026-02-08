@@ -187,7 +187,7 @@ export default function PsychicStatsModal({ hits, trials, chance, appName, matri
                      </div>
                  )}
                  {/* Matrix Fallback - Wrapped in Card */}
-                 {!radarData && matrixData && matrixData.labels && (
+                 {matrixData && matrixData.labels && (
                      <div className="bg-slate-900/50 rounded-xl border border-white/20 overflow-hidden shadow-md">
                         <div className="text-[8px] uppercase font-black tracking-widest text-center py-2 bg-white/5 text-slate-400 border-b border-white/5">Performance Matrix</div>
                         <div className="grid grid-cols-[auto_1fr_1fr] text-[10px]">
