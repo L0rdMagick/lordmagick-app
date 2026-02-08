@@ -210,17 +210,28 @@ export default function StatisticalEyeApp() {
         .rotate-y-180 { transform: rotateY(180deg); }
       `}</style>
       
-      <header className="relative z-10 w-full max-w-4xl mx-auto border-b border-zinc-800 pb-[3px] pt-[3px] mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
-        <div className="flex items-center gap-4">
-            <MagickalBackLink href="/the-magick-psychic-school/psychic-training" text="Exit" className="text-xs text-zinc-500 hover:text-zinc-300" />
-            <div className="flex items-center gap-2">
-                <div className="text-cyan-400"><Eye /></div>
-                <h1 className="text-xl tracking-widest font-bold uppercase text-zinc-300">
-                    The Statistical Eye
-                </h1>
+      <header className="relative z-20 flex justify-between items-center px-4 py-[3px] border-b border-zinc-800 backdrop-blur-sm bg-black/40 shrink-0 min-h-[54px] w-full max-w-4xl mx-auto mb-6">
+        
+        {/* Left: Back Link */}
+        <div className="flex items-center gap-4 relative z-10 pointer-events-auto shrink-0">
+             <div className="md:hidden">
+                <MagickalBackLink href="/the-magick-psychic-school/psychic-training" text="" className="text-xs text-zinc-500 hover:text-zinc-300" />
+            </div>
+            <div className="hidden md:block">
+                <MagickalBackLink href="/the-magick-psychic-school/psychic-training" text="Exit" className="text-xs text-zinc-500 hover:text-zinc-300" />
             </div>
         </div>
-        <div className="flex items-center gap-2">
+
+        {/* Center: Title (Desktop Only) */}
+        <div className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 items-center gap-2 pointer-events-none z-0">
+            <div className="text-cyan-400"><Eye /></div>
+            <h1 className="text-xl tracking-widest font-bold uppercase text-zinc-300">
+                The Statistical Eye
+            </h1>
+        </div>
+
+        {/* Right: Modal + Reset Button */}
+        <div className="flex items-center gap-2 z-10 pointer-events-auto flex-1 justify-end min-w-0">
              <PsychicStatsModal 
                 hits={stats.hits} 
                 trials={stats.trials} 
@@ -228,11 +239,11 @@ export default function StatisticalEyeApp() {
                 appName={`Statistical Eye (${mode})`}
                 radarData={radarData}
                 maxStreak={maxStreak}
+                className="static transform-none z-30 w-full max-w-[230px] md:w-64 md:max-w-none shrink"
              />
-             <button onClick={resetGame} className="px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white rounded text-[10px] uppercase font-bold tracking-wider transition-colors flex items-center gap-2">
-                <RotateCcw size={12} /> Reset
+             <button onClick={resetGame} className="px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white rounded text-[10px] uppercase font-bold tracking-wider transition-colors flex items-center gap-2 shrink-0">
+                <RotateCcw size={12} /> <span className="hidden sm:inline">Reset</span>
              </button>
-            <RoomsButton />
         </div>
       </header>
       
