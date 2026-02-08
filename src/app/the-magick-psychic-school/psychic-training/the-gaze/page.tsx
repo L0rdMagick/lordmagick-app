@@ -412,8 +412,8 @@ export default function TheGazeApp() {
               labels: ["TARGET", "TRAP"] as [string, string]
           },
           radarData: [
-              { id: 'sense', label: 'Sensitivity', value: sensitivity, color: '#facc15' },
-              { id: 'spec', label: 'Specificity', value: specificity, color: '#22d3ee' },
+              { id: 'sense', label: 'Gazing', value: sensitivity, color: '#facc15' },
+              { id: 'spec', label: 'Ignoring', value: specificity, color: '#22d3ee' },
               { id: 'acc', label: 'Combined', value: accuracy, color: '#a78bfa' }
           ],
           maxStreak
