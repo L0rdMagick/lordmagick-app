@@ -546,7 +546,12 @@ export default function VeritasApp() {
           matrixData: {
               tp, tn, fp, fn,
               labels: ["TRUTH", "LIE"] as [string, string]
-          }
+          },
+          radarData: [
+              { id: 'sense', label: 'Sensitivity', value: (tp + fn) > 0 ? (tp / (tp + fn)) * 100 : 0, color: '#facc15' },
+              { id: 'spec', label: 'Specificity', value: (tn + fp) > 0 ? (tn / (tn + fp)) * 100 : 0, color: '#22d3ee' },
+              { id: 'acc', label: 'Accuracy', value: trials > 0 ? (hits / trials) * 100 : 0, color: '#a78bfa' }
+          ]
       };
   };
 

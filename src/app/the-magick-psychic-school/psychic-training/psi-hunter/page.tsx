@@ -240,9 +240,19 @@ export default function FriendOrFoeApp() {
       const tn = history.filter(h => h.actual === 'evil' && h.guess === 'evil').length;
       const fp = history.filter(h => h.actual === 'evil' && h.guess === 'good').length;
       const fn = history.filter(h => h.actual === 'good' && h.guess === 'evil').length;
+      
+      const sensitivity = (tp + fn) > 0 ? (tp / (tp + fn)) * 100 : 0;
+      const specificity = (tn + fp) > 0 ? (tn / (tn + fp)) * 100 : 0;
+      const accuracy = history.length > 0 ? ((tp + tn) / history.length) * 100 : 0;
+
       return {
           labels: ['Angelic', 'Demonic'] as [string, string],
-          tp, tn, fp, fn
+          tp, tn, fp, fn,
+          radarData: [
+              { id: 'sense', label: 'Sensitivity', value: sensitivity, color: '#facc15' },
+              { id: 'spec', label: 'Specificity', value: specificity, color: '#22d3ee' },
+              { id: 'acc', label: 'Accuracy', value: accuracy, color: '#a78bfa' }
+          ]
       };
   }, [history]);
 
@@ -492,6 +502,7 @@ export default function FriendOrFoeApp() {
               chance={0.5} 
               appName="Friend or Foe"
               matrixData={matrixData}
+              radarData={matrixData.radarData}
           />
       </div>
 
