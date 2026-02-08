@@ -364,10 +364,10 @@ export default function NumberRecallApp() {
       </header>
 
       {/* MAIN CONTENT - Mobile Optimized */}
-      <div className="flex-1 relative z-10 flex flex-col items-center justify-center p-2 min-h-0 overflow-y-auto overflow-x-hidden w-full max-w-full">
+      <div className="flex-1 relative z-10 flex flex-col items-center justify-evenly p-2 min-h-0 overflow-y-auto overflow-x-hidden w-full max-w-full">
         
-        {/* CARD AREA - Compacted */}
-        <div className="relative w-40 h-60 md:w-64 md:h-96 perspective-1000 my-2 md:my-6 shrink-0 max-w-full">
+        {/* CARD AREA - Compacted & Centered */}
+        <div className="relative w-52 h-80 md:w-64 md:h-96 perspective-1000 shrink-0 max-w-full">
             <div className={`relative w-full h-full transition-transform duration-700 transform-style-3d ${gameState === 'REVEALED' ? 'rotate-y-180' : ''}`}>
                {/* FRONT (HIDDEN) */}
                <div className={`absolute inset-0 w-full h-full backface-hidden rounded-xl border-2 border-indigo-500/30 shadow-2xl ${CARD_BACKS.find(cb => cb.id === cardBack)?.css || 'bg-slate-900'} flex items-center justify-center`}>
