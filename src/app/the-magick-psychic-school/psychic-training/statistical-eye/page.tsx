@@ -200,7 +200,7 @@ export default function StatisticalEyeApp() {
   }, [history]);
 
   return (
-    <main className="relative min-h-screen w-full bg-black bg-cover bg-center p-8 flex flex-col overflow-hidden" style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}>
+    <main className="relative h-dvh w-full bg-black bg-cover bg-center p-2 md:p-4 flex flex-col overflow-hidden" style={{ backgroundImage: "url('/images/grand-hall-bg.png')" }}>
       <div className="absolute inset-0 bg-[#09090b]/95 backdrop-blur-sm z-0" />
       
       <style jsx global>{`
@@ -210,9 +210,9 @@ export default function StatisticalEyeApp() {
         .rotate-y-180 { transform: rotateY(180deg); }
       `}</style>
       
-      <header className="relative z-20 flex justify-between items-center px-4 py-[3px] border-b border-zinc-800 backdrop-blur-sm bg-black/40 shrink-0 min-h-[54px] w-full max-w-4xl mx-auto mb-6">
+      <header className="relative z-20 flex justify-between items-center px-4 py-[3px] border-b border-zinc-800 backdrop-blur-sm bg-black/40 shrink-0 min-h-[54px] w-full max-w-4xl mx-auto mb-2">
         
-        {/* Left: Back Link */}
+        {/* Left: Back Link + Title */}
         <div className="flex items-center gap-4 relative z-10 pointer-events-auto shrink-0">
              <div className="md:hidden">
                 <MagickalBackLink href="/the-magick-psychic-school/psychic-training" text="" className="text-xs text-zinc-500 hover:text-zinc-300" />
@@ -220,14 +220,14 @@ export default function StatisticalEyeApp() {
             <div className="hidden md:block">
                 <MagickalBackLink href="/the-magick-psychic-school/psychic-training" text="Exit" className="text-xs text-zinc-500 hover:text-zinc-300" />
             </div>
-        </div>
 
-        {/* Center: Title (Desktop Only) */}
-        <div className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 items-center gap-2 pointer-events-none z-0">
-            <div className="text-cyan-400"><Eye /></div>
-            <h1 className="text-xl tracking-widest font-bold uppercase text-zinc-300">
-                The Statistical Eye
-            </h1>
+            {/* Title Moved to Left Group */}
+            <div className="hidden md:flex items-center gap-2 border-l border-zinc-800 pl-4 ml-2">
+                <div className="text-cyan-400"><Eye size={16} /></div>
+                <h1 className="text-lg tracking-widest font-bold uppercase text-zinc-300">
+                    The Statistical Eye
+                </h1>
+            </div>
         </div>
 
         {/* Right: Modal + Reset Button */}
@@ -248,7 +248,7 @@ export default function StatisticalEyeApp() {
       </header>
       
       {/* Mode Selector */}
-      <div className="relative z-10 flex justify-center gap-4 text-xs mb-8">
+      <div className="relative z-10 flex justify-center gap-4 text-xs mb-4 shrink-0">
           <button onClick={() => toggleMode('clairvoyance')} className={`flex items-center gap-2 px-4 py-2 border transition-all duration-300 ${mode === 'clairvoyance' ? 'border-cyan-500 bg-cyan-950/30 text-cyan-400' : 'border-zinc-800 text-zinc-600 hover:border-zinc-700'}`}>
             <div style={{ width: 14 }}><Eye size={14} /></div> CLAIRVOYANCE
           </button>
@@ -258,16 +258,16 @@ export default function StatisticalEyeApp() {
       </div>
 
       {/* Main Area */}
-      <div className="relative z-10 flex-1 w-full max-w-4xl mx-auto flex flex-col gap-8 justify-center">
+      <div className="relative z-10 flex-1 w-full max-w-4xl mx-auto flex flex-col gap-4 justify-center min-h-0">
         
-        {/* Card Stage - Centered and Larger */}
-        <div className="flex-1 flex flex-col items-center justify-center min-h-[300px]">
-          <div className="relative w-64 h-96 perspective-1000">
+        {/* Card Stage - Compact */}
+        <div className="flex-1 flex flex-col items-center justify-center min-h-0">
+          <div className="relative w-48 h-72 md:w-56 md:h-80 perspective-1000">
             <div className={`relative w-full h-full transition-transform duration-700 transform-style-3d ${isRevealing ? 'rotate-y-180' : ''}`}>
               {/* Back */}
               <div className="absolute w-full h-full backface-hidden bg-zinc-900 border-2 border-zinc-700 rounded-lg flex items-center justify-center shadow-2xl cursor-default">
-                <div className="w-56 h-80 border border-zinc-800 rounded flex items-center justify-center opacity-50 bg-zinc-900">
-                   <div className="w-24 h-24 border border-zinc-600 rounded-full flex items-center justify-center">
+                <div className="w-[90%] h-[90%] border border-zinc-800 rounded flex items-center justify-center opacity-50 bg-zinc-900">
+                   <div className="w-20 h-20 border border-zinc-600 rounded-full flex items-center justify-center">
                      <span className="text-zinc-600 text-4xl font-bold">?</span>
                    </div>
                 </div>
@@ -276,16 +276,16 @@ export default function StatisticalEyeApp() {
               <div className="absolute w-full h-full backface-hidden rotate-y-180 bg-zinc-900 border-2 border-white rounded-lg flex flex-col items-center justify-center shadow-[0_0_30px_rgba(255,255,255,0.1)]">
                 {lastResult && (
                   <>
-                    <div className="w-40 h-40 text-white animate-in zoom-in duration-300">
+                    <div className="w-32 h-32 md:w-40 md:h-40 text-white animate-in zoom-in duration-300">
                       <ZenerSymbol type={lastResult.actual} />
                     </div>
-                    <div className="mt-8 text-center space-y-2">
+                    <div className="mt-4 md:mt-8 text-center space-y-2">
                         <div className="text-xs text-zinc-500 uppercase tracking-widest">Outcome</div>
                         {lastResult.correct ? (
-                            <span className="text-emerald-400 font-black text-2xl tracking-widest drop-shadow-[0_0_10px_rgba(52,211,153,0.5)]">MATCH!</span>
+                            <span className="text-emerald-400 font-black text-xl md:text-2xl tracking-widest drop-shadow-[0_0_10px_rgba(52,211,153,0.5)]">MATCH!</span>
                         ) : (
                             <div className="flex flex-col">
-                                <span className="text-rose-500 font-black text-2xl tracking-widest drop-shadow-[0_0_10px_rgba(244,63,94,0.5)]">MISS</span>
+                                <span className="text-rose-500 font-black text-xl md:text-2xl tracking-widest drop-shadow-[0_0_10px_rgba(244,63,94,0.5)]">MISS</span>
                                 <span className="text-zinc-500 text-[10px] uppercase mt-1">You picked {lastResult.guess.toUpperCase()}</span>
                             </div>
                         )}
@@ -298,7 +298,7 @@ export default function StatisticalEyeApp() {
         </div>
 
         {/* Controls */}
-        <div className="grid grid-cols-5 gap-3 md:gap-6 w-full max-w-3xl mx-auto pb-12">
+        <div className="grid grid-cols-5 gap-2 md:gap-4 w-full max-w-2xl mx-auto pb-4 shrink-0">
           {SYMBOLS.map((symbol) => (
             <button
               key={symbol}
@@ -315,7 +315,7 @@ export default function StatisticalEyeApp() {
               <div className="w-1/2 h-1/2 transition-transform group-hover:scale-110" style={{ color: SYMBOL_COLORS[symbol] }}>
                 <ZenerSymbol type={symbol} />
               </div>
-              <span className="absolute bottom-3 text-[9px] md:text-[10px] uppercase text-zinc-600 tracking-widest group-hover:text-zinc-400 font-bold">
+              <span className="absolute bottom-2 text-[8px] md:text-[9px] uppercase text-zinc-600 tracking-widest group-hover:text-zinc-400 font-bold">
                 {symbol}
               </span>
             </button>
@@ -324,7 +324,7 @@ export default function StatisticalEyeApp() {
 
       </div>
 
-      <footer className="mt-auto text-zinc-800 text-[9px] text-center max-w-2xl mx-auto pb-4 relative z-10 font-bold tracking-[0.2em] uppercase">
+      <footer className="mt-auto text-zinc-800 text-[9px] text-center max-w-2xl mx-auto pb-2 relative z-10 font-bold tracking-[0.2em] uppercase shrink-0">
         <p>Zero-Dependency Build • Scientific Protocol</p>
       </footer>
     </main>
