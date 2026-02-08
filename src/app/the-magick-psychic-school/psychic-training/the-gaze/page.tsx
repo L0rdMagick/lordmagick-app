@@ -580,12 +580,12 @@ export default function TheGazeApp() {
       <div className="absolute inset-0 bg-[#0a0a0a]/90 backdrop-blur-sm z-0" />
       
       {/* Header */}
-      <header className="relative z-20 px-6 py-[3px] flex justify-between items-center border-b border-gray-800/50 bg-[#0a0a0a]/50">
+      <header className="relative z-20 px-2 md:px-6 py-[3px] flex justify-between items-center border-b border-gray-800/50 bg-[#0a0a0a]/50">
         <div className="flex items-center gap-4">
           <MagickalBackLink href="/the-magick-psychic-school/psychic-training" text="Exit Training" className="text-sm" />
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 md:gap-2">
             <h1 className="font-bold text-xl tracking-wider text-transparent bg-clip-text bg-linear-to-r from-cyan-200 to-purple-200 hidden lg:block">
                 THE GAZE
             </h1>
