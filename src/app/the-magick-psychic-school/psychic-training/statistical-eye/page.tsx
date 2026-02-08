@@ -2,13 +2,37 @@
 
 // ... imports
 import React, { useState, useEffect, useMemo } from 'react';
-import { Eye, Brain, Activity, RotateCcw } from 'lucide-react';
+import { Eye, Brain, Activity, RotateCcw, Settings, X, Check } from 'lucide-react';
 import { createBrowserClient } from '@supabase/ssr';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
 import RoomsButton from '@/app/components/RoomsButton';
 import { useHaptics } from '@/hooks/useHaptics';
 import PsychicStatsModal from '../components/PsychicStatsModal';
 import { RadarCategory } from '../components/ResonanceRadar';
+
+// --- CARD BACK DEFINITIONS ---
+const CARD_BACKS = [
+  { 
+    id: 'default', 
+    name: 'Stardust', 
+    css: "bg-slate-950 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')]" 
+  },
+  { 
+    id: 'stars', 
+    name: 'Deep Space', 
+    css: "bg-black bg-[radial-gradient(white_1px,transparent_1px)] [background-size:16px_16px]" 
+  },
+  { 
+    id: 'hypnotic', 
+    name: 'Hypnotic', 
+    css: "bg-[conic-gradient(at_center,red,orange,yellow,green,blue,indigo,violet,red)]" 
+  },
+  { 
+    id: 'gold', 
+    name: 'Golden Metal', 
+    css: "bg-linear-to-br from-yellow-700 via-yellow-200 to-yellow-800" 
+  }
+];
 
 // --- Zener Card Symbols ---
 const ZenerSymbol = ({ type }: { type: string }) => {
@@ -51,6 +75,8 @@ const SYMBOL_COLORS: Record<string, string> = {
 
 export default function StatisticalEyeApp() {
   const [mode, setMode] = useState('clairvoyance');
+  const [cardBack, setCardBack] = useState('stars'); // Default to Deep Space
+  const [showSettings, setShowSettings] = useState(false);
   const [history, setHistory] = useState<any[]>([]);
   const [currentHiddenCard, setCurrentHiddenCard] = useState<string | null>(null);
   const [lastResult, setLastResult] = useState<any>(null);
@@ -241,8 +267,8 @@ export default function StatisticalEyeApp() {
                 maxStreak={maxStreak}
                 className="static transform-none z-30 w-full max-w-[230px] md:w-64 md:max-w-none shrink"
              />
-             <button onClick={resetGame} className="px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white rounded text-[10px] uppercase font-bold tracking-wider transition-colors flex items-center gap-2 shrink-0">
-                <RotateCcw size={12} /> <span className="hidden sm:inline">Reset</span>
+             <button onClick={() => setShowSettings(true)} className="px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white rounded text-[10px] uppercase font-bold tracking-wider transition-colors flex items-center gap-2 shrink-0">
+                <Settings size={12} /> <span className="hidden sm:inline">Settings</span>
              </button>
         </div>
       </header>
@@ -265,12 +291,7 @@ export default function StatisticalEyeApp() {
           <div className="relative w-48 h-72 md:w-56 md:h-80 perspective-1000">
             <div className={`relative w-full h-full transition-transform duration-700 transform-style-3d ${isRevealing ? 'rotate-y-180' : ''}`}>
               {/* Back */}
-              <div className="absolute w-full h-full backface-hidden bg-zinc-900 border-2 border-zinc-700 rounded-lg flex items-center justify-center shadow-2xl cursor-default">
-                <div className="w-[90%] h-[90%] border border-zinc-800 rounded flex items-center justify-center opacity-50 bg-zinc-900">
-                   <div className="w-20 h-20 border border-zinc-600 rounded-full flex items-center justify-center">
-                     <span className="text-zinc-600 text-4xl font-bold">?</span>
-                   </div>
-                </div>
+              <div className={`absolute w-full h-full backface-hidden border-2 border-zinc-700/50 rounded-lg shadow-2xl cursor-default transition-all duration-300 ${CARD_BACKS.find(cb => cb.id === cardBack)?.css || 'bg-black'}`}>
               </div>
               {/* Front (Result) */}
               <div className="absolute w-full h-full backface-hidden rotate-y-180 bg-zinc-900 border-2 border-white rounded-lg flex flex-col items-center justify-center shadow-[0_0_30px_rgba(255,255,255,0.1)]">
@@ -323,6 +344,56 @@ export default function StatisticalEyeApp() {
         </div>
 
       </div>
+
+      {/* Settings Modal */}
+      {showSettings && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
+                <div className="p-4 border-b border-zinc-800 flex justify-between items-center bg-zinc-950/50">
+                    <h2 className="text-zinc-100 font-serif tracking-widest text-lg">SETTINGS</h2>
+                    <button onClick={() => setShowSettings(false)} className="text-zinc-500 hover:text-white transition-colors">
+                        <X size={20} />
+                    </button>
+                </div>
+                
+                <div className="p-6 space-y-6">
+                    {/* Card Back Selection */}
+                    <div className="space-y-3">
+                        <label className="text-xs uppercase tracking-widest text-zinc-500 font-bold block">Card Back Design</label>
+                        <div className="grid grid-cols-2 gap-3">
+                            {CARD_BACKS.map(cb => (
+                                <button 
+                                    key={cb.id}
+                                    onClick={() => setCardBack(cb.id)}
+                                    className={`relative h-24 rounded-lg border-2 transition-all overflow-hidden group ${cardBack === cb.id ? 'border-cyan-500 ring-2 ring-cyan-500/20' : 'border-zinc-800 hover:border-zinc-600'}`}
+                                >
+                                    <div className={`absolute inset-0 ${cb.css}`} />
+                                    {cardBack === cb.id && (
+                                        <div className="absolute top-1 right-1 bg-cyan-500 text-black rounded-full p-0.5">
+                                            <Check size={10} strokeWidth={4} />
+                                        </div>
+                                    )}
+                                    <span className="absolute bottom-0 w-full bg-black/60 backdrop-blur-xs text-[9px] py-1 text-center text-zinc-300 font-bold uppercase tracking-wider">
+                                        {cb.name}
+                                    </span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Game Actions */}
+                    <div className="pt-4 border-t border-zinc-800">
+                         <button 
+                            onClick={() => { resetGame(); setShowSettings(false); }}
+                            className="w-full py-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white rounded-lg flex items-center justify-center gap-2 transition-colors uppercase tracking-wider text-xs font-bold"
+                        >
+                            <RotateCcw size={14} /> Reset Session
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+      )}
 
       <footer className="mt-auto text-zinc-800 text-[9px] text-center max-w-2xl mx-auto pb-2 relative z-10 font-bold tracking-[0.2em] uppercase shrink-0">
         <p>Zero-Dependency Build • Scientific Protocol</p>

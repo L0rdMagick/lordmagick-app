@@ -29,7 +29,7 @@ import { calculateZScore } from '../utils/psychicStats';
 const IMG_PATH = '/images/empathy-app/';
 
 const EMOTIONS = [
-  { id: 'love', name: 'Lov', src: `${IMG_PATH}love.jpg`, color: '#ec4899', desc: 'Resonance, Connection', aura: 'shadow-pink-500' },
+  { id: 'love', name: 'Love', src: `${IMG_PATH}love.jpg`, color: '#ec4899', desc: 'Resonance, Connection', aura: 'shadow-pink-500' },
   { id: 'sad', name: 'Sadness', src: `${IMG_PATH}sadness.jpg`, color: '#94a3b8', desc: 'Rain, Tears, Grey', aura: 'shadow-slate-500' },
   { id: 'happy', name: 'Joy', src: `${IMG_PATH}joy_unbound.jpg`, color: '#facc15', desc: 'Sun, Radiance', aura: 'shadow-yellow-500' },
   { id: 'rich', name: 'Wealth', src: `${IMG_PATH}wealth (1).jpg`, color: '#fbbf24', desc: 'Gold, Abundance', aura: 'shadow-amber-500' },
