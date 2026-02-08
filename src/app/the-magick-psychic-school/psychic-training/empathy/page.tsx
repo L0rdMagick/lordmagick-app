@@ -537,8 +537,8 @@ export default function EmpathyApp() {
 
       {showInstructions && <InstructionModal onClose={handleStart} />}
 
-      {/* HEADER - Fixed at top */}
-      <header className="relative z-20 flex justify-between items-center px-4 py-[3px] border-b border-white/5 backdrop-blur-sm bg-black/40 shrink-0 min-h-[54px]">
+      {/* HEADER - Grid on Mobile, Flex on Desktop */}
+      <header className="relative z-20 grid grid-cols-2 md:flex md:justify-between items-center px-4 py-2 md:py-[3px] border-b border-white/5 backdrop-blur-sm bg-black/40 shrink-0 min-h-[54px] gap-y-2 md:gap-y-0">
         
         {/* Left: Back Link */}
         <div className="flex items-center gap-4 relative z-10 pointer-events-auto">
@@ -550,8 +550,18 @@ export default function EmpathyApp() {
             </div>
         </div>
 
+        {/* Mobile Right Buttons (Row 1 Col 2) */}
+        <div className="flex justify-end gap-1 md:hidden relative z-10 pointer-events-auto">
+           <button onClick={toggleSound} className="p-2 hover:bg-white/10 rounded-full transition-colors text-slate-400">
+            {soundEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />}
+          </button>
+          <button onClick={() => setShowSettings(!showSettings)} className={`p-2 rounded-full transition-colors ${showSettings ? 'bg-purple-900/50 text-purple-200' : 'hover:bg-white/10 text-slate-400'}`}>
+            <Settings size={20} />
+          </button>
+        </div>
+
         {/* Center: Title (Desktop Only) */}
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-3 hidden md:flex pointer-events-none z-0">
+        <div className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 items-center gap-3 pointer-events-none z-0">
              <div className="w-8 h-8 rounded-full bg-linear-to-tr from-purple-500 to-amber-300 flex items-center justify-center">
                 <Eye size={16} className="text-black" />
             </div>
@@ -560,8 +570,8 @@ export default function EmpathyApp() {
             </span>
         </div>
 
-        {/* Right: Modal + Buttons */}
-        <div className="flex items-center gap-1 md:gap-2 z-10 pointer-events-auto">
+        {/* Modal Container: Mobile Row 2 (Centered), Desktop Right Group */}
+        <div className="col-span-2 flex justify-center md:col-span-auto md:w-auto md:flex md:items-center md:gap-2 z-10 pointer-events-auto">
             <PsychicStatsModal 
                 hits={Object.values(stats).reduce((acc: number, curr: any) => acc + (curr.hits || 0), 0)}
                 trials={Object.values(stats).reduce((acc: number, curr: any) => acc + (curr.attempts || 0), 0)}
@@ -577,18 +587,21 @@ export default function EmpathyApp() {
                     };
                 })}
                 maxStreak={maxStreak}
-                className="absolute left-1/2 top-[2px] -translate-x-1/2 md:static md:transform-none z-30"
+                className="static transform-none z-30 w-[230px] md:w-64 max-w-none"
             />
             
-           <button onClick={() => setShowInstructions(true)} className="hidden md:block p-2 hover:bg-white/10 rounded-full transition-colors text-slate-400">
-             <Info size={20} />
-           </button>
-           <button onClick={toggleSound} className="p-2 hover:bg-white/10 rounded-full transition-colors text-slate-400">
-            {soundEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />}
-          </button>
-          <button onClick={() => setShowSettings(!showSettings)} className={`p-2 rounded-full transition-colors ${showSettings ? 'bg-purple-900/50 text-purple-200' : 'hover:bg-white/10 text-slate-400'}`}>
-            <Settings size={20} />
-          </button>
+           {/* Desktop Only Buttons */}
+           <div className="hidden md:flex items-center gap-2">
+               <button onClick={() => setShowInstructions(true)} className="p-2 hover:bg-white/10 rounded-full transition-colors text-slate-400">
+                 <Info size={20} />
+               </button>
+               <button onClick={toggleSound} className="p-2 hover:bg-white/10 rounded-full transition-colors text-slate-400">
+                {soundEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />}
+              </button>
+              <button onClick={() => setShowSettings(!showSettings)} className={`p-2 rounded-full transition-colors ${showSettings ? 'bg-purple-900/50 text-purple-200' : 'hover:bg-white/10 text-slate-400'}`}>
+                <Settings size={20} />
+              </button>
+           </div>
         </div>
       </header>
 
