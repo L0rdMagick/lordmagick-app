@@ -258,7 +258,7 @@ export default function FriendOrFoeApp() {
       });
 
       return {
-          labels: ['Angelic', 'Demonic'] as [string, string],
+          labels: ['ANGELIC', 'DEMONIC'] as [string, string],
           tp, tn, fp, fn,
           radarData: [
               { id: 'sense', label: 'Angelic Sense', value: sensitivity, color: '#facc15' },

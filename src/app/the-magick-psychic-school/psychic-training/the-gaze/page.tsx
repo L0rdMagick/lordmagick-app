@@ -409,7 +409,7 @@ export default function TheGazeApp() {
           chance,
           matrixData: {
               tp, tn, fp, fn, 
-              labels: ["TARGET", "TRAP"] as [string, string]
+              labels: ["GAZING", "IGNORING"] as [string, string]
           },
           radarData: [
               { id: 'sense', label: 'Gazing', value: sensitivity, color: '#facc15' },
