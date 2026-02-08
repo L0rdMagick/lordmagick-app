@@ -335,15 +335,12 @@ export default function StatisticalEyeApp() {
                 hover:border-white hover:bg-zinc-800 transition-all duration-200
                 disabled:opacity-30 disabled:cursor-not-allowed
                 flex flex-col items-center justify-center text-zinc-500 hover:text-white
-                shadow-lg active:scale-95
+                shadow-lg active:scale-95 p-[5%]
               `}
             >
-              <div className="w-1/2 h-1/2 transition-transform group-hover:scale-110" style={{ color: SYMBOL_COLORS[symbol] }}>
+              <div className="w-full h-full transition-transform group-hover:scale-105" style={{ color: SYMBOL_COLORS[symbol] }}>
                 <ZenerSymbol type={symbol} />
               </div>
-              <span className="absolute bottom-2 text-[8px] md:text-[9px] uppercase text-zinc-600 tracking-widest group-hover:text-zinc-400 font-bold">
-                {symbol}
-              </span>
             </button>
           ))}
         </div>
