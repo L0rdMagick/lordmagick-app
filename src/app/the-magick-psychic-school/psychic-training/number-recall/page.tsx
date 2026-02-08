@@ -191,10 +191,18 @@ export default function NumberRecallApp() {
   };
 
   const startNewRound = (digits = numDigits) => {
-    const newTarget = generateNumber(digits);
-    setTargetNumber(newTarget);
-    setUserGuess('');
+    // 1. Start Flip Back
     setGameState('WAITING');
+    
+    // 2. Clear Guess immediately
+    setUserGuess('');
+
+    // 3. Generate new number ONLY after card is edge-on (approx 300ms)
+    // This prevents the user from seeing the next number during the flip back animation
+    setTimeout(() => {
+        const newTarget = generateNumber(digits);
+        setTargetNumber(newTarget);
+    }, 300);
   };
 
   const handleSubmit = (e?: React.FormEvent) => {
@@ -230,20 +238,11 @@ export default function NumberRecallApp() {
 
   const handleDigitChange = (val: number) => {
     setNumDigits(val);
-    // Optionally reset current round immediately or wait for next?
-    // Better to reset to avoid confusion of guessing a 1 digit number when slider is on 5.
-    // But we should ask confirmation if game in progress? 
-    // For fluidity, let's just reset stats or just round?
-    // Let's just reset the round.
-    const newTarget = generateNumber(val);
-    setTargetNumber(newTarget);
-    setUserGuess('');
-    setGameState('WAITING');
+    startNewRound(val);
   };
 
   const handleResetSession = () => {
     setHistory([]);
-    setGameState('WAITING');
     startNewRound(numDigits);
     setShowSettings(false);
   };
@@ -365,10 +364,10 @@ export default function NumberRecallApp() {
       </header>
 
       {/* MAIN CONTENT */}
-      <div className="flex-1 relative z-10 flex flex-col items-center justify-center p-4 min-h-0 overflow-y-auto">
+      <div className="flex-1 relative z-10 flex flex-col items-center justify-center p-2 min-h-0 overflow-y-auto">
         
-        {/* CARD AREA */}
-        <div className="relative w-48 h-72 md:w-64 md:h-96 perspective-1000 my-4 md:my-8 shrink-0">
+        {/* CARD AREA - Compacted */}
+        <div className="relative w-40 h-60 md:w-64 md:h-96 perspective-1000 my-2 md:my-6 shrink-0">
             <div className={`relative w-full h-full transition-transform duration-700 transform-style-3d ${gameState === 'REVEALED' ? 'rotate-y-180' : ''}`}>
                {/* FRONT (HIDDEN) */}
                <div className={`absolute inset-0 w-full h-full backface-hidden rounded-xl border-2 border-indigo-500/30 shadow-2xl ${CARD_BACKS.find(cb => cb.id === cardBack)?.css || 'bg-slate-900'} flex items-center justify-center`}>
@@ -380,11 +379,11 @@ export default function NumberRecallApp() {
                {/* BACK (REVEALED) */}
                <div className="absolute inset-0 w-full h-full backface-hidden rotate-y-180 bg-slate-900 rounded-xl border-2 border-indigo-400 flex flex-col items-center justify-center shadow-[0_0_50px_rgba(99,102,241,0.3)]">
                     <span className="text-xs font-mono text-slate-500 uppercase tracking-widest mb-4">Target Signal</span>
-                    <div className="text-6xl md:text-7xl font-black text-white tracking-tighter drop-shadow-lg">
+                    <div className="text-5xl md:text-7xl font-black text-white tracking-tighter drop-shadow-lg text-center break-all px-2">
                         {targetNumber}
                     </div>
                     {userGuess && (
-                        <div className={`mt-6 px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${userGuess === targetNumber ? 'bg-green-900/50 text-green-300 border border-green-500/50' : 'bg-red-900/50 text-red-300 border border-red-500/50'}`}>
+                        <div className={`mt-6 px-4 py-1 rounded-full text-[10px] md:text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${userGuess === targetNumber ? 'bg-green-900/50 text-green-300 border border-green-500/50' : 'bg-red-900/50 text-red-300 border border-red-500/50'}`}>
                            {userGuess === targetNumber ? <Check size={14} /> : <X size={14} />}
                            You Saw: {userGuess}
                         </div>
@@ -393,8 +392,8 @@ export default function NumberRecallApp() {
             </div>
         </div>
 
-        {/* CONTROLS AREA */}
-        <div className="w-full max-w-md space-y-6">
+        {/* CONTROLS AREA - Compacted */}
+        <div className="w-full max-w-md space-y-3 md:space-y-6">
             
             {/* INPUT & SUBMIT */}
             <form onSubmit={handleSubmit} className="flex gap-2">
@@ -427,7 +426,7 @@ export default function NumberRecallApp() {
             </form>
 
             {/* SLIDER */}
-            <div className="bg-slate-900/50 rounded-xl p-4 border border-slate-800">
+            <div className="bg-slate-900/50 rounded-xl p-3 md:p-4 border border-slate-800">
                 <div className="flex justify-between items-center mb-2">
                     <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Complexity</span>
                     <span className="text-xs text-indigo-400 font-mono">{numDigits} {numDigits === 1 ? 'Digit' : 'Digits'} (0-{Math.pow(10, numDigits)-1})</span>
