@@ -50,6 +50,35 @@ export function calculateZScore(hits: number, trials: number, chance: number): n
 }
 
 /**
+ * Calculates the Z-score for a Hypergeometric distribution (Sampling without replacement).
+ * Use this when the sample size is a significant portion of the total population (e.g. > 5%).
+ * 
+ * @param hits (k) Number of successes in the sample
+ * @param totalPopulation (N) Total number of items in the population
+ * @param totalSuccesses (K) Total number of success states in the population
+ * @param sampleSize (n) Size of the sample drawn
+ */
+export function calculateHypergeometricZScore(hits: number, totalPopulation: number, totalSuccesses: number, sampleSize: number): number {
+  const N = totalPopulation;
+  const K = totalSuccesses;
+  const n = sampleSize;
+  const k = hits;
+
+  // Mean = n * (K / N)
+  const mean = n * (K / N);
+
+  // Variance = n * (K/N) * ((N-K)/N) * ((N-n)/(N-1))
+  // The last term ((N-n)/(N-1)) is the Finite Population Correction (FPC)
+  const p = K / N;
+  const variance = n * p * (1 - p) * ((N - n) / (N - 1));
+
+  if (variance <= 0) return 0;
+  const stdDev = Math.sqrt(variance);
+
+  return (k - mean) / stdDev;
+}
+
+/**
  * Gets the rank based on Z-score.
  */
 export function getPsiRank(z: number): PsiRank {

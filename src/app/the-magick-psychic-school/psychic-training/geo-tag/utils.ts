@@ -1,6 +1,6 @@
 import { TARGET_DATA, TargetLocation } from './targetData';
 import { TAG_GROUPS } from './tag-groups';
-import { calculateZScore, getPsiRank } from '../utils/psychicStats';
+import { calculateZScore, calculateHypergeometricZScore, getPsiRank } from '../utils/psychicStats';
 
 export interface GameState {
   target: TargetLocation;
@@ -123,10 +123,21 @@ export function calculateGameScore(target: TargetLocation, selectedTags: string[
   });
 
   // Calculate Stats
-  // Z-Score based on 17 trials (user selections), prob 1/6
   const totalHits = exactHits.length + alignmentHits.length;
-  // Note: Trials = 17 (number of selections user MADE). Chance = 1/6.
-  const zScore = calculateZScore(totalHits, 17, 1/6);
+  
+  // Use Hypergeometric Z-Score because we are sampling without replacement
+  // N=102 (Total Tags), K=17 (Total Correct in Pool? No, wait.)
+  // Wait, let's verify the parameters.
+  // The Total Populaton N = 102 tags shown to user?
+  // No, the user SELECTIONS are the sample? Or the BOARD is the population?
+  // The user *selects* 17 tags from the 102 on screen.
+  // The "Population" is the 102 tags on screen.
+  // "Successes in Population" (K) is the number of "Correct" tags on screen. 
+  // There are 17 Correct Tags (Target Tags) on screen.
+  // The "Sample Size" (n) is 17 (User picks 17).
+  // "Hits" (k) is number of Correct Tags the user picked.
+  
+  const zScore = calculateHypergeometricZScore(totalHits, 102, 17, 17);
   const rank = getPsiRank(zScore);
 
   return {
