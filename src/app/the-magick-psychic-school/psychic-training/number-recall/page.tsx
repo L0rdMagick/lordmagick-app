@@ -144,7 +144,7 @@ export default function NumberRecallApp() {
   const [userGuess, setUserGuess] = useState('');
   const [gameState, setGameState] = useState<'WAITING' | 'REVEALED'>('WAITING');
   const [history, setHistory] = useState<any[]>([]);
-  const [cardBack, setCardBack] = useState('stars');
+  const [cardBack, setCardBack] = useState('hypnotic');
   const [showSettings, setShowSettings] = useState(false);
   const [showInstructions, setShowInstructions] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -382,9 +382,7 @@ export default function NumberRecallApp() {
             <div className={`relative w-full h-full transition-transform duration-700 transform-style-3d ${gameState === 'REVEALED' ? 'rotate-y-180' : ''}`}>
                {/* FRONT (HIDDEN) */}
                <div className={`absolute inset-0 w-full h-full backface-hidden rounded-xl border-2 border-indigo-500/30 shadow-2xl ${CARD_BACKS.find(cb => cb.id === cardBack)?.css || 'bg-slate-900'} flex items-center justify-center`}>
-                    <div className="w-16 h-16 rounded-full bg-slate-950/50 flex items-center justify-center backdrop-blur-sm border border-white/10">
-                         <span className="text-2xl font-black text-indigo-500/50">?</span>
-                    </div>
+                    {/* Clean card back - no overlays */}
                </div>
 
                {/* BACK (REVEALED) */}
@@ -486,14 +484,9 @@ export default function NumberRecallApp() {
                                     className={`relative h-20 rounded-lg border-2 transition-all overflow-hidden group ${cardBack === cb.id ? 'border-indigo-500 ring-2 ring-indigo-500/20' : 'border-slate-800 hover:border-slate-600'}`}
                                 >
                                     <div className={`absolute inset-0 ${cb.css}`} />
-                                    {cardBack === cb.id && (
-                                        <div className="absolute top-1 right-1 bg-indigo-500 text-black rounded-full p-0.5">
-                                            <Check size={10} strokeWidth={4} />
-                                        </div>
-                                    )}
-                                    <span className="absolute bottom-0 w-full bg-black/60 backdrop-blur-xs text-[9px] py-1 text-center text-slate-300 font-bold uppercase tracking-wider">
+                                    <div className="absolute bottom-0 w-full bg-black/80 backdrop-blur-sm text-[8px] leading-tight py-1 px-1 text-center text-slate-300 font-bold uppercase tracking-wider truncate">
                                         {cb.name}
-                                    </span>
+                                    </div>
                                 </button>
                             ))}
                         </div>
