@@ -21,11 +21,21 @@ type PsychicStatsProps = {
   radarData?: RadarCategory[];
   maxStreak?: number;
   className?: string;
+  children?: React.ReactNode;
+  isOpen?: boolean;
+  onClose?: () => void;
 };
 
-export default function PsychicStatsModal({ hits, trials, chance, appName, matrixData, radarData, maxStreak, className }: PsychicStatsProps) {
+export default function PsychicStatsModal({ hits, trials, chance, appName, matrixData, radarData, maxStreak, className, children, isOpen, onClose }: PsychicStatsProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [mounted, setMounted] = useState(false);
+  
+  const showExpanded = isOpen !== undefined ? isOpen : isExpanded;
+  
+  const handleClose = () => {
+      if (onClose) onClose();
+      setIsExpanded(false);
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -37,7 +47,7 @@ export default function PsychicStatsModal({ hits, trials, chance, appName, matri
   const probabilityLabel = calculatePValue(zScore);
 
   // --- MINIMIZED VIEW ---
-  if (!isExpanded) {
+  if (!showExpanded) {
     return (
       <div className={className}>
         <button 
@@ -70,14 +80,14 @@ export default function PsychicStatsModal({ hits, trials, chance, appName, matri
   return createPortal(
     <div 
       className="fixed inset-0 z-[9999] bg-slate-950/90 backdrop-blur-xl flex md:items-center justify-center p-0 md:p-4 animate-in fade-in duration-200 overflow-y-auto"
-      onClick={() => setIsExpanded(false)}
+      onClick={() => handleClose()}
     >
       <div 
         className="w-[90%] md:w-[70%] max-w-none bg-slate-900 border-x md:border border-white/10 md:rounded-2xl shadow-2xl flex flex-col max-h-[90vh] md:max-h-[85vh] relative overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         <button 
-          onClick={() => setIsExpanded(false)}
+          onClick={() => handleClose()}
           className="fixed md:absolute top-4 right-4 z-50 p-2 bg-black/40 md:bg-black/20 hover:bg-rose-500/20 text-slate-400 hover:text-white rounded-full transition-all backdrop-blur-md"
         >
             <X size={20} />
@@ -234,6 +244,12 @@ export default function PsychicStatsModal({ hits, trials, chance, appName, matri
                      </div>
                  )}
             </div>
+            
+            {children && (
+                 <div className="w-full bg-slate-900/50 rounded-xl border border-white/20 p-4 md:p-6 shadow-md mt-6">
+                     {children}
+                 </div>
+            )}
 
         </div>
 

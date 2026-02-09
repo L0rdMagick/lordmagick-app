@@ -1,0 +1,3 @@
+﻿src/app/the-magick-psychic-school/psychic-training/geo-tag/page.tsx(7,24): error TS2307: Cannot find module '@/components/ui/button' or its corresponding type declarations.
+src/app/the-magick-psychic-school/psychic-training/geo-tag/page.tsx(308,9): error TS2322: Type '{ children: Element | null; isOpen: boolean; onClose: () => void; zScore: number; rank: string | PsiRank; title: string; hits: number; trials: number; chance: number; stats: { ...; }[]; }' is not assignable to type 'IntrinsicAttributes & PsychicStatsProps'.
+  Property 'zScore' does not exist on type 'IntrinsicAttributes & PsychicStatsProps'.

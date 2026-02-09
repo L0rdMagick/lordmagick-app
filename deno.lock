@@ -37,6 +37,7 @@
     "npm:supabase@^2.54.11": "2.54.11",
     "npm:tailwindcss@^4.1.16": "4.1.16",
     "npm:typescript@5": "5.9.3",
+    "npm:typescript@5.9.3": "5.9.3",
     "npm:uuid@13": "13.0.0"
   },
   "npm": {
