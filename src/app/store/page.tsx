@@ -252,7 +252,7 @@ export function StoreContent({ isModal = false }: StoreContentProps) {
                             </button>
                         )}
                     </div>
-                    <div className="flex items-center gap-4">
+                    <div className={`flex items-center gap-4 ${isModal ? 'pr-14' : ''}`}>
                         <h1 className="text-xl font-serif text-amber-500 tracking-widest uppercase hidden md:block">
                             Faestone Exchange
                         </h1>
