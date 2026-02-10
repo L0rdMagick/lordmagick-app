@@ -1,12 +1,9 @@
-/// <reference types="google.maps" />
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, RefreshCw, BarChart2, CheckCircle, XCircle, Eye, HelpCircle, Volume2, VolumeX, Maximize2, Minimize2, MapPin, Navigation, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-// @ts-ignore
-import JSConfetti from 'js-confetti';
 
 import { useAudioEngine } from '@/hooks/useAudioEngine';
 import { useHaptics } from '@/hooks/useHaptics';
@@ -18,6 +15,7 @@ import { generateGameRound, calculateGameScore, ScoringResult } from './utils';
 // --- CONFIG ---
 const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
+declare var google: any;
 
 // --- HELPERS ---
 const getTargetCategory = (target: TargetLocation): string => {
@@ -65,8 +63,8 @@ export default function GeoTagApp() {
   // --- REFS for Map ---
   const mapRef = useRef<HTMLDivElement>(null);
   const streetViewRef = useRef<HTMLDivElement>(null);
-  const googleMapInstance = useRef<google.maps.Map | null>(null);
-  const streetViewInstance = useRef<google.maps.StreetViewPanorama | null>(null);
+  const googleMapInstance = useRef<any>(null);
+  const streetViewInstance = useRef<any>(null);
 
   // --- SOUND INIT ---
   useEffect(() => {
@@ -161,8 +159,6 @@ export default function GeoTagApp() {
     if (score.zScore > 1.645) { // p < 0.05
         audio.playHit();
         haptics.triggerHeavy();
-        const jsConfetti = new JSConfetti();
-        jsConfetti.addConfetti();
     } else {
         audio.playMiss();
         haptics.triggerLight();
