@@ -225,18 +225,38 @@ export function StoreContent({ isModal = false }: StoreContentProps) {
                 {/* Header */}
                 <header className="p-4 shrink-0 flex justify-between items-center bg-transparent">
                     <div className="flex items-center gap-4">
-                        {!isModal && (
+                        {!isModal ? (
                             <MagickalBackLink 
                                 href={activeReturnPath || "/hall"} 
                                 text={activeReturnPath ? "Return to Ritual" : "Grand Hall"} 
                             />
+                        ) : (
+                            <button 
+                                onClick={() => router.back()}
+                                className="group flex items-center gap-3 text-cyan-200 opacity-80 hover:opacity-100 transition-all duration-300"
+                                style={{ filter: 'drop-shadow(1px 1px 3px rgba(0,0,0,0.7))' }}
+                            >
+                                <svg 
+                                    xmlns="http://www.w3.org/2000/svg" 
+                                    width="24" height="24" viewBox="0 0 24 24" 
+                                    fill="none" stroke="currentColor" strokeWidth="2" 
+                                    strokeLinecap="round" strokeLinejoin="round" 
+                                    className="transition-transform group-hover:-translate-x-1"
+                                >
+                                    <path d="M19 12H5" />
+                                    <path d="M12 19l-7-7 7-7" />
+                                </svg>
+                                <span className="font-semibold tracking-wider group-hover:text-white">
+                                    Return
+                                </span>
+                            </button>
                         )}
                     </div>
                     <div className="flex items-center gap-4">
                         <h1 className="text-xl font-serif text-amber-500 tracking-widest uppercase hidden md:block">
                             Faestone Exchange
                         </h1>
-                        <RoomsButton />
+                        {!isModal && <RoomsButton />}
                     </div>
                 </header>
 
@@ -309,9 +329,11 @@ export function StoreContent({ isModal = false }: StoreContentProps) {
 
                     </div>
 
-                    <div className="mt-4 text-[9px] text-gray-500 font-mono uppercase tracking-widest flex items-center justify-center gap-2 opacity-60">
-                        <AlertTriangle size={10} />
-                        Transactions secured by Stripe. No refunds on digital essence.
+                    <div className="mt-4 flex items-center justify-center gap-2 bg-gray-500/10 backdrop-blur-sm border border-white/5 px-4 py-2 rounded-lg">
+                        <AlertTriangle size={12} className="text-[#FDFD96]" />
+                        <span className="text-[10px] text-[#FDFD96] font-mono uppercase tracking-widest opacity-90">
+                            Transactions secured by Stripe. No refunds on digital essence.
+                        </span>
                     </div>
                 </div>
             </div>
