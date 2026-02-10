@@ -50,7 +50,7 @@ const STORE_ITEMS = [
 const FaestonePile = ({ count }: { count: number }) => {
     if (count === 1) {
         return (
-            <div className="relative w-14 h-14 mb-3 group-hover:scale-110 transition-transform duration-500">
+            <div className="relative w-14 h-14 mb-1 group-hover:scale-110 transition-transform duration-500">
                 <Image src="/images/faestones.png" alt="Faestone: Magickal Currency Token" layout="fill" objectFit="contain" />
             </div>
         );
@@ -58,7 +58,7 @@ const FaestonePile = ({ count }: { count: number }) => {
     
     if (count === 3) {
         return (
-            <div className="relative w-28 h-16 mb-3 group-hover:scale-110 transition-transform duration-500">
+            <div className="relative w-28 h-16 mb-1 group-hover:scale-110 transition-transform duration-500">
                 <div className="absolute left-0 bottom-0 w-12 h-12 rotate-[-15deg] z-10">
                     <Image src="/images/faestones.png" alt="Faestone: Magickal Currency Token" layout="fill" objectFit="contain" />
                 </div>
@@ -74,7 +74,7 @@ const FaestonePile = ({ count }: { count: number }) => {
 
     if (count === 6) {
         return (
-            <div className="relative w-36 h-20 mb-3 group-hover:scale-110 transition-transform duration-500">
+            <div className="relative w-36 h-20 mb-1 group-hover:scale-110 transition-transform duration-500">
                 {/* Back Row */}
                 <div className="absolute left-2 bottom-4 w-12 h-12 rotate-[-45deg] opacity-90 blur-[1px]">
                      <Image src="/images/faestones.png" alt="Faestone: Magickal Currency Token" layout="fill" objectFit="contain" />
@@ -235,9 +235,13 @@ export function StoreContent() {
                             <h2 className="text-xl md:text-3xl font-serif text-amber-400 mb-1 text-shadow-lg">
                                 Acquire Faestones
                             </h2>
-                            <p className="text-gray-400 font-serif text-xs md:text-sm leading-relaxed max-w-sm mx-auto">
+                            <p className="text-gray-400 font-serif text-xs md:text-sm leading-relaxed max-w-sm mx-auto mb-2">
                                 Faestones power your spells, readings, and bindings. Choose your vessel wisely.
                             </p>
+                            <div className="text-[9px] text-gray-500 font-mono uppercase tracking-widest flex items-center justify-center gap-2 opacity-60">
+                                <AlertTriangle size={10} />
+                                Transactions secured by Stripe. No refunds on digital essence.
+                            </div>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 w-full max-w-4xl">
@@ -248,7 +252,7 @@ export function StoreContent() {
                                 className={`
                                     relative group cursor-pointer 
                                     bg-black/80 border-2 ${pkg.border} 
-                                    rounded-none rounded-tl-2xl rounded-br-2xl p-4 
+                                    rounded-none rounded-tl-2xl rounded-br-2xl p-3
                                     hover:bg-black/90 transition-all duration-300 
                                     hover:scale-[1.02] shadow-2xl hover:${pkg.glow}
                                     flex flex-col items-center text-center
@@ -269,7 +273,7 @@ export function StoreContent() {
                                     {pkg.credits} <span className="text-[10px] text-gray-500 font-normal">FAESTONES</span>
                                 </div>
                                 
-                                <p className="text-[10px] text-gray-400 mb-3 min-h-[16px] uppercase tracking-wide">{pkg.desc}</p>
+                                <p className="text-[10px] text-gray-400 mb-2 min-h-[16px] uppercase tracking-wide">{pkg.desc}</p>
                                 
                                 <button 
                                     disabled={loadingId !== null}
@@ -289,11 +293,6 @@ export function StoreContent() {
                                 </button>
                             </div>
                         ))}
-                    </div>
-
-                    <div className="mt-8 text-[10px] text-gray-500 font-mono uppercase tracking-widest flex items-center gap-2 opacity-60 hover:opacity-100 transition-opacity bg-black/40 px-4 py-2 rounded-full backdrop-blur-sm">
-                        <AlertTriangle size={12} />
-                        Transactions secured by Stripe. No refunds on digital essence.
                     </div>
                 </div>
             </div>
