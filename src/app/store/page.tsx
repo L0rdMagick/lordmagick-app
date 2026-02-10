@@ -102,7 +102,11 @@ const FaestonePile = ({ count }: { count: number }) => {
     return null;
 };
 
-export function StoreContent() {
+interface StoreContentProps {
+    isModal?: boolean;
+}
+
+export function StoreContent({ isModal = false }: StoreContentProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
     const haptics = useHaptics();
@@ -212,7 +216,7 @@ export function StoreContent() {
     };
 
     return (
-        <main className="store-wrapper h-[100dvh] w-full bg-black bg-[url('/images/grand-hall-bg.png')] bg-cover bg-center flex flex-col relative overflow-hidden font-sans text-gray-200">
+        <main className={`store-wrapper ${isModal ? 'h-full rounded-2xl' : 'h-[100dvh]'} w-full bg-black bg-[url('/images/grand-hall-bg.png')] bg-cover bg-center flex flex-col relative overflow-hidden font-sans text-gray-200`}>
             <div className="absolute inset-0 bg-black/20 z-0" />
             
             {/* Scrollable Wrapper for Header + Content */}
@@ -221,10 +225,12 @@ export function StoreContent() {
                 {/* Header */}
                 <header className="p-4 shrink-0 flex justify-between items-center bg-transparent">
                     <div className="flex items-center gap-4">
-                        <MagickalBackLink 
-                            href={activeReturnPath || "/hall"} 
-                            text={activeReturnPath ? "Return to Ritual" : "Grand Hall"} 
-                        />
+                        {!isModal && (
+                            <MagickalBackLink 
+                                href={activeReturnPath || "/hall"} 
+                                text={activeReturnPath ? "Return to Ritual" : "Grand Hall"} 
+                            />
+                        )}
                     </div>
                     <div className="flex items-center gap-4">
                         <h1 className="text-xl font-serif text-amber-500 tracking-widest uppercase hidden md:block">

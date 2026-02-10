@@ -48,9 +48,9 @@ export default function InterceptedStore() {
                    Given StoreContent has 'h-screen' on its main element, 
                    it might try to force full height. We'll let it fill our container.
                 */}
-                <div className="w-full h-full overflow-y-auto">
+                <div className="w-full h-full">
                     <Suspense fallback={<div className="h-full flex items-center justify-center"><LoadingSpinner /></div>}>
-                        <StoreContent />
+                        <StoreContent isModal={true} />
                     </Suspense>
                 </div>
             </div>
