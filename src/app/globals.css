@@ -436,28 +436,28 @@ body {
   scrollbar-color: rgba(99, 102, 241, 0.5) rgba(15, 23, 42, 0.5);
 }
 
-/* === MAGICKAL SCROLLBAR === */
-.magickal-scrollbar::-webkit-scrollbar {
+/* === MAGICKAL SCROLLBAR (Recursive for Store Wrapper) === */
+.store-wrapper *::-webkit-scrollbar {
   width: 8px !important;
   height: 8px !important;
 }
-.magickal-scrollbar::-webkit-scrollbar-track {
+.store-wrapper *::-webkit-scrollbar-track {
   background: rgba(10, 10, 10, 0.8) !important;
   border-radius: 4px !important;
   border: 1px solid rgba(120, 53, 15, 0.3) !important;
 }
-.magickal-scrollbar::-webkit-scrollbar-thumb {
+.store-wrapper *::-webkit-scrollbar-thumb {
   background: linear-gradient(180deg, #b45309, #f59e0b) !important; /* Amber gradient */
   border-radius: 4px !important;
   border: 1px solid rgba(251, 191, 36, 0.4) !important;
   box-shadow: 0 0 5px rgba(245, 158, 11, 0.5) !important;
 }
-.magickal-scrollbar::-webkit-scrollbar-thumb:hover {
+.store-wrapper *::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(180deg, #d97706, #fbbf24) !important;
   box-shadow: 0 0 8px rgba(245, 158, 11, 0.8) !important;
 }
 /* Firefox support */
-.magickal-scrollbar {
+.store-wrapper * {
   scrollbar-width: thin !important;
   scrollbar-color: #f59e0b rgba(10, 10, 10, 0.8) !important;
 }

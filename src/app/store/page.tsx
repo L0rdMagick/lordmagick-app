@@ -203,11 +203,11 @@ export function StoreContent() {
     };
 
     return (
-        <main className="h-screen w-full bg-black bg-[url('/images/grand-hall-bg.png')] bg-cover bg-center flex flex-col relative overflow-hidden font-sans text-gray-200">
+        <main className="store-wrapper h-[100dvh] w-full bg-black bg-[url('/images/grand-hall-bg.png')] bg-cover bg-center flex flex-col relative overflow-hidden font-sans text-gray-200">
             <div className="absolute inset-0 bg-black/20 z-0" />
             
             {/* Scrollable Wrapper for Header + Content */}
-            <div className="relative z-10 w-full h-full overflow-y-auto magickal-scrollbar">
+            <div className="relative z-10 w-full h-full overflow-y-auto">
                 
                 {/* Header */}
                 <header className="p-4 shrink-0 flex justify-between items-center bg-transparent">
