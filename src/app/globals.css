@@ -435,3 +435,26 @@ body {
   scrollbar-width: thin;
   scrollbar-color: rgba(99, 102, 241, 0.5) rgba(15, 23, 42, 0.5);
 }
+
+/* === MAGICKAL SCROLLBAR === */
+.magickal-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.magickal-scrollbar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 3px;
+}
+.magickal-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(217, 119, 6, 0.6); /* Amber-600/60 */
+  border-radius: 3px;
+  transition: background 0.3s;
+}
+.magickal-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(245, 158, 11, 0.9); /* Amber-500/90 */
+}
+/* Firefox support */
+.magickal-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(217, 119, 6, 0.6) rgba(0, 0, 0, 0.3);
+}
