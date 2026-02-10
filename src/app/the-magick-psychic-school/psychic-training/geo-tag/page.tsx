@@ -1,379 +1,445 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, RefreshCw, BarChart2, MapPin, CheckCircle, XCircle, Camera } from 'lucide-react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
+import { ArrowLeft, RefreshCw, BarChart2, CheckCircle, XCircle, Eye, HelpCircle, Volume2, VolumeX, Maximize2, Minimize2, MapPin, Navigation, Info } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { createBrowserClient } from '@supabase/ssr';
+import JSConfetti from 'js-confetti';
+
+import { useAudioEngine } from '../utils/audioEngine';
+import { useHaptics } from '../utils/haptics';
 import PsychicStatsModal from '../components/PsychicStatsModal';
-import { startNewGame, calculateGameScore, GameState, ScoringResult } from './utils';
+import ResonanceRadar, { RadarCategory } from '../components/ResonanceRadar';
+import { TARGET_DATA, TargetLocation } from './targetData';
+import { generateGameRound, calculateGameScore, ScoringResult } from './utils';
 
-// --- UTILS ---
-function cn(...classes: (string | undefined | null | false)[]) {
-  return classes.filter(Boolean).join(' ');
-}
+// --- CONFIG ---
+const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
-// --- TYPES ---
-declare global {
-  interface Window {
-    google: any;
+// --- HELPERS ---
+const getTargetCategory = (target: TargetLocation): string => {
+  for (const [category, targets] of Object.entries(TARGET_DATA)) {
+    if (targets.some(t => t.name === target.name)) return category;
   }
-}
+  return 'UNKNOWN';
+};
 
-// --- STREET VIEW COMPONENT (Ported from GeoingViewing) ---
-function StreetViewPanel({ coords, title, className, label }: { coords: { lat: number, lng: number }, title: string, className?: string, label?: string }) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [error, setError] = useState(false);
-  const panoRef = useRef<any>(null);
+const CATEGORY_COLORS: Record<string, string> = {
+  ANCIENT: '#f59e0b', // Amber
+  ARCHITECTURAL: '#3b82f6', // Blue
+  NATURAL: '#10b981', // Emerald
+  URBAN: '#8b5cf6', // Violet
+};
 
-  useEffect(() => {
-    if (!coords || !containerRef.current || !window.google || !window.google.maps) return;
-    
-    const sv = new window.google.maps.StreetViewService();
-    
-    const pano = new window.google.maps.StreetViewPanorama(containerRef.current, {
-        position: coords,
-        pov: { heading: 165, pitch: 0 },
-        zoom: 1,
-        addressControl: false,
-        showRoadLabels: false,
-        motionTracking: true,
-        linksControl: false,
-        panControl: true,
-        enableCloseButton: false,
-        visible: false
-    });
-    
-    panoRef.current = pano;
-
-    // Search for panorama
-    sv.getPanorama({ location: coords, radius: 50 }, (data: any, status: any) => {
-        if (status === "OK") {
-            pano.setPano(data.location.pano);
-            pano.setVisible(true);
-            setError(false);
-        } else {
-             // Try a wider radius if initial fails
-             sv.getPanorama({ location: coords, radius: 1000 }, (data2: any, status2: any) => {
-                if (status2 === "OK") {
-                    pano.setPano(data2.location.pano);
-                    pano.setVisible(true);
-                    setError(false);
-                } else {
-                    console.warn(`Street View not found for ${title} at loc`, coords);
-                    setError(true);
-                }
-             });
-        }
-    });
-
-    return () => {
-        if (panoRef.current) {
-            panoRef.current.unbindAll();
-            panoRef.current.setVisible(false);
-            panoRef.current = null;
-        }
-    };
-
-  }, [coords, title]);
-
-  return (
-    <div className={cn("relative bg-black/50 overflow-hidden", className)}>
-        {/* Label Overlay */}
-        <div className="absolute top-0 left-0 right-0 p-3 z-10 flex justify-between items-start pointer-events-none bg-gradient-to-b from-black/80 to-transparent">
-            <div>
-                {label && <div className="text-[9px] font-black uppercase tracking-widest text-indigo-400 mb-0.5">{label}</div>}
-                <div className="text-xs font-bold text-white drop-shadow-md truncate max-w-[200px]">{title}</div>
-            </div>
-            <div className="p-1.5 bg-black/40 backdrop-blur-md rounded-lg border border-white/10 text-white/70">
-                <Camera size={14} />
-            </div>
-        </div>
-
-        {/* Panorama Container */}
-        {error ? (
-            <div className="w-full h-full flex flex-col items-center justify-center text-slate-500 bg-slate-900 border border-white/5">
-                <Camera size={24} className="mb-2 opacity-50" />
-                <span className="text-[10px] uppercase tracking-widest">No Visual Feed</span>
-            </div>
-        ) : (
-            <div ref={containerRef} className="w-full h-full grayscale-[0.2]" />
-        )}
-    </div>
-  );
-}
-
-
-// --- MAIN PAGE ---
 export default function GeoTagApp() {
-  const [gameState, setGameState] = useState<GameState | null>(null);
-  const [score, setScore] = useState<ScoringResult | null>(null);
+  
+  // --- STATE ---
+  const [gameState, setGameState] = useState<{
+    status: 'SELECTION' | 'RESULTS';
+    target: TargetLocation | null;
+    tags: string[];
+    selectedTags: string[];
+    score: ScoringResult | null;
+  }>({
+    status: 'SELECTION',
+    target: null,
+    tags: [],
+    selectedTags: [],
+    score: null,
+  });
+
+  const [history, setHistory] = useState<{ target: TargetLocation; score: ScoringResult }[]>([]);
+  const [bestScore, setBestScore] = useState(0); // Track max hits in a round
   const [showStats, setShowStats] = useState(false);
-  const [googleLoaded, setGoogleLoaded] = useState(false);
-  const [bestScore, setBestScore] = useState(0);
+  
+  const [cameraView, setCameraView] = useState<'STREET' | 'AERIAL'>('STREET');
+  const [mapLoaded, setMapLoaded] = useState(false);
+  
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const audio = useAudioEngine();
+  const haptics = useHaptics();
 
-  // Load Google Maps Script
+  // --- REFS for Map ---
+  const mapRef = useRef<HTMLDivElement>(null);
+  const streetViewRef = useRef<HTMLDivElement>(null);
+  const googleMapInstance = useRef<google.maps.Map | null>(null);
+  const streetViewInstance = useRef<google.maps.StreetViewPanorama | null>(null);
+
+  // --- SOUND INIT ---
   useEffect(() => {
-    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
-    if (!apiKey) {
-         console.warn("Google Maps API Key missing");
-         return;
-    }
+    audio.init();
+    // Default ambient sound loop? 
+    // audio.playAmbient('drone'); // if available
+  }, []);
 
-    const scriptId = 'google-maps-script';
-    // Check if script already exists
-    if (document.getElementById(scriptId)) {
-        if (window.google && window.google.maps) {
-            setGoogleLoaded(true);
-        } else {
-             // Maybe loaded but not ready? checking interval?
-             const interval = setInterval(() => {
-                 if (window.google && window.google.maps) {
-                     setGoogleLoaded(true);
-                     clearInterval(interval);
-                 }
-             }, 100);
-        }
+  // --- MAP INIT ---
+  useEffect(() => {
+    if (!GOOGLE_MAPS_API_KEY) {
+        console.error("Google Maps API Key missing");
         return;
     }
 
-    const script = document.createElement('script');
-    script.id = scriptId;
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=geometry,places&v=weekly`;
-    script.async = true;
-    script.onload = () => {
-      if (window.google && window.google.maps) {
-        setGoogleLoaded(true);
-      }
-    };
-    document.head.appendChild(script);
+    if (!window.google) {
+        const script = document.createElement('script');
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places,geometry`;
+        script.async = true;
+        script.defer = true;
+        script.onload = () => setMapLoaded(true);
+        document.head.appendChild(script);
+    } else {
+        setMapLoaded(true);
+    }
   }, []);
 
-  // Initialize Game
+  // --- MAP RENDER LOGIC ---
   useEffect(() => {
-    startNewRound();
-  }, []);
+      if (!mapLoaded || !gameState.target) return;
 
-  const startNewRound = () => {
-    const newState = startNewGame();
-    setGameState(newState);
-    setScore(null);
-    setShowStats(false);
-  };
-
-  const toggleTag = (tag: string) => {
-    if (!gameState) return;
-    
-    setGameState(prev => {
-      if (!prev) return null;
-      const isSelected = prev.selectedTags.includes(tag);
-      let newSelected = [...prev.selectedTags];
+      // DELAY to ensure DOM is ready if switching states?
+      // Actually, we render map container always but hide/show overlays.
       
-      if (isSelected) {
-        newSelected = newSelected.filter(t => t !== tag);
-      } else {
-        if (newSelected.length < 17) {
-          newSelected.push(tag);
-        }
+      // 1. Initialize Street View (if not exists or target changed)
+      if (streetViewRef.current) {
+          const panorama = new google.maps.StreetViewPanorama(streetViewRef.current, {
+            position: { lat: gameState.target.lat, lng: gameState.target.lng },
+            pov: { heading: 165, pitch: 0 },
+            zoom: 1,
+            disableDefaultUI: true, // Clean look
+            showRoadLabels: false,
+          });
+          streetViewInstance.current = panorama;
       }
+
+      // 2. Initialize Aerial Map (if needed)
+      // We can lazy load this or init it hidden
       
-      return { ...prev, selectedTags: newSelected };
+  }, [mapLoaded, gameState.target, cameraView]);
+
+
+  // --- GAME LOGIC ---
+
+  const startNewGame = () => {
+    const { target, tags } = generateGameRound();
+    setGameState({
+      status: 'SELECTION',
+      target,
+      tags,
+      selectedTags: [],
+      score: null // Reset score
     });
+    setCameraView('STREET');
   };
+
+  // Initial Game Start
+  useEffect(() => {
+    if (!gameState.target) startNewGame();
+  }, []);
 
   const submitGuess = () => {
-    if (!gameState) return;
-    const result = calculateGameScore(gameState.target, gameState.selectedTags);
-    setScore(result);
-    setBestScore(prev => Math.max(prev, result.totalHits));
-    setGameState(prev => prev ? { ...prev, status: 'RESULTS' } : null);
+    if (!gameState.target) return;
+
+    const score = calculateGameScore(gameState.target, gameState.selectedTags);
+    
+    // Update History
+    setHistory(prev => [...prev, { target: gameState.target!, score }]);
+
+    // Update Best Score (Max Streak concept)
+    if (score.totalHits > bestScore) {
+      setBestScore(score.totalHits);
+    }
+
+    setGameState(prev => ({
+      ...prev,
+      status: 'RESULTS',
+      score
+    }));
+    
+    // Play sound based on rank
+    if (score.zScore > 1.645) { // p < 0.05
+        audio.playHit();
+        haptics.triggerHeavy();
+        const jsConfetti = new JSConfetti();
+        jsConfetti.addConfetti();
+    } else {
+        audio.playMiss();
+        haptics.triggerLight();
+    }
   };
 
+  const toggleSound = () => setSoundEnabled(!soundEnabled);
+
+
+  // --- STATS CALCULATION ---
+  const radarData: RadarCategory[] = useMemo(() => {
+    const categories = ['ANCIENT', 'ARCHITECTURAL', 'NATURAL', 'URBAN'];
+    return categories.map(cat => {
+      // Find all rounds where target was in this category
+      const relevantRounds = history.filter(h => getTargetCategory(h.target) === cat);
+      
+      let accuracy = 0;
+      if (relevantRounds.length > 0) {
+        const totalHits = relevantRounds.reduce((sum, r) => sum + r.score.totalHits, 0);
+        // Each round has 17 selections. So "accuracy" is hints found / total selections? 
+        // Or % of "Max Possible Score"? Max hits usually varies per target (some have 17 tags, some have fewer relevant ones?)
+        // Actually target tags are fixed, but user selects 17.
+        // Let's use: (Hits / 17) * 100 as a simple metric of "Precision" for that category.
+        const totalTrials = relevantRounds.length * 17; 
+        accuracy = (totalHits / totalTrials) * 100;
+
+        // Normalizing: If max possible hits is low, accuracy looks low. 
+        // But for now, simple is better. 
+        // Boost visually if needed? nah.
+      }
+
+      return {
+        id: cat,
+        label: cat,
+        value: accuracy * 2.5, // Scale up a bit visually? Typical user gets 3-5 hits. 3/17 is 17%. Chart looks empty.
+        // Let's scale for visual if accuracy is generally low.
+        // Or keep it real. 
+        // Let's keep it real but maybe consider "Alignment" hits too? 
+        // Total Hits includes Alignments in our score logic? 
+        // utils.ts: totalHits = exactHits.length + alignmentHits.length. Yes.
+        color: CATEGORY_COLORS[cat] || '#ffffff',
+        total: relevantRounds.length
+      };
+    });
+  }, [history]);
+
+  const aggregateHits = history.reduce((sum, h) => sum + h.score.totalHits, 0);
+  const aggregateTrials = history.length * 17; 
+
   return (
-    <div className="relative h-dvh w-full overflow-hidden bg-slate-950 text-slate-100 flex flex-col font-sans">
+    <div className="relative w-full h-full min-h-screen bg-slate-950 flex flex-col overflow-hidden font-sans text-slate-200 selection:bg-indigo-500/30">
       
       {/* HEADER */}
-      <header className="relative z-20 flex justify-between items-center p-4 bg-slate-900/80 backdrop-blur-md border-b border-white/10 shrink-0">
+      <header className="h-14 border-b border-white/10 bg-slate-900/50 backdrop-blur-md flex items-center justify-between px-4 z-50 shrink-0">
         <div className="flex items-center gap-4">
-          <Link href="/the-magick-psychic-school/psychic-training" className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors">
-            <ArrowLeft className="w-5 h-5" />
-            <span className="hidden sm:inline">Exit</span>
-          </Link>
+             <Link href="/the-magick-psychic-school/psychic-training" className="p-2 -ml-2 hover:bg-white/5 rounded-full text-slate-400 hover:text-white transition-colors">
+               <ArrowLeft size={18} />
+             </Link>
+             <h1 className="font-serif text-lg text-transparent bg-clip-text bg-linear-to-r from-indigo-200 via-purple-200 to-amber-200 font-bold tracking-wide">
+               Geo Tag
+             </h1>
         </div>
-
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
-           <h1 className="text-xl font-serif tracking-widest text-amber-500/90 glow-amber">GEO TAG</h1>
-        </div>
-
         <div className="flex items-center gap-2">
-           <button className="p-2 hover:bg-white/10 rounded-full transition-colors" onClick={startNewRound}>
-             <RefreshCw className="w-5 h-5 text-slate-400 hover:text-white" />
-           </button>
+            <button onClick={toggleSound} className="p-2 hover:bg-white/5 rounded-full text-slate-400 hover:text-white transition-colors">
+              {soundEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
+            </button>
         </div>
       </header>
-      
+
       {/* MAIN CONTENT */}
       <main className="flex-1 relative overflow-hidden flex flex-col md:flex-row">
-         
-         {/* LEFT PANEL (RESULTS & SOUL RESONANCE) - Visible only on RESULTS */}
-         <AnimatePresence>
-            {gameState?.status === 'RESULTS' && (
-                <motion.div 
-                    initial={{ x: -300, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    exit={{ x: -300, opacity: 0 }}
-                    className="order-first md:w-1/3 min-w-[300px] bg-slate-900/90 backdrop-blur-md border-b md:border-b-0 md:border-r border-white/10 flex flex-col z-20 shadow-2xl overflow-hidden h-[35%] md:h-full"
-                >
-                    <div className="flex-none p-4 border-b border-white/5 bg-slate-950/50">
-                        <div className="flex items-center gap-2 mb-1">
-                             <div className={`w-2 h-2 rounded-full ${score?.rank.color.replace('text-', 'bg-')}`} />
-                             <h2 className={`text-sm font-black uppercase tracking-widest ${score?.rank.color}`}>{score?.rank.title}</h2>
-                        </div>
-                        <div className="flex justify-between items-baseline">
-                            <h3 className="text-xl font-bold text-white truncate">{gameState.target.name}</h3>
-                            <button onClick={() => setShowStats(true)} className="text-[10px] text-indigo-400 hover:text-indigo-300 font-bold uppercase tracking-wider underline">
-                                Detailed Stats
-                            </button>
-                        </div>
-                        <p className="text-xs text-slate-400">{gameState.target.region}</p>
-                    </div>
-
-                    <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-4">
-                        {/* SOUL RESONANCE SECTION */}
-                        <div>
-                             <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2 flex items-center gap-2">
-                                <BarChart2 size={12} /> Soul Resonance
-                             </h4>
-                             <div className="flex flex-wrap gap-1.5">
-                                 {score?.soulResonance.map((group, i) => (
-                                     <motion.span 
-                                        key={group}
-                                        initial={{ scale: 0.8, opacity: 0 }}
-                                        animate={{ scale: 1, opacity: 1 }}
-                                        transition={{ delay: i * 0.05 }}
-                                        className="text-[10px] px-2 py-1 rounded bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 font-medium"
-                                     >
-                                         {group}
-                                     </motion.span>
-                                 ))}
-                                 {score?.soulResonance.length === 0 && <span className="text-xs text-slate-600 italic">No strong resonance detected.</span>}
-                             </div>
-                        </div>
-
-                         <div className="w-full h-px bg-white/5" />
-
-                         {/* QUICK HITS SUMMARY */}
-                         <div className="grid grid-cols-2 gap-2">
-                            <div className="bg-emerald-900/20 rounded p-2 border border-emerald-500/20">
-                                <div className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider mb-1">Hits</div>
-                                <div className="text-xl font-mono text-white">{score?.exactHits.length}</div>
-                            </div>
-                            <div className="bg-indigo-900/20 rounded p-2 border border-indigo-500/20">
-                                <div className="text-[10px] text-indigo-400 font-bold uppercase tracking-wider mb-1">Alignments</div>
-                                <div className="text-xl font-mono text-white">{score?.alignmentHits.length}</div>
-                            </div>
-                         </div>
-                    </div>
-                    
-                    <div className="p-4 border-t border-white/10 bg-slate-950/80">
-                         <button 
-                            onClick={startNewRound}
-                            className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-bold uppercase tracking-widest shadow-lg shadow-indigo-500/20 transition-all flex items-center justify-center gap-2"
-                         >
-                            <RefreshCw size={16} /> Next Location
-                         </button>
-                    </div>
-
-                </motion.div>
-            )}
-         </AnimatePresence>
-         
-         {/* RESULT VIEW (MAP) - RIGHT PANEL */}
-         <div className="flex-1 relative min-h-0">
-           <AnimatePresence>
-             {gameState?.status === 'RESULTS' && googleLoaded && (
-               <motion.div 
-                 initial={{ opacity: 0 }}
-                 animate={{ opacity: 1 }}
-                 className="absolute inset-0 z-0 bg-black"
-               >
-                  <StreetViewPanel 
-                      coords={{ lat: gameState.target.lat, lng: gameState.target.lng }}
-                      title={gameState.target.name}
-                      label={`${gameState.target.region}`}
-                      className="w-full h-full"
-                  />
-               </motion.div>
-             )}
-           </AnimatePresence>
-
-           {/* TAG CLOUD / GAME AREA (Visible when SELECTION) */}
-           {gameState?.status === 'SELECTION' && (
-             <div className="absolute inset-0 z-10 flex flex-col p-4 md:p-8 overflow-y-auto custom-scrollbar bg-slate-950">
-                <div className="flex justify-between items-center mb-6">
-                   <div className="text-slate-400 text-sm">
-                      Select the 17 tags that resonate with the target location.
-                   </div>
-                   <div className="text-amber-500 font-mono font-bold text-lg">
-                      {gameState.selectedTags.length} / 17
-                   </div>
-                </div>
-
-                {/* TAG GRID */}
-                <div className="flex-1">
-                  <div className="flex flex-wrap gap-2 justify-center content-start pb-20">
-                    {gameState.allTags.map((tag, i) => {
-                       const isSelected = gameState.selectedTags.includes(tag);
-                       return (
-                         <button
-                           key={`${tag}-${i}`}
-                           onClick={() => toggleTag(tag)}
-                           className={cn(
-                             "px-3 py-1.5 rounded-full text-xs md:text-sm transition-all duration-300 border",
-                             isSelected 
-                               ? "bg-amber-500/20 border-amber-500 text-amber-200 shadow-[0_0_15px_rgba(245,158,11,0.3)] scale-105"
-                               : "bg-slate-900/50 border-slate-700/50 text-slate-400 hover:bg-slate-800 hover:border-slate-500 hover:text-slate-200"
-                           )}
-                         >
-                           {tag}
-                         </button>
-                       );
-                    })}
+        
+        {/* LEFT PANEL (RESULTS & SOUL RESONANCE) - Visible only on RESULTS */}
+        {/* MOBILE: Height 35% (1/3 approx) */}
+        {/* DESKTOP: Width 1/3, Height Full */}
+        <AnimatePresence>
+          {gameState.status === 'RESULTS' && (
+            <motion.div
+              initial={{ x: -50, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: -200, opacity: 0 }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
+              className="order-first md:w-[400px] h-[35%] md:h-full bg-slate-900/95 backdrop-blur-xl border-b md:border-b-0 md:border-r border-white/10 flex flex-col z-30 shadow-2xl relative overflow-hidden shrink-0"
+            >
+               <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 space-y-4 md:space-y-6">
+                  
+                  {/* ROUND SCORE HEADER */}
+                  <div className="text-center flex items-center justify-between md:block">
+                      <div className="text-left md:text-center">
+                          <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-1">Score</div>
+                          <div className="text-2xl md:text-4xl font-black text-white drop-shadow-lg leading-none">
+                              {gameState.score?.totalHits} <span className="text-sm md:text-lg text-slate-500 font-bold">/ 17</span>
+                          </div>
+                      </div>
+                      
+                      {/* Desktop only Z-Score prominent */}
+                      <div className={`text-sm md:text-base font-bold font-mono ${gameState.score && gameState.score.zScore >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                          Z: {gameState.score?.zScore.toFixed(2)}
+                      </div>
                   </div>
+
+                  {/* SOUL RESONANCE CHART */}
+                  <div className="bg-slate-950/50 rounded-2xl p-3 md:p-4 border border-white/5 flex flex-row md:flex-col gap-4 items-center">
+                      <div className="flex-1 md:w-full">
+                          <h3 className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-indigo-300 mb-2 md:mb-4 flex items-center gap-2">
+                            <BarChart2 size={12} /> Soul Resonance
+                          </h3>
+                          <div className="space-y-1">
+                            {radarData.map(cat => (
+                                <div key={cat.id} className="flex items-center gap-2 text-[9px] md:text-[10px]">
+                                    <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: cat.color }}></span>
+                                    <span className="flex-1 text-slate-400 font-bold uppercase tracking-wider truncate">{cat.label}</span>
+                                    <div className="w-16 h-1 bg-slate-800 rounded-full overflow-hidden">
+                                        <div className="h-full" style={{ width: `${Math.min(cat.value || 0, 100)}%`, backgroundColor: cat.color }}></div>
+                                    </div>
+                                </div>
+                            ))}
+                          </div>
+                      </div>
+                      {/* Radar Chart (Small on Mobile, larger on Desktop) */}
+                      <div className="w-24 h-24 md:w-full md:h-40 relative shrink-0">
+                         <ResonanceRadar categories={radarData} size={150} />
+                      </div>
+                  </div>
+
+                  {/* ALIGNMENT LIST */}
+                  <div className="hidden md:block">
+                      <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-3 text-center">Tag Analysis</h3>
+                      <div className="flex flex-wrap gap-2 justify-center">
+                           {/* Exact Hits */}
+                           {gameState.score?.exactHits.map(t => (
+                               <span key={t} className="px-2 py-1 rounded-md bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 text-[10px] font-bold uppercase tracking-wide flex items-center gap-1">
+                                   <CheckCircle size={10} /> {t}
+                               </span>
+                           ))}
+                            {/* Alignment Hits */}
+                           {gameState.score?.alignmentHits.map(t => (
+                               <span key={t} className="px-2 py-1 rounded-md bg-amber-500/20 border border-amber-500/50 text-amber-300 text-[10px] font-bold uppercase tracking-wide flex items-center gap-1">
+                                   <CheckCircle size={10} /> {t} (Near)
+                               </span>
+                           ))}
+                           {/* Misses (Optional - show first few?) */}
+                           {gameState.score?.misses.slice(0, 3).map(t => (
+                               <span key={t} className="px-2 py-1 rounded-md bg-slate-800/50 border border-slate-700 text-slate-500 text-[10px] font-bold uppercase tracking-wide decoration-slate-600 line-through">
+                                   {t}
+                               </span>
+                           ))}
+                      </div>
+                  </div>
+
+                  {/* ACTION BUTTONS (Desktop) */}
+                  <div className="hidden md:flex flex-col gap-2 pt-2">
+                      <button 
+                        onClick={startNewGame}
+                        className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold uppercase tracking-widest text-xs shadow-lg shadow-indigo-900/50 transition-all active:scale-95 flex items-center justify-center gap-2"
+                      >
+                         <RefreshCw size={16} /> Next Location
+                      </button>
+                  </div>
+               </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* RESULTS MAP VIEW (Right Panel) */}
+        <div className="flex-1 relative min-h-0 bg-slate-900 flex flex-col">
+           {/* MAP CONTAINER */}
+           <div id="street-view" ref={streetViewRef} className="absolute inset-0 z-0 bg-slate-900" />
+           
+           {/* If Map Not Loaded */}
+           {!mapLoaded && (
+              <div className="absolute inset-0 flex items-center justify-center text-slate-500 z-0">
+                  Loading Satellite Link...
+              </div>
+           )}
+
+           {/* SELECTION UI OVERLAY - Full Screen over Map */}
+           {gameState.status === 'SELECTION' && (
+              <div className="absolute inset-0 z-10 flex flex-col overflow-y-auto custom-scrollbar bg-slate-950/80 backdrop-blur-md p-4 md:p-12 items-center justify-center animate-in fade-in duration-500">
+                 {/* TAG CLOUD */}
+                 <div className="w-full max-w-5xl mx-auto text-center pb-24">
+                    <h2 className="text-xl md:text-3xl font-serif text-white mb-2 drop-shadow-md">Attune to the Signal</h2>
+                    <p className="text-slate-400 text-xs md:text-sm uppercase tracking-widest mb-8 md:mb-12">Select 17 Resonance Artifacts</p>
+                    
+                    <div className="flex flex-wrap justify-center gap-1.5 md:gap-3">
+                       {gameState.tags.map(tag => {
+                           const isSelected = gameState.selectedTags.includes(tag);
+                           return (
+                               <button
+                                   key={tag}
+                                   onClick={() => {
+                                       if (isSelected) {
+                                           setGameState(p => ({ ...p, selectedTags: p.selectedTags.filter(t => t !== tag) }));
+                                       } else if (gameState.selectedTags.length < 17) {
+                                            audio.playBlip();
+                                            haptics.triggerSelection();
+                                           setGameState(p => ({ ...p, selectedTags: [...p.selectedTags, tag] }));
+                                       }
+                                   }}
+                                   className={`
+                                       px-3 py-1.5 md:px-4 md:py-2 rounded-full text-[10px] md:text-xs font-bold uppercase tracking-wide border transition-all duration-300
+                                       ${isSelected 
+                                           ? 'bg-indigo-500 border-indigo-400 text-white shadow-[0_0_15px_rgba(99,102,241,0.5)] scale-105' 
+                                           : 'bg-slate-900/50 border-white/10 text-slate-400 hover:border-indigo-500/50 hover:text-indigo-200'}
+                                   `}
+                               >
+                                   {tag}
+                               </button>
+                           );
+                       })}
+                    </div>
+                 </div>
+
+                 {/* SUBMIT BUTTON (Fixed Bottom) */}
+                 <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
+                     <button
+                        onClick={submitGuess}
+                        disabled={gameState.selectedTags.length !== 17}
+                        className={`
+                            px-8 py-4 rounded-full font-black uppercase tracking-[0.2em] transition-all shadow-2xl flex items-center gap-3 whitespace-nowrap
+                            ${gameState.selectedTags.length === 17 
+                                ? 'bg-white text-slate-950 hover:bg-indigo-50 hover:scale-105 cursor-pointer' 
+                                : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-white/5'}
+                        `}
+                     >
+                        Confirm Sync ({gameState.selectedTags.length}/17)
+                     </button>
+                 </div>
+              </div>
+           )}
+
+           {/* RESULTS OVERLAY ACTIONS (Mobile/Desktop Map Toggles) */}
+           {gameState.status === 'RESULTS' && (
+               <>
+                {/* View Toggles - Top Right */}
+                <div className="absolute top-4 right-4 z-20 flex flex-col gap-2">
+                    <div className="bg-slate-900/80 backdrop-blur border border-white/10 rounded-lg p-1 flex flex-col gap-1 shadow-lg">
+                        <button onClick={() => setCameraView('STREET')} className={`p-2 rounded-md transition-colors ${cameraView === 'STREET' ? 'bg-indigo-500 text-white' : 'text-slate-400 hover:text-white'}`}><Eye size={18}/></button>
+                        <button onClick={() => setCameraView('AERIAL')} className={`p-2 rounded-md transition-colors ${cameraView === 'AERIAL' ? 'bg-indigo-500 text-white' : 'text-slate-400 hover:text-white'}`}><MapPin size={18}/></button>
+                    </div>
                 </div>
 
-                {/* ACTION BAR */}
-                <div className="mt-6 flex justify-center sticky bottom-0 py-4 bg-gradient-to-t from-slate-950 to-transparent pointer-events-none">
-                   <button 
-                      onClick={submitGuess}
-                      disabled={gameState.selectedTags.length !== 17}
-                      className={cn(
-                          "pointer-events-auto w-full max-w-sm font-bold tracking-widest transition-all duration-500 h-10 rounded-md flex items-center justify-center",
-                          gameState.selectedTags.length === 17 
-                            ? "bg-amber-500 hover:bg-amber-400 text-black shadow-[0_0_20px_rgba(245,158,11,0.5)]"
-                            : "bg-slate-800 text-slate-500"
-                      )}
-                   >
-                      {gameState.selectedTags.length === 17 ? "REVEAL LOCATION" : `SELECT ${17 - gameState.selectedTags.length} MORE`}
-                   </button>
+                {/* BOTTOM LEFT ACTION BUTTONS (Stats & Next) */}
+                <div className="absolute bottom-6 left-6 z-50 flex flex-col gap-3 items-start">
+                    {/* Next Button (Mobile Only - since desktop has it in panel) */}
+                    <button 
+                        onClick={startNewGame}
+                        className="md:hidden flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-full font-bold uppercase tracking-widest text-xs shadow-lg shadow-indigo-900/50"
+                    >
+                         <RefreshCw size={16} /> Next
+                    </button>
+
+                    {/* Detailed Stats Button */}
+                    <button 
+                        onClick={() => setShowStats(true)}
+                        className="flex items-center gap-2 px-4 py-2 bg-slate-900/90 hover:bg-slate-800 border border-white/10 rounded-full shadow-lg backdrop-blur-md transition-transform hover:scale-105 active:scale-95 group"
+                    >
+                        <BarChart2 size={16} className="text-indigo-400 group-hover:text-indigo-300" />
+                        <span className="text-xs font-bold uppercase tracking-wider text-slate-300 group-hover:text-white">Detailed Stats</span>
+                    </button>
                 </div>
-             </div>
+               </>
            )}
-         </div>
+
+        </div>
+
       </main>
 
-      {/* STATS MODAL - Standard Data Only */}
-      {score && (
-        <PsychicStatsModal
-            isOpen={showStats ? true : undefined}
-            onClose={() => setShowStats(false)}
-            hits={score.totalHits}
-            trials={17}
-            chance={1/6} 
-            maxStreak={bestScore} // Passing Best Score as Max Streak
-            appName="Geo Tag"
-        />
-      )}
-      
+      {/* STATS MODAL - Full Data */}
+      <PsychicStatsModal
+        isOpen={showStats}
+        onClose={() => setShowStats(false)}
+        hits={aggregateHits} 
+        trials={aggregateTrials} 
+        chance={1/6} 
+        maxStreak={bestScore}
+        appName="Geo Tag"
+        radarData={radarData}
+      />
     </div>
   );
 }
