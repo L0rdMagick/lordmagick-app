@@ -50,7 +50,7 @@ const STORE_ITEMS = [
 const FaestonePile = ({ count }: { count: number }) => {
     if (count === 1) {
         return (
-            <div className="relative w-16 h-16 mb-6 group-hover:scale-110 transition-transform duration-500">
+            <div className="relative w-14 h-14 mb-3 group-hover:scale-110 transition-transform duration-500">
                 <Image src="/images/faestones.png" alt="Faestone: Magickal Currency Token" layout="fill" objectFit="contain" />
             </div>
         );
@@ -58,14 +58,14 @@ const FaestonePile = ({ count }: { count: number }) => {
     
     if (count === 3) {
         return (
-            <div className="relative w-32 h-20 mb-6 group-hover:scale-110 transition-transform duration-500">
-                <div className="absolute left-0 bottom-0 w-14 h-14 rotate-[-15deg] z-10">
+            <div className="relative w-28 h-16 mb-3 group-hover:scale-110 transition-transform duration-500">
+                <div className="absolute left-0 bottom-0 w-12 h-12 rotate-[-15deg] z-10">
                     <Image src="/images/faestones.png" alt="Faestone: Magickal Currency Token" layout="fill" objectFit="contain" />
                 </div>
-                <div className="absolute left-8 bottom-2 w-16 h-16 z-20">
+                <div className="absolute left-7 bottom-1 w-14 h-14 z-20">
                     <Image src="/images/faestones.png" alt="Faestone: Magickal Currency Token" layout="fill" objectFit="contain" />
                 </div>
-                <div className="absolute right-0 bottom-1 w-14 h-14 rotate-[15deg] z-10">
+                <div className="absolute right-0 bottom-1 w-12 h-12 rotate-[15deg] z-10">
                     <Image src="/images/faestones.png" alt="Faestone: Magickal Currency Token" layout="fill" objectFit="contain" />
                 </div>
             </div>
@@ -74,26 +74,26 @@ const FaestonePile = ({ count }: { count: number }) => {
 
     if (count === 6) {
         return (
-            <div className="relative w-40 h-24 mb-6 group-hover:scale-110 transition-transform duration-500">
+            <div className="relative w-36 h-20 mb-3 group-hover:scale-110 transition-transform duration-500">
                 {/* Back Row */}
-                <div className="absolute left-2 bottom-6 w-14 h-14 rotate-[-45deg] opacity-90 blur-[1px]">
+                <div className="absolute left-2 bottom-4 w-12 h-12 rotate-[-45deg] opacity-90 blur-[1px]">
                      <Image src="/images/faestones.png" alt="Faestone: Magickal Currency Token" layout="fill" objectFit="contain" />
                 </div>
-                <div className="absolute left-14 bottom-8 w-14 h-14 rotate-[10deg] opacity-90">
+                <div className="absolute left-12 bottom-6 w-12 h-12 rotate-[10deg] opacity-90">
                      <Image src="/images/faestones.png" alt="Faestone: Magickal Currency Token" layout="fill" objectFit="contain" />
                 </div>
-                <div className="absolute right-4 bottom-5 w-14 h-14 rotate-[60deg] opacity-90 blur-[1px]">
+                <div className="absolute right-4 bottom-3 w-12 h-12 rotate-[60deg] opacity-90 blur-[1px]">
                      <Image src="/images/faestones.png" alt="Faestone: Magickal Currency Token" layout="fill" objectFit="contain" />
                 </div>
                 
                 {/* Front Row */}
-                 <div className="absolute left-0 bottom-0 w-16 h-16 rotate-[-10deg] z-20">
+                 <div className="absolute left-0 bottom-0 w-14 h-14 rotate-[-10deg] z-20">
                      <Image src="/images/faestones.png" alt="Faestone: Magickal Currency Token" layout="fill" objectFit="contain" />
                 </div>
-                <div className="absolute left-10 -bottom-2 w-20 h-20 z-30 drop-shadow-xl">
+                <div className="absolute left-9 -bottom-2 w-16 h-16 z-30 drop-shadow-xl">
                      <Image src="/images/faestones.png" alt="Faestone: Magickal Currency Token" layout="fill" objectFit="contain" />
                 </div>
-                <div className="absolute right-0 bottom-1 w-16 h-16 rotate-[25deg] z-20">
+                <div className="absolute right-0 bottom-0 w-14 h-14 rotate-[25deg] z-20">
                      <Image src="/images/faestones.png" alt="Faestone: Magickal Currency Token" layout="fill" objectFit="contain" />
                 </div>
             </div>
@@ -225,14 +225,14 @@ export function StoreContent() {
             {/* Content */}
             <div className="relative z-10 flex-1 w-full overflow-y-auto overflow-x-hidden">
                 <div className="min-h-full flex flex-col items-center justify-start md:justify-center p-4">
-                    <div className="w-full max-w-6xl mx-auto flex flex-col items-center gap-6 md:gap-8">
+                    <div className="w-full max-w-6xl mx-auto flex flex-col items-center gap-3 md:gap-4">
                         
                         {/* Title Card */}
-                        <div className="text-center w-full max-w-lg bg-indigo-950/60 backdrop-blur-md border border-white/10 p-4 md:p-6 rounded-xl rounded-tl-3xl rounded-br-3xl shadow-2xl shrink-0">
-                            <p className="text-[10px] md:text-xs font-mono text-purple-300 uppercase tracking-[0.2em] mb-1 md:mb-2">
+                        <div className="text-center w-full max-w-lg bg-indigo-950/60 backdrop-blur-md border border-white/10 p-3 md:p-4 rounded-xl rounded-tl-3xl rounded-br-3xl shadow-2xl shrink-0">
+                            <p className="text-[10px] md:text-xs font-mono text-purple-300 uppercase tracking-[0.2em] mb-1">
                                 Transmute Wealth into Will
                             </p>
-                            <h2 className="text-2xl md:text-4xl font-serif text-amber-400 mb-2 text-shadow-lg">
+                            <h2 className="text-xl md:text-3xl font-serif text-amber-400 mb-1 text-shadow-lg">
                                 Acquire Faestones
                             </h2>
                             <p className="text-gray-400 font-serif text-xs md:text-sm leading-relaxed max-w-sm mx-auto">
@@ -248,7 +248,7 @@ export function StoreContent() {
                                 className={`
                                     relative group cursor-pointer 
                                     bg-black/80 border-2 ${pkg.border} 
-                                    rounded-none rounded-tl-2xl rounded-br-2xl p-6 
+                                    rounded-none rounded-tl-2xl rounded-br-2xl p-4 
                                     hover:bg-black/90 transition-all duration-300 
                                     hover:scale-[1.02] shadow-2xl hover:${pkg.glow}
                                     flex flex-col items-center text-center
@@ -264,17 +264,17 @@ export function StoreContent() {
                                     <FaestonePile count={pkg.quantity} />
                                 </div>
                                 
-                                <h3 className="text-lg font-serif text-amber-400 mb-1">{pkg.name}</h3>
-                                <div className="text-2xl font-bold font-mono text-amber-400 mb-2">
-                                    {pkg.credits} <span className="text-xs text-gray-500 font-normal">FAESTONES</span>
+                                <h3 className="text-lg font-serif text-amber-400 mb-0.5">{pkg.name}</h3>
+                                <div className="text-xl font-bold font-mono text-amber-400 mb-1">
+                                    {pkg.credits} <span className="text-[10px] text-gray-500 font-normal">FAESTONES</span>
                                 </div>
                                 
-                                <p className="text-[10px] text-gray-400 mb-6 min-h-[20px] uppercase tracking-wide">{pkg.desc}</p>
+                                <p className="text-[10px] text-gray-400 mb-3 min-h-[16px] uppercase tracking-wide">{pkg.desc}</p>
                                 
                                 <button 
                                     disabled={loadingId !== null}
                                     className={`
-                                        w-full py-3 border ${pkg.border} 
+                                        w-full py-2 border ${pkg.border} 
                                         text-amber-400 font-mono uppercase tracking-widest text-xs
                                         hover:bg-amber-400 hover:text-black transition-colors
                                         flex items-center justify-center gap-2
