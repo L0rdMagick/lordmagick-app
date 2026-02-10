@@ -224,8 +224,8 @@ export function StoreContent() {
 
             {/* Content */}
             <div className="relative z-10 flex-1 w-full overflow-y-auto overflow-x-hidden magickal-scrollbar">
-                <div className="min-h-full flex flex-col items-center justify-start md:justify-center px-4 pb-5 pt-0">
-                    <div className="w-full max-w-6xl mx-auto flex flex-col items-center gap-0">
+                <div className="min-h-full flex flex-col items-center justify-start px-4 pb-2 pt-0 w-full">
+                    <div className="w-full max-w-6xl mx-auto flex flex-col items-center gap-2">
                         
                         {/* Title Card */}
                         <div className="text-center w-full max-w-lg bg-indigo-950/60 backdrop-blur-md border border-white/10 p-3 md:p-4 rounded-xl rounded-tl-3xl rounded-br-3xl shadow-2xl shrink-0">
