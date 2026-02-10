@@ -222,6 +222,13 @@ export default function GeoTagApp() {
              </h1>
         </div>
         <div className="flex items-center gap-2">
+            <button 
+                onClick={() => setShowStats(true)}
+                className="p-2 hover:bg-white/5 rounded-full text-slate-400 hover:text-white transition-colors"
+                title="Detailed Stats"
+            >
+                <BarChart2 size={18} />
+            </button>
             <button onClick={toggleSound} className="p-2 hover:bg-white/5 rounded-full text-slate-400 hover:text-white transition-colors">
               {soundEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
             </button>
@@ -231,9 +238,7 @@ export default function GeoTagApp() {
       {/* MAIN CONTENT */}
       <main className="flex-1 relative overflow-hidden flex flex-col md:flex-row">
         
-        {/* LEFT PANEL (RESULTS & SOUL RESONANCE) - Visible only on RESULTS */}
-        {/* MOBILE: Height 33% (1/3) */}
-        {/* DESKTOP: Width 1/3, Height Full */}
+        {/* LEFT PANEL (RESULTS & TAG ANALYSIS) - Visible only on RESULTS */}
         <AnimatePresence>
           {gameState.status === 'RESULTS' && (
             <motion.div
@@ -243,80 +248,91 @@ export default function GeoTagApp() {
               transition={{ duration: 0.3 }}
               className="order-first md:w-[400px] h-[33vh] md:h-full bg-slate-900/95 backdrop-blur-xl border-b md:border-b-0 md:border-r border-white/10 flex flex-col z-30 shadow-2xl relative overflow-hidden shrink-0"
             >
-               <div className="flex-1 overflow-y-auto custom-scrollbar p-3 md:p-6 space-y-3 md:space-y-6">
+               <div className="flex-1 overflow-y-auto custom-scrollbar p-3 md:p-6 space-y-4">
                   
                   {/* ROUND SCORE HEADER */}
-                  {/* Compact Header for Mobile */}
-                  <div className="flex items-center justify-between md:block">
+                  <div className="flex items-center justify-between md:block md:text-center">
                       <div className="text-left md:text-center">
-                          <div className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-0.5 md:mb-1">Score</div>
-                          <div className="text-xl md:text-4xl font-black text-white drop-shadow-lg leading-none">
-                              {gameState.score?.totalHits} <span className="text-xs md:text-lg text-slate-500 font-bold">/ 17</span>
+                          <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-1">Results</div>
+                          <div className="text-2xl md:text-4xl font-black text-white drop-shadow-lg leading-none">
+                              {gameState.score?.totalHits} <span className="text-sm md:text-lg text-slate-500 font-bold">/ 17</span>
                           </div>
                       </div>
                       
-                      <div className={`text-xs md:text-base font-bold font-mono ${gameState.score && gameState.score.zScore >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                      <div className={`text-sm md:text-base font-bold font-mono ${gameState.score && gameState.score.zScore >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
                           Z: {gameState.score?.zScore.toFixed(2)}
                       </div>
                   </div>
 
-                  {/* SOUL RESONANCE CHART */}
-                  <div className="bg-slate-950/50 rounded-xl p-2 md:p-4 border border-white/5 flex flex-row md:flex-col gap-2 md:gap-4 items-center h-full max-h-[140px] md:max-h-none overflow-hidden md:overflow-visible">
-                      {/* Percentages List */}
-                      <div className="flex-1 md:w-full min-w-0">
-                          <h3 className="text-[8px] md:text-[10px] font-black uppercase tracking-widest text-indigo-300 md:mb-4 flex items-center gap-1 md:gap-2 mb-1">
-                            <BarChart2 size={10} className="md:w-3 md:h-3" /> <span className="hidden md:inline">Soul Resonance</span><span className="md:hidden">Resonance</span>
+                  <hr className="border-white/5" />
+
+                  {/* TAG ANALYSIS - REPLACING RADAR CHART */}
+                  <div className="space-y-4">
+                      
+                      {/* 1. TARGET RESONANCE (Green = Hit, Blue = Missed) */}
+                      <div>
+                          <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 flex items-center gap-2">
+                             <CheckCircle size={12} className="text-emerald-500" /> Target Resonance
                           </h3>
-                          <div className="space-y-1">
-                            {radarData.map(cat => (
-                                <div key={cat.id} className="flex items-center gap-2 text-[8px] md:text-[10px]">
-                                    <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: cat.color }}></span>
-                                    <span className="flex-1 text-slate-400 font-bold uppercase tracking-wider truncate">{cat.label}</span>
-                                    <div className="w-12 md:w-16 h-1 bg-slate-800 rounded-full overflow-hidden shrink-0">
-                                        <div className="h-full" style={{ width: `${Math.min(cat.value || 0, 100)}%`, backgroundColor: cat.color }}></div>
-                                    </div>
-                                    <span className="text-xs font-mono text-white w-6 text-right md:hidden">{Math.round(cat.value || 0)}%</span>
-                                </div>
-                            ))}
+                          <div className="flex flex-wrap gap-1.5">
+                              {gameState.target?.tags.map(tag => {
+                                  // Is it a hit?
+                                  const isHit = gameState.selectedTags.includes(tag);
+                                  return (
+                                      <span 
+                                        key={tag} 
+                                        className={`
+                                            px-2 py-1 rounded-md text-[9px] md:text-[10px] font-bold uppercase tracking-wide flex items-center gap-1 border
+                                            ${isHit 
+                                                ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300' 
+                                                : 'bg-indigo-500/10 border-indigo-500/30 text-indigo-400/70'}
+                                        `}
+                                      >
+                                          {isHit && <CheckCircle size={10} />}
+                                          {tag}
+                                      </span>
+                                  );
+                              })}
                           </div>
                       </div>
-                      
-                      {/* Radar Chart - Compact on Mobile */}
-                      <div className="w-20 h-20 md:w-full md:h-40 relative shrink-0">
-                         <ResonanceRadar categories={radarData} size={150} />
-                      </div>
-                  </div>
 
-                  {/* ALIGNMENT LIST - Hidden on mobile to save space, available in Detailed Stats */}
-                  <div className="hidden md:block">
-                      <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-3 text-center">Tag Analysis</h3>
-                      <div className="flex flex-wrap gap-2 justify-center">
-                           {/* Exact Hits */}
-                           {gameState.score?.exactHits.map(t => (
-                               <span key={t} className="px-2 py-1 rounded-md bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 text-[10px] font-bold uppercase tracking-wide flex items-center gap-1">
-                                   <CheckCircle size={10} /> {t}
-                               </span>
-                           ))}
-                            {/* Alignment Hits */}
-                           {gameState.score?.alignmentHits.map((t, idx) => (
-                               <span key={`${t.selected}-${idx}`} className="px-2 py-1 rounded-md bg-amber-500/20 border border-amber-500/50 text-amber-300 text-[10px] font-bold uppercase tracking-wide flex items-center gap-1">
-                                   <CheckCircle size={10} /> {t.selected} (Near)
-                               </span>
-                           ))}
-                           {/* Misses (Optional - show first few?) */}
-                           {gameState.score?.misses.slice(0, 3).map(t => (
-                               <span key={t} className="px-2 py-1 rounded-md bg-slate-800/50 border border-slate-700 text-slate-500 text-[10px] font-bold uppercase tracking-wide decoration-slate-600 line-through">
-                                   {t}
-                               </span>
-                           ))}
+                      {/* 2. NOISE / DISTORTION (Red = Incorrect, Amber = Near/Alignment) */}
+                      <div>
+                          <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 flex items-center gap-2">
+                             <XCircle size={12} className="text-rose-500" /> Signal Noise
+                          </h3>
+                          <div className="flex flex-wrap gap-1.5">
+                              {gameState.selectedTags
+                                .filter(tag => !gameState.target?.tags.includes(tag)) // Only incorrect guesses
+                                .map(tag => {
+                                    // Check if it's an alignment hit (Near Miss)
+                                    const alignment = gameState.score?.alignmentHits.find(a => a.selected === tag);
+                                    
+                                    if (alignment) {
+                                        return (
+                                            <span key={tag} className="px-2 py-1 rounded-md bg-amber-500/20 border border-amber-500/50 text-amber-300 text-[9px] md:text-[10px] font-bold uppercase tracking-wide flex items-center gap-1">
+                                                <HelpCircle size={10} /> {tag} (Near)
+                                            </span>
+                                        );
+                                    } else {
+                                        return (
+                                            <span key={tag} className="px-2 py-1 rounded-md bg-rose-500/10 border border-rose-500/30 text-rose-400 text-[9px] md:text-[10px] font-bold uppercase tracking-wide flex items-center gap-1 decoration-rose-500/50 line-through">
+                                                {tag}
+                                            </span>
+                                        );
+                                    }
+                                })
+                              }
+                          </div>
                       </div>
-                  </div>
 
-                  {/* ACTION BUTTONS (Desktop) */}
-                  <div className="hidden md:flex flex-col gap-2 pt-2">
+                  </div>
+                  
+                  {/* NEXT BUTTON (Visible on Mobile & Desktop) */}
+                  <div className="pt-4">
                       <button 
                         onClick={startNewGame}
-                        className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold uppercase tracking-widest text-xs shadow-lg shadow-indigo-900/50 transition-all active:scale-95 flex items-center justify-center gap-2"
+                        className="w-full py-3 md:py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold uppercase tracking-widest text-xs shadow-lg shadow-indigo-900/50 transition-all active:scale-95 flex items-center justify-center gap-2"
                       >
                          <RefreshCw size={16} /> Next Location
                       </button>
@@ -342,7 +358,7 @@ export default function GeoTagApp() {
            {gameState.status === 'SELECTION' && (
               <div className="absolute inset-0 z-10 flex flex-col overflow-y-auto custom-scrollbar bg-slate-950/80 backdrop-blur-md p-4 md:p-12 items-center justify-center animate-in fade-in duration-500">
                  {/* TAG CLOUD */}
-                 <div className="w-full max-w-5xl mx-auto text-center pb-24">
+                 <div className="w-full max-w-5xl mx-auto text-center pb-40"> {/* INCREASED PADDING */}
                     <h2 className="text-xl md:text-3xl font-serif text-white mb-2 drop-shadow-md">Attune to the Signal</h2>
                     <p className="text-slate-400 text-xs md:text-sm uppercase tracking-widest mb-8 md:mb-12">Select 17 Resonance Artifacts</p>
                     
@@ -394,6 +410,7 @@ export default function GeoTagApp() {
            )}
 
            {/* RESULTS OVERLAY ACTIONS (Mobile/Desktop Map Toggles) */}
+           {/* REMOVED BOTTOM FOOTER */}
            {gameState.status === 'RESULTS' && (
                <>
                 {/* View Toggles - Top Right */}
@@ -402,26 +419,6 @@ export default function GeoTagApp() {
                         <button onClick={() => setCameraView('STREET')} className={`p-2 rounded-md transition-colors ${cameraView === 'STREET' ? 'bg-indigo-500 text-white' : 'text-slate-400 hover:text-white'}`}><Eye size={18}/></button>
                         <button onClick={() => setCameraView('AERIAL')} className={`p-2 rounded-md transition-colors ${cameraView === 'AERIAL' ? 'bg-indigo-500 text-white' : 'text-slate-400 hover:text-white'}`}><MapPin size={18}/></button>
                     </div>
-                </div>
-
-                {/* BOTTOM LEFT ACTION BUTTONS (Stats & Next) */}
-                <div className="absolute bottom-6 left-6 z-50 flex flex-col gap-3 items-start">
-                    {/* Next Button (Mobile Only - since desktop has it in panel) */}
-                    <button 
-                        onClick={startNewGame}
-                        className="md:hidden flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-full font-bold uppercase tracking-widest text-xs shadow-lg shadow-indigo-900/50"
-                    >
-                         <RefreshCw size={16} /> Next
-                    </button>
-
-                    {/* Detailed Stats Button */}
-                    <button 
-                        onClick={() => setShowStats(true)}
-                        className="flex items-center gap-2 px-4 py-2 bg-slate-900/90 hover:bg-slate-800 border border-white/10 rounded-full shadow-lg backdrop-blur-md transition-transform hover:scale-105 active:scale-95 group"
-                    >
-                        <BarChart2 size={16} className="text-indigo-400 group-hover:text-indigo-300" />
-                        <span className="text-xs font-bold uppercase tracking-wider text-slate-300 group-hover:text-white">Detailed Stats</span>
-                    </button>
                 </div>
                </>
            )}

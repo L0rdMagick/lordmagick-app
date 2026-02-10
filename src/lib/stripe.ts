@@ -1,10 +1,23 @@
 import Stripe from 'stripe';
 
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  // Updated to match your installed SDK version
-  apiVersion: '2025-10-29.clover', 
-  typescript: true,
-});
+let stripeInstance: Stripe | null = null;
+
+export const getStripe = () => {
+  if (!stripeInstance) {
+    const key = process.env.STRIPE_SECRET_KEY;
+    if (!key) {
+        // Fallback or throw, but likely threw before. 
+        // If we are in build context and key is missing, this function shouldn't be called.
+        // If it IS called, we want to know.
+        throw new Error("STRIPE_SECRET_KEY is missing");
+    }
+    stripeInstance = new Stripe(key, {
+      apiVersion: '2025-10-29.clover', 
+      typescript: true,
+    });
+  }
+  return stripeInstance;
+};
 
 export const PACKAGES = {
   pack_small: {

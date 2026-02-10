@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { stripe, PACKAGES } from '@/lib/stripe';
+import { getStripe, PACKAGES } from '@/lib/stripe';
 
 export async function POST(request: Request) {
   try {
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
     }
 
     // 3. Create Checkout Session
-    const session = await stripe.checkout.sessions.create({
+    const session = await getStripe().checkout.sessions.create({
       payment_method_types: ['card'],
       // ENABLE COUPONS HERE
       allow_promotion_codes: true, 
