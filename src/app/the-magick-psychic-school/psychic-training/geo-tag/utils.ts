@@ -40,7 +40,7 @@ TAG_GROUPS.forEach(group => {
 const getGroupById = (id: string) => TAG_GROUPS.find(g => g.id === id);
 
 
-export function startNewGame(): GameState {
+export function generateGameRound(): { target: TargetLocation, tags: string[] } {
   // 1. Pick Random Target
   const allLocations = Object.values(TARGET_DATA).flat();
   const targetIndex = Math.floor(Math.random() * allLocations.length);
@@ -71,10 +71,7 @@ export function startNewGame(): GameState {
 
   return {
     target,
-    distractors,
-    allTags: shuffledTags,
-    selectedTags: [],
-    status: 'SELECTION'
+    tags: shuffledTags
   };
 }
 

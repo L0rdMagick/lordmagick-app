@@ -1,14 +1,15 @@
+/// <reference types="google.maps" />
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, RefreshCw, BarChart2, CheckCircle, XCircle, Eye, HelpCircle, Volume2, VolumeX, Maximize2, Minimize2, MapPin, Navigation, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { createBrowserClient } from '@supabase/ssr';
+// @ts-ignore
 import JSConfetti from 'js-confetti';
 
-import { useAudioEngine } from '../utils/audioEngine';
-import { useHaptics } from '../utils/haptics';
+import { useAudioEngine } from '@/hooks/useAudioEngine';
+import { useHaptics } from '@/hooks/useHaptics';
 import PsychicStatsModal from '../components/PsychicStatsModal';
 import ResonanceRadar, { RadarCategory } from '../components/ResonanceRadar';
 import { TARGET_DATA, TargetLocation } from './targetData';
@@ -16,6 +17,7 @@ import { generateGameRound, calculateGameScore, ScoringResult } from './utils';
 
 // --- CONFIG ---
 const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+
 
 // --- HELPERS ---
 const getTargetCategory = (target: TargetLocation): string => {
@@ -234,59 +236,62 @@ export default function GeoTagApp() {
       <main className="flex-1 relative overflow-hidden flex flex-col md:flex-row">
         
         {/* LEFT PANEL (RESULTS & SOUL RESONANCE) - Visible only on RESULTS */}
-        {/* MOBILE: Height 35% (1/3 approx) */}
+        {/* MOBILE: Height 33% (1/3) */}
         {/* DESKTOP: Width 1/3, Height Full */}
         <AnimatePresence>
           {gameState.status === 'RESULTS' && (
             <motion.div
-              initial={{ x: -50, opacity: 0 }}
+              initial={{ x: -20, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
-              exit={{ x: -200, opacity: 0 }}
-              transition={{ duration: 0.4, ease: "easeOut" }}
-              className="order-first md:w-[400px] h-[35%] md:h-full bg-slate-900/95 backdrop-blur-xl border-b md:border-b-0 md:border-r border-white/10 flex flex-col z-30 shadow-2xl relative overflow-hidden shrink-0"
+              exit={{ x: -20, opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="order-first md:w-[400px] h-[33vh] md:h-full bg-slate-900/95 backdrop-blur-xl border-b md:border-b-0 md:border-r border-white/10 flex flex-col z-30 shadow-2xl relative overflow-hidden shrink-0"
             >
-               <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 space-y-4 md:space-y-6">
+               <div className="flex-1 overflow-y-auto custom-scrollbar p-3 md:p-6 space-y-3 md:space-y-6">
                   
                   {/* ROUND SCORE HEADER */}
-                  <div className="text-center flex items-center justify-between md:block">
+                  {/* Compact Header for Mobile */}
+                  <div className="flex items-center justify-between md:block">
                       <div className="text-left md:text-center">
-                          <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-1">Score</div>
-                          <div className="text-2xl md:text-4xl font-black text-white drop-shadow-lg leading-none">
-                              {gameState.score?.totalHits} <span className="text-sm md:text-lg text-slate-500 font-bold">/ 17</span>
+                          <div className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-0.5 md:mb-1">Score</div>
+                          <div className="text-xl md:text-4xl font-black text-white drop-shadow-lg leading-none">
+                              {gameState.score?.totalHits} <span className="text-xs md:text-lg text-slate-500 font-bold">/ 17</span>
                           </div>
                       </div>
                       
-                      {/* Desktop only Z-Score prominent */}
-                      <div className={`text-sm md:text-base font-bold font-mono ${gameState.score && gameState.score.zScore >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                      <div className={`text-xs md:text-base font-bold font-mono ${gameState.score && gameState.score.zScore >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
                           Z: {gameState.score?.zScore.toFixed(2)}
                       </div>
                   </div>
 
                   {/* SOUL RESONANCE CHART */}
-                  <div className="bg-slate-950/50 rounded-2xl p-3 md:p-4 border border-white/5 flex flex-row md:flex-col gap-4 items-center">
-                      <div className="flex-1 md:w-full">
-                          <h3 className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-indigo-300 mb-2 md:mb-4 flex items-center gap-2">
-                            <BarChart2 size={12} /> Soul Resonance
+                  <div className="bg-slate-950/50 rounded-xl p-2 md:p-4 border border-white/5 flex flex-row md:flex-col gap-2 md:gap-4 items-center h-full max-h-[140px] md:max-h-none overflow-hidden md:overflow-visible">
+                      {/* Percentages List */}
+                      <div className="flex-1 md:w-full min-w-0">
+                          <h3 className="text-[8px] md:text-[10px] font-black uppercase tracking-widest text-indigo-300 md:mb-4 flex items-center gap-1 md:gap-2 mb-1">
+                            <BarChart2 size={10} className="md:w-3 md:h-3" /> <span className="hidden md:inline">Soul Resonance</span><span className="md:hidden">Resonance</span>
                           </h3>
                           <div className="space-y-1">
                             {radarData.map(cat => (
-                                <div key={cat.id} className="flex items-center gap-2 text-[9px] md:text-[10px]">
+                                <div key={cat.id} className="flex items-center gap-2 text-[8px] md:text-[10px]">
                                     <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: cat.color }}></span>
                                     <span className="flex-1 text-slate-400 font-bold uppercase tracking-wider truncate">{cat.label}</span>
-                                    <div className="w-16 h-1 bg-slate-800 rounded-full overflow-hidden">
+                                    <div className="w-12 md:w-16 h-1 bg-slate-800 rounded-full overflow-hidden shrink-0">
                                         <div className="h-full" style={{ width: `${Math.min(cat.value || 0, 100)}%`, backgroundColor: cat.color }}></div>
                                     </div>
+                                    <span className="text-xs font-mono text-white w-6 text-right md:hidden">{Math.round(cat.value || 0)}%</span>
                                 </div>
                             ))}
                           </div>
                       </div>
-                      {/* Radar Chart (Small on Mobile, larger on Desktop) */}
-                      <div className="w-24 h-24 md:w-full md:h-40 relative shrink-0">
+                      
+                      {/* Radar Chart - Compact on Mobile */}
+                      <div className="w-20 h-20 md:w-full md:h-40 relative shrink-0">
                          <ResonanceRadar categories={radarData} size={150} />
                       </div>
                   </div>
 
-                  {/* ALIGNMENT LIST */}
+                  {/* ALIGNMENT LIST - Hidden on mobile to save space, available in Detailed Stats */}
                   <div className="hidden md:block">
                       <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-3 text-center">Tag Analysis</h3>
                       <div className="flex flex-wrap gap-2 justify-center">
@@ -297,9 +302,9 @@ export default function GeoTagApp() {
                                </span>
                            ))}
                             {/* Alignment Hits */}
-                           {gameState.score?.alignmentHits.map(t => (
-                               <span key={t} className="px-2 py-1 rounded-md bg-amber-500/20 border border-amber-500/50 text-amber-300 text-[10px] font-bold uppercase tracking-wide flex items-center gap-1">
-                                   <CheckCircle size={10} /> {t} (Near)
+                           {gameState.score?.alignmentHits.map((t, idx) => (
+                               <span key={`${t.selected}-${idx}`} className="px-2 py-1 rounded-md bg-amber-500/20 border border-amber-500/50 text-amber-300 text-[10px] font-bold uppercase tracking-wide flex items-center gap-1">
+                                   <CheckCircle size={10} /> {t.selected} (Near)
                                </span>
                            ))}
                            {/* Misses (Optional - show first few?) */}
@@ -356,7 +361,7 @@ export default function GeoTagApp() {
                                            setGameState(p => ({ ...p, selectedTags: p.selectedTags.filter(t => t !== tag) }));
                                        } else if (gameState.selectedTags.length < 17) {
                                             audio.playBlip();
-                                            haptics.triggerSelection();
+                                            haptics.triggerLight();
                                            setGameState(p => ({ ...p, selectedTags: [...p.selectedTags, tag] }));
                                        }
                                    }}
