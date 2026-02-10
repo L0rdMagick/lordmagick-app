@@ -206,26 +206,28 @@ export function StoreContent() {
         <main className="h-screen w-full bg-black bg-[url('/images/grand-hall-bg.png')] bg-cover bg-center flex flex-col relative overflow-hidden font-sans text-gray-200">
             <div className="absolute inset-0 bg-black/20 z-0" />
             
-            {/* Header */}
-            <header className="relative z-10 p-4 shrink-0 flex justify-between items-center bg-transparent">
-                <div className="flex items-center gap-4">
-                    <MagickalBackLink 
-                        href={activeReturnPath || "/hall"} 
-                        text={activeReturnPath ? "Return to Ritual" : "Grand Hall"} 
-                    />
-                </div>
-                <div className="flex items-center gap-4">
-                    <h1 className="text-xl font-serif text-amber-500 tracking-widest uppercase hidden md:block">
-                        Faestone Exchange
-                    </h1>
-                    <RoomsButton />
-                </div>
-            </header>
+            {/* Scrollable Wrapper for Header + Content */}
+            <div className="relative z-10 w-full h-full overflow-y-auto magickal-scrollbar">
+                
+                {/* Header */}
+                <header className="p-4 shrink-0 flex justify-between items-center bg-transparent">
+                    <div className="flex items-center gap-4">
+                        <MagickalBackLink 
+                            href={activeReturnPath || "/hall"} 
+                            text={activeReturnPath ? "Return to Ritual" : "Grand Hall"} 
+                        />
+                    </div>
+                    <div className="flex items-center gap-4">
+                        <h1 className="text-xl font-serif text-amber-500 tracking-widest uppercase hidden md:block">
+                            Faestone Exchange
+                        </h1>
+                        <RoomsButton />
+                    </div>
+                </header>
 
-            {/* Content */}
-            <div className="relative z-10 flex-1 w-full overflow-y-auto overflow-x-hidden magickal-scrollbar">
-                <div className="flex flex-col items-center justify-start px-4 pt-0 w-full h-fit">
-                    <div className="w-full max-w-6xl mx-auto flex flex-col items-center gap-2">
+                {/* Content */}
+                <div className="flex flex-col items-center justify-start px-4 pt-0 w-full pb-4">
+                    <div className="w-full max-w-6xl mx-auto flex flex-col items-center gap-5">
                         
                         {/* Title Card */}
                         <div className="text-center w-full max-w-lg bg-indigo-950/60 backdrop-blur-md border border-white/10 p-3 md:p-4 rounded-xl rounded-tl-3xl rounded-br-3xl shadow-2xl shrink-0">
@@ -238,10 +240,6 @@ export function StoreContent() {
                             <p className="text-gray-400 font-serif text-xs md:text-sm leading-relaxed max-w-sm mx-auto mb-2">
                                 Faestones power your spells, readings, and bindings. Choose your vessel wisely.
                             </p>
-                            <div className="text-[9px] text-gray-500 font-mono uppercase tracking-widest flex items-center justify-center gap-2 opacity-60">
-                                <AlertTriangle size={10} />
-                                Transactions secured by Stripe. No refunds on digital essence.
-                            </div>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 w-full max-w-4xl">
@@ -293,10 +291,17 @@ export function StoreContent() {
                                 </button>
                             </div>
                         ))}
+
+                    </div>
+
+                    <div className="mt-4 text-[9px] text-gray-500 font-mono uppercase tracking-widest flex items-center justify-center gap-2 opacity-60">
+                        <AlertTriangle size={10} />
+                        Transactions secured by Stripe. No refunds on digital essence.
                     </div>
                 </div>
             </div>
         </div>
+
 
             {/* Success Modal */}
             {showSuccess && (
