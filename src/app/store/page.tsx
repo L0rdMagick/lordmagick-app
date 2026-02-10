@@ -166,6 +166,15 @@ export function StoreContent() {
         }
     }, [showSuccess, activeReturnPath, router]);
 
+    // --- Prevent Body Scroll on Desktop ---
+    useEffect(() => {
+        // Force body overflow hidden to prevent double scrollbars
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, []);
+
     const handlePurchase = async (pkgId: string) => {
         setLoadingId(pkgId);
         haptics.triggerMedium();
@@ -207,7 +216,7 @@ export function StoreContent() {
             <div className="absolute inset-0 bg-black/20 z-0" />
             
             {/* Scrollable Wrapper for Header + Content */}
-            <div className="relative z-10 w-full h-full overflow-y-auto">
+            <div className="relative z-10 w-full h-full overflow-y-auto magickal-scrollbar">
                 
                 {/* Header */}
                 <header className="p-4 shrink-0 flex justify-between items-center bg-transparent">
@@ -226,7 +235,7 @@ export function StoreContent() {
                 </header>
 
                 {/* Content */}
-                <div className="flex flex-col items-center justify-start px-4 pt-0 w-full pb-4">
+                <div className="flex flex-col items-center justify-start px-4 pt-0 w-full pb-2">
                     <div className="w-full max-w-6xl mx-auto flex flex-col items-center gap-5">
                         
                         {/* Title Card */}
