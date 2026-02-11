@@ -105,8 +105,8 @@ const RitualButton: React.FC<RitualButtonProps> = ({ onClick, children, classNam
 
 const StepContainer: React.FC<StepContainerProps> = ({ stageTitle, instruction, children, button, allowOverflow = false }) => (
     <div className="w-full h-full flex flex-col items-center justify-center gap-1 overflow-hidden">
-        <div className="shrink-0 flex flex-col items-center justify-center text-center px-4 min-h-[4rem] h-auto py-2 z-20 relative">
-             {stageTitle && <h2 className="text-2xl md:text-3xl font-serif text-amber-200/90">{stageTitle}</h2>}
+        <div className="shrink-0 flex flex-col items-center justify-center text-center px-4 min-h-[4rem] md:min-h-0 h-auto py-2 md:py-1 z-20 relative">
+             {stageTitle && <h2 className="text-2xl md:text-3xl font-serif text-amber-200/90 leading-none">{stageTitle}</h2>}
              {instruction && <p className="text-sm md:text-base text-amber-100/80 mt-1 ischemic italic font-light max-w-2xl leading-tight whitespace-pre-line" style={{textShadow: '1px 1px 2px rgba(0,0,0,0.7)'}}>{instruction}</p>}
         </div>
         <div className={`w-full grow min-h-0 relative flex items-center justify-center z-10 ${allowOverflow ? '' : 'overflow-hidden'}`}>
@@ -437,8 +437,8 @@ const VoodooStep1_OpenGate: React.FC<StepComponentProps> = ({ onNext }) => {
 
 const VoodooStep2_StateNeed: React.FC<{ cost: number; petition: string; setPetition: (val: string) => void; onNext: (mode: RitualMode) => void; isReplay: boolean }> = ({ cost, petition, setPetition, onNext, isReplay }) => (
     <StepContainer stageTitle="State Your Need" instruction="Clearly present your petition to the spirits." allowOverflow={true}>
-        <div className="relative w-full h-full flex flex-col items-center justify-center md:justify-between gap-2 overflow-hidden">
-             <div className="relative h-full max-h-full min-h-0 w-auto max-w-full aspect-square @container md:h-[65%] md:w-auto md:max-w-none md:scale-125 md:origin-top md:mt-8 transition-transform duration-300">
+        <div className="relative w-full h-full overflow-hidden">
+             <div className="absolute top-0 left-1/2 -translate-x-1/2 h-[65%] w-auto aspect-square md:scale-140 md:origin-top md:-mt-8 transition-transform duration-300 z-10">
                 <Image src={`${ASSET_PATH}/voodoo-petition-scroll.png`} alt="Aged Parchment Petition Paper" layout="fill" objectFit="contain" />
                 <div className="absolute p-4" style={{ left: '22%', top: '30%', width: '56%', height: '40%' }}>
                     <textarea 
@@ -451,7 +451,7 @@ const VoodooStep2_StateNeed: React.FC<{ cost: number; petition: string; setPetit
                     />
                 </div>
             </div>
-            <div className="flex flex-col gap-3 w-full max-w-xs md:max-w-md md:w-[80%] md:mb-8 md:scale-110 md:origin-bottom transition-transform duration-300 z-30">
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-full max-w-xs md:max-w-sm md:scale-95 transition-transform duration-300 z-30 flex flex-col gap-3">
                 {isReplay ? (
                     <button onClick={() => onNext('replay')} className="w-full py-3 bg-amber-600 hover:bg-amber-500 text-black font-serif font-bold rounded animate-pulse">
                         Begin Replay (Free)
