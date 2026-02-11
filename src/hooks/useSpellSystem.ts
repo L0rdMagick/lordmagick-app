@@ -48,7 +48,6 @@ export const useSpellSystem = ({ serviceSlugGen, serviceSlugSave, baseRedirectPa
         }
     };
 
-    // 2. Go To Store Action (with auto-redirect back)
     const handleGoToStoreForSlots = (currentStateToSave?: any, saveKey?: string) => {
         if (currentStateToSave && saveKey) {
             localStorage.setItem(saveKey, JSON.stringify({
@@ -56,7 +55,8 @@ export const useSpellSystem = ({ serviceSlugGen, serviceSlugSave, baseRedirectPa
                 timestamp: Date.now()
             }));
         }
-        router.push(`/store?redirect=${encodeURIComponent(`${baseRedirectPath}?action=expand_slots`)}`);
+        // Removed action=expand_slots to prevent deprecated "Grimoire Full" modal on return
+        router.push(`/store?redirect=${encodeURIComponent(baseRedirectPath)}`);
     };
 
     // 3. Modal Close

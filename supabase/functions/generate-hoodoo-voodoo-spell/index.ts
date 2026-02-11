@@ -41,7 +41,7 @@ Deno.serve(async (req: Request) => {
         const accessToken = (await client.getAccessToken()).token;
         if (!accessToken) { throw new Error("Failed to retrieve access token."); }
 
-        const apiUrl = `https://${GCP_REGION}-aiplatform.googleapis.com/v1/projects/${GCP_PROJECT_ID}/locations/${GCP_REGION}/publishers/google/models/gemini-2.5-flash:generateContent`;
+        const apiUrl = `https://${GCP_REGION}-aiplatform.googleapis.com/v1/projects/${GCP_PROJECT_ID}/locations/${GCP_REGION}/publishers/google/models/gemini-1.5-flash:generateContent`;
         
         let prompt = '';
 
