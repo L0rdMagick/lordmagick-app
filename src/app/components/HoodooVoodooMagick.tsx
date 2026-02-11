@@ -213,18 +213,12 @@ const ChargingComponent: React.FC<{
 
 const Step0_Crossroads: React.FC<{ onSelectPath: (path: RitualPath) => void }> = ({ onSelectPath }) => (
     <div className="relative w-full h-full flex flex-col items-center justify-center">
-        <div className="relative z-10 flex flex-row items-center justify-center gap-4 md:gap-16 h-full p-4 w-full max-w-4xl mx-auto">
-            <button onClick={() => onSelectPath('hoodoo')} className="relative w-[45%] h-auto max-h-[80vh] aspect-[40/56] transition-transform duration-300 hover:scale-105 active:scale-95 shadow-xl rounded-lg overflow-hidden border border-amber-900/30 md:scale-50">
+        <div className="relative z-10 flex flex-row items-center justify-center gap-4 md:gap-16 p-4 w-full max-w-4xl mx-auto">
+            <button onClick={() => onSelectPath('hoodoo')} className="relative w-[45%] h-auto max-h-[80vh] aspect-[40/56] transition-transform duration-300 hover:scale-[0.8] active:scale-[0.7] shadow-xl rounded-lg overflow-hidden border border-amber-900/30 scale-70 md:scale-50">
                 <Image src={`${ASSET_PATH}/ui-button-hoodoo-path.png`} alt="Hoodoo Rootwork Path Selection Button" layout="fill" objectFit="contain" className="object-cover" />
-                <div className="absolute bottom-0 w-full bg-black/60 backdrop-blur-sm p-2 text-center">
-                    <span className="text-amber-100 font-serif text-sm md:text-lg tracking-wider uppercase">Hoodoo</span>
-                </div>
             </button>
-            <button onClick={() => onSelectPath('voodoo')} className="relative w-[45%] h-auto max-h-[80vh] aspect-[40/56] transition-transform duration-300 hover:scale-105 active:scale-95 shadow-xl rounded-lg overflow-hidden border border-amber-900/30 md:scale-50">
+            <button onClick={() => onSelectPath('voodoo')} className="relative w-[45%] h-auto max-h-[80vh] aspect-[40/56] transition-transform duration-300 hover:scale-[0.8] active:scale-[0.7] shadow-xl rounded-lg overflow-hidden border border-amber-900/30 scale-70 md:scale-50">
                 <Image src={`${ASSET_PATH}/ui-button-voodoo-path.png`} alt="Voodoo Lwa Service Path Selection Button" layout="fill" objectFit="contain" className="object-cover" />
-                <div className="absolute bottom-0 w-full bg-black/60 backdrop-blur-sm p-2 text-center">
-                    <span className="text-amber-100 font-serif text-sm md:text-lg tracking-wider uppercase">Voodoo</span>
-                </div>
             </button>
         </div>
     </div>
