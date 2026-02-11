@@ -437,8 +437,8 @@ const VoodooStep1_OpenGate: React.FC<StepComponentProps> = ({ onNext }) => {
 
 const VoodooStep2_StateNeed: React.FC<{ cost: number; petition: string; setPetition: (val: string) => void; onNext: (mode: RitualMode) => void; isReplay: boolean }> = ({ cost, petition, setPetition, onNext, isReplay }) => (
     <StepContainer stageTitle="State Your Need" instruction="Clearly present your petition to the spirits." allowOverflow={true}>
-        <div className="relative w-full h-full flex flex-col items-center justify-center gap-2">
-             <div className="relative h-full max-h-full min-h-0 w-auto max-w-full aspect-square @container md:scale-150 md:origin-bottom md:-mb-12 transition-transform duration-300">
+        <div className="relative w-full h-full flex flex-col items-center justify-center md:justify-between gap-2 overflow-hidden">
+             <div className="relative h-full max-h-full min-h-0 w-auto max-w-full aspect-square @container md:h-[65%] md:w-auto md:max-w-none md:scale-125 md:origin-top md:mt-8 transition-transform duration-300">
                 <Image src={`${ASSET_PATH}/voodoo-petition-scroll.png`} alt="Aged Parchment Petition Paper" layout="fill" objectFit="contain" />
                 <div className="absolute p-4" style={{ left: '22%', top: '30%', width: '56%', height: '40%' }}>
                     <textarea 
@@ -451,7 +451,7 @@ const VoodooStep2_StateNeed: React.FC<{ cost: number; petition: string; setPetit
                     />
                 </div>
             </div>
-            <div className="flex flex-col gap-3 w-full max-w-xs md:scale-50 md:origin-top md:-mt-12 transition-transform duration-300 z-30">
+            <div className="flex flex-col gap-3 w-full max-w-xs md:max-w-md md:w-[80%] md:mb-8 md:scale-110 md:origin-bottom transition-transform duration-300 z-30">
                 {isReplay ? (
                     <button onClick={() => onNext('replay')} className="w-full py-3 bg-amber-600 hover:bg-amber-500 text-black font-serif font-bold rounded animate-pulse">
                         Begin Replay (Free)
