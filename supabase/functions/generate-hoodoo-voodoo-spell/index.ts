@@ -1,6 +1,5 @@
-// --- START OF FILE supabase/functions/generate-hoodoo-voodoo-spell/index.ts ---
 
-import { GoogleAuth } from "npm:google-auth-library";
+import { JWT } from "npm:google-auth-library";
 import { corsHeaders } from '../_shared/cors.ts';
 
 const GCP_PROJECT_ID = 'arcane-tools';
@@ -33,11 +32,14 @@ Deno.serve(async (req: Request) => {
         const serviceAccountKey = Deno.env.get('GCP_SERVICE_ACCOUNT_KEY');
         if (!serviceAccountKey) { throw new Error("GCP_SERVICE_ACCOUNT_KEY secret is not set."); }
 
-        const auth = new GoogleAuth({
-            credentials: JSON.parse(serviceAccountKey),
-            scopes: 'https://www.googleapis.com/auth/cloud-platform',
+        const serviceAccount = JSON.parse(serviceAccountKey);
+
+        const client = new JWT({
+            email: serviceAccount.client_email,
+            key: serviceAccount.private_key,
+            scopes: ['https://www.googleapis.com/auth/cloud-platform'],
         });
-        const client = await auth.getClient();
+
         const accessToken = (await client.getAccessToken()).token;
         if (!accessToken) { throw new Error("Failed to retrieve access token."); }
 
@@ -153,4 +155,3 @@ Deno.serve(async (req: Request) => {
         return new Response(JSON.stringify({ error: errorMessage }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 });
-// --- END OF FILE ---
