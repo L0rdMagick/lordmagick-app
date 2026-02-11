@@ -451,7 +451,7 @@ const VoodooStep2_StateNeed: React.FC<{ cost: number; petition: string; setPetit
                     />
                 </div>
             </div>
-            <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-full max-w-xs md:max-w-sm md:scale-95 transition-transform duration-300 z-30 flex flex-col gap-3">
+            <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-full max-w-xs md:max-w-sm md:scale-70 md:origin-bottom transition-transform duration-300 z-30 flex flex-col gap-3">
                 {isReplay ? (
                     <button onClick={() => onNext('replay')} className="w-full py-3 bg-amber-600 hover:bg-amber-500 text-black font-serif font-bold rounded animate-pulse">
                         Begin Replay (Free)
