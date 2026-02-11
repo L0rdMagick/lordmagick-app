@@ -100,37 +100,7 @@ const RitualButton: React.FC<RitualButtonProps> = ({ onClick, children, classNam
     </button>
 );
 
-const DebugOverlay = ({ data }: { data: any }) => {
-    const [lsData, setLsData] = useState<any>(null);
-    useEffect(() => {
-        const interval = setInterval(() => {
-            const item = localStorage.getItem('hoodoo_voodoo_autosave');
-            if (item) setLsData(JSON.parse(item));
-            else setLsData(null);
-        }, 1000);
-        return () => clearInterval(interval);
-    }, []);
 
-    return (
-        <div className="fixed top-20 left-4 z-[9999] bg-black/80 text-green-400 font-mono text-xs p-2 max-w-sm pointer-events-none border border-green-500">
-            <h3>DEBUG STATE</h3>
-            <p>Current Step: {data.step}</p>
-            <p>Current Path: {data.path}</p>
-            <p>Petition Len: {data.petition?.length || 0}</p>
-            <p>Hydrating: {String(data.isHydrating)}</p>
-            <hr className="border-green-800 my-1"/>
-            <h3>LOCAL STORAGE</h3>
-            {lsData ? (
-                <>
-                    <p>TS: {new Date(lsData.timestamp).toLocaleTimeString()}</p>
-                    <p>Path: {lsData.path}</p>
-                    <p>Step: {lsData.step}</p>
-                    <p>Petition: {lsData.petition}</p>
-                </>
-            ) : <p>EMPTY</p>}
-        </div>
-    );
-};
 
 const StepContainer: React.FC<StepContainerProps> = ({ stageTitle, instruction, children, button }) => (
     <div className="w-full h-full flex flex-col items-center justify-center gap-1 overflow-hidden">
@@ -1189,7 +1159,7 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
 
     return (
         <>
-            <DebugOverlay data={{ step, path, petition, isHydrating }} />
+
             <PsalmReader 
                 isOpen={psalmReaderOpen} 
                 onClose={() => setPsalmReaderOpen(false)} 
