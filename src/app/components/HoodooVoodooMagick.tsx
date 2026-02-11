@@ -112,9 +112,11 @@ const StepContainer: React.FC<StepContainerProps> = ({ stageTitle, instruction, 
         <div className={`w-full grow min-h-0 relative flex items-center justify-center z-10 ${allowOverflow ? '' : 'overflow-hidden'}`}>
             {children}
         </div>
-        <div className="h-[60px] shrink-0 flex items-center justify-center z-20">
-            {button}
-        </div>
+        {button && (
+            <div className="h-[60px] shrink-0 flex items-center justify-center z-20">
+                {button}
+            </div>
+        )}
     </div>
 );
 
