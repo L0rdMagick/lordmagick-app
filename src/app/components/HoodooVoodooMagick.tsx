@@ -37,9 +37,10 @@ const CONTAINER_GEOMETRY = {
     hoodoo_empty: { left: '30.76%', top: '30.55%', width: '40.23%', height: '56.49%' },
     hoodoo_fixed: { left: '30.76%', top: '31.04%', width: '40.23%', height: '56.49%' },
     hoodoo_manifestation: { left: '36.35%', top: '50.71%', width: '28.54%', height: '40.09%' },
-    voodoo_empty: { left: '35.00%', top: '46.15%', width: '31.05%', height: '45.75%' },
-    voodoo_filled: { left: '36.23%', top: '38.54%', width: '27.54%', height: '38.92%' },
-    voodoo_manifestation: { left: '36.23%', top: '38.54%', width: '27.54%', height: '38.92%' }
+    // Tuned Voodoo Geometry to keep items inside the bottle
+    voodoo_empty: { left: '38.00%', top: '48.15%', width: '24.05%', height: '43.75%' },
+    voodoo_filled: { left: '38.00%', top: '48.15%', width: '24.05%', height: '43.75%' },
+    voodoo_manifestation: { left: '38.00%', top: '48.15%', width: '24.05%', height: '43.75%' }
 };
 
 // --- Data ---
@@ -211,10 +212,10 @@ const ChargingComponent: React.FC<{
 const Step0_Crossroads: React.FC<{ onSelectPath: (path: RitualPath) => void }> = ({ onSelectPath }) => (
     <div className="relative w-full h-full flex flex-col items-center justify-center">
         <div className="relative z-10 flex flex-row items-center justify-center gap-4 md:gap-16 h-full p-4">
-            <button onClick={() => onSelectPath('hoodoo')} className="relative h-[90%] w-auto aspect-[40/56] transition-transform duration-300 hover:scale-105 active:scale-95">
+            <button onClick={() => onSelectPath('hoodoo')} className="relative h-[90%] w-auto max-w-[45%] aspect-[40/56] transition-transform duration-300 hover:scale-105 active:scale-95">
                 <Image src={`${ASSET_PATH}/ui-button-hoodoo-path.png`} alt="Hoodoo Rootwork Path Selection Button" layout="fill" objectFit="contain" />
             </button>
-            <button onClick={() => onSelectPath('voodoo')} className="relative h-[90%] w-auto aspect-[40/56] transition-transform duration-300 hover:scale-105 active:scale-95">
+            <button onClick={() => onSelectPath('voodoo')} className="relative h-[90%] w-auto max-w-[45%] aspect-[40/56] transition-transform duration-300 hover:scale-105 active:scale-95">
                 <Image src={`${ASSET_PATH}/ui-button-voodoo-path.png`} alt="Voodoo Lwa Service Path Selection Button" layout="fill" objectFit="contain" />
             </button>
         </div>
@@ -276,8 +277,8 @@ const HoodooStep1_Ancestors: React.FC<StepComponentProps> = ({ onNext }) => {
 
 const HoodooStep2_Petition: React.FC<{ cost: number; petition: string; setPetition: (val: string) => void; onNext: (mode: RitualMode) => void; isReplay: boolean }> = ({ cost, petition, setPetition, onNext, isReplay }) => (
     <StepContainer stageTitle="Write Your Petition" instruction="State your intention for this Work. Be clear and direct.">
-        <div className="relative w-full h-full flex flex-col items-center justify-center gap-2">
-            <div className={`relative h-full max-h-full min-h-0 w-auto max-w-full aspect-square @container ${isReplay ? 'opacity-80' : ''}`}>
+        <div className="relative w-full h-full flex flex-col items-center justify-center gap-1">
+            <div className={`relative h-full max-h-full min-h-0 w-auto max-w-full aspect-square @container ${isReplay ? 'opacity-80' : ''} scale-110 md:scale-125 origin-bottom`}>
                 <Image src={`${ASSET_PATH}/hoodoo-petition-paper.png`} alt="Aged Parchment Petition Paper" layout="fill" objectFit="contain" />
                 <div className="absolute p-4" style={{ left: '15%', top: '25%', width: '70%', height: '50%' }}>
                     <textarea 
@@ -291,7 +292,7 @@ const HoodooStep2_Petition: React.FC<{ cost: number; petition: string; setPetiti
                 </div>
             </div>
             
-            <div className="flex flex-col gap-3 w-full max-w-xs">
+            <div className="flex flex-col gap-2 w-full max-w-xs scale-75 origin-top">
                 {isReplay ? (
                      <button onClick={() => onNext('replay')} className="flex items-center justify-center gap-3 p-4 bg-purple-900 border border-purple-500 rounded-lg hover:bg-purple-800 text-white shadow-lg animate-pulse">
                         <RotateCcw className="w-5 h-5" />
@@ -486,15 +487,17 @@ const VoodooStep3_ServeLwa: React.FC<{ selectedLwa: string; onSelect: (lwa: stri
 
     return (
         <StepContainer stageTitle="Serve the Lwa" instruction={mode === 'standard' ? "You serve Papa Legba to open the roads." : "Choose the Lwa whose domain aligns with your need."} button={<RitualButton onClick={onNext} disabled={!selectedLwa}>Prepare Offerings</RitualButton>}>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {availableLwas.map(lwa => (
-                    <div key={lwa.name} onClick={() => onSelect(lwa.name)} className="flex flex-col items-center gap-2 cursor-pointer group p-2">
-                        <div className={`relative w-28 h-28 md:w-36 md:h-36 bg-black/20 p-2 rounded-full border-2 transition-colors ${selectedLwa === lwa.name ? 'border-amber-300' : 'border-transparent group-hover:border-amber-300/50'}`}>
-                             <Image src={`${ASSET_PATH}/${lwa.img}`} alt={lwa.name} layout="fill" objectFit="contain" className={`transition-all ${selectedLwa === lwa.name ? 'brightness-125' : 'brightness-75 group-hover:brightness-110'}`}/>
+            <div className="w-full h-full overflow-y-auto flex items-center justify-center">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 p-4">
+                    {availableLwas.map(lwa => (
+                        <div key={lwa.name} onClick={() => onSelect(lwa.name)} className="flex flex-col items-center gap-2 cursor-pointer group p-2">
+                            <div className={`relative w-28 h-28 md:w-36 md:h-36 bg-black/20 p-2 rounded-full border-2 transition-colors ${selectedLwa === lwa.name ? 'border-amber-300' : 'border-transparent group-hover:border-amber-300/50'}`}>
+                                 <Image src={`${ASSET_PATH}/${lwa.img}`} alt={lwa.name} layout="fill" objectFit="contain" className={`transition-all ${selectedLwa === lwa.name ? 'brightness-125' : 'brightness-75 group-hover:brightness-110'}`}/>
+                            </div>
+                            <p className={`font-serif transition-colors ${selectedLwa === lwa.name ? 'text-amber-200' : 'text-gray-300 group-hover:text-white'}`}>{lwa.name}</p>
                         </div>
-                        <p className={`font-serif transition-colors ${selectedLwa === lwa.name ? 'text-amber-200' : 'text-gray-300 group-hover:text-white'}`}>{lwa.name}</p>
-                    </div>
-                ))}
+                    ))}
+                </div>
             </div>
         </StepContainer>
     );
@@ -573,7 +576,7 @@ const Step7_Sending: React.FC<{onNext: () => void, petition: string, selections:
                 <Image src={`${ASSET_PATH}/${image}`} alt="Final Manifestation" layout="fill" objectFit="contain" unoptimized={image.endsWith('.gif')} />
                 <div className="absolute inset-0 z-10"><FilledContainer variant={variant} items={selections} count={selections.length} /></div>
                 <AnimatePresence>
-                    <motion.p initial={{opacity: 0, y: 50}} animate={{opacity: [0, 0.7, 0.7, 0], y: -150}} transition={{duration: SENDING_DURATION/1000, ease: 'linear', repeat: Infinity}} className="absolute w-64 text-center text-amber-100/80 italic whitespace-pre-line z-20">
+                    <motion.p initial={{opacity: 0, y: 50}} animate={{opacity: [0, 0.9, 0.9, 0], y: -150}} transition={{duration: SENDING_DURATION/1000, ease: 'linear', repeat: Infinity}} className="absolute w-64 text-center text-amber-100 font-bold text-xl md:text-3xl italic whitespace-pre-line z-20" style={{textShadow: '2px 2px 4px black'}}>
                         {petition}
                     </motion.p>
                 </AnimatePresence>
@@ -588,9 +591,9 @@ const Step8_Manifestation: React.FC<{ affirmation: string, path: RitualPath, onC
     const particles = useMemo(() => Array.from({ length: 20 }).map((_, i) => ({ id: i, x: (Math.random() - 0.5) * 400, y: Math.random() * -500 - 50, duration: 5 + Math.random() * 5, delay: Math.random() * 7 })), []);
     return (
         <StepContainer stageTitle={path === 'hoodoo' ? "The Work is Done" : "The Lwa is Served"}>
-            <div className="flex flex-col items-center justify-center gap-4 w-full h-full max-w-4xl">
-                 <div className="flex flex-row items-center justify-center gap-2 md:gap-8 w-full">
-                    <div className="relative w-1/2 aspect-square">
+            <div className="flex flex-col items-center justify-center gap-2 w-full h-full max-w-4xl overflow-hidden p-2">
+                 <div className="flex flex-row items-center justify-center gap-2 md:gap-8 w-full h-full min-h-0 grow">
+                    <div className="relative h-full w-auto max-w-[45%] aspect-square">
                         <Image src={`${ASSET_PATH}/${finalImage}`} alt="Final Manifestation" layout="fill" objectFit="contain" unoptimized={finalImage.endsWith('.gif')} />
                         <div className="absolute inset-0 z-10"><FilledContainer variant={variant} items={selections} count={selections.length} /></div>
                         {path === 'voodoo' && (
@@ -603,18 +606,18 @@ const Step8_Manifestation: React.FC<{ affirmation: string, path: RitualPath, onC
                             </div>
                         )}
                     </div>
-                    <div className="relative w-1/2 aspect-square @container">
+                    <div className="relative h-full w-auto max-w-[45%] aspect-square @container">
                         <Image src={`${ASSET_PATH}/hoodoo-petition-paper.png`} alt="Completed Petition Parchment" layout="fill" objectFit="contain"/>
                         <div className="absolute inset-0 flex items-center justify-center p-[22%]"><p className="text-center text-[#3a291c] font-serif font-semibold" style={{fontSize: 'clamp(0.7rem, 4.5cqw, 1.2rem)'}}>{affirmation}</p></div>
                     </div>
                 </div>
-                <div className="flex flex-col gap-3 w-full max-w-xs mt-4">
-                    <button onClick={onSave} disabled={isSaved || isSaving} className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-amber-900/60 border border-amber-400 text-amber-100 font-serif rounded hover:bg-amber-800 disabled:opacity-50 transition-colors">
-                        {isSaved ? <Check size={18} /> : <Save size={18} />}
+                <div className="flex flex-col gap-2 w-full max-w-xs shrink-0">
+                    <button onClick={onSave} disabled={isSaved || isSaving} className="w-full flex items-center justify-center gap-2 px-6 py-2 bg-amber-900/60 border border-amber-400 text-amber-100 font-serif rounded hover:bg-amber-800 disabled:opacity-50 transition-colors text-sm">
+                        {isSaved ? <Check size={16} /> : <Save size={16} />}
                         {isSaved ? "Work Sealed" : isSaving ? "Sealing..." : "Seal This Work (1 Credit)"}
                     </button>
-                    <RitualButton onClick={onCastAnother} className="w-full">Cast Another Spell</RitualButton>
-                    <RitualButton onClick={onReturn} className="w-full bg-slate-900/40 border-slate-600 hover:bg-slate-800">Return to Spell Room</RitualButton>
+                    <RitualButton onClick={onCastAnother} className="w-full py-2">Cast Another Spell</RitualButton>
+                    <RitualButton onClick={onReturn} className="w-full bg-slate-900/40 border-slate-600 hover:bg-slate-800 py-2">Return to Spell Room</RitualButton>
                 </div>
             </div>
         </StepContainer>
@@ -1092,6 +1095,8 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
                     redirectPath={'/spell-room/hoodoo-rootwork-spells-app'}
                     onGoToStore={() => {
                         console.log("HoodooVoodooMagick (RenderError): Saving state...", { step, path, petition });
+                        // Clear the error so the store modal is visible (Z-index fix)
+                        spellSystem.clearErrors();
                         spellSystem.goToStoreForSlots(
                         { step, path, petition, selectedPsalm, selectedLwa, hoodooMateriaSelections, voodooOfferingSelections }, 
                         'hoodoo_voodoo_autosave'
