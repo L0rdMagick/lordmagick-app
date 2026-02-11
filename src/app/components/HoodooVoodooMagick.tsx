@@ -87,7 +87,7 @@ type MateriaSelection = { name: string; incantation: string; };
 type GeometryVariant = keyof typeof CONTAINER_GEOMETRY;
 
 interface StepComponentProps { onNext: () => void; }
-interface StepContainerProps { stageTitle?: string; instruction?: string; children: React.ReactNode; button?: React.ReactNode; }
+interface StepContainerProps { stageTitle?: string; instruction?: string; children: React.ReactNode; button?: React.ReactNode; allowOverflow?: boolean; }
 interface RitualButtonProps { onClick: () => void; children: React.ReactNode; className?: string; disabled?: boolean; }
 
 
@@ -103,13 +103,13 @@ const RitualButton: React.FC<RitualButtonProps> = ({ onClick, children, classNam
 
 
 
-const StepContainer: React.FC<StepContainerProps> = ({ stageTitle, instruction, children, button }) => (
+const StepContainer: React.FC<StepContainerProps> = ({ stageTitle, instruction, children, button, allowOverflow = false }) => (
     <div className="w-full h-full flex flex-col items-center justify-center gap-1 overflow-hidden">
         <div className="shrink-0 flex flex-col items-center justify-center text-center px-4 min-h-[4rem] h-auto py-2 z-20 relative">
              {stageTitle && <h2 className="text-2xl md:text-3xl font-serif text-amber-200/90">{stageTitle}</h2>}
              {instruction && <p className="text-sm md:text-base text-amber-100/80 mt-1 ischemic italic font-light max-w-2xl leading-tight whitespace-pre-line" style={{textShadow: '1px 1px 2px rgba(0,0,0,0.7)'}}>{instruction}</p>}
         </div>
-        <div className="w-full grow min-h-0 relative flex items-center justify-center z-10 overflow-hidden">
+        <div className={`w-full grow min-h-0 relative flex items-center justify-center z-10 ${allowOverflow ? '' : 'overflow-hidden'}`}>
             {children}
         </div>
         <div className="h-[60px] shrink-0 flex items-center justify-center z-20">
@@ -436,9 +436,9 @@ const VoodooStep1_OpenGate: React.FC<StepComponentProps> = ({ onNext }) => {
 };
 
 const VoodooStep2_StateNeed: React.FC<{ cost: number; petition: string; setPetition: (val: string) => void; onNext: (mode: RitualMode) => void; isReplay: boolean }> = ({ cost, petition, setPetition, onNext, isReplay }) => (
-    <StepContainer stageTitle="State Your Need" instruction="Clearly present your petition to the spirits.">
+    <StepContainer stageTitle="State Your Need" instruction="Clearly present your petition to the spirits." allowOverflow={true}>
         <div className="relative w-full h-full flex flex-col items-center justify-center gap-2">
-             <div className="relative h-full max-h-full min-h-0 w-auto max-w-full aspect-square @container">
+             <div className="relative h-full max-h-full min-h-0 w-auto max-w-full aspect-square @container md:scale-150 md:origin-bottom md:-mb-12 transition-transform duration-300">
                 <Image src={`${ASSET_PATH}/voodoo-petition-scroll.png`} alt="Aged Parchment Petition Paper" layout="fill" objectFit="contain" />
                 <div className="absolute p-4" style={{ left: '22%', top: '30%', width: '56%', height: '40%' }}>
                     <textarea 
@@ -451,7 +451,7 @@ const VoodooStep2_StateNeed: React.FC<{ cost: number; petition: string; setPetit
                     />
                 </div>
             </div>
-            <div className="flex flex-col gap-3 w-full max-w-xs">
+            <div className="flex flex-col gap-3 w-full max-w-xs md:scale-50 md:origin-top md:-mt-12 transition-transform duration-300 z-30">
                 {isReplay ? (
                     <button onClick={() => onNext('replay')} className="w-full py-3 bg-amber-600 hover:bg-amber-500 text-black font-serif font-bold rounded animate-pulse">
                         Begin Replay (Free)
