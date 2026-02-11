@@ -434,7 +434,7 @@ const VoodooStep1_OpenGate: React.FC<StepComponentProps> = ({ onNext }) => {
 const VoodooStep2_StateNeed: React.FC<{ cost: number; petition: string; setPetition: (val: string) => void; onNext: (mode: RitualMode) => void; isReplay: boolean }> = ({ cost, petition, setPetition, onNext, isReplay }) => (
     <StepContainer stageTitle="State Your Need" instruction="Clearly present your petition to the spirits." allowOverflow={true}>
         <div className="relative w-full h-full overflow-hidden">
-             <div className="absolute top-0 left-1/2 -translate-x-1/2 h-[60%] w-auto aspect-square md:scale-130 md:origin-top md:mt-2 transition-transform duration-300 z-10">
+             <div className="absolute top-0 left-1/2 -translate-x-1/2 h-[58%] w-auto aspect-square md:scale-130 md:origin-top md:mt-2 transition-transform duration-300 z-10">
                 <Image src={`${ASSET_PATH}/voodoo-petition-scroll.png`} alt="Aged Parchment Petition Paper" layout="fill" objectFit="contain" />
                 <div className="absolute p-4" style={{ left: '19.14%', top: '19.59%', width: '61.73%', height: '61.19%' }}>
                     <textarea 
