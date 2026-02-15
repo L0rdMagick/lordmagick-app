@@ -654,11 +654,10 @@ const Step8_Manifestation: React.FC<{ affirmation: string, path: RitualPath, onC
         <StepContainer stageTitle={path === 'hoodoo' ? "The Work is Done" : "The Lwa is Served"}>
             <div className="flex flex-col items-center justify-center w-full h-full max-w-6xl overflow-hidden p-2 gap-2">
                  
-                 {/* MAIN CONTENT AREA: Uses flex-1 and min-h-0 to take available space without pushing buttons */}
-                 <div className="flex-1 min-h-0 w-full flex flex-row items-center justify-center gap-2 md:gap-8">
+                 <div className="flex-1 min-h-0 w-full flex flex-col md:flex-row items-center justify-center gap-4 md:gap-8">
                     
                     {/* LEFT SIDE: MANIFESTATION IMAGE */}
-                    <div className="relative h-full w-1/2 flex items-center justify-end">
+                    <div className="relative flex-1 min-h-0 w-full md:w-1/2 flex items-center justify-center md:justify-end">
                         <div className="relative aspect-square h-auto w-auto max-h-full max-w-full">
                             <Image 
                                 src={`${ASSET_PATH}/${finalImage}`} 
@@ -684,17 +683,17 @@ const Step8_Manifestation: React.FC<{ affirmation: string, path: RitualPath, onC
                     </div>
 
                     {/* RIGHT SIDE: PETITION PAPER */}
-                    <div className="relative h-full w-1/2 flex items-center justify-start">
+                    <div className="relative flex-1 min-h-0 w-full md:w-1/2 flex items-center justify-center md:justify-start">
                         <div className="relative aspect-square h-auto w-auto max-h-full max-w-full">
                              <Image src={`${ASSET_PATH}/hoodoo-petition-paper.png`} alt="Completed Petition Parchment" width={1024} height={1024} className="w-full h-full object-contain"/>
                              
-                             {/* TEXT SAFE ZONE: 
-                                 inset-[15%] creates a padding buffer so text doesn't hit torn edges.
-                                 overflow-y-auto handles long text. 
+                             {/* TEXT FIX: 
+                                 1. Removed 'justify-center' from parent div.
+                                 2. Added 'm-auto' to <p> to center it if small, but allow scroll if large.
                              */}
-                             <div className="absolute inset-[18%] flex items-center justify-center overflow-hidden">
-                                <div className="w-full max-h-full overflow-y-auto scrollbar-hide flex flex-col justify-center">
-                                    <p className="text-center text-[#3a291c] font-serif font-bold leading-tight whitespace-pre-wrap" style={{fontSize: 'clamp(0.6rem, 3cqw, 1.1rem)'}}>
+                             <div className="absolute inset-[18%] overflow-hidden">
+                                <div className="w-full h-full overflow-y-auto scrollbar-hide flex flex-col">
+                                    <p className="text-center text-[#3a291c] font-serif font-bold leading-tight whitespace-pre-wrap m-auto" style={{fontSize: 'clamp(0.8rem, 2.5cqw, 1.2rem)'}}>
                                         {affirmation}
                                     </p>
                                 </div>
@@ -703,7 +702,7 @@ const Step8_Manifestation: React.FC<{ affirmation: string, path: RitualPath, onC
                     </div>
                 </div>
 
-                {/* FOOTER BUTTONS: Kept separate so they are never pushed off screen */}
+                {/* FOOTER BUTTONS */}
                 <div className="flex flex-col gap-2 w-full max-w-xs shrink-0 z-20">
                     <button onClick={onSave} disabled={isSaved || isSaving} className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-amber-900/80 border border-amber-400 text-amber-100 font-serif rounded hover:bg-amber-800 disabled:opacity-50 transition-colors text-sm">
                         {isSaved ? <Check size={16} /> : <Save size={16} />}
@@ -1194,7 +1193,7 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
                         // Clear the error so the store modal is visible (Z-index fix)
                         spellSystem.clearErrors();
                         spellSystem.goToStoreForSlots(
-                        { step, path, petition, selectedPsalm, selectedLwa, hoodooMateriaSelections, voodooOfferingSelections }, 
+                        { step, path, petition, selectedPsalm, selectedLwa, hoodooMateriaSelections, voodooOfferingSelections, finalAffirmation }, 
                         'hoodoo_voodoo_autosave'
                         );
                     }}
@@ -1279,7 +1278,7 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
                 onGoToStore={() => {
                    console.log("HoodooVoodooMagick (Modal): Saving state...", { step, path, petition });
                    spellSystem.goToStoreForSlots(
-                    { step, path, petition, selectedPsalm, selectedLwa, hoodooMateriaSelections, voodooOfferingSelections }, 
+                    { step, path, petition, selectedPsalm, selectedLwa, hoodooMateriaSelections, voodooOfferingSelections, finalAffirmation }, 
                     'hoodoo_voodoo_autosave'
                    );
                 }}
