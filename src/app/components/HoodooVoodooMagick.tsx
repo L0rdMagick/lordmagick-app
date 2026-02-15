@@ -1202,6 +1202,7 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
                     redirectPath={'/spell-room/hoodoo-rootwork-spells-app'}
                     onGoToStore={() => {
                         console.log("HoodooVoodooMagick (Overlay): Saving state...", { step, path, petition });
+                        spellSystem.clearErrors();
                         spellSystem.goToStoreForSlots(
                          { step, path, petition, selectedPsalm, selectedLwa, hoodooMateriaSelections, voodooOfferingSelections }, 
                          'hoodoo_voodoo_autosave'
