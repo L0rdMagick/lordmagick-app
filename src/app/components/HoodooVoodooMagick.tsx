@@ -706,7 +706,7 @@ const Step8_Manifestation: React.FC<{ affirmation: string, path: RitualPath, onC
                 <div className="flex flex-col gap-2 w-full max-w-xs shrink-0 z-20">
                     <button onClick={onSave} disabled={isSaved || isSaving} className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-amber-900/80 border border-amber-400 text-amber-100 font-serif rounded hover:bg-amber-800 disabled:opacity-50 transition-colors text-sm">
                         {isSaved ? <Check size={16} /> : <Save size={16} />}
-                        {isSaved ? "Work Sealed" : isSaving ? "Sealing..." : "Seal This Work (1 Credit)"}
+                        {isSaved ? "Work Sealed" : isSaving ? "Sealing..." : "Seal This Work (3 Credits)"}
                     </button>
                     <div className="flex gap-2">
                         <RitualButton onClick={onCastAnother} className="flex-1 py-2 text-xs">Cast Another</RitualButton>
