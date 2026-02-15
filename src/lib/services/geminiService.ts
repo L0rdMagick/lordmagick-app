@@ -388,22 +388,8 @@ export const uploadBase64Image = async (base64: string, path: string): Promise<s
  * Checks if the user has reached their spell slot limit.
  */
 export const checkGrimoireLimit = async (userId: string): Promise<boolean> => {
-    const { count, error: countError } = await supabase
-        .from('spells')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', userId);
-        
-    if (countError) throw countError;
-
-    const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('spell_slots_limit')
-        .eq('id', userId)
-        .single();
-    
-    const limit = profile?.spell_slots_limit || 5;
-
-    return (count || 0) >= limit;
+    // GLOBAL OVERRIDE: Storage limits are disabled.
+    return false;
 };
 
 /**
@@ -424,28 +410,9 @@ export const saveSpell = async (
 ): Promise<Spell> => {
 
     // 1. Check Spell Limits (if not bypassed)
-    if (!bypassLimit) {
-        const { count, error: countError } = await supabase
-            .from('spells')
-            .select('*', { count: 'exact', head: true })
-            .eq('user_id', userId);
-            
-        if (countError) throw countError;
-
-        const { data: profile, error: profileError } = await supabase
-            .from('profiles')
-            .select('spell_slots_limit')
-            .eq('id', userId)
-            .single();
-        
-        // Default to 5 if not set or error fetching profile
-        const limit = profile?.spell_slots_limit || 5;
-
-        // Trigger purchase modal (handled by calling component) if full
-        if ((count || 0) >= limit) {
-            throw new Error("GRIMOIRE_FULL");
-        }
-    }
+    // 1. Check Spell Limits (DISABLED GLOBALLY)
+    // The user has requested to remove all grimoire storage limits.
+    // This block is intentionally removed/bypassed.
 
     // 2. Perform Insert
     // IMPORTANT: Ensure ritual_data is stringified if it's an object, or pass as is if Supabase handles JSONB
