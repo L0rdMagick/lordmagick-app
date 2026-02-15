@@ -718,13 +718,7 @@ const Step8_Manifestation: React.FC<{ affirmation: string, path: RitualPath, onC
         </StepContainer>
     );
 };
-                    <RitualButton onClick={onCastAnother} className="w-full py-2">Cast Another Spell</RitualButton>
-                    <RitualButton onClick={onReturn} className="w-full bg-slate-900/40 border-slate-600 hover:bg-slate-800 py-2">Return to Spell Room</RitualButton>
-                </div>
-            </div>
-        </StepContainer>
-    );
-};
+
 
 const PsalmReader: React.FC<{isOpen: boolean; onClose: () => void; psalmName: string; psalmText: string; onBless: () => void;}> = ({isOpen, onClose, psalmName, psalmText, onBless}) => {
     const [stage, setStage] = useState<'read' | 'fix'>('read');
