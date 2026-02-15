@@ -443,7 +443,7 @@ const VoodooStep2_StateNeed: React.FC<{ cost: number; petition: string; setPetit
                             onChange={(e) => setPetition((e.target as any).value)} 
                             readOnly={isReplay}
                             placeholder="e.g., I ask for protection on my journey." 
-                            className="w-full h-full bg-transparent text-center text-[#4a2e1c] font-serif focus:outline-none resize-none text-[clamp(1rem,4cqw,2rem)] leading-tight overflow-y-auto scrollbar-thin scrollbar-thumb-amber-900 scrollbar-track-transparent placeholder:text-amber-900/50"
+                            className="w-full h-full bg-transparent text-center text-[#4a2e1c] font-serif focus:outline-none resize-none text-[clamp(1rem,4cqw,2rem)] md:text-[clamp(0.8rem,1.5cqw,1.2rem)] leading-tight overflow-y-auto scrollbar-thin scrollbar-thumb-amber-900 scrollbar-track-transparent placeholder:text-amber-900/50"
                         />
                     </div>
                 </div>
