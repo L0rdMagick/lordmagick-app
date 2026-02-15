@@ -1191,7 +1191,7 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
                     onGoToStore={() => {
                         console.log("HoodooVoodooMagick (RenderError): Opening Purchase Modal...", { step, path });
                         spellSystem.clearErrors();
-                        spellSystem.modalState.open();
+                        spellSystem.modalState.setIsOpen(true);
                     }}
                 />
             );
@@ -1289,7 +1289,7 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
                     onGoToStore={() => {
                         console.log("HoodooVoodooMagick (Overlay): Opening Purchase Modal...", { step, path });
                         spellSystem.clearErrors();
-                        spellSystem.modalState.open();
+                        spellSystem.modalState.setIsOpen(true);
                     }}
                 />
             )}
