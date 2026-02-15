@@ -492,14 +492,14 @@ const VoodooStep3_ServeLwa: React.FC<{ selectedLwa: string; onSelect: (lwa: stri
 
     return (
         <StepContainer stageTitle="Serve the Lwa" instruction={mode === 'standard' ? "You serve Papa Legba to open the roads." : "Choose the Lwa whose domain aligns with your need."} button={<RitualButton onClick={onNext} disabled={!selectedLwa}>Prepare Offerings</RitualButton>}>
-            <div className="w-full h-full overflow-y-auto flex flex-col items-center py-4">
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-8 p-4 pb-24 m-auto">
+            <div className="w-full h-full flex flex-col items-center justify-center py-2">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-2 p-2 m-auto">
                     {availableLwas.map(lwa => (
-                        <div key={lwa.name} onClick={() => onSelect(lwa.name)} className="flex flex-col items-center gap-2 cursor-pointer group p-2">
-                            <div className={`relative w-28 h-28 md:w-36 md:h-36 bg-black/20 rounded-full border-2 transition-colors overflow-hidden ${selectedLwa === lwa.name ? 'border-amber-300' : 'border-transparent group-hover:border-amber-300/50'}`}>
-                                 <Image src={`${ASSET_PATH}/${lwa.img}`} alt={lwa.name} layout="fill" objectFit="contain" className={`p-6 transition-all duration-300 ${selectedLwa === lwa.name ? 'brightness-125 scale-105' : 'brightness-75 group-hover:brightness-110 scale-95'}`}/>
+                        <div key={lwa.name} onClick={() => onSelect(lwa.name)} className="flex flex-col items-center gap-1 cursor-pointer group p-1">
+                            <div className={`relative w-20 h-20 md:w-28 md:h-28 bg-black/20 rounded-full border-2 transition-colors overflow-hidden ${selectedLwa === lwa.name ? 'border-amber-300' : 'border-transparent group-hover:border-amber-300/50'}`}>
+                                 <Image src={`${ASSET_PATH}/${lwa.img}`} alt={lwa.name} layout="fill" objectFit="contain" className={`p-2 transition-all duration-300 ${selectedLwa === lwa.name ? 'brightness-125 scale-105' : 'brightness-75 group-hover:brightness-110 scale-95'}`}/>
                             </div>
-                            <p className={`font-serif transition-colors ${selectedLwa === lwa.name ? 'text-amber-200' : 'text-gray-300 group-hover:text-white'}`}>{lwa.name}</p>
+                            <p className={`font-serif text-sm md:text-base leading-tight text-center transition-colors ${selectedLwa === lwa.name ? 'text-amber-200' : 'text-gray-300 group-hover:text-white'}`}>{lwa.name}</p>
                         </div>
                     ))}
                 </div>
