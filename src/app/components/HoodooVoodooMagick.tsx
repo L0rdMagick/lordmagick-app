@@ -14,7 +14,7 @@ import { getSpellById } from '@/lib/services/spellService';
 
 // Hooks
 import { useSpellSystem } from '@/hooks/useSpellSystem';
-import { SlotPurchaseModal } from '@/app/components/economy/SlotPurchaseModal';
+// SlotPurchaseModal import removed
 import { BlockageErrorOverlay } from '@/app/components/economy/BlockageErrorOverlay';
 
 // Components & Assets
@@ -1173,10 +1173,7 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
         }
     };
 
-     const handleBuySlots = async () => {
-         if (!session?.user?.id) return;
-         await spellSystem.buySlots(session.user.id);
-    };
+// handleBuySlots removed
 
     const renderError = () => {
         if (!appError && ! spellSystem.activeError) return null;
@@ -1189,9 +1186,9 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
                     onDismiss={() => spellSystem.clearErrors()} 
                     redirectPath={'/spell-room/hoodoo-rootwork-spells-app'}
                     onGoToStore={() => {
-                        console.log("HoodooVoodooMagick (RenderError): Opening Purchase Modal...", { step, path });
+                        // Fallback direct navigation
                         spellSystem.clearErrors();
-                        spellSystem.modalState.setIsOpen(true);
+                        router.push(`/store?redirect=${encodeURIComponent('/spell-room/hoodoo-rootwork-spells-app')}`);
                     }}
                 />
             );
@@ -1264,21 +1261,7 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
                 onBless={() => { setIsPsalmLit(true); setPsalmReaderOpen(false); }}
             />
             
-            <SlotPurchaseModal 
-                isOpen={spellSystem.modalState.isOpen} 
-                onClose={spellSystem.modalState.close}
-                onPurchase={handleBuySlots}
-                isProcessing={spellSystem.modalState.isLoading}
-                showAetherWarning={spellSystem.modalState.showWarning}
-                showSuccess={spellSystem.modalState.showSuccess}
-                onGoToStore={() => {
-                   console.log("HoodooVoodooMagick (Modal): Saving state...", { step, path, petition });
-                   spellSystem.goToStoreForSlots(
-                    { step, path, petition, selectedPsalm, selectedLwa, hoodooMateriaSelections, voodooOfferingSelections, finalAffirmation }, 
-                    'hoodoo_voodoo_autosave'
-                   );
-                }}
-            />
+            {/* SlotPurchaseModal Removed */}
 
             {/* Global Errors (In case rendered outside content flow) */}
             {spellSystem.activeError && (
@@ -1287,9 +1270,9 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
                     onDismiss={() => spellSystem.clearErrors()}
                     redirectPath={'/spell-room/hoodoo-rootwork-spells-app'}
                     onGoToStore={() => {
-                        console.log("HoodooVoodooMagick (Overlay): Opening Purchase Modal...", { step, path });
+                        // Fallback direct navigation
                         spellSystem.clearErrors();
-                        spellSystem.modalState.setIsOpen(true);
+                        router.push(`/store?redirect=${encodeURIComponent('/spell-room/hoodoo-rootwork-spells-app')}`);
                     }}
                 />
             )}

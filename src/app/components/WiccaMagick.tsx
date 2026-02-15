@@ -10,13 +10,13 @@ import type { Session, GeneratedWiccanSpell, WiccanDeitySuggestion, WiccanIngred
 // Services
 import { generateWiccanSpell, saveSpell } from '@/lib/services/geminiService';
 import { getSpellById } from '@/lib/services/spellService';
-import { buySpellSlots } from '@/lib/services/economyService';
+// buySpellSlots removed
 
 // Hooks
 import { useSpellSystem } from '@/hooks/useSpellSystem';
 
 // UI Components
-import { SlotPurchaseModal } from '@/app/components/economy/SlotPurchaseModal';
+// SlotPurchaseModal import removed
 import { BlockageErrorOverlay } from '@/app/components/economy/BlockageErrorOverlay';
 import MagickalBackLink from './MagickalBackLink';
 import RoomsButton from './RoomsButton';
@@ -518,13 +518,7 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
 
     // ... (rest of code)
 
-    const handleGoToStore = () => {
-        spellSystem.goToStoreForSlots({
-             intention, situation, selectedDeity, spell: generatedSpell,
-             ritualStep, subStep, chargedElements, chargingIndex,
-             // No timestamp needed, hook adds it if missing, but we'll let hook handle strict props if typed
-        }, LS_AUTOSAVE_KEY);
-    };
+    // handleGoToStore removed
 
     const handleCastAnother = () => {
         playAudio('THUD').play();
@@ -678,15 +672,7 @@ const WiccaMagick = ({ session, onBack }: { session: Session, isSubscribed: bool
                     </motion.div>
                 </AnimatePresence>
             {/* Overlays */}
-            <SlotPurchaseModal 
-                isOpen={spellSystem.modalState.isOpen} 
-                onClose={spellSystem.modalState.close} 
-                onPurchase={() => spellSystem.buySlots(session?.user?.id)} 
-                isProcessing={spellSystem.modalState.isLoading}
-                showAetherWarning={spellSystem.modalState.showWarning}
-                showSuccess={spellSystem.modalState.showSuccess}
-                onGoToStore={handleGoToStore}
-            />
+            {/* SlotPurchaseModal Removed */}
         </div>
     </main>
     );

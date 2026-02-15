@@ -11,7 +11,7 @@ import RealityPatchSpell from './RealityPatchSpell';
 import ZeroPointZetSpell from './ZeroPointZetSpell'; 
 import { useSpellSystem } from '@/hooks/useSpellSystem';
 import type { Session } from '@/lib/types';
-import { SlotPurchaseModal } from '@/app/components/economy/SlotPurchaseModal';
+// SlotPurchaseModal import removed
 import { BlockageErrorOverlay } from '@/app/components/economy/BlockageErrorOverlay';
 import { useSpellPersistence } from '@/hooks/useSpellPersistence';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
@@ -82,9 +82,7 @@ export default function ElectricMagickMenu({ session, isSubscribed, onBack }: { 
       baseRedirectPath: '/spell-room/electric-magick-spells-app'
   });
   
-  const handleGoToStore = () => {
-      spellSystem.goToStoreForSlots(null, 'electric_spell_save_temp'); 
-  };
+  // handleGoToStore removed
   
   const handleExitSpell = () => {
       // Clear URL params on exit to prevent sticky loadIds
@@ -130,15 +128,7 @@ export default function ElectricMagickMenu({ session, isSubscribed, onBack }: { 
                     redirectPath="/spell-room/electric-magick-spells-app"
                 />
             )}
-             <SlotPurchaseModal 
-                isOpen={spellSystem.modalState.isOpen} 
-                onClose={spellSystem.modalState.close} 
-                onPurchase={() => spellSystem.buySlots(session?.user?.id || '')} 
-                isProcessing={spellSystem.modalState.isLoading}
-                showAetherWarning={spellSystem.modalState.showWarning}
-                showSuccess={spellSystem.modalState.showSuccess}
-                onGoToStore={handleGoToStore}
-            />
+             {/* SlotPurchaseModal Removed */}
         </>
       );
   }

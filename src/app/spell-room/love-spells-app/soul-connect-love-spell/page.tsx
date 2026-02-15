@@ -10,13 +10,13 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 import { generateLoveSpell, saveSpell } from '@/lib/services/geminiService';
 import { getSpellById } from '@/lib/services/spellService';
-import { buySpellSlots } from '@/lib/services/economyService';
+// buySpellSlots removed
 
 import { useSpellSystem } from '@/hooks/useSpellSystem';
 import type { Session } from '@/lib/types';
 import MagickalBackLink from '@/app/components/MagickalBackLink';
 import LoadingSpinner from '@/app/components/LoadingSpinner';
-import { SlotPurchaseModal } from '@/app/components/economy/SlotPurchaseModal';
+// SlotPurchaseModal import removed
 import { BlockageErrorOverlay } from '@/app/components/economy/BlockageErrorOverlay';
 
 // --- CONFIGURATION ---
@@ -626,10 +626,7 @@ function SoulConnectContent() {
           }
       }
       
-      // Auto-open slot modal if returning from store for that purpose
-      if (actionParam === 'expand_slots') {
-          setTimeout(() => spellSystem.modalState.setIsOpen(true), 500); // Small delay for UI settlement
-      }
+      // Auto-open logic for expand_slots removed
       
       setIsHydrated(true); // Allow saving from now on
   }, [loadId, actionParam]);
@@ -760,14 +757,7 @@ function SoulConnectContent() {
     nextStep();
   };
 
-    const handleGoToStore = () => {
-        spellSystem.goToStoreForSlots({
-            // Save state if needed (Love spell has simpler state, depends on requirement)
-            // For now passing empty logic as Love Spell persistence is handled differently in clearStorageAndExit
-            // But if we want to return, we should probably save current state
-            names, intention, activeIngredients, step, generatedChant
-        }, 'soul_connect_local_save');
-    };
+    // handleGoToStore removed
 
   const saveToGrimoire = async () => {
      if (isSaved) return;
@@ -994,29 +984,7 @@ function SoulConnectContent() {
           />
       )}
       
-      <SlotPurchaseModal 
-          isOpen={spellSystem.modalState.isOpen} 
-          onClose={spellSystem.modalState.close} 
-          onPurchase={async () => {
-              const { data: { user } } = await supabase.auth.getUser();
-              if (user) spellSystem.buySlots(user.id);
-          }} 
-                                                        // Currently app structure fetches user locally. 
-                                                        // spellSystem normally needs userId for buySlots.
-                                                        // We should pass userId if we have it in state, but we don't hold it in top state.
-                                                        // `useSpellSystem`'s buySlots handles `supabase.auth.getUser()` if userId is missing? 
-                                                        // Let's check `useSpellSystem`. Checked: It calls `buySpellSlots(userId)`. 
-                                                        // If userId is undefined, `buySpellSlots` service might fail or handle it.
-                                                        // The service expects a userId. 
-                                                        // I should fetch user before calling, or rely on the hook to get it?
-                                                        // The hook `buySlots` signature is `(userId?: string)`.
-                                                        // I will wrap it. But for now, let's just pass null and let the hook fail? No.
-                                                        // I'll make the onClick async and fetch user.
-          isProcessing={spellSystem.modalState.isLoading}
-          showAetherWarning={spellSystem.modalState.showWarning}
-          showSuccess={spellSystem.modalState.showSuccess}
-          onGoToStore={handleGoToStore}
-      />
+      {/* SlotPurchaseModal Removed */}
     </div>
   );
 }
