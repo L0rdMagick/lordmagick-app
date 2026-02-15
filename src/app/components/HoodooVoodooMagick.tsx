@@ -891,7 +891,7 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
                      if (parsed.hoodooMateriaSelections) setHoodooMateriaSelections(parsed.hoodooMateriaSelections);
                      if (parsed.hoodooMateriaSelections) setHoodooMateriaSelections(parsed.hoodooMateriaSelections);
                      if (parsed.voodooOfferingSelections) setVoodooOfferingSelections(parsed.voodooOfferingSelections);
-                     if (parsed.finalAffirmation) setFinalAffirmation(parsed.finalAffirmation);
+                     if (parsed.finalAffirmation !== undefined) setFinalAffirmation(parsed.finalAffirmation);
                      
                      // If we are returning from store, likely we were in AI mode
                      setMode('ai'); 
@@ -1189,13 +1189,9 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
                     onDismiss={() => spellSystem.clearErrors()} 
                     redirectPath={'/spell-room/hoodoo-rootwork-spells-app'}
                     onGoToStore={() => {
-                        console.log("HoodooVoodooMagick (RenderError): Saving state...", { step, path, petition });
-                        // Clear the error so the store modal is visible (Z-index fix)
+                        console.log("HoodooVoodooMagick (RenderError): Opening Purchase Modal...", { step, path });
                         spellSystem.clearErrors();
-                        spellSystem.goToStoreForSlots(
-                        { step, path, petition, selectedPsalm, selectedLwa, hoodooMateriaSelections, voodooOfferingSelections, finalAffirmation }, 
-                        'hoodoo_voodoo_autosave'
-                        );
+                        spellSystem.modalState.open();
                     }}
                 />
             );
@@ -1291,12 +1287,9 @@ const HoodooVoodooMagick: React.FC<{ session: Session; isSubscribed: boolean; }>
                     onDismiss={() => spellSystem.clearErrors()}
                     redirectPath={'/spell-room/hoodoo-rootwork-spells-app'}
                     onGoToStore={() => {
-                        console.log("HoodooVoodooMagick (Overlay): Saving state...", { step, path, petition });
+                        console.log("HoodooVoodooMagick (Overlay): Opening Purchase Modal...", { step, path });
                         spellSystem.clearErrors();
-                        spellSystem.goToStoreForSlots(
-                         { step, path, petition, selectedPsalm, selectedLwa, hoodooMateriaSelections, voodooOfferingSelections }, 
-                         'hoodoo_voodoo_autosave'
-                        );
+                        spellSystem.modalState.open();
                     }}
                 />
             )}
