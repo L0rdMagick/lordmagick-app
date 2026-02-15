@@ -40,7 +40,7 @@ const CONTAINER_GEOMETRY = {
     // Tuned Voodoo Geometry to keep items inside the bottle
     voodoo_empty: { left: '38.00%', top: '48.15%', width: '24.05%', height: '43.75%' },
     voodoo_filled: { left: '38.00%', top: '48.15%', width: '24.05%', height: '43.75%' },
-    voodoo_manifestation: { left: '38.00%', top: '48.15%', width: '24.05%', height: '43.75%' }
+    voodoo_manifestation: { left: '34.00%', top: '36.00%', width: '32.00%', height: '44.00%' }
 };
 
 // --- Data ---
@@ -651,26 +651,46 @@ const Step8_Manifestation: React.FC<{ affirmation: string, path: RitualPath, onC
     const finalImage = path === 'hoodoo' ? 'hoodoo-manifestation-final.gif' : 'voodoo-manifestation-final.png';
     const variant = path === 'hoodoo' ? 'hoodoo_manifestation' : 'voodoo_manifestation';
     const particles = useMemo(() => Array.from({ length: 20 }).map((_, i) => ({ id: i, x: (Math.random() - 0.5) * 400, y: Math.random() * -500 - 50, duration: 5 + Math.random() * 5, delay: Math.random() * 7 })), []);
+    
     return (
         <StepContainer stageTitle={path === 'hoodoo' ? "The Work is Done" : "The Lwa is Served"}>
             <div className="flex flex-col items-center justify-center gap-2 w-full h-full max-w-4xl overflow-hidden p-2">
                  <div className="flex flex-row items-center justify-center gap-2 md:gap-8 w-full h-full min-h-0 grow">
-                    <div className="relative h-full w-auto max-w-[45%] aspect-square">
-                        <Image src={`${ASSET_PATH}/${finalImage}`} alt="Final Manifestation" layout="fill" objectFit="contain" unoptimized={finalImage.endsWith('.gif')} />
-                        <div className="absolute inset-0 z-10"><FilledContainer variant={variant} items={selections} count={selections.length} /></div>
-                        {path === 'voodoo' && (
-                            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                                {particles.map(p => (
-                                    <motion.div key={p.id} initial={{opacity: 0, y: 0}} animate={{opacity: [0, 0.8, 0], y: p.y}} transition={{duration: p.duration, delay: p.delay, repeat: Infinity, repeatType: "loop"}} style={{x: p.x}} className="absolute top-1/2 left-1/2 w-12 h-12">
-                                    <Image src={`${ASSET_PATH}/ui-particle-spirit.png`} alt="spirit particle" layout="fill" />
-                                    </motion.div>
-                                ))}
+                    
+                    {/* LEFT SIDE: MANIFESTATION IMAGE (Updated with Constraint Box) */}
+                    <div className="relative flex items-center justify-center h-full w-auto max-w-[45%] aspect-square">
+                        <div className="relative aspect-square h-auto w-auto max-h-full max-w-full">
+                            <Image 
+                                src={`${ASSET_PATH}/${finalImage}`} 
+                                alt="Final Manifestation" 
+                                width={1024} 
+                                height={1024} 
+                                className="w-full h-full object-contain" 
+                                unoptimized={finalImage.endsWith('.gif')} 
+                            />
+                            <div className="absolute inset-0 w-full h-full">
+                                <FilledContainer variant={variant} items={selections} count={selections.length} />
+                                {path === 'voodoo' && (
+                                    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                                        {particles.map(p => (
+                                            <motion.div key={p.id} initial={{opacity: 0, y: 0}} animate={{opacity: [0, 0.8, 0], y: p.y}} transition={{duration: p.duration, delay: p.delay, repeat: Infinity, repeatType: "loop"}} style={{x: p.x}} className="absolute top-1/2 left-1/2 w-12 h-12">
+                                                <Image src={`${ASSET_PATH}/ui-particle-spirit.png`} alt="spirit particle" layout="fill" />
+                                            </motion.div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
-                        )}
+                        </div>
                     </div>
-                    <div className="relative h-full w-auto max-w-[45%] aspect-square @container">
-                        <Image src={`${ASSET_PATH}/hoodoo-petition-paper.png`} alt="Completed Petition Parchment" layout="fill" objectFit="contain"/>
-                        <div className="absolute inset-0 flex items-center justify-center p-[22%]"><p className="text-center text-[#3a291c] font-serif font-semibold" style={{fontSize: 'clamp(0.7rem, 4.5cqw, 1.2rem)'}}>{affirmation}</p></div>
+
+                    {/* RIGHT SIDE: PETITION PAPER */}
+                    <div className="relative h-full w-auto max-w-[45%] aspect-square @container flex items-center justify-center">
+                        <div className="relative aspect-square h-auto w-auto max-h-full max-w-full">
+                             <Image src={`${ASSET_PATH}/hoodoo-petition-paper.png`} alt="Completed Petition Parchment" width={1024} height={1024} className="w-full h-full object-contain"/>
+                             <div className="absolute inset-0 flex items-center justify-center p-[22%]">
+                                <p className="text-center text-[#3a291c] font-serif font-semibold" style={{fontSize: 'clamp(0.7rem, 4.5cqw, 1.2rem)'}}>{affirmation}</p>
+                             </div>
+                        </div>
                     </div>
                 </div>
                 <div className="flex flex-col gap-2 w-full max-w-xs shrink-0">
