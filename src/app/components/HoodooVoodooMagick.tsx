@@ -582,7 +582,8 @@ const VoodooStep5_MakeOffering: React.FC<{ onNext: () => void, selections: Mater
                             setIsDropping(false);
                             playSound('/audio/sfx-liquid-pour.mp3', 0.4).play();
                         }}
-                        className="absolute z-30 w-24 h-24 pointer-events-none drop-shadow-lg"
+                        style={{ width: '15%', aspectRatio: '1/1', zIndex: 30 }}
+                        className="absolute pointer-events-none drop-shadow-lg"
                     >
                          <Sprite sheetPath={spriteData.sheet.path} x={spriteData.itemInfo.x} y={spriteData.itemInfo.y} spriteWidth={spriteData.sheet.spriteSize.width} spriteHeight={spriteData.sheet.spriteSize.height} sheetWidth={spriteData.sheet.sheetSize.width} sheetHeight={spriteData.sheet.sheetSize.height} />
                     </motion.div>
