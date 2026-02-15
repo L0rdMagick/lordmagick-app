@@ -362,88 +362,30 @@ const HoodooStep4_GatherMateria: React.FC<{ selections: MateriaSelection[]; onNe
     </StepContainer>
 );
 
-const VoodooStep5_MakeOffering: React.FC<{ onNext: () => void, selections: MateriaSelection[], index: number }> = ({ onNext, selections, index }) => {
+const HoodooStep5_FixJar: React.FC<{ onNext: () => void, selections: MateriaSelection[], index: number }> = ({ onNext, selections, index }) => {
     const [isCharged, setIsCharged] = useState(false);
-    const [isDropping, setIsDropping] = useState(false);
-    const [dropTargets, setDropTargets] = useState<{ neck: { x: number, y: number }, rest: { x: number, y: number } } | null>(null);
-    const containerRef = useRef<HTMLDivElement>(null);
-
-    const currentOffering = selections[index];
-    const spriteData = findSprite(currentOffering.name);
+    const currentMateria = selections[index];
+    const spriteData = findSprite(currentMateria.name);
     
     const instructionText = isCharged 
-        ? `The ${currentOffering.name} is added to the offering bottle.\n"${currentOffering.incantation}"`
-        : `Prepare the ${currentOffering.name}, speaking its incantation:\n"${currentOffering.incantation}"`;
-
-    const handleChargeComplete = () => {
-        if (!containerRef.current) return;
-        
-        const rect = containerRef.current.getBoundingClientRect();
-        const width = rect.width;
-        const height = rect.height;
-
-        // Calculate runtime pixel positions based on percentages relative to image bounding box
-        // Drop Zone (Neck): X: ~47% (mid of 41-53), Y: ~13% (mid of 4-22)
-        // Resting Position: X: 47%, Y: 90%
-        
-        // Note: The sprite is absolute positioned. Default center is top-1/2 left-1/2.
-        // We need to calculate offset relative to top-left corner (0,0) of container.
-        
-        const neckX = width * 0.47;
-        const neckY = height * 0.13;
-        
-        const restX = width * 0.47;
-        const restY = height * 0.90;
-
-        setDropTargets({
-            neck: { x: neckX, y: neckY },
-            rest: { x: restX, y: restY }
-        });
-        
-        setIsDropping(true);
-    };
+        ? `The ${currentMateria.name} is added to the jar.\n"${currentMateria.incantation}"`
+        : `Charge the ${currentMateria.name}, speaking its incantation:\n"${currentMateria.incantation}"`;
 
     return (
-        <StepContainer stageTitle="Make the Offering" instruction={instructionText} button={isCharged ? <RitualButton onClick={onNext} className="animate-pulse">{index < selections.length - 1 ? "Next Offering" : "Seal the Offering"}</RitualButton> : <div/>}>
-            <div ref={containerRef} className="relative h-full max-h-full w-auto max-w-full aspect-square mx-auto">
-                <Image src={`${ASSET_PATH}/voodoo-offering-bottle.png`} alt="Empty Rum Bottle Offering" layout="fill" objectFit="contain" priority />
-                <FilledContainer variant="voodoo_empty" items={selections} count={isCharged ? index + 1 : index} />
+        <StepContainer stageTitle="Fix the Jar" instruction={instructionText} button={isCharged ? <RitualButton onClick={onNext} className="animate-pulse">{index < selections.length - 1 ? "Next Ingredient" : "Seal the Jar"}</RitualButton> : <div/>}>
+            <div className="relative h-full max-h-full w-auto max-w-full aspect-square mx-auto">
+                <Image src={`${ASSET_PATH}/hoodoo-jar-empty.png`} alt="Empty Glass Spell Jar for Moyo Bag" layout="fill" objectFit="contain" priority />
                 
-                {!isCharged && !isDropping && spriteData && (
+                <FilledContainer items={selections} count={isCharged ? index + 1 : index} variant="hoodoo_empty" />
+
+                {!isCharged && spriteData && (
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-2/3 z-20">
-                        <ChargingComponent onCharge={handleChargeComplete} isCharged={isCharged}>
-                             <div className="w-24 h-24 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
+                        <ChargingComponent onCharge={() => setIsCharged(true)} isCharged={isCharged}>
+                            <div className="w-24 h-24 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
                                 <Sprite sheetPath={spriteData.sheet.path} x={spriteData.itemInfo.x} y={spriteData.itemInfo.y} spriteWidth={spriteData.sheet.spriteSize.width} spriteHeight={spriteData.sheet.spriteSize.height} sheetWidth={spriteData.sheet.sheetSize.width} sheetHeight={spriteData.sheet.sheetSize.height} />
                             </div>
                         </ChargingComponent>
                     </div>
-                )}
-
-                {isDropping && dropTargets && spriteData && (
-                    <motion.div 
-                        initial={{ left: '50%', top: '50%', x: '-50%', y: '-50%', scale: 1 }}
-                        animate={{ 
-                            left: [null, `${(dropTargets.neck.x / (containerRef.current?.offsetWidth || 1)) * 100}%`, `${(dropTargets.rest.x / (containerRef.current?.offsetWidth || 1)) * 100}%`],
-                            top: [null, `${(dropTargets.neck.y / (containerRef.current?.offsetHeight || 1)) * 100}%`, `${(dropTargets.rest.y / (containerRef.current?.offsetHeight || 1)) * 100}%`],
-                            x: '-50%', // Keep centering anchor
-                            y: '-50%',
-                            scale: [1, 0.8, 0.6],
-                            rotate: [0, -15, 45]
-                        }}
-                        transition={{ 
-                            duration: 1.5, 
-                            times: [0, 0.4, 1],
-                            ease: ["easeInOut", "easeIn"]
-                        }}
-                        onAnimationComplete={() => {
-                            setIsCharged(true);
-                            setIsDropping(false);
-                            playSound('/audio/sfx-liquid-pour.mp3', 0.4).play();
-                        }}
-                        className="absolute z-30 w-24 h-24 pointer-events-none drop-shadow-lg"
-                    >
-                         <Sprite sheetPath={spriteData.sheet.path} x={spriteData.itemInfo.x} y={spriteData.itemInfo.y} spriteWidth={spriteData.sheet.spriteSize.width} spriteHeight={spriteData.sheet.spriteSize.height} sheetWidth={spriteData.sheet.sheetSize.width} sheetHeight={spriteData.sheet.sheetSize.height} />
-                    </motion.div>
                 )}
             </div>
         </StepContainer>
@@ -585,23 +527,86 @@ const VoodooStep4_PrepareOffering: React.FC<{ selections: MateriaSelection[]; on
 
 const VoodooStep5_MakeOffering: React.FC<{ onNext: () => void, selections: MateriaSelection[], index: number }> = ({ onNext, selections, index }) => {
     const [isCharged, setIsCharged] = useState(false);
+    const [isDropping, setIsDropping] = useState(false);
+    const [dropTargets, setDropTargets] = useState<{ neck: { x: number, y: number }, rest: { x: number, y: number } } | null>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
+
     const currentOffering = selections[index];
     const spriteData = findSprite(currentOffering.name);
-    const instructionText = isCharged ? `The ${currentOffering.name} is added to the offering bottle. "${currentOffering.incantation}"` : `Prepare the ${currentOffering.name}, speaking its incantation: "${currentOffering.incantation}"`;
+    
+    const instructionText = isCharged 
+        ? `The ${currentOffering.name} is added to the offering bottle.\n"${currentOffering.incantation}"`
+        : `Prepare the ${currentOffering.name}, speaking its incantation:\n"${currentOffering.incantation}"`;
+
+    const handleChargeComplete = () => {
+        if (!containerRef.current) return;
+        
+        const rect = containerRef.current.getBoundingClientRect();
+        const width = rect.width;
+        const height = rect.height;
+
+        // Calculate runtime pixel positions based on percentages relative to image bounding box
+        // Drop Zone (Neck): X: ~47% (mid of 41-53), Y: ~13% (mid of 4-22)
+        // Resting Position: X: 47%, Y: 90%
+        
+        // Note: The sprite is absolute positioned. Default center is top-1/2 left-1/2.
+        // We need to calculate offset relative to top-left corner (0,0) of container.
+        
+        const neckX = width * 0.47;
+        const neckY = height * 0.13;
+        
+        const restX = width * 0.47;
+        const restY = height * 0.90;
+
+        setDropTargets({
+            neck: { x: neckX, y: neckY },
+            rest: { x: restX, y: restY }
+        });
+        
+        setIsDropping(true);
+    };
 
     return (
         <StepContainer stageTitle="Make the Offering" instruction={instructionText} button={isCharged ? <RitualButton onClick={onNext} className="animate-pulse">{index < selections.length - 1 ? "Next Offering" : "Seal the Offering"}</RitualButton> : <div/>}>
-            <div className="relative h-full max-h-full w-auto max-w-full aspect-square mx-auto">
+            <div ref={containerRef} className="relative h-full max-h-full w-auto max-w-full aspect-square mx-auto">
                 <Image src={`${ASSET_PATH}/voodoo-offering-bottle.png`} alt="Empty Rum Bottle Offering" layout="fill" objectFit="contain" priority />
                 <FilledContainer variant="voodoo_empty" items={selections} count={isCharged ? index + 1 : index} />
-                {!isCharged && spriteData && (
+                
+                {!isCharged && !isDropping && spriteData && (
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-2/3 z-20">
-                        <ChargingComponent onCharge={() => setIsCharged(true)} isCharged={isCharged}>
+                        <ChargingComponent onCharge={handleChargeComplete} isCharged={isCharged}>
                              <div className="w-24 h-24 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
                                 <Sprite sheetPath={spriteData.sheet.path} x={spriteData.itemInfo.x} y={spriteData.itemInfo.y} spriteWidth={spriteData.sheet.spriteSize.width} spriteHeight={spriteData.sheet.spriteSize.height} sheetWidth={spriteData.sheet.sheetSize.width} sheetHeight={spriteData.sheet.sheetSize.height} />
                             </div>
                         </ChargingComponent>
                     </div>
+                )}
+
+                {isDropping && dropTargets && spriteData && (
+                    <motion.div 
+                        initial={{ left: '50%', top: '50%', x: '-50%', y: '-50%', scale: 1 }}
+                        animate={{ 
+                            left: [null, `${(dropTargets.neck.x / (containerRef.current?.offsetWidth || 1)) * 100}%`, `${(dropTargets.rest.x / (containerRef.current?.offsetWidth || 1)) * 100}%`],
+                            top: [null, `${(dropTargets.neck.y / (containerRef.current?.offsetHeight || 1)) * 100}%`, `${(dropTargets.rest.y / (containerRef.current?.offsetHeight || 1)) * 100}%`],
+                            x: '-50%', // Keep centering anchor
+                            y: '-50%',
+                            scale: [1, 0.8, 0.6],
+                            rotate: [0, -15, 45]
+                        }}
+                        transition={{ 
+                            duration: 1.5, 
+                            times: [0, 0.4, 1],
+                            ease: ["easeInOut", "easeIn"]
+                        }}
+                        onAnimationComplete={() => {
+                            setIsCharged(true);
+                            setIsDropping(false);
+                            playSound('/audio/sfx-liquid-pour.mp3', 0.4).play();
+                        }}
+                        className="absolute z-30 w-24 h-24 pointer-events-none drop-shadow-lg"
+                    >
+                         <Sprite sheetPath={spriteData.sheet.path} x={spriteData.itemInfo.x} y={spriteData.itemInfo.y} spriteWidth={spriteData.sheet.spriteSize.width} spriteHeight={spriteData.sheet.spriteSize.height} sheetWidth={spriteData.sheet.sheetSize.width} sheetHeight={spriteData.sheet.sheetSize.height} />
+                    </motion.div>
                 )}
             </div>
         </StepContainer>
