@@ -373,20 +373,22 @@ const HoodooStep5_FixJar: React.FC<{ onNext: () => void, selections: MateriaSele
 
     return (
         <StepContainer stageTitle="Fix the Jar" instruction={instructionText} button={isCharged ? <RitualButton onClick={onNext} className="animate-pulse">{index < selections.length - 1 ? "Next Ingredient" : "Seal the Jar"}</RitualButton> : <div/>}>
-            <div className="relative aspect-square h-auto max-h-full w-auto max-w-full mx-auto overflow-hidden">
-                <Image src={`${ASSET_PATH}/hoodoo-jar-empty.png`} alt="Empty Glass Spell Jar for Moyo Bag" layout="fill" objectFit="contain" priority />
-                
-                <FilledContainer items={selections} count={isCharged ? index + 1 : index} variant="hoodoo_empty" />
-
-                {!isCharged && spriteData && (
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-2/3 z-20">
-                        <ChargingComponent onCharge={() => setIsCharged(true)} isCharged={isCharged}>
-                            <div className="w-24 h-24 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
-                                <Sprite sheetPath={spriteData.sheet.path} x={spriteData.itemInfo.x} y={spriteData.itemInfo.y} spriteWidth={spriteData.sheet.spriteSize.width} spriteHeight={spriteData.sheet.spriteSize.height} sheetWidth={spriteData.sheet.sheetSize.width} sheetHeight={spriteData.sheet.sheetSize.height} />
+            <div className="relative flex items-center justify-center w-full h-full p-2">
+                <div className="relative w-auto h-auto max-w-full max-h-full">
+                    <Image src={`${ASSET_PATH}/hoodoo-jar-empty.png`} alt="Empty Glass Spell Jar for Moyo Bag" width={1024} height={1024} priority className="w-auto h-auto max-w-full max-h-full object-contain block" />
+                    <div className="absolute inset-0">
+                        <FilledContainer items={selections} count={isCharged ? index + 1 : index} variant="hoodoo_empty" />
+                        {!isCharged && spriteData && (
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-2/3 z-20">
+                                <ChargingComponent onCharge={() => setIsCharged(true)} isCharged={isCharged}>
+                                    <div className="w-24 h-24 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
+                                        <Sprite sheetPath={spriteData.sheet.path} x={spriteData.itemInfo.x} y={spriteData.itemInfo.y} spriteWidth={spriteData.sheet.spriteSize.width} spriteHeight={spriteData.sheet.spriteSize.height} sheetWidth={spriteData.sheet.sheetSize.width} sheetHeight={spriteData.sheet.sheetSize.height} />
+                                    </div>
+                                </ChargingComponent>
                             </div>
-                        </ChargingComponent>
+                        )}
                     </div>
-                )}
+                </div>
             </div>
         </StepContainer>
     );
@@ -399,13 +401,13 @@ const HoodooStep6_SealJar: React.FC<{ onNext: () => void, selections: MateriaSel
 
     return(
         <StepContainer stageTitle="Seal the Work" instruction="I seal this work in the name of the Father, Son, and Holy Ghost. Awake and do my bidding.">
-            <div className="relative aspect-square h-auto max-h-full w-auto max-w-full mx-auto overflow-hidden flex items-center justify-center">
+            <div className="relative flex items-center justify-center w-full h-full p-2">
                  <motion.div 
-                    className="relative w-full h-full"
+                    className="relative w-auto h-auto max-w-full max-h-full"
                     animate={isSent ? { scale: [1, 1.2, 0], opacity: [1, 1, 0], filter: ["brightness(1)", "brightness(2)", "brightness(10)"], y: [0, -50, -500] } : {}}
                     transition={{ duration: 2, ease: "easeInOut" }}
                  >
-                    <Image src={`${ASSET_PATH}/hoodoo-jar-fixed.png`} alt="Fixed and Sealed Spell Jar" layout="fill" objectFit="contain" className="z-0"/>
+                    <Image src={`${ASSET_PATH}/hoodoo-jar-fixed.png`} alt="Fixed and Sealed Spell Jar" width={1024} height={1024} className="w-auto h-auto max-w-full max-h-full object-contain block z-0"/>
                     <div className="absolute inset-0 z-10"><FilledContainer variant="hoodoo_fixed" items={selections} count={selections.length} /></div>
                     {!isSealed && (
                         <div className="absolute inset-0 z-20 flex items-center justify-center">
@@ -547,47 +549,51 @@ const VoodooStep5_MakeOffering: React.FC<{ onNext: () => void, selections: Mater
 
     return (
         <StepContainer stageTitle="Make the Offering" instruction={instructionText} button={isCharged ? <RitualButton onClick={onNext} className="animate-pulse">{index < selections.length - 1 ? "Next Offering" : "Seal the Offering"}</RitualButton> : <div/>}>
-            <div className="relative aspect-square h-auto max-h-full w-auto max-w-full mx-auto overflow-hidden">
-                <Image src={`${ASSET_PATH}/voodoo-offering-bottle.png`} alt="Empty Rum Bottle Offering" layout="fill" objectFit="contain" priority />
-                <FilledContainer variant="voodoo_empty" items={selections} count={isCharged ? index + 1 : index} />
-                
-                {!isCharged && !isDropping && spriteData && (
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-2/3 z-20">
-                        <ChargingComponent onCharge={handleChargeStart} isCharged={isCharged}>
-                             <div className="w-24 h-24 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
-                                <Sprite sheetPath={spriteData.sheet.path} x={spriteData.itemInfo.x} y={spriteData.itemInfo.y} spriteWidth={spriteData.sheet.spriteSize.width} spriteHeight={spriteData.sheet.spriteSize.height} sheetWidth={spriteData.sheet.sheetSize.width} sheetHeight={spriteData.sheet.sheetSize.height} />
+            <div className="relative flex items-center justify-center w-full h-full p-2">
+                <div className="relative w-auto h-auto max-w-full max-h-full">
+                    <Image src={`${ASSET_PATH}/voodoo-offering-bottle.png`} alt="Empty Rum Bottle Offering" width={1024} height={1024} priority className="w-auto h-auto max-w-full max-h-full object-contain block" />
+                    <div className="absolute inset-0">
+                        <FilledContainer variant="voodoo_empty" items={selections} count={isCharged ? index + 1 : index} />
+                        
+                        {!isCharged && !isDropping && spriteData && (
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-2/3 z-20">
+                                <ChargingComponent onCharge={handleChargeStart} isCharged={isCharged}>
+                                     <div className="w-24 h-24 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
+                                        <Sprite sheetPath={spriteData.sheet.path} x={spriteData.itemInfo.x} y={spriteData.itemInfo.y} spriteWidth={spriteData.sheet.spriteSize.width} spriteHeight={spriteData.sheet.spriteSize.height} sheetWidth={spriteData.sheet.sheetSize.width} sheetHeight={spriteData.sheet.sheetSize.height} />
+                                    </div>
+                                </ChargingComponent>
                             </div>
-                        </ChargingComponent>
-                    </div>
-                )}
+                        )}
 
-                {isDropping && spriteData && (
-                    <motion.div 
-                        initial={{ left: '50%', top: '50%', x: '-50%', y: '-50%', scale: 1.5 }}
-                        animate={{ 
-                            left: ["50%", "47%", "47%"],
-                            top: ["50%", "13%", "90%"],
-                            scale: [1.5, 1.2, 0.9],
-                            rotate: [0, -15, 45],
-                            x: "-50%",
-                            y: "-50%"
-                        }}
-                        transition={{ 
-                            duration: 1.5, 
-                            times: [0, 0.4, 1],
-                            ease: ["easeInOut", "easeIn"]
-                        }}
-                        onAnimationComplete={() => {
-                            setIsCharged(true);
-                            setIsDropping(false);
-                            playSound('/audio/sfx-liquid-pour.mp3', 0.4).play();
-                        }}
-                        style={{ width: '22%', aspectRatio: '1/1', zIndex: 30, position: 'absolute' }}
-                        className="pointer-events-none drop-shadow-lg"
-                    >
-                         <Sprite sheetPath={spriteData.sheet.path} x={spriteData.itemInfo.x} y={spriteData.itemInfo.y} spriteWidth={spriteData.sheet.spriteSize.width} spriteHeight={spriteData.sheet.spriteSize.height} sheetWidth={spriteData.sheet.sheetSize.width} sheetHeight={spriteData.sheet.sheetSize.height} />
-                    </motion.div>
-                )}
+                        {isDropping && spriteData && (
+                            <motion.div 
+                                initial={{ left: '50%', top: '50%', x: '-50%', y: '-50%', scale: 1.5 }}
+                                animate={{ 
+                                    left: ["50%", "47%", "47%"],
+                                    top: ["50%", "13%", "90%"],
+                                    scale: [1.5, 1.2, 0.9],
+                                    rotate: [0, -15, 45],
+                                    x: "-50%",
+                                    y: "-50%"
+                                }}
+                                transition={{ 
+                                    duration: 1.5, 
+                                    times: [0, 0.4, 1],
+                                    ease: ["easeInOut", "easeIn"]
+                                }}
+                                onAnimationComplete={() => {
+                                    setIsCharged(true);
+                                    setIsDropping(false);
+                                    playSound('/audio/sfx-liquid-pour.mp3', 0.4).play();
+                                }}
+                                style={{ width: '22%', aspectRatio: '1/1', zIndex: 30, position: 'absolute' }}
+                                className="pointer-events-none drop-shadow-lg"
+                            >
+                                 <Sprite sheetPath={spriteData.sheet.path} x={spriteData.itemInfo.x} y={spriteData.itemInfo.y} spriteWidth={spriteData.sheet.spriteSize.width} spriteHeight={spriteData.sheet.spriteSize.height} sheetWidth={spriteData.sheet.sheetSize.width} sheetHeight={spriteData.sheet.sheetSize.height} />
+                            </motion.div>
+                        )}
+                    </div>
+                </div>
             </div>
         </StepContainer>
     );
@@ -599,9 +605,13 @@ const VoodooStep6_SealBottle: React.FC<{ onNext: () => void; selections: Materia
     const handleSeal = () => { setIsSealed(true); playSound('/audio/sfx-chaos-explosion.mp3', 0.5).play(); setIsSent(true); setTimeout(onNext, 2500); };
     return (
         <StepContainer stageTitle="Consecrate the Vessel" instruction={`I seal this gift for ${lwa}. Accept this offering and open the way.`}>
-             <div className="relative aspect-square h-auto max-h-full w-auto max-w-full mx-auto overflow-hidden flex items-center justify-center">
-                <motion.div className="relative w-full h-full" animate={isSent ? { scale: [1, 1.2, 0], opacity: [1, 1, 0], filter: ["brightness(1)", "brightness(2)", "brightness(10)"], y: [0, -50, -500] } : {}} transition={{ duration: 2, ease: "easeInOut" }}>
-                    <Image src={`${ASSET_PATH}/voodoo-offering-bottle-filled.png`} alt="Rum Bottle Offering for the Spirits" layout="fill" objectFit="contain" className="z-0" />
+            <div className="relative flex items-center justify-center w-full h-full p-2">
+                 <motion.div 
+                    className="relative w-auto h-auto max-w-full max-h-full"
+                    animate={isSent ? { scale: [1, 1.2, 0], opacity: [1, 1, 0], filter: ["brightness(1)", "brightness(2)", "brightness(10)"], y: [0, -50, -500] } : {}} 
+                    transition={{ duration: 2, ease: "easeInOut" }}
+                 >
+                    <Image src={`${ASSET_PATH}/voodoo-offering-bottle-filled.png`} alt="Rum Bottle Offering for the Spirits" width={1024} height={1024} className="w-auto h-auto max-w-full max-h-full object-contain block z-0" />
                     <div className="absolute inset-0 z-10"><FilledContainer variant="voodoo_filled" items={selections} count={selections.length} /></div>
                     {!isSealed && (
                         <div className="absolute inset-0 z-20 flex items-center justify-center">
@@ -620,14 +630,18 @@ const Step7_Sending: React.FC<{onNext: () => void, petition: string, selections:
     useEffect(() => { const timer = setTimeout(onNext, SENDING_DURATION); return () => clearTimeout(timer); }, [onNext]);
     return(
         <StepContainer stageTitle="Sending the Work" instruction="Your spell is being sent by a great magick into the essence of the all.">
-            <div className="relative aspect-square h-auto max-h-full w-auto max-w-full mx-auto overflow-hidden flex items-center justify-center">
-                <Image src={`${ASSET_PATH}/${image}`} alt="Final Manifestation" layout="fill" objectFit="contain" unoptimized={image.endsWith('.gif')} />
-                <div className="absolute inset-0 z-10"><FilledContainer variant={variant} items={selections} count={selections.length} /></div>
-                <AnimatePresence>
-                    <motion.p initial={{opacity: 0, y: 50}} animate={{opacity: [0, 0.9, 0.9, 0], y: -150}} transition={{duration: SENDING_DURATION/1000, ease: 'linear', repeat: Infinity}} className="absolute w-64 text-center text-amber-100 font-bold text-xl md:text-3xl italic whitespace-pre-line z-20" style={{textShadow: '2px 2px 4px black'}}>
-                        {petition}
-                    </motion.p>
-                </AnimatePresence>
+            <div className="relative flex items-center justify-center w-full h-full p-2">
+                <div className="relative w-auto h-auto max-w-full max-h-full">
+                    <Image src={`${ASSET_PATH}/${image}`} alt="Final Manifestation" width={1024} height={1024} className="w-auto h-auto max-w-full max-h-full object-contain block" unoptimized={image.endsWith('.gif')} />
+                    <div className="absolute inset-0 z-10">
+                        <FilledContainer variant={variant} items={selections} count={selections.length} />
+                        <AnimatePresence>
+                            <motion.p initial={{opacity: 0, y: 50}} animate={{opacity: [0, 0.9, 0.9, 0], y: -150}} transition={{duration: SENDING_DURATION/1000, ease: 'linear', repeat: Infinity}} className="absolute w-64 text-center text-amber-100 font-bold text-xl md:text-3xl italic whitespace-pre-line z-20 left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2" style={{textShadow: '2px 2px 4px black'}}>
+                                {petition}
+                            </motion.p>
+                        </AnimatePresence>
+                    </div>
+                </div>
             </div>
         </StepContainer>
     );
