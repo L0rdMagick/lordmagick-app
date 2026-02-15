@@ -493,11 +493,11 @@ const VoodooStep3_ServeLwa: React.FC<{ selectedLwa: string; onSelect: (lwa: stri
     return (
         <StepContainer stageTitle="Serve the Lwa" instruction={mode === 'standard' ? "You serve Papa Legba to open the roads." : "Choose the Lwa whose domain aligns with your need."} button={<RitualButton onClick={onNext} disabled={!selectedLwa}>Prepare Offerings</RitualButton>}>
             <div className="w-full h-full overflow-y-auto flex items-center justify-center">
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 p-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-6 p-6 pb-24">
                     {availableLwas.map(lwa => (
                         <div key={lwa.name} onClick={() => onSelect(lwa.name)} className="flex flex-col items-center gap-2 cursor-pointer group p-2">
-                            <div className={`relative w-28 h-28 md:w-36 md:h-36 bg-black/20 p-2 rounded-full border-2 transition-colors ${selectedLwa === lwa.name ? 'border-amber-300' : 'border-transparent group-hover:border-amber-300/50'}`}>
-                                 <Image src={`${ASSET_PATH}/${lwa.img}`} alt={lwa.name} layout="fill" objectFit="contain" className={`transition-all ${selectedLwa === lwa.name ? 'brightness-125' : 'brightness-75 group-hover:brightness-110'}`}/>
+                            <div className={`relative w-28 h-28 md:w-36 md:h-36 bg-black/20 rounded-full border-2 transition-colors overflow-hidden ${selectedLwa === lwa.name ? 'border-amber-300' : 'border-transparent group-hover:border-amber-300/50'}`}>
+                                 <Image src={`${ASSET_PATH}/${lwa.img}`} alt={lwa.name} layout="fill" objectFit="contain" className={`p-4 transition-all ${selectedLwa === lwa.name ? 'brightness-125 scale-110' : 'brightness-75 group-hover:brightness-110 scale-90'}`}/>
                             </div>
                             <p className={`font-serif transition-colors ${selectedLwa === lwa.name ? 'text-amber-200' : 'text-gray-300 group-hover:text-white'}`}>{lwa.name}</p>
                         </div>
