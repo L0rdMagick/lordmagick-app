@@ -563,14 +563,14 @@ const VoodooStep5_MakeOffering: React.FC<{ onNext: () => void, selections: Mater
 
                 {isDropping && spriteData && (
                     <motion.div 
-                        initial={{ left: '50%', top: '50%', x: '-50%', y: '-50%', scale: 1 }}
+                        initial={{ left: '50%', top: '50%', x: '-50%', y: '-50%', scale: 1.5 }}
                         animate={{ 
                             left: ["50%", "47%", "47%"],
                             top: ["50%", "13%", "90%"],
-                            x: "-50%", 
-                            y: "-50%",
-                            scale: [1, 0.8, 0.6],
-                            rotate: [0, -15, 45]
+                            scale: [1.5, 1.2, 0.6],
+                            rotate: [0, -15, 45],
+                            x: "-50%",
+                            y: "-50%"
                         }}
                         transition={{ 
                             duration: 1.5, 
@@ -582,8 +582,8 @@ const VoodooStep5_MakeOffering: React.FC<{ onNext: () => void, selections: Mater
                             setIsDropping(false);
                             playSound('/audio/sfx-liquid-pour.mp3', 0.4).play();
                         }}
-                        style={{ width: '15%', aspectRatio: '1/1', zIndex: 30 }}
-                        className="absolute pointer-events-none drop-shadow-lg"
+                        style={{ width: '18%', aspectRatio: '1/1', zIndex: 30, position: 'absolute' }}
+                        className="pointer-events-none drop-shadow-lg"
                     >
                          <Sprite sheetPath={spriteData.sheet.path} x={spriteData.itemInfo.x} y={spriteData.itemInfo.y} spriteWidth={spriteData.sheet.spriteSize.width} spriteHeight={spriteData.sheet.spriteSize.height} sheetWidth={spriteData.sheet.sheetSize.width} sheetHeight={spriteData.sheet.sheetSize.height} />
                     </motion.div>
