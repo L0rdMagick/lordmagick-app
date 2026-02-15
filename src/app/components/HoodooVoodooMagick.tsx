@@ -434,16 +434,16 @@ const VoodooStep1_OpenGate: React.FC<StepComponentProps> = ({ onNext }) => {
 const VoodooStep2_StateNeed: React.FC<{ cost: number; petition: string; setPetition: (val: string) => void; onNext: (mode: RitualMode) => void; isReplay: boolean }> = ({ cost, petition, setPetition, onNext, isReplay }) => (
     <StepContainer stageTitle="State Your Need" instruction="Clearly present your petition to the spirits." allowOverflow={true}>
         <div className="flex flex-col relative w-full h-full overflow-hidden">
-             <div className="flex-1 min-h-0 relative flex items-center justify-center">
-                 <div className="relative h-full w-auto aspect-square md:scale-110 object-contain transition-transform duration-300 z-10">
+             <div className="flex-1 min-h-0 relative flex items-center justify-center p-4">
+                 <div className="relative h-full w-auto max-w-full aspect-square object-contain transition-transform duration-300 z-10 shadow-2xl rounded-lg">
                     <Image src={`${ASSET_PATH}/voodoo-petition-scroll.png`} alt="Aged Parchment Petition Paper" layout="fill" objectFit="contain" />
-                    <div className="absolute p-4" style={{ left: '19.14%', top: '19.59%', width: '61.73%', height: '61.19%' }}>
+                    <div className="absolute p-4 flex items-center justify-center" style={{ left: '19.14%', top: '19.59%', width: '61.73%', height: '61.19%' }}>
                         <textarea 
                             value={petition} 
                             onChange={(e) => setPetition((e.target as any).value)} 
                             readOnly={isReplay}
                             placeholder="e.g., I ask for protection on my journey." 
-                            className="w-full h-full bg-transparent text-center text-[#4a2e1c] font-serif focus:outline-none resize-none text-[clamp(0.4rem,2.7cqw,1rem)] md:text-[clamp(0.32rem,2.1cqw,0.8rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-amber-900 scrollbar-track-transparent"
+                            className="w-full h-full bg-transparent text-center text-[#4a2e1c] font-serif focus:outline-none resize-none text-[clamp(1rem,4cqw,2rem)] leading-tight overflow-y-auto scrollbar-thin scrollbar-thumb-amber-900 scrollbar-track-transparent placeholder:text-amber-900/50"
                         />
                     </div>
                 </div>
