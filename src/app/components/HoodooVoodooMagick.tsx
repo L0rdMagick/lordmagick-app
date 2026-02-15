@@ -434,43 +434,41 @@ const VoodooStep1_OpenGate: React.FC<StepComponentProps> = ({ onNext }) => {
 };
 
 const VoodooStep2_StateNeed: React.FC<{ cost: number; petition: string; setPetition: (val: string) => void; onNext: (mode: RitualMode) => void; isReplay: boolean }> = ({ cost, petition, setPetition, onNext, isReplay }) => (
-    <StepContainer stageTitle="State Your Need" instruction="Clearly present your petition to the spirits." allowOverflow={true}>
-        <div className="flex flex-col relative w-full h-full overflow-hidden">
-             <div className="flex-1 min-h-0 relative flex items-center justify-center p-4">
-                 <div className="relative h-full w-auto max-w-full aspect-square object-contain transition-transform duration-300 z-10 shadow-2xl rounded-lg">
-                    <Image src={`${ASSET_PATH}/voodoo-petition-scroll.png`} alt="Aged Parchment Petition Paper" layout="fill" objectFit="contain" />
-                    <div className="absolute p-4 flex items-center justify-center" style={{ left: '19.14%', top: '19.59%', width: '61.73%', height: '61.19%' }}>
+    <StepContainer stageTitle="State Your Need" instruction="Clearly present your petition to the spirits." allowOverflow={false}>
+        <div className="flex flex-col relative w-full h-full overflow-hidden p-2">
+             
+             {/* SCROLL CONTAINER: flex-1 min-h-0 allows it to grow/shrink properly */}
+             <div className="flex-1 min-h-0 relative flex items-center justify-center">
+                 <div className="relative w-auto h-auto max-w-full max-h-full aspect-square">
+                    <Image src={`${ASSET_PATH}/voodoo-petition-scroll.png`} alt="Aged Parchment Petition Paper" width={1024} height={1024} className="w-full h-full object-contain" priority />
+                    
+                    {/* TEXT AREA: Mapped to the scroll center */}
+                    <div className="absolute flex items-center justify-center" style={{ left: '20%', top: '22%', width: '60%', height: '56%' }}>
                         <textarea 
                             value={petition} 
                             onChange={(e) => setPetition((e.target as any).value)} 
                             readOnly={isReplay}
                             placeholder="e.g., I ask for protection on my journey." 
-                            className="w-full h-full bg-transparent text-center text-[#4a2e1c] font-serif focus:outline-none resize-none text-[clamp(1rem,4cqw,2rem)] md:text-[clamp(0.8rem,1.5cqw,1.2rem)] leading-tight overflow-y-auto scrollbar-thin scrollbar-thumb-amber-900 scrollbar-track-transparent placeholder:text-amber-900/50"
+                            className="w-full h-full bg-transparent text-center text-[#4a2e1c] font-serif focus:outline-none resize-none leading-tight placeholder:text-amber-900/50"
+                            style={{ fontSize: 'clamp(1rem, 4cqw, 1.5rem)' }}
                         />
                     </div>
                 </div>
              </div>
-            <div className="shrink-0 w-full flex flex-col items-center pb-2 z-30">
-                <div className="w-full max-w-xs md:max-w-sm flex flex-col gap-3 md:scale-70 md:origin-bottom transition-transform duration-300">
+
+            <div className="shrink-0 w-full flex flex-col items-center pt-2 z-30">
+                <div className="w-full max-w-xs md:max-w-sm flex flex-col gap-3">
                     {isReplay ? (
-                        <button onClick={() => onNext('replay')} className="w-full py-3 bg-amber-600 hover:bg-amber-500 text-black font-serif font-bold rounded animate-pulse">
-                            Begin Replay (Free)
-                        </button>
+                        <button onClick={() => onNext('replay')} className="w-full py-3 bg-amber-600 hover:bg-amber-500 text-black font-serif font-bold rounded animate-pulse">Begin Replay (Free)</button>
                     ) : (
                         <>
                             <button onClick={() => onNext('standard')} disabled={!petition} className="flex items-center gap-3 p-3 bg-amber-900/60 border border-amber-600 rounded-lg hover:bg-amber-800 disabled:opacity-50 text-amber-100">
                                 <Book className="w-5 h-5" />
-                                <div className="text-left">
-                                    <div className="font-serif">Serve Papa Legba</div>
-                                    <div className="text-xs text-amber-300/70">Traditional offerings. Free.</div>
-                                </div>
+                                <div className="text-left"><div className="font-serif">Serve Papa Legba</div><div className="text-xs text-amber-300/70">Traditional offerings. Free.</div></div>
                             </button>
                             <button onClick={() => onNext('ai')} disabled={!petition} className="flex items-center gap-3 p-3 bg-purple-900/60 border border-purple-500 rounded-lg hover:bg-purple-800 disabled:opacity-50 relative overflow-hidden group text-purple-100">
                                 <Skull className="w-5 h-5" />
-                                <div className="text-left relative z-10">
-                                    <div className="font-serif flex items-center gap-2">Divine the Lwa <Sparkles size={12}/></div>
-                                    <div className="text-xs text-purple-300">Consult the spirits. {cost} Credits.</div>
-                                </div>
+                                <div className="text-left relative z-10"><div className="font-serif flex items-center gap-2">Divine the Lwa <Sparkles size={12}/></div><div className="text-xs text-purple-300">Consult the spirits. {cost} Credits.</div></div>
                             </button>
                         </>
                     )}
@@ -654,11 +652,13 @@ const Step8_Manifestation: React.FC<{ affirmation: string, path: RitualPath, onC
     
     return (
         <StepContainer stageTitle={path === 'hoodoo' ? "The Work is Done" : "The Lwa is Served"}>
-            <div className="flex flex-col items-center justify-center gap-2 w-full h-full max-w-4xl overflow-hidden p-2">
-                 <div className="flex flex-row items-center justify-center gap-2 md:gap-8 w-full h-full min-h-0 grow">
+            <div className="flex flex-col items-center justify-center w-full h-full max-w-6xl overflow-hidden p-2 gap-2">
+                 
+                 {/* MAIN CONTENT AREA: Uses flex-1 and min-h-0 to take available space without pushing buttons */}
+                 <div className="flex-1 min-h-0 w-full flex flex-row items-center justify-center gap-2 md:gap-8">
                     
-                    {/* LEFT SIDE: MANIFESTATION IMAGE (Updated with Constraint Box) */}
-                    <div className="relative flex items-center justify-center h-full w-auto max-w-[45%] aspect-square">
+                    {/* LEFT SIDE: MANIFESTATION IMAGE */}
+                    <div className="relative h-full w-1/2 flex items-center justify-end">
                         <div className="relative aspect-square h-auto w-auto max-h-full max-w-full">
                             <Image 
                                 src={`${ASSET_PATH}/${finalImage}`} 
@@ -684,20 +684,40 @@ const Step8_Manifestation: React.FC<{ affirmation: string, path: RitualPath, onC
                     </div>
 
                     {/* RIGHT SIDE: PETITION PAPER */}
-                    <div className="relative h-full w-auto max-w-[45%] aspect-square @container flex items-center justify-center">
+                    <div className="relative h-full w-1/2 flex items-center justify-start">
                         <div className="relative aspect-square h-auto w-auto max-h-full max-w-full">
                              <Image src={`${ASSET_PATH}/hoodoo-petition-paper.png`} alt="Completed Petition Parchment" width={1024} height={1024} className="w-full h-full object-contain"/>
-                             <div className="absolute inset-0 flex items-center justify-center p-[22%]">
-                                <p className="text-center text-[#3a291c] font-serif font-semibold" style={{fontSize: 'clamp(0.7rem, 4.5cqw, 1.2rem)'}}>{affirmation}</p>
+                             
+                             {/* TEXT SAFE ZONE: 
+                                 inset-[15%] creates a padding buffer so text doesn't hit torn edges.
+                                 overflow-y-auto handles long text. 
+                             */}
+                             <div className="absolute inset-[18%] flex items-center justify-center overflow-hidden">
+                                <div className="w-full max-h-full overflow-y-auto scrollbar-hide flex flex-col justify-center">
+                                    <p className="text-center text-[#3a291c] font-serif font-bold leading-tight whitespace-pre-wrap" style={{fontSize: 'clamp(0.6rem, 3cqw, 1.1rem)'}}>
+                                        {affirmation}
+                                    </p>
+                                </div>
                              </div>
                         </div>
                     </div>
                 </div>
-                <div className="flex flex-col gap-2 w-full max-w-xs shrink-0">
-                    <button onClick={onSave} disabled={isSaved || isSaving} className="w-full flex items-center justify-center gap-2 px-6 py-2 bg-amber-900/60 border border-amber-400 text-amber-100 font-serif rounded hover:bg-amber-800 disabled:opacity-50 transition-colors text-sm">
+
+                {/* FOOTER BUTTONS: Kept separate so they are never pushed off screen */}
+                <div className="flex flex-col gap-2 w-full max-w-xs shrink-0 z-20">
+                    <button onClick={onSave} disabled={isSaved || isSaving} className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-amber-900/80 border border-amber-400 text-amber-100 font-serif rounded hover:bg-amber-800 disabled:opacity-50 transition-colors text-sm">
                         {isSaved ? <Check size={16} /> : <Save size={16} />}
                         {isSaved ? "Work Sealed" : isSaving ? "Sealing..." : "Seal This Work (1 Credit)"}
                     </button>
+                    <div className="flex gap-2">
+                        <RitualButton onClick={onCastAnother} className="flex-1 py-2 text-xs">Cast Another</RitualButton>
+                        <RitualButton onClick={onReturn} className="flex-1 bg-slate-900/40 border-slate-600 hover:bg-slate-800 py-2 text-xs">Exit</RitualButton>
+                    </div>
+                </div>
+            </div>
+        </StepContainer>
+    );
+};
                     <RitualButton onClick={onCastAnother} className="w-full py-2">Cast Another Spell</RitualButton>
                     <RitualButton onClick={onReturn} className="w-full bg-slate-900/40 border-slate-600 hover:bg-slate-800 py-2">Return to Spell Room</RitualButton>
                 </div>
