@@ -348,14 +348,33 @@ const HoodooStep3_FindVerse: React.FC<{ onOpenReader: (psalm: string) => void; s
             instruction="The spirits have guided you to these scriptures. Choose one to read and fix for your Work." 
             button={<RitualButton onClick={onNext} disabled={!isPsalmLit}>Gather Your Materia</RitualButton>}
         >
-            <div className="w-full h-full flex flex-row items-center gap-4 overflow-x-auto md:justify-center p-4 snap-x no-scrollbar">
+            {/* LAYOUT FIX:
+               - Mobile: flex-col (stack vertically), overflow-y-auto (scroll down)
+               - Desktop (md): flex-row (side-by-side), overflow-x-auto (scroll sideways if needed)
+            */}
+            <div className="w-full h-full flex flex-col md:flex-row items-center gap-6 p-4 overflow-y-auto md:overflow-y-hidden md:overflow-x-auto md:justify-center scrollbar-hide">
                 {selections.map(psalm => (
-                    <div key={psalm} onClick={() => onOpenReader(psalm)} className={`relative h-full max-h-[40vh] aspect-[3/4] cursor-pointer group transition-all duration-300 shrink-0 snap-center ${selectedPsalm === psalm ? 'scale-105' : 'scale-95'}`}>
+                    <div 
+                        key={psalm} 
+                        onClick={() => onOpenReader(psalm)} 
+                        /* ITEM SIZING FIX:
+                           - Mobile: Fixed width (w-48) so they stack cleanly without stretching.
+                           - Desktop: Revert to height-based sizing (md:h-full) to fit the row.
+                        */
+                        className={`relative shrink-0 aspect-[3/4] cursor-pointer group transition-all duration-300
+                            w-48 md:w-auto md:h-full md:max-h-[40vh]
+                            ${selectedPsalm === psalm ? 'scale-105 border-2 border-amber-400/50 rounded-lg' : 'scale-95'}
+                        `}
+                    >
                         <Image src={`${ASSET_PATH}/ui-psalm-book.png`} alt="Biblical Book of Psalms for Hoodoo Workings" layout="fill" objectFit="contain" />
+                        
                         <div className={`absolute inset-0 flex items-center justify-center p-4 rounded-lg transition-colors ${selectedPsalm === psalm ? 'bg-amber-300/20' : ''}`}>
                             <p className={`text-center font-serif text-lg md:text-xl group-hover:text-black ${selectedPsalm === psalm ? 'text-black font-bold' : 'text-gray-800'}`}>{psalm}</p>
                         </div>
-                        {isPsalmLit && selectedPsalm === psalm && <div className="absolute top-2 right-2 w-8 h-8 bg-red-800 rounded-full flex items-center justify-center text-yellow-300 text-xs font-bold ring-2 ring-yellow-300">✓</div>}
+                        
+                        {isPsalmLit && selectedPsalm === psalm && (
+                            <div className="absolute top-2 right-2 w-8 h-8 bg-red-800 rounded-full flex items-center justify-center text-yellow-300 text-xs font-bold ring-2 ring-yellow-300">✓</div>
+                        )}
                     </div>
                 ))}
             </div>
