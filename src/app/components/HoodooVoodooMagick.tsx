@@ -707,7 +707,11 @@ const Step8_Manifestation: React.FC<{ affirmation: string, path: RitualPath, onC
                     
                     {/* LEFT SIDE: MANIFESTATION IMAGE (JAR) */}
                     <div className="relative flex-1 min-h-0 min-w-0 w-full md:w-1/2 flex items-center justify-center md:justify-end">
-                        <div className="relative aspect-square h-auto w-auto max-h-full max-w-full">
+                        {/* SIZING FIX:
+                            - Mobile: w-full h-auto (Width drives height, limited by max-h-full)
+                            - Desktop: h-full w-auto (Height drives width, limited by max-w-full)
+                        */}
+                        <div className="relative aspect-square max-h-full max-w-full w-full h-auto md:w-auto md:h-full">
                             <Image 
                                 src={`${ASSET_PATH}/${finalImage}`} 
                                 alt="Final Manifestation" 
@@ -733,7 +737,8 @@ const Step8_Manifestation: React.FC<{ affirmation: string, path: RitualPath, onC
 
                     {/* RIGHT SIDE: PETITION PAPER */}
                     <div className="relative flex-1 min-h-0 min-w-0 w-full md:w-1/2 flex items-center justify-center md:justify-start">
-                        <div className="relative aspect-square h-auto w-auto max-h-full max-w-full">
+                        {/* SIZING FIX: Same logic as above */}
+                        <div className="relative aspect-square max-h-full max-w-full w-full h-auto md:w-auto md:h-full">
                              <Image 
                                 src={`${ASSET_PATH}/hoodoo-petition-paper.png`} 
                                 alt="Completed Petition Parchment" 
