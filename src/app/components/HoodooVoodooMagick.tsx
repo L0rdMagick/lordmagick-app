@@ -279,45 +279,63 @@ const HoodooStep1_Ancestors: React.FC<StepComponentProps> = ({ onNext }) => {
 
 const HoodooStep2_Petition: React.FC<{ cost: number; petition: string; setPetition: (val: string) => void; onNext: (mode: RitualMode) => void; isReplay: boolean }> = ({ cost, petition, setPetition, onNext, isReplay }) => (
     <StepContainer stageTitle="Write Your Petition" instruction="State your intention for this Work. Be clear and direct.">
-        <div className="relative w-full h-full flex flex-col items-center justify-center gap-1">
-            <div className={`relative h-full max-h-full min-h-0 w-auto max-w-full aspect-square @container ${isReplay ? 'opacity-80' : ''} scale-110 md:scale-125 origin-bottom`}>
-                <Image src={`${ASSET_PATH}/hoodoo-petition-paper.png`} alt="Aged Parchment Petition Paper" layout="fill" objectFit="contain" />
-                <div className="absolute p-4" style={{ left: '15%', top: '25%', width: '70%', height: '50%' }}>
-                    <textarea 
-                        value={petition} 
-                        onChange={(e) => setPetition((e.target as any).value)} 
-                        readOnly={isReplay}
-                        placeholder="e.g., To draw money to me for my rent." 
-                        className="w-full h-full bg-transparent text-center text-[#4a2e1c] font-serif focus:outline-none resize-none" 
-                        style={{ fontSize: 'clamp(0.6rem, 4cqw, 1.5rem)' }} 
+        <div className="flex flex-col relative w-full h-full overflow-hidden p-2"> {/* Added p-2 for slight padding */}
+            
+            {/* MAIN AREA: Grows to fill space */}
+            <div className="flex-1 min-h-0 relative flex items-center justify-center w-full">
+                
+                {/* CONSTRAINT BOX: No Scaling! Fits perfectly within bounds. */}
+                <div className="relative w-auto h-auto max-w-full max-h-full aspect-square">
+                    <Image 
+                        src={`${ASSET_PATH}/hoodoo-petition-paper.png`} 
+                        alt="Aged Parchment Petition Paper" 
+                        width={1024} 
+                        height={1024} 
+                        className={`w-auto h-auto max-w-full max-h-full object-contain ${isReplay ? 'opacity-80' : ''}`}
+                        priority 
                     />
+                    
+                    {/* TEXT AREA: Mapped to the paper center */}
+                    <div className="absolute p-4 flex items-center justify-center" style={{ left: '15%', top: '25%', width: '70%', height: '50%' }}>
+                        <textarea 
+                            value={petition} 
+                            onChange={(e) => setPetition((e.target as any).value)} 
+                            readOnly={isReplay}
+                            placeholder="e.g., To draw money to me for my rent." 
+                            className="w-full h-full bg-transparent text-center text-[#4a2e1c] font-serif focus:outline-none resize-none leading-tight placeholder:text-amber-900/50"
+                            style={{ fontSize: 'clamp(0.8rem, 4cqw, 1.5rem)' }} 
+                        />
+                    </div>
                 </div>
             </div>
             
-            <div className="flex flex-col gap-2 w-full max-w-xs scale-75 origin-top">
-                {isReplay ? (
-                     <button onClick={() => onNext('replay')} className="flex items-center justify-center gap-3 p-4 bg-purple-900 border border-purple-500 rounded-lg hover:bg-purple-800 text-white shadow-lg animate-pulse">
-                        <RotateCcw className="w-5 h-5" />
-                        <div className="font-serif tracking-widest text-sm uppercase">Begin Ritual (Saved)</div>
-                    </button>
-                ) : (
-                    <>
-                        <button onClick={() => onNext('standard')} disabled={!petition} className="flex items-center gap-3 p-3 bg-amber-900/60 border border-amber-600 rounded-lg hover:bg-amber-800 disabled:opacity-50 text-amber-100">
-                            <Book className="w-5 h-5" />
-                            <div className="text-left">
-                                <div className="font-serif">Traditional Work</div>
-                                <div className="text-xs text-amber-300/70">Fixed Psalm & Materia. Free.</div>
-                            </div>
+            {/* FOOTER: Kept static so it is never pushed off screen */}
+            <div className="shrink-0 w-full flex flex-col items-center pt-2 z-30">
+                <div className="w-full max-w-xs scale-90 md:scale-100 origin-bottom transition-transform duration-300">
+                    {isReplay ? (
+                        <button onClick={() => onNext('replay')} className="flex items-center justify-center gap-3 w-full p-4 bg-purple-900 border border-purple-500 rounded-lg hover:bg-purple-800 text-white shadow-lg animate-pulse">
+                            <RotateCcw className="w-5 h-5" />
+                            <div className="font-serif tracking-widest text-sm uppercase">Begin Ritual (Saved)</div>
                         </button>
-                        <button onClick={() => onNext('ai')} disabled={!petition} className="flex items-center gap-3 p-3 bg-purple-900/60 border border-purple-500 rounded-lg hover:bg-purple-800 disabled:opacity-50 relative overflow-hidden group text-purple-100">
-                            <Skull className="w-5 h-5" />
-                            <div className="text-left relative z-10">
-                                <div className="font-serif flex items-center gap-2">Rootworker Consult <Sparkles size={12}/></div>
-                                <div className="text-xs text-purple-300">Custom scripture & ingredients. {cost} Credits.</div>
-                            </div>
-                        </button>
-                    </>
-                )}
+                    ) : (
+                        <>
+                            <button onClick={() => onNext('standard')} disabled={!petition} className="flex items-center gap-3 w-full p-3 mb-2 bg-amber-900/60 border border-amber-600 rounded-lg hover:bg-amber-800 disabled:opacity-50 text-amber-100">
+                                <Book className="w-5 h-5" />
+                                <div className="text-left">
+                                    <div className="font-serif">Traditional Work</div>
+                                    <div className="text-xs text-amber-300/70">Fixed Psalm & Materia. Free.</div>
+                                </div>
+                            </button>
+                            <button onClick={() => onNext('ai')} disabled={!petition} className="flex items-center gap-3 w-full p-3 bg-purple-900/60 border border-purple-500 rounded-lg hover:bg-purple-800 disabled:opacity-50 relative overflow-hidden group text-purple-100">
+                                <Skull className="w-5 h-5" />
+                                <div className="text-left relative z-10">
+                                    <div className="font-serif flex items-center gap-2">Rootworker Consult <Sparkles size={12}/></div>
+                                    <div className="text-xs text-purple-300">Custom scripture & ingredients. {cost} Credits.</div>
+                                </div>
+                            </button>
+                        </>
+                    )}
+                </div>
             </div>
         </div>
     </StepContainer>
