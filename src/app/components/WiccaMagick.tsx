@@ -1173,7 +1173,7 @@ const Step5_DeityCandles = ({ deity, onComplete }: { deity: ExtendedWiccanDeityS
                             </div>
                             
                             {isLit && (
-                                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-6 bg-orange-400 rounded-full blur-[2px] animate-pulse shadow-[0_0_20px_orange]">
+                                <div className="absolute top-0 left-[48%] -translate-x-1/2 -translate-y-1/2 w-4 h-6 bg-orange-400 rounded-full blur-[2px] animate-pulse shadow-[0_0_20px_orange]">
                                     <div className="absolute inset-0 bg-yellow-200 rounded-full blur-[1px] scale-50 animate-ping" />
                                 </div>
                             )}
@@ -1305,9 +1305,10 @@ const Step7_Ingredients = ({ spell, index, onComplete }: { spell: GeneratedWicca
                 <div 
                     onMouseDown={handleDown} onMouseUp={handleUp} onMouseLeave={handleUp}
                     onTouchStart={(e) => { e.preventDefault(); handleDown(); }} onTouchEnd={(e) => { e.preventDefault(); handleUp(); }}
-                    className={`relative z-10 w-40 h-40 transition-all duration-300 ${holding ? 'scale-105' : 'scale-100'} cursor-pointer`}
+                    className={`relative z-10 w-40 h-40 transition-all duration-300 ${holding ? 'scale-105' : 'scale-100'} cursor-pointer outline-none ring-0 focus:outline-none focus:ring-0 select-none`}
+                    style={{ WebkitTapHighlightColor: 'transparent', userSelect: 'none', WebkitUserSelect: 'none', MozUserSelect: 'none', MsUserSelect: 'none' }}
                 >
-                     <div className={`w-full h-full transition-all duration-700 ${isCandle && !holding && !complete ? 'brightness-[0.4] grayscale sepia-[0.5]' : 'brightness-110 filter-none'}`}>
+                     <div className={`w-full h-full transition-all duration-700 pointer-events-none select-none ${isCandle && !holding && !complete ? 'brightness-[0.4] grayscale sepia-[0.5]' : 'brightness-110 filter-none'}`}>
                         <Sprite sheetPath={sprite.sheet.path} x={sprite.itemInfo.x} y={sprite.itemInfo.y} spriteWidth={sprite.sheet.spriteSize.width} spriteHeight={sprite.sheet.spriteSize.height} sheetWidth={sprite.sheet.sheetSize.width} sheetHeight={sprite.sheet.sheetSize.height} />
                      </div>
                      
