@@ -1306,7 +1306,7 @@ const Step7_Ingredients = ({ spell, index, onComplete }: { spell: GeneratedWicca
                     onMouseDown={handleDown} onMouseUp={handleUp} onMouseLeave={handleUp}
                     onTouchStart={(e) => { e.preventDefault(); handleDown(); }} onTouchEnd={(e) => { e.preventDefault(); handleUp(); }}
                     className={`relative z-10 w-40 h-40 transition-all duration-300 ${holding ? 'scale-105' : 'scale-100'} cursor-pointer outline-none ring-0 focus:outline-none focus:ring-0 select-none`}
-                    style={{ WebkitTapHighlightColor: 'transparent', userSelect: 'none', WebkitUserSelect: 'none', MozUserSelect: 'none', MsUserSelect: 'none' }}
+                    style={{ WebkitTapHighlightColor: 'transparent', userSelect: 'none', WebkitUserSelect: 'none', MozUserSelect: 'none', msUserSelect: 'none' }}
                 >
                      <div className={`w-full h-full transition-all duration-700 pointer-events-none select-none ${isCandle && !holding && !complete ? 'brightness-[0.4] grayscale sepia-[0.5]' : 'brightness-110 filter-none'}`}>
                         <Sprite sheetPath={sprite.sheet.path} x={sprite.itemInfo.x} y={sprite.itemInfo.y} spriteWidth={sprite.sheet.spriteSize.width} spriteHeight={sprite.sheet.spriteSize.height} sheetWidth={sprite.sheet.sheetSize.width} sheetHeight={sprite.sheet.sheetSize.height} />
