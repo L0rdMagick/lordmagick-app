@@ -1295,10 +1295,9 @@ const Step7_Ingredients = ({ spell, index, onComplete }: { spell: GeneratedWicca
                         opacity: holding ? 1 : 0 // Increased opacity to full
                     }}
                     transition={{ duration: 0.3, ease: "easeOut" }}
-                    className="absolute z-0 w-40 h-40 rounded-full blur-2xl -mt-8"
+                    className="absolute z-0 w-40 h-40 rounded-full -mt-8"
                     style={{ 
-                        background: `radial-gradient(circle, ${candleColorValue} 0%, rgba(255,255,255,0.2) 60%, rgba(0,0,0,0) 80%)`,
-                        boxShadow: `0 0 40px ${candleColorValue}`
+                        background: `radial-gradient(circle, ${candleColorValue} 0%, transparent 70%)`
                     }}
                 />
 
