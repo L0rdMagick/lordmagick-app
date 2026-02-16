@@ -699,13 +699,12 @@ const Step8_Manifestation: React.FC<{ affirmation: string, path: RitualPath, onC
             <div className="flex flex-col items-center justify-between w-full h-full max-w-7xl overflow-hidden p-2 gap-2">
                  
                  {/* MAIN CONTENT AREA */}
-                 {/* Gap handles spacing. flex-1 allows filling height. */}
                  <div className="flex-1 min-h-0 w-full flex flex-col md:flex-row items-center justify-center gap-4 md:gap-8">
                     
                     {/* LEFT SIDE: MANIFESTATION IMAGE (JAR) */}
-                    {/* FIXED: md:max-w-[45%] ensures 45+45+gap < 100%. No overlap possible. */}
-                    <div className="relative flex-1 flex items-center justify-center min-h-0 min-w-0 max-h-full w-full md:max-w-[45%]">
-                        <div className="relative aspect-square w-full h-full max-h-full max-w-full m-auto">
+                    <div className="relative flex-1 flex items-center justify-center min-h-0 min-w-0 w-full md:max-w-[45%]">
+                        {/* CHANGED: Removed w-full h-full. Used w-auto h-auto with max constraints. */}
+                        <div className="relative aspect-square w-auto h-auto max-w-full max-h-full m-auto">
                             <Image 
                                 src={`${ASSET_PATH}/${finalImage}`} 
                                 alt="Final Manifestation" 
@@ -730,9 +729,9 @@ const Step8_Manifestation: React.FC<{ affirmation: string, path: RitualPath, onC
                     </div>
 
                     {/* RIGHT SIDE: PETITION PAPER */}
-                    {/* FIXED: md:max-w-[45%] matches left side. */}
-                    <div className="relative flex-1 flex items-center justify-center min-h-0 min-w-0 max-h-full w-full md:max-w-[45%]">
-                        <div className="relative aspect-square w-full h-full max-h-full max-w-full m-auto">
+                    <div className="relative flex-1 flex items-center justify-center min-h-0 min-w-0 w-full md:max-w-[45%]">
+                        {/* CHANGED: Removed w-full h-full. Used w-auto h-auto with max constraints. */}
+                        <div className="relative aspect-square w-auto h-auto max-w-full max-h-full m-auto">
                              <Image 
                                 src={`${ASSET_PATH}/hoodoo-petition-paper.png`} 
                                 alt="Completed Petition Parchment" 
