@@ -1285,7 +1285,7 @@ const Step7_Ingredients = ({ spell, index, onComplete }: { spell: GeneratedWicca
         <div className="flex flex-col items-center justify-center h-full gap-4 min-h-0">
             <h2 className="text-xl font-serif text-purple-200">Consecrate the Components</h2>
             
-            <div className="relative w-56 h-56 flex items-center justify-center">
+            <div className="relative w-56 h-56 flex items-center justify-center overflow-visible">
                 
                 {/* Dynamic Background Light - Raised slightly (-mt-8) and Brighter */}
                 <motion.div
@@ -1317,7 +1317,7 @@ const Step7_Ingredients = ({ spell, index, onComplete }: { spell: GeneratedWicca
                      )}
                 </div>
 
-                <svg className="absolute inset-0 w-full h-full pointer-events-none z-20" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg) scale(1.1)' }}>
+                <svg className="absolute inset-0 w-full h-full pointer-events-none z-20 overflow-visible" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg) scale(1.1)' }}>
                     <circle cx="50" cy="50" r="48" stroke="rgba(255,255,255,0.1)" strokeWidth="2" fill="transparent" />
                     <motion.circle
                         cx="50" cy="50" r="48"
