@@ -132,7 +132,10 @@ Deno.serve(async (req: Request) => {
         const response = await fetch(apiUrl, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }] }),
+            body: JSON.stringify({ 
+                contents: [{ role: "user", parts: [{ text: prompt }] }],
+                generationConfig: { responseMimeType: "application/json" }
+            }),
         });
 
         if (!response.ok) {
@@ -144,8 +147,11 @@ Deno.serve(async (req: Request) => {
         const responseBody = responseData?.candidates?.[0]?.content?.parts?.[0]?.text;
         if (!responseBody) { throw new Error("Received an empty response from the AI model."); }
         
-        const cleanedJsonString = responseBody.replace(/```json\n|```/g, '').trim();
-        const parsedJson = JSON.parse(cleanedJsonString);
+        // Robust extraction: Find the first valid JSON object, ignoring 'thinking' traces
+        const jsonMatch = responseBody.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) { throw new Error("No JSON object found in AI response."); }
+        
+        const parsedJson = JSON.parse(jsonMatch[0]);
 
         return new Response(JSON.stringify(parsedJson), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
