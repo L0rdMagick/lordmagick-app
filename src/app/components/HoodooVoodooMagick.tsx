@@ -698,19 +698,24 @@ const Step8_Manifestation: React.FC<{ affirmation: string, path: RitualPath, onC
         <StepContainer stageTitle={path === 'hoodoo' ? "The Work is Done" : "The Lwa is Served"}>
             <div className="flex flex-col items-center justify-between w-full h-full max-w-7xl overflow-hidden p-2 gap-2">
                  
-                 {/* MAIN CONTENT AREA */}
-                 <div className="flex-1 min-h-0 w-full flex flex-col md:flex-row items-center justify-center gap-4 md:gap-8">
+                 {/* UNIFIED IMAGE CONTAINER 
+                     - flex-1 min-h-0: Takes available vertical space, shrinks if needed, never overflows parent.
+                     - overflow-hidden: Ensures no child elements spill out.
+                 */}
+                 <div className="flex-1 min-h-0 w-full flex flex-col md:flex-row items-center justify-center gap-4 md:gap-8 overflow-hidden">
                     
-                    {/* LEFT SIDE: MANIFESTATION IMAGE (JAR) */}
-                    <div className="relative flex-1 flex items-center justify-center min-h-0 min-w-0 w-full md:max-w-[45%]">
-                        {/* CHANGED: Removed w-full h-full. Used w-auto h-auto with max constraints. */}
-                        <div className="relative aspect-square w-auto h-auto max-w-full max-h-full m-auto">
+                    {/* LEFT SIDE: MANIFESTATION IMAGE (JAR) 
+                        - md:w-[45%]: Explicit width on desktop to guarantee gap.
+                        - h-full: Allows using full height of the unified container.
+                    */}
+                    <div className="relative flex items-center justify-center min-h-0 min-w-0 w-full md:w-[45%] h-full max-h-full">
+                        <div className="relative aspect-square w-auto h-auto max-w-full max-h-full m-auto drop-shadow-2xl">
                             <Image 
                                 src={`${ASSET_PATH}/${finalImage}`} 
                                 alt="Final Manifestation" 
                                 width={1024} 
                                 height={1024} 
-                                className="w-full h-full object-contain drop-shadow-2xl" 
+                                className="w-full h-full object-contain" 
                                 unoptimized={finalImage.endsWith('.gif')} 
                             />
                             <div className="absolute inset-0 w-full h-full">
@@ -729,15 +734,14 @@ const Step8_Manifestation: React.FC<{ affirmation: string, path: RitualPath, onC
                     </div>
 
                     {/* RIGHT SIDE: PETITION PAPER */}
-                    <div className="relative flex-1 flex items-center justify-center min-h-0 min-w-0 w-full md:max-w-[45%]">
-                        {/* CHANGED: Removed w-full h-full. Used w-auto h-auto with max constraints. */}
-                        <div className="relative aspect-square w-auto h-auto max-w-full max-h-full m-auto">
+                    <div className="relative flex items-center justify-center min-h-0 min-w-0 w-full md:w-[45%] h-full max-h-full">
+                        <div className="relative aspect-square w-auto h-auto max-w-full max-h-full m-auto drop-shadow-2xl">
                              <Image 
                                 src={`${ASSET_PATH}/hoodoo-petition-paper.png`} 
                                 alt="Completed Petition Parchment" 
                                 width={1024} 
                                 height={1024} 
-                                className="w-full h-full object-contain drop-shadow-2xl"
+                                className="w-full h-full object-contain"
                             />
                              
                              <div className="absolute inset-[18%] overflow-hidden">
@@ -751,7 +755,7 @@ const Step8_Manifestation: React.FC<{ affirmation: string, path: RitualPath, onC
                     </div>
                 </div>
 
-                {/* FOOTER BUTTONS */}
+                {/* FOOTER BUTTONS - Stays independent */}
                 <div className="flex flex-col gap-3 w-full max-w-sm shrink-0 z-30 pt-2 pb-4">
                     <button onClick={onSave} disabled={isSaved || isSaving} className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-amber-900/80 border border-amber-400 text-amber-100 font-serif rounded hover:bg-amber-800 disabled:opacity-50 transition-colors text-sm">
                         {isSaved ? <Check size={16} /> : <Save size={16} />}
