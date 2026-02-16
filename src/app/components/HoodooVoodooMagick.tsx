@@ -698,20 +698,12 @@ const Step8_Manifestation: React.FC<{ affirmation: string, path: RitualPath, onC
         <StepContainer stageTitle={path === 'hoodoo' ? "The Work is Done" : "The Lwa is Served"}>
             <div className="flex flex-col items-center justify-between w-full h-full max-w-7xl overflow-hidden p-2 gap-2">
                  
-                 {/* MAIN CONTENT AREA 
-                     - Flex-1 and min-h-0 ensure it takes available space but shrinks if needed.
-                     - Mobile: flex-col (Stack Vertical).
-                     - Desktop: flex-row (Side by Side).
-                 */}
-                 <div className="flex-1 min-h-0 w-full flex flex-col md:flex-row items-center justify-center gap-2 md:gap-8">
+                 {/* MAIN CONTENT AREA */}
+                 <div className="flex-1 min-h-0 w-full flex flex-col md:flex-row items-center justify-center gap-4 md:gap-8">
                     
                     {/* LEFT SIDE: MANIFESTATION IMAGE (JAR) */}
-                    <div className="relative flex-1 min-h-0 min-w-0 w-full md:w-1/2 flex items-center justify-center md:justify-end">
-                        {/* SIZING FIX:
-                            - Mobile: w-full h-auto (Width drives height, limited by max-h-full)
-                            - Desktop: h-full w-auto (Height drives width, limited by max-w-full)
-                        */}
-                        <div className="relative aspect-square max-h-full max-w-full w-full h-auto md:w-auto md:h-full">
+                    <div className="relative flex-1 flex items-center justify-center min-h-0 min-w-0 max-h-full w-full md:max-w-[50%]">
+                        <div className="relative aspect-square h-auto w-auto max-h-full max-w-full">
                             <Image 
                                 src={`${ASSET_PATH}/${finalImage}`} 
                                 alt="Final Manifestation" 
@@ -736,9 +728,8 @@ const Step8_Manifestation: React.FC<{ affirmation: string, path: RitualPath, onC
                     </div>
 
                     {/* RIGHT SIDE: PETITION PAPER */}
-                    <div className="relative flex-1 min-h-0 min-w-0 w-full md:w-1/2 flex items-center justify-center md:justify-start">
-                        {/* SIZING FIX: Same logic as above */}
-                        <div className="relative aspect-square max-h-full max-w-full w-full h-auto md:w-auto md:h-full">
+                    <div className="relative flex-1 flex items-center justify-center min-h-0 min-w-0 max-h-full w-full md:max-w-[50%]">
+                        <div className="relative aspect-square h-auto w-auto max-h-full max-w-full">
                              <Image 
                                 src={`${ASSET_PATH}/hoodoo-petition-paper.png`} 
                                 alt="Completed Petition Parchment" 
