@@ -696,19 +696,24 @@ const Step8_Manifestation: React.FC<{ affirmation: string, path: RitualPath, onC
     
     return (
         <StepContainer stageTitle={path === 'hoodoo' ? "The Work is Done" : "The Lwa is Served"}>
-            <div className="flex flex-col items-center justify-center w-full h-full max-w-6xl overflow-hidden p-2 gap-2">
+            <div className="flex flex-col items-center justify-between w-full h-full max-w-7xl overflow-hidden p-2 gap-2">
                  
-                 <div className="flex-1 min-h-0 w-full flex flex-col md:flex-row items-center justify-center gap-4 md:gap-8">
+                 {/* MAIN CONTENT AREA 
+                     - Flex-1 and min-h-0 ensure it takes available space but shrinks if needed.
+                     - Mobile: flex-col (Stack Vertical).
+                     - Desktop: flex-row (Side by Side).
+                 */}
+                 <div className="flex-1 min-h-0 w-full flex flex-col md:flex-row items-center justify-center gap-2 md:gap-8">
                     
-                    {/* LEFT SIDE: MANIFESTATION IMAGE */}
-                    <div className="relative flex-1 min-h-0 w-full md:w-1/2 flex items-center justify-center md:justify-end">
+                    {/* LEFT SIDE: MANIFESTATION IMAGE (JAR) */}
+                    <div className="relative flex-1 min-h-0 min-w-0 w-full md:w-1/2 flex items-center justify-center md:justify-end">
                         <div className="relative aspect-square h-auto w-auto max-h-full max-w-full">
                             <Image 
                                 src={`${ASSET_PATH}/${finalImage}`} 
                                 alt="Final Manifestation" 
                                 width={1024} 
                                 height={1024} 
-                                className="w-full h-full object-contain" 
+                                className="w-full h-full object-contain drop-shadow-2xl" 
                                 unoptimized={finalImage.endsWith('.gif')} 
                             />
                             <div className="absolute inset-0 w-full h-full">
@@ -727,17 +732,19 @@ const Step8_Manifestation: React.FC<{ affirmation: string, path: RitualPath, onC
                     </div>
 
                     {/* RIGHT SIDE: PETITION PAPER */}
-                    <div className="relative flex-1 min-h-0 w-full md:w-1/2 flex items-center justify-center md:justify-start">
+                    <div className="relative flex-1 min-h-0 min-w-0 w-full md:w-1/2 flex items-center justify-center md:justify-start">
                         <div className="relative aspect-square h-auto w-auto max-h-full max-w-full">
-                             <Image src={`${ASSET_PATH}/hoodoo-petition-paper.png`} alt="Completed Petition Parchment" width={1024} height={1024} className="w-full h-full object-contain"/>
+                             <Image 
+                                src={`${ASSET_PATH}/hoodoo-petition-paper.png`} 
+                                alt="Completed Petition Parchment" 
+                                width={1024} 
+                                height={1024} 
+                                className="w-full h-full object-contain drop-shadow-2xl"
+                            />
                              
-                             {/* TEXT FIX: 
-                                 1. Removed 'justify-center' from parent div.
-                                 2. Added 'm-auto' to <p> to center it if small, but allow scroll if large.
-                             */}
                              <div className="absolute inset-[18%] overflow-hidden">
-                                <div className="w-full h-full overflow-y-auto scrollbar-hide flex flex-col">
-                                    <p className="text-center text-[#3a291c] font-serif font-bold leading-tight whitespace-pre-wrap m-auto" style={{fontSize: 'clamp(0.8rem, 2.5cqw, 1.2rem)'}}>
+                                <div className="w-full h-full overflow-y-auto scrollbar-hide flex flex-col justify-center">
+                                    <p className="text-center text-[#3a291c] font-serif font-bold leading-tight whitespace-pre-wrap m-auto" style={{fontSize: 'clamp(0.9rem, 2.5cqw, 1.4rem)'}}>
                                         {affirmation}
                                     </p>
                                 </div>
@@ -746,8 +753,8 @@ const Step8_Manifestation: React.FC<{ affirmation: string, path: RitualPath, onC
                     </div>
                 </div>
 
-                {/* FOOTER BUTTONS */}
-                <div className="flex flex-col gap-2 w-full max-w-xs shrink-0 z-20">
+                {/* FOOTER BUTTONS - Fixed Height / Shrink-0 */}
+                <div className="flex flex-col gap-3 w-full max-w-sm shrink-0 z-30 pt-2 pb-4">
                     <button onClick={onSave} disabled={isSaved || isSaving} className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-amber-900/80 border border-amber-400 text-amber-100 font-serif rounded hover:bg-amber-800 disabled:opacity-50 transition-colors text-sm">
                         {isSaved ? <Check size={16} /> : <Save size={16} />}
                         {isSaved ? "Work Sealed" : isSaving ? "Sealing..." : "Seal This Work (3 Credits)"}
