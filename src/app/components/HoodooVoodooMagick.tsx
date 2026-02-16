@@ -699,11 +699,13 @@ const Step8_Manifestation: React.FC<{ affirmation: string, path: RitualPath, onC
             <div className="flex flex-col items-center justify-between w-full h-full max-w-7xl overflow-hidden p-2 gap-2">
                  
                  {/* MAIN CONTENT AREA */}
+                 {/* Gap handles spacing. flex-1 allows filling height. */}
                  <div className="flex-1 min-h-0 w-full flex flex-col md:flex-row items-center justify-center gap-4 md:gap-8">
                     
                     {/* LEFT SIDE: MANIFESTATION IMAGE (JAR) */}
-                    <div className="relative flex-1 flex items-center justify-center min-h-0 min-w-0 max-h-full w-full md:max-w-[50%]">
-                        <div className="relative aspect-square h-auto w-auto max-h-full max-w-full">
+                    {/* FIXED: md:max-w-[45%] ensures 45+45+gap < 100%. No overlap possible. */}
+                    <div className="relative flex-1 flex items-center justify-center min-h-0 min-w-0 max-h-full w-full md:max-w-[45%]">
+                        <div className="relative aspect-square w-full h-full max-h-full max-w-full m-auto">
                             <Image 
                                 src={`${ASSET_PATH}/${finalImage}`} 
                                 alt="Final Manifestation" 
@@ -728,8 +730,9 @@ const Step8_Manifestation: React.FC<{ affirmation: string, path: RitualPath, onC
                     </div>
 
                     {/* RIGHT SIDE: PETITION PAPER */}
-                    <div className="relative flex-1 flex items-center justify-center min-h-0 min-w-0 max-h-full w-full md:max-w-[50%]">
-                        <div className="relative aspect-square h-auto w-auto max-h-full max-w-full">
+                    {/* FIXED: md:max-w-[45%] matches left side. */}
+                    <div className="relative flex-1 flex items-center justify-center min-h-0 min-w-0 max-h-full w-full md:max-w-[45%]">
+                        <div className="relative aspect-square w-full h-full max-h-full max-w-full m-auto">
                              <Image 
                                 src={`${ASSET_PATH}/hoodoo-petition-paper.png`} 
                                 alt="Completed Petition Parchment" 
@@ -749,7 +752,7 @@ const Step8_Manifestation: React.FC<{ affirmation: string, path: RitualPath, onC
                     </div>
                 </div>
 
-                {/* FOOTER BUTTONS - Fixed Height / Shrink-0 */}
+                {/* FOOTER BUTTONS */}
                 <div className="flex flex-col gap-3 w-full max-w-sm shrink-0 z-30 pt-2 pb-4">
                     <button onClick={onSave} disabled={isSaved || isSaving} className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-amber-900/80 border border-amber-400 text-amber-100 font-serif rounded hover:bg-amber-800 disabled:opacity-50 transition-colors text-sm">
                         {isSaved ? <Check size={16} /> : <Save size={16} />}
