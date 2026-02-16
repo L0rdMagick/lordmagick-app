@@ -348,25 +348,32 @@ const HoodooStep3_FindVerse: React.FC<{ onOpenReader: (psalm: string) => void; s
             instruction="The spirits have guided you to these scriptures. Choose one to read and fix for your Work." 
             button={<RitualButton onClick={onNext} disabled={!isPsalmLit}>Gather Your Materia</RitualButton>}
         >
-            {/* LAYOUT FIX:
-               - Mobile: flex-col (stack vertically), overflow-y-auto (scroll down)
-               - Desktop (md): flex-row (side-by-side), overflow-x-auto (scroll sideways if needed)
+            {/* CONTAINER: 
+                - Takes full height (h-full).
+                - Stacks vertically on mobile (flex-col), horizontally on desktop (md:flex-row).
+                - Uses minimal gap (gap-2) to maximize space for the images.
             */}
-            <div className="w-full h-full flex flex-col md:flex-row items-center gap-6 p-4 overflow-y-auto md:overflow-y-hidden md:overflow-x-auto md:justify-center scrollbar-hide">
+            <div className="w-full h-full flex flex-col md:flex-row items-center justify-center gap-2 md:gap-8 p-1 overflow-hidden">
                 {selections.map(psalm => (
                     <div 
                         key={psalm} 
                         onClick={() => onOpenReader(psalm)} 
-                        /* ITEM SIZING FIX:
-                           - Mobile: Fixed width (w-48) so they stack cleanly without stretching.
-                           - Desktop: Revert to height-based sizing (md:h-full) to fit the row.
+                        /* ITEM SIZING:
+                           - flex-1 min-h-0: Forces items to split available height equally and shrink to fit without overflowing.
+                           - aspect-[3/4]: Maintains the book shape.
+                           - max-h: Safety limit so single items don't become enormous.
                         */
-                        className={`relative shrink-0 aspect-[3/4] cursor-pointer group transition-all duration-300
-                            w-48 md:w-auto md:h-full md:max-h-[40vh]
-                            ${selectedPsalm === psalm ? 'scale-105 border-2 border-amber-400/50 rounded-lg' : 'scale-95'}
+                        className={`relative flex-1 min-h-0 w-auto aspect-[3/4] max-h-[45vh] md:max-h-[60vh] cursor-pointer group transition-all duration-300
+                            ${selectedPsalm === psalm ? 'scale-105 border-2 border-amber-400/50 rounded-lg z-10' : 'scale-95'}
                         `}
                     >
-                        <Image src={`${ASSET_PATH}/ui-psalm-book.png`} alt="Biblical Book of Psalms for Hoodoo Workings" layout="fill" objectFit="contain" />
+                        <Image 
+                            src={`${ASSET_PATH}/ui-psalm-book.png`} 
+                            alt="Biblical Book of Psalms for Hoodoo Workings" 
+                            layout="fill" 
+                            objectFit="contain" 
+                            className="drop-shadow-xl"
+                        />
                         
                         <div className={`absolute inset-0 flex items-center justify-center p-4 rounded-lg transition-colors ${selectedPsalm === psalm ? 'bg-amber-300/20' : ''}`}>
                             <p className={`text-center font-serif text-lg md:text-xl group-hover:text-black ${selectedPsalm === psalm ? 'text-black font-bold' : 'text-gray-800'}`}>{psalm}</p>
