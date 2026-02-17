@@ -307,22 +307,48 @@
             .choices { margin: 10px 0; gap: 10px; }
             .input-group { margin: 5px 0; }
             
-            .btn { padding: 8px 16px; font-size: 10px; margin-top: 5px; }
-            #end-game-btn { top: 5px; right: 5px; padding: 4px 6px; font-size: 8px; }
-            canvas { width: 100%; height: auto; align-self: center; }
+            canvas { width: 100%; height: 100%; display: block; }
 
             /* HUD Mobile Adjustments */
-            .hud-panel { padding: 5px; font-size: 8px; border-width: 1px; }
-            .hud-left { top: 5px; left: 5px; max-width: 45%; }
-            .hud-right { top: 5px; right: 5px; min-width: auto; max-width: 45%; }
-            #inventory-bar { top: 5px; padding: 2px 5px; gap: 2px; }
-            .inv-slot { width: 24px; height: 24px; font-size: 14px; border-width: 1px; }
+            .hud-panel { 
+                padding: 6px; 
+                font-size: 8px; 
+                border-width: 1px;
+                background: rgba(44, 33, 55, 0.95); /* More opaque */
+            }
+            .hud-left { 
+                top: 5px; left: 5px; 
+                width: 45%; 
+                max-width: 150px;
+            }
+            .hud-right { 
+                top: 5px; right: 5px; 
+                width: 40%; 
+                max-width: 120px; 
+                text-align: center;
+                display: flex; flex-direction: column; align-items: center;
+            }
+            
+            /* Hide spell name on mobile if it takes too much space, or make it tiny */
+            #hud-spell-name { font-size: 7px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; }
+            
+            /* Compass Fixes */
+            #compass { font-size: 24px; margin: 2px 0; }
+            #target-icon-hud { font-size: 24px; margin-top: 2px; }
+
+            #inventory-bar { 
+                top: auto; bottom: 160px; /* Move above controls */
+                left: 50%; width: auto; 
+                padding: 4px 8px; gap: 4px; 
+                transform: translateX(-50%);
+            }
+            .inv-slot { width: 28px; height: 28px; font-size: 16px; border-width: 1px; }
 
             /* Mobile Controls Scaling */
-            #mobile-controls { height: 140px; padding: 0 10px; bottom: 10px; }
-            .dpad-btn { width: 45px; height: 45px; font-size: 18px; margin: 2px; }
-            .action-btn { width: 60px; height: 60px; font-size: 24px; border-width: 2px; }
-            #action-buttons { gap: 10px; margin-bottom: 10px; }
+            #mobile-controls { height: 160px; padding: 0 10px; bottom: 0; padding-bottom: 20px; }
+            .dpad-btn { width: 50px; height: 50px; font-size: 20px; margin: 3px; }
+            .action-btn { width: 65px; height: 65px; font-size: 28px; border-width: 2px; }
+            #action-buttons { gap: 15px; margin-bottom: 10px; }
         }
 
         /* RESTORED HUD & MODAL STYLES */
@@ -836,7 +862,30 @@ function init() {
     
     // Actions
     const btnShoot = document.getElementById('btn-shoot');
-    if(btnShoot) btnShoot.addEventListener('pointerdown', (e) => { e.preventDefault(); playerAttack(); });
+    let shootInterval;
+
+    if(btnShoot) {
+        const startShooting = (e) => {
+            e.preventDefault();
+            playerAttack();
+            if (!shootInterval) {
+                shootInterval = setInterval(playerAttack, 200); // Rapid fire every 200ms
+            }
+            btnShoot.classList.add('active');
+        };
+
+        const stopShooting = (e) => {
+            if(e) e.preventDefault();
+            clearInterval(shootInterval);
+            shootInterval = null;
+            btnShoot.classList.remove('active');
+        };
+
+        btnShoot.addEventListener('pointerdown', startShooting);
+        btnShoot.addEventListener('pointerup', stopShooting);
+        btnShoot.addEventListener('pointerleave', stopShooting);
+        btnShoot.addEventListener('pointercancel', stopShooting);
+    }
     
     const btnLev = document.getElementById('btn-levitate');
     if(btnLev) btnLev.addEventListener('pointerdown', (e) => { e.preventDefault(); toggleLevitate(); });
