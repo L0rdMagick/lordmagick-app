@@ -443,13 +443,46 @@
         #final-activation-ui { display: none; flex-direction: column; align-items: center; animation: fade-in 2s forwards; }
         @keyframes fade-in { 0% { opacity: 0; } 100% { opacity: 1; } }
 
-        .hidden { display: none !important; }
+    /* END GAME BUTTON STYLES */
+        #end-game-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid #a855f7;
+            color: #e9d5ff;
+            font-family: 'Cinzel', serif;
+            font-size: 16px;
+            cursor: pointer;
+            z-index: 1000;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(4px);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
 
+        #end-game-btn:hover {
+            background: rgba(168, 85, 247, 0.3);
+            box-shadow: 0 0 15px rgba(168, 85, 247, 0.5);
+            transform: scale(1.05);
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body>
-
-<div id="game-container">
+    <a href="/spell-room/games-of-magick" id="end-game-btn">End Game</a>
+    <div id="game-container">
     <canvas id="gameCanvas" width="800" height="600"></canvas>
     
     <div id="transition-overlay"></div>

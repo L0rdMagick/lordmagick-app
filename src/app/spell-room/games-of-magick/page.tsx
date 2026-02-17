@@ -9,7 +9,7 @@ const games: TraditionInfo[] = [
     name: "Craft Work",
     image: "/images/spell-room/craft-work-thumbnail.png",
     isAvailable: true,
-    customHref: "/spell-room/craft-work",
+    customHref: "/spell-room/games-of-magick/craft-work",
     caption: "A retro-style alchemical adventure. Gather ingredients, brew potions, and defeat the guardians.",
     category: "Game",
     visualTags: "Pixel art wizard brewing a potion in a dungeon"
@@ -18,8 +18,17 @@ const games: TraditionInfo[] = [
 
 export default function GamesOfMagickPage() {
   return (
-    <div className="w-full h-full animate-fade-in p-4 md:p-8 pb-20">
-       
+    <div className="w-full h-full animate-fade-in p-4 md:p-8 pb-20 relative">
+        {/* Back Button */}
+        <div className="w-full max-w-[1400px] mx-auto mb-4 px-4">
+             <a href="/spell-room" className="inline-flex items-center text-purple-300/70 hover:text-purple-200 transition-colors font-serif italic text-sm md:text-base group">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+                </svg>
+                Back to Spell Room
+            </a>
+        </div>
+
         {/* Header */}
         <div className="w-full max-w-[1400px] mx-auto mb-8 flex flex-col items-center justify-center">
             <div className="relative w-full max-w-md aspect-[4/1]">
