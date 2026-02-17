@@ -212,19 +212,37 @@
 
         /* MOBILE / SMALL SCREEN OVERRIDES */
         @media (max-width: 600px), (max-height: 600px) {
-            h1 { font-size: 16px; margin: 10px 0; }
-            #step-1, #step-2 { padding: 15px; border-width: 2px; }
-            #step-1 p { font-size: 10px; display: none; } /* Hide lore on mobile */
+            h1 { font-size: 14px; margin: 5px 0; }
+            #step-1, #step-2 { padding: 10px; border-width: 2px; }
             
-            #player-name { padding: 10px; font-size: 12px; width: 180px; }
+            /* Show text but make it small */
+            #step-1 p { 
+                font-size: 8px; 
+                display: block; 
+                margin-bottom: 5px; 
+                line-height: 1.2;
+                max-width: 90%;
+            } 
             
-            .choice-card { width: 100px; padding: 10px; font-size: 10px; }
-            .choice-card div { font-size: 24px !important; }
+            #player-name { padding: 8px; font-size: 10px; width: 140px; }
             
-            .instructions { font-size: 8px; padding: 10px; line-height: 1.4; display: none; /* Hide instructions on small screens to save space */ }
+            .choice-card { width: 80px; padding: 5px; font-size: 8px; }
+            .choice-card div { font-size: 18px !important; }
             
-            .btn { padding: 10px 20px; font-size: 12px; margin-top: 10px; }
-            #end-game-btn { top: 5px; right: 5px; padding: 5px 8px; font-size: 10px; }
+            /* Show instructions but compact */
+            .instructions { 
+                font-size: 7px; 
+                padding: 5px; 
+                line-height: 1.2; 
+                display: block; 
+                margin: 5px 0;
+            }
+            
+            .choices { margin: 10px 0; gap: 10px; }
+            .input-group { margin: 5px 0; }
+            
+            .btn { padding: 8px 16px; font-size: 10px; margin-top: 5px; }
+            #end-game-btn { top: 5px; right: 5px; padding: 4px 6px; font-size: 8px; }
             canvas { width: 100%; height: auto; align-self: center; }
         }
 
