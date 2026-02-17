@@ -44,21 +44,20 @@
             object-fit: cover;
         }
 
-        /* MOBILE CONTROLS */
+        /* MOBILE CONTROLS (Base) */
         #mobile-controls {
             position: absolute;
-            bottom: 20px; left: 0; width: 100%;
+            bottom: 0; left: 0; width: 100%;
             height: 180px;
-            pointer-events: none; /* Let clicks pass through empty areas */
-            display: none; /* Hidden by default */
+            pointer-events: none;
+            display: none;
             z-index: 1000;
-            padding: 0 30px;
+            padding: 0 30px 20px 30px;
             box-sizing: border-box;
             justify-content: space-between;
             align-items: flex-end;
         }
         
-        /* Show on touch devices or small screens */
         @media (max-width: 1024px), (hover: none) {
             #mobile-controls { display: flex; }
         }
@@ -307,104 +306,115 @@
             .choices { margin: 10px 0; gap: 10px; }
             .input-group { margin: 5px 0; }
             
-            canvas { width: 100%; height: 100%; display: block; }
-
-            /* HUD Mobile Adjustments */
-            .hud-panel { 
-                padding: 6px; 
-                font-size: 8px; 
-                border-width: 1px;
-                background: rgba(44, 33, 55, 0.95); /* More opaque */
-            }
-            .hud-left { 
-                top: 5px; left: 5px; 
-                width: 45%; 
-                max-width: 150px;
-            }
-            .hud-right { 
-                top: 5px; right: 5px; 
-                width: 40%; 
-                max-width: 120px; 
-                text-align: center;
-                display: flex; flex-direction: column; align-items: center;
-            }
-            
-            /* Hide spell name on mobile if it takes too much space, or make it tiny */
-            #hud-spell-name { font-size: 7px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; }
-            
-            /* Compass Fixes */
-            #compass { font-size: 24px; margin: 2px 0; }
-            #target-icon-hud { font-size: 24px; margin-top: 2px; }
-
-            #inventory-bar { 
-                top: auto; bottom: 160px; /* Move above controls */
-                left: 50%; width: auto; 
-                padding: 4px 8px; gap: 4px; 
-                transform: translateX(-50%);
-            }
-            .inv-slot { width: 28px; height: 28px; font-size: 16px; border-width: 1px; }
-
-            /* Mobile Controls Scaling */
-            #mobile-controls { height: 160px; padding: 0 10px; bottom: 0; padding-bottom: 20px; }
-            .dpad-btn { width: 50px; height: 50px; font-size: 20px; margin: 3px; }
-            .action-btn { width: 65px; height: 65px; font-size: 28px; border-width: 2px; }
-            #action-buttons { gap: 15px; margin-bottom: 10px; }
+            /* GLOBAL FIXES */
+        body, html {
+            margin: 0; padding: 0;
+            width: 100%; height: 100%;
+            overflow: hidden;
+            background-color: #000;
+            position: fixed; /* Prevent scroll bounce */
         }
 
-        /* RESTORED HUD & MODAL STYLES */
-        #hud {
-            position: absolute;
+        #game-container {
+            position: fixed;
             top: 0; left: 0;
             width: 100%; height: 100%;
-            pointer-events: none; /* Let clicks pass through to canvas */
-            display: none; /* Hidden on start */
-            z-index: 10;
+            border: none; /* Ensure no border */
+            outline: none;
         }
 
-        .hud-panel {
-            position: absolute;
-            background: rgba(44, 33, 55, 0.9);
-            border: 2px solid var(--ui-border);
-            padding: 15px;
-            color: #fff;
-            font-family: 'Press Start 2P', monospace;
-            font-size: 12px; /* Increased from 10px */
-            pointer-events: auto;
-            border-radius: 4px;
-            box-shadow: 4px 4px 0 #000;
+        canvas { 
+            display: block; 
+            width: 100%; height: 100%; 
+            object-fit: cover;
         }
 
-        .hud-left { top: 20px; left: 20px; max-width: 300px; }
-        .hud-right { top: 20px; right: 20px; text-align: right; min-width: 180px; }
-
+        /* HUD LAYOUT - STACKED STRATEGY */
+        /* 1. Inventory Bar (Top Center, High Priority) */
         #inventory-bar {
             position: absolute;
-            top: 20px; left: 50%;
+            top: 10px; left: 50%;
             transform: translateX(-50%);
             display: flex;
-            gap: 10px;
-            background: rgba(0,0,0,0.7);
-            padding: 10px 20px;
-            border-radius: 0;
+            gap: 8px;
+            background: rgba(0,0,0,0.6);
+            padding: 8px 16px;
+            border-radius: 8px;
             pointer-events: auto;
-            border: 2px solid #888;
-            box-shadow: 4px 4px 0 #000;
+            border: 1px solid #666;
+            z-index: 100; /* Above other HUD */
         }
 
         .inv-slot {
-            width: 40px; height: 40px; /* Increased from 32px */
+            width: 32px; height: 32px;
             background: rgba(255,255,255,0.1);
-            border: 2px solid #444;
+            border: 1px solid #444;
             display: flex; align-items: center; justify-content: center;
-            font-size: 24px; /* Increased from 18px */
-            border-radius: 0;
-            transition: all 0.1s;
+            font-size: 20px;
+            border-radius: 4px;
         }
         .inv-slot.collected {
             background: rgba(255, 215, 0, 0.3);
             border-color: #ffd700;
             box-shadow: 0 0 10px #ffd700;
-            animation: popIn 0.5s ease;
+        }
+
+        /* 2. HUD Info Panels (Below Inventory) */
+        .hud-panel {
+            position: absolute;
+            top: 60px; /* Push down to clear inventory */
+            background: rgba(44, 33, 55, 0.85);
+            border: 1px solid var(--ui-border);
+            padding: 8px;
+            color: #fff;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 10px;
+            pointer-events: auto;
+            border-radius: 4px;
+            z-index: 90;
+        }
+
+        .hud-left { left: 10px; text-align: left; }
+        .hud-right { right: 10px; text-align: center; }
+
+        /* MOBILE SPECIFIC OVERRIDES */
+        @media (max-width: 1024px) {
+            /* Tighter Inventory */
+            #inventory-bar {
+                top: 5px;
+                padding: 4px 10px;
+                gap: 4px;
+                width: 90%; /* Fit screen */
+                justify-content: center;
+            }
+            .inv-slot { width: 28px; height: 28px; font-size: 18px; }
+
+            /* Push Panels Further Down */
+            .hud-panel {
+                top: 50px; /* Below inventory */
+                font-size: 9px;
+                padding: 6px;
+                background: rgba(20, 15, 25, 0.9);
+            }
+            
+            .hud-left { left: 5px; max-width: 40%; }
+            .hud-right { right: 5px; max-width: 40%; }
+
+            /* Compass Visibility */
+            #compass { font-size: 28px; margin: 4px 0; color: var(--accent); }
+            #target-icon-hud { font-size: 24px; }
+            #hud-spell-name { display: none; } /* Hide spell name to save space if needed */
+
+            /* Controls Positioning - Ensure Bottom */
+            #mobile-controls {
+                position: absolute;
+                bottom: 0; left: 0;
+                width: 100%;
+                height: 180px;
+                padding-bottom: 20px;
+                background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+                z-index: 1000;
+            }
         }
 
         #message-log {
