@@ -737,16 +737,31 @@ const Step8_Manifestation: React.FC<{ affirmation: string, path: RitualPath, onC
                     <div className="relative flex items-center justify-center min-h-0 min-w-0 w-full md:w-[45%] h-full max-h-full">
                         <div className="relative aspect-square w-auto h-auto max-w-full max-h-full m-auto drop-shadow-2xl">
                              <Image 
-                                src={`${ASSET_PATH}/hoodoo-petition-paper.png`} 
+                                src={`${ASSET_PATH}/${path === 'hoodoo' ? 'hoodoo-petition-paper.png' : 'voodoo-petition-scroll.png'}`} 
                                 alt="Completed Petition Parchment" 
                                 width={1024} 
                                 height={1024} 
                                 className="w-full h-full object-contain"
                             />
                              
-                             <div className="absolute inset-[18%] overflow-hidden">
+                             {/* Text Container with Dynamic Constraints based on Paper Type */}
+                             <div 
+                                className="absolute overflow-hidden"
+                                style={{
+                                    ...(path === 'hoodoo' 
+                                        ? { inset: '18%' } 
+                                        : { top: '22%', left: '20%', width: '60%', height: '56%' }
+                                    ),
+                                    containerType: 'size'
+                                }}
+                             >
                                 <div className="w-full h-full overflow-y-auto scrollbar-hide flex flex-col justify-center">
-                                    <p className="text-center text-[#3a291c] font-serif font-bold leading-tight whitespace-pre-wrap m-auto" style={{fontSize: 'clamp(0.9rem, 2.5cqw, 1.4rem)'}}>
+                                    <p className="text-center text-[#3a291c] font-serif font-bold leading-tight whitespace-pre-wrap m-auto" 
+                                       style={{
+                                           fontSize: 'clamp(0.6rem, 5cqw, 1.4rem)',
+                                           textShadow: '0px 0px 1px rgba(58, 41, 28, 0.1)'
+                                       }}
+                                    >
                                         {affirmation}
                                     </p>
                                 </div>
