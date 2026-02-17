@@ -3,7 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 // Expanded type to allow arbitrary strings or specific known types
-type Tradition = "Chaos Magick" | "Wicca Magick" | "Ceremonial Magick" | "Folk Magick" | "Hoodoo (Rootwork)" | "Electric Magick" | "Love" | "Grimoire of Magickal Servitors" | "Servitors of the Wild Unknown";
+type Tradition = "Chaos Magick" | "Wicca Magick" | "Ceremonial Magick" | "Folk Magick" | "Hoodoo (Rootwork)" | "Electric Magick" | "Love" | "Grimoire of Magickal Servitors" | "Servitors of the Wild Unknown" | "Craft Work";
 
 interface TraditionInfo {
   name: Tradition;
@@ -91,6 +91,18 @@ const traditions: TraditionInfo[] = [
     category: "Folk",
     visualTags: "Bundles of dried herbs, crystals, and natural stones"
   },
+];
+
+const games: TraditionInfo[] = [
+  {
+    name: "Craft Work",
+    image: "/images/spell-room/craft-work-thumbnail.png",
+    isAvailable: true,
+    customHref: "/spell-room/craft-work",
+    caption: "A retro-style alchemical adventure. Gather ingredients, brew potions, and defeat the guardians.",
+    category: "Game",
+    visualTags: "Pixel art wizard brewing a potion in a dungeon"
+  }
 ];
 
 const slugifyTradition = (name: string): string => {
@@ -281,6 +293,27 @@ const SpellRoom: React.FC = () => {
             tradition={tradition}
           />
         ))}
+      </div>
+
+      {/* GAMES OF MAGICK SECTION */}
+      <div className="w-full max-w-[1400px] mx-auto mt-16 mb-8 flex flex-col items-center justify-center">
+          <div className="relative w-full max-w-md aspect-[4/1] mb-8">
+              <Image
+                src="/images/spell-room/games-of-magick-thumbnail.png"
+                alt="Games of Magick"
+                fill
+                className="object-contain drop-shadow-[0_0_15px_rgba(168,85,247,0.4)]"
+              />
+          </div>
+          
+          <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-8 items-start justify-center">
+            {games.map((game) => (
+                <TraditionButton 
+                    key={game.name}
+                    tradition={game}
+                />
+            ))}
+          </div>
       </div>
     </div>
   );
