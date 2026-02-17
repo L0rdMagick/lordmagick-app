@@ -474,48 +474,64 @@
         }
 
         /* MOBILE OPTIMIZATIONS */
-        @media (max-width: 600px) {
+        @media (max-width: 800px) {
+            body {
+                align-items: flex-start; /* prevent centering from pushing top off screen if too tall */
+                overflow: hidden; /* Prevent scroll on body */
+            }
+
             #game-container {
                 width: 100%;
-                height: 100%; /* Fill the iframe height */
+                height: 100vh; /* Force full viewport height */
                 max-width: none;
-                aspect-ratio: auto; /* Allow container to be taller than 4:3 so UI fits */
+                max-height: none;
+                aspect-ratio: unset;
+                display: flex; /* Use flex to center content */
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
             }
             
-            /* Center the canvas within the taller container */
             canvas {
                 position: absolute;
                 top: 50%; left: 50%;
                 transform: translate(-50%, -50%);
-                max-width: 100%;
-                max-height: 100%;
+                width: 100%;
+                height: 100%;
+                object-fit: contain; /* Ensure canvas scales correctly */
+                z-index: 1;
             }
 
-            /* UI Elements scaling */
-            h1 { font-size: 16px; margin-bottom: 10px; }
-            p { font-size: 10px; line-height: 1.4; margin-bottom: 10px; }
-            
-            .choice-card { width: 90px; padding: 5px; font-size: 10px; }
-            .choice-card div { font-size: 20px !important; }
-            
-            #player-name { padding: 8px; font-size: 12px; }
-            
-            .btn { padding: 10px 15px; font-size: 12px; margin: 5px; }
+            /* UI SCALING */
+            #start-screen {
+                justify-content: flex-start; /* Start from top */
+                padding-top: 40px; /* Space for End Game button */
+                overflow-y: auto; /* Allow scrolling if really small */
+                z-index: 20;
+            }
 
-            .input-group, .choices, .instructions { margin: 5px; gap: 5px; }
-            .instructions { font-size: 8px; max-width: 95%; }
+            h1 { font-size: 18px; margin: 10px 0; }
+            p { font-size: 11px; margin-bottom: 10px; max-width: 90%; }
             
-            /* Ensure HUD fits */
-            .hud-panel { transform: scale(0.8); transform-origin: top left; }
-            .hud-right { transform-origin: top right; }
+            .choice-card { width: 100px; padding: 10px; margin: 5px; }
+            .choice-card div { font-size: 24px !important; }
+            
+            .input-group { margin: 10px; }
+            #player-name { padding: 8px; width: 200px; }
+            
+            .btn { padding: 12px 24px; font-size: 14px; margin-top: 10px; }
+
+            .instructions { font-size: 9px; max-width: 90%; padding: 8px; }
         }
 
-        /* Fix for "Footer Layer" Ghosting - likely background leak or iframe sizing */
-        /* Ensure body fills frame but allows centering */
+        /* BODY RESET */
         body {
-            height: 100%;
-            min-height: 100vh;
-            background-color: #000; /* Match game container to hide letterboxing seams */
+            height: 100vh;
+            width: 100vw;
+            margin: 0;
+            padding: 0;
+            background-color: #000;
+            overflow: hidden; /* Prevent native scrollbars */
         }
     </style>
 </head>
