@@ -41,16 +41,13 @@
             align-items: center;
         }
 
-        /* Wrapper for the 4:3 Game Canvas */
+        /* Wrapper for the Game Canvas - FULL SCREEN */
         #canvas-wrapper {
             position: relative;
             width: 100%;
             height: 100%;
-            max-width: min(100vw, 133.33vh);
-            max-height: min(100vh, 75vw);
-            aspect-ratio: 4/3;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
-            margin: auto;
+            margin: 0;
+            overflow: hidden;
         }
         
         #game-container:fullscreen {
@@ -481,7 +478,7 @@
 <div id="game-container">
     <!-- NEW WRAPPER FOR GAME CANVAS -->
     <div id="canvas-wrapper">
-        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        <canvas id="gameCanvas"></canvas>
     </div>
     
     <div id="transition-overlay"></div>
@@ -716,7 +713,11 @@ function toggleFullScreen() {
     } else { document.exitFullscreen(); }
 }
 
-const TILE_SIZE = 40; const MAP_WIDTH = 100; const MAP_HEIGHT = 100; const VIEWPORT_W = 800; const VIEWPORT_H = 600;
+const TILE_SIZE = 40; const MAP_WIDTH = 100; const MAP_HEIGHT = 100;
+let VIEWPORT_W = window.innerWidth; 
+let VIEWPORT_H = window.innerHeight;
+
+
 
 // Expanded Incantations and Icons
 const SPELLS = [
@@ -796,6 +797,15 @@ const SPRITES = {
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
+
+function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    VIEWPORT_W = canvas.width;
+    VIEWPORT_H = canvas.height;
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
 
 let gameState = {
     screen: 'START', playerClass: 'witch', playerName: '', selectedSpell: null,
