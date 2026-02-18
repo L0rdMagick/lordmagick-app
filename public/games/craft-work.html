@@ -1054,7 +1054,7 @@ function spawnEnemy(x, y, type) {
     const dist = distance(x, y, player.x, player.y);
     if (dist < 500) {
         console.warn("Prevented enemy spawn too close to player:", x, y, "Dist:", dist);
-        return;
+        return null;
     }
 
     const stage = gameState.currentIngredientIndex;
@@ -1084,21 +1084,45 @@ function spawnEnemy(x, y, type) {
 
     console.log("Spawning enemy at", x, y, "Type:", type, "Dist to Player:", dist);
 
-    gameState.enemies.push({ 
+    const enemy = { 
         x: x, y: y, w: size, h: size, type: type, 
         hp: hp, maxHp: hp, speed: speed, canShoot: canShoot, shootTimer: 0,
         sprite: spriteData, soundType: soundType 
-    });
+    };
+    gameState.enemies.push(enemy);
+    return enemy;
 }
 
 function spawnBoss() {
-    gameState.bossActive = true;
     const name = gameState.selectedSpell.boss;
-    showMessage(`WARNING: ${name} approaches!`);
-    playSound('monster_groan');
-    document.getElementById('hud-mission').innerText = `Defeat ${name}!`;
-    spawnEnemy(currentObjective.x, currentObjective.y, 'boss');
-    gameState.bossEntity = gameState.enemies[gameState.enemies.length-1];
+    
+    // Find a safe spawn position for the boss (at least 600px away from player)
+    let angle = Math.random() * Math.PI * 2;
+    let dist = 600;
+    let bx = player.x + Math.cos(angle) * dist;
+    let by = player.y + Math.sin(angle) * dist;
+    
+    // Ensure inside map bounds (with padding)
+    bx = Math.max(100, Math.min(MAP_WIDTH * TILE_SIZE - 100, bx));
+    by = Math.max(100, Math.min(MAP_HEIGHT * TILE_SIZE - 100, by));
+
+    // Force spawn even if safety check warns (we manually calculated a safe spot)
+    console.log(`Spawning Boss ${name} at ${bx}, ${by} (Player at ${player.x}, ${player.y})`);
+    
+    spawnEnemy(bx, by, 'boss');
+    
+    // Verify boss actually spawned
+    const boss = gameState.enemies[gameState.enemies.length-1];
+    if (boss && boss.type === 'boss') {
+        gameState.bossActive = true;
+        gameState.bossEntity = boss;
+        showMessage(`WARNING: ${name} approaches!`);
+        playSound('monster_groan');
+        document.getElementById('hud-mission').innerText = `Defeat ${name}!`;
+    } else {
+        console.error("Boss failed to spawn! Retrying next frame...");
+        // Do NOT set bossActive = true, so it will try again next update
+    }
 }
 
 function toggleLevitate() {
@@ -1452,8 +1476,9 @@ function draw() {
     }
     
     // Objective / Item
-    if (currentObjective.active && !currentObjective.bossDefeated && !gameState.bossActive) {
-         // Show item on map
+    if (currentObjective.active && !currentObjective.bossDefeated) {
+         // Show item on map - ALWAYS show if active and not collected
+         // Adjusted condition: Removed !gameState.bossActive check because we WANT to see it even if boss is fightning
          // Use sprite
          let size = 40;
          let pulse = Math.sin(Date.now() / 200) * 5;
