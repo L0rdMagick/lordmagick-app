@@ -933,6 +933,18 @@ function startGame(spell) {
     });
 
     if (audioCtx.state === 'suspended') audioCtx.resume();
+    
+    // Reset Game State
+    gameState.inventory = [];
+    gameState.enemies = [];
+    gameState.projectiles = [];
+    gameState.enemyProjectiles = [];
+    gameState.particles = [];
+    gameState.currentIngredientIndex = 0;
+    gameState.bossActive = false;
+    player.hp = player.maxHp;
+    player.mana = player.maxMana;
+    
     generateWorld();
     gameState.screen = 'PLAY';
     spawnNextIngredient();
@@ -1012,9 +1024,17 @@ function spawnNextIngredient() {
     }
     
     let valid = false, tx, ty;
+    let attempts = 0;
     while (!valid) {
         tx = Math.floor(Math.random() * (MAP_WIDTH - 20)) + 10; ty = Math.floor(Math.random() * (MAP_HEIGHT - 20)) + 10;
-        if (gameState.map[ty][tx].type.type === 'walkable') valid = true;
+        
+        let distToPlayer = distance(tx * TILE_SIZE, ty * TILE_SIZE, player.x, player.y);
+        
+        // Ensure distance is at least 600px (15 tiles) to avoid instant death on spawn
+        if (gameState.map[ty][tx].type.type === 'walkable' && distToPlayer > 600) valid = true;
+        
+        attempts++;
+        if(attempts > 500 && gameState.map[ty][tx].type.type === 'walkable') valid = true; // Fallback
     }
     currentObjective = { x: tx * TILE_SIZE, y: ty * TILE_SIZE, item: ingredientName, sheet: sheetKey, index: spriteIndex, active: true, bossDefeated: false };
     
@@ -1202,7 +1222,15 @@ function takeDamage(amount) {
 }
 
 function respawnPlayer() {
-    player.hp = 100; player.x = (MAP_WIDTH/2)*TILE_SIZE; player.y = (MAP_HEIGHT/2)*TILE_SIZE; alert("You fainted! The spirits return you to safety.");
+    player.hp = 100; 
+    player.x = (MAP_WIDTH/2)*TILE_SIZE; 
+    player.y = (MAP_HEIGHT/2)*TILE_SIZE; 
+    
+    // Safety Invulnerability (2 seconds)
+    player.invulnTimer = 120;
+    
+    alert("You fainted! The spirits return you to safety.");
+    playSound('shimmer');
 }
 
 let isCollecting = false;
