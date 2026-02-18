@@ -1269,8 +1269,11 @@ function respawnPlayer() {
     player.x = (MAP_WIDTH/2)*TILE_SIZE; 
     player.y = (MAP_HEIGHT/2)*TILE_SIZE; 
     
-    // Safety Invulnerability (2 seconds)
-    player.invulnTimer = 120;
+    // Safety Invulnerability (3 seconds)
+    player.invulnTimer = 180;
+    
+    // Reset Input State to prevent sticky movement
+    keys = {}; 
     
     alert("You fainted! The spirits return you to safety.");
     playSound('shimmer');
