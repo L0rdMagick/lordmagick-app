@@ -32,40 +32,40 @@
 
         #game-container {
             position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: #000;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Wrapper for the 4:3 Game Canvas */
+        #canvas-wrapper {
+            position: relative;
             width: 100%;
-            /* 
-             * Responsive Logic:
-             * 1. Max width is controlled by screen width OR height-based aspect ratio
-             * 2. Max height is controlled by screen height OR width-based aspect ratio
-             * 3. This ensures it never overflows and maintains 4:3
-             */
+            height: 100%;
             max-width: min(100vw, 133.33vh);
             max-height: min(100vh, 75vw);
             aspect-ratio: 4/3;
-            
             box-shadow: 0 0 20px rgba(0,0,0,0.5);
-            background: #000;
             margin: auto;
-            overflow: hidden;
         }
         
         #game-container:fullscreen {
             width: 100vw;
             height: 100vh;
-            max-width: none;
-            max-height: none;
-            display: flex;
-            justify-content: center;
-            align-items: center;
             background: #000;
         }
         
-        #game-container:fullscreen canvas {
-            width: auto;
+        #game-container:fullscreen #canvas-wrapper {
+            max-width: none;
+            max-height: none;
+            width: 100%;
             height: 100%;
-            aspect-ratio: 4/3;
         }
-
+        
         canvas {
             display: block;
             image-rendering: pixelated;
@@ -98,7 +98,10 @@
             z-index: 20;
             text-align: center;
             
-            /* Magic Room Background */
+            /* Magic Room Background needs to be explicitly fixed to cover viewport */
+            position: fixed; /* Force full screen coverage */
+            inset: 0;
+            
             background-color: #1a1025;
             background-image: 
                 radial-gradient(circle at 50% 40%, rgba(60, 40, 80, 0.6) 0%, rgba(20, 10, 30, 0.9) 80%),
@@ -131,8 +134,23 @@
             100% { opacity: 1; transform: scale(2); }
         }
 
-        h1 { color: var(--accent); text-shadow: 2px 2px #000; margin-bottom: 30px; line-height: 1.5; font-size: 24px; }
-        p { font-size: 12px; line-height: 1.8; max-width: 600px; margin-bottom: 20px; padding: 0 20px; }
+
+        /* Responsive Text Sizing */
+        h1 { 
+            color: var(--accent); 
+            text-shadow: 2px 2px #000; 
+            margin-bottom: 30px; 
+            line-height: 1.2; 
+            font-size: clamp(18px, 5vw, 36px); 
+            padding: 0 10px;
+        }
+        p { 
+            font-size: clamp(10px, 3vw, 14px); 
+            line-height: 1.6; 
+            max-width: 600px; 
+            margin-bottom: 20px; 
+            padding: 0 20px; 
+        }
 
         .btn {
             background: var(--ui-bg);
@@ -140,7 +158,7 @@
             color: white;
             padding: 15px 20px;
             font-family: inherit;
-            font-size: 14px;
+            font-size: clamp(12px, 3vw, 16px);
             cursor: pointer;
             margin: 10px;
             transition: transform 0.1s;
@@ -461,7 +479,10 @@
 <body>
 
 <div id="game-container">
-    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <!-- NEW WRAPPER FOR GAME CANVAS -->
+    <div id="canvas-wrapper">
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+    </div>
     
     <div id="transition-overlay"></div>
     <button id="fs-btn" onclick="toggleFullScreen()">[ ] Fullscreen</button>
@@ -1121,7 +1142,7 @@ function collectIngredient() {
 
 function enterPortal() {
     playSound('portal');
-    document.getElementById('gameCanvas').style.display = 'none';
+    document.getElementById('canvas-wrapper').style.display = 'none';
     document.getElementById('hud').style.display = 'none';
     
     // Trigger transition overlay
