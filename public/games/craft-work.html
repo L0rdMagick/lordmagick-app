@@ -932,8 +932,6 @@ function startGame(spell) {
         bar.appendChild(slot);
     });
 
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-    
     // Reset Game State
     gameState.inventory = [];
     gameState.enemies = [];
@@ -942,8 +940,14 @@ function startGame(spell) {
     gameState.particles = [];
     gameState.currentIngredientIndex = 0;
     gameState.bossActive = false;
-    player.hp = player.maxHp;
-    player.mana = player.maxMana;
+    
+    player.hp = 100;
+    player.maxHp = 100;
+    player.mana = 100;
+    player.maxMana = 100;
+    player.invulnTimer = 60; // Start with 1s of safety
+    
+    console.log("Game Starting... Player HP:", player.hp, "Invuln:", player.invulnTimer);
     
     generateWorld();
     gameState.screen = 'PLAY';
@@ -952,6 +956,7 @@ function startGame(spell) {
 }
 
 function generateWorld() {
+    gameState.map = []; // Ensure map is cleared before regenerating
     for (let y = 0; y < MAP_HEIGHT; y++) {
         gameState.map[y] = [];
         for (let x = 0; x < MAP_WIDTH; x++) {
@@ -1162,7 +1167,7 @@ function update(dt) {
     gameState.enemyProjectiles.forEach(ep => {
         ep.x += ep.vx; ep.y += ep.vy; ep.life--;
         if (rectIntersect(ep.x, ep.y, 10, 10, player.x, player.y, player.w, player.h)) {
-            takeDamage(15);
+            takeDamage(15, "Enemy Projectile");
             ep.life = 0;
         }
     });
@@ -1188,7 +1193,7 @@ function update(dt) {
         
         // Collision with player
         if (rectIntersect(player.x, player.y, player.w, player.h, e.x, e.y, e.w, e.h)) { 
-            takeDamage(10);
+            takeDamage(10, "Enemy Contact (" + e.type + ")");
         }
     });
     
@@ -1209,19 +1214,23 @@ function update(dt) {
     if(manaEl) manaEl.innerText = Math.floor(player.mana);
 }
 
-function takeDamage(amount) {
+function takeDamage(amount, source) {
     if (player.invulnTimer > 0) return;
+    
+    console.log("Player took damage!", amount, "Source:", source, "Player Pos:", player.x, player.y);
     
     player.hp -= amount;
     player.invulnTimer = 30; // 0.5s invincibility (60fps)
     playSound('hit_player');
     
     if (player.hp <= 0) {
+        console.log("Player died!");
         respawnPlayer();
     }
 }
 
 function respawnPlayer() {
+    console.log("Respawning player...");
     player.hp = 100; 
     player.x = (MAP_WIDTH/2)*TILE_SIZE; 
     player.y = (MAP_HEIGHT/2)*TILE_SIZE; 
