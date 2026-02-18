@@ -471,20 +471,25 @@
         @keyframes fade-in { 0% { opacity: 0; } 100% { opacity: 1; } }
 
 
+
         /* Mobile Controls */
         #mobile-controls {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
             pointer-events: none;
             z-index: 20; /* Above game, below modals */
-            display: none; /* Shown on touch devices or small screens */
+            display: none; /* Controlled by JS */
         }
         
-        @media (hover: none) and (pointer: coarse) {
-            #mobile-controls { display: block; }
-            /* Adjust HUD for mobile */
-            .hud-panel { font-size: 10px; padding: 5px; }
-            #inventory-bar { top: 5px; transform: translateX(-50%) scale(0.8); }
+        /* Force no selection/context menu */
+        * {
+            -webkit-touch-callout: none; /* iOS Safari */
+            -webkit-user-select: none; /* Safari */
+            -khtml-user-select: none; /* Konqueror HTML */
+            -moz-user-select: none; /* Old versions of Firefox */
+            -ms-user-select: none; /* Internet Explorer/Edge */
+            user-select: none; /* Non-prefixed version, currently supported by Chrome, Edge, Opera and Firefox */
+            touch-action: none;
         }
 
         #joystick-zone {
@@ -495,7 +500,6 @@
             border-radius: 50%;
             border: 2px solid rgba(255, 255, 255, 0.2);
             pointer-events: auto;
-            touch-action: none;
         }
 
         #joystick-knob {
@@ -1080,6 +1084,22 @@ function startGame(spell) {
     gameState.selectedSpell = spell;
     document.getElementById('start-screen').classList.add('hidden');
     document.getElementById('hud').style.display = 'block';
+    
+    // Enable Mobile Controls if touch supported or forced
+    if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+        document.getElementById('mobile-controls').style.display = 'block';
+    }
+    
+    // Auto Fullscreen
+    toggleFullScreen();
+    
+    // Disable Context Menu (prevent long press modals)
+    window.oncontextmenu = function(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        return false;
+    };
+    
     document.getElementById('hud-spell-name').innerText = spell.name;
     document.getElementById('hud-name').innerText = gameState.playerName;
     
@@ -1357,10 +1377,16 @@ function update(dt) {
     if (!player.isAttacking) {
         let isMoving = dx !== 0 || dy !== 0;
         
-        if (dy > 0) { player.frameY = 0; player.facing = 'down'; player.flipX = false; }
-        else if (dy < 0) { player.frameY = 1; player.facing = 'up'; player.flipX = false; }
-        else if (dx > 0) { player.frameY = 2; player.facing = 'right'; player.flipX = false; }
-        else if (dx < 0) { player.frameY = 2; player.facing = 'left'; player.flipX = true; } // Reuse Row 2, Flip
+        // Prioritize Horizontal Animation for Diagonals
+        if (dx !== 0) {
+            player.frameY = 2; // Side
+            if (dx < 0) { player.facing = 'left'; player.flipX = true; }
+            else { player.facing = 'right'; player.flipX = false; }
+        }
+        else if (dy !== 0) {
+            if (dy > 0) { player.frameY = 0; player.facing = 'down'; player.flipX = false; }
+            else { player.frameY = 1; player.facing = 'up'; player.flipX = false; }
+        }
 
         if (isMoving) {
             player.animTimer++;
@@ -1499,7 +1525,8 @@ function update(dt) {
     document.getElementById('compass').style.transform = `rotate(${Math.atan2(currentObjective.y - player.y, currentObjective.x - player.x) * (180/Math.PI)}deg)`;
     if (dist < 400 && !gameState.bossActive && !currentObjective.bossDefeated && currentObjective.active && currentObjective.item !== 'PORTAL' && !gameState.enemies.some(e => e.type === 'boss')) spawnBoss();
     
-    if (dist < 80 && currentObjective.active && (!gameState.bossActive || currentObjective.bossDefeated)) { 
+    // Strict Hitbox for Pickup (40px radius check for 80px item)
+    if (dist < 40 && currentObjective.active && (!gameState.bossActive || currentObjective.bossDefeated)) { 
         if (!gameState.bossEntity) { 
             if(currentObjective.item === 'PORTAL') enterPortal();
             else collectIngredient(); 
@@ -1754,13 +1781,11 @@ function draw() {
     
     // Objective / Item
     if (currentObjective.active && currentObjective.item !== 'PORTAL') {
-         let size = 40;
+         let size = 80; // Doubled Size (was 40)
          let pulse = Math.sin(Date.now() / 200) * 5;
          
          if (!currentObjective.bossDefeated && gameState.bossActive) ctx.globalAlpha = 0.6;
          
-         // Note: Objective items still use the old "sheet/index" format in the object
-         // Our new drawSprite handles legacy object {sheet, index} gracefully
          drawSprite(ctx, { sheet: currentObjective.sheet, index: currentObjective.index }, currentObjective.x - pulse/2, currentObjective.y - pulse/2, size + pulse);
          
          ctx.globalAlpha = 1.0;
