@@ -532,6 +532,26 @@
         }
         #fire-btn:active { background: rgba(255, 0, 0, 0.5); transform: scale(0.95); }
 
+        #fly-btn-zone {
+            position: absolute;
+            bottom: 180px; right: 40px; /* Above fire button */
+            width: 80px; height: 80px;
+            pointer-events: auto;
+            touch-action: none;
+            display: flex; justify-content: center; align-items: center;
+        }
+        
+        #fly-btn {
+            width: 60px; height: 60px;
+            background: rgba(0, 200, 255, 0.3);
+            border: 2px solid rgba(0, 200, 255, 0.5);
+            border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 24px;
+            user-select: none;
+        }
+        #fly-btn:active { background: rgba(0, 200, 255, 0.5); transform: scale(0.95); }
+
         /* Fullscreen button adjust */
         #fs-btn { bottom: auto; top: 10px; right: 10px; opacity: 0.7; }
         
@@ -693,6 +713,9 @@
     <div id="mobile-controls">
         <div id="joystick-zone">
             <div id="joystick-knob"></div>
+        </div>
+        <div id="fly-btn-zone">
+            <div id="fly-btn" ontouchstart="toggleLevitate(event)">🪽</div>
         </div>
         <div id="fire-btn-zone">
             <div id="fire-btn" ontouchstart="handleFire(event)" onmousedown="handleFire(event)">🔥</div>
@@ -1335,7 +1358,8 @@ function spawnBoss() {
     }
 }
 
-function toggleLevitate() {
+function toggleLevitate(e) {
+    if(e) e.preventDefault();
     if (gameState.screen !== 'PLAY') return; // Guard clause
     if (player.mana > 10) { player.isLevitating = !player.isLevitating; createParticles(player.x, player.y, 10, '#fff'); }
 }
@@ -1355,14 +1379,35 @@ function playerAttack() {
     // Keep existing flipX
     
     let vx = 0, vy = 0;
-    // Determine projectile direction based on last facing or current flip
-    // This logic might need to align with frameY, but facing is usually accurate
-    switch(player.facing) { 
-        case 'up': vy = -12; break; 
-        case 'down': vy = 12; break; 
-        case 'left': vx = -12; break; 
-        case 'right': vx = 12; break; 
-        default: vy = 12; 
+    
+    // Determine projectile direction
+    if (joystickInput.active && (Math.abs(joystickInput.x) > 0.1 || Math.abs(joystickInput.y) > 0.1)) {
+        // Shoot in joystick direction
+        const mag = Math.sqrt(joystickInput.x*joystickInput.x + joystickInput.y*joystickInput.y);
+        vx = (joystickInput.x / mag) * 12;
+        vy = (joystickInput.y / mag) * 12;
+    } else {
+        // Keyboard/Fallback direction logic (support diagonals)
+        let kx = 0, ky = 0;
+        if (keys['w'] || keys['ArrowUp']) ky = -1;
+        if (keys['s'] || keys['ArrowDown']) ky = 1;
+        if (keys['a'] || keys['ArrowLeft']) kx = -1;
+        if (keys['d'] || keys['ArrowRight']) kx = 1;
+
+        if (kx !== 0 || ky !== 0) {
+            const mag = Math.sqrt(kx*kx + ky*ky);
+            vx = (kx / mag) * 12;
+            vy = (ky / mag) * 12;
+        } else {
+            // Static facing fallback
+            switch(player.facing) { 
+                case 'up': vy = -12; break; 
+                case 'down': vy = 12; break; 
+                case 'left': vx = -12; break; 
+                case 'right': vx = 12; break; 
+                default: vy = 12; 
+            }
+        }
     }
     
     gameState.projectiles.push({ x: player.x + 15, y: player.y + 15, vx: vx, vy: vy, life: 40, color: gameState.selectedSpell.color });
@@ -1578,9 +1623,26 @@ function respawnPlayer() {
     player.invulnTimer = 180;
     
     // Reset Input State to prevent sticky movement
+    // Reset Input State to prevent sticky movement
     keys = {}; 
     
-    alert("You fainted! The spirits return you to safety.");
+    // Custom Modal instead of Alert to keep Fullscreen
+    const modal = document.createElement('div');
+    modal.style.position = 'fixed'; modal.style.top = '0'; modal.style.left = '0'; modal.style.width = '100%'; modal.style.height = '100%';
+    modal.style.background = 'rgba(0,0,0,0.8)'; modal.style.color = '#fff'; modal.style.display = 'flex'; modal.style.flexDirection = 'column';
+    modal.style.justifyContent = 'center'; modal.style.alignItems = 'center'; modal.style.zIndex = '1000';
+    modal.innerHTML = `<h1>You Fainted!</h1><p>The spirits utilize your mana to return you to safety...</p><button class="btn" id="respawn-btn">Rise Again</button>`;
+    document.body.appendChild(modal);
+    
+    // Pause game loop logic implicitly by blocking input or state?
+    // Actually game loop continues running which is fine, but we might want to pause updates?
+    // For now, let world run, player is safe at spawn.
+    
+    document.getElementById('respawn-btn').onclick = () => {
+        modal.remove();
+        toggleFullScreen(); // Re-trigger ensures we stay in fullscreen if lost
+    };
+
     playSound('shimmer');
 }
 
@@ -1874,7 +1936,7 @@ function draw() {
     gameState.projectiles.forEach(p => {
         ctx.fillStyle = p.color;
         ctx.beginPath(); ctx.arc(p.x, p.y, 6, 0, Math.PI*2); ctx.fill();
-        ctx.shadowBlur = 10; ctx.shadowColor = p.color; ctx.fill(); ctx.shadowBlur = 0;
+        // Removed shadowBlur for performance
     });
     
     // Enemy Projectiles
@@ -1923,8 +1985,11 @@ function initRitual() {
         const overlay = document.getElementById('liquid-overlay');
         if(overlay) overlay.style.backgroundColor = gameState.selectedSpell.color;
         
+        if(overlay) overlay.style.backgroundColor = gameState.selectedSpell.color;
+        
         spawnBubbles(5);
-        setInterval(() => spawnSteam(), 500); 
+        if(gameState.steamInterval) clearInterval(gameState.steamInterval);
+        gameState.steamInterval = setInterval(() => spawnSteam(), 500); 
     }
     
     updateRitualUI();
