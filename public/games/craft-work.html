@@ -794,23 +794,24 @@ const SPELLS = [
 
 const TILES = { GRASS: { color: '#4a8c4a', type: 'walkable' }, WATER: { color: '#4fa4b8', type: 'obstacle' }, MOUNTAIN: { color: '#5c5552', type: 'wall' }, SAND: { color: '#dec47c', type: 'walkable' }, SNOW: { color: '#e8eef2', type: 'walkable' }, SWAMP: { color: '#3e4231', type: 'walkable' } };
 const SPRITES = { 
-    PLAYER_WITCH: { sheet: 'CHARS', index: 0 }, 
-    PLAYER_WIZARD: { sheet: 'CHARS', index: 1 },
+    PLAYER_WITCH: 'witch', 
+    PLAYER_WIZARD: 'wizard',
+    
     // Enemies 
-    SLIME: { sheet: 'CHARS', index: 2 },
-    BAT: { sheet: 'CHARS', index: 3 },
-    SPIDER: { sheet: 'CHARS', index: 4 },
-    GHOST: { sheet: 'CHARS', index: 5 },
-    GOBLIN: { sheet: 'CHARS', index: 6 },
-    SKELETON: { sheet: 'CHARS', index: 7 },
+    SLIME: 'slime',
+    BAT: 'bat',
+    SPIDER: 'spider',
+    GHOST: 'ghost',
+    GOBLIN: 'goblin',
+    SKELETON: 'skeleton',
     
     // Bosses
-    BOSS_LOVE: { sheet: 'CHARS', index: 8 },
-    BOSS_WEALTH: { sheet: 'CHARS', index: 9 },
-    BOSS_HEALTH: { sheet: 'CHARS', index: 10 },
-    BOSS_GLAMOUR: { sheet: 'CHARS', index: 11 },
+    BOSS_LOVE: 'cupid',
+    BOSS_WEALTH: 'demon',
+    BOSS_HEALTH: 'rot_golem',
+    BOSS_GLAMOUR: 'mirror_shadow',
 
-    // Misc
+    // Misc (Keep on old sheet for now if not replaced)
     PROJECTILE: { sheet: 'CHARS', index: 12 },
     PORTAL: { sheet: 'CHARS', index: 13 },
     CHEST: { sheet: 'CHARS', index: 14 },
@@ -819,28 +820,47 @@ const SPRITES = {
 
 // Sprite Sheets
 const SHEET_SRC = {
-    CHARS: '/images/craft-work/characters_sheet.png',
+    CHARS: '/images/craft-work/characters_sheet.png', // Legacy/Misc
     INGR_1: '/images/craft-work/ingredients_sheet_1.png',
-    INGR_2: '/images/craft-work/ingredients_sheet_2.png'
+    INGR_2: '/images/craft-work/ingredients_sheet_2.png',
+    
+    // New Character Sheets
+    witch: '/images/craft-work/characters/witch.png',
+    wizard: '/images/craft-work/characters/wizard.png',
+    slime: '/images/craft-work/characters/slime.png',
+    bat: '/images/craft-work/characters/bat.png',
+    spider: '/images/craft-work/characters/spider.png',
+    ghost: '/images/craft-work/characters/ghost.png',
+    goblin: '/images/craft-work/characters/goblin.png',
+    skeleton: '/images/craft-work/characters/skeleton.png',
+    
+    // Bosses
+    cupid: '/images/craft-work/characters/cupid.png',
+    demon: '/images/craft-work/characters/demon.png',
+    rot_golem: '/images/craft-work/characters/rot_golem.png',
+    mirror_shadow: '/images/craft-work/characters/mirror_shadow.png'
 };
 
-const SPRITE_SHEETS = {
-    CHARS: new Image(),
-    INGR_1: new Image(),
-    INGR_2: new Image()
-};
+const SPRITE_SHEETS = {};
+// Pre-populate keys to avoid undefined errors before load
+Object.keys(SHEET_SRC).forEach(k => SPRITE_SHEETS[k] = new Image());
 
 let spritesLoaded = false;
 
 function loadSprites() {
-    return Promise.all([
-        new Promise(resolve => { SPRITE_SHEETS.CHARS.onload = resolve; SPRITE_SHEETS.CHARS.src = SHEET_SRC.CHARS; }),
-        new Promise(resolve => { SPRITE_SHEETS.INGR_1.onload = resolve; SPRITE_SHEETS.INGR_1.src = SHEET_SRC.INGR_1; }),
-        new Promise(resolve => { SPRITE_SHEETS.INGR_2.onload = resolve; SPRITE_SHEETS.INGR_2.src = SHEET_SRC.INGR_2; })
-    ]).then(() => { 
+    const promises = Object.keys(SHEET_SRC).map(key => {
+        return new Promise((resolve, reject) => {
+            const img = SPRITE_SHEETS[key];
+            img.onload = resolve;
+            img.onerror = () => { console.warn(`Failed to load ${SHEET_SRC[key]}`); resolve(); }; // Continue even if fail
+            img.src = SHEET_SRC[key];
+        });
+    });
+
+    return Promise.all(promises).then(() => { 
         spritesLoaded = true; 
-        console.log("Sprites loaded!");
-        logSheetDimensions();
+        console.log("All Sprites Loaded!");
+        // logSheetDimensions();
     });
 }
 
@@ -863,7 +883,13 @@ let gameState = {
     ritualStep: 0, stirCount: 0
 };
 
-let player = { x: 0, y: 0, w: 40, h: 40, speed: 5, hp: 100, maxHp: 100, mana: 100, maxMana: 100, facing: 'down', isLevitating: false, invulnTimer: 0 };
+let player = { 
+    x: 0, y: 0, w: 40, h: 40, speed: 5, 
+    hp: 100, maxHp: 100, mana: 100, maxMana: 100, 
+    facing: 'down', isLevitating: false, invulnTimer: 0,
+    // Animation State
+    frameX: 0, frameY: 0, flipX: false, isAttacking: false, animTimer: 0
+};
 let keys = {};
 
 function init() {
@@ -1072,9 +1098,10 @@ function spawnEnemy(x, y, type) {
     }
     
     let soundType = 'monster_groan';
-    if(spriteData.index === 3) soundType = 'monster_squeak'; // Bat
-    else if(spriteData.index === 4) soundType = 'monster_hiss'; // Spider
-    else if(spriteData.index === 7) soundType = 'monster_rattle'; // Skeleton
+    // Update sound logic for string keys
+    if (spriteData === 'bat' || (spriteData.index === 3)) soundType = 'monster_squeak'; 
+    else if (spriteData === 'spider' || (spriteData.index === 4)) soundType = 'monster_hiss'; 
+    else if (spriteData === 'skeleton' || (spriteData.index === 7)) soundType = 'monster_rattle';
 
     // Difficulty Scaling
     let hp = type === 'boss' ? (200 + stage*50) : (30 + (stage * 15));
@@ -1087,7 +1114,11 @@ function spawnEnemy(x, y, type) {
     const enemy = { 
         x: x, y: y, w: size, h: size, type: type, 
         hp: hp, maxHp: hp, speed: speed, canShoot: canShoot, shootTimer: 0,
-        sprite: spriteData, soundType: soundType 
+        spriteKey: typeof spriteData === 'string' ? spriteData : null, // Store key specifically
+        sheet: typeof spriteData === 'object' ? spriteData.sheet : spriteData, // Fallback/Legacy
+        // Animation State
+        frameX: 0, frameY: 0, flipX: false, isAttacking: false, animTimer: 0 + Math.floor(Math.random()*10), // Offset anims
+        soundType: soundType 
     };
     gameState.enemies.push(enemy);
     return enemy;
@@ -1131,11 +1162,30 @@ function toggleLevitate() {
 }
 
 function playerAttack() {
-    if (gameState.screen !== 'PLAY' || !gameState.selectedSpell) return; // Guard clause
+    if (gameState.screen !== 'PLAY' || !gameState.selectedSpell) return;
+    if (player.isAttacking) return; // Cooldown/Animation Lock
+    
     if (player.mana < 2) { playSound('empty'); return; }
-    player.mana -= 2; playSound('shoot');
+    player.mana -= 2; 
+    playSound('shoot');
+    
+    // Trigger Animation
+    player.isAttacking = true;
+    player.frameX = 0;
+    player.frameY = 3; // Row 3 is Attack
+    // Keep existing flipX
+    
     let vx = 0, vy = 0;
-    switch(player.facing) { case 'up': vy = -12; break; case 'down': vy = 12; break; case 'left': vx = -12; break; case 'right': vx = 12; break; default: vy = 12; }
+    // Determine projectile direction based on last facing or current flip
+    // This logic might need to align with frameY, but facing is usually accurate
+    switch(player.facing) { 
+        case 'up': vy = -12; break; 
+        case 'down': vy = 12; break; 
+        case 'left': vx = -12; break; 
+        case 'right': vx = 12; break; 
+        default: vy = 12; 
+    }
+    
     gameState.projectiles.push({ x: player.x + 15, y: player.y + 15, vx: vx, vy: vy, life: 40, color: gameState.selectedSpell.color });
 }
 
@@ -1146,12 +1196,53 @@ function update(dt) {
     if (player.invulnTimer > 0) player.invulnTimer--;
 
     let dx = 0, dy = 0;
-    if (keys['w'] || keys['ArrowUp']) dy = -player.speed; if (keys['s'] || keys['ArrowDown']) dy = player.speed; if (keys['a'] || keys['ArrowLeft']) dx = -player.speed; if (keys['d'] || keys['ArrowRight']) dx = player.speed;
-    if (dy < 0) player.facing = 'up'; else if (dy > 0) player.facing = 'down'; else if (dx < 0) player.facing = 'left'; else if (dx > 0) player.facing = 'right';
+    if (keys['w'] || keys['ArrowUp']) dy = -player.speed; 
+    if (keys['s'] || keys['ArrowDown']) dy = player.speed; 
+    if (keys['a'] || keys['ArrowLeft']) dx = -player.speed; 
+    if (keys['d'] || keys['ArrowRight']) dx = player.speed;
+    
+    // --- PLAYER ANIMATION LOGIC ---
+    if (!player.isAttacking) {
+        let isMoving = dx !== 0 || dy !== 0;
+        
+        if (dy > 0) { player.frameY = 0; player.facing = 'down'; player.flipX = false; }
+        else if (dy < 0) { player.frameY = 1; player.facing = 'up'; player.flipX = false; }
+        else if (dx > 0) { player.frameY = 2; player.facing = 'right'; player.flipX = false; }
+        else if (dx < 0) { player.frameY = 2; player.facing = 'left'; player.flipX = true; } // Reuse Row 2, Flip
+
+        if (isMoving) {
+            player.animTimer++;
+            if (player.animTimer > 8) { // Speed of animation
+                player.frameX = (player.frameX + 1) % 4;
+                player.animTimer = 0;
+            }
+        } else {
+            player.frameX = 0; // Idle frame
+            player.animTimer = 0;
+        }
+    } else {
+        // Attack Animation
+        player.animTimer++;
+        if (player.animTimer > 5) { // Fast attack
+            player.frameX++;
+            player.animTimer = 0;
+            if (player.frameX > 3) {
+                player.isAttacking = false;
+                player.frameX = 0;
+                // Return to correct walking frame row based on facing
+                 if(player.facing === 'down') player.frameY = 0;
+                 if(player.facing === 'up') player.frameY = 1;
+                 if(player.facing === 'left' || player.facing === 'right') player.frameY = 2;
+            }
+        }
+    }
     
     // Check Collision
     const checkCollision = (newX, newY) => {
         let tx = Math.floor((newX + 15) / TILE_SIZE), ty = Math.floor((newY + 15) / TILE_SIZE);
+        // Bounding box checks
+        if(tx < 0 || tx >= MAP_WIDTH || ty < 0 || ty >= MAP_HEIGHT) return false;
+        
         let tile = (gameState.map[ty] && gameState.map[ty][tx]) ? gameState.map[ty][tx] : null;
         if (!tile) return false;
         let isWalkable = tile.type.type === 'walkable'; if (tile.type.type === 'obstacle' && player.isLevitating) isWalkable = true;
@@ -1210,8 +1301,29 @@ function update(dt) {
     // Enemies Logic
     gameState.enemies.forEach(e => {
         let angle = Math.atan2(player.y - e.y, player.x - e.x); 
-        e.x += Math.cos(angle) * (e.type === 'boss' ? 2.5 * e.speed : 1.5 * e.speed); 
-        e.y += Math.sin(angle) * (e.type === 'boss' ? 2.5 * e.speed : 1.5 * e.speed);
+        let speed = (e.type === 'boss' ? 2.5 * e.speed : 1.5 * e.speed);
+        let vx = Math.cos(angle) * speed;
+        let vy = Math.sin(angle) * speed;
+        
+        e.x += vx; 
+        e.y += vy;
+        
+        // --- ENEMY ANIMATION ---
+        // Simple directional mapping
+        if (Math.abs(vy) > Math.abs(vx)) {
+            if (vy > 0) { e.frameY = 0; e.flipX = false; }
+            else { e.frameY = 1; e.flipX = false; }
+        } else {
+            e.frameY = 2; // Side
+            if (vx < 0) e.flipX = true; else e.flipX = false;
+        }
+        
+        // Animate walk
+        e.animTimer++;
+        if (e.animTimer > 10) {
+            e.frameX = (e.frameX + 1) % 4;
+            e.animTimer = 0;
+        }
         
         // Shooting
         if (e.canShoot) {
@@ -1398,33 +1510,43 @@ function drawWand(ctx, pX, pY, facing, isCasting) {
 }
 
 // Draw Helpers
-function drawSprite(ctx, sheetKey, index, x, y, size) {
-    if (!spritesLoaded) {
-        // Fallback: Draw colored rectangle
-        ctx.fillStyle = '#ff00ff'; // Magenta for missing sprites
-        ctx.fillRect(x, y, size, size);
-        return;
-    }
-    const sheet = SPRITE_SHEETS[sheetKey];
-    if (!sheet || sheet.width === 0) {
-        // Fallback for failed image load
-         ctx.fillStyle = '#ff0000'; // Red for failed load
-         ctx.fillRect(x, y, size, size);
-         return;
-    }
-
-    const sx = (index % 4) * 512;
-    const sy = Math.floor(index / 4) * 512;
+// Generic Sprite Drawer with Animation Support
+function drawSprite(ctx, imageOrKey, x, y, size, frameX = 0, frameY = 0, flipX = false) {
+    if (!spritesLoaded) return;
     
-    // Safety check for out of bounds
-    if (sx >= sheet.width || sy >= sheet.height) {
-        console.warnOnce(`Sprite index out of bounds: ${sheetKey} #${index} (Sheet: ${sheet.width}x${sheet.height})`);
-        ctx.fillStyle = '#ffff00'; // Yellow for OOB
-        ctx.fillRect(x, y, size, size);
-        return;
+    let img;
+    if (typeof imageOrKey === 'string') {
+        img = SPRITE_SHEETS[imageOrKey];
+    } else {
+        // Fallback for legacy sprite objects (e.g. {sheet:'CHARS', index:0})
+        if (imageOrKey && imageOrKey.sheet) {
+            img = SPRITE_SHEETS[imageOrKey.sheet];
+            // Conversion for old index-based sprites (static)
+            const index = imageOrKey.index;
+            frameX = index % 4;
+            frameY = Math.floor(index / 4);
+        } else {
+            return; // Invalid
+        }
     }
+    
+    if (!img) return;
 
-    ctx.drawImage(sheet, sx, sy, 512, 512, x, y, size, size);
+    const frameSize = 512; // As per spec
+    const sx = frameX * frameSize;
+    const sy = frameY * frameSize;
+
+    ctx.save();
+    
+    // Move to center of timestamp to handle flip
+    ctx.translate(x + size/2, y + size/2);
+    
+    if (flipX) ctx.scale(-1, 1);
+    
+    // Draw centered
+    ctx.drawImage(img, sx, sy, frameSize, frameSize, -size/2, -size/2, size, size);
+    
+    ctx.restore();
 }
 
 // Helper to log warning only once
@@ -1480,31 +1602,33 @@ function draw() {
     
     // Objective / Item
     if (currentObjective.active && currentObjective.item !== 'PORTAL') {
-         // Show item on map - ALWAYS show if active (whether boss is alive or dead)
-         // Visually distinct if boss is alive? Maybe adding a lock icon or transparency could help, but for now just showing it is priority.
          let size = 40;
          let pulse = Math.sin(Date.now() / 200) * 5;
          
-         // Visual cue if locked by boss
-         if (!currentObjective.bossDefeated && gameState.bossActive) {
-             ctx.globalAlpha = 0.6; // Ghostly if not yet obtainable
-         }
+         if (!currentObjective.bossDefeated && gameState.bossActive) ctx.globalAlpha = 0.6;
          
-         drawSprite(ctx, currentObjective.sheet, currentObjective.index, currentObjective.x - pulse/2, currentObjective.y - pulse/2, size + pulse);
+         // Note: Objective items still use the old "sheet/index" format in the object
+         // Our new drawSprite handles legacy object {sheet, index} gracefully
+         drawSprite(ctx, { sheet: currentObjective.sheet, index: currentObjective.index }, currentObjective.x - pulse/2, currentObjective.y - pulse/2, size + pulse);
          
          ctx.globalAlpha = 1.0;
     }
     
     // Portal
     if (currentObjective.item === 'PORTAL' && currentObjective.active) {
-         // Portal Sprite
          let size = 60;
          let rot = (Date.now() / 1000) * Math.PI;
          
          ctx.save();
          ctx.translate(currentObjective.x + TILE_SIZE/2, currentObjective.y + TILE_SIZE/2);
          ctx.rotate(rot);
-         ctx.drawImage(SPRITE_SHEETS.CHARS, (SPRITES.PORTAL.index%4)*512, Math.floor(SPRITES.PORTAL.index/4)*512, 512, 512, -30, -30, 60, 60);
+         // Use legacy lookup for Portal (sheet: CHARS, index: 13)
+         // But we have to manually call drawImage because rotation implies we need center pivot which drawSprite does...
+         // Actually, let's just use raw ctx.drawImage for this special rotatable
+         const pSheet = SPRITE_SHEETS.CHARS;
+         if(pSheet.complete) {
+            ctx.drawImage(pSheet, (13%4)*512, Math.floor(13/4)*512, 512, 512, -30, -30, 60, 60);
+         }
          ctx.restore();
     }
 
@@ -1515,8 +1639,12 @@ function draw() {
         ctx.beginPath(); ctx.ellipse(e.x + e.w/2, e.y + e.h - 5, e.w/2, 10, 0, 0, Math.PI*2); ctx.fill();
 
         // Sprite
-        if(e.sprite) {
-             drawSprite(ctx, e.sprite.sheet, e.sprite.index, e.x, e.y, e.w);
+        // e.spriteKey contains the string key 'slime', 'bat', etc.
+        if(e.spriteKey) {
+             drawSprite(ctx, e.spriteKey, e.x, e.y, e.w, e.frameX, e.frameY, e.flipX);
+        } else if (e.sprite && e.sprite.sheet) {
+             // Fallback for any legacy objects
+             drawSprite(ctx, e.sprite, e.x, e.y, e.w);
         }
         
         // HP Bar
@@ -1531,8 +1659,11 @@ function draw() {
         ctx.beginPath(); ctx.ellipse(player.x + player.w/2, player.y + player.h - 5, player.w/2, 10, 0, 0, Math.PI*2); ctx.fill();
 
         // Sprite
-        const pSprite = gameState.playerClass === 'witch' ? SPRITES.PLAYER_WITCH : SPRITES.PLAYER_WIZARD;
-        drawSprite(ctx, pSprite.sheet, pSprite.index, player.x, player.y, player.w);
+        const pKey = gameState.playerClass === 'witch' ? 'PLAYER_WITCH' : 'PLAYER_WIZARD';
+        // The key in SPRITES is now 'witch' or 'wizard'
+        const spriteName = SPRITES[pKey];
+        
+        drawSprite(ctx, spriteName, player.x, player.y, player.w, player.frameX, player.frameY, player.flipX);
         
         if(player.isLevitating) {
             ctx.strokeStyle = '#aaf'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(player.x+20, player.y+20, 25, 0, Math.PI*2); ctx.stroke();
