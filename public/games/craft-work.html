@@ -1476,13 +1476,20 @@ function draw() {
     }
     
     // Objective / Item
-    if (currentObjective.active && !currentObjective.bossDefeated) {
-         // Show item on map - ALWAYS show if active and not collected
-         // Adjusted condition: Removed !gameState.bossActive check because we WANT to see it even if boss is fightning
-         // Use sprite
+    if (currentObjective.active && currentObjective.item !== 'PORTAL') {
+         // Show item on map - ALWAYS show if active (whether boss is alive or dead)
+         // Visually distinct if boss is alive? Maybe adding a lock icon or transparency could help, but for now just showing it is priority.
          let size = 40;
          let pulse = Math.sin(Date.now() / 200) * 5;
+         
+         // Visual cue if locked by boss
+         if (!currentObjective.bossDefeated && gameState.bossActive) {
+             ctx.globalAlpha = 0.6; // Ghostly if not yet obtainable
+         }
+         
          drawSprite(ctx, currentObjective.sheet, currentObjective.index, currentObjective.x - pulse/2, currentObjective.y - pulse/2, size + pulse);
+         
+         ctx.globalAlpha = 1.0;
     }
     
     // Portal
