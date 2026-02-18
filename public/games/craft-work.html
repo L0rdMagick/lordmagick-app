@@ -720,11 +720,11 @@ let VIEWPORT_H = window.innerHeight;
 
 
 // Expanded Incantations and Icons
+// Expanded Incantations and Icons
 const SPELLS = [
     {
         id: 'love', name: 'Amor Aeterna',
         ingredients: ['Rose Quartz', 'Honey Comb', 'Dove Feather', 'Siren Scale', 'Moon Flower', 'Passion Fruit', 'Heart of Ruby'],
-        icons: ['💎', '🍯', '🪶', '🧜♀️', '🌼', '🥥', '❤️'],
         finalIncantation: "By the powers of Earth and Sky, I release this love into the universe to bind two souls as one!",
         incantations: [
             "I consecrate this Rose Quartz! May it open the gates of the heart to true affection.",
@@ -735,12 +735,13 @@ const SPELLS = [
             "Passion Fruit, ignite the divine spark of desire within the soul!",
             "Ruby Heart, I charge you to seal this fate in blood and stone forever!"
         ],
-        boss: 'Cupid\'s Shadow', color: '#ff69b4'
+        boss: 'Cupid\'s Shadow', color: '#ff69b4',
+        sheet: 'INGR_1',
+        spriteIndices: [0, 1, 2, 3, 4, 5, 6]
     },
     {
         id: 'wealth', name: 'Aurea Fortuna',
         ingredients: ['Fool\'s Gold', 'Clover Leaf', 'Ancient Coin', 'Jade Fragment', 'Golden Apple', 'Dragon Scale', 'Crown Jewel'],
-        icons: ['✨', '🍀', '🪙', '🟢', '🍎', '🐉', '👑'],
         finalIncantation: "As gold is forged in fire, so shall my fortune be forged in destiny. Wealth flow to me now!",
         incantations: [
             "I consecrate this Gold! Transmute all lack into endless prosperity.",
@@ -751,12 +752,13 @@ const SPELLS = [
             "Dragon Scale, I charge you to guard my hoard against all who would steal it.",
             "Crown Jewel, I claim my sovereignty over fortune! Let it be so!"
         ],
-        boss: 'The Greed Demon', color: '#ffd700'
+        boss: 'The Greed Demon', color: '#ffd700',
+        sheet: 'INGR_1',
+        spriteIndices: [8, 9, 10, 11, 12, 13, 14]
     },
     {
         id: 'health', name: 'Sanus Vita',
         ingredients: ['Spring Water', 'Ginseng Root', 'Phoenix Ash', 'Vitality Herb', 'Sun Stone', 'Elixir Drop', 'Tree Bark'],
-        icons: ['💧', '🥕', '🌋', '🌿', '☀️', '⚗️', '🪵'],
         finalIncantation: "Vigor returns, sickness fades. By this brew, life is renewed and the body made whole!",
         incantations: [
             "I consecrate this Water! Cleanse the spirit and wash away all decay.",
@@ -767,12 +769,13 @@ const SPELLS = [
             "I activate this Elixir to awaken the dormant power of life within.",
             "Bark of the Elder Tree, shield this body from all harm and time!"
         ],
-        boss: 'The Rot Golem', color: '#7cfc00'
+        boss: 'The Rot Golem', color: '#7cfc00',
+        sheet: 'INGR_2',
+        spriteIndices: [0, 1, 2, 3, 4, 5, 6]
     },
     {
         id: 'glamour', name: 'Lux Forma',
         ingredients: ['Mirror Shard', 'Peacock Feather', 'Pearl Dust', 'Silk Worm', 'Night Essence', 'Crystal Tear', 'Star Fragment'],
-        icons: ['🪞', '🦚', '⚪', '🐛', '🌑', '💧', '⭐'],
         finalIncantation: "Let the shadows dance and the light reveal. Beauty unbound, shine for all the world to see!",
         incantations: [
             "I consecrate this Mirror to reflect only the truth of my inner radiance.",
@@ -783,17 +786,62 @@ const SPELLS = [
             "Crystal Tear, wash away insecurity and leave only diamond strength.",
             "Star Fragment, fall from the heavens and crown me with starlight!"
         ],
-        boss: 'The Mirror Shadow', color: '#e0ffff'
+        boss: 'The Mirror Shadow', color: '#e0ffff',
+        sheet: 'INGR_2',
+        spriteIndices: [8, 9, 10, 11, 12, 13, 14]
     }
 ];
 
 const TILES = { GRASS: { color: '#4a8c4a', type: 'walkable' }, WATER: { color: '#4fa4b8', type: 'obstacle' }, MOUNTAIN: { color: '#5c5552', type: 'wall' }, SAND: { color: '#dec47c', type: 'walkable' }, SNOW: { color: '#e8eef2', type: 'walkable' }, SWAMP: { color: '#3e4231', type: 'walkable' } };
 const SPRITES = { 
-    PLAYER_WITCH: '🧙♀️', PLAYER_WIZARD: '🧙♂️', 
-    ITEM: '✨', PORTAL: '🌀', TREE: '🌲', ROCK: '🪨',
-    // Monster Progression
-    MONSTERS: ['🦠', '🦇', '🕷️', '👻', '👺', '💀', '👹'] // Slime, Bat, Spider, Ghost, Goblin, Skeleton, Boss
+    PLAYER_WITCH: { sheet: 'CHARS', index: 0 }, 
+    PLAYER_WIZARD: { sheet: 'CHARS', index: 1 },
+    // Enemies 
+    SLIME: { sheet: 'CHARS', index: 2 },
+    BAT: { sheet: 'CHARS', index: 3 },
+    SPIDER: { sheet: 'CHARS', index: 4 },
+    GHOST: { sheet: 'CHARS', index: 5 },
+    GOBLIN: { sheet: 'CHARS', index: 6 },
+    SKELETON: { sheet: 'CHARS', index: 7 },
+    
+    // Bosses
+    BOSS_LOVE: { sheet: 'CHARS', index: 8 },
+    BOSS_WEALTH: { sheet: 'CHARS', index: 9 },
+    BOSS_HEALTH: { sheet: 'CHARS', index: 10 },
+    BOSS_GLAMOUR: { sheet: 'CHARS', index: 11 },
+
+    // Misc
+    PROJECTILE: { sheet: 'CHARS', index: 12 },
+    PORTAL: { sheet: 'CHARS', index: 13 },
+    CHEST: { sheet: 'CHARS', index: 14 },
+    SPARKLES: { sheet: 'CHARS', index: 15 }
 };
+
+// Sprite Sheets
+const SHEET_SRC = {
+    CHARS: '/images/craft-work/characters_sheet.png',
+    INGR_1: '/images/craft-work/ingredients_sheet_1.png',
+    INGR_2: '/images/craft-work/ingredients_sheet_2.png'
+};
+
+const SPRITE_SHEETS = {
+    CHARS: new Image(),
+    INGR_1: new Image(),
+    INGR_2: new Image()
+};
+
+let spritesLoaded = false;
+
+function loadSprites() {
+    return Promise.all([
+        new Promise(resolve => { SPRITE_SHEETS.CHARS.onload = resolve; SPRITE_SHEETS.CHARS.src = SHEET_SRC.CHARS; }),
+        new Promise(resolve => { SPRITE_SHEETS.INGR_1.onload = resolve; SPRITE_SHEETS.INGR_1.src = SHEET_SRC.INGR_1; }),
+        new Promise(resolve => { SPRITE_SHEETS.INGR_2.onload = resolve; SPRITE_SHEETS.INGR_2.src = SHEET_SRC.INGR_2; })
+    ]).then(() => { 
+        spritesLoaded = true; 
+        console.log("Sprites loaded!");
+    });
+}
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -834,6 +882,11 @@ function init() {
     requestAnimationFrame(gameLoop);
     
     setupStirring();
+    
+    // Start Loading
+    loadSprites().then(() => {
+        // Ready
+    });
 }
 
 function selectClass(c) {
@@ -861,11 +914,21 @@ function startGame(spell) {
     // Init Inventory Bar
     const bar = document.getElementById('inventory-bar');
     bar.innerHTML = '';
-    spell.icons.forEach((icon, i) => {
+    spell.ingredients.forEach((ing, i) => {
         const slot = document.createElement('div');
         slot.className = 'inv-slot';
         slot.id = `inv-slot-${i}`;
-        slot.innerText = icon;
+        // For HUD, we can just use a placeholder or mini canvas, but for now let's use the ingredient name first letter or generic
+        // BETTER: Create a mini canvas for the icon
+        const c = document.createElement('canvas'); c.width = 30; c.height = 30;
+        const ctxIcon = c.getContext('2d');
+        const sheet = SPRITE_SHEETS[spell.sheet];
+        const index = spell.spriteIndices[i];
+        if(spritesLoaded) {
+            ctxIcon.drawImage(sheet, (index%4)*512, Math.floor(index/4)*512, 512, 512, 0, 0, 30, 30);
+        }
+        slot.appendChild(c);
+        
         bar.appendChild(slot);
     });
 
@@ -913,7 +976,17 @@ function spawnNextIngredient() {
         document.getElementById('hud-mission').innerText = "Return to Start (Portal)";
         showMessage("Ritual ready! Return to start.");
         const targetIcon = document.getElementById('target-icon-hud');
-        if(targetIcon) targetIcon.innerText = SPRITES.PORTAL;
+        if(targetIcon) {
+            targetIcon.innerHTML = '';
+            const c = document.createElement('canvas'); c.width = 40; c.height = 40;
+            const ctxIcon = c.getContext('2d');
+            const sheet = SPRITE_SHEETS.CHARS;
+            const index = SPRITES.PORTAL.index;
+            if(spritesLoaded) {
+                ctxIcon.drawImage(sheet, (index%4)*512, Math.floor(index/4)*512, 512, 512, 0, 0, 40, 40);
+            }
+            targetIcon.appendChild(c);
+        }
         return;
     }
     
@@ -921,17 +994,29 @@ function spawnNextIngredient() {
     gameState.currentIngredientIndex = idx;
 
     const ingredientName = gameState.selectedSpell.ingredients[idx];
-    const ingredientIcon = gameState.selectedSpell.icons[idx];
+    const sheetKey = gameState.selectedSpell.sheet;
+    const spriteIndex = gameState.selectedSpell.spriteIndices[idx];
+    
     document.getElementById('hud-mission').innerText = `Find the ${ingredientName}`;
+    
     const targetIcon = document.getElementById('target-icon-hud');
-    if(targetIcon) targetIcon.innerText = ingredientIcon;
+    if(targetIcon) {
+        targetIcon.innerHTML = '';
+        const c = document.createElement('canvas'); c.width = 40; c.height = 40;
+        const ctxIcon = c.getContext('2d');
+        const sheet = SPRITE_SHEETS[sheetKey];
+        if(spritesLoaded) {
+            ctxIcon.drawImage(sheet, (spriteIndex%4)*512, Math.floor(spriteIndex/4)*512, 512, 512, 0, 0, 40, 40);
+        }
+        targetIcon.appendChild(c);
+    }
     
     let valid = false, tx, ty;
     while (!valid) {
         tx = Math.floor(Math.random() * (MAP_WIDTH - 20)) + 10; ty = Math.floor(Math.random() * (MAP_HEIGHT - 20)) + 10;
         if (gameState.map[ty][tx].type.type === 'walkable') valid = true;
     }
-    currentObjective = { x: tx * TILE_SIZE, y: ty * TILE_SIZE, item: ingredientName, icon: ingredientIcon, active: true, bossDefeated: false };
+    currentObjective = { x: tx * TILE_SIZE, y: ty * TILE_SIZE, item: ingredientName, sheet: sheetKey, index: spriteIndex, active: true, bossDefeated: false };
     
     for(let i=0; i<5; i++) { 
         spawnEnemy(tx * TILE_SIZE + (Math.random()*300 - 150), ty * TILE_SIZE + (Math.random()*300 - 150), 'minion'); 
@@ -940,13 +1025,23 @@ function spawnNextIngredient() {
 
 function spawnEnemy(x, y, type) {
     const stage = gameState.currentIngredientIndex;
-    let spriteIndex = type === 'boss' ? 6 : stage;
-    let sprite = SPRITES.MONSTERS[Math.min(spriteIndex, 6)];
+    let spriteData;
+    
+    if (type === 'boss') {
+        if(gameState.selectedSpell.id === 'love') spriteData = SPRITES.BOSS_LOVE;
+        else if(gameState.selectedSpell.id === 'wealth') spriteData = SPRITES.BOSS_WEALTH;
+        else if(gameState.selectedSpell.id === 'health') spriteData = SPRITES.BOSS_HEALTH;
+        else if(gameState.selectedSpell.id === 'glamour') spriteData = SPRITES.BOSS_GLAMOUR;
+    } else {
+        // Minion progression: Slime -> Bat -> Spider -> Ghost -> Goblin -> Skeleton
+        const order = [SPRITES.SLIME, SPRITES.BAT, SPRITES.SPIDER, SPRITES.GHOST, SPRITES.GOBLIN, SPRITES.SKELETON];
+        spriteData = order[Math.min(stage, order.length-1)];
+    }
     
     let soundType = 'monster_groan';
-    if(spriteIndex === 1) soundType = 'monster_squeak';
-    else if(spriteIndex === 2) soundType = 'monster_hiss';
-    else if(spriteIndex === 5) soundType = 'monster_rattle';
+    if(spriteData.index === 3) soundType = 'monster_squeak'; // Bat
+    else if(spriteData.index === 4) soundType = 'monster_hiss'; // Spider
+    else if(spriteData.index === 7) soundType = 'monster_rattle'; // Skeleton
 
     // Difficulty Scaling
     let hp = type === 'boss' ? (200 + stage*50) : (30 + (stage * 15));
@@ -957,7 +1052,7 @@ function spawnEnemy(x, y, type) {
     gameState.enemies.push({ 
         x: x, y: y, w: size, h: size, type: type, 
         hp: hp, maxHp: hp, speed: speed, canShoot: canShoot, shootTimer: 0,
-        sprite: sprite, soundType: soundType 
+        sprite: spriteData, soundType: soundType 
     });
 }
 
@@ -1129,7 +1224,15 @@ function collectIngredient() {
     const colName = document.getElementById('col-name');
     
     if (modal && colIcon && colName) {
-        colIcon.innerText = currentObjective.icon || '✨';
+        colIcon.innerHTML = '';
+        const c = document.createElement('canvas'); c.width = 80; c.height = 80;
+        const ctxIcon = c.getContext('2d');
+        const sheet = SPRITE_SHEETS[currentObjective.sheet];
+        const index = currentObjective.index;
+        if(spritesLoaded) {
+            ctxIcon.drawImage(sheet, (index%4)*512, Math.floor(index/4)*512, 512, 512, 0, 0, 80, 80);
+        }
+        colIcon.appendChild(c);
         colName.innerText = currentObjective.item || 'Item';
         modal.classList.add('show');
     }
@@ -1220,132 +1323,125 @@ function drawWand(ctx, pX, pY, facing, isCasting) {
     ctx.restore();
 }
 
+// Draw Helpers
+function drawSprite(ctx, sheetKey, index, x, y, size) {
+    if (!spritesLoaded) return;
+    const sheet = SPRITE_SHEETS[sheetKey];
+    const sx = (index % 4) * 512;
+    const sy = Math.floor(index / 4) * 512;
+    ctx.drawImage(sheet, sx, sy, 512, 512, x, y, size, size);
+}
+
 function draw() {
     if (gameState.screen !== 'PLAY') return;
-    ctx.fillStyle = '#000'; ctx.fillRect(0, 0, canvas.width, canvas.height); const cam = gameState.camera;
-    const startCol = Math.floor(cam.x / TILE_SIZE), endCol = startCol + (canvas.width / TILE_SIZE) + 1, startRow = Math.floor(cam.y / TILE_SIZE), endRow = startRow + (canvas.height / TILE_SIZE) + 1;
+    ctx.clearRect(0, 0, canvas.width, canvas.height); // Use actual canvas size
     
-    // First pass: Draw terrain backgrounds
-    for (let y = startRow; y <= endRow; y++) { 
-        for (let x = startCol; x <= endCol; x++) { 
-            if (y >= 0 && y < MAP_HEIGHT && x >= 0 && x < MAP_WIDTH) { 
-                const t = gameState.map[y][x]; 
-                drawTile(ctx, t.type, t.x - cam.x, t.y - cam.y);
-            } 
-        } 
-    }
+    // Fill background (outside map)
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Second pass: Draw decorations (trees, mushrooms) so they layer correctly
-    for (let y = startRow; y <= endRow; y++) { 
-        for (let x = startCol; x <= endCol; x++) { 
-            if (y >= 0 && y < MAP_HEIGHT && x >= 0 && x < MAP_WIDTH) { 
-                const t = gameState.map[y][x]; 
-                if (t.deco) { 
-                    ctx.font = `${t.decoSize}px serif`; 
-                    ctx.fillText(t.deco, t.x - cam.x + 5, t.y - cam.y + 30); 
-                } 
-            } 
-        } 
-    }
+    ctx.save();
     
-    // Objective Drawing
-    if (currentObjective.active) {
-        ctx.save();
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
+    // Camera Transform using dynamic viewport
+    ctx.translate(-gameState.camera.x, -gameState.camera.y);
+    
+    // Draw Map (Optimization: only visible tiles)
+    const startX = Math.floor(gameState.camera.x / TILE_SIZE);
+    const startY = Math.floor(gameState.camera.y / TILE_SIZE);
+    const endX = startX + Math.ceil(VIEWPORT_W / TILE_SIZE) + 1;
+    const endY = startY + Math.ceil(VIEWPORT_H / TILE_SIZE) + 1;
 
-        let dx = currentObjective.x - cam.x; 
-        let dy = currentObjective.y - cam.y; 
-        let cx = dx + TILE_SIZE/2; 
-        let cy = dy + TILE_SIZE/2; 
-
-        // Draw Circle
-        ctx.globalAlpha = 0.5 + Math.sin(Date.now()/200)*0.2; 
-        ctx.fillStyle = gameState.bossActive ? '#f00' : gameState.selectedSpell.color; 
-        ctx.beginPath(); 
-        ctx.arc(cx, cy, gameState.bossActive ? 40 : 25, 0, Math.PI*2); 
-        ctx.fill(); 
-        ctx.globalAlpha = 1;
-
-        // Draw Icon centered
-        ctx.font = '40px serif'; 
-        ctx.fillStyle = '#fff';
-        ctx.fillText(currentObjective.item === 'PORTAL' ? SPRITES.PORTAL : currentObjective.icon, cx, cy);
-
-        // Draw Text centered above
-        if (!gameState.bossActive && currentObjective.item !== 'PORTAL') { 
-            ctx.fillStyle = "#fff"; 
-            ctx.font = "10px sans-serif"; 
-            ctx.fillText("WALK HERE", cx, cy - 40); 
-            ctx.fillText("⬇", cx, cy - 55 + Math.sin(Date.now()/100)*5); 
+    for (let y = Math.max(0, startY); y < Math.min(MAP_HEIGHT, endY); y++) {
+        for (let x = Math.max(0, startX); x < Math.min(MAP_WIDTH, endX); x++) {
+            let t = gameState.map[y][x];
+            drawTile(ctx, t.type, t.x, t.y);
+            if (t.deco) {
+               ctx.font = `${t.decoSize}px sans-serif`;
+               ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+               ctx.fillText(t.deco, t.x + TILE_SIZE/2, t.y + TILE_SIZE/2);
+            }
         }
-        ctx.restore();
     }
     
-    // Draw Enemies
-    gameState.enemies.forEach(e => { 
-        // Save context to ensure alignment doesn't bleed
-        ctx.save();
-        ctx.font = e.type === 'boss' ? '60px serif' : '40px serif'; 
-        let wobbleY = Math.sin(Date.now()/200) * 3;
-        
-        // Draw enemy relative to top-left (standard)
-        ctx.fillText(e.sprite, e.x - cam.x, e.y - cam.y + e.h + wobbleY); 
+    // Objective / Item
+    if (currentObjective.active && !currentObjective.bossDefeated && !gameState.bossActive) {
+         // Show item on map
+         // Use sprite
+         let size = 40;
+         let pulse = Math.sin(Date.now() / 200) * 5;
+         drawSprite(ctx, currentObjective.sheet, currentObjective.index, currentObjective.x - pulse/2, currentObjective.y - pulse/2, size + pulse);
+    }
+    
+    // Portal
+    if (currentObjective.item === 'PORTAL' && currentObjective.active) {
+         // Portal Sprite
+         let size = 60;
+         let rot = (Date.now() / 1000) * Math.PI;
+         
+         ctx.save();
+         ctx.translate(currentObjective.x + TILE_SIZE/2, currentObjective.y + TILE_SIZE/2);
+         ctx.rotate(rot);
+         ctx.drawImage(SPRITE_SHEETS.CHARS, (SPRITES.PORTAL.index%4)*512, Math.floor(SPRITES.PORTAL.index/4)*512, 512, 512, -30, -30, 60, 60);
+         ctx.restore();
+    }
+
+    // Enemies
+    gameState.enemies.forEach(e => {
+        // Shadow
+        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        ctx.beginPath(); ctx.ellipse(e.x + e.w/2, e.y + e.h - 5, e.w/2, 10, 0, 0, Math.PI*2); ctx.fill();
+
+        // Sprite
+        if(e.sprite) {
+             drawSprite(ctx, e.sprite.sheet, e.sprite.index, e.x, e.y, e.w);
+        }
         
         // HP Bar
-        ctx.fillStyle = 'red'; ctx.fillRect(e.x - cam.x, e.y - cam.y - 10, e.w, 5); 
-        ctx.fillStyle = 'green'; ctx.fillRect(e.x - cam.x, e.y - cam.y - 10, e.w * (e.hp/e.maxHp), 5); 
-        ctx.restore();
+        ctx.fillStyle = 'red'; ctx.fillRect(e.x, e.y - 10, e.w, 5);
+        ctx.fillStyle = 'green'; ctx.fillRect(e.x, e.y - 10, e.w * (e.hp/e.maxHp), 5);
+    });
+    
+    // Player
+    if (player.invulnTimer % 10 < 5) {
+        // Shadow
+        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        ctx.beginPath(); ctx.ellipse(player.x + player.w/2, player.y + player.h - 5, player.w/2, 10, 0, 0, Math.PI*2); ctx.fill();
+
+        // Sprite
+        const pSprite = gameState.playerClass === 'witch' ? SPRITES.PLAYER_WITCH : SPRITES.PLAYER_WIZARD;
+        drawSprite(ctx, pSprite.sheet, pSprite.index, player.x, player.y, player.w);
+        
+        if(player.isLevitating) {
+            ctx.strokeStyle = '#aaf'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(player.x+20, player.y+20, 25, 0, Math.PI*2); ctx.stroke();
+        }
+    }
+    
+    // Projectiles
+    gameState.projectiles.forEach(p => {
+        ctx.fillStyle = p.color;
+        ctx.beginPath(); ctx.arc(p.x, p.y, 6, 0, Math.PI*2); ctx.fill();
+        ctx.shadowBlur = 10; ctx.shadowColor = p.color; ctx.fill(); ctx.shadowBlur = 0;
     });
     
     // Enemy Projectiles
-    gameState.enemyProjectiles.forEach(ep => {
-        ctx.fillStyle = '#f00'; ctx.beginPath(); ctx.arc(ep.x-cam.x, ep.y-cam.y, 8, 0, Math.PI*2); ctx.fill();
+    gameState.enemyProjectiles.forEach(p => {
+        ctx.fillStyle = '#f00';
+        ctx.beginPath(); ctx.arc(p.x, p.y, 6, 0, Math.PI*2); ctx.fill();
     });
 
-    // --- DRAW PLAYER (Restored Logic) ---
-    
-    // Ensure alignment is reset to default for the player
-    ctx.textAlign = "start";
-    ctx.textBaseline = "alphabetic";
+    // Particles
+    gameState.particles.forEach(p => {
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = p.life / 30;
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill();
+        ctx.globalAlpha = 1;
+        p.x += p.vx; p.y += p.vy; p.life--;
+    });
+    gameState.particles = gameState.particles.filter(p => p.life > 0);
 
-    // Draw Shadow (Restored to +20 x, +45 y offset)
-    ctx.fillStyle = 'rgba(0,0,0,0.2)'; 
-    ctx.beginPath(); 
-    ctx.ellipse(player.x - cam.x + 20, player.y - cam.y + 45, 15, 8, 0, 0, Math.PI*2); 
-    ctx.fill();
+    ctx.restore();
     
-    // Flash if hurt
-    if(player.invulnTimer > 0 && Math.floor(Date.now()/100) % 2 === 0) {
-        ctx.globalAlpha = 0.5;
-    } else {
-        ctx.globalAlpha = 1.0;
-    }
-
-    let pWobble = Math.sin(Date.now()/150) * 2;
-    if (player.isLevitating) ctx.translate(0, -Math.sin(Date.now()/100)*5); else ctx.translate(0, pWobble);
-    
-    let isCasting = keys[' '];
-    
-    // Draw Wand BEHIND if facing up
-    if (player.facing === 'up') drawWand(ctx, player.x - cam.x, player.y - cam.y, player.facing, isCasting);
-    
-    // Reset fillStyle to opaque white to ensure emoji renders fully opaque
-    ctx.fillStyle = '#ffffff';
-    ctx.font = '45px serif'; 
-    
-    // Draw Sprite (Restored to +0 x, +40 y offset for top-left anchor text)
-    ctx.fillText(gameState.playerClass === 'witch' ? SPRITES.PLAYER_WITCH : SPRITES.PLAYER_WIZARD, player.x - cam.x, player.y - cam.y + 40); 
-    
-    // Draw Wand FRONT if not facing up
-    if (player.facing !== 'up') drawWand(ctx, player.x - cam.x, player.y - cam.y, player.facing, isCasting);
-    
-    ctx.setTransform(1,0,0,1,0,0);
-    
-    // --- END PLAYER DRAW ---
-    
-    gameState.projectiles.forEach(p => { ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x-cam.x, p.y-cam.y, 6, 0, Math.PI*2); ctx.fill(); });
-    gameState.particles.forEach(p => { p.life--; p.x+=p.vx; p.y+=p.vy; ctx.fillStyle = p.color; ctx.fillRect(p.x-cam.x, p.y-cam.y, p.size, p.size); }); gameState.particles = gameState.particles.filter(p => p.life > 0);
+    requestAnimationFrame(gameLoop);
 }
 function gameLoop(timestamp) { const dt = timestamp - gameState.lastTime; gameState.lastTime = timestamp; update(dt); draw(); requestAnimationFrame(gameLoop); }
 function rectIntersect(x1, y1, w1, h1, x2, y2, w2, h2) { return x2 < x1 + w1 && x2 + w2 > x1 && y2 < y1 + h1 && y2 + h2 > y1; }
@@ -1412,12 +1508,23 @@ function updateRitualUI() {
         
         const ingName = gameState.selectedSpell.ingredients[gameState.ritualStep];
         const chantText = gameState.selectedSpell.incantations[gameState.ritualStep];
-        const icon = gameState.selectedSpell.icons[gameState.ritualStep];
+        // const icon = gameState.selectedSpell.icons[gameState.ritualStep]; // REMOVED
+        const sheetKey = gameState.selectedSpell.sheet;
+        const index = gameState.selectedSpell.spriteIndices[gameState.ritualStep];
         
         if(instr) instr.innerHTML = `Step ${gameState.ritualStep+1}/7: Add <span style="color:${gameState.selectedSpell.color}">${ingName}</span>`;
         if(chant) chant.innerText = `"${chantText}"`;
         if(itemVisual) {
-            itemVisual.innerText = icon; itemVisual.className = 'ingredient-visual'; 
+            itemVisual.innerHTML = ''; // Clear text
+            const c = document.createElement('canvas'); c.width = 100; c.height = 100;
+            const ctxIcon = c.getContext('2d');
+            const sheet = SPRITE_SHEETS[sheetKey];
+            if(spritesLoaded) {
+                ctxIcon.drawImage(sheet, (index%4)*512, Math.floor(index/4)*512, 512, 512, 0, 0, 100, 100);
+            }
+            itemVisual.appendChild(c);
+            
+            itemVisual.className = 'ingredient-visual'; 
             itemVisual.style.animation = 'none'; itemVisual.offsetHeight; itemVisual.style.opacity = '1'; itemVisual.style.transform = 'scale(1)'; itemVisual.style.top = '-100px';
         }
     } else {
@@ -1439,7 +1546,11 @@ function triggerAddIngredient() {
     playSound('collect'); 
     
     // VISUAL FEEDBACK: Create and Add floating ingredient
-    const currentIcon = document.getElementById('current-ingredient').innerText;
+    // Capture current data before it updates
+    const currentStep = gameState.ritualStep;
+    const sheetKey = gameState.selectedSpell.sheet;
+    const spriteIndex = gameState.selectedSpell.spriteIndices[currentStep];
+    
     const container = document.getElementById('mixed-ingredients');
     
     setTimeout(() => {
@@ -1454,7 +1565,15 @@ function triggerAddIngredient() {
             if(container) {
                 const floatingItem = document.createElement('div');
                 floatingItem.className = 'mixed-item';
-                floatingItem.innerText = currentIcon;
+                // floatingItem.innerText = currentIcon; // REPLACED
+                const c = document.createElement('canvas'); c.width = 40; c.height = 40;
+                const ctxIcon = c.getContext('2d');
+                const sheet = SPRITE_SHEETS[sheetKey];
+                if(spritesLoaded) {
+                    ctxIcon.drawImage(sheet, (spriteIndex%4)*512, Math.floor(spriteIndex/4)*512, 512, 512, 0, 0, 40, 40);
+                }
+                floatingItem.appendChild(c);
+
                 floatingItem.style.left = (Math.random() * 60 + 20) + '%';
                 floatingItem.style.top = (Math.random() * 60 + 20) + '%';
                 floatingItem.style.animationDelay = (Math.random() * 2) + 's';
