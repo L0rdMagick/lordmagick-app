@@ -470,6 +470,70 @@
         #final-activation-ui { display: none; flex-direction: column; align-items: center; animation: fade-in 2s forwards; }
         @keyframes fade-in { 0% { opacity: 0; } 100% { opacity: 1; } }
 
+
+        /* Mobile Controls */
+        #mobile-controls {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 20; /* Above game, below modals */
+            display: none; /* Shown on touch devices or small screens */
+        }
+        
+        @media (hover: none) and (pointer: coarse) {
+            #mobile-controls { display: block; }
+            /* Adjust HUD for mobile */
+            .hud-panel { font-size: 10px; padding: 5px; }
+            #inventory-bar { top: 5px; transform: translateX(-50%) scale(0.8); }
+        }
+
+        #joystick-zone {
+            position: absolute;
+            bottom: 40px; left: 40px;
+            width: 150px; height: 150px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            pointer-events: auto;
+            touch-action: none;
+        }
+
+        #joystick-knob {
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 60px; height: 60px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        #fire-btn-zone {
+            position: absolute;
+            bottom: 60px; right: 40px;
+            width: 100px; height: 100px;
+            pointer-events: auto;
+            touch-action: none;
+            display: flex; justify-content: center; align-items: center;
+        }
+
+        #fire-btn {
+            width: 80px; height: 80px;
+            background: rgba(255, 0, 0, 0.3);
+            border: 2px solid rgba(255, 100, 100, 0.5);
+            border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 30px;
+            user-select: none;
+        }
+        #fire-btn:active { background: rgba(255, 0, 0, 0.5); transform: scale(0.95); }
+
+        /* Fullscreen button adjust */
+        #fs-btn { bottom: auto; top: 10px; right: 10px; opacity: 0.7; }
+        
+        /* Message log adjust */
+        #message-log { bottom: auto; top: 20%; width: 90%; }
+        
         .hidden { display: none !important; }
     </style>
 </head>
@@ -884,13 +948,90 @@ let gameState = {
 };
 
 let player = { 
-    x: 0, y: 0, w: 40, h: 40, speed: 5, 
+    x: 0, y: 0, w: 60, h: 60, speed: 5, 
     hp: 100, maxHp: 100, mana: 100, maxMana: 100, 
     facing: 'down', isLevitating: false, invulnTimer: 0,
     // Animation State
     frameX: 0, frameY: 0, flipX: false, isAttacking: false, animTimer: 0
 };
 let keys = {};
+
+// Mobile Input State
+let joystickInput = { x: 0, y: 0, active: false };
+
+function initMobileControls() {
+    const zone = document.getElementById('joystick-zone');
+    const knob = document.getElementById('joystick-knob');
+    
+    if (!zone || !knob) return;
+
+    let startX = 0, startY = 0;
+    const maxDist = 40; // Max distance knob can move from center
+
+    const handleStart = (e) => {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const rect = zone.getBoundingClientRect();
+        // Center of joystick
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        
+        startX = centerX;
+        startY = centerY;
+        joystickInput.active = true;
+        updateKnob(touch.clientX, touch.clientY);
+    };
+
+    const handleMove = (e) => {
+        e.preventDefault();
+        if (!joystickInput.active) return;
+        const touch = e.touches[0];
+        updateKnob(touch.clientX, touch.clientY);
+    };
+
+    const handleEnd = (e) => {
+        e.preventDefault();
+        joystickInput.active = false;
+        joystickInput.x = 0;
+        joystickInput.y = 0;
+        knob.style.transform = `translate(-50%, -50%)`;
+    };
+
+    const updateKnob = (clientX, clientY) => {
+        // Calculate vector from center
+        const rect = zone.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+
+        let dx = clientX - centerX;
+        let dy = clientY - centerY;
+        
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        
+        // Normalize if outside maxDist
+        if (dist > maxDist) {
+            dx = (dx / dist) * maxDist;
+            dy = (dy / dist) * maxDist;
+        }
+
+        // Move Knob
+        knob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+        
+        // Set Input (Normalized -1 to 1)
+        joystickInput.x = dx / maxDist;
+        joystickInput.y = dy / maxDist;
+    };
+
+    zone.addEventListener('touchstart', handleStart, {passive: false});
+    zone.addEventListener('touchmove', handleMove, {passive: false});
+    zone.addEventListener('touchend', handleEnd);
+    zone.addEventListener('touchcancel', handleEnd);
+}
+
+function handleFire(e) {
+    if(e) e.preventDefault();
+    playerAttack();
+}
 
 function init() {
     const spellContainer = document.getElementById('spell-options');
@@ -906,6 +1047,10 @@ function init() {
         if (e.key === 'Shift') toggleLevitate();
     });
     window.addEventListener('keyup', e => keys[e.key] = false);
+    
+    // Init Mobile
+    initMobileControls();
+
     requestAnimationFrame(gameLoop);
     
     setupStirring();
@@ -1106,7 +1251,7 @@ function spawnEnemy(x, y, type) {
     // Difficulty Scaling
     let hp = type === 'boss' ? (200 + stage*50) : (30 + (stage * 15));
     let speed = 1.0 + (stage * 0.2);
-    let size = type === 'boss' ? 70 : 40; 
+    let size = type === 'boss' ? 105 : 60; // 50% increase (70->105, 40->60)
     let canShoot = (type === 'boss' && stage >= 4); // Final 3 bosses shoot
 
     console.log("Spawning enemy at", x, y, "Type:", type, "Dist to Player:", dist);
@@ -1196,10 +1341,17 @@ function update(dt) {
     if (player.invulnTimer > 0) player.invulnTimer--;
 
     let dx = 0, dy = 0;
+    // Keyboard Input
     if (keys['w'] || keys['ArrowUp']) dy = -player.speed; 
     if (keys['s'] || keys['ArrowDown']) dy = player.speed; 
     if (keys['a'] || keys['ArrowLeft']) dx = -player.speed; 
     if (keys['d'] || keys['ArrowRight']) dx = player.speed;
+    
+    // Joystick Input (Additive)
+    if (joystickInput.active) {
+        dx = joystickInput.x * player.speed;
+        dy = joystickInput.y * player.speed;
+    }
     
     // --- PLAYER ANIMATION LOGIC ---
     if (!player.isAttacking) {
