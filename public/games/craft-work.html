@@ -1049,6 +1049,12 @@ function spawnNextIngredient() {
 }
 
 function spawnEnemy(x, y, type) {
+    // SAFETY CHECK: Do not spawn if too close to player
+    if (distance(x, y, player.x, player.y) < 400) {
+        console.warn("Prevented enemy spawn too close to player:", x, y, "Dist:", distance(x, y, player.x, player.y));
+        return;
+    }
+
     const stage = gameState.currentIngredientIndex;
     let spriteData;
     
@@ -1073,6 +1079,8 @@ function spawnEnemy(x, y, type) {
     let speed = 1.0 + (stage * 0.2);
     let size = type === 'boss' ? 70 : 40; 
     let canShoot = (type === 'boss' && stage >= 4); // Final 3 bosses shoot
+
+    console.log("Spawning enemy at", x, y, "Type:", type);
 
     gameState.enemies.push({ 
         x: x, y: y, w: size, h: size, type: type, 
