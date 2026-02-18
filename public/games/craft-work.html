@@ -883,7 +883,11 @@ const SPRITES = {
     PROJECTILE: { sheet: 'CHARS', index: 12 },
     PORTAL: { sheet: 'CHARS', index: 13 },
     CHEST: { sheet: 'CHARS', index: 14 },
-    SPARKLES: { sheet: 'CHARS', index: 15 }
+    SPARKLES: { sheet: 'CHARS', index: 15 },
+    
+    // Environment (Strings for Emoji fallback or Sprite keys if added later)
+    TREE: '🌲',
+    ROCK: '🪨'
 };
 
 // Sprite Sheets
@@ -1750,16 +1754,25 @@ function logSheetDimensions() {
 
 function draw() {
     if (gameState.screen !== 'PLAY') return;
-    ctx.clearRect(0, 0, canvas.width, canvas.height); // Use actual canvas size
     
-    // Fill background (outside map)
-    ctx.fillStyle = '#000';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    try {
+        ctx.clearRect(0, 0, canvas.width, canvas.height); // Use actual canvas size
+        
+        // Fill background (outside map)
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    ctx.save();
-    
-    // Camera Transform using dynamic viewport
-    ctx.translate(-gameState.camera.x, -gameState.camera.y);
+        ctx.save();
+        
+        // Camera Transform using dynamic viewport
+        // Ensure camera values are valid
+        if (isNaN(gameState.camera.x) || isNaN(gameState.camera.y)) {
+             gameState.camera.x = 0; gameState.camera.y = 0;
+             console.warn("Fixed NaN Camera");
+        }
+        
+        ctx.translate(-Math.floor(gameState.camera.x), -Math.floor(gameState.camera.y)); // Floor to prevent subpixel blur
+
     
     // Draw Map (Optimization: only visible tiles)
     const startX = Math.floor(gameState.camera.x / TILE_SIZE);
@@ -1871,8 +1884,10 @@ function draw() {
     gameState.particles = gameState.particles.filter(p => p.life > 0);
 
     ctx.restore();
-    
-    // requestAnimationFrame(gameLoop); // FIXED: Removed duplicate loop call that caused exponential speedup
+    } catch(e) {
+        console.error("Draw Loop Error:", e);
+        ctx.restore(); // Ensure restore happens
+    }
 }
 function gameLoop(timestamp) { const dt = timestamp - gameState.lastTime; gameState.lastTime = timestamp; update(dt); draw(); requestAnimationFrame(gameLoop); }
 function rectIntersect(x1, y1, w1, h1, x2, y2, w2, h2) { return x2 < x1 + w1 && x2 + w2 > x1 && y2 < y1 + h1 && y2 + h2 > y1; }
