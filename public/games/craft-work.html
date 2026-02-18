@@ -945,7 +945,7 @@ function startGame(spell) {
     player.maxHp = 100;
     player.mana = 100;
     player.maxMana = 100;
-    player.invulnTimer = 60; // Start with 1s of safety
+    player.invulnTimer = 180; // Start with 3s of safety
     
     console.log("Game Starting... Player HP:", player.hp, "Invuln:", player.invulnTimer);
     
@@ -1036,7 +1036,7 @@ function spawnNextIngredient() {
         let distToPlayer = distance(tx * TILE_SIZE, ty * TILE_SIZE, player.x, player.y);
         
         // Ensure distance is at least 600px (15 tiles) to avoid instant death on spawn
-        if (gameState.map[ty][tx].type.type === 'walkable' && distToPlayer > 600) valid = true;
+        if (gameState.map[ty][tx].type.type === 'walkable' && distToPlayer > 800) valid = true; // Increased safety distance
         
         attempts++;
         if(attempts > 500 && gameState.map[ty][tx].type.type === 'walkable') valid = true; // Fallback
@@ -1050,8 +1050,9 @@ function spawnNextIngredient() {
 
 function spawnEnemy(x, y, type) {
     // SAFETY CHECK: Do not spawn if too close to player
-    if (distance(x, y, player.x, player.y) < 400) {
-        console.warn("Prevented enemy spawn too close to player:", x, y, "Dist:", distance(x, y, player.x, player.y));
+    const dist = distance(x, y, player.x, player.y);
+    if (dist < 500) {
+        console.warn("Prevented enemy spawn too close to player:", x, y, "Dist:", dist);
         return;
     }
 
@@ -1080,7 +1081,7 @@ function spawnEnemy(x, y, type) {
     let size = type === 'boss' ? 70 : 40; 
     let canShoot = (type === 'boss' && stage >= 4); // Final 3 bosses shoot
 
-    console.log("Spawning enemy at", x, y, "Type:", type);
+    console.log("Spawning enemy at", x, y, "Type:", type, "Dist to Player:", dist);
 
     gameState.enemies.push({ 
         x: x, y: y, w: size, h: size, type: type, 
@@ -1225,14 +1226,14 @@ function update(dt) {
 function takeDamage(amount, source) {
     if (player.invulnTimer > 0) return;
     
-    console.log("Player took damage!", amount, "Source:", source, "Player Pos:", player.x, player.y);
+    console.warn(`[DAMAGE] Player took ${amount} damage from ${source}. Pos: ${Math.floor(player.x)},${Math.floor(player.y)} | HP: ${player.hp} -> ${player.hp - amount}`);
     
     player.hp -= amount;
     player.invulnTimer = 30; // 0.5s invincibility (60fps)
     playSound('hit_player');
     
     if (player.hp <= 0) {
-        console.log("Player died!");
+        console.error("Player died!");
         respawnPlayer();
     }
 }
