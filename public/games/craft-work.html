@@ -840,6 +840,7 @@ function loadSprites() {
     ]).then(() => { 
         spritesLoaded = true; 
         console.log("Sprites loaded!");
+        logSheetDimensions();
     });
 }
 
@@ -1371,11 +1372,52 @@ function drawWand(ctx, pX, pY, facing, isCasting) {
 
 // Draw Helpers
 function drawSprite(ctx, sheetKey, index, x, y, size) {
-    if (!spritesLoaded) return;
+    if (!spritesLoaded) {
+        // Fallback: Draw colored rectangle
+        ctx.fillStyle = '#ff00ff'; // Magenta for missing sprites
+        ctx.fillRect(x, y, size, size);
+        return;
+    }
     const sheet = SPRITE_SHEETS[sheetKey];
+    if (!sheet || sheet.width === 0) {
+        // Fallback for failed image load
+         ctx.fillStyle = '#ff0000'; // Red for failed load
+         ctx.fillRect(x, y, size, size);
+         return;
+    }
+
     const sx = (index % 4) * 512;
     const sy = Math.floor(index / 4) * 512;
+    
+    // Safety check for out of bounds
+    if (sx >= sheet.width || sy >= sheet.height) {
+        console.warnOnce(`Sprite index out of bounds: ${sheetKey} #${index} (Sheet: ${sheet.width}x${sheet.height})`);
+        ctx.fillStyle = '#ffff00'; // Yellow for OOB
+        ctx.fillRect(x, y, size, size);
+        return;
+    }
+
     ctx.drawImage(sheet, sx, sy, 512, 512, x, y, size, size);
+}
+
+// Helper to log warning only once
+console.warnOnce = (function() {
+    let logged = {};
+    return function(msg) {
+        if (!logged[msg]) {
+            console.warn(msg);
+            logged[msg] = true;
+        }
+    };
+})();
+
+// Debug log for sheet dimensions on load
+function logSheetDimensions() {
+    console.log("Sprite Sheet Dimensions:");
+    for (let key in SPRITE_SHEETS) {
+        const img = SPRITE_SHEETS[key];
+        console.log(`${key}: ${img.width}x${img.height} (Loaded: ${img.complete})`);
+    }
 }
 
 function draw() {
