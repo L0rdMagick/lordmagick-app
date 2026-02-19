@@ -2061,6 +2061,10 @@ function drawSprite(ctx, imageOrKey, x, y, size, frameX = 0, frameY = 0, flipX =
     
     if (flipX) ctx.scale(-1, 1);
     
+    // SPRITE SAFETY: Ensure no shadow box
+    ctx.shadowBlur = 0;
+    ctx.shadowColor = 'transparent';
+
     // Draw centered
     ctx.drawImage(img, sx, sy, frameSize, frameSize, -size/2, -size/2, size, size);
     
@@ -2093,6 +2097,10 @@ function draw() {
     try {
         ctx.clearRect(0, 0, canvas.width, canvas.height); // Use actual canvas size
         
+        // GLOBAL SHADOW RESET - Critical Fix
+        ctx.shadowBlur = 0;
+        ctx.shadowColor = 'transparent';
+
         // Fill background (outside map)
         ctx.fillStyle = '#000';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -2137,6 +2145,8 @@ function draw() {
          
          if (!currentObjective.bossDefeated && gameState.bossActive) ctx.globalAlpha = 0.6;
          
+         // Explicit reset for item
+         ctx.shadowBlur = 0; ctx.shadowColor = 'transparent';
          drawSprite(ctx, { sheet: currentObjective.sheet, index: currentObjective.index }, currentObjective.x - pulse/2, currentObjective.y - pulse/2, size + pulse);
          
          ctx.globalAlpha = 1.0;
