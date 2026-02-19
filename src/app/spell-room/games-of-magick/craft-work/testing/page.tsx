@@ -63,8 +63,8 @@ const SpriteCanvas = ({ src, w, h, frameX = 0, frameY = 0, label }: { src: strin
     }, [src, w, h, frameX, frameY]);
 
     return (
-        <div className="flex flex-col items-center m-4 bg-white border border-gray-300 p-2 shadow-sm rounded">
-            <div className="relative border border-dashed border-gray-200" style={{ width: w, height: h }}>
+        <div className="flex flex-col items-center m-4 bg-white p-2 shadow-sm rounded">
+            <div className="relative" style={{ width: w, height: h }}>
                 <canvas ref={canvasRef} width={w} height={h} />
                 {!loaded && <div className="absolute inset-0 flex items-center justify-center text-xs text-gray-400">Loading...</div>}
             </div>
