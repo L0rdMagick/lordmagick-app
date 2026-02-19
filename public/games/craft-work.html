@@ -585,16 +585,7 @@
         
         .hidden { display: none !important; }
 
-        #ritual-text-container {
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            transform: translateY(-40px); /* Raise text up */
-            padding-bottom: 5px; /* Padding below text */
-            position: relative;
-            z-index: 40;
-        }
+
     </style>
 </head>
 <body>
@@ -739,10 +730,8 @@
 
         <h1>The Ritual Begins</h1>
         <div id="cauldron-ui">
-            <div id="ritual-text-container">
-                <div id="ritual-instruction" style="margin-bottom:5px; color:#aaa; font-size:12px;">Prepare the ingredients...</div>
-                <div id="chant-display" class="chant-text"></div>
-            </div>
+            <div id="ritual-instruction" style="margin-bottom:5px; color:#aaa; font-size:12px;">Prepare the ingredients...</div>
+            <div id="chant-display" class="chant-text"></div>
             
             <div class="cauldron-wrapper" id="cauldron-zone">
                 <!-- Drop Animation -->
@@ -2061,12 +2050,7 @@ function drawSprite(ctx, imageOrKey, x, y, size, frameX = 0, frameY = 0, flipX =
     
     if (flipX) ctx.scale(-1, 1);
     
-    // SPRITE SAFETY: Ensure no shadow box
-    ctx.shadowBlur = 0;
-    ctx.shadowColor = 'transparent';
-    ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 0;
-    ctx.filter = 'none';
+
 
     // Draw centered
     ctx.drawImage(img, sx, sy, frameSize, frameSize, -size/2, -size/2, size, size);
@@ -2100,12 +2084,7 @@ function draw() {
     try {
         ctx.clearRect(0, 0, canvas.width, canvas.height); // Use actual canvas size
         
-        // GLOBAL SHADOW RESET - Critical Fix
-        ctx.shadowBlur = 0;
-        ctx.shadowColor = 'transparent';
-        ctx.shadowOffsetX = 0;
-        ctx.shadowOffsetY = 0;
-        ctx.filter = 'none';
+
 
         // Fill background (outside map)
         ctx.fillStyle = '#000';
@@ -2151,8 +2130,7 @@ function draw() {
          
          if (!currentObjective.bossDefeated && gameState.bossActive) ctx.globalAlpha = 0.6;
          
-         // Explicit reset for item
-         ctx.shadowBlur = 0; ctx.shadowColor = 'transparent';
+
          drawSprite(ctx, { sheet: currentObjective.sheet, index: currentObjective.index }, currentObjective.x - pulse/2, currentObjective.y - pulse/2, size + pulse);
          
          ctx.globalAlpha = 1.0;
@@ -2184,9 +2162,7 @@ function draw() {
             return;
         }
 
-        // RESET SHADOW to prevent "box" artifact around sprites
-        ctx.shadowColor = 'transparent'; 
-        ctx.shadowBlur = 0;
+
 
         // Shadow
         ctx.fillStyle = 'rgba(0,0,0,0.3)';
@@ -2209,9 +2185,7 @@ function draw() {
     
     // Player
     if (player.invulnTimer % 10 < 5) {
-        // RESET SHADOW for Player too
-        ctx.shadowColor = 'transparent'; 
-        ctx.shadowBlur = 0;
+
 
         // Shadow
         ctx.fillStyle = 'rgba(0,0,0,0.3)';
