@@ -236,28 +236,32 @@
 
         .hud-panel {
             background: rgba(0,0,0,0.7);
-            padding: 5px;
+            padding: 8px; /* Increased padding */
             border: 2px solid var(--ui-border);
             color: white;
-            font-size: clamp(8px, 2vw, 12px); /* Responsive Font */
+            font-size: clamp(10px, 2.5vw, 14px); /* Slightly larger clamp */
             position: absolute;
             top: 10px; 
             white-space: nowrap; 
-            height: 70px; /* Fixed Height */
+            min-height: 80px; /* Min Height instead of fixed */
             display: flex;
             flex-direction: column;
             justify-content: center;
+            box-sizing: border-box; /* Ensure padding doesn't add to width */
         }
 
         .hud-left { 
-            left: 4%; 
-            width: fit-content; /* Responsive container width */
-            max-width: 45%; 
+            left: 2%; /* Closer to edge */
+            width: fit-content; 
+            min-width: 140px; /* Ensure basic width */
+            max-width: 48%; 
             text-align: left; 
         }
         .hud-right { 
-            right: 4%; 
+            right: 2%; 
             width: fit-content; 
+            min-width: 140px;
+            max-width: 48%;
             text-align: right; 
         }
 
@@ -608,31 +612,50 @@
         </style>
         <h1>Craft Work</h1>
         <div id="step-1" style="display:flex; flex-direction:column; align-items:center;">
-            <p style="font-family: 'MedievalSharp', serif; font-size: 14px; max-width: 500px; margin-bottom: 20px;">
+            <p style="font-family: 'MedievalSharp', serif; font-size: 14px; max-width: 600px; margin-bottom: 20px;">
                 Welcome, seeker of the arcane. To weave a spell of true power, one must gather the seven sacred essences scattered across the perilous realms. Only when all ingredients are united can the Grand Rite be performed.
             </p>
             <p>Who begins their journey today?</p>
-            <div class="input-group" style="width: 100%; max-width: 300px;">
-                <input type="text" id="player-name" placeholder="Enter Name" maxlength="12" style="width:100%;">
-            </div>
-            <div class="choices">
-                <div class="choice-card" onclick="selectClass('witch')" id="card-witch">
-                    <div id="icon-witch" style="width:60px; height:60px; margin:0 auto 10px; overflow:hidden; position:relative;"></div>Witch
+            <!-- WIDER CONTAINER -->
+            <div style="width:100%; max-width:400px; display:flex; flex-direction:column; align-items:center;">
+                <div class="input-group" style="width: 100%;">
+                    <input type="text" id="player-name" placeholder="Enter Name" maxlength="12" style="width:100%;">
                 </div>
-                <div class="choice-card" onclick="selectClass('wizard')" id="card-wizard">
-                    <div id="icon-wizard" style="width:60px; height:60px; margin:0 auto 10px; overflow:hidden; position:relative;"></div>Wizard
+                <div class="choices">
+                    <div class="choice-card" onclick="selectClass('witch')" id="card-witch">
+                        <div id="icon-witch" style="width:60px; height:60px; margin:0 auto 10px; overflow:hidden; position:relative;"></div>Witch
+                    </div>
+                    <div class="choice-card" onclick="selectClass('wizard')" id="card-wizard">
+                        <div id="icon-wizard" style="width:60px; height:60px; margin:0 auto 10px; overflow:hidden; position:relative;"></div>Wizard
+                    </div>
                 </div>
+                <!-- INSTRUCTIONS with Mobile/PC logic -->
+                <div class="instructions" style="width: 100%; text-align: left; margin-bottom: 20px;">
+                    <b>HOW TO PLAY:</b><br>
+                    <span id="instr-desktop" style="display:none;">
+                        ➤ Move: WASD or Arrow Keys<br>
+                        ➤ Shoot: Spacebar (Uses Mana)<br>
+                        ➤ Levitate: Hold Shift (Cross Water)<br>
+                    </span>
+                    <span id="instr-mobile" style="display:none;">
+                        ➤ Move: Left Joystick (Drag)<br>
+                        ➤ Shoot: Tap 🔥 Button<br>
+                        ➤ Levitate: Tap 🪽 Button<br>
+                    </span>
+                    ➤ Goal: Defeat Guardians -> Collect 7 Essences
+                </div>
+                <button class="btn" onclick="goToStep2()" style="margin-bottom:20px;">Next</button>
             </div>
-            <div class="instructions" style="width: 100%; max-width: 300px; text-align: left;">
-                <b>HOW TO PLAY:</b><br>
-                ➤ Move: WASD or Arrow Keys<br>
-                ➤ Shoot: Spacebar (Uses Mana)<br>
-                ➤ Levitate: Hold Shift (Cross Water)<br>
-                ➤ Goal: Defeat Guardians -> Collect 7 Essences
-            </div>
-            <br>
-            <button class="btn" onclick="goToStep2()">Next</button>
         </div>
+        
+        <script>
+            // Simple Logic to toggle instructions
+            if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+                document.getElementById('instr-mobile').style.display = 'inline';
+            } else {
+                document.getElementById('instr-desktop').style.display = 'inline';
+            }
+        </script>
         <div id="step-2" class="hidden">
             <p>What is your intention?</p>
             <div class="choices" id="spell-options"></div>
@@ -1027,7 +1050,7 @@ window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
 
 let gameState = {
-    screen: 'START', playerClass: 'witch', playerName: '', selectedSpell: null,
+    screen: 'START', playerClass: null, playerName: '', selectedSpell: null,
     currentIngredientIndex: 0, inventory: [], map: [], enemies: [], particles: [], projectiles: [], enemyProjectiles: [],
     camera: { x: 0, y: 0 }, lastTime: 0, bossActive: false, bossEntity: null,
     ritualStep: 0, stirCount: 0
@@ -1165,14 +1188,19 @@ function init() {
 
 function selectClass(c) {
     gameState.playerClass = c;
-    document.getElementById('card-witch').classList.remove('selected');
-    document.getElementById('card-wizard').classList.remove('selected');
+    const w = document.getElementById('card-witch');
+    const z = document.getElementById('card-wizard');
+    if(w) w.classList.remove('selected');
+    if(z) z.classList.remove('selected');
+    
     document.getElementById(`card-${c}`).classList.add('selected');
 }
 
 function goToStep2() {
     const name = document.getElementById('player-name').value;
     if (!name) { alert("Please enter a name!"); return; }
+    if (!gameState.playerClass) { alert("Please select a character (Witch or Wizard)!"); return; }
+    
     gameState.playerName = name;
     document.getElementById('step-1').classList.add('hidden');
     document.getElementById('step-2').classList.remove('hidden');
