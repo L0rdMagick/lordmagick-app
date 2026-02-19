@@ -1599,20 +1599,43 @@ function update(dt) {
                  player.x = nextX; // Slide X
             }
             
-            // FACING LOGIC FIX
-            // Prioritize Left/Right facing over Up/Down for sprites usually
-            // But diagonals need care. 
-            // Previous logic might have been simplistic.
-            if (dx < 0) { player.flipX = true; player.facing = 'left'; }
-            if (dx > 0) { player.flipX = false; player.facing = 'right'; }
-            if (dy < 0 && dx === 0) player.facing = 'up';
-            if (dy > 0 && dx === 0) player.facing = 'down';
-            
-            // For diagonals, we usually keep left/right flip but might want to know 'up-left' etc for shooting
-            if (dy < 0 && dx < 0) player.facing = 'up-left';
-            if (dy < 0 && dx > 0) player.facing = 'up-right';
-            if (dy > 0 && dx < 0) player.facing = 'down-left';
-            if (dy > 0 && dx > 0) player.facing = 'down-right';
+            // --- UPDATED FACING LOGIC (Visuals Fix) ---
+            // Determine primary facing for sprites
+            if (joystickInput.active) {
+                // Use input angle for true 8-way facing
+                const angle = Math.atan2(dy, dx);
+                const deg = angle * (180 / Math.PI);
+                
+                if (deg > -22.5 && deg <= 22.5) player.facing = 'right';
+                else if (deg > 22.5 && deg <= 67.5) player.facing = 'down-right';
+                else if (deg > 67.5 && deg <= 112.5) player.facing = 'down';
+                else if (deg > 112.5 && deg <= 157.5) player.facing = 'down-left';
+                else if (Math.abs(deg) > 157.5) player.facing = 'left';
+                else if (deg < -112.5 && deg >= -157.5) player.facing = 'up-left';
+                else if (deg < -67.5 && deg >= -112.5) player.facing = 'up';
+                else if (deg < -22.5 && deg >= -67.5) player.facing = 'up-right';
+            } else {
+                // Keyboard fallback (Explicit diagonals)
+                if (dy < 0 && dx < 0) player.facing = 'up-left';
+                else if (dy < 0 && dx > 0) player.facing = 'up-right';
+                else if (dy > 0 && dx < 0) player.facing = 'down-left';
+                else if (dy > 0 && dx > 0) player.facing = 'down-right';
+                else if (dx < 0) player.facing = 'left';
+                else if (dx > 0) player.facing = 'right';
+                else if (dy < 0) player.facing = 'up';
+                else if (dy > 0) player.facing = 'down';
+            }
+
+            // Sync visual sprites to facing
+            // Row 0: Down (and diagonals-down)
+            // Row 1: Up (and diagonals-up)
+            // Row 2: Side (Left/Right)
+            if (player.facing.includes('up')) player.frameY = 1;
+            else if (player.facing.includes('down')) player.frameY = 0;
+            else if (player.facing === 'left' || player.facing === 'right') player.frameY = 2;
+
+            // Flip check
+            player.flipX = (player.facing.includes('left'));
 
             // Animation
             player.animTimer++;
@@ -1640,9 +1663,9 @@ function update(dt) {
                 player.isAttacking = false;
                 player.frameX = 0;
                 // Return to correct walking frame row based on facing
-                 if(player.facing === 'down') player.frameY = 0;
-                 if(player.facing === 'up') player.frameY = 1;
-                 if(player.facing === 'left' || player.facing === 'right') player.frameY = 2;
+                 if(player.facing.includes('down')) player.frameY = 0;
+                 else if(player.facing.includes('up')) player.frameY = 1;
+                 else if(player.facing === 'left' || player.facing === 'right') player.frameY = 2;
             }
         }
     }
