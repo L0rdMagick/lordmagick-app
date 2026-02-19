@@ -1641,7 +1641,10 @@ function update(dt) {
             player.animTimer++;
             if (player.animTimer > 10) { player.frameX = (player.frameX + 1) % 4; player.animTimer = 0; }
         } else {
-             player.frameX = 0; // Idle
+             // Only reset to idle frame if NOT attacking
+             if (!player.isAttacking) {
+                player.frameX = 0; 
+             }
         }
         
         // Camera Follow
