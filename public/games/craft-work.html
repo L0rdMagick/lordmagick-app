@@ -1091,7 +1091,6 @@ function resizeCanvas() {
     canvas.height = window.innerHeight;
     VIEWPORT_W = canvas.width;
     VIEWPORT_H = canvas.height;
-    ctx.imageSmoothingEnabled = false; // [FIX] Disable smoothing for crisp pixel art & prevent bleeding
 }
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
@@ -2052,10 +2051,8 @@ function drawSprite(ctx, imageOrKey, x, y, size, frameX = 0, frameY = 0, flipX =
     if (!img) return;
 
     const frameSize = 512; // As per spec
-    const padding = 2; // [FIX] Contract source to avoid edge bleeding
-    const sx = frameX * frameSize + padding;
-    const sy = frameY * frameSize + padding;
-    const sSize = frameSize - (padding * 2);
+    const sx = frameX * frameSize;
+    const sy = frameY * frameSize;
 
     ctx.save();
     
@@ -2072,7 +2069,7 @@ function drawSprite(ctx, imageOrKey, x, y, size, frameX = 0, frameY = 0, flipX =
     ctx.filter = 'none';
 
     // Draw centered
-    ctx.drawImage(img, sx, sy, sSize, sSize, -size/2, -size/2, size, size);
+    ctx.drawImage(img, sx, sy, frameSize, frameSize, -size/2, -size/2, size, size);
     
     ctx.restore();
 }
