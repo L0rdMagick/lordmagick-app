@@ -1169,9 +1169,9 @@ function init() {
         div.onclick = () => startGame(spell); spellContainer.appendChild(div);
     });
     window.addEventListener('keydown', e => {
-        if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"," "].includes(e.key)) e.preventDefault();
+        if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"," ","Enter","z","Z"].includes(e.key)) e.preventDefault();
         keys[e.key] = true;
-        if (e.key === ' ') playerAttack();
+        if (e.key === ' ' || e.key === 'Enter' || e.key.toLowerCase() === 'z') playerAttack();
         if (e.key === 'Shift') toggleLevitate();
     });
     window.addEventListener('keyup', e => keys[e.key] = false);
