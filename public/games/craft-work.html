@@ -2064,6 +2064,9 @@ function drawSprite(ctx, imageOrKey, x, y, size, frameX = 0, frameY = 0, flipX =
     // SPRITE SAFETY: Ensure no shadow box
     ctx.shadowBlur = 0;
     ctx.shadowColor = 'transparent';
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
+    ctx.filter = 'none';
 
     // Draw centered
     ctx.drawImage(img, sx, sy, frameSize, frameSize, -size/2, -size/2, size, size);
@@ -2100,6 +2103,9 @@ function draw() {
         // GLOBAL SHADOW RESET - Critical Fix
         ctx.shadowBlur = 0;
         ctx.shadowColor = 'transparent';
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 0;
+        ctx.filter = 'none';
 
         // Fill background (outside map)
         ctx.fillStyle = '#000';
