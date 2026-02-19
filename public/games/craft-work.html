@@ -640,6 +640,14 @@
             <div id="target-icon-hud" style="font-size: 20px; margin-top:5px;"></div>
         </div>
         
+        <style>
+            /* Fix for canvas stretching in HUD and Modals */
+            #target-icon-hud canvas { width: 20px !important; height: 20px !important; display: inline-block; }
+            #col-icon canvas { width: 40px !important; height: 40px !important; display: inline-block; }
+            #current-ingredient canvas { width: 100px !important; height: 100px !important; object-fit: contain; }
+            .mixed-item canvas { width: 40px !important; height: 40px !important; }
+        </style>
+        
         <div id="collection-modal">
             <h2 style="color:var(--accent); font-size:16px;">ESSENCE OBTAINED!</h2>
             <div id="col-icon"></div>
