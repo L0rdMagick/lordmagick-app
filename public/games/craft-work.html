@@ -582,7 +582,17 @@
 
     <!-- START SCREEN -->
     <div id="start-screen">
-        <a href="https://www.lordmagick.com/spell-room/games-of-magick" style="position:absolute; top:20px; left:20px; color:#aaa; text-decoration:none; font-size:12px; z-index:1000;">← Back to Spell Room</a>
+        <a href="https://www.lordmagick.com/spell-room/games-of-magick" class="back-link">← Back</a>
+        <style>
+            .back-link {
+                position: absolute; top: 20px; left: 20px; color: #aaa; text-decoration: none; font-size: 12px; z-index: 1000;
+            }
+            @media (max-width: 400px) {
+                /* On small screens (iPhone SE), ensure title doesn't overlap or move link up */
+                .back-link { top: 10px; left: 10px; font-size: 10px; }
+                h1 { margin-top: 40px; } /* Push title down */
+            }
+        </style>
         <h1>The Alchemist's Path</h1>
         <div id="step-1">
             <p style="font-family: 'MedievalSharp', serif; font-size: 14px; max-width: 500px; margin-bottom: 20px;">
@@ -632,11 +642,11 @@
                 <span class="mission-text" id="hud-mission">Find the Rose Quartz</span>
             </div>
         </div>
-        <div class="hud-panel hud-right" style="display:flex; flex-direction:column; align-items:flex-end;">
+        <div class="hud-panel hud-right" style="display:flex; flex-direction:column; align-items:center;">
             <button onclick="location.reload()" style="pointer-events:auto; background:#cc0000; color:black; border:none; border-bottom:4px solid #7a0000; font-family:inherit; font-size:10px; padding:5px; cursor:pointer; text-transform:uppercase; font-weight:bold; width:100px; margin-bottom:5px;">End Game</button>
             <div style="border-bottom:1px solid #666; margin-bottom:5px; width:100%;"></div>
-            <div style="display:flex; align-items:center; justify-content:flex-end; gap:10px;">
-                <div id="compass" style="font-size:20px; line-height:1;">➤</div>
+            <div style="display:flex; align-items:center; justify-content:center; gap:10px;">
+                <div id="compass" style="font-size:20px; line-height:1; position:relative; top:-2px;">➤</div>
                 <div id="hud-distance-val" style="font-size:12px; font-weight:bold; color:var(--accent);">0m</div>
                 <div id="target-icon-hud" style="font-size: 20px; display:flex; align-items:center;"></div>
             </div>
