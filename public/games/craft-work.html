@@ -674,7 +674,8 @@
                 HP: <span id="hud-hp">100</span> | Mana: <span id="hud-mana">100</span>
             </div>
             <div style="margin-top:10px;">
-                <span class="desktop-only text-xs text-gray-400">MISSION:</span><br>
+                <span class="desktop-only text-xs text-gray-400">MISSION:<br>
+                </span>
                 <span class="mission-text" id="hud-mission">Find the Rose Quartz</span>
             </div>
         </div>
@@ -891,6 +892,21 @@ function playSound(type) {
         gainNode.gain.linearRampToValueAtTime(0, now + 0.2);
         osc.start(now);
         osc.stop(now + 0.2);
+    } else if (type === 'enemy_hit') { // New unique hit sound
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(100, now);
+        gainNode.gain.setValueAtTime(0.1, now);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+        osc.start(now);
+        osc.stop(now + 0.1);
+    } else if (type === 'enemy_kill') { // New unique kill sound
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(300, now);
+        osc.frequency.exponentialRampToValueAtTime(50, now + 0.3);
+        gainNode.gain.setValueAtTime(0.15, now);
+        gainNode.gain.linearRampToValueAtTime(0, now + 0.3);
+        osc.start(now);
+        osc.stop(now + 0.3);
     }
 }
 
@@ -1699,13 +1715,15 @@ function update(dt) {
             let e = gameState.enemies[j];
             if (rectIntersect(p.x, p.y, 10, 10, e.x, e.y, e.w, e.h)) {
                 e.hp -= 10; p.life = 0; hitEnemy = true;
-                playSound('hit'); createParticles(e.x + e.w/2, e.y + e.h/2, 5, gameState.selectedSpell.color);
+                playSound('enemy_hit'); // Updated Sound
+                createParticles(e.x + e.w/2, e.y + e.h/2, 5, gameState.selectedSpell.color);
                 
                 if (e.hp <= 0) {
                     // Mark for deletion later or handle splicing carefully
                     // Here we just modify the array in place since we aren't iterating enemies with index issues in this specific inner loop context
                     // BUT to be safe, we will mark them as dead and filter later
                     e.dead = true;
+                    playSound('enemy_kill'); // Updated Sound
                     if (e.type === 'boss') { 
                         playSound('monster_groan'); gameState.bossActive = false; gameState.bossEntity = null; currentObjective.bossDefeated = true; document.getElementById('hud-mission').innerText = `Pick up the ${currentObjective.item}!`; 
                     }
@@ -1738,6 +1756,20 @@ function update(dt) {
         
         e.x += vx; 
         e.y += vy;
+        
+        // --- ENEMY SEPARATION (Anti-Overlap) ---
+        gameState.enemies.forEach(other => {
+            if (e === other) return;
+            const dist = distance(e.x, e.y, other.x, other.y);
+            const minDist = (e.w + other.w) * 0.4; // Partial overlap allowed, but push apart
+            
+            if (dist < minDist && dist > 0) {
+                const pushX = (e.x - other.x) / dist;
+                const pushY = (e.y - other.y) / dist;
+                e.x += pushX * 1.5; // Push e away
+                e.y += pushY * 1.5;
+            }
+        });
         
         // --- ENEMY ANIMATION ---
         
@@ -2138,9 +2170,10 @@ function draw() {
              drawSprite(ctx, e.sprite, e.x, e.y, e.w);
         }
         
-        // HP Bar
-        ctx.fillStyle = 'red'; ctx.fillRect(e.x, e.y - 10, e.w, 5);
-        ctx.fillStyle = 'green'; ctx.fillRect(e.x, e.y - 10, e.w * (e.hp/e.maxHp), 5);
+        // HP Bar (New Style: White Border, Red Back, Green Front)
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; ctx.strokeRect(e.x, e.y - 12, e.w, 8);
+        ctx.fillStyle = '#cc0000'; ctx.fillRect(e.x, e.y - 12, e.w, 8); // Red Back
+        ctx.fillStyle = '#00cc00'; ctx.fillRect(e.x, e.y - 12, e.w * (e.hp/e.maxHp), 8); // Green Front
     });
     
     // Player
@@ -2157,7 +2190,9 @@ function draw() {
         drawSprite(ctx, spriteName, player.x, player.y, player.w, player.frameX, player.frameY, player.flipX);
         
         if(player.isLevitating) {
-            ctx.strokeStyle = '#aaf'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(player.x+20, player.y+20, 25, 0, Math.PI*2); ctx.stroke();
+            // Circle removed as requested
+            // Keeping shadow or other subtle effect if needed, but circle gone.
+            // ctx.strokeStyle = '#aaf'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(player.x+20, player.y+20, 25, 0, Math.PI*2); ctx.stroke();
         }
     }
     
