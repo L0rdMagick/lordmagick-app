@@ -584,6 +584,17 @@
         #message-log { bottom: auto; top: 20%; width: 90%; }
         
         .hidden { display: none !important; }
+
+        #ritual-text-container {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transform: translateY(-40px); /* Raise text up */
+            padding-bottom: 5px; /* Padding below text */
+            position: relative;
+            z-index: 40;
+        }
     </style>
 </head>
 <body>
@@ -595,7 +606,6 @@
     </div>
     
     <div id="transition-overlay"></div>
-
 
     <!-- START SCREEN -->
     <div id="start-screen">
@@ -729,9 +739,10 @@
 
         <h1>The Ritual Begins</h1>
         <div id="cauldron-ui">
-            <div id="ritual-instruction" style="margin-bottom:5px; color:#aaa; font-size:12px;">Prepare the ingredients...</div>
-            
-            <div id="chant-display" class="chant-text"></div>
+            <div id="ritual-text-container">
+                <div id="ritual-instruction" style="margin-bottom:5px; color:#aaa; font-size:12px;">Prepare the ingredients...</div>
+                <div id="chant-display" class="chant-text"></div>
+            </div>
             
             <div class="cauldron-wrapper" id="cauldron-zone">
                 <!-- Drop Animation -->
@@ -2157,6 +2168,10 @@ function draw() {
             return;
         }
 
+        // RESET SHADOW to prevent "box" artifact around sprites
+        ctx.shadowColor = 'transparent'; 
+        ctx.shadowBlur = 0;
+
         // Shadow
         ctx.fillStyle = 'rgba(0,0,0,0.3)';
         ctx.beginPath(); ctx.ellipse(e.x + e.w/2, e.y + e.h - 5, e.w/2, 10, 0, 0, Math.PI*2); ctx.fill();
@@ -2178,6 +2193,10 @@ function draw() {
     
     // Player
     if (player.invulnTimer % 10 < 5) {
+        // RESET SHADOW for Player too
+        ctx.shadowColor = 'transparent'; 
+        ctx.shadowBlur = 0;
+
         // Shadow
         ctx.fillStyle = 'rgba(0,0,0,0.3)';
         ctx.beginPath(); ctx.ellipse(player.x + player.w/2, player.y + player.h - 5, player.w/2, 10, 0, 0, Math.PI*2); ctx.fill();
