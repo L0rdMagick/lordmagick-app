@@ -236,17 +236,30 @@
 
         .hud-panel {
             background: rgba(0,0,0,0.7);
-            padding: 10px;
+            padding: 5px;
             border: 2px solid var(--ui-border);
             color: white;
-            font-size: 10px;
+            font-size: clamp(8px, 2vw, 12px); /* Responsive Font */
             position: absolute;
             top: 10px; 
             white-space: nowrap; 
+            height: 70px; /* Fixed Height */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
 
-        .hud-left { left: 4%; max-width: 40%; text-align: left; }
-        .hud-right { right: 4%; text-align: right; }
+        .hud-left { 
+            left: 4%; 
+            width: fit-content; /* Responsive container width */
+            max-width: 45%; 
+            text-align: left; 
+        }
+        .hud-right { 
+            right: 4%; 
+            width: fit-content; 
+            text-align: right; 
+        }
 
         .mission-text { color: var(--accent); margin-top: 5px; display: block; line-height: 1.4; white-space: normal; }
 
@@ -593,24 +606,24 @@
                 h1 { margin-top: 40px; } /* Push title down */
             }
         </style>
-        <h1>The Alchemist's Path</h1>
-        <div id="step-1">
+        <h1>Craft Work</h1>
+        <div id="step-1" style="display:flex; flex-direction:column; align-items:center;">
             <p style="font-family: 'MedievalSharp', serif; font-size: 14px; max-width: 500px; margin-bottom: 20px;">
                 Welcome, seeker of the arcane. To weave a spell of true power, one must gather the seven sacred essences scattered across the perilous realms. Only when all ingredients are united can the Grand Rite be performed.
             </p>
             <p>Who begins their journey today?</p>
-            <div class="input-group">
-                <input type="text" id="player-name" placeholder="Enter Name" maxlength="12">
+            <div class="input-group" style="width: 100%; max-width: 300px;">
+                <input type="text" id="player-name" placeholder="Enter Name" maxlength="12" style="width:100%;">
             </div>
             <div class="choices">
                 <div class="choice-card" onclick="selectClass('witch')" id="card-witch">
-                    <div style="font-size:30px">🧙♀️</div>Witch
+                    <div id="icon-witch" style="width:60px; height:60px; margin:0 auto 10px; overflow:hidden; position:relative;"></div>Witch
                 </div>
                 <div class="choice-card" onclick="selectClass('wizard')" id="card-wizard">
-                    <div style="font-size:30px">🧙♂️</div>Wizard
+                    <div id="icon-wizard" style="width:60px; height:60px; margin:0 auto 10px; overflow:hidden; position:relative;"></div>Wizard
                 </div>
             </div>
-            <div class="instructions">
+            <div class="instructions" style="width: 100%; max-width: 300px; text-align: left;">
                 <b>HOW TO PLAY:</b><br>
                 ➤ Move: WASD or Arrow Keys<br>
                 ➤ Shoot: Spacebar (Uses Mana)<br>
@@ -634,7 +647,7 @@
 
         <div class="hud-panel hud-left">
             <span id="hud-name" style="font-weight:bold; color:#fff;">Player</span>
-            <div style="margin-top:5px; border-top:1px solid #666; padding-top:5px;">
+            <div style="margin-top:5px; border-top:1px solid #666; padding-top:5px; width:100%;">
                 HP: <span id="hud-hp">100</span> | Mana: <span id="hud-mana">100</span>
             </div>
             <div style="margin-top:10px;">
@@ -1130,7 +1143,23 @@ function init() {
     
     // Start Loading
     loadSprites().then(() => {
-        // Ready
+        // Updated Intro Icons (Top Half of Sprite)
+        const keys = ['witch', 'wizard'];
+        keys.forEach(k => {
+            const container = document.getElementById(`icon-${k}`);
+            if(container) {
+                const c = document.createElement('canvas'); c.width = 60; c.height = 60;
+                const ctx = c.getContext('2d');
+                
+                // Zoom on upper body/face: Source region [128, 50] size [256, 256] -> Dest [0, 0] size [60, 60]
+                if(SPRITE_SHEETS[k].complete) {
+                     ctx.drawImage(SPRITE_SHEETS[k], 128, 50, 256, 256, 0, 0, 60, 60);
+                }
+                
+                container.innerHTML = '';
+                container.appendChild(c);
+            }
+        });
     });
 }
 
