@@ -481,15 +481,19 @@
             display: none; /* Controlled by JS */
         }
         
-        /* Force no selection/context menu */
-        * {
-            -webkit-touch-callout: none; /* iOS Safari */
-            -webkit-user-select: none; /* Safari */
-            -khtml-user-select: none; /* Konqueror HTML */
-            -moz-user-select: none; /* Old versions of Firefox */
-            -ms-user-select: none; /* Internet Explorer/Edge */
-            user-select: none; /* Non-prefixed version, currently supported by Chrome, Edge, Opera and Firefox */
-            touch-action: none;
+        @media (hover: none) and (pointer: coarse) {
+            #mobile-controls { display: block; }
+            /* Adjust HUD for mobile - Stacking Order */
+            .hud-panel { font-size: 10px; padding: 5px; }
+            
+            /* Inventory Bar (Top Center) */
+            #inventory-bar { top: 10px; transform: translateX(-50%) scale(0.8); width: auto; white-space: nowrap; }
+            
+            /* HP/Mana (Below Inventory, Left) */
+            .hud-left { top: 60px; left: 10px; }
+            
+            /* Distance/Compass (Below Inventory, Right) */
+            .hud-right { top: 60px; right: 10px; }
         }
 
         #joystick-zone {
@@ -514,8 +518,8 @@
 
         #fire-btn-zone {
             position: absolute;
-            bottom: 60px; right: 40px;
-            width: 100px; height: 100px;
+            bottom: 40px; right: 40px; /* Aligned with Joystick bottom */
+            width: 150px; height: 150px; /* Match Joystick zone size for symmetry/reach */
             pointer-events: auto;
             touch-action: none;
             display: flex; justify-content: center; align-items: center;
@@ -534,7 +538,7 @@
 
         #fly-btn-zone {
             position: absolute;
-            bottom: 180px; right: 40px; /* Above fire button */
+            bottom: 140px; right: 40px; /* 1/3 closer (was 180px) */
             width: 80px; height: 80px;
             pointer-events: auto;
             touch-action: none;
@@ -627,6 +631,7 @@
             <div style="margin-top:5px; color:#aaa; font-size:9px;" id="hud-spell-name">Spell Name</div>
             <div id="compass">➤</div>
             <div style="font-size:9px; margin-top:2px;">DISTANCE</div>
+            <div id="hud-distance-val" style="font-size:12px; font-weight:bold; color:var(--accent);">0m</div>
             <div id="target-icon-hud" style="font-size: 20px; margin-top:5px;"></div>
         </div>
         
@@ -1410,7 +1415,7 @@ function playerAttack() {
         }
     }
     
-    gameState.projectiles.push({ x: player.x + 15, y: player.y + 15, vx: vx, vy: vy, life: 40, color: gameState.selectedSpell.color });
+    gameState.projectiles.push({ x: player.x + player.w/2, y: player.y + player.h/2, vx: vx, vy: vy, life: 40, color: gameState.selectedSpell.color });
 }
 
 function update(dt) {
@@ -1436,16 +1441,19 @@ function update(dt) {
     if (!player.isAttacking) {
         let isMoving = dx !== 0 || dy !== 0;
         
-        // Prioritize Horizontal Animation for Diagonals
-        if (dx !== 0) {
-            player.frameY = 2; // Side
-            if (dx < 0) { player.facing = 'left'; player.flipX = true; }
-            else { player.facing = 'right'; player.flipX = false; }
+        // Update Facing based on movement (Joystick OR Keyboard)
+        if (isMoving) {
+            // Prioritize horizontal facing for side sprites
+            if (Math.abs(dx) > 0.1) {
+                if (dx < 0) { player.facing = 'left'; player.flipX = true; player.frameY = 2; }
+                else { player.facing = 'right'; player.flipX = false; player.frameY = 2; }
+            } else if (Math.abs(dy) > 0.1) {
+                if (dy > 0) { player.facing = 'down'; player.flipX = false; player.frameY = 0; }
+                else { player.facing = 'up'; player.flipX = false; player.frameY = 1; }
+            }
         }
-        else if (dy !== 0) {
-            if (dy > 0) { player.frameY = 0; player.facing = 'down'; player.flipX = false; }
-            else { player.frameY = 1; player.facing = 'up'; player.flipX = false; }
-        }
+        // If not moving, we keep the last set `player.facing`, `player.frameY`, and `player.flipX`
+        // ensuring the shooter direction persists!
 
         if (isMoving) {
             player.animTimer++;
@@ -1582,6 +1590,9 @@ function update(dt) {
     
     let dist = distance(player.x, player.y, currentObjective.x, currentObjective.y);
     document.getElementById('compass').style.transform = `rotate(${Math.atan2(currentObjective.y - player.y, currentObjective.x - player.x) * (180/Math.PI)}deg)`;
+    const distEl = document.getElementById('hud-distance-val');
+    if(distEl) distEl.innerText = Math.floor(dist/10) + 'm'; // Update Distance Text (scaled down)
+
     if (dist < 400 && !gameState.bossActive && !currentObjective.bossDefeated && currentObjective.active && currentObjective.item !== 'PORTAL' && !gameState.enemies.some(e => e.type === 'boss')) spawnBoss();
     
     // Strict Hitbox for Pickup (40px radius check for 80px item)
@@ -1666,12 +1677,12 @@ function collectIngredient() {
     
     if (modal && colIcon && colName) {
         colIcon.innerHTML = '';
-        const c = document.createElement('canvas'); c.width = 80; c.height = 80;
+        const c = document.createElement('canvas'); c.width = 60; c.height = 60; // Reduced size (was 80)
         const ctxIcon = c.getContext('2d');
         const sheet = SPRITE_SHEETS[currentObjective.sheet];
         const index = currentObjective.index;
         if(spritesLoaded) {
-            ctxIcon.drawImage(sheet, (index%4)*512, Math.floor(index/4)*512, 512, 512, 0, 0, 80, 80);
+            ctxIcon.drawImage(sheet, (index%4)*512, Math.floor(index/4)*512, 512, 512, 0, 0, 60, 60);
         }
         colIcon.appendChild(c);
         colName.innerText = currentObjective.item || 'Item';
