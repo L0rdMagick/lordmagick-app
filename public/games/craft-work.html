@@ -634,7 +634,7 @@
                     <b>HOW TO PLAY:</b><br>
                     <span id="instr-desktop" style="display:none;">
                         ➤ Move: WASD or Arrow Keys<br>
-                        ➤ Shoot: Spacebar (Uses Mana)<br>
+                        ➤ Shoot: Space, Enter, Z (Uses Mana)<br>
                         ➤ Levitate: Hold Shift (Cross Water)<br>
                     </span>
                     <span id="instr-mobile" style="display:none;">
@@ -1630,9 +1630,12 @@ function update(dt) {
             // Row 0: Down (and diagonals-down)
             // Row 1: Up (and diagonals-up)
             // Row 2: Side (Left/Right)
-            if (player.facing.includes('up')) player.frameY = 1;
-            else if (player.facing.includes('down')) player.frameY = 0;
-            else if (player.facing === 'left' || player.facing === 'right') player.frameY = 2;
+            // ONLY UPDATE IF NOT ATTACKING (Preserve Row 3)
+            if (!player.isAttacking) {
+                if (player.facing.includes('up')) player.frameY = 1;
+                else if (player.facing.includes('down')) player.frameY = 0;
+                else if (player.facing === 'left' || player.facing === 'right') player.frameY = 2;
+            }
 
             // Flip check
             player.flipX = (player.facing.includes('left'));
@@ -1737,20 +1740,36 @@ function update(dt) {
         e.y += vy;
         
         // --- ENEMY ANIMATION ---
-        // Simple directional mapping
-        if (Math.abs(vy) > Math.abs(vx)) {
-            if (vy > 0) { e.frameY = 0; e.flipX = false; }
-            else { e.frameY = 1; e.flipX = false; }
-        } else {
-            e.frameY = 2; // Side
-            if (vx < 0) e.flipX = true; else e.flipX = false;
-        }
         
-        // Animate walk
-        e.animTimer++;
-        if (e.animTimer > 10) {
-            e.frameX = (e.frameX + 1) % 4;
-            e.animTimer = 0;
+        if (e.isAttacking) {
+            // Attack Animation (Row 3 / Index 3)
+            e.animTimer++;
+            if (e.animTimer > 5) {
+                e.frameX++;
+                e.animTimer = 0;
+                if (e.frameX > 3) {
+                    e.isAttacking = false; // Attack complete
+                    e.frameX = 0;
+                    // Reset to walk row will happen next frame
+                }
+            }
+            e.frameY = 3; // Force Attack Row
+        } else {
+            // Simple directional mapping (Walk)
+            if (Math.abs(vy) > Math.abs(vx)) {
+                if (vy > 0) { e.frameY = 0; e.flipX = false; }
+                else { e.frameY = 1; e.flipX = false; }
+            } else {
+                e.frameY = 2; // Side
+                if (vx < 0) e.flipX = true; else e.flipX = false;
+            }
+            
+            // Animate walk
+            e.animTimer++;
+            if (e.animTimer > 10) {
+                e.frameX = (e.frameX + 1) % 4;
+                e.animTimer = 0;
+            }
         }
         
         // Shooting
@@ -1768,6 +1787,13 @@ function update(dt) {
         // Collision with player
         if (rectIntersect(player.x, player.y, player.w, player.h, e.x, e.y, e.w, e.h)) { 
             takeDamage(10, "Enemy Contact (" + e.type + ")");
+            // Trigger Enemy Attack Animation
+            if (!e.isAttacking) {
+                e.isAttacking = true;
+                e.frameX = 0;
+                e.frameY = 3; 
+                e.animTimer = 0;
+            }
         }
     });
     
