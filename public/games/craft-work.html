@@ -2390,6 +2390,13 @@ function performFinalActivation() {
     setTimeout(() => { finishGame(); }, 4000);
 }
 
+function updateManaUI() {
+    const hpEl = document.getElementById('hud-hp');
+    const manaEl = document.getElementById('hud-mana');
+    if(hpEl) hpEl.innerText = Math.floor(player.hp);
+    if(manaEl) manaEl.innerText = Math.floor(player.mana);
+}
+
 function finishGame() {
     document.getElementById('cauldron-screen').classList.add('hidden');
     document.getElementById('end-screen').classList.remove('hidden');
