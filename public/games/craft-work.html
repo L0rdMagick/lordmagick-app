@@ -670,14 +670,20 @@
 
         <div class="hud-panel hud-left">
             <span id="hud-name" style="font-weight:bold; color:#fff;">Player</span>
-            <div style="margin-top:5px; border-top:1px solid #666; padding-top:5px; width:100%;">
+            <div style="margin-top:5px; border-top:1px solid #666; padding-top:5px; width:100%; white-space: normal; line-height: 1.2;">
                 HP: <span id="hud-hp">100</span> | Mana: <span id="hud-mana">100</span>
             </div>
             <div style="margin-top:10px;">
-                MISSION:<br>
+                <span class="desktop-only text-xs text-gray-400">MISSION:</span><br>
                 <span class="mission-text" id="hud-mission">Find the Rose Quartz</span>
             </div>
         </div>
+        
+        <style>
+            @media (max-width: 600px) {
+                .desktop-only { display: none !important; }
+            }
+        </style>
         <div class="hud-panel hud-right" style="display:flex; flex-direction:column; align-items:center;">
             <button onclick="location.reload()" style="pointer-events:auto; background:#cc0000; color:black; border:none; border-bottom:4px solid #7a0000; font-family:inherit; font-size:10px; padding:5px; cursor:pointer; text-transform:uppercase; font-weight:bold; width:100px; margin-bottom:5px;">End Game</button>
             <div style="border-bottom:1px solid #666; margin-bottom:5px; width:100%;"></div>
@@ -1228,7 +1234,9 @@ function startGame(spell) {
     
     
     // document.getElementById('hud-spell-name').innerText = spell.name; // Removed from UI
-    document.getElementById('hud-name').innerText = gameState.playerName;
+    // Update Name Display: Class: Name
+    const pClass = gameState.playerClass.charAt(0).toUpperCase() + gameState.playerClass.slice(1);
+    document.getElementById('hud-name').innerText = `${pClass}: ${gameState.playerName}`;
     
     // Init Inventory Bar
     const bar = document.getElementById('inventory-bar');
@@ -1495,12 +1503,31 @@ function playerAttack() {
                 case 'down': vy = 12; break; 
                 case 'left': vx = -12; break; 
                 case 'right': vx = 12; break; 
-                default: vy = 12; 
-            }
-        }
-    }
+    const speed = 10;
     
-    gameState.projectiles.push({ x: player.x + player.w/2, y: player.y + player.h/2, vx: vx, vy: vy, life: 40, color: gameState.selectedSpell.color });
+    let dir = player.facing || 'down';
+    
+    // Support Diagonal Firing based on 'facing' set in movement loop
+    switch(dir) {
+        case 'up': vy = -speed; break;
+        case 'down': vy = speed; break;
+        case 'left': vx = -speed; break;
+        case 'right': vx = speed; break;
+        case 'up-left': vx = -speed * 0.7; vy = -speed * 0.7; break;
+        case 'up-right': vx = speed * 0.7; vy = -speed * 0.7; break;
+        case 'down-left': vx = -speed * 0.7; vy = speed * 0.7; break;
+        case 'down-right': vx = speed * 0.7; vy = speed * 0.7; break;
+        default: vy = speed; // Fallback
+    }
+
+    gameState.projectiles.push({
+        x: player.x + player.w/2, 
+        y: player.y + player.h/2, 
+        vx: vx, vy: vy, 
+        color: '#ff0', life: 60 
+    });
+    
+    playSound('shoot');
 }
 
 function update(dt) {
@@ -1509,51 +1536,95 @@ function update(dt) {
     // Decrement iFrame timer
     if (player.invulnTimer > 0) player.invulnTimer--;
 
-    let dx = 0, dy = 0;
-    // Keyboard Input
-    if (keys['w'] || keys['ArrowUp']) dy = -player.speed; 
-    if (keys['s'] || keys['ArrowDown']) dy = player.speed; 
-    if (keys['a'] || keys['ArrowLeft']) dx = -player.speed; 
-    if (keys['d'] || keys['ArrowRight']) dx = player.speed;
-    
-    // Joystick Input (Additive)
-    if (joystickInput.active) {
-        dx = joystickInput.x * player.speed;
-        dy = joystickInput.y * player.speed;
+    // Movement Logic
+    if (gameState.screen === 'PLAY' && player.hp > 0) {
+        let dx = 0, dy = 0;
+        
+        // Keyboard
+        if (keys['ArrowUp'] || keys['w'] || keys['W']) dy -= 1;
+        if (keys['ArrowDown'] || keys['s'] || keys['S']) dy += 1;
+        if (keys['ArrowLeft'] || keys['a'] || keys['A']) dx -= 1;
+        if (keys['ArrowRight'] || keys['d'] || keys['D']) dx += 1;
+        
+        // Joystick override
+        if (joystickInput.active) {
+            dx = joystickInput.x;
+            dy = joystickInput.y;
+            // Add deadzone
+            if(Math.abs(dx) < 0.1) dx = 0;
+            if(Math.abs(dy) < 0.1) dy = 0;
+        }
+
+        if (dx !== 0 || dy !== 0) {
+            // Normalize for diagonal speed
+            const len = Math.sqrt(dx*dx + dy*dy);
+            if (len > 1) { dx /= len; dy /= len; } // Only normalize if > 1 (keyboard) or allow analog control for stick
+
+            let speed = player.speed;
+            if (player.isLevitating) speed *= 1.5;
+            
+            // Collision Check (Simple)
+            const checkCollision = (newX, newY) => {
+                let tx = Math.floor((newX + player.w/2) / TILE_SIZE);
+                let ty = Math.floor((newY + player.h/2) / TILE_SIZE);
+                // Bounding box checks
+                if(tx < 0 || tx >= MAP_WIDTH || ty < 0 || ty >= MAP_HEIGHT) return true; // Treat out of bounds as collision
+                
+                let tile = (gameState.map[ty] && gameState.map[ty][tx]) ? gameState.map[ty][tx] : null;
+                if (!tile) return true; // Treat null tile as collision
+                let isWalkable = tile.type.type === 'walkable'; 
+                if (tile.type.type === 'obstacle' && player.isLevitating) isWalkable = true;
+                return !isWalkable;
+            };
+
+            let nextX = player.x + dx * speed;
+            let nextY = player.y + dy * speed;
+            
+            // Boundary
+            if (nextX < 0) nextX = 0; if (nextX > MAP_WIDTH*TILE_SIZE - player.w) nextX = MAP_WIDTH*TILE_SIZE - player.w;
+            if (nextY < 0) nextY = 0; if (nextY > MAP_HEIGHT*TILE_SIZE - player.h) nextY = MAP_HEIGHT*TILE_SIZE - player.h;
+
+            if (!checkCollision(nextX, nextY)) {
+                player.x = nextX;
+                player.y = nextY;
+            } else if (!checkCollision(player.x, nextY)) {
+                 player.y = nextY; // Slide Y
+            } else if (!checkCollision(nextX, player.y)) {
+                 player.x = nextX; // Slide X
+            }
+            
+            // FACING LOGIC FIX
+            // Prioritize Left/Right facing over Up/Down for sprites usually
+            // But diagonals need care. 
+            // Previous logic might have been simplistic.
+            if (dx < 0) { player.flipX = true; player.facing = 'left'; }
+            if (dx > 0) { player.flipX = false; player.facing = 'right'; }
+            if (dy < 0 && dx === 0) player.facing = 'up';
+            if (dy > 0 && dx === 0) player.facing = 'down';
+            
+            // For diagonals, we usually keep left/right flip but might want to know 'up-left' etc for shooting
+            if (dy < 0 && dx < 0) player.facing = 'up-left';
+            if (dy < 0 && dx > 0) player.facing = 'up-right';
+            if (dy > 0 && dx < 0) player.facing = 'down-left';
+            if (dy > 0 && dx > 0) player.facing = 'down-right';
+
+            // Animation
+            player.animTimer++;
+            if (player.animTimer > 10) { player.frameX = (player.frameX + 1) % 4; player.animTimer = 0; }
+        } else {
+             player.frameX = 0; // Idle
+        }
+        
+        // Camera Follow
+        gameState.camera.x = player.x + player.w/2 - VIEWPORT_W/2;
+        gameState.camera.y = player.y + player.h/2 - VIEWPORT_H/2;
+        // Clamp Camera
+        gameState.camera.x = Math.max(0, Math.min(gameState.camera.x, MAP_WIDTH*TILE_SIZE - VIEWPORT_W));
+        gameState.camera.y = Math.max(0, Math.min(gameState.camera.y, MAP_HEIGHT*TILE_SIZE - VIEWPORT_H));
     }
     
-    // --- PLAYER ANIMATION LOGIC ---
-    if (!player.isAttacking) {
-        let isMoving = dx !== 0 || dy !== 0;
-        
-        // Update Facing based on movement (Joystick OR Keyboard)
-        if (isMoving) {
-            // Strict 45-degree sector check
-            // If movement is predominantly horizontal vs vertical
-            if (Math.abs(dx) > Math.abs(dy)) {
-                // Horizontal Sector
-                if (dx < 0) { player.facing = 'left'; player.flipX = true; player.frameY = 2; }
-                else { player.facing = 'right'; player.flipX = false; player.frameY = 2; }
-            } else {
-                // Vertical Sector
-                if (dy > 0) { player.facing = 'down'; player.flipX = false; player.frameY = 0; }
-                else { player.facing = 'up'; player.flipX = false; player.frameY = 1; }
-            }
-        }
-        // If not moving, we keep the last set `player.facing`, `player.frameY`, and `player.flipX`
-        // ensuring the shooter direction persists!
-
-        if (isMoving) {
-            player.animTimer++;
-            if (player.animTimer > 8) { // Speed of animation
-                player.frameX = (player.frameX + 1) % 4;
-                player.animTimer = 0;
-            }
-        } else {
-            player.frameX = 0; // Idle frame
-            player.animTimer = 0;
-        }
-    } else {
+    // --- PLAYER ANIMATION LOGIC (Attack part) ---
+    if (player.isAttacking) {
         // Attack Animation
         player.animTimer++;
         if (player.animTimer > 5) { // Fast attack
@@ -1570,25 +1641,17 @@ function update(dt) {
         }
     }
     
-    // Check Collision
-    const checkCollision = (newX, newY) => {
-        let tx = Math.floor((newX + 15) / TILE_SIZE), ty = Math.floor((newY + 15) / TILE_SIZE);
-        // Bounding box checks
-        if(tx < 0 || tx >= MAP_WIDTH || ty < 0 || ty >= MAP_HEIGHT) return false;
-        
-        let tile = (gameState.map[ty] && gameState.map[ty][tx]) ? gameState.map[ty][tx] : null;
-        if (!tile) return false;
-        let isWalkable = tile.type.type === 'walkable'; if (tile.type.type === 'obstacle' && player.isLevitating) isWalkable = true;
-        return isWalkable;
-    };
-    if (dx !== 0 && checkCollision(player.x + dx, player.y)) player.x += dx;
-    if (dy !== 0 && checkCollision(player.x, player.y + dy)) player.y += dy;
+    // Mana Regeneration / Levitation Drain
+    if (player.isLevitating) { 
+        player.mana -= 0.1; 
+        if (player.mana <= 0) player.isLevitating = false; 
+        // createParticles(player.x + 15, player.y + 30, 1, '#aaf'); // Optional visual
+    } else { 
+        if (player.mana < player.maxMana) player.mana += 0.2; 
+    }
+    updateManaUI();
     
-    // Mana
-    if (player.isLevitating) { player.mana -= 0.1; if (player.mana <= 0) player.isLevitating = false; createParticles(player.x + 15, player.y + 30, 1, '#aaf'); } else { if (player.mana < player.maxMana) player.mana += 0.2; }
-    
-    gameState.camera.x = Math.max(0, Math.min(player.x - VIEWPORT_W / 2, MAP_WIDTH * TILE_SIZE - VIEWPORT_W));
-    gameState.camera.y = Math.max(0, Math.min(player.y - VIEWPORT_H / 2, MAP_HEIGHT * TILE_SIZE - VIEWPORT_H));
+
     
     // Process Projectiles (REVERSE LOOP to fix splicing bug)
     for (let i = gameState.projectiles.length - 1; i >= 0; i--) {
