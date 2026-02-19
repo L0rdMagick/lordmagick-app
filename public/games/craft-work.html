@@ -1640,6 +1640,7 @@ function update(dt) {
             }
         }
     }
+    }
     
     // Mana Regeneration / Levitation Drain
     if (player.isLevitating) { 
@@ -2131,6 +2132,7 @@ function draw() {
         console.error("Draw Loop Error:", e);
         ctx.restore(); // Ensure restore happens
     }
+}
 }
 function gameLoop(timestamp) { const dt = timestamp - gameState.lastTime; gameState.lastTime = timestamp; update(dt); draw(); requestAnimationFrame(gameLoop); }
 function rectIntersect(x1, y1, w1, h1, x2, y2, w2, h2) { return x2 < x1 + w1 && x2 + w2 > x1 && y2 < y1 + h1 && y2 + h2 > y1; }
