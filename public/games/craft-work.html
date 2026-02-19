@@ -1881,13 +1881,16 @@ function draw() {
     const endX = startX + Math.ceil(VIEWPORT_W / TILE_SIZE) + 1;
     const endY = startY + Math.ceil(VIEWPORT_H / TILE_SIZE) + 1;
 
+    // OPTIMIZATION: Set Text Properties ONCE before loop
+    ctx.font = '30px sans-serif';
+    ctx.textAlign = 'center'; 
+    ctx.textBaseline = 'middle';
+
     for (let y = Math.max(0, startY); y < Math.min(MAP_HEIGHT, endY); y++) {
         for (let x = Math.max(0, startX); x < Math.min(MAP_WIDTH, endX); x++) {
             let t = gameState.map[y][x];
             drawTile(ctx, t.type, t.x, t.y);
             if (t.deco) {
-               ctx.font = `${t.decoSize}px sans-serif`;
-               ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
                ctx.fillText(t.deco, t.x + TILE_SIZE/2, t.y + TILE_SIZE/2);
             }
         }
