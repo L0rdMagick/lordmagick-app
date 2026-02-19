@@ -633,16 +633,16 @@
             </div>
         </div>
         <div class="hud-panel hud-right">
-            <div style="margin-top:5px; color:#aaa; font-size:9px;" id="hud-spell-name">Spell Name</div>
-            <div id="compass">➤</div>
-            <div style="font-size:9px; margin-top:2px;">DISTANCE</div>
-            <div id="hud-distance-val" style="font-size:12px; font-weight:bold; color:var(--accent);">0m</div>
+            <div style="display:flex; align-items:center; justify-content:flex-end; gap:5px;">
+                <div id="compass" style="font-size:20px; line-height:1;">➤</div>
+                <div id="hud-distance-val" style="font-size:16px; font-weight:bold; color:var(--accent);">0m</div>
+            </div>
             <div id="target-icon-hud" style="font-size: 20px; margin-top:5px;"></div>
         </div>
         
         <style>
             /* Fix for canvas stretching in HUD and Modals */
-            #target-icon-hud canvas { width: 20px !important; height: 20px !important; display: inline-block; }
+            #target-icon-hud canvas { width: 40px !important; height: 40px !important; display: inline-block; }
             #col-icon canvas { width: 40px !important; height: 40px !important; display: inline-block; }
             #current-ingredient canvas { width: 100px !important; height: 100px !important; object-fit: contain; }
             .mixed-item canvas { width: 40px !important; height: 40px !important; }
@@ -1157,7 +1157,8 @@ function startGame(spell) {
         return false;
     };
     
-    document.getElementById('hud-spell-name').innerText = spell.name;
+    
+    // document.getElementById('hud-spell-name').innerText = spell.name; // Removed from UI
     document.getElementById('hud-name').innerText = gameState.playerName;
     
     // Init Inventory Bar
@@ -1268,7 +1269,7 @@ function spawnNextIngredient() {
     const targetIcon = document.getElementById('target-icon-hud');
     if(targetIcon) {
         targetIcon.innerHTML = '';
-        const c = document.createElement('canvas'); c.width = 20; c.height = 20; // 1/4 Size (was 40)
+        const c = document.createElement('canvas'); c.width = 40; c.height = 40; // Size increased to 40 (was 20)
         const ctxIcon = c.getContext('2d');
         const sheet = SPRITE_SHEETS[sheetKey];
         if(spritesLoaded) {
