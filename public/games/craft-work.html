@@ -519,15 +519,25 @@
             transform: translate(-50%, -50%);
             box-shadow: 0 0 10px rgba(0,0,0,0.5);
         }
-
-        #fire-btn-zone {
+        
+        #action-buttons-zone {
             position: absolute;
-            bottom: 20px; right: 20px; /* Closer to edge */
-            width: 150px; height: 150px; /* Match Joystick zone size for symmetry/reach */
+            bottom: 20px; right: 20px;
+            display: flex; flex-direction: column; align-items: center;
+            gap: 20px; /* Space between buttons */
+            pointer-events: none; /* Let clicks pass through gaps */
+        }
+
+        #fire-btn-zone, #fly-btn-zone {
+            position: relative; /* Relative to container */
+            bottom: auto; right: auto;
             pointer-events: auto;
             touch-action: none;
             display: flex; justify-content: center; align-items: center;
         }
+        
+        #fire-btn-zone { width: 100px; height: 100px; }
+        #fly-btn-zone { width: 80px; height: 80px; }
 
         #fire-btn {
             width: 80px; height: 80px;
@@ -539,15 +549,6 @@
             user-select: none;
         }
         #fire-btn:active { background: rgba(255, 0, 0, 0.5); transform: scale(0.95); }
-
-        #fly-btn-zone {
-            position: absolute;
-            bottom: 120px; right: 20px; /* Aligned with Fire, shifted up */
-            width: 80px; height: 80px;
-            pointer-events: auto;
-            touch-action: none;
-            display: flex; justify-content: center; align-items: center;
-        }
         
         #fly-btn {
             width: 60px; height: 60px;
@@ -723,11 +724,13 @@
         <div id="joystick-zone">
             <div id="joystick-knob"></div>
         </div>
-        <div id="fly-btn-zone">
-            <div id="fly-btn" ontouchstart="toggleLevitate(event)">🪽</div>
-        </div>
-        <div id="fire-btn-zone">
-            <div id="fire-btn" ontouchstart="handleFire(event)" onmousedown="handleFire(event)">🔥</div>
+        <div id="action-buttons-zone">
+            <div id="fly-btn-zone">
+                <div id="fly-btn" ontouchstart="toggleLevitate(event)">🪽</div>
+            </div>
+            <div id="fire-btn-zone">
+                <div id="fire-btn" ontouchstart="handleFire(event)" onmousedown="handleFire(event)">🔥</div>
+            </div>
         </div>
     </div>
 
@@ -845,7 +848,7 @@ const SPELLS = [
             "Passion Fruit, ignite the divine spark of desire within the soul!",
             "Ruby Heart, I charge you to seal this fate in blood and stone forever!"
         ],
-        boss: 'Cupid\'s Shadow', color: '#ff69b4',
+        BOSS: 'Cupid\'s Shadow', color: '#ff00aa', // Neon Pink (High Vis)
         sheet: 'INGR_1',
         spriteIndices: [0, 1, 2, 3, 4, 5, 6]
     },
@@ -1257,11 +1260,11 @@ function spawnNextIngredient() {
     const targetIcon = document.getElementById('target-icon-hud');
     if(targetIcon) {
         targetIcon.innerHTML = '';
-        const c = document.createElement('canvas'); c.width = 40; c.height = 40;
+        const c = document.createElement('canvas'); c.width = 20; c.height = 20; // 1/4 Size (was 40)
         const ctxIcon = c.getContext('2d');
         const sheet = SPRITE_SHEETS[sheetKey];
         if(spritesLoaded) {
-            ctxIcon.drawImage(sheet, (spriteIndex%4)*512, Math.floor(spriteIndex/4)*512, 512, 512, 0, 0, 40, 40);
+            ctxIcon.drawImage(sheet, (spriteIndex%4)*512, Math.floor(spriteIndex/4)*512, 512, 512, 0, 0, 20, 20);
         }
         targetIcon.appendChild(c);
     }
@@ -1447,11 +1450,14 @@ function update(dt) {
         
         // Update Facing based on movement (Joystick OR Keyboard)
         if (isMoving) {
-            // Prioritize horizontal facing for side sprites
-            if (Math.abs(dx) > 0.1) {
+            // Strict 45-degree sector check
+            // If movement is predominantly horizontal vs vertical
+            if (Math.abs(dx) > Math.abs(dy)) {
+                // Horizontal Sector
                 if (dx < 0) { player.facing = 'left'; player.flipX = true; player.frameY = 2; }
                 else { player.facing = 'right'; player.flipX = false; player.frameY = 2; }
-            } else if (Math.abs(dy) > 0.1) {
+            } else {
+                // Vertical Sector
                 if (dy > 0) { player.facing = 'down'; player.flipX = false; player.frameY = 0; }
                 else { player.facing = 'up'; player.flipX = false; player.frameY = 1; }
             }
