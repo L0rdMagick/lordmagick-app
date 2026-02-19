@@ -1487,46 +1487,42 @@ function playerAttack() {
     player.isAttacking = true;
     player.frameX = 0;
     player.frameY = 3; // Row 3 is Attack
-    // Keep existing flipX
     
+    const speed = 12;
     let vx = 0, vy = 0;
     
-    // Determine projectile direction
+    // 1. Joystick Input (8-way Snap for Mobile Requirement)
     if (joystickInput.active && (Math.abs(joystickInput.x) > 0.1 || Math.abs(joystickInput.y) > 0.1)) {
-        // Shoot in joystick direction
-        const mag = Math.sqrt(joystickInput.x*joystickInput.x + joystickInput.y*joystickInput.y);
-        vx = (joystickInput.x / mag) * 12;
-        vy = (joystickInput.y / mag) * 12;
+        // Calculate raw angle
+        let angle = Math.atan2(joystickInput.y, joystickInput.x);
+        
+        // Snap to nearest 45 degrees (PI/4 radians)
+        // This ensures the "45 degree radius" logic requested
+        const snap = Math.PI / 4; 
+        angle = Math.round(angle / snap) * snap;
+        
+        vx = Math.cos(angle) * speed;
+        vy = Math.sin(angle) * speed;
     } else {
-        // Keyboard/Fallback direction logic (support diagonals)
-        let kx = 0, ky = 0;
-        if (keys['w'] || keys['ArrowUp']) ky = -1;
-        if (keys['s'] || keys['ArrowDown']) ky = 1;
-        if (keys['a'] || keys['ArrowLeft']) kx = -1;
-        if (keys['d'] || keys['ArrowRight']) kx = 1;
-
-        if (kx !== 0 || ky !== 0) {
-            const mag = Math.sqrt(kx*kx + ky*ky);
-            vx = (kx / mag) * 12;
-            vy = (ky / mag) * 12;
-        } else {
-            // Static facing fallback
-            // Static facing fallback
-            const speed = 12; 
-            let dir = player.facing || 'down';
-            
-            // Support Diagonal Firing based on 'facing' set in movement loop
-            switch(dir) {
-                case 'up': vy = -speed; break;
-                case 'down': vy = speed; break;
-                case 'left': vx = -speed; break;
-                case 'right': vx = speed; break;
-                case 'up-left': vx = -speed * 0.7; vy = -speed * 0.7; break;
-                case 'up-right': vx = speed * 0.7; vy = -speed * 0.7; break;
-                case 'down-left': vx = -speed * 0.7; vy = speed * 0.7; break;
-                case 'down-right': vx = speed * 0.7; vy = speed * 0.7; break;
-                default: vy = speed; 
-            }
+        // 2. Keyboard / Facing fallback
+        // Unify logic: Always shoot in direction of player.facing
+        // This solves "standing still" issue (forcing persists) and any key ghosting for diagonals
+        
+        let dir = player.facing || 'down'; 
+        
+        // Diagonal scalar (1 / sqrt(2)) to ensure consistent speed
+        const diag = speed * 0.7071;
+        
+        switch(dir) {
+            case 'up':          vx = 0;     vy = -speed; break;
+            case 'down':        vx = 0;     vy = speed;  break;
+            case 'left':        vx = -speed; vy = 0;     break;
+            case 'right':       vx = speed;  vy = 0;     break;
+            case 'up-left':     vx = -diag; vy = -diag; break;
+            case 'up-right':    vx = diag;  vy = -diag; break;
+            case 'down-left':   vx = -diag; vy = diag;  break;
+            case 'down-right':  vx = diag;  vy = diag;  break;
+            default:            vx = 0;     vy = speed; // Default Down
         }
     }
 
