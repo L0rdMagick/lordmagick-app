@@ -267,7 +267,7 @@
 
         .mission-text { color: var(--accent); margin-top: 5px; display: block; line-height: 1.4; white-space: normal; }
 
-        #collection-modal, #ritual-intro-modal {
+        #collection-modal {
             position: absolute;
             top: 50%; left: 50%;
             transform: translate(-50%, -50%) scale(0);
@@ -279,11 +279,10 @@
             color: white;
             border-radius: 10px;
             transition: transform 0.3s;
-            pointer-events: auto;
+            pointer-events: none;
             max-width: 400px;
         }
-        #collection-modal { pointer-events: none; }
-        #collection-modal.show, #ritual-intro-modal.show { transform: translate(-50%, -50%) scale(1); }
+        #collection-modal.show { transform: translate(-50%, -50%) scale(1); pointer-events: auto; }
         
         #col-icon { font-size: 60px; margin: 10px 0; display: block; animation: bounce 1s infinite; }
         @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
@@ -747,17 +746,32 @@
                 opacity: 1;
                 pointer-events: auto;
             }
+            #ritual-intro-modal-content {
+                background: rgba(0, 0, 0, 0.95);
+                border: 4px solid var(--accent);
+                border-radius: 10px;
+                padding: 30px;
+                max-width: 400px;
+                color: white;
+                transform: scale(0.8);
+                transition: transform 0.3s ease;
+            }
+            #ritual-intro-modal.show #ritual-intro-modal-content {
+                transform: scale(1);
+            }
             #ritual-intro-modal h2 { margin-bottom: 10px; }
             #ritual-intro-modal p { max-width: 400px; display:inline-block; }
         </style>
         <div id="ritual-intro-modal">
-            <h2 style="color:var(--accent); font-family:'MedievalSharp';">The Grand Rite</h2>
-            <p style="font-size:12px; line-height:1.6; margin: 20px 0;">
-                You have gathered the ingredients. Now you must perform the spell.<br><br>
-                <b>Speak each incantation aloud</b> to consecrate the ingredient, then add it to the cauldron.<br><br>
-                Finally, stir the brew to bind the magic to your will.
-            </p>
-            <button class="btn" onclick="closeRitualIntro()">Begin Ritual</button>
+            <div id="ritual-intro-modal-content">
+                <h2 style="color:var(--accent); font-family:'MedievalSharp';">The Grand Rite</h2>
+                <p style="font-size:12px; line-height:1.6; margin: 20px 0;">
+                    You have gathered the ingredients. Now you must perform the spell.<br><br>
+                    <b>Speak each incantation aloud</b> to consecrate the ingredient, then add it to the cauldron.<br><br>
+                    Finally, stir the brew to bind the magic to your will.
+                </p>
+                <button class="btn" onclick="closeRitualIntro()">Begin Ritual</button>
+            </div>
         </div>
 
         <h1>The Ritual Begins</h1>
