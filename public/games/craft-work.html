@@ -1300,7 +1300,14 @@ function init() {
         div.onclick = () => startGame(spell); spellContainer.appendChild(div);
     });
     window.addEventListener('keydown', e => {
-        if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"," ","Enter","z","Z"].includes(e.key)) e.preventDefault();
+        if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Enter","z","Z"].includes(e.key)) {
+            e.preventDefault();
+        }
+        if (e.key === " ") {
+            if (e.target.tagName !== 'INPUT') {
+                e.preventDefault();
+            }
+        }
         keys[e.key] = true;
         if (e.key === ' ' || e.key === 'Enter' || e.key.toLowerCase() === 'z') playerAttack();
         if (e.key === 'Shift') toggleLevitate();
@@ -1954,7 +1961,16 @@ function update(dt) {
     if (dist < 40 && currentObjective.active && (!gameState.bossActive || currentObjective.bossDefeated)) { 
         if (!gameState.bossEntity) { 
             if(currentObjective.item === 'PORTAL') enterPortal();
-            else collectIngredient(); 
+            else {
+                // Must defeat all enemies
+                if(gameState.enemies.length === 0) {
+                     collectIngredient(); 
+                } else {
+                     document.getElementById('compass').style.transform = `rotate(${Math.atan2(currentObjective.y - player.y, currentObjective.x - player.x) * (180/Math.PI)}deg)`;
+                     const distEl = document.getElementById('hud-distance-val');
+                     if(distEl) distEl.innerText = 'Clear Enemies first!';
+                }
+            }
         } 
     }
     
