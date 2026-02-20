@@ -1363,6 +1363,55 @@ function init() {
                 container.appendChild(c);
             }
         });
+
+        // --- DEBUG JUMP LOGIC ---
+        const urlParams = new URLSearchParams(window.location.search);
+        const testSpell = urlParams.get('spell');
+        const testStage = urlParams.get('stage');
+        const testCauldron = urlParams.get('cauldron');
+
+        if (testSpell) {
+            const spellObj = SPELLS.find(s => s.id === testSpell) || SPELLS[0];
+            gameState.playerClass = 'wizard';
+            gameState.playerName = 'Tester';
+            
+            startGame(spellObj);
+            
+            if (testStage !== null) {
+                const stageNum = parseInt(testStage);
+                // Fill inventory
+                gameState.inventory = [];
+                for(let i = 0; i < stageNum; i++) {
+                    gameState.inventory.push(spellObj.ingredients[i]);
+                }
+                gameState.currentIngredientIndex = gameState.inventory.length;
+                
+                // Clear enemies spawned by initial startGame
+                gameState.enemies = [];
+                
+                // Update Info
+                for(let i = 0; i < gameState.inventory.length; i++) {
+                    const slot = document.getElementById(`inv-slot-${i}`);
+                    if(slot) slot.classList.add('collected');
+                }
+                const hudCount = document.getElementById('hud-count');
+                if(hudCount) hudCount.innerText = gameState.inventory.length;
+
+                // Re-spawn objective with correct stage
+                spawnNextIngredient();
+            } else if (testCauldron === 'true') {
+                gameState.inventory = [...spellObj.ingredients];
+                gameState.currentIngredientIndex = 7;
+                gameState.enemies = [];
+                
+                document.getElementById('canvas-wrapper').style.display = 'none';
+                document.getElementById('hud').style.display = 'none';
+                gameState.screen = 'CAULDRON'; 
+                document.getElementById('cauldron-screen').classList.remove('hidden');
+                document.getElementById('ritual-intro-modal').classList.add('show');
+                initRitual();
+            }
+        }
     });
 }
 
