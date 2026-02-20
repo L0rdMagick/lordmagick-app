@@ -935,7 +935,6 @@ let VIEWPORT_H = window.innerHeight;
 
 
 // Expanded Incantations and Icons
-// Expanded Incantations and Icons
 const SPELLS = [
     {
         id: 'love', name: 'Amor Aeterna',
@@ -950,7 +949,16 @@ const SPELLS = [
             "Passion Fruit, ignite the divine spark of desire within the soul!",
             "Ruby Heart, I charge you to seal this fate in blood and stone forever!"
         ],
-        BOSS: 'Cupid\'s Shadow', color: '#ff00aa', // Neon Pink (High Vis)
+        bosses: [
+            { name: 'Narcissus', spriteKey: 'BOSS_NARCISSUS' },
+            { name: 'The Moaning Ghost', spriteKey: 'BOSS_MOANING_GHOST' },
+            { name: 'The Tin Man', spriteKey: 'BOSS_TIN_MAN' },
+            { name: 'Medusa', spriteKey: 'BOSS_MEDUSA' },
+            { name: 'The Siren', spriteKey: 'BOSS_SIREN' },
+            { name: 'Davy Jones', spriteKey: 'BOSS_DAVY_JONES' },
+            { name: 'The Black Widow', spriteKey: 'BOSS_BLACK_WIDOW' }
+        ],
+        color: '#ff00aa', // Neon Pink (High Vis)
         sheet: 'INGR_1',
         spriteIndices: [0, 1, 2, 3, 4, 5, 6]
     },
@@ -967,7 +975,16 @@ const SPELLS = [
             "Dragon Scale, I charge you to guard my hoard against all who would steal it.",
             "Crown Jewel, I claim my sovereignty over fortune! Let it be so!"
         ],
-        boss: 'The Greed Demon', color: '#ffd700',
+        bosses: [
+            { name: 'The Leprechaun', spriteKey: 'BOSS_LEPRECHAUN' },
+            { name: 'King Midas', spriteKey: 'BOSS_KING_MIDAS' },
+            { name: 'Ebenezer Scrooge', spriteKey: 'BOSS_EBENEZER_SCROOGE' },
+            { name: 'The Harpy', spriteKey: 'BOSS_HARPY' },
+            { name: 'Smaug', spriteKey: 'BOSS_SMAUG' },
+            { name: 'Atlas', spriteKey: 'BOSS_ATLAS' },
+            { name: 'The Void', spriteKey: 'BOSS_THE_VOID' }
+        ],
+        color: '#ffd700',
         sheet: 'INGR_1',
         spriteIndices: [8, 9, 10, 11, 12, 13, 14]
     },
@@ -984,7 +1001,16 @@ const SPELLS = [
             "I activate this Elixir to awaken the dormant power of life within.",
             "Bark of the Elder Tree, shield this body from all harm and time!"
         ],
-        boss: 'The Rot Golem', color: '#7cfc00',
+        bosses: [
+            { name: 'The Sloth', spriteKey: 'BOSS_SLOTH' },
+            { name: 'Dorian Gray', spriteKey: 'BOSS_DORIAN_GRAY' },
+            { name: 'The Hydra', spriteKey: 'BOSS_HYDRA' },
+            { name: 'The Golem', spriteKey: 'BOSS_GOLEM' },
+            { name: 'The Chimera', spriteKey: 'BOSS_CHIMERA' },
+            { name: 'Sisyphus', spriteKey: 'BOSS_SISYPHUS' },
+            { name: 'The Grim Reaper', spriteKey: 'BOSS_GRIM_REAPER' }
+        ],
+        color: '#7cfc00',
         sheet: 'INGR_2',
         spriteIndices: [0, 1, 2, 3, 4, 5, 6]
     },
@@ -1001,7 +1027,16 @@ const SPELLS = [
             "Crystal Tear, wash away insecurity and leave only diamond strength.",
             "Star Fragment, fall from the heavens and crown me with starlight!"
         ],
-        boss: 'The Mirror Shadow', color: '#e0ffff',
+        bosses: [
+            { name: 'The Invisible Man', spriteKey: 'BOSS_INVISIBLE_MAN' },
+            { name: 'The Step-Sister', spriteKey: 'BOSS_STEP_SISTER' },
+            { name: 'The Doppelgänger', spriteKey: 'BOSS_DOPPELGANGER' },
+            { name: 'The Gargoyle', spriteKey: 'BOSS_GARGOYLE' },
+            { name: 'The Phantom', spriteKey: 'BOSS_PHANTOM' },
+            { name: 'Frankenstein\'s Monster', spriteKey: 'BOSS_FRANKENSTEIN' },
+            { name: 'Lucifer', spriteKey: 'BOSS_LUCIFER' }
+        ],
+        color: '#e0ffff',
         sheet: 'INGR_2',
         spriteIndices: [8, 9, 10, 11, 12, 13, 14]
     }
@@ -1020,11 +1055,47 @@ const SPRITES = {
     GOBLIN: 'goblin',
     SKELETON: 'skeleton',
     
-    // Bosses
+    // Bosses (legacy)
     BOSS_LOVE: 'cupid',
     BOSS_WEALTH: 'demon',
     BOSS_HEALTH: 'rot_golem',
     BOSS_GLAMOUR: 'mirror_shadow',
+
+    // Progression Bosses - Love
+    BOSS_NARCISSUS: 'narcissus',
+    BOSS_MOANING_GHOST: 'moaning_ghost',
+    BOSS_TIN_MAN: 'tin_man',
+    BOSS_MEDUSA: 'medusa',
+    BOSS_SIREN: 'siren',
+    BOSS_DAVY_JONES: 'davy_jones',
+    BOSS_BLACK_WIDOW: 'black_widow',
+
+    // Progression Bosses - Wealth
+    BOSS_LEPRECHAUN: 'leprechaun',
+    BOSS_KING_MIDAS: 'king_midas',
+    BOSS_EBENEZER_SCROOGE: 'ebenezer_scrooge',
+    BOSS_HARPY: 'harpy',
+    BOSS_SMAUG: 'smaug',
+    BOSS_ATLAS: 'atlas',
+    BOSS_THE_VOID: 'the_void',
+
+    // Progression Bosses - Health
+    BOSS_SLOTH: 'sloth',
+    BOSS_DORIAN_GRAY: 'dorian_gray',
+    BOSS_HYDRA: 'hydra',
+    BOSS_GOLEM: 'golem',
+    BOSS_CHIMERA: 'chimera',
+    BOSS_SISYPHUS: 'sisyphus',
+    BOSS_GRIM_REAPER: 'grim_reaper',
+
+    // Progression Bosses - Glamour
+    BOSS_INVISIBLE_MAN: 'invisible_man',
+    BOSS_STEP_SISTER: 'step_sister',
+    BOSS_DOPPELGANGER: 'doppelganger',
+    BOSS_GARGOYLE: 'gargoyle',
+    BOSS_PHANTOM: 'phantom',
+    BOSS_FRANKENSTEIN: 'frankenstein',
+    BOSS_LUCIFER: 'lucifer',
 
     // Misc (Keep on old sheet for now if not replaced)
     PROJECTILE: { sheet: 'CHARS', index: 12 },
@@ -1057,7 +1128,40 @@ const SHEET_SRC = {
     cupid: '/images/craft-work/characters/cupid.png',
     demon: '/images/craft-work/characters/demon.png',
     rot_golem: '/images/craft-work/characters/rot_golem.png',
-    mirror_shadow: '/images/craft-work/characters/mirror_shadow.png'
+    mirror_shadow: '/images/craft-work/characters/mirror_shadow.png',
+
+    // Love Bosses
+    narcissus: '/images/craft-work/characters/Narcissus.png',
+    moaning_ghost: '/images/craft-work/characters/The_Moaning_Ghost.png',
+    tin_man: '/images/craft-work/characters/The_Tin_Man.png',
+    medusa: '/images/craft-work/characters/Medusa.png',
+    siren: '/images/craft-work/characters/The_Siren.png',
+    davy_jones: '/images/craft-work/characters/Davy_Jones.png',
+    black_widow: '/images/craft-work/characters/The_Black_Widow.png',
+    // Wealth Bosses
+    leprechaun: '/images/craft-work/characters/The_Leprechaun.png',
+    king_midas: '/images/craft-work/characters/King_Midas.png',
+    ebenezer_scrooge: '/images/craft-work/characters/Ebenezer_Scrooge.png',
+    harpy: '/images/craft-work/characters/The_Harpy.png',
+    smaug: '/images/craft-work/characters/Smaug.png',
+    atlas: '/images/craft-work/characters/Atlas.png',
+    the_void: '/images/craft-work/characters/The_Void.png',
+    // Health Bosses
+    sloth: '/images/craft-work/characters/The_Sloth.png',
+    dorian_gray: '/images/craft-work/characters/Dorian_Gray.png',
+    hydra: '/images/craft-work/characters/The_Hydra.png',
+    golem: '/images/craft-work/characters/The_Golem.png',
+    chimera: '/images/craft-work/characters/The_Chimera.png',
+    sisyphus: '/images/craft-work/characters/Sisyphus.png',
+    grim_reaper: '/images/craft-work/characters/The_Grim_Reaper.png',
+    // Glamour Bosses
+    invisible_man: '/images/craft-work/characters/The_Invisible_Man.png',
+    step_sister: '/images/craft-work/characters/The_Step-Sister.png',
+    doppelganger: '/images/craft-work/characters/The_Doppelgänger.png',
+    gargoyle: '/images/craft-work/characters/The_Gargoyle.png',
+    phantom: '/images/craft-work/characters/The_Phantom.png',
+    frankenstein: '/images/craft-work/characters/Frankensteins_Monster.png',
+    lucifer: '/images/craft-work/characters/Lucifer.png'
 };
 
 const SPRITE_SHEETS = {};
@@ -1427,10 +1531,8 @@ function spawnEnemy(x, y, type) {
     let spriteData;
     
     if (type === 'boss') {
-        if(gameState.selectedSpell.id === 'love') spriteData = SPRITES.BOSS_LOVE;
-        else if(gameState.selectedSpell.id === 'wealth') spriteData = SPRITES.BOSS_WEALTH;
-        else if(gameState.selectedSpell.id === 'health') spriteData = SPRITES.BOSS_HEALTH;
-        else if(gameState.selectedSpell.id === 'glamour') spriteData = SPRITES.BOSS_GLAMOUR;
+        const currentBossInfo = gameState.selectedSpell.bosses[gameState.currentIngredientIndex];
+        spriteData = SPRITES[currentBossInfo.spriteKey];
     } else {
         // Minion progression: Slime -> Bat -> Spider -> Ghost -> Goblin -> Skeleton
         const order = [SPRITES.SLIME, SPRITES.BAT, SPRITES.SPIDER, SPRITES.GHOST, SPRITES.GOBLIN, SPRITES.SKELETON];
@@ -1465,7 +1567,8 @@ function spawnEnemy(x, y, type) {
 }
 
 function spawnBoss() {
-    const name = gameState.selectedSpell.boss;
+    const currentBossInfo = gameState.selectedSpell.bosses[gameState.currentIngredientIndex];
+    const name = currentBossInfo.name;
     
     // Find a safe spawn position for the boss (at least 600px away from player)
     let angle = Math.random() * Math.PI * 2;
