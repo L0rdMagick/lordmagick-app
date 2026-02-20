@@ -947,7 +947,7 @@ function playSound(type) {
 function toggleFullScreen() {
     const el = document.getElementById('game-container');
     if (!document.fullscreenElement) {
-        el.requestFullscreen().catch(err => { alert(`Error: ${err.message}`); });
+        el.requestFullscreen().catch(err => { console.warn(`Fullscreen Error: ${err.message}`); });
     } else { document.exitFullscreen(); }
 }
 
