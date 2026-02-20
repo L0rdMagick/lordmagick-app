@@ -17,10 +17,41 @@ const ASSETS = [
     { name: 'Skeleton', src: '/images/craft-work/characters/skeleton.png', w: 60, h: 60 },
 
     // Bosses
-    { name: 'Cupid (Love)', src: '/images/craft-work/characters/cupid.png', w: 120, h: 120 },
-    { name: 'Demon (Wealth)', src: '/images/craft-work/characters/demon.png', w: 120, h: 120 },
-    { name: 'Rot Golem (Health)', src: '/images/craft-work/characters/rot_golem.png', w: 120, h: 120 },
-    { name: 'Mirror Shadow (Glamour)', src: '/images/craft-work/characters/mirror_shadow.png', w: 120, h: 120 },
+    // Love Bosses
+    { name: 'Narcissus (Love)', src: '/images/craft-work/characters/Narcissus.png', w: 105, h: 105 },
+    { name: 'The Moaning Ghost (Love)', src: '/images/craft-work/characters/The_Moaning_Ghost.png', w: 105, h: 105 },
+    { name: 'The Tin Man (Love)', src: '/images/craft-work/characters/The_Tin_Man.png', w: 105, h: 105 },
+    { name: 'Medusa (Love)', src: '/images/craft-work/characters/Medusa.png', w: 105, h: 105 },
+    { name: 'The Siren (Love)', src: '/images/craft-work/characters/The_Siren.png', w: 105, h: 105 },
+    { name: 'Davy Jones (Love)', src: '/images/craft-work/characters/Davy_Jones.png', w: 105, h: 105 },
+    { name: 'The Black Widow (Love)', src: '/images/craft-work/characters/The_Black_Widow.png', w: 105, h: 105 },
+
+    // Wealth Bosses
+    { name: 'The Leprechaun (Wealth)', src: '/images/craft-work/characters/The_Leprechaun.png', w: 105, h: 105 },
+    { name: 'King Midas (Wealth)', src: '/images/craft-work/characters/King_Midas.png', w: 105, h: 105 },
+    { name: 'Ebenezer Scrooge (Wealth)', src: '/images/craft-work/characters/Ebenezer_Scrooge.png', w: 105, h: 105 },
+    { name: 'The Harpy (Wealth)', src: '/images/craft-work/characters/The_Harpy.png', w: 105, h: 105 },
+    { name: 'Smaug (Wealth)', src: '/images/craft-work/characters/Smaug.png', w: 105, h: 105 },
+    { name: 'Atlas (Wealth)', src: '/images/craft-work/characters/Atlas.png', w: 105, h: 105 },
+    { name: 'The Void (Wealth)', src: '/images/craft-work/characters/The_Void.png', w: 105, h: 105 },
+
+    // Health Bosses
+    { name: 'The Sloth (Health)', src: '/images/craft-work/characters/The_Sloth.png', w: 105, h: 105 },
+    { name: 'Dorian Gray (Health)', src: '/images/craft-work/characters/Dorian_Gray.png', w: 105, h: 105 },
+    { name: 'The Hydra (Health)', src: '/images/craft-work/characters/The_Hydra.png', w: 105, h: 105 },
+    { name: 'The Golem (Health)', src: '/images/craft-work/characters/The_Golem.png', w: 105, h: 105 },
+    { name: 'The Chimera (Health)', src: '/images/craft-work/characters/The_Chimera.png', w: 105, h: 105 },
+    { name: 'Sisyphus (Health)', src: '/images/craft-work/characters/Sisyphus.png', w: 105, h: 105 },
+    { name: 'The Grim Reaper (Health)', src: '/images/craft-work/characters/The_Grim_Reaper.png', w: 105, h: 105 },
+
+    // Glamour Bosses
+    { name: 'The Invisible Man (Glamour)', src: '/images/craft-work/characters/The_Invisible_Man.png', w: 105, h: 105 },
+    { name: 'The Step-Sister (Glamour)', src: '/images/craft-work/characters/The_Step-Sister.png', w: 105, h: 105 },
+    { name: 'The Doppelgänger (Glamour)', src: '/images/craft-work/characters/The_Doppelgänger.png', w: 105, h: 105 },
+    { name: 'The Gargoyle (Glamour)', src: '/images/craft-work/characters/The_Gargoyle.png', w: 105, h: 105 },
+    { name: 'The Phantom (Glamour)', src: '/images/craft-work/characters/The_Phantom.png', w: 105, h: 105 },
+    { name: 'Frankenstein\'s Monster (Glamour)', src: '/images/craft-work/characters/Frankensteins_Monster.png', w: 105, h: 105 },
+    { name: 'Lucifer (Glamour)', src: '/images/craft-work/characters/Lucifer.png', w: 105, h: 105 },
 
     // Ingredients Sheet 1
     // (Indices 0-14 for different items)
