@@ -1565,18 +1565,16 @@ function spawnEnemy(x, y, type) {
         spriteData = SPRITES[currentBossInfo.spriteKey];
     } else {
         // Minion progression: Slime -> Bat -> Spider -> Ghost -> Goblin -> Skeleton -> Spell Specific Minion
-        if (stage === 6) {
-            // Stage 7 (index 6) uses unique legacy bosses as minions
-            const spellId = gameState.selectedSpell.id;
-            if (spellId === 'love') spriteData = SPRITES.BOSS_LOVE;
-            else if (spellId === 'wealth') spriteData = SPRITES.BOSS_WEALTH;
-            else if (spellId === 'health') spriteData = SPRITES.BOSS_HEALTH;
-            else if (spellId === 'glamour') spriteData = SPRITES.BOSS_GLAMOUR;
-            else spriteData = SPRITES.SKELETON; // Fallback
-        } else {
-            const order = [SPRITES.SLIME, SPRITES.BAT, SPRITES.SPIDER, SPRITES.GHOST, SPRITES.GOBLIN, SPRITES.SKELETON];
-            spriteData = order[Math.min(stage, order.length-1)];
-        }
+        const spellId = gameState.selectedSpell.id;
+        let finalMinion;
+        if (spellId === 'love') finalMinion = SPRITES.BOSS_LOVE;
+        else if (spellId === 'wealth') finalMinion = SPRITES.BOSS_WEALTH;
+        else if (spellId === 'health') finalMinion = SPRITES.BOSS_HEALTH;
+        else if (spellId === 'glamour') finalMinion = SPRITES.BOSS_GLAMOUR;
+        else finalMinion = SPRITES.SKELETON; // Fallback
+
+        const order = [SPRITES.SLIME, SPRITES.BAT, SPRITES.SPIDER, SPRITES.GHOST, SPRITES.GOBLIN, SPRITES.SKELETON, finalMinion];
+        spriteData = order[Math.min(stage, 6)]; // Use index 0-6
     }
     
     let soundType = 'monster_groan';
