@@ -1198,7 +1198,18 @@ const SHEET_SRC = {
     gargoyle: '../images/craft-work/characters/The_Gargoyle.png',
     phantom: '../images/craft-work/characters/The_Phantom.png',
     frankenstein: '../images/craft-work/characters/Frankensteins_Monster.png',
-    lucifer: '../images/craft-work/characters/Lucifer.png'
+    lucifer: '../images/craft-work/characters/Lucifer.png',
+
+    // Stage 1 Ritual Map Assets
+    crystal_wall_front: '../images/craft-work/indoor maps/stage 1/crystal_wall_front.png',
+    crystal_wall_top_view: '../images/craft-work/indoor maps/stage 1/crystal_wall_top_view.png',
+    crystal_arch_entrance: '../images/craft-work/indoor maps/stage 1/crystal_arch_entrance.png',
+    crystal_closed_doors: '../images/craft-work/indoor maps/stage 1/crystal_closed_doors.png',
+    crystal_open_doors: '../images/craft-work/indoor maps/stage 1/crystal_open_doors.png',
+    crystal_wall_corner_down_left: '../images/craft-work/indoor maps/stage 1/crystal_wall_corner_down_left.png',
+    crystal_wall_corner_up_left: '../images/craft-work/indoor maps/stage 1/crystal_wall_corner_up_left.png',
+    crystal_down_stairs: '../images/craft-work/indoor maps/stage 1/crystal_down_stairs.png',
+    crystal_wall_top_front_angle_view: '../images/craft-work/indoor maps/stage 1/crystal_wall_top_front_angle_view.png'
 };
 
 const SPRITE_SHEETS = {};
@@ -1768,6 +1779,10 @@ function playerAttack() {
 }
 
 function update(dt) {
+    if (gameState.screen === 'RITUAL_MAP') {
+        updateRitualMap(dt);
+        return;
+    }
     if (gameState.screen !== 'PLAY') return;
     
     // Decrement iFrame timer
@@ -2181,10 +2196,12 @@ function enterPortal() {
     
     setTimeout(() => {
         overlay.classList.remove('active');
-        gameState.screen = 'CAULDRON'; 
-        document.getElementById('cauldron-screen').classList.remove('hidden');
-        document.getElementById('ritual-intro-modal').classList.add('show'); // Show new instruction
-        initRitual();
+        document.getElementById('canvas-wrapper').style.display = 'block';
+        document.getElementById('hud').style.display = 'flex';
+        
+        // Redirect to Ritual Map Initialization
+        gameState.screen = 'RITUAL_MAP';
+        initRitualMap();
     }, 1000);
 }
 
@@ -2306,6 +2323,10 @@ function logSheetDimensions() {
 }
 
 function draw() {
+    if (gameState.screen === 'RITUAL_MAP') {
+        drawRitualMap();
+        return;
+    }
     if (gameState.screen !== 'PLAY') return;
     
     try {
@@ -2721,6 +2742,267 @@ function finishGame() {
     document.getElementById('end-screen').classList.remove('hidden');
     document.getElementById('end-spell-name').innerText = gameState.selectedSpell.name;
     document.getElementById('end-message').innerText = `Ritual complete! The spirits accepted your offering. Your intention for ${gameState.selectedSpell.id.toUpperCase()} manifests now.`;
+}
+
+let ritualState = null;
+
+function initRitualMap() {
+    ritualState = {
+        gridSize: 128, tilesX: 32, tilesY: 32,
+        assets: [], q1_solved: false, shards: 0,
+        active: true, lastInteractTime: 0
+    };
+    
+    const addAsset = (id, type, gridX, gridY, w, h, solid, interact = null, hidden = false) => {
+        ritualState.assets.push({ id, type, x: gridX * 128, y: gridY * 128, w: w * 128, h: h * 128, solid, interact, hidden });
+    };
+
+    // Boundaries
+    for (let x = 0; x < 32; x += 2) {
+        addAsset('wall_top', 'crystal_wall_front', x, 0, 2, 2, true);
+        if (x !== 14) addAsset('wall_bot', 'crystal_wall_front', x, 30, 2, 2, true);
+    }
+    for (let y = 0; y < 32; y += 2) {
+        addAsset('wall_l', 'crystal_wall_top_view', 0, y, 2, 2, true);
+        addAsset('wall_r', 'crystal_wall_top_view', 30, y, 2, 2, true);
+    }
+
+    // Zone A: Foyer
+    addAsset('entrance', 'crystal_arch_entrance', 14, 30, 2, 2, false);
+    addAsset('gate', 'crystal_closed_doors', 14, 24, 2, 2, true, () => {
+        if (!ritualState.q1_solved) {
+            const answer = prompt("Knowledge Gate: What blocks the path? (Hint: The theme of this stage)");
+            if (answer && answer.toLowerCase().includes('ego')) {
+                ritualState.q1_solved = true;
+                const gate = ritualState.assets.find(a => a.id === 'gate');
+                gate.type = 'crystal_open_doors'; gate.solid = false;
+                playSound('collect');
+            } else {
+                alert("The gate remains sealed. Seek the truth of the Ego Trap.");
+            }
+        }
+    });
+
+    // Oracle
+    addAsset('oracle', 'crystal_wall_top_front_angle_view', 10, 26, 2, 2, true, () => {
+        alert("Oracle: Seek the Rose Quartz Shard through the mirrors.");
+    });
+
+    // Zone B: Mirror Labyrinth
+    // Ritual Closet 1: 6x6 from (2, 18) to (8, 24)
+    for(let i=2; i<=8; i+=2) {
+        addAsset('rc1_t', 'crystal_wall_front', i, 18, 2, 2, true);
+        addAsset('rc1_b', 'crystal_wall_front', i, 24, 2, 2, true);
+    }
+    for(let j=18; j<=24; j+=2) {
+        addAsset('rc1_l', 'crystal_wall_top_view', 2, j, 2, 2, true);
+        if(j!==20) addAsset('rc1_r', 'crystal_wall_top_view', 8, j, 2, 2, true);
+    }
+    
+    // Portal inside Ritual Closet 1
+    addAsset('portal', 'crystal_open_doors', 4, 20, 2, 2, false); 
+
+    // Mirror Gallery (10, 10) to (22, 22)
+    for(let i=10; i<=22; i+=2) {
+        if(i !== 16) addAsset('mg_t', 'crystal_wall_front', i, 10, 2, 2, true); 
+        else addAsset('mg_false', 'crystal_wall_front', 16, 10, 2, 2, false); // False wall!
+        
+        addAsset('mg_b', 'crystal_wall_front', i, 22, 2, 2, true);
+    }
+    for(let j=10; j<=22; j+=2) {
+        addAsset('mg_l', 'crystal_wall_top_view', 10, j, 2, 2, true);
+        addAsset('mg_r', 'crystal_wall_top_view', 22, j, 2, 2, true);
+    }
+
+    // Zone C: Ritual Closet 2
+    for(let i=24; i<=30; i+=2) {
+        addAsset('rc2_t', 'crystal_wall_front', i, 4, 2, 2, true);
+        addAsset('rc2_b', 'crystal_wall_front', i, 10, 2, 2, true);
+    }
+    for(let j=4; j<=10; j+=2) {
+        addAsset('rc2_l', 'crystal_wall_top_view', 24, j, 2, 2, true);
+    }
+    addAsset('rc2_door', 'crystal_open_doors', 26, 8, 2, 2, false); 
+
+    // Zone D: Inner Sanctum
+    addAsset('shard', 'shard', 15, 15, 1, 1, false, () => {
+        ritualState.shards = 1;
+        ritualState.assets = ritualState.assets.filter(a => a.id !== 'shard');
+        playSound('collect');
+        alert("You found the Rose Quartz Shard! The exit stairs have appeared at (30, 0).");
+        let stairs = ritualState.assets.find(a => a.id === 'stairs');
+        if (stairs) stairs.hidden = false;
+    });
+
+    addAsset('stairs', 'crystal_down_stairs', 30, 0, 2, 2, false, () => {
+        if (ritualState.shards === 1) {
+            gameState.screen = 'CAULDRON';
+            document.getElementById('cauldron-screen').classList.remove('hidden');
+            document.getElementById('ritual-intro-modal').classList.add('show');
+            initRitual();
+        }
+    }, true);
+
+    // Initial positioning
+    player.x = 14 * 128 + 64; 
+    player.y = 30 * 128 + 64;
+    gameState.camera.x = player.x - VIEWPORT_W/2;
+    gameState.camera.y = player.y - VIEWPORT_H/2;
+}
+
+function updateRitualMap(dt) {
+    if (player.invulnTimer > 0) player.invulnTimer--;
+
+    let dx = 0, dy = 0;
+    if (keys['ArrowUp'] || keys['w'] || keys['W']) dy -= 1;
+    if (keys['ArrowDown'] || keys['s'] || keys['S']) dy += 1;
+    if (keys['ArrowLeft'] || keys['a'] || keys['A']) dx -= 1;
+    if (keys['ArrowRight'] || keys['d'] || keys['D']) dx += 1;
+    
+    if (joystickInput.active) { dx = joystickInput.x; dy = joystickInput.y; }
+
+    const speed = player.speed * 0.8; 
+    
+    let moveX = 0, moveY = 0;
+    if (dx !== 0 || dy !== 0) {
+        let mag = Math.hypot(dx, dy);
+        moveX = (dx / mag) * speed;
+        moveY = (dy / mag) * speed;
+        
+        let newX = player.x + moveX;
+        let newY = player.y + moveY;
+        
+        newX = Math.max(0, Math.min(newX, ritualState.tilesX * ritualState.gridSize - player.w));
+        newY = Math.max(0, Math.min(newY, ritualState.tilesY * ritualState.gridSize - player.h));
+        
+        let hitX = false, hitY = false;
+        ritualState.assets.forEach(a => {
+            if (a.hidden || !a.solid) return;
+            if (rectIntersect(newX, player.y, player.w, player.h, a.x, a.y + (a.h*0.3), a.w, a.h*0.7)) hitX = true;
+            if (rectIntersect(player.x, newY, player.w, player.h, a.x, a.y + (a.h*0.3), a.w, a.h*0.7)) hitY = true;
+        });
+        
+        if (!hitX) player.x = newX;
+        if (!hitY) player.y = newY;
+    }
+    
+    // Animate Player
+    if (moveX !== 0 || moveY !== 0) {
+        if (Math.abs(moveY) > Math.abs(moveX)) {
+            if (moveY > 0) { player.frameY = 0; player.flipX = false; }
+            else { player.frameY = 1; player.flipX = false; }
+        } else {
+            player.frameY = 2; // Side
+            if (moveX < 0) player.flipX = true; else player.flipX = false;
+        }
+        player.animTimer++;
+        if (player.animTimer > 5) {
+            player.frameX = (player.frameX + 1) % 4;
+            player.animTimer = 0;
+        }
+    } else {
+        player.frameX = 0; // idle
+    }
+    
+    // Interactions
+    const now = Date.now();
+    ritualState.assets.forEach(a => {
+        if (a.hidden) return;
+        // Central interaction overlap
+        if (rectIntersect(player.x, player.y, player.w, player.h, a.x, a.y, a.w, a.h)) {
+            if (a.id === 'portal' && now - ritualState.lastInteractTime > 1000) {
+                player.x = 26 * 128 + 64; player.y = 26 * 128 + 64;
+                playSound('portal');
+                ritualState.lastInteractTime = now;
+            } else if (a.interact && now - ritualState.lastInteractTime > 1000) {
+                ritualState.lastInteractTime = now;
+                a.interact();
+            }
+        }
+    });
+
+    // Camera follow limits
+    if (typeof VIEWPORT_W !== 'undefined') {
+        gameState.camera.x += (player.x - VIEWPORT_W/2 - gameState.camera.x) * 0.1;
+        gameState.camera.y += (player.y - VIEWPORT_H/2 - gameState.camera.y) * 0.1;
+        gameState.camera.x = Math.max(0, Math.min(gameState.camera.x, ritualState.tilesX * ritualState.gridSize - VIEWPORT_W));
+        gameState.camera.y = Math.max(0, Math.min(gameState.camera.y, ritualState.tilesY * ritualState.gridSize - VIEWPORT_H));
+    }
+}
+
+function drawRitualMap() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#050212'; // Labyrinth deep color
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    ctx.save();
+    ctx.translate(-Math.floor(gameState.camera.x), -Math.floor(gameState.camera.y));
+    
+    // Grid floor pattern (subtle)
+    ctx.strokeStyle = '#1a103c';
+    ctx.lineWidth = 1;
+    const startX = Math.floor(gameState.camera.x / ritualState.gridSize) * ritualState.gridSize;
+    const startY = Math.floor(gameState.camera.y / ritualState.gridSize) * ritualState.gridSize;
+    
+    const viewW = typeof VIEWPORT_W !== 'undefined' ? VIEWPORT_W : canvas.width;
+    const viewH = typeof VIEWPORT_H !== 'undefined' ? VIEWPORT_H : canvas.height;
+
+    for (let x = startX; x < gameState.camera.x + viewW; x += ritualState.gridSize) {
+        ctx.beginPath(); ctx.moveTo(x, gameState.camera.y); ctx.lineTo(x, gameState.camera.y + viewH); ctx.stroke();
+    }
+    for (let y = startY; y < gameState.camera.y + viewH; y += ritualState.gridSize) {
+        ctx.beginPath(); ctx.moveTo(gameState.camera.x, y); ctx.lineTo(gameState.camera.x + viewW, y); ctx.stroke();
+    }
+    
+    let drawables = [];
+    ritualState.assets.forEach(a => {
+        if (!a.hidden) drawables.push(a);
+    });
+    drawables.push({ isPlayer: true, y: player.y + player.h });
+    drawables.sort((A, B) => (A.y + (A.h||0)) - (B.y + (B.h||0)));
+    
+    drawables.forEach(item => {
+        if (item.isPlayer) {
+            // Shadow
+            ctx.fillStyle = 'rgba(0,0,0,0.5)';
+            ctx.beginPath(); ctx.ellipse(player.x + player.w/2, player.y + player.h - 5, player.w/2, 10, 0, 0, Math.PI*2); ctx.fill();
+            const pKey = gameState.playerClass === 'witch' ? 'PLAYER_WITCH' : 'PLAYER_WIZARD';
+            drawSprite(ctx, SPRITES[pKey], player.x, player.y, player.w, player.frameX, player.frameY, player.flipX);
+        } else {
+            // Culling
+            if (item.x + item.w < gameState.camera.x - 100 || item.x > gameState.camera.x + viewW + 100 ||
+                item.y + item.h < gameState.camera.y - 100 || item.y > gameState.camera.y + viewH + 100) return;
+                
+            let img = SPRITE_SHEETS[item.type];
+            if (img && img.complete) {
+                if (item.id === 'shard') {
+                    let pulse = Math.abs(Math.sin(Date.now() / 300)) * 10;
+                    ctx.shadowColor = '#ff66aa'; ctx.shadowBlur = 20 + pulse;
+                }
+                ctx.drawImage(img, 0, 0, 512, 512, item.x, item.y, item.w, item.h);
+                ctx.shadowBlur = 0;
+            } else if (item.type === 'shard') { // Fallback if image not loaded
+                ctx.fillStyle = '#ff66aa';
+                ctx.beginPath();
+                ctx.arc(item.x + item.w/2, item.y + item.h/2, 20, 0, Math.PI*2);
+                ctx.fill();
+            } else if (item.type === 'oracle') { // Fallback
+                ctx.fillStyle = '#aaa'; ctx.fillRect(item.x, item.y, item.w, item.h);
+            }
+        }
+    });
+    
+    // Added GUI text overlay for guidance
+    ctx.restore();
+    
+    ctx.fillStyle = 'white';
+    ctx.font = '20px "Cinzel", serif';
+    ctx.textAlign = 'left';
+    ctx.fillText("Ritual Labyrinth: The Ego Trap", 20, 30);
+    if(ritualState.shards > 0) {
+         ctx.fillStyle = '#ff66aa';
+         ctx.fillText("Shard Acquired - Seek the Stairs", 20, 60);
+    }
 }
 
 init();
