@@ -1394,6 +1394,7 @@ function init() {
         const testSpell = urlParams.get('spell');
         const testStage = urlParams.get('stage');
         const testCauldron = urlParams.get('cauldron');
+        const testRitualMap = urlParams.get('ritualMap');
 
         if (testSpell) {
             const spellObj = SPELLS.find(s => s.id === testSpell) || SPELLS[0];
@@ -1402,7 +1403,17 @@ function init() {
             
             startGame(spellObj);
             
-            if (testStage !== null) {
+            if (testRitualMap === 'true') {
+                gameState.inventory = [spellObj.ingredients[0]]; // Stage 1 completed
+                gameState.currentIngredientIndex = 1;
+                gameState.enemies = [];
+                
+                document.getElementById('canvas-wrapper').style.display = 'block';
+                document.getElementById('hud').style.display = 'flex';
+                // Trigger Ritual Map directly
+                gameState.screen = 'RITUAL_MAP';
+                initRitualMap();
+            } else if (testStage !== null) {
                 const stageNum = parseInt(testStage);
                 // Fill inventory
                 gameState.inventory = [];
@@ -2979,7 +2990,10 @@ function drawRitualMap() {
                     let pulse = Math.abs(Math.sin(Date.now() / 300)) * 10;
                     ctx.shadowColor = '#ff66aa'; ctx.shadowBlur = 20 + pulse;
                 }
-                ctx.drawImage(img, 0, 0, 512, 512, item.x, item.y, item.w, item.h);
+                
+                // Determine source size based on original image size to ensure it scales correctly
+                // Most are 1024, but corner pieces are 2048. We can use img.width and img.height directly.
+                ctx.drawImage(img, 0, 0, img.width, img.height, item.x, item.y, item.w, item.h);
                 ctx.shadowBlur = 0;
             } else if (item.type === 'shard') { // Fallback if image not loaded
                 ctx.fillStyle = '#ff66aa';
