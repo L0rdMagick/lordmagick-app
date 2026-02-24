@@ -108,6 +108,18 @@
     <script src="assetList.js"></script>
     <script src="initialMapData.js"></script>
     <script>
+        const RITUAL_SPRITES = {
+            crystal_wall_front:                { sx: 0,    sy: 0,    sw: 512, sh: 512 },
+            crystal_wall_top_view:             { sx: 512,  sy: 0,    sw: 256, sh: 512 },
+            crystal_wall_corner_up_left:       { sx: 1024, sy: 0,    sw: 512, sh: 512 },
+            crystal_wall_corner_down_left:     { sx: 1536, sy: 0,    sw: 512, sh: 512 },
+            crystal_wall_top_front_angle_view: { sx: 0,    sy: 512,  sw: 256, sh: 512 },
+            crystal_open_doors:                { sx: 512,  sy: 512,  sw: 512, sh: 512 },
+            crystal_closed_doors:              { sx: 1024, sy: 512,  sw: 512, sh: 512 },
+            crystal_arch_entrance:             { sx: 1536, sy: 512,  sw: 512, sh: 512 },
+            crystal_down_stairs:               { sx: 0,    sy: 1024, sw: 512, sh: 512 }
+        };
+
         // Data Structure matching craft-work game logic
         const MAP_DATA = {};
         for(let i=1; i<=7; i++) {
@@ -177,10 +189,64 @@
 
             const renderAssets = (filter = '') => {
                 assetList.innerHTML = '';
-                AVAILABLE_ASSETS.forEach(path => {
-                    if (path.toLowerCase().indexOf('sprite_sheet') > -1) return; // Skip packed sheets for now, use raw assets
+                
+                // 1. Render specific Spritesheet elements mapped explicitly
+                const mainSheetPath = '../../images/craft-work/indoor maps/stage 1/crystal_structure_sprite_sheet.png';
+                const mainSheetImg = sprites[mainSheetPath] || new Image();
+                if (!sprites[mainSheetPath]) { mainSheetImg.src = mainSheetPath; sprites[mainSheetPath] = mainSheetImg; }
+
+                Object.keys(RITUAL_SPRITES).forEach(k => {
+                    const data = RITUAL_SPRITES[k];
+                    if (filter && k.toLowerCase().indexOf(filter) === -1) return;
+
+                    const div = document.createElement('div');
+                    div.className = 'asset-item';
                     
+                    // Create visual representation via CSS Background Cropping (very efficient)
+                    const wrapper = document.createElement('div');
+                    wrapper.style.width = '100%';
+                    wrapper.style.aspectRatio = (data.sw / data.sh).toString();
+                    wrapper.style.position = 'relative';
+                    wrapper.style.overflow = 'hidden';
+                    wrapper.style.maxHeight = '80px';
+                    wrapper.style.margin = '0 auto';
+                    
+                    const inner = document.createElement('div');
+                    inner.style.position = 'absolute';
+                    inner.style.left = '0'; inner.style.top = '0';
+                    inner.style.width = (2048 / data.sw * 100) + '%';
+                    inner.style.height = (2048 / data.sh * 100) + '%';
+                    inner.style.backgroundImage = `url('${mainSheetPath}')`;
+                    inner.style.backgroundSize = 'cover';
+                    inner.style.backgroundPosition = `-${(data.sx / data.sw) * 100}% -${(data.sy / data.sh) * 100}%`;
+                    inner.style.imageRendering = 'pixelated';
+                    
+                    wrapper.appendChild(inner);
+                    div.appendChild(wrapper);
+                    div.insertAdjacentHTML('beforeend', `<br><span style="font-size:10px">${k}</span>`);
+
+                    div.onclick = () => {
+                        document.querySelectorAll('.asset-item').forEach(el => el.classList.remove('selected'));
+                        div.classList.add('selected');
+                        
+                        // Enforce scaling: map editor works in 128 chunks, art chunks are built over 512 space natively, so 512=2 grid blocks.
+                        selectedAssetObj = {
+                            type: k,
+                            path: 'SPRITESHEET',
+                            w: data.sw,
+                            h: data.sh
+                        };
+                        
+                        document.getElementById('tool-paint').click();
+                    };
+                    assetList.appendChild(div);
+                });
+
+                // 2. Render all other dynamic loose PNG assets NOT matched in the sprite sheet
+                AVAILABLE_ASSETS.forEach(path => {
+                    if (path.toLowerCase().indexOf('sprite_sheet') > -1) return; // Skip packed sheets directly
                     const name = path.split('/').pop().replace('.png', '');
+                    if (RITUAL_SPRITES[name]) return; // Skip if it has a dynamic sprite-sheet layout defined
                     if (filter && name.toLowerCase().indexOf(filter) === -1) return;
 
                     const div = document.createElement('div');
@@ -273,19 +339,25 @@
             const sortedAssets = [...map.assets].sort((a, b) => a.y - b.y);
 
             sortedAssets.forEach(item => {
-                const img = Object.values(sprites).find(img => img.src.indexOf(item.type+'.png') > -1);
+                const sData = RITUAL_SPRITES[item.type];
+                const bgImgPath = '../../images/craft-work/indoor maps/stage 1/crystal_structure_sprite_sheet.png';
+                const img = sData ? sprites[bgImgPath] : Object.values(sprites).find(img => img.src.indexOf(item.type+'.png') > -1);
                 
                 oCtx.save();
                 if (item.flipX) {
                     oCtx.translate(item.x + item.w, item.y);
                     oCtx.scale(-1, 1);
-                    if (img) {
+                    if (sData && img) {
+                        oCtx.drawImage(img, sData.sx, sData.sy, sData.sw, sData.sh, 0, 0, item.w, item.h);
+                    } else if (img) {
                         oCtx.drawImage(img, 0, 0, item.w, item.h);
                     } else {
                         oCtx.fillStyle = '#ff00ff'; oCtx.fillRect(0, 0, item.w, item.h);
                     }
                 } else {
-                    if (img) {
+                    if (sData && img) {
+                        oCtx.drawImage(img, sData.sx, sData.sy, sData.sw, sData.sh, item.x, item.y, item.w, item.h);
+                    } else if (img) {
                         oCtx.drawImage(img, item.x, item.y, item.w, item.h);
                     } else {
                         oCtx.fillStyle = '#ff00ff'; oCtx.fillRect(item.x, item.y, item.w, item.h);
