@@ -192,31 +192,77 @@
             const renderAssets = (filter = '') => {
                 assetList.innerHTML = '';
                 
-                // Render everything structurally from the newly transformed AVAILABLE_ASSETS object list
-                AVAILABLE_ASSETS.forEach(assetData => {
-                    const name = assetData.id;
-                    if (filter && name.toLowerCase().indexOf(filter) === -1) return;
+                // 1. Render specific static RITUAL_SPRITES mapped explicitly correctly without stretching
+                const mainSheetPath = '../../images/craft-work/indoor maps/stage 1/crystal_structure_sprite_sheet.png';
+                const mainSheetImg = sprites[mainSheetPath] || new Image();
+                if (!sprites[mainSheetPath]) { mainSheetImg.src = mainSheetPath; sprites[mainSheetPath] = mainSheetImg; }
 
-                    // If it's a known specifically cut out asset, override the dimensions
-                    let sx = assetData.sx; let sy = assetData.sy; let sw = assetData.sw; let sh = assetData.sh;
-                    let assetType = name;
-                    
-                    // Match the specific logic if a named sprite aligns to the original core sheet (which might be named appropriately if from the generic map)
-                    const knownSprite = RITUAL_SPRITES[name] || RITUAL_SPRITES[name.split('_')[0]]; // If matching base name
-                    if (knownSprite) {
-                        sx = knownSprite.sx; sy = knownSprite.sy; sw = knownSprite.sw; sh = knownSprite.sh;
-                    }
+                Object.keys(RITUAL_SPRITES).forEach(k => {
+                    const data = RITUAL_SPRITES[k];
+                    if (filter && k.toLowerCase().indexOf(filter) === -1) return;
 
                     const div = document.createElement('div');
                     div.className = 'asset-item';
                     
-                    // Load image locally if not cached
-                    const mainSheetImg = sprites[assetData.path] || new Image();
-                    if (!sprites[assetData.path]) { mainSheetImg.src = assetData.path; sprites[assetData.path] = mainSheetImg; }
+                    const wrapper = document.createElement('div');
+                    wrapper.style.width = '100%';
+                    wrapper.style.aspectRatio = (data.sw / data.sh).toString();
+                    wrapper.style.position = 'relative';
+                    wrapper.style.overflow = 'hidden';
+                    wrapper.style.maxHeight = '80px';
+                    wrapper.style.margin = '0 auto';
+                    
+                    const inner = document.createElement('div');
+                    inner.style.position = 'absolute';
+                    inner.style.left = '0'; inner.style.top = '0';
+                    inner.style.width = (2048 / data.sw * 100) + '%';
+                    inner.style.height = (2048 / data.sh * 100) + '%';
+                    inner.style.backgroundImage = `url('${mainSheetPath}')`;
+                    inner.style.backgroundSize = 'cover';
+                    inner.style.backgroundPosition = `-${(data.sx / data.sw) * 100}% -${(data.sy / data.sh) * 100}%`;
+                    inner.style.imageRendering = 'pixelated';
+                    
+                    // Specific scaling correction just for UI preview accuracy 
+                    inner.style.backgroundSize = 'auto'; inner.style.width = '2048px'; inner.style.height = '2048px'; inner.style.backgroundPosition = `-${data.sx}px -${data.sy}px`;
+
+                    wrapper.appendChild(inner);
+                    div.appendChild(wrapper);
+                    div.insertAdjacentHTML('beforeend', `<br><span style="font-size:10px; word-wrap:break-word;">${k}</span>`);
+
+                    div.onclick = () => {
+                        document.querySelectorAll('.asset-item').forEach(el => el.classList.remove('selected'));
+                        div.classList.add('selected');
+                        
+                        selectedAssetObj = {
+                            type: k,
+                            id: k,
+                            path: mainSheetPath,
+                            sx: data.sx, sy: data.sy, sw: data.sw, sh: data.sh,
+                            w: data.sw * 0.5,
+                            h: data.sh * 0.5
+                        };
+                        
+                        document.getElementById('tool-paint').click();
+                    };
+                    assetList.appendChild(div);
+                });
+
+                // 2. Render all generically parsed 16-grid sprite sheet blocks from folders!
+                AVAILABLE_ASSETS.forEach(assetData => {
+                    if (assetData.path.includes('crystal_structure_sprite_sheet')) return; // Skip dupes
+                    if (filter && assetData.id.toLowerCase().indexOf(filter) === -1) return;
+
+                    let sw = 512; let sh = 512; let sx = assetData.sx; let sy = assetData.sy;
+                    
+                    const div = document.createElement('div');
+                    div.className = 'asset-item';
+                    
+                    const sheetImg = sprites[assetData.path] || new Image();
+                    if (!sprites[assetData.path]) { sheetImg.src = assetData.path; sprites[assetData.path] = sheetImg; }
                     
                     const wrapper = document.createElement('div');
                     wrapper.style.width = '100%';
-                    wrapper.style.aspectRatio = (sw / sh).toString();
+                    wrapper.style.aspectRatio = '1';
                     wrapper.style.position = 'relative';
                     wrapper.style.overflow = 'hidden';
                     wrapper.style.maxHeight = '80px';
@@ -231,21 +277,19 @@
                     inner.style.backgroundSize = 'cover';
                     inner.style.backgroundPosition = `-${(sx / sw) * 100}% -${(sy / sh) * 100}%`;
                     inner.style.imageRendering = 'pixelated';
-                    // Optional padding tweak for preview 
-                    if(knownSprite) { inner.style.backgroundSize = 'auto'; inner.style.width = '2048px'; inner.style.height = '2048px'; inner.style.backgroundPosition = `-${sx}px -${sy}px`; }
 
                     wrapper.appendChild(inner);
                     div.appendChild(wrapper);
-                    div.insertAdjacentHTML('beforeend', `<br><span style="font-size:10px; word-wrap:break-word;">${name}</span>`);
+                    div.insertAdjacentHTML('beforeend', `<br><span style="font-size:10px; word-wrap:break-word;">${assetData.id}</span>`);
 
                     div.onclick = () => {
                         document.querySelectorAll('.asset-item').forEach(el => el.classList.remove('selected'));
                         div.classList.add('selected');
                         
-                        // Map editor uses 128 chunks natively. Base assets are 512, meaning scaled at exactly 0.5 for a 2x2 grid.
+                        // Map editor uses 128 chunks natively. Base assets are 512 -> scaled exactly 0.5 for 2x2 grid.
                         selectedAssetObj = {
-                            type: assetType, // fallback generic block if strictly custom
-                            id: name,
+                            type: assetData.id,
+                            id: assetData.id,
                             path: assetData.path,
                             sx: sx, sy: sy, sw: sw, sh: sh,
                             w: sw * 0.5,
