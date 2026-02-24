@@ -16,7 +16,7 @@
         
         #sidebar { 
             width: 300px; background: var(--panel); border-right: 1px solid #000; display: flex; flex-direction: column; 
-            transition: transform 0.3s ease; position: relative; z-index: 10;
+            transition: transform 0.3s ease; position: relative; z-index: 10; overflow-y: auto;
         }
         #sidebar.collapsed { transform: translateX(-100%); position: absolute; height: 100%; }
         
@@ -25,8 +25,12 @@
             color: var(--text); border: none; cursor: pointer; border-radius: 0 5px 5px 0; font-size: 20px;
         }
 
-        .section { padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); }
-        .section h3 { margin: 0 0 10px 0; font-size: 14px; text-transform: uppercase; color: var(--accent); }
+        .section { display: flex; flex-direction: column; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .section-header { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: rgba(0,0,0,0.2); cursor: pointer; user-select: none; }
+        .section-content { padding: 15px; display: flex; flex-direction: column; overflow-y: auto; }
+        .section.collapsed { flex: none !important; min-height: auto !important; }
+        .section.collapsed .section-content { display: none !important; }
+        .section.collapsed .toggle-icon { transform: rotate(-90deg); }
         
         button, select { 
             background: #3a3a45; color: white; border: 1px solid rgba(255,255,255,0.2); 
@@ -35,7 +39,7 @@
         button:hover, select:hover { background: #4a4a55; }
         button.active { border-color: var(--accent); color: var(--accent); }
 
-        #asset-list { flex: 1; overflow-y: auto; padding: 10px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        #asset-list { flex: 1; overflow-y: auto; padding: 10px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; min-height: 50px; }
         .asset-item { 
             background: rgba(0,0,0,0.5); border: 2px solid transparent; border-radius: 4px; padding: 5px; 
             text-align: center; cursor: pointer; transition: 0.2s;
@@ -66,48 +70,66 @@
     <div id="sidebar">
         <button id="toggle-sidebar">☰</button>
         
-        <div class="section">
-            <h3>Map</h3>
-            <select id="map-select">
-                <option value="ritual_stage_1">Ritual Map - Stage 1</option>
-                <option value="ritual_stage_2">Ritual Map - Stage 2</option>
-                <option value="ritual_stage_3">Ritual Map - Stage 3</option>
-                <option value="ritual_stage_4">Ritual Map - Stage 4</option>
-                <option value="ritual_stage_5">Ritual Map - Stage 5</option>
-                <option value="ritual_stage_6">Ritual Map - Stage 6</option>
-                <option value="ritual_stage_7">Ritual Map - Stage 7 (Boss)</option>
-            </select>
-            <button id="publish-btn">Save / Publish Map</button>
+        <div class="section" id="section-map">
+            <div class="section-header" onclick="this.parentElement.classList.toggle('collapsed')">
+                <h3>Map</h3><span class="toggle-icon">▼</span>
+            </div>
+            <div class="section-content">
+                <select id="map-select">
+                    <option value="ritual_stage_1">Ritual Map - Stage 1</option>
+                    <option value="ritual_stage_2">Ritual Map - Stage 2</option>
+                    <option value="ritual_stage_3">Ritual Map - Stage 3</option>
+                    <option value="ritual_stage_4">Ritual Map - Stage 4</option>
+                    <option value="ritual_stage_5">Ritual Map - Stage 5</option>
+                    <option value="ritual_stage_6">Ritual Map - Stage 6</option>
+                    <option value="ritual_stage_7">Ritual Map - Stage 7 (Boss)</option>
+                </select>
+                <div style="display: flex; gap: 5px;">
+                    <button id="publish-btn" style="flex: 1;">Save / Publish Map</button>
+                    <button id="reset-btn" style="background:#d32f2f; width: auto; padding: 8px;" title="Reset Editor Cache & Load From Game">↺</button>
+                </div>
+            </div>
         </div>
         
-        <div class="section">
-            <h3>Tools</h3>
-            <div style="display: flex; gap: 5px;">
-                <button id="tool-paint" class="active">Paint</button>
-                <button id="tool-erase">Erase</button>
-                <button id="tool-select">Select / Move</button>
+        <div class="section" id="section-tools">
+            <div class="section-header" onclick="this.parentElement.classList.toggle('collapsed')">
+                <h3>Tools</h3><span class="toggle-icon">▼</span>
             </div>
-            <div style="display: flex; gap: 5px; margin-top: 5px; align-items: center; justify-content: space-between;">
-                <button onclick="changeZoom(-0.25)" style="padding: 5px; font-size: 10px; margin-bottom: 0;">Zoom Out</button>
-                <span id="zoom-level" style="font-size: 12px; font-weight: bold; width: 40px; text-align: center;">100%</span>
-                <button onclick="changeZoom(0.25)" style="padding: 5px; font-size: 10px; margin-bottom: 0;">Zoom In</button>
+            <div class="section-content">
+                <div style="display: flex; gap: 5px;">
+                    <button id="tool-paint" class="active">Paint</button>
+                    <button id="tool-erase">Erase</button>
+                    <button id="tool-select">Select / Move</button>
+                </div>
+                <div style="display: flex; gap: 5px; margin-top: 5px; align-items: center; justify-content: space-between;">
+                    <button onclick="changeZoom(-0.25)" style="padding: 5px; font-size: 10px; margin-bottom: 0;">Zoom Out</button>
+                    <span id="zoom-level" style="font-size: 12px; font-weight: bold; width: 40px; text-align: center;">100%</span>
+                    <button onclick="changeZoom(0.25)" style="padding: 5px; font-size: 10px; margin-bottom: 0;">Zoom In</button>
+                </div>
+                <p style="font-size: 11px; opacity: 0.7; margin-top: 10px;">Select box/click: Drag to move group. Shift+Click to add to group. Right-Click to duplicate group. Press Delete/Bkspc to remove. Press F to flip. Press ⬅️/➡️ to rotate. Press +/- to scale 10%.</p>
             </div>
-            <p style="font-size: 11px; opacity: 0.7; margin-top: 10px;">Select box/click: Drag to move group. Shift+Click to add to group. Right-Click to duplicate group. Press Delete/Bkspc to remove. Press F to flip. Press ⬅️/➡️ to rotate. Press +/- to scale 10%.</p>
         </div>
 
-        <div class="section" style="display: flex; flex-direction: column; flex: 1; min-height: 0;">
-            <h3>Assets</h3>
-            <input type="text" id="asset-search" placeholder="Search assets..." style="width:100%; padding:5px; margin-bottom:10px; background:#222; color:white; border:1px solid #444; box-sizing:border-box;">
-            <div id="asset-list"></div>
+        <div class="section" style="flex: 1; min-height: 200px;" id="section-assets">
+            <div class="section-header" onclick="this.parentElement.classList.toggle('collapsed')">
+                <h3>Assets</h3><span class="toggle-icon">▼</span>
+            </div>
+            <div class="section-content" style="flex: 1; min-height: 0; padding-bottom: 0;">
+                <input type="text" id="asset-search" placeholder="Search assets..." style="width:100%; padding:5px; margin-bottom:10px; background:#222; color:white; border:1px solid #444; box-sizing:border-box;">
+                <div id="asset-list" style="padding: 0;"></div>
+            </div>
         </div>
 
         <!-- NEW PROPERTIES PANEL -->
-        <div class="section" id="properties-panel" style="display: none; background: #222; border-top: 2px solid var(--accent);">
-            <h3>Properties</h3>
-            <div id="prop-type" style="font-size: 12px; margin-bottom: 10px; color: #888;">No Object Selected</div>
-            
-            <div id="props-container" style="display: flex; flex-direction: column; gap: 5px; font-size: 11px;">
-                <!-- Dynamic Props Injected Here -->
+        <div class="section" id="properties-panel" style="display: none; background: #222; border-top: 2px solid var(--accent); flex: 1; min-height: 250px; display: flex; flex-direction: column;">
+            <div class="section-header" onclick="this.parentElement.classList.toggle('collapsed')">
+                <h3>Properties</h3><span class="toggle-icon">▼</span>
+            </div>
+            <div class="section-content" style="flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; padding-bottom: 0;">
+                <div id="prop-type" style="font-size: 12px; margin-bottom: 10px; color: #888;">No Object Selected</div>
+                <div id="props-container" style="display: flex; flex-direction: column; gap: 5px; font-size: 11px; overflow-y: auto; flex: 1; padding-bottom: 15px;">
+                    <!-- Dynamic Props Injected Here -->
+                </div>
             </div>
         </div>
     </div>
@@ -140,6 +162,24 @@
     <script src="assetList.js"></script>
     <script src="initialMapData.js"></script>
     <script>
+        function saveToLocalStorage() {
+            if (!MAP_DATA || !MAP_DATA[currentMapId]) return;
+            localStorage.setItem(`map_editor_${currentMapId}`, JSON.stringify(MAP_DATA[currentMapId]));
+        }
+
+        function loadFromLocalStorage() {
+            const saved = localStorage.getItem(`map_editor_${currentMapId}`);
+            if (saved) {
+                try {
+                    MAP_DATA[currentMapId] = JSON.parse(saved);
+                    // Force DOM reflood mapping for sidebar elements
+                    setTimeout(() => drawMap(), 50); 
+                    return true;
+                } catch(e) { console.warn("Corrupt local storage map data"); }
+            }
+            return false;
+        }
+
         const RITUAL_SPRITES = {
             crystal_wall_front:                { sx: 0,    sy: 0,    sw: 512, sh: 512 },
             crystal_wall_top_view:             { sx: 512,  sy: 0,    sw: 192, sh: 512 },
@@ -328,9 +368,6 @@
 
             renderAssets();
             searchInput.oninput = (e) => renderAssets(e.target.value.toLowerCase());
-            
-            // Initial load of map
-            loadExistingMapData();
         }
 
         function loadPreloadedAssets() {
@@ -344,7 +381,7 @@
                     loadedSpritesCount++;
                     if (loadedSpritesCount === uniquePaths.length) {
                         console.log("All sheets loaded.");
-                        drawMap();
+                        loadExistingMapData(); // Wait for images before rendering canvas
                     }
                 }
             });
@@ -367,7 +404,6 @@
             scrollBounds.style.height = (h * zoom) + 'px';
 
             drawGrid();
-            drawMap();
         }
 
         function drawGrid() {
@@ -462,6 +498,8 @@
                 uCtx.lineWidth = 2;
                 uCtx.strokeRect(selectionBox.x, selectionBox.y, selectionBox.w, selectionBox.h);
             }
+            
+            saveToLocalStorage();
         }
 
         // Interaction processing
@@ -592,7 +630,9 @@
             }
         };
 
-        window.onmouseup = () => {
+        window.onmouseup = (e) => {
+            let wasCanvasInteraction = isBoxSelecting || isDraggingObj || e.target === uiCanvas;
+            
             if (isBoxSelecting) {
                 const map = MAP_DATA[currentMapId];
                 // Select elements inside box
@@ -607,14 +647,19 @@
             isDraggingObj = false;
             isBoxSelecting = false;
             uiCanvas.style.cursor = 'crosshair';
-            drawMap();
-            updatePropertiesPanel(); // Add properties panel update here
+            
+            if (wasCanvasInteraction) {
+                drawMap();
+                updatePropertiesPanel();
+            }
         };
         
         // Prevent context menu
         uiCanvas.oncontextmenu = e => e.preventDefault();
 
         window.onkeydown = (e) => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') return;
+            
             if (currentTool === 'select' && selectedMapObjects.length > 0) {
                 if (e.key === 'Delete' || e.key === 'Backspace') {
                     const map = MAP_DATA[currentMapId];
@@ -715,14 +760,37 @@
             };
 
             // 1. Core Properties
-            addSelect('Interactable Type', 'interactType', [
+            const interactTypeWrapper = document.createElement('div');
+            interactTypeWrapper.style.marginBottom = '5px';
+            interactTypeWrapper.innerHTML = `<div>Interactable Type</div>`;
+            const interactTypeSelect = document.createElement('select');
+            interactTypeSelect.style.marginBottom = '0';
+            
+            const typeOptions = [
                 { value: '', label: 'None (Default)' },
                 { value: 'door', label: 'Door' },
                 { value: 'portal', label: 'Portal' },
                 { value: 'boss', label: 'Boss' },
                 { value: 'enemy', label: 'Enemy' },
                 { value: 'npc', label: 'NPC / Lore' }
-            ]);
+            ];
+            
+            typeOptions.forEach(opt => {
+                const option = document.createElement('option');
+                option.value = opt.value;
+                option.innerText = opt.label;
+                if (obj.interactType === opt.value) option.selected = true;
+                interactTypeSelect.appendChild(option);
+            });
+            
+            interactTypeSelect.onchange = (e) => { 
+                obj.interactType = e.target.value; 
+                drawMap(); 
+                updatePropertiesPanel(); // Force immediate redraw of sub-options
+            };
+            
+            interactTypeWrapper.appendChild(interactTypeSelect);
+            container.appendChild(interactTypeWrapper);
 
             // Add slight separation
             container.insertAdjacentHTML('beforeend', '<hr style="border: 0; border-top: 1px solid #444; width: 100%; margin: 5px 0;">');
@@ -790,31 +858,54 @@
         }
 
         function loadExistingMapData() {
-            const map = MAP_DATA[currentMapId];
-            if (map.assets.length > 0) return; // Prevent duplicating assets on multiple loads
-            
-            // Bypass file:/// CORS errors entirely by relying on the auto-generated initialMapData.js file
-            if (currentMapId === 'ritual_stage_1' && typeof INITIAL_MAP_DATA !== 'undefined' && INITIAL_MAP_DATA.length > 0) {
-                map.assets = INITIAL_MAP_DATA;
+            if (loadFromLocalStorage()) {
                 drawMap();
                 return;
             }
 
-            // Fallback: Fetch relative to current map editor directory (works for localhost server viewing)
-            fetch('../craft-work.html').then(r => r.text()).then(html => {
+            const map = MAP_DATA[currentMapId];
+            if (map.assets.length > 0) {
+                drawMap();
+                return;
+            }
+
+            // Fallback: Dynamically calculate path exactly one directory above map-editor regardless of trailing slashes or server root!
+            const craftWorkUrl = window.location.href.split('/map-editor')[0] + '/craft-work.html?t=' + Date.now();
+            fetch(craftWorkUrl).then(r => {
+                if (!r.ok) throw new Error("HTTP " + r.status);
+                return r.text();
+            }).then(html => {
                 if (currentMapId === 'ritual_stage_1') {
-                    const regex = /addAsset\('([^']+)',\s*'([^']+)',\s*([\d.]+),\s*([\d.]+),\s*([\d.]+),\s*([\d.]+)/g;
-                    let match;
-                    while ((match = regex.exec(html)) !== null) {
-                        map.assets.push({
-                            id: match[1],
-                            type: match[2],
-                            x: parseFloat(match[3]) * 128,
-                            y: parseFloat(match[4]) * 128,
-                            w: parseFloat(match[5]) * 128,
-                            h: parseFloat(match[6]) * 128,
-                            flipX: false
-                        });
+                    const blockStart = html.indexOf('// --- MAP EDITOR INJECTION START ---');
+                    const blockEnd = html.indexOf('// --- MAP EDITOR INJECTION END ---');
+                    
+                    if (blockStart > -1 && blockEnd > -1) {
+                        const block = html.substring(blockStart, blockEnd).trim();
+                        
+                        // Use a native Function constructor for secure, locked-down parsing of the map string
+                        const nativeParser = new Function('addAsset', block);
+                        
+                        // Execute the string identically to how the Game Engine does it natively
+                        try {
+                            nativeParser((id, type, x, y, w, h, solid=true, flipX=false, rot=0, interactProps=null) => {
+                                let newObj = {
+                                    id, type,
+                                    x: x * 128, y: y * 128,
+                                    w: w * 128, h: h * 128,
+                                    solid, flipX, rot
+                                };
+                                
+                                if (interactProps) {
+                                    newObj.interactType = interactProps.type;
+                                    Object.assign(newObj, interactProps);
+                                }
+                                
+                                map.assets.push(newObj);
+                            });
+                            console.log("Successfully parsed assets purely from game state:", map.assets.length);
+                        } catch(e) {
+                            console.error("Map parse crash!", e);
+                        }
                     }
                 }
                 drawMap();
@@ -822,6 +913,14 @@
                 console.warn("Could not fetch craft-work.html via network due to file:/// domain policy.", e);
             });
         }
+
+        document.getElementById('reset-btn').onclick = () => {
+            if (confirm("Reset current map to match the game's actual data? This will clear any unsaved editor changes.")) {
+                localStorage.removeItem(`map_editor_${currentMapId}`);
+                MAP_DATA[currentMapId].assets = [];
+                loadExistingMapData();
+            }
+        };
 
         // Publishing flat-file payload modal instead of backend node.js server requirement
         document.getElementById('publish-btn').onclick = async () => {
@@ -846,7 +945,7 @@
                     interactObj = { type: a.interactType };
                     const copyProps = ['targetMap', 'targetX', 'targetY', 'unlockCondition', 'hp', 'aiBehavior', 'bossVariant', 'doorState', 'doorRequiresKey', 'dialogueText'];
                     copyProps.forEach(prop => {
-                        if (a[prop] !== undefined) interactObj[prop] = a[prop];
+                        if (a[prop] !== undefined && a[prop] !== '') interactObj[prop] = a[prop];
                     });
                 }
                 let interactStr = interactObj ? JSON.stringify(interactObj) : 'null';
@@ -895,3 +994,5 @@
     </script>
 </body>
 </html>
+
+
