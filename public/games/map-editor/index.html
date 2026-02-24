@@ -876,11 +876,13 @@
                 return r.text();
             }).then(html => {
                 if (currentMapId === 'ritual_stage_1') {
-                    const blockStart = html.indexOf('// --- MAP EDITOR INJECTION START ---');
-                    const blockEnd = html.indexOf('// --- MAP EDITOR INJECTION END ---');
+                    const startMarker = '// --- MAP EDITOR INJECTION START ---';
+                    const endMarker = '// --- MAP EDITOR INJECTION END ---';
+                    const blockStart = html.indexOf(startMarker);
+                    const blockEnd = html.indexOf(endMarker);
                     
                     if (blockStart > -1 && blockEnd > -1) {
-                        const block = html.substring(blockStart, blockEnd).trim();
+                        const block = html.substring(blockStart + startMarker.length, blockEnd).trim();
                         
                         // Use a native Function constructor for secure, locked-down parsing of the map string
                         const nativeParser = new Function('addAsset', block);
