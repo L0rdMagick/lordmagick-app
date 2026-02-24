@@ -46,9 +46,9 @@
 
         #main-view { flex: 1; position: relative; overflow: auto; background: #000; cursor: crosshair; }
         #canvas-container { position: relative; transform-origin: top left; }
-        canvas { display: block; image-rendering: crisp-edges; image-rendering: pixelated; }
+        canvas { position: absolute; left: 0; top: 0; display: block; image-rendering: crisp-edges; image-rendering: pixelated; }
         
-        #controls { position: absolute; bottom: 20px; left: 20px; display: flex; gap: 10px; z-index: 5; }
+        #controls { position: fixed; bottom: 20px; left: 320px; display: flex; gap: 10px; z-index: 5; background: rgba(0,0,0,0.5); padding: 5px; border-radius: 5px; }
         #controls button { width: auto; padding: 10px 20px; font-weight: bold; }
         #publish-btn { background: #2e7d32; }
         #publish-btn:hover { background: #388e3c; }
@@ -308,7 +308,8 @@
 
         // Interaction processing
         function getCoords(e) {
-            const rect = uiCanvas.getBoundingClientRect();
+            const rect = container.getBoundingClientRect();
+            // Compensate for mainView scroll dynamically alongside container's zoomed bounding client rect
             const x = (e.clientX - rect.left) / zoom;
             const y = (e.clientY - rect.top) / zoom;
             return { x, y };
@@ -430,8 +431,8 @@
 
         // Loading from craft-work map data visually initially
         function loadExistingMapData() {
-            // Ideally we parse craft-work.html, but for now we fetch it via an endpoint and extract
-            fetch('/games/craft-work.html').then(r => r.text()).then(html => {
+            // Fetch relative to current map editor directory (works for both localhost server and local file viewing)
+            fetch('../craft-work.html').then(r => r.text()).then(html => {
                 const map = MAP_DATA[currentMapId];
                 if (map.assets.length > 0) return; // Prevent duplicating assets on multiple loads
                 
