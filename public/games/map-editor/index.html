@@ -91,12 +91,14 @@
     </div>
 
     <div id="main-view">
-        <div id="canvas-container">
-            <!-- Layers -->
-            <canvas id="bgLayer"></canvas>
-            <canvas id="gridLayer"></canvas>
-            <canvas id="objectLayer"></canvas>
-            <canvas id="uiLayer"></canvas>
+        <div id="scroll-bounds-wrapper">
+            <div id="canvas-container">
+                <!-- Layers -->
+                <canvas id="bgLayer"></canvas>
+                <canvas id="gridLayer"></canvas>
+                <canvas id="objectLayer"></canvas>
+                <canvas id="uiLayer"></canvas>
+            </div>
         </div>
     </div>
     <div id="controls">
@@ -147,6 +149,7 @@
         let objDragOffset = []; // array of offsets per selected object
 
         // DOM
+        const scrollBounds = document.getElementById('scroll-bounds-wrapper');
         const container = document.getElementById('canvas-container');
         const mainView = document.getElementById('main-view');
         const bgCanvas = document.getElementById('bgLayer');
@@ -204,29 +207,19 @@
                     const div = document.createElement('div');
                     div.className = 'asset-item';
                     
-                    const wrapper = document.createElement('div');
-                    wrapper.style.width = '100%';
-                    wrapper.style.aspectRatio = (data.sw / data.sh).toString();
-                    wrapper.style.position = 'relative';
-                    wrapper.style.overflow = 'hidden';
-                    wrapper.style.maxHeight = '80px';
-                    wrapper.style.margin = '0 auto';
-                    
-                    const inner = document.createElement('div');
-                    inner.style.position = 'absolute';
-                    inner.style.left = '0'; inner.style.top = '0';
-                    inner.style.width = (2048 / data.sw * 100) + '%';
-                    inner.style.height = (2048 / data.sh * 100) + '%';
-                    inner.style.backgroundImage = `url('${mainSheetPath}')`;
-                    inner.style.backgroundSize = 'cover';
-                    inner.style.backgroundPosition = `-${(data.sx / data.sw) * 100}% -${(data.sy / data.sh) * 100}%`;
-                    inner.style.imageRendering = 'pixelated';
-                    
-                    // Specific scaling correction just for UI preview accuracy 
-                    inner.style.backgroundSize = 'auto'; inner.style.width = '2048px'; inner.style.height = '2048px'; inner.style.backgroundPosition = `-${data.sx}px -${data.sy}px`;
+                    const cvs = document.createElement('canvas');
+                    cvs.width = data.sw;
+                    cvs.height = data.sh;
+                    cvs.style.width = '100%';
+                    cvs.style.display = 'block';
+                    cvs.style.imageRendering = 'pixelated';
+                    cvs.style.maxHeight = '80px';
+                    cvs.style.objectFit = 'contain';
 
-                    wrapper.appendChild(inner);
-                    div.appendChild(wrapper);
+                    const renderCanvas = () => { cvs.getContext('2d').drawImage(mainSheetImg, data.sx, data.sy, data.sw, data.sh, 0, 0, data.sw, data.sh); };
+                    if(mainSheetImg.complete && mainSheetImg.naturalWidth > 0) renderCanvas(); else mainSheetImg.addEventListener('load', renderCanvas);
+
+                    div.appendChild(cvs);
                     div.insertAdjacentHTML('beforeend', `<br><span style="font-size:10px; word-wrap:break-word;">${k}</span>`);
 
                     div.onclick = () => {
@@ -260,26 +253,19 @@
                     const sheetImg = sprites[assetData.path] || new Image();
                     if (!sprites[assetData.path]) { sheetImg.src = assetData.path; sprites[assetData.path] = sheetImg; }
                     
-                    const wrapper = document.createElement('div');
-                    wrapper.style.width = '100%';
-                    wrapper.style.aspectRatio = '1';
-                    wrapper.style.position = 'relative';
-                    wrapper.style.overflow = 'hidden';
-                    wrapper.style.maxHeight = '80px';
-                    wrapper.style.margin = '0 auto';
-                    
-                    const inner = document.createElement('div');
-                    inner.style.position = 'absolute';
-                    inner.style.left = '0'; inner.style.top = '0';
-                    inner.style.width = (2048 / sw * 100) + '%';
-                    inner.style.height = (2048 / sh * 100) + '%';
-                    inner.style.backgroundImage = `url('${assetData.path}')`;
-                    inner.style.backgroundSize = 'cover';
-                    inner.style.backgroundPosition = `-${(sx / sw) * 100}% -${(sy / sh) * 100}%`;
-                    inner.style.imageRendering = 'pixelated';
+                    const cvs = document.createElement('canvas');
+                    cvs.width = sw;
+                    cvs.height = sh;
+                    cvs.style.width = '100%';
+                    cvs.style.display = 'block';
+                    cvs.style.imageRendering = 'pixelated';
+                    cvs.style.maxHeight = '80px';
+                    cvs.style.objectFit = 'contain';
 
-                    wrapper.appendChild(inner);
-                    div.appendChild(wrapper);
+                    const renderCanvas = () => { cvs.getContext('2d').drawImage(sheetImg, sx, sy, sw, sh, 0, 0, sw, sh); };
+                    if(sheetImg.complete && sheetImg.naturalWidth > 0) renderCanvas(); else sheetImg.addEventListener('load', renderCanvas);
+
+                    div.appendChild(cvs);
                     div.insertAdjacentHTML('beforeend', `<br><span style="font-size:10px; word-wrap:break-word;">${assetData.id}</span>`);
 
                     div.onclick = () => {
@@ -337,6 +323,10 @@
             });
             container.style.width = w + 'px';
             container.style.height = h + 'px';
+            
+            // Sync bounding tracker wrapper with logical zoom footprint immediately!
+            scrollBounds.style.width = (w * zoom) + 'px';
+            scrollBounds.style.height = (h * zoom) + 'px';
 
             drawGrid();
             drawMap();
@@ -383,25 +373,25 @@
                 const img = sprites[bgImgPath];
                 
                 oCtx.save();
-                if (item.flipX) {
-                    oCtx.translate(item.x + item.w, item.y);
-                    oCtx.scale(-1, 1);
-                    if (sData && img) {
-                        oCtx.drawImage(img, sData.sx, sData.sy, sData.sw, sData.sh, 0, 0, item.w, item.h);
-                    } else if (img) {
-                        oCtx.drawImage(img, 0, 0, item.w, item.h);
-                    } else {
-                        oCtx.fillStyle = '#ff00ff'; oCtx.fillRect(0, 0, item.w, item.h);
-                    }
+                
+                // Navigate pivot anchor to absolute center of object to process rotation or scale inversions natively from epicenter 
+                oCtx.translate(item.x + (item.w / 2), item.y + (item.h / 2));
+                
+                if (item.rot) oCtx.rotate(item.rot * Math.PI / 180);
+                if (item.flipX) oCtx.scale(-1, 1);
+                
+                // Shift anchor back negatively to draw origin so coords map back flawlessly to epicenter transformations
+                const drX = -(item.w / 2);
+                const drY = -(item.h / 2);
+                
+                if (sData && img) {
+                    oCtx.drawImage(img, sData.sx, sData.sy, sData.sw, sData.sh, drX, drY, item.w, item.h);
+                } else if (img) {
+                    oCtx.drawImage(img, drX, drY, item.w, item.h);
                 } else {
-                    if (sData && img) {
-                        oCtx.drawImage(img, sData.sx, sData.sy, sData.sw, sData.sh, item.x, item.y, item.w, item.h);
-                    } else if (img) {
-                        oCtx.drawImage(img, item.x, item.y, item.w, item.h);
-                    } else {
-                        oCtx.fillStyle = '#ff00ff'; oCtx.fillRect(item.x, item.y, item.w, item.h);
-                    }
+                    oCtx.fillStyle = '#ff00ff'; oCtx.fillRect(drX, drY, item.w, item.h);
                 }
+                
                 oCtx.restore();
 
                 // Selection highlight
@@ -588,12 +578,28 @@
                     selectedMapObjects.forEach(obj => obj.flipX = !obj.flipX);
                     drawMap();
                 }
+                if (e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    selectedMapObjects.forEach(obj => obj.rot = (obj.rot || 0) + 15);
+                    drawMap();
+                }
+                if (e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    selectedMapObjects.forEach(obj => obj.rot = (obj.rot || 0) - 15);
+                    drawMap();
+                }
             }
         };
 
         function changeZoom(delta) {
             zoom = Math.max(0.25, Math.min(2.0, zoom + delta));
             container.style.transform = `scale(${zoom})`;
+            
+            // Sync Bounding padding limits explicitly
+            const map = MAP_DATA[currentMapId];
+            scrollBounds.style.width = (map.tilesX * map.gridSize * zoom) + 'px';
+            scrollBounds.style.height = (map.tilesY * map.gridSize * zoom) + 'px';
+            
             document.getElementById('zoom-level').innerText = Math.round(zoom * 100) + '%';
         }
 
