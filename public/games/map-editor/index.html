@@ -46,10 +46,8 @@
 
         #main-view { flex: 1; position: relative; overflow: auto; background: #000; cursor: crosshair; }
         #canvas-container { position: relative; transform-origin: top left; }
-        canvas { position: absolute; left: 0; top: 0; display: block; image-rendering: crisp-edges; image-rendering: pixelated; }
+        #canvas-container canvas { position: absolute; left: 0; top: 0; display: block; image-rendering: crisp-edges; image-rendering: pixelated; }
         
-        #controls { position: fixed; bottom: 20px; left: 320px; display: flex; gap: 10px; z-index: 5; background: rgba(0,0,0,0.5); padding: 5px; border-radius: 5px; }
-        #controls button { width: auto; padding: 10px 20px; font-weight: bold; }
         #publish-btn { background: #2e7d32; }
         #publish-btn:hover { background: #388e3c; }
     </style>
@@ -80,7 +78,12 @@
                 <button id="tool-erase">Erase</button>
                 <button id="tool-select">Select / Move</button>
             </div>
-            <p style="font-size: 11px; opacity: 0.7; margin-top: 10px;">Select: Click & drag to move. press Delete to remove. Click & press F to flip horizontally.</p>
+            <div style="display: flex; gap: 5px; margin-top: 5px; align-items: center; justify-content: space-between;">
+                <button onclick="changeZoom(-0.25)" style="padding: 5px; font-size: 10px; margin-bottom: 0;">Zoom Out</button>
+                <span id="zoom-level" style="font-size: 12px; font-weight: bold; width: 40px; text-align: center;">100%</span>
+                <button onclick="changeZoom(0.25)" style="padding: 5px; font-size: 10px; margin-bottom: 0;">Zoom In</button>
+            </div>
+            <p style="font-size: 11px; opacity: 0.7; margin-top: 10px;">Select box/click: Drag to move group. Shift+Click to add to group. Right-Click to duplicate group. Press Delete/Bkspc to remove. Press F to flip. Press ⬅️/➡️ to rotate.</p>
         </div>
 
         <div class="section" style="display: flex; flex-direction: column; flex: 1; min-height: 0;">
@@ -100,11 +103,6 @@
                 <canvas id="uiLayer"></canvas>
             </div>
         </div>
-    </div>
-    <div id="controls">
-        <button onclick="changeZoom(-0.25)">Zoom Out</button>
-        <span id="zoom-level" style="padding: 10px; background: rgba(0,0,0,0.5); border-radius: 4px;">100%</span>
-        <button onclick="changeZoom(0.25)">Zoom In</button>
     </div>
 
     <script src="assetList.js"></script>
