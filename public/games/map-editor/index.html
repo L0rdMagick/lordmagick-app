@@ -695,7 +695,7 @@
         }
 
         // Publishing flat-file payload modal instead of backend node.js server requirement
-        document.getElementById('publish-btn').onclick = () => {
+        document.getElementById('publish-btn').onclick = async () => {
             const map = MAP_DATA[currentMapId];
             
             // Build the string representation for initRitualMap
@@ -721,8 +721,24 @@
             const modal = document.getElementById('save-modal');
             const textarea = document.getElementById('save-textarea');
             
-            textarea.value = textToCopy;
-            modal.style.display = 'flex';
+            // Attempt to hit local node server for automatic injection
+            try {
+                const res = await fetch('http://localhost:3000/api/save-map', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ layout: textToCopy })
+                });
+
+                if (res.ok) {
+                    alert('Map saved and injected into craft-work.html!');
+                } else {
+                    throw new Error('Server error');
+                }
+            } catch (e) {
+                // Fallback to manual copy/paste modal if node server is not running
+                textarea.value = textToCopy;
+                modal.style.display = 'flex';
+            }
         };
 
         // Boot
