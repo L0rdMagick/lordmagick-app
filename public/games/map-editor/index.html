@@ -136,13 +136,15 @@
         let currentMapId = 'ritual_stage_1';
         let currentTool = 'paint'; // paint, erase, select
         let selectedAssetObj = null; // The template from the sidebar
-        let selectedMapObject = null; // The instantiated object on the canvas
+        let selectedMapObjects = []; // The instantiated objects on the canvas
         let zoom = 1.0;
         let isDraggingMap = false;
         let isDraggingObj = false;
+        let isBoxSelecting = false;
+        let selectionBox = { x:0, y:0, w:0, h:0 };
         let startPan = {x:0, y:0};
         let lastPan = {x:0, y:0};
-        let objDragOffset = {x:0, y:0};
+        let objDragOffset = []; // array of offsets per selected object
 
         // DOM
         const container = document.getElementById('canvas-container');
@@ -169,7 +171,7 @@
             const mapSelect = document.getElementById('map-select');
             mapSelect.onchange = (e) => {
                 currentMapId = e.target.value;
-                selectedMapObject = null;
+                selectedMapObjects = [];
                 setupCanvas(); // resizes and re-draws for the new map
                 loadExistingMapData(); // tries to load from HTML for the new map if available
             };
@@ -179,7 +181,7 @@
                     document.querySelectorAll('.section button').forEach(b => b.classList.remove('active'));
                     e.target.classList.add('active');
                     currentTool = t;
-                    selectedMapObject = null;
+                    selectedMapObjects = [];
                     drawMap();
                 };
             });
@@ -190,22 +192,31 @@
             const renderAssets = (filter = '') => {
                 assetList.innerHTML = '';
                 
-                // 1. Render specific Spritesheet elements mapped explicitly
-                const mainSheetPath = '../../images/craft-work/indoor maps/stage 1/crystal_structure_sprite_sheet.png';
-                const mainSheetImg = sprites[mainSheetPath] || new Image();
-                if (!sprites[mainSheetPath]) { mainSheetImg.src = mainSheetPath; sprites[mainSheetPath] = mainSheetImg; }
+                // Render everything structurally from the newly transformed AVAILABLE_ASSETS object list
+                AVAILABLE_ASSETS.forEach(assetData => {
+                    const name = assetData.id;
+                    if (filter && name.toLowerCase().indexOf(filter) === -1) return;
 
-                Object.keys(RITUAL_SPRITES).forEach(k => {
-                    const data = RITUAL_SPRITES[k];
-                    if (filter && k.toLowerCase().indexOf(filter) === -1) return;
+                    // If it's a known specifically cut out asset, override the dimensions
+                    let sx = assetData.sx; let sy = assetData.sy; let sw = assetData.sw; let sh = assetData.sh;
+                    let assetType = name;
+                    
+                    // Match the specific logic if a named sprite aligns to the original core sheet (which might be named appropriately if from the generic map)
+                    const knownSprite = RITUAL_SPRITES[name] || RITUAL_SPRITES[name.split('_')[0]]; // If matching base name
+                    if (knownSprite) {
+                        sx = knownSprite.sx; sy = knownSprite.sy; sw = knownSprite.sw; sh = knownSprite.sh;
+                    }
 
                     const div = document.createElement('div');
                     div.className = 'asset-item';
                     
-                    // Create visual representation via CSS Background Cropping (very efficient)
+                    // Load image locally if not cached
+                    const mainSheetImg = sprites[assetData.path] || new Image();
+                    if (!sprites[assetData.path]) { mainSheetImg.src = assetData.path; sprites[assetData.path] = mainSheetImg; }
+                    
                     const wrapper = document.createElement('div');
                     wrapper.style.width = '100%';
-                    wrapper.style.aspectRatio = (data.sw / data.sh).toString();
+                    wrapper.style.aspectRatio = (sw / sh).toString();
                     wrapper.style.position = 'relative';
                     wrapper.style.overflow = 'hidden';
                     wrapper.style.maxHeight = '80px';
@@ -214,57 +225,31 @@
                     const inner = document.createElement('div');
                     inner.style.position = 'absolute';
                     inner.style.left = '0'; inner.style.top = '0';
-                    inner.style.width = (2048 / data.sw * 100) + '%';
-                    inner.style.height = (2048 / data.sh * 100) + '%';
-                    inner.style.backgroundImage = `url('${mainSheetPath}')`;
+                    inner.style.width = (2048 / sw * 100) + '%';
+                    inner.style.height = (2048 / sh * 100) + '%';
+                    inner.style.backgroundImage = `url('${assetData.path}')`;
                     inner.style.backgroundSize = 'cover';
-                    inner.style.backgroundPosition = `-${(data.sx / data.sw) * 100}% -${(data.sy / data.sh) * 100}%`;
+                    inner.style.backgroundPosition = `-${(sx / sw) * 100}% -${(sy / sh) * 100}%`;
                     inner.style.imageRendering = 'pixelated';
-                    
+                    // Optional padding tweak for preview 
+                    if(knownSprite) { inner.style.backgroundSize = 'auto'; inner.style.width = '2048px'; inner.style.height = '2048px'; inner.style.backgroundPosition = `-${sx}px -${sy}px`; }
+
                     wrapper.appendChild(inner);
                     div.appendChild(wrapper);
-                    div.insertAdjacentHTML('beforeend', `<br><span style="font-size:10px">${k}</span>`);
+                    div.insertAdjacentHTML('beforeend', `<br><span style="font-size:10px; word-wrap:break-word;">${name}</span>`);
 
                     div.onclick = () => {
                         document.querySelectorAll('.asset-item').forEach(el => el.classList.remove('selected'));
                         div.classList.add('selected');
                         
-                        // Enforce scaling: map editor works in 128 chunks, art chunks are built over 512 space natively, so 512=2 grid blocks.
-                        // So dimension ratio is exactly 0.5 to convert from SpriteSheet pixels -> Map Pixels
+                        // Map editor uses 128 chunks natively. Base assets are 512, meaning scaled at exactly 0.5 for a 2x2 grid.
                         selectedAssetObj = {
-                            type: k,
-                            path: 'SPRITESHEET',
-                            w: data.sw * 0.5,
-                            h: data.sh * 0.5
-                        };
-                        
-                        document.getElementById('tool-paint').click();
-                    };
-                    assetList.appendChild(div);
-                });
-
-                // 2. Render all other dynamic loose PNG assets NOT matched in the sprite sheet
-                AVAILABLE_ASSETS.forEach(path => {
-                    if (path.toLowerCase().indexOf('sprite_sheet') > -1) return; // Skip packed sheets directly
-                    const name = path.split('/').pop().replace('.png', '');
-                    if (RITUAL_SPRITES[name]) return; // Skip if it has a dynamic sprite-sheet layout defined
-                    if (filter && name.toLowerCase().indexOf(filter) === -1) return;
-
-                    const div = document.createElement('div');
-                    div.className = 'asset-item';
-                    div.innerHTML = `<img src="${path}" alt="${name}" loading="lazy"><br><span style="font-size:10px">${name}</span>`;
-                    
-                    div.onclick = () => {
-                        document.querySelectorAll('.asset-item').forEach(el => el.classList.remove('selected'));
-                        div.classList.add('selected');
-                        
-                        // Parse info
-                        const img = sprites[path];
-                        selectedAssetObj = {
-                            type: name,
-                            path: path,
-                            w: img ? (img.width * 0.5) : 256, // Apply 0.5 scaling across all loose assets globally 
-                            h: img ? (img.height * 0.5) : 256
+                            type: assetType, // fallback generic block if strictly custom
+                            id: name,
+                            path: assetData.path,
+                            sx: sx, sy: sy, sw: sw, sh: sh,
+                            w: sw * 0.5,
+                            h: sh * 0.5
                         };
                         
                         document.getElementById('tool-paint').click();
@@ -281,14 +266,16 @@
         }
 
         function loadPreloadedAssets() {
-            AVAILABLE_ASSETS.forEach(path => {
+            // Need to load unique paths
+            const uniquePaths = [...new Set(AVAILABLE_ASSETS.map(a => a.path))];
+            uniquePaths.forEach(path => {
                 const img = new Image();
                 img.src = path;
                 sprites[path] = img;
                 img.onload = () => {
                     loadedSpritesCount++;
-                    if (loadedSpritesCount === AVAILABLE_ASSETS.length) {
-                        console.log("All assets loaded.");
+                    if (loadedSpritesCount === uniquePaths.length) {
+                        console.log("All sheets loaded.");
                         drawMap();
                     }
                 }
@@ -340,9 +327,16 @@
             const sortedAssets = [...map.assets].sort((a, b) => a.y - b.y);
 
             sortedAssets.forEach(item => {
-                const sData = RITUAL_SPRITES[item.type];
-                const bgImgPath = '../../images/craft-work/indoor maps/stage 1/crystal_structure_sprite_sheet.png';
-                const img = sData ? sprites[bgImgPath] : Object.values(sprites).find(img => img.src.indexOf(item.type+'.png') > -1);
+                let sData = RITUAL_SPRITES[item.type];
+                
+                // If it is a dynamically generated sprite sheet chunk, fetch its cached definition
+                const autoSheet = AVAILABLE_ASSETS.find(a => a.id === item.type);
+                if (!sData && autoSheet) {
+                    sData = { sx: autoSheet.sx, sy: autoSheet.sy, sw: autoSheet.sw, sh: autoSheet.sh, path: autoSheet.path };
+                }
+                
+                const bgImgPath = sData && sData.path ? sData.path : '../../images/craft-work/indoor maps/stage 1/crystal_structure_sprite_sheet.png';
+                const img = sprites[bgImgPath];
                 
                 oCtx.save();
                 if (item.flipX) {
@@ -367,7 +361,7 @@
                 oCtx.restore();
 
                 // Selection highlight
-                if (currentTool === 'select' && selectedMapObject === item) {
+                if (currentTool === 'select' && selectedMapObjects.includes(item)) {
                     uCtx.strokeStyle = 'lime';
                     uCtx.lineWidth = 4;
                     uCtx.strokeRect(item.x, item.y, item.w, item.h);
@@ -378,6 +372,15 @@
                     uCtx.fillText(`${item.type}`, item.x, item.y - 5);
                 }
             });
+            
+            // Draw box selection visual
+            if (currentTool === 'select' && isBoxSelecting) {
+                uCtx.fillStyle = 'rgba(77, 208, 225, 0.3)';
+                uCtx.fillRect(selectionBox.x, selectionBox.y, selectionBox.w, selectionBox.h);
+                uCtx.strokeStyle = 'cyan';
+                uCtx.lineWidth = 2;
+                uCtx.strokeRect(selectionBox.x, selectionBox.y, selectionBox.w, selectionBox.h);
+            }
         }
 
         // Interaction processing
@@ -390,8 +393,11 @@
         }
 
         uiCanvas.onmousedown = (e) => {
-            if (e.button === 1 || e.button === 2) {
-                // Middle/Right click pan
+            const coords = getCoords(e);
+            const map = MAP_DATA[currentMapId];
+
+            if (e.button === 1 || (e.button === 2 && currentTool !== 'select')) {
+                // Middle click pan (or Right click map dragging without interfering with select tools)
                 isDraggingMap = true;
                 startPan = { x: e.clientX, y: e.clientY };
                 lastPan = { x: mainView.scrollLeft, y: mainView.scrollTop };
@@ -399,8 +405,20 @@
                 return;
             }
 
-            const coords = getCoords(e);
-            const map = MAP_DATA[currentMapId];
+            if (e.button === 2 && currentTool === 'select') {
+                // Right Click Duplicate Selected items
+                if (selectedMapObjects.length > 0) {
+                    const mappedNew = [];
+                    selectedMapObjects.forEach(obj => {
+                        const duplicate = { ...obj, id: 'dup_' + Date.now() + Math.random(), x: obj.x + 64, y: obj.y + 64 };
+                        map.assets.push(duplicate);
+                        mappedNew.push(duplicate);
+                    });
+                    selectedMapObjects = mappedNew; // move focus to new duplicates
+                    drawMap();
+                }
+                return;
+            }
 
             if (currentTool === 'paint' && selectedAssetObj) {
                 // Do not math-round widths because partial pixel clipping is intentionally fractional to strict sprite bounds!
@@ -413,7 +431,7 @@
 
                 // Push to map
                 map.assets.push({
-                    id: 'custom_' + Date.now(),
+                    id: selectedAssetObj.id || selectedAssetObj.type + '_' + Date.now(),
                     type: selectedAssetObj.type,
                     x: gx,
                     y: gy,
@@ -435,59 +453,95 @@
                 }
             }
             else if (currentTool === 'select') {
-                selectedMapObject = null;
+                let clickedOnExisting = false;
                 for (let i = map.assets.length - 1; i >= 0; i--) {
                     const a = map.assets[i];
                     if (coords.x > a.x && coords.x < a.x + a.w && coords.y > a.y && coords.y < a.y + a.h) {
-                        selectedMapObject = a;
+                        clickedOnExisting = true;
+                        
+                        // Check if hitting existing multi-select block
+                        if (!selectedMapObjects.includes(a)) {
+                            if (!e.shiftKey) { selectedMapObjects = [a]; } 
+                            else { selectedMapObjects.push(a); }
+                        }
+                        
                         isDraggingObj = true;
-                        objDragOffset = { x: coords.x - a.x, y: coords.y - a.y };
-                        // Bring to front
+                        objDragOffset = selectedMapObjects.map(obj => ({ x: coords.x - obj.x, y: coords.y - obj.y, obj: obj }));
+                        
+                        // Bring picked target to front
                         map.assets.push(map.assets.splice(i, 1)[0]);
                         break;
                     }
+                }
+                
+                if (!clickedOnExisting) {
+                    if (!e.shiftKey) selectedMapObjects = [];
+                    isBoxSelecting = true;
+                    selectionBox = { startX: coords.x, startY: coords.y, x: coords.x, y: coords.y, w: 0, h: 0 };
                 }
                 drawMap();
             }
         };
 
         window.onmousemove = (e) => {
+            const coords = getCoords(e);
+            
             if (isDraggingMap) {
                 mainView.scrollLeft = lastPan.x - (e.clientX - startPan.x);
                 mainView.scrollTop = lastPan.y - (e.clientY - startPan.y);
             }
-            if (isDraggingObj && selectedMapObject) {
-                const coords = getCoords(e);
-                
-                // Snap to half grid (64)
-                let snapX = Math.round((coords.x - objDragOffset.x) / 64) * 64;
-                let snapY = Math.round((coords.y - objDragOffset.y) / 64) * 64;
-                
-                selectedMapObject.x = snapX;
-                selectedMapObject.y = snapY;
+            
+            if (isBoxSelecting) {
+                selectionBox.w = Math.abs(coords.x - selectionBox.startX);
+                selectionBox.h = Math.abs(coords.y - selectionBox.startY);
+                selectionBox.x = Math.min(coords.x, selectionBox.startX);
+                selectionBox.y = Math.min(coords.y, selectionBox.startY);
+                drawMap();
+            }
+
+            if (isDraggingObj && selectedMapObjects.length > 0) {
+                objDragOffset.forEach(dragMap => {
+                    const obj = dragMap.obj;
+                    let snapX = Math.round((coords.x - dragMap.x) / 64) * 64;
+                    let snapY = Math.round((coords.y - dragMap.y) / 64) * 64;
+                    obj.x = snapX;
+                    obj.y = snapY;
+                });
                 drawMap();
             }
         };
 
         window.onmouseup = () => {
+            if (isBoxSelecting) {
+                const map = MAP_DATA[currentMapId];
+                // Select elements inside box
+                selectedMapObjects = map.assets.filter(a => {
+                    return a.x < selectionBox.x + selectionBox.w && 
+                           a.x + a.w > selectionBox.x && 
+                           a.y < selectionBox.y + selectionBox.h && 
+                           a.y + a.h > selectionBox.y;
+                });
+            }
             isDraggingMap = false;
             isDraggingObj = false;
+            isBoxSelecting = false;
             uiCanvas.style.cursor = 'crosshair';
+            drawMap();
         };
         
         // Prevent context menu
         uiCanvas.oncontextmenu = e => e.preventDefault();
 
         window.onkeydown = (e) => {
-            if (currentTool === 'select' && selectedMapObject) {
+            if (currentTool === 'select' && selectedMapObjects.length > 0) {
                 if (e.key === 'Delete' || e.key === 'Backspace') {
                     const map = MAP_DATA[currentMapId];
-                    map.assets = map.assets.filter(a => a !== selectedMapObject);
-                    selectedMapObject = null;
+                    map.assets = map.assets.filter(a => !selectedMapObjects.includes(a));
+                    selectedMapObjects = [];
                     drawMap();
                 }
                 if (e.key === 'f' || e.key === 'F') {
-                    selectedMapObject.flipX = !selectedMapObject.flipX;
+                    selectedMapObjects.forEach(obj => obj.flipX = !obj.flipX);
                     drawMap();
                 }
             }
