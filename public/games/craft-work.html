@@ -1745,8 +1745,11 @@ function spawnBoss() {
 
 function toggleLevitate(e) {
     if(e) e.preventDefault();
-    if (gameState.screen !== 'PLAY') return; // Guard clause
-    if (player.mana > 10) { player.isLevitating = !player.isLevitating; createParticles(player.x, player.y, 10, '#fff'); }
+    if (gameState.screen !== 'PLAY' && gameState.screen !== 'RITUAL_MAP') return; 
+    if (player.mana >= 10 || player.isLevitating) { 
+        player.isLevitating = !player.isLevitating; 
+        if (player.isLevitating) createParticles(player.x, player.y, 10, '#fff'); 
+    }
 }
 
 function playerAttack() {
@@ -2807,17 +2810,17 @@ function initRitualMap() {
         if (x !== 14) addAsset('wall_bot', 'crystal_wall_front', x, 30, 2, 2, true);
     }
     for (let y = 0; y < 32; y += 2) {
-        // Shift left wall to align edge (occupies width 1)
-        addAsset('wall_l', 'crystal_wall_top_view', 1, y, 1, 2, true);
-        // Right wall remains on grid bounds
-        addAsset('wall_r', 'crystal_wall_top_view', 30, y, 1, 2, true);
+        // Shift left wall to perfectly align corner
+        addAsset('wall_l', 'crystal_wall_top_view', 0, y, 1, 2, true);
+        // Right wall needs precisely 1.5 offset from X=30 to perfectly align with 0.5 pillar 
+        addAsset('wall_r', 'crystal_wall_top_view', 31.5, y, 1, 2, true);
     }
 
     // Zone A: Foyer
     addAsset('entrance', 'crystal_arch_entrance', 14, 30, 2, 2, false);
     
-    // Gate replacing the wall structure directly
-    addAsset('gate', 'crystal_closed_doors', 14, 24, 2, 2, true, () => {
+    // Gate replacing the wall structure directly in Mirror Gallery Wall
+    addAsset('gate', 'crystal_closed_doors', 14, 22, 2, 2, true, () => {
         if (!ritualState.q1_solved) {
             const answer = prompt("[DEBUG ENABLED]\nKnowledge Gate: What blocks the path?\n(Hint: Any input will open it for testing)");
             if (answer !== null && answer !== undefined && answer.trim() !== "") {
@@ -2843,8 +2846,8 @@ function initRitualMap() {
         if (i !== 4) addAsset('rc1_b', 'crystal_wall_front', i, 24, 2, 2, true);
     }
     for(let j=18; j<=24; j+=2) {
-        addAsset('rc1_l', 'crystal_wall_top_view', 2, j, 1, 2, true);
-        addAsset('rc1_r', 'crystal_wall_top_view', 9, j, 1, 2, true);
+        addAsset('rc1_l', 'crystal_wall_top_view', 2, j, 1, 2, true);    // Left aligns perfectly 
+        addAsset('rc1_r', 'crystal_wall_top_view', 9.5, j, 1, 2, true);  // 8 + 1.5
     }
     
     // Portal/Door replacing the wall in Closet 1
@@ -2855,11 +2858,12 @@ function initRitualMap() {
         if(i !== 16) addAsset('mg_t', 'crystal_wall_front', i, 10, 2, 2, true); 
         else addAsset('mg_false', 'crystal_wall_front', 16, 10, 2, 2, false); // False wall!
         
-        addAsset('mg_b', 'crystal_wall_front', i, 22, 2, 2, true);
+        // Ensure we skip i=14 to hollow out the space for the Gate replacing it!
+        if (i !== 14) addAsset('mg_b', 'crystal_wall_front', i, 22, 2, 2, true);
     }
     for(let j=10; j<=22; j+=2) {
-        addAsset('mg_l', 'crystal_wall_top_view', 10, j, 1, 2, true);
-        addAsset('mg_r', 'crystal_wall_top_view', 23, j, 1, 2, true);
+        addAsset('mg_l', 'crystal_wall_top_view', 10, j, 1, 2, true);     // Left aligns perfectly
+        addAsset('mg_r', 'crystal_wall_top_view', 23.5, j, 1, 2, true);   // 22 + 1.5
     }
 
     // Zone C: Ritual Closet 2
@@ -2918,7 +2922,8 @@ function updateRitualMap(dt) {
     
     if (joystickInput.active) { dx = joystickInput.x; dy = joystickInput.y; }
 
-    const speed = player.speed * 0.8; 
+    let speed = player.speed * 0.8; 
+    if (player.isLevitating) speed *= 3; // Triple speed testing modifier!
     
     let moveX = 0, moveY = 0;
     if (dx !== 0 || dy !== 0) {
