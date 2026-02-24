@@ -110,10 +110,10 @@
     <script>
         const RITUAL_SPRITES = {
             crystal_wall_front:                { sx: 0,    sy: 0,    sw: 512, sh: 512 },
-            crystal_wall_top_view:             { sx: 512,  sy: 0,    sw: 256, sh: 512 },
-            crystal_wall_corner_up_left:       { sx: 1024, sy: 0,    sw: 512, sh: 512 },
-            crystal_wall_corner_down_left:     { sx: 1536, sy: 0,    sw: 512, sh: 512 },
-            crystal_wall_top_front_angle_view: { sx: 0,    sy: 512,  sw: 256, sh: 512 },
+            crystal_wall_top_view:             { sx: 512,  sy: 0,    sw: 192, sh: 512 },
+            crystal_wall_corner_up_left:       { sx: 1024, sy: 0,    sw: 384, sh: 512 },
+            crystal_wall_corner_down_left:     { sx: 1536, sy: 0,    sw: 384, sh: 512 },
+            crystal_wall_top_front_angle_view: { sx: 0,    sy: 512,  sw: 192, sh: 512 },
             crystal_open_doors:                { sx: 512,  sy: 512,  sw: 512, sh: 512 },
             crystal_closed_doors:              { sx: 1024, sy: 512,  sw: 512, sh: 512 },
             crystal_arch_entrance:             { sx: 1536, sy: 512,  sw: 512, sh: 512 },
@@ -230,11 +230,12 @@
                         div.classList.add('selected');
                         
                         // Enforce scaling: map editor works in 128 chunks, art chunks are built over 512 space natively, so 512=2 grid blocks.
+                        // So dimension ratio is exactly 0.5 to convert from SpriteSheet pixels -> Map Pixels
                         selectedAssetObj = {
                             type: k,
                             path: 'SPRITESHEET',
-                            w: data.sw,
-                            h: data.sh
+                            w: data.sw * 0.5,
+                            h: data.sh * 0.5
                         };
                         
                         document.getElementById('tool-paint').click();
@@ -262,8 +263,8 @@
                         selectedAssetObj = {
                             type: name,
                             path: path,
-                            w: img ? img.width : 512, // Default block
-                            h: img ? img.height : 512
+                            w: img ? (img.width * 0.5) : 256, // Apply 0.5 scaling across all loose assets globally 
+                            h: img ? (img.height * 0.5) : 256
                         };
                         
                         document.getElementById('tool-paint').click();
@@ -402,17 +403,13 @@
             const map = MAP_DATA[currentMapId];
 
             if (currentTool === 'paint' && selectedAssetObj) {
-                // Snap to grid
-                let snapW = Math.max(1, Math.round(selectedAssetObj.w / 128)); // Nearest tile size
-                let snapH = Math.max(1, Math.round(selectedAssetObj.h / 128));
+                // Do not math-round widths because partial pixel clipping is intentionally fractional to strict sprite bounds!
+                // Directly use floating literal values mapping 1:1 visually
+                let gridW = selectedAssetObj.w;
+                let gridH = selectedAssetObj.h;
                 
-                // Allow dynamic scaling logic for custom images that don't fit 512
-                let gridW = snapW * 128;
-                let gridH = snapH * 128;
-                if (selectedAssetObj.w === 256) gridW = 256; // Top walls
-                
-                let gx = Math.floor(coords.x / (128)) * 128;
-                let gy = Math.floor(coords.y / (128)) * 128;
+                let gx = Math.floor(coords.x / 64) * 64; // Snap paint placement coordinates to nearest half-grid block 
+                let gy = Math.floor(coords.y / 64) * 64;
 
                 // Push to map
                 map.assets.push({
