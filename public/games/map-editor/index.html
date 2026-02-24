@@ -83,7 +83,7 @@
                 <span id="zoom-level" style="font-size: 12px; font-weight: bold; width: 40px; text-align: center;">100%</span>
                 <button onclick="changeZoom(0.25)" style="padding: 5px; font-size: 10px; margin-bottom: 0;">Zoom In</button>
             </div>
-            <p style="font-size: 11px; opacity: 0.7; margin-top: 10px;">Select box/click: Drag to move group. Shift+Click to add to group. Right-Click to duplicate group. Press Delete/Bkspc to remove. Press F to flip. Press ⬅️/➡️ to rotate.</p>
+            <p style="font-size: 11px; opacity: 0.7; margin-top: 10px;">Select box/click: Drag to move group. Shift+Click to add to group. Right-Click to duplicate group. Press Delete/Bkspc to remove. Press F to flip. Press ⬅️/➡️ to rotate. Press +/- to scale 10%.</p>
         </div>
 
         <div class="section" style="display: flex; flex-direction: column; flex: 1; min-height: 0;">
@@ -374,6 +374,11 @@
                 if (!sData && autoSheet) {
                     sData = { sx: autoSheet.sx, sy: autoSheet.sy, sw: autoSheet.sw, sh: autoSheet.sh, path: autoSheet.path };
                 }
+
+                if (sData && sData.path && sData.path.includes('/characters/')) {
+                    // Animation: 4 frames, loops every 1000ms
+                    sData.sx = Math.floor((Date.now() / 250) % 4) * sData.sw;
+                }
                 
                 const bgImgPath = sData && sData.path ? sData.path : '../../images/craft-work/indoor maps/stage 1/crystal_structure_sprite_sheet.png';
                 const img = sprites[bgImgPath];
@@ -598,6 +603,26 @@
                     selectedMapObjects.forEach(obj => obj.rot = (obj.rot || 0) - 15);
                     drawMap();
                 }
+                if (e.key === '+' || e.key === '=') {
+                    e.preventDefault();
+                    selectedMapObjects.forEach(obj => {
+                        const dw = obj.w * 0.1;
+                        const dh = obj.h * 0.1;
+                        obj.w += dw; obj.h += dh;
+                        obj.x -= dw / 2; obj.y -= dh / 2;
+                    });
+                    drawMap();
+                }
+                if (e.key === '-' || e.key === '_') {
+                    e.preventDefault();
+                    selectedMapObjects.forEach(obj => {
+                        const dw = obj.w * 0.1;
+                        const dh = obj.h * 0.1;
+                        obj.w -= dw; obj.h -= dh;
+                        obj.x += dw / 2; obj.y += dh / 2;
+                    });
+                    drawMap();
+                }
             }
         };
 
@@ -690,6 +715,9 @@
         loadPreloadedAssets();
         setupCanvas();
         initSidebar();
+
+        // Animation Loop
+        setInterval(() => drawMap(), 250);
 
     </script>
 </body>

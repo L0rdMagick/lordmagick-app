@@ -22,10 +22,16 @@ let spritesData = [];
 assets.forEach(p => {
     const relPath = encodeURI(p.replace('./public/', '../../'));
     const name = path.basename(p, '.png');
+    
+    // Only fetch first top-left grid slot for characters so they don't blow up the list 16 times
+    const isCharacter = relPath.includes('/characters/');
+
     for(let y=0; y<4; y++) {
         for(let x=0; x<4; x++) {
+            if (isCharacter && (x !== 0 || y !== 0)) continue;
+            
             spritesData.push({ 
-                id: name + '_' + x + '_' + y, 
+                id: name + (isCharacter ? '' : ('_' + x + '_' + y)), 
                 path: relPath, 
                 sx: x*512, 
                 sy: y*512, 
