@@ -214,8 +214,12 @@
                     cvs.style.maxHeight = '80px';
                     cvs.style.objectFit = 'contain';
 
-                    const renderCanvas = () => { cvs.getContext('2d').drawImage(mainSheetImg, data.sx, data.sy, data.sw, data.sh, 0, 0, data.sw, data.sh); };
-                    if(mainSheetImg.complete && mainSheetImg.naturalWidth > 0) renderCanvas(); else mainSheetImg.addEventListener('load', renderCanvas);
+                    const renderCanvas = () => { 
+                        try {
+                            if(mainSheetImg.naturalWidth > 0) cvs.getContext('2d').drawImage(mainSheetImg, data.sx, data.sy, data.sw, data.sh, 0, 0, data.sw, data.sh); 
+                        } catch(e) {}
+                    };
+                    if(mainSheetImg.complete) renderCanvas(); else mainSheetImg.addEventListener('load', renderCanvas);
 
                     div.appendChild(cvs);
                     div.insertAdjacentHTML('beforeend', `<br><span style="font-size:10px; word-wrap:break-word;">${k}</span>`);
@@ -260,8 +264,12 @@
                     cvs.style.maxHeight = '80px';
                     cvs.style.objectFit = 'contain';
 
-                    const renderCanvas = () => { cvs.getContext('2d').drawImage(sheetImg, sx, sy, sw, sh, 0, 0, sw, sh); };
-                    if(sheetImg.complete && sheetImg.naturalWidth > 0) renderCanvas(); else sheetImg.addEventListener('load', renderCanvas);
+                    const renderCanvas = () => { 
+                        try {
+                            if(sheetImg.naturalWidth > 0) cvs.getContext('2d').drawImage(sheetImg, sx, sy, sw, sh, 0, 0, sw, sh); 
+                        } catch(e) {}
+                    };
+                    if(sheetImg.complete) renderCanvas(); else sheetImg.addEventListener('load', renderCanvas);
 
                     div.appendChild(cvs);
                     div.insertAdjacentHTML('beforeend', `<br><span style="font-size:10px; word-wrap:break-word;">${assetData.id}</span>`);
@@ -382,12 +390,16 @@
                 const drX = -(item.w / 2);
                 const drY = -(item.h / 2);
                 
-                if (sData && img) {
-                    oCtx.drawImage(img, sData.sx, sData.sy, sData.sw, sData.sh, drX, drY, item.w, item.h);
-                } else if (img) {
-                    oCtx.drawImage(img, drX, drY, item.w, item.h);
-                } else {
-                    oCtx.fillStyle = '#ff00ff'; oCtx.fillRect(drX, drY, item.w, item.h);
+                try {
+                    if (sData && img && img.complete && img.naturalWidth > 0) {
+                        oCtx.drawImage(img, sData.sx, sData.sy, sData.sw, sData.sh, drX, drY, item.w, item.h);
+                    } else if (img && img.complete && img.naturalWidth > 0) {
+                        oCtx.drawImage(img, drX, drY, item.w, item.h);
+                    } else {
+                        oCtx.fillStyle = 'rgba(255, 0, 255, 0.5)'; oCtx.fillRect(drX, drY, item.w, item.h);
+                    }
+                } catch(e) {
+                    oCtx.fillStyle = 'rgba(255, 0, 0, 0.5)'; oCtx.fillRect(drX, drY, item.w, item.h);
                 }
                 
                 oCtx.restore();
