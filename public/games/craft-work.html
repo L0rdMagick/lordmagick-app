@@ -2810,10 +2810,10 @@ function initRitualMap() {
         if (x !== 14) addAsset('wall_bot', 'crystal_wall_front', x, 30, 2, 2, true);
     }
     for (let y = 0; y < 32; y += 2) {
-        // Shift left wall to perfectly align corner
+        // Left outer wall
         addAsset('wall_l', 'crystal_wall_top_view', 0, y, 1, 2, true);
-        // Right wall needs precisely 1.5 offset from X=30 to perfectly align with 0.5 pillar 
-        addAsset('wall_r', 'crystal_wall_top_view', 31.5, y, 1, 2, true);
+        // Right outer wall right-aligned inside boundary
+        addAsset('wall_r', 'crystal_wall_top_view', 31, y, 1, 2, true);
     }
 
     // Zone A: Foyer
@@ -2846,12 +2846,24 @@ function initRitualMap() {
         if (i !== 4) addAsset('rc1_b', 'crystal_wall_front', i, 24, 2, 2, true);
     }
     for(let j=18; j<=24; j+=2) {
-        addAsset('rc1_l', 'crystal_wall_top_view', 2, j, 1, 2, true);    // Left aligns perfectly 
-        addAsset('rc1_r', 'crystal_wall_top_view', 9.5, j, 1, 2, true);  // 8 + 1.5
+        // Left wall of rc1
+        addAsset('rc1_l', 'crystal_wall_top_view', 2, j, 1, 2, true);    
     }
     
-    // Portal/Door replacing the wall in Closet 1
-    addAsset('portal', 'crystal_open_doors', 4, 24, 2, 2, false); 
+    // Portal/Door replacing the wall in Closet 1 (starts closed)
+    addAsset('portal', 'crystal_closed_doors', 4, 24, 2, 2, true, () => {
+        const portal = ritualState.assets.find(a => a.id === 'portal');
+        if (portal.type === 'crystal_closed_doors') {
+            portal.type = 'crystal_open_doors'; 
+            portal.solid = false;
+            playSound('collect');
+        } else {
+            // Already open, teleport player through
+            player.x = 26 * 128 + 64; 
+            player.y = 26 * 128 + 64;
+            playSound('portal');
+        }
+    }); 
 
     // Mirror Gallery (10, 10) to (22, 22)
     for(let i=10; i<=22; i+=2) {
@@ -2861,18 +2873,21 @@ function initRitualMap() {
         // Ensure we skip i=14 to hollow out the space for the Gate replacing it!
         if (i !== 14) addAsset('mg_b', 'crystal_wall_front', i, 22, 2, 2, true);
     }
-    for(let j=10; j<=22; j+=2) {
-        addAsset('mg_l', 'crystal_wall_top_view', 10, j, 1, 2, true);     // Left aligns perfectly
-        addAsset('mg_r', 'crystal_wall_top_view', 23.5, j, 1, 2, true);   // 22 + 1.5
+
+    // Unified Left-Enclosing Vertical Column at x=9 (satisfies rc1 right-wall and mg left-wall)
+    for(let j=10; j<=24; j+=2) {
+        addAsset('mg_l_unified', 'crystal_wall_top_view', 9, j, 1, 2, true);
+    }
+    
+    // Unified Right-Enclosing Vertical Column at x=23 (satisfies mg right-wall and rc2 left-wall)
+    for(let j=4; j<=22; j+=2) {
+        addAsset('mg_r_unified', 'crystal_wall_top_view', 23, j, 1, 2, true);
     }
 
     // Zone C: Ritual Closet 2
     for(let i=24; i<=30; i+=2) {
         addAsset('rc2_t', 'crystal_wall_front', i, 4, 2, 2, true);
         if (i !== 26) addAsset('rc2_b', 'crystal_wall_front', i, 10, 2, 2, true);
-    }
-    for(let j=4; j<=10; j+=2) {
-        addAsset('rc2_l', 'crystal_wall_top_view', 24, j, 1, 2, true);
     }
     addAsset('rc2_door', 'crystal_closed_doors', 26, 10, 2, 2, true, () => {
         const answer = prompt("[DEBUG ENABLED]\nKnowledge Gate 2: What is the truth?\n(Hint: Any input will open it for testing)");
