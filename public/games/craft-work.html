@@ -2778,16 +2778,20 @@ function initRitualMap() {
         if (x !== 14) addAsset('wall_bot', 'crystal_wall_front', x, 30, 2, 2, true);
     }
     for (let y = 0; y < 32; y += 2) {
-        addAsset('wall_l', 'crystal_wall_top_view', 0, y, 1, 2, true);
-        addAsset('wall_r', 'crystal_wall_top_view', 31, y, 1, 2, true);
+        // Shift left wall to align edge (occupies width 1)
+        addAsset('wall_l', 'crystal_wall_top_view', 1, y, 1, 2, true);
+        // Right wall remains on grid bounds
+        addAsset('wall_r', 'crystal_wall_top_view', 30, y, 1, 2, true);
     }
 
     // Zone A: Foyer
     addAsset('entrance', 'crystal_arch_entrance', 14, 30, 2, 2, false);
+    
+    // Gate replacing the wall structure directly
     addAsset('gate', 'crystal_closed_doors', 14, 24, 2, 2, true, () => {
         if (!ritualState.q1_solved) {
             const answer = prompt("[DEBUG ENABLED]\nKnowledge Gate: What blocks the path?\n(Hint: Any input will open it for testing)");
-            if (answer !== null && answer !== undefined) {
+            if (answer !== null && answer !== undefined && answer.trim() !== "") {
                 ritualState.q1_solved = true;
                 const gate = ritualState.assets.find(a => a.id === 'gate');
                 gate.type = 'crystal_open_doors'; gate.solid = false;
@@ -2799,23 +2803,23 @@ function initRitualMap() {
     });
 
     // Oracle
-    addAsset('oracle', 'crystal_wall_top_front_angle_view', 10, 26, 2, 2, true, () => {
+    addAsset('oracle', 'crystal_wall_top_front_angle_view', 10, 26, 1, 2, true, () => {
         alert("Oracle: Seek the Rose Quartz Shard through the mirrors.");
     });
 
     // Zone B: Mirror Labyrinth
     // Ritual Closet 1: 6x6 from (2, 18) to (8, 24)
-    for(let i=2; i<=6; i+=2) {
+    for(let i=2; i<=8; i+=2) {
         addAsset('rc1_t', 'crystal_wall_front', i, 18, 2, 2, true);
-        addAsset('rc1_b', 'crystal_wall_front', i, 24, 2, 2, true);
+        if (i !== 4) addAsset('rc1_b', 'crystal_wall_front', i, 24, 2, 2, true);
     }
     for(let j=18; j<=24; j+=2) {
-        addAsset('rc1_l', 'crystal_wall_top_view', 2, j, 1, 2, true);
-        if(j!==20) addAsset('rc1_r', 'crystal_wall_top_view', 8, j, 1, 2, true);
+        addAsset('rc1_l', 'crystal_wall_top_view', 3, j, 1, 2, true);
+        addAsset('rc1_r', 'crystal_wall_top_view', 8, j, 1, 2, true);
     }
     
-    // Portal inside Ritual Closet 1
-    addAsset('portal', 'crystal_open_doors', 4, 20, 2, 2, false); 
+    // Portal/Door replacing the wall in Closet 1
+    addAsset('portal', 'crystal_open_doors', 4, 24, 2, 2, false); 
 
     // Mirror Gallery (10, 10) to (22, 22)
     for(let i=10; i<=22; i+=2) {
@@ -2825,19 +2829,19 @@ function initRitualMap() {
         addAsset('mg_b', 'crystal_wall_front', i, 22, 2, 2, true);
     }
     for(let j=10; j<=22; j+=2) {
-        addAsset('mg_l', 'crystal_wall_top_view', 10, j, 1, 2, true);
-        addAsset('mg_r', 'crystal_wall_top_view', 23, j, 1, 2, true);
+        addAsset('mg_l', 'crystal_wall_top_view', 11, j, 1, 2, true);
+        addAsset('mg_r', 'crystal_wall_top_view', 22, j, 1, 2, true);
     }
 
     // Zone C: Ritual Closet 2
     for(let i=24; i<=30; i+=2) {
         addAsset('rc2_t', 'crystal_wall_front', i, 4, 2, 2, true);
-        addAsset('rc2_b', 'crystal_wall_front', i, 10, 2, 2, true);
+        if (i !== 26) addAsset('rc2_b', 'crystal_wall_front', i, 10, 2, 2, true);
     }
     for(let j=4; j<=10; j+=2) {
-        addAsset('rc2_l', 'crystal_wall_top_view', 24, j, 1, 2, true);
+        addAsset('rc2_l', 'crystal_wall_top_view', 25, j, 1, 2, true);
     }
-    addAsset('rc2_door', 'crystal_open_doors', 26, 8, 2, 2, false); 
+    addAsset('rc2_door', 'crystal_open_doors', 26, 10, 2, 2, false); 
 
     // Zone D: Inner Sanctum
     addAsset('shard', 'shard', 15, 15, 1, 1, false, () => {
