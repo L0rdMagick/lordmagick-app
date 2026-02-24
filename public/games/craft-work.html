@@ -2804,18 +2804,6 @@ function initRitualMap() {
         ritualState.assets.push({ id, type, x: gridX * 128, y: gridY * 128, w: w * 128, h: h * 128, solid, interact, hidden });
     };
 
-    // Boundaries
-    for (let x = 0; x < 32; x += 2) {
-        addAsset('wall_top', 'crystal_wall_front', x, 0, 2, 2, true);
-        if (x !== 14) addAsset('wall_bot', 'crystal_wall_front', x, 30, 2, 2, true);
-    }
-    for (let y = 0; y < 32; y += 2) {
-        // Left outer wall
-        addAsset('wall_l', 'crystal_wall_top_view', 0, y, 1, 2, true);
-        // Right outer wall right-aligned inside boundary
-        addAsset('wall_r', 'crystal_wall_top_view', 31, y, 1, 2, true);
-    }
-    
     // --- MAP EDITOR INJECTION START ---
     addAsset('id_2323', 'crystal_wall_front', 0, 0, 2, 2, true, false);
     addAsset('id_9110', 'crystal_wall_front', 0, 30, 2, 2, true, false);
