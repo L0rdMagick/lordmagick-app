@@ -1201,15 +1201,7 @@ const SHEET_SRC = {
     lucifer: '../images/craft-work/characters/Lucifer.png',
 
     // Stage 1 Ritual Map Assets
-    crystal_wall_front: '../images/craft-work/indoor maps/stage 1/crystal_wall_front.png',
-    crystal_wall_top_view: '../images/craft-work/indoor maps/stage 1/crystal_wall_top_view.png',
-    crystal_arch_entrance: '../images/craft-work/indoor maps/stage 1/crystal_arch_entrance.png',
-    crystal_closed_doors: '../images/craft-work/indoor maps/stage 1/crystal_closed_doors.png',
-    crystal_open_doors: '../images/craft-work/indoor maps/stage 1/crystal_open_doors.png',
-    crystal_wall_corner_down_left: '../images/craft-work/indoor maps/stage 1/crystal_wall_corner_down_left.png',
-    crystal_wall_corner_up_left: '../images/craft-work/indoor maps/stage 1/crystal_wall_corner_up_left.png',
-    crystal_down_stairs: '../images/craft-work/indoor maps/stage 1/crystal_down_stairs.png',
-    crystal_wall_top_front_angle_view: '../images/craft-work/indoor maps/stage 1/crystal_wall_top_front_angle_view.png'
+    crystal_structure: '../images/craft-work/indoor maps/stage 1/crystal_structure_sprite_sheet.png'
 };
 
 const SPRITE_SHEETS = {};
@@ -2755,6 +2747,18 @@ function finishGame() {
     document.getElementById('end-message').innerText = `Ritual complete! The spirits accepted your offering. Your intention for ${gameState.selectedSpell.id.toUpperCase()} manifests now.`;
 }
 
+const RITUAL_SPRITES = {
+    crystal_wall_front:                { sx: 0,    sy: 0,    sw: 512, sh: 512 },
+    crystal_wall_top_view:             { sx: 512,  sy: 0,    sw: 256, sh: 512 },
+    crystal_wall_corner_up_left:       { sx: 1024, sy: 0,    sw: 512, sh: 512 },
+    crystal_wall_corner_down_left:     { sx: 1536, sy: 0,    sw: 512, sh: 512 },
+    crystal_wall_top_front_angle_view: { sx: 0,    sy: 512,  sw: 256, sh: 512 },
+    crystal_open_doors:                { sx: 512,  sy: 512,  sw: 512, sh: 512 },
+    crystal_closed_doors:              { sx: 1024, sy: 512,  sw: 512, sh: 512 },
+    crystal_arch_entrance:             { sx: 1536, sy: 512,  sw: 512, sh: 512 },
+    crystal_down_stairs:               { sx: 0,    sy: 1024, sw: 512, sh: 512 }
+};
+
 let ritualState = null;
 
 function initRitualMap() {
@@ -2774,22 +2778,22 @@ function initRitualMap() {
         if (x !== 14) addAsset('wall_bot', 'crystal_wall_front', x, 30, 2, 2, true);
     }
     for (let y = 0; y < 32; y += 2) {
-        addAsset('wall_l', 'crystal_wall_top_view', 0, y, 2, 2, true);
-        addAsset('wall_r', 'crystal_wall_top_view', 30, y, 2, 2, true);
+        addAsset('wall_l', 'crystal_wall_top_view', 0, y, 1, 2, true);
+        addAsset('wall_r', 'crystal_wall_top_view', 31, y, 1, 2, true);
     }
 
     // Zone A: Foyer
     addAsset('entrance', 'crystal_arch_entrance', 14, 30, 2, 2, false);
     addAsset('gate', 'crystal_closed_doors', 14, 24, 2, 2, true, () => {
         if (!ritualState.q1_solved) {
-            const answer = prompt("Knowledge Gate: What blocks the path? (Hint: The theme of this stage)");
-            if (answer && answer.toLowerCase().includes('ego')) {
+            const answer = prompt("[DEBUG ENABLED]\nKnowledge Gate: What blocks the path?\n(Hint: Any input will open it for testing)");
+            if (answer !== null && answer !== undefined) {
                 ritualState.q1_solved = true;
                 const gate = ritualState.assets.find(a => a.id === 'gate');
                 gate.type = 'crystal_open_doors'; gate.solid = false;
                 playSound('collect');
             } else {
-                alert("The gate remains sealed. Seek the truth of the Ego Trap.");
+                alert("The gate remains sealed.");
             }
         }
     });
@@ -2801,13 +2805,13 @@ function initRitualMap() {
 
     // Zone B: Mirror Labyrinth
     // Ritual Closet 1: 6x6 from (2, 18) to (8, 24)
-    for(let i=2; i<=8; i+=2) {
+    for(let i=2; i<=6; i+=2) {
         addAsset('rc1_t', 'crystal_wall_front', i, 18, 2, 2, true);
         addAsset('rc1_b', 'crystal_wall_front', i, 24, 2, 2, true);
     }
     for(let j=18; j<=24; j+=2) {
-        addAsset('rc1_l', 'crystal_wall_top_view', 2, j, 2, 2, true);
-        if(j!==20) addAsset('rc1_r', 'crystal_wall_top_view', 8, j, 2, 2, true);
+        addAsset('rc1_l', 'crystal_wall_top_view', 2, j, 1, 2, true);
+        if(j!==20) addAsset('rc1_r', 'crystal_wall_top_view', 8, j, 1, 2, true);
     }
     
     // Portal inside Ritual Closet 1
@@ -2821,8 +2825,8 @@ function initRitualMap() {
         addAsset('mg_b', 'crystal_wall_front', i, 22, 2, 2, true);
     }
     for(let j=10; j<=22; j+=2) {
-        addAsset('mg_l', 'crystal_wall_top_view', 10, j, 2, 2, true);
-        addAsset('mg_r', 'crystal_wall_top_view', 22, j, 2, 2, true);
+        addAsset('mg_l', 'crystal_wall_top_view', 10, j, 1, 2, true);
+        addAsset('mg_r', 'crystal_wall_top_view', 23, j, 1, 2, true);
     }
 
     // Zone C: Ritual Closet 2
@@ -2831,7 +2835,7 @@ function initRitualMap() {
         addAsset('rc2_b', 'crystal_wall_front', i, 10, 2, 2, true);
     }
     for(let j=4; j<=10; j+=2) {
-        addAsset('rc2_l', 'crystal_wall_top_view', 24, j, 2, 2, true);
+        addAsset('rc2_l', 'crystal_wall_top_view', 24, j, 1, 2, true);
     }
     addAsset('rc2_door', 'crystal_open_doors', 26, 8, 2, 2, false); 
 
@@ -2984,16 +2988,15 @@ function drawRitualMap() {
             if (item.x + item.w < gameState.camera.x - 100 || item.x > gameState.camera.x + viewW + 100 ||
                 item.y + item.h < gameState.camera.y - 100 || item.y > gameState.camera.y + viewH + 100) return;
                 
-            let img = SPRITE_SHEETS[item.type];
-            if (img && img.complete) {
+            let sInfo = RITUAL_SPRITES[item.type];
+            let img = SPRITE_SHEETS['crystal_structure'];
+            if (sInfo && img && img.complete) {
                 if (item.id === 'shard') {
                     let pulse = Math.abs(Math.sin(Date.now() / 300)) * 10;
                     ctx.shadowColor = '#ff66aa'; ctx.shadowBlur = 20 + pulse;
                 }
                 
-                // Determine source size based on original image size to ensure it scales correctly
-                // Most are 1024, but corner pieces are 2048. We can use img.width and img.height directly.
-                ctx.drawImage(img, 0, 0, img.width, img.height, item.x, item.y, item.w, item.h);
+                ctx.drawImage(img, sInfo.sx, sInfo.sy, sInfo.sw, sInfo.sh, item.x, item.y, item.w, item.h);
                 ctx.shadowBlur = 0;
             } else if (item.type === 'shard') { // Fallback if image not loaded
                 ctx.fillStyle = '#ff66aa';
