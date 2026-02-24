@@ -91,11 +91,6 @@
     </div>
 
     <div id="main-view">
-        <div id="controls">
-            <button onclick="changeZoom(-0.25)">Zoom Out</button>
-            <span id="zoom-level" style="padding: 10px; background: rgba(0,0,0,0.5); border-radius: 4px;">100%</span>
-            <button onclick="changeZoom(0.25)">Zoom In</button>
-        </div>
         <div id="canvas-container">
             <!-- Layers -->
             <canvas id="bgLayer"></canvas>
@@ -104,8 +99,14 @@
             <canvas id="uiLayer"></canvas>
         </div>
     </div>
+    <div id="controls">
+        <button onclick="changeZoom(-0.25)">Zoom Out</button>
+        <span id="zoom-level" style="padding: 10px; background: rgba(0,0,0,0.5); border-radius: 4px;">100%</span>
+        <button onclick="changeZoom(0.25)">Zoom In</button>
+    </div>
 
     <script src="assetList.js"></script>
+    <script src="initialMapData.js"></script>
     <script>
         // Data Structure matching craft-work game logic
         const MAP_DATA = {};
@@ -429,17 +430,19 @@
             document.getElementById('zoom-level').innerText = Math.round(zoom * 100) + '%';
         }
 
-        // Loading from craft-work map data visually initially
         function loadExistingMapData() {
-            // Fetch relative to current map editor directory (works for both localhost server and local file viewing)
+            const map = MAP_DATA[currentMapId];
+            if (map.assets.length > 0) return; // Prevent duplicating assets on multiple loads
+            
+            // Bypass file:/// CORS errors entirely by relying on the auto-generated initialMapData.js file
+            if (currentMapId === 'ritual_stage_1' && typeof INITIAL_MAP_DATA !== 'undefined' && INITIAL_MAP_DATA.length > 0) {
+                map.assets = INITIAL_MAP_DATA;
+                drawMap();
+                return;
+            }
+
+            // Fallback: Fetch relative to current map editor directory (works for localhost server viewing)
             fetch('../craft-work.html').then(r => r.text()).then(html => {
-                const map = MAP_DATA[currentMapId];
-                if (map.assets.length > 0) return; // Prevent duplicating assets on multiple loads
-                
-                // VERY basic naive extraction
-                // Note: Currently craft-work only has initRitualMap() for stage 1. 
-                // Later stages might need unique keys/functions to parse correctly.
-                // For now, only load the first stage if empty.
                 if (currentMapId === 'ritual_stage_1') {
                     const regex = /addAsset\('([^']+)',\s*'([^']+)',\s*([\d.]+),\s*([\d.]+),\s*([\d.]+),\s*([\d.]+)/g;
                     let match;
@@ -456,6 +459,8 @@
                     }
                 }
                 drawMap();
+            }).catch(e => {
+                console.warn("Could not fetch craft-work.html via network due to file:/// domain policy.", e);
             });
         }
 
