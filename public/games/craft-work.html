@@ -2843,8 +2843,8 @@ function initRitualMap() {
         if (i !== 4) addAsset('rc1_b', 'crystal_wall_front', i, 24, 2, 2, true);
     }
     for(let j=18; j<=24; j+=2) {
-        addAsset('rc1_l', 'crystal_wall_top_view', 3, j, 1, 2, true);
-        addAsset('rc1_r', 'crystal_wall_top_view', 8, j, 1, 2, true);
+        addAsset('rc1_l', 'crystal_wall_top_view', 2, j, 1, 2, true);
+        addAsset('rc1_r', 'crystal_wall_top_view', 9, j, 1, 2, true);
     }
     
     // Portal/Door replacing the wall in Closet 1
@@ -2858,8 +2858,8 @@ function initRitualMap() {
         addAsset('mg_b', 'crystal_wall_front', i, 22, 2, 2, true);
     }
     for(let j=10; j<=22; j+=2) {
-        addAsset('mg_l', 'crystal_wall_top_view', 11, j, 1, 2, true);
-        addAsset('mg_r', 'crystal_wall_top_view', 22, j, 1, 2, true);
+        addAsset('mg_l', 'crystal_wall_top_view', 10, j, 1, 2, true);
+        addAsset('mg_r', 'crystal_wall_top_view', 23, j, 1, 2, true);
     }
 
     // Zone C: Ritual Closet 2
@@ -2868,7 +2868,7 @@ function initRitualMap() {
         if (i !== 26) addAsset('rc2_b', 'crystal_wall_front', i, 10, 2, 2, true);
     }
     for(let j=4; j<=10; j+=2) {
-        addAsset('rc2_l', 'crystal_wall_top_view', 25, j, 1, 2, true);
+        addAsset('rc2_l', 'crystal_wall_top_view', 24, j, 1, 2, true);
     }
     addAsset('rc2_door', 'crystal_closed_doors', 26, 10, 2, 2, true, () => {
         const answer = prompt("[DEBUG ENABLED]\nKnowledge Gate 2: What is the truth?\n(Hint: Any input will open it for testing)");
