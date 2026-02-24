@@ -63,6 +63,12 @@
             <h3>Map</h3>
             <select id="map-select">
                 <option value="ritual_stage_1">Ritual Map - Stage 1</option>
+                <option value="ritual_stage_2">Ritual Map - Stage 2</option>
+                <option value="ritual_stage_3">Ritual Map - Stage 3</option>
+                <option value="ritual_stage_4">Ritual Map - Stage 4</option>
+                <option value="ritual_stage_5">Ritual Map - Stage 5</option>
+                <option value="ritual_stage_6">Ritual Map - Stage 6</option>
+                <option value="ritual_stage_7">Ritual Map - Stage 7 (Boss)</option>
             </select>
             <button id="publish-btn">Save / Publish Map</button>
         </div>
@@ -102,15 +108,16 @@
     <script src="assetList.js"></script>
     <script>
         // Data Structure matching craft-work game logic
-        const MAP_DATA = {
-            ritual_stage_1: {
-                id: 'ritual_stage_1',
+        const MAP_DATA = {};
+        for(let i=1; i<=7; i++) {
+            MAP_DATA['ritual_stage_' + i] = {
+                id: 'ritual_stage_' + i,
                 gridSize: 128,
                 tilesX: 32,
                 tilesY: 32,
                 assets: []
-            }
-        };
+            };
+        }
 
         // Editor State
         let currentMapId = 'ritual_stage_1';
@@ -144,6 +151,14 @@
         function initSidebar() {
             document.getElementById('toggle-sidebar').onclick = () => {
                 document.getElementById('sidebar').classList.toggle('collapsed');
+            };
+
+            const mapSelect = document.getElementById('map-select');
+            mapSelect.onchange = (e) => {
+                currentMapId = e.target.value;
+                selectedMapObject = null;
+                setupCanvas(); // resizes and re-draws for the new map
+                loadExistingMapData(); // tries to load from HTML for the new map if available
             };
 
             ['paint', 'erase', 'select'].forEach(t => {
@@ -417,22 +432,27 @@
         function loadExistingMapData() {
             // Ideally we parse craft-work.html, but for now we fetch it via an endpoint and extract
             fetch('/games/craft-work.html').then(r => r.text()).then(html => {
-                const map = MAP_DATA['ritual_stage_1'];
+                const map = MAP_DATA[currentMapId];
+                if (map.assets.length > 0) return; // Prevent duplicating assets on multiple loads
                 
                 // VERY basic naive extraction
-                // Extracts addAsset('id', 'type', x, y, w, h...)
-                const regex = /addAsset\('([^']+)',\s*'([^']+)',\s*([\d.]+),\s*([\d.]+),\s*([\d.]+),\s*([\d.]+)/g;
-                let match;
-                while ((match = regex.exec(html)) !== null) {
-                    map.assets.push({
-                        id: match[1],
-                        type: match[2],
-                        x: parseFloat(match[3]) * 128,
-                        y: parseFloat(match[4]) * 128,
-                        w: parseFloat(match[5]) * 128,
-                        h: parseFloat(match[6]) * 128,
-                        flipX: false
-                    });
+                // Note: Currently craft-work only has initRitualMap() for stage 1. 
+                // Later stages might need unique keys/functions to parse correctly.
+                // For now, only load the first stage if empty.
+                if (currentMapId === 'ritual_stage_1') {
+                    const regex = /addAsset\('([^']+)',\s*'([^']+)',\s*([\d.]+),\s*([\d.]+),\s*([\d.]+),\s*([\d.]+)/g;
+                    let match;
+                    while ((match = regex.exec(html)) !== null) {
+                        map.assets.push({
+                            id: match[1],
+                            type: match[2],
+                            x: parseFloat(match[3]) * 128,
+                            y: parseFloat(match[4]) * 128,
+                            w: parseFloat(match[5]) * 128,
+                            h: parseFloat(match[6]) * 128,
+                            flipX: false
+                        });
+                    }
                 }
                 drawMap();
             });
