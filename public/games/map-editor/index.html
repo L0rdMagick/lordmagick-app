@@ -100,6 +100,16 @@
             <input type="text" id="asset-search" placeholder="Search assets..." style="width:100%; padding:5px; margin-bottom:10px; background:#222; color:white; border:1px solid #444; box-sizing:border-box;">
             <div id="asset-list"></div>
         </div>
+
+        <!-- NEW PROPERTIES PANEL -->
+        <div class="section" id="properties-panel" style="display: none; background: #222; border-top: 2px solid var(--accent);">
+            <h3>Properties</h3>
+            <div id="prop-type" style="font-size: 12px; margin-bottom: 10px; color: #888;">No Object Selected</div>
+            
+            <div id="props-container" style="display: flex; flex-direction: column; gap: 5px; font-size: 11px;">
+                <!-- Dynamic Props Injected Here -->
+            </div>
+        </div>
     </div>
 
     <div id="main-view">
@@ -598,6 +608,7 @@
             isBoxSelecting = false;
             uiCanvas.style.cursor = 'crosshair';
             drawMap();
+            updatePropertiesPanel(); // Add properties panel update here
         };
         
         // Prevent context menu
@@ -647,6 +658,124 @@
                 }
             }
         };
+
+        function updatePropertiesPanel() {
+            const panel = document.getElementById('properties-panel');
+            const typeLabel = document.getElementById('prop-type');
+            const container = document.getElementById('props-container');
+
+            if (selectedMapObjects.length !== 1) {
+                panel.style.display = 'none';
+                return;
+            }
+
+            const obj = selectedMapObjects[0];
+            panel.style.display = 'block';
+            typeLabel.innerText = `Type: ${obj.type} | ID: ${obj.id}`;
+            container.innerHTML = ''; // Clear previous
+
+            // Helper to add a select dropdown
+            const addSelect = (label, key, options) => {
+                const wrapper = document.createElement('div');
+                wrapper.style.marginBottom = '5px';
+                wrapper.innerHTML = `<div>${label}</div>`;
+                const select = document.createElement('select');
+                select.style.marginBottom = '0';
+                options.forEach(opt => {
+                    const option = document.createElement('option');
+                    option.value = opt.value;
+                    option.innerText = opt.label;
+                    if (obj[key] === opt.value) option.selected = true;
+                    select.appendChild(option);
+                });
+                select.onchange = (e) => { obj[key] = e.target.value; drawMap(); };
+                wrapper.appendChild(select);
+                container.appendChild(wrapper);
+            };
+
+            // Helper to add a number input
+            const addInput = (label, key, type='text', placeholder='') => {
+                const wrapper = document.createElement('div');
+                wrapper.style.marginBottom = '5px';
+                wrapper.innerHTML = `<div>${label}</div>`;
+                const input = document.createElement('input');
+                input.type = type;
+                input.value = obj[key] !== undefined ? obj[key] : '';
+                input.placeholder = placeholder;
+                input.style.width = '100%'; input.style.boxSizing = 'border-box';
+                input.style.background = '#333'; input.style.color = '#fff'; input.style.border = '1px solid #555';
+                
+                input.onchange = (e) => {
+                    if (type === 'number') obj[key] = parseFloat(e.target.value) || 0;
+                    else obj[key] = e.target.value;
+                    drawMap();
+                };
+                wrapper.appendChild(input);
+                container.appendChild(wrapper);
+            };
+
+            // 1. Core Properties
+            addSelect('Interactable Type', 'interactType', [
+                { value: '', label: 'None (Default)' },
+                { value: 'door', label: 'Door' },
+                { value: 'portal', label: 'Portal' },
+                { value: 'boss', label: 'Boss' },
+                { value: 'enemy', label: 'Enemy' },
+                { value: 'npc', label: 'NPC / Lore' }
+            ]);
+
+            // Add slight separation
+            container.insertAdjacentHTML('beforeend', '<hr style="border: 0; border-top: 1px solid #444; width: 100%; margin: 5px 0;">');
+
+            // 2. Dynamic fields based on interactType
+            const type = obj.interactType;
+
+            if (type === 'portal') {
+                addInput('Target Map ID', 'targetMap', 'text', 'e.g. ritual_stage_2');
+                addInput('Spawn X (Grid)', 'targetX', 'number', 'Spawn X pos');
+                addInput('Spawn Y (Grid)', 'targetY', 'number', 'Spawn Y pos');
+                addSelect('Unlock Condition', 'unlockCondition', [
+                    { value: 'always', label: 'Always Open' },
+                    { value: 'boss_defeated', label: 'Require Boss Defeat' },
+                    { value: 'key', label: 'Require Key' }
+                ]);
+            } 
+            else if (type === 'enemy' || type === 'boss') {
+                addInput('Max HP', 'hp', 'number', '100');
+                addSelect('AI Behavior', 'aiBehavior', [
+                    { value: 'wander', label: 'Wanderer' },
+                    { value: 'chaser', label: 'Chaser' },
+                    { value: 'shooter', label: 'Ranged Shooter' },
+                    { value: 'patrol', label: 'Patrol (Left/Right)' }
+                ]);
+                if (type === 'boss') {
+           addInput('Boss Type ID', 'bossVariant', 'number', '1 to 7');
+                }
+            }
+            else if (type === 'door') {
+                addSelect('Initial State', 'doorState', [
+                    { value: 'closed', label: 'Closed' },
+                    { value: 'open', label: 'Open' }
+                ]);
+                addSelect('Requires Key', 'doorRequiresKey', [
+                    { value: 'false', label: 'No' },
+                    { value: 'true', label: 'Yes' }
+                ]);
+            }
+            else if (type === 'npc') {
+                addInput('Dialogue Line', 'dialogueText', 'text', 'Speech here...');
+            }
+
+            // Always allow toggling collision manually
+            addSelect('Collision Solid', 'solid', [
+                { value: 'true', label: 'Solid (Wall)' },
+                { value: 'false', label: 'Pass-through' }
+            ]);
+            // Re-map string boolean to actual boolean for solid on change for this specific dropdown
+            const solidDrops = container.querySelectorAll('select');
+            const solidSelect = solidDrops[solidDrops.length - 1]; // It's always the last one added
+            solidSelect.onchange = (e) => { obj.solid = e.target.value === 'true'; };
+        }
 
         function changeZoom(delta) {
             zoom = Math.max(0.25, Math.min(2.0, zoom + delta));
@@ -709,9 +838,23 @@
                 let flipStr = a.flipX ? 'true' : 'false';
                 
                 // Keep addAsset formatting compatible
-                // addAsset(id, type, x, y, w, h, solid, flipX, rotation)
+                // addAsset(id, type, x, y, w, h, solid, flipX, rotation, interactProps)
+                
+                // Build robust interact props object from mapped dynamic fields
+                let interactObj = null;
+                if (a.interactType) {
+                    interactObj = { type: a.interactType };
+                    const copyProps = ['targetMap', 'targetX', 'targetY', 'unlockCondition', 'hp', 'aiBehavior', 'bossVariant', 'doorState', 'doorRequiresKey', 'dialogueText'];
+                    copyProps.forEach(prop => {
+                        if (a[prop] !== undefined) interactObj[prop] = a[prop];
+                    });
+                }
+                let interactStr = interactObj ? JSON.stringify(interactObj) : 'null';
+
                 if (a.rot) {
-                    jsStrs.push(`    addAsset('id_${Math.floor(Math.random()*10000)}', '${a.type}', ${gridX}, ${gridY}, ${w}, ${h}, true, ${flipStr}, ${a.rot});`);
+                    jsStrs.push(`    addAsset('id_${Math.floor(Math.random()*10000)}', '${a.type}', ${gridX}, ${gridY}, ${w}, ${h}, true, ${flipStr}, ${a.rot}, ${interactStr});`);
+                } else if (interactObj) {
+                    jsStrs.push(`    addAsset('id_${Math.floor(Math.random()*10000)}', '${a.type}', ${gridX}, ${gridY}, ${w}, ${h}, true, ${flipStr}, 0, ${interactStr});`);
                 } else {
                     jsStrs.push(`    addAsset('id_${Math.floor(Math.random()*10000)}', '${a.type}', ${gridX}, ${gridY}, ${w}, ${h}, true, ${flipStr});`);
                 }

@@ -2797,11 +2797,13 @@ function initRitualMap() {
     ritualState = {
         gridSize: 128, tilesX: 32, tilesY: 32,
         assets: [], q1_solved: false, shards: 0,
-        active: true, lastInteractTime: 0
+        active: true, lastInteractTime: 0,
+        enemies: [] // Separate array for stage enemies if needed, or push to gameState.enemies
     };
     
-    const addAsset = (id, type, gridX, gridY, w, h, solid, interact = null, hidden = false) => {
-        ritualState.assets.push({ id, type, x: gridX * 128, y: gridY * 128, w: w * 128, h: h * 128, solid, interact, hidden });
+    // Updated signature to accept interaction properties from Map Editor
+    const addAsset = (id, type, gridX, gridY, w, h, solid, flipX, rotation, interactProps = null, hidden = false) => {
+        ritualState.assets.push({ id, type, x: gridX * 128, y: gridY * 128, w: w * 128, h: h * 128, solid, flipX, rotation, interactProps, hidden });
     };
 
     // --- MAP EDITOR INJECTION START ---
@@ -2926,14 +2928,13 @@ function initRitualMap() {
     addAsset('id_7232', 'crystal_closed_doors', 14, 24, 2, 2, true, false);
     // --- MAP EDITOR INJECTION END ---
 
-    // Zone Event Logic Mapping (Attaching game interact hooks directly to visual layout exported from Map Editor)
-
-    // 1. Player Spawn Point (Find any Character asset placed in the map)
-    const spawnPoint = ritualState.assets.find(a => ['wizard', 'witch', 'slime', 'bat', 'ghost', 'goblin', 'skeleton'].includes(a.type));
+    // DYNAMIC EVENT BINDING: Process interactProps from Map Editor instead of hardcoding
+    
+    // 1. Player Spawn Point
+    const spawnPoint = ritualState.assets.find(a => ['wizard', 'witch'].includes(a.type));
     if (spawnPoint) {
         player.x = spawnPoint.x;
         player.y = spawnPoint.y;
-        // Purge the static character asset so it doesn't just sit there duplicating the player graphic
         ritualState.assets = ritualState.assets.filter(a => a !== spawnPoint);
     } else {
         // Fallback spawn
@@ -2941,71 +2942,87 @@ function initRitualMap() {
         player.y = 30 * 128 + 64;
     }
 
-    // Camera initial binding
     gameState.camera.x = player.x - VIEWPORT_W/2;
     gameState.camera.y = player.y - VIEWPORT_H/2;
 
-    // 2. Knowledge Gate (Foyer)
-    // Locate the closest door
-    const gate = ritualState.assets.find(a => a.type === 'crystal_closed_doors' && Math.abs(a.x - (14*128)) < 200 && Math.abs(a.y - (22*128)) < 200);
-    if (gate) {
-        gate.id = 'gate';
-        gate.interact = () => {
-            if (!ritualState.q1_solved) {
-                const answer = prompt('[DEBUG ENABLED]\\nKnowledge Gate: What blocks the path?\\n(Hint: Any input will open it for testing)');
-                if (answer !== null && answer !== undefined && answer.trim() !== '') {
-                    ritualState.q1_solved = true;
-                    gate.type = 'crystal_open_doors'; gate.solid = false;
-                    playSound('collect');
-                } else {
-                    alert('The gate remains sealed.');
+    // 2. Iterate dynamically over objects with interactProps
+    ritualState.assets.forEach(asset => {
+        if (!asset.interactProps) return;
+        
+        const props = asset.interactProps;
+        
+        // Portals
+        if (props.type === 'portal') {
+            asset.interact = () => {
+                // If there's an unlock condition like boss_defeated, check it here
+                if (props.unlockCondition === 'boss_defeated' && !currentObjective.bossDefeated) {
+                    alert('The portal is sealed. Defeat the guardian first.');
+                    return;
                 }
-            }
-        };
-    }
-
-    // 3. Oracle
-    const oracle = ritualState.assets.find(a => a.type === 'crystal_wall_top_front_angle_view' && Math.abs(a.x - (10*128)) < 200 && Math.abs(a.y - (26*128)) < 200);
-    if (oracle) {
-        oracle.id = 'oracle';
-        oracle.interact = () => alert('Oracle: Seek the Rose Quartz Shard through the mirrors.');
-    }
-
-    // 4. Portal (Closet 1)
-    const portal = ritualState.assets.find(a => a.type === 'crystal_closed_doors' && Math.abs(a.x - (4*128)) < 200 && Math.abs(a.y - (24*128)) < 200);
-    if (portal) {
-        portal.id = 'portal';
-        portal.interact = () => {
-            if (portal.type === 'crystal_closed_doors') {
-                portal.type = 'crystal_open_doors'; 
-                portal.solid = false;
-                playSound('collect');
-            } else {
-                player.x = 26 * 128 + 64; 
-                player.y = 26 * 128 + 64;
+                
                 playSound('portal');
+                // Use target spawn if defined, else generic
+                if (props.targetX !== undefined && props.targetY !== undefined) {
+                    player.x = props.targetX * 128 + 64;
+                    player.y = props.targetY * 128 + 64;
+                }
+                if (props.targetMap) {
+                    console.log("Loading map: " + props.targetMap);
+                    // In a full implementation, fetch and load targetMap data here
+                    alert(`Targeting Map: ${props.targetMap}. Feature in development.`);
+                }
+            };
+        }
+        
+        // Doors
+        if (props.type === 'door') {
+            if (props.doorState === 'open') {
+                asset.solid = false;
+                asset.type = 'crystal_open_doors';
             }
-        };
-    }
-
-    // 5. Door (Closet 2)
-    const rc2Door = ritualState.assets.find(a => a.type === 'crystal_closed_doors' && Math.abs(a.x - (25*128)) < 400 && Math.abs(a.y - (10*128)) < 400);
-    if (rc2Door) {
-        rc2Door.id = 'rc2_door';
-        rc2Door.interact = () => {
-            const answer = prompt('[DEBUG ENABLED]\\nKnowledge Gate 2: What is the truth?\\n(Hint: Any input will open it for testing)');
-            if (answer !== null && answer !== undefined && answer.trim() !== '') {
-                rc2Door.type = 'crystal_open_doors'; rc2Door.solid = false;
-                playSound('collect');
-            } else {
-                alert('The door remains locked.');
+            asset.interact = () => {
+                if (asset.solid) {
+                    if (props.doorRequiresKey === 'true') {
+                        const answer = prompt('Knowledge Gate: What blocks the path?');
+                        if (answer) {
+                            asset.solid = false;
+                            asset.type = 'crystal_open_doors';
+                            playSound('collect');
+                        }
+                    } else {
+                        asset.solid = false;
+                        asset.type = 'crystal_open_doors';
+                        playSound('collect');
+                    }
+                }
+            };
+        }
+        
+        // NPCs
+        if (props.type === 'npc') {
+            asset.interact = () => {
+                if (props.dialogueText) alert(props.dialogueText);
+            };
+        }
+        
+        // Enemies & Bosses
+        if (props.type === 'enemy' || props.type === 'boss') {
+            // Spawn the enemy directly into the game loop's array
+            const enemy = spawnEnemy(asset.x, asset.y, props.type);
+            if (enemy) {
+                // Override default stats with custom map stats
+                if (props.hp) { enemy.hp = props.hp; enemy.maxHp = props.hp; }
+                if (props.aiBehavior) { enemy.aiBehavior = props.aiBehavior; }
             }
-        };
-    }
+            // Remove the static asset since it's now an active enemy entity
+            asset.hidden = true; 
+            asset.solid = false;
+        }
+    });
 
-    // 6. Shard & Exit
+    // 3. Fallback manual exit shard for testing if no portals defined
     const exitStairs = ritualState.assets.find(a => a.type === 'crystal_down_stairs' || (a.id && a.id.includes('stairs')));
-    if (exitStairs) {
+    if (exitStairs && !exitStairs.interactProps) {
         exitStairs.id = 'stairs';
         exitStairs.hidden = true;
         exitStairs.interact = () => {
@@ -3019,16 +3036,11 @@ function initRitualMap() {
     }
 
     const shard = ritualState.assets.find(a => a.type === 'shard' || (a.id && a.id.includes('shard')));
-    if (shard) {
+    if (shard && !shard.interactProps) {
         shard.id = 'shard';
         shard.solid = false;
         shard.interact = () => processShardCollect(shard, exitStairs);
-    } else {
-        addAsset('shard', 'shard', 15, 15, 1, 1, false, () => {
-            let s = ritualState.assets.find(a => a.id === 'shard');
-            processShardCollect(s, exitStairs);
-        });
-    }
+    } 
     
     function processShardCollect(shardObj, stairsObj) {
         if(ritualState.shards === 1) return;
