@@ -446,7 +446,9 @@
                     sData = { sx: autoSheet.sx, sy: autoSheet.sy, sw: autoSheet.sw, sh: autoSheet.sh, path: autoSheet.path };
                 }
 
-                if (sData && sData.path && sData.path.includes('/characters/')) {
+                // Only apply animation logic to entities in the exact `/characters/` loose directory.
+                // Things like `characters_sheet.png` shouldn't be animated since they have explicit grid coordinates.
+                if (sData && sData.path && sData.path.includes('/characters/') && !sData.path.includes('sheet')) {
                     // Animation: 4 frames, loops every 1000ms
                     sData.sx = Math.floor((Date.now() / 250) % 4) * sData.sw;
                 }
