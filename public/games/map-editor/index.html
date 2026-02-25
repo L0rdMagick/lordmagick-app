@@ -850,6 +850,9 @@
                     ]);
                 }
             } 
+            else if (type === 'treasure') {
+                addInput('Reward Value', 'treasureValue', 'number', '1');
+            }
             else if (type === 'enemy' || type === 'boss') {
                 addInput('Max HP', 'hp', 'number', '100');
                 addInput('Speed Multiplier', 'enemySpeed', 'number', '1.0');
@@ -1007,9 +1010,11 @@
                 let interactObj = null;
                 if (a.interactType) {
                     interactObj = { type: a.interactType };
-                    const copyProps = ['targetMap', 'targetX', 'targetY', 'unlockCondition', 'qMinions', 'qBosses', 'qTreasures', 'qRiddle', 'qRiddleA', 'qRiddleB', 'qRiddleC', 'qRiddleD', 'qRiddleAns', 'hp', 'aiChase', 'aiPatrol', 'aiShoot', 'bossVariant', 'doorState', 'doorRequiresKey', 'dialogueText', 'playerSpeed', 'playerFlying', 'playerWeapon', 'playerAura', 'enemySpeed', 'enemyProjDist', 'enemyProjSpeed', 'enemyFireRate', 'playerProjDist', 'playerProjSpeed', 'playerFireRate'];
+                    const copyProps = ['targetMap', 'targetX', 'targetY', 'unlockCondition', 'qMinions', 'qBosses', 'qTreasures', 'qRiddle', 'qRiddleA', 'qRiddleB', 'qRiddleC', 'qRiddleD', 'qRiddleAns', 'treasureValue', 'hp', 'aiChase', 'aiPatrol', 'aiShoot', 'bossVariant', 'doorState', 'doorRequiresKey', 'dialogueText', 'playerSpeed', 'playerFlying', 'playerWeapon', 'playerAura', 'enemySpeed', 'enemyProjDist', 'enemyProjSpeed', 'enemyFireRate', 'playerProjDist', 'playerProjSpeed', 'playerFireRate'];
                     copyProps.forEach(prop => {
-                        if (a[prop] !== undefined && a[prop] !== '') interactObj[prop] = a[prop];
+                         let valToCopy = a[prop];
+                         // Hack for empty text riddle configs: avoid dropping explicit empty strings for multiple-choice text configs if they matter, but here we enforce simply undefined check.
+                        if (valToCopy !== undefined && valToCopy !== '') interactObj[prop] = valToCopy;
                     });
                 }
                 let interactStr = interactObj ? JSON.stringify(interactObj) : 'null';
