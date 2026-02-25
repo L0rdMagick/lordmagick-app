@@ -831,7 +831,7 @@
                 addInput('Max HP', 'hp', 'number', '100');
                 addInput('Speed Multiplier', 'enemySpeed', 'number', '1.0');
                 addInput('Projectile Distance', 'enemyProjDist', 'number', '60');
-                addInput('Projectile Speed', 'enemyProjSpeed', 'number', '6.0');
+                addInput('Projectile Velocity', 'enemyProjSpeed', 'number', '6.0');
                 addCheckbox('Can Chase Player', 'aiChase');
                 addCheckbox('Can Patrol', 'aiPatrol');
                 addCheckbox('Can Shoot', 'aiShoot');
@@ -868,7 +868,7 @@
                     { value: 'true', label: 'Enabled' }
                 ]);
                 addInput('Projectile Distance', 'playerProjDist', 'number', '120');
-                addInput('Projectile Speed', 'playerProjSpeed', 'number', '12.0');
+                addInput('Projectile Velocity', 'playerProjSpeed', 'number', '12.0');
             }
 
             // Always allow toggling collision manually
@@ -931,8 +931,9 @@
                             };
                             
                             if (interactProps) {
-                                newObj.interactType = interactProps.type;
+                                newObj.interactType = interactProps.type; // Preserve gameplay behavior 
                                 Object.assign(newObj, interactProps);
+                                newObj.type = type; // Restore original visual sprite type destroyed by Object.assign!
                             }
                             
                             map.assets.push(newObj);
