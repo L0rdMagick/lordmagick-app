@@ -26,8 +26,9 @@
         }
 
         .section { display: flex; flex-direction: column; border-bottom: 1px solid rgba(255,255,255,0.1); }
-        .section-header { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: rgba(0,0,0,0.2); cursor: pointer; user-select: none; }
-        .section-content { padding: 15px; display: flex; flex-direction: column; overflow-y: auto; }
+        .section-header { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: rgba(0,0,0,0.2); cursor: pointer; user-select: none; }
+        .section-header h3 { margin: 0; font-size: 16px; }
+        .section-content { padding: 10px; display: flex; flex-direction: column; overflow-y: auto; }
         .section.collapsed { flex: none !important; min-height: auto !important; }
         .section.collapsed .section-content { display: none !important; }
         .section.collapsed .toggle-icon { transform: rotate(-90deg); }
@@ -41,12 +42,12 @@
 
         #asset-list { flex: 1; overflow-y: auto; padding: 10px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; min-height: 50px; }
         .asset-item { 
-            background: rgba(0,0,0,0.5); border: 2px solid transparent; border-radius: 4px; padding: 5px; 
-            text-align: center; cursor: pointer; transition: 0.2s;
+            background: rgba(0,0,0,0.5); border: 2px solid transparent; border-radius: 4px; padding: 0; 
+            text-align: center; cursor: pointer; transition: 0.2s; overflow: hidden;
         }
         .asset-item:hover { border-color: rgba(255,255,255,0.5); }
         .asset-item.selected { border-color: var(--accent); background: rgba(77, 208, 225, 0.2); }
-        .asset-item img { max-width: 100%; max-height: 80px; display: block; margin: 0 auto; image-rendering: pixelated; }
+        .asset-item img { max-width: 100%; max-height: 40px; display: block; margin: 0 auto; image-rendering: pixelated; }
 
         #main-view { flex: 1; position: relative; overflow: auto; background: #000; cursor: crosshair; }
         #canvas-container { position: relative; transform-origin: top left; }
@@ -830,6 +831,7 @@
                 addInput('Max HP', 'hp', 'number', '100');
                 addInput('Speed Multiplier', 'enemySpeed', 'number', '1.0');
                 addInput('Projectile Distance', 'enemyProjDist', 'number', '60');
+                addInput('Projectile Speed', 'enemyProjSpeed', 'number', '6.0');
                 addCheckbox('Can Chase Player', 'aiChase');
                 addCheckbox('Can Patrol', 'aiPatrol');
                 addCheckbox('Can Shoot', 'aiShoot');
@@ -866,6 +868,7 @@
                     { value: 'true', label: 'Enabled' }
                 ]);
                 addInput('Projectile Distance', 'playerProjDist', 'number', '120');
+                addInput('Projectile Speed', 'playerProjSpeed', 'number', '12.0');
             }
 
             // Always allow toggling collision manually
@@ -978,7 +981,7 @@
                 let interactObj = null;
                 if (a.interactType) {
                     interactObj = { type: a.interactType };
-                    const copyProps = ['targetMap', 'targetX', 'targetY', 'unlockCondition', 'hp', 'aiChase', 'aiPatrol', 'aiShoot', 'bossVariant', 'doorState', 'doorRequiresKey', 'dialogueText', 'playerSpeed', 'playerFlying', 'playerWeapon', 'playerAura', 'enemySpeed', 'enemyProjDist', 'playerProjDist'];
+                    const copyProps = ['targetMap', 'targetX', 'targetY', 'unlockCondition', 'hp', 'aiChase', 'aiPatrol', 'aiShoot', 'bossVariant', 'doorState', 'doorRequiresKey', 'dialogueText', 'playerSpeed', 'playerFlying', 'playerWeapon', 'playerAura', 'enemySpeed', 'enemyProjDist', 'enemyProjSpeed', 'playerProjDist', 'playerProjSpeed'];
                     copyProps.forEach(prop => {
                         if (a[prop] !== undefined && a[prop] !== '') interactObj[prop] = a[prop];
                     });
