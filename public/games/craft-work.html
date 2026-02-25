@@ -859,7 +859,78 @@
 
 </div>
 
+    <!-- CUSTOM ALERT MODAL -->
+    <div id="custom-alert-modal" class="hidden" style="position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:#222; border: 2px solid #555; border-radius:10px; padding:20px; z-index:9000; width: 90%; max-width: 400px; color: white; display: none; flex-direction:column; gap:10px; box-shadow: 0 0 15px rgba(0,0,0,0.8);">
+        <h3 id="custom-alert-title" style="margin:0; color:#4dd0e1; text-align:center;">The Guardian speaks...</h3>
+        <p id="custom-alert-text" style="text-align:center; margin: 10px 0; font-size: 16px; white-space: pre-wrap; line-height: 1.4;"></p>
+        <input type="text" id="custom-alert-input" style="display:none; width: 100%; border: 1px solid #555; background: #111; color: white; padding: 10px; border-radius: 5px; box-sizing:border-box;">
+        <div style="display:flex; justify-content: center; margin-top: 5px; gap: 10px;">
+             <button id="custom-alert-ok-btn" class="btn" style="width: 100%;">Acknowledge</button>
+             <button id="custom-alert-cancel-btn" class="btn" style="width: 100%; display:none; background:#555;">Cancel</button>
+        </div>
+    </div>
+
 <script>
+window.customAlertCallback = null;
+
+// Rebind the standard alert UI
+window.alert = function(msg, callback) {
+    const modal = document.getElementById('custom-alert-modal');
+    if(modal) {
+        document.getElementById('custom-alert-input').style.display = 'none';
+        document.getElementById('custom-alert-cancel-btn').style.display = 'none';
+        document.getElementById('custom-alert-text').innerText = msg;
+        
+        let okBtn = document.getElementById('custom-alert-ok-btn');
+        okBtn.innerText = "Acknowledge";
+        okBtn.onclick = () => {
+             modal.style.display = 'none'; 
+             modal.classList.add('hidden'); 
+             if(callback) callback(); 
+        };
+        
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+    } else {
+        console.log("ALERT:", msg);
+        if(callback) callback();
+    }
+};
+
+// Use an async callback-based prompt instead of freezing execution
+window.customPrompt = function(msg, callback) {
+    const modal = document.getElementById('custom-alert-modal');
+    if(modal) {
+        let input = document.getElementById('custom-alert-input');
+        input.style.display = 'block';
+        input.value = '';
+        
+        document.getElementById('custom-alert-text').innerText = msg;
+        
+        let cancelBtn = document.getElementById('custom-alert-cancel-btn');
+        cancelBtn.style.display = 'block';
+        cancelBtn.onclick = () => {
+             modal.style.display = 'none'; 
+             modal.classList.add('hidden');
+             callback(null);
+        };
+        
+        let okBtn = document.getElementById('custom-alert-ok-btn');
+        okBtn.innerText = "Submit";
+        okBtn.onclick = () => {
+             modal.style.display = 'none'; 
+             modal.classList.add('hidden'); 
+             callback(input.value); 
+        };
+        
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+        input.focus();
+    } else {
+        console.log("PROMPT:", msg);
+        callback(null);
+    }
+};
 window.onerror = function(msg, url, line, col, error) {
    const log = document.getElementById('message-log');
    if(log) {
@@ -2840,119 +2911,119 @@ function initRitualMap() {
     };
 
     // --- MAP EDITOR INJECTION START ---
-    addAsset('id_5345', 'crystal_wall_front', 0, 0, 2, 2, true, false);
-    addAsset('id_1020', 'crystal_wall_front', 2, 0, 2, 2, true, false);
-    addAsset('id_3829', 'crystal_wall_front', 4, 0, 2, 2, true, false);
-    addAsset('id_7006', 'crystal_wall_front', 6, 0, 2, 2, true, false);
-    addAsset('id_6971', 'crystal_wall_front', 8, 0, 2, 2, true, false);
-    addAsset('id_9947', 'crystal_wall_front', 10, 0, 2, 2, true, false);
-    addAsset('id_6742', 'crystal_wall_front', 12, 0, 2, 2, true, false);
-    addAsset('id_6282', 'crystal_wall_front', 14, 0, 2, 2, true, false);
-    addAsset('id_8474', 'crystal_wall_front', 16, 0, 2, 2, true, false);
-    addAsset('id_7363', 'crystal_wall_front', 18, 0, 2, 2, true, false);
-    addAsset('id_3715', 'crystal_wall_front', 20, 0, 2, 2, true, false);
-    addAsset('id_707', 'crystal_wall_front', 22, 0, 2, 2, true, false);
-    addAsset('id_4755', 'crystal_wall_front', 24, 0, 2, 2, true, false);
-    addAsset('id_7591', 'crystal_wall_front', 26, 0, 2, 2, true, false);
-    addAsset('id_6000', 'crystal_wall_front', 28, 0, 2, 2, true, false);
-    addAsset('id_9666', 'crystal_wall_front', 30, 0, 2, 2, true, false);
-    addAsset('id_2187', 'crystal_wall_top_view', 0, 0, 1, 2, true, false);
-    addAsset('id_1967', 'crystal_wall_top_view', 31, 0, 1, 2, true, false);
-    addAsset('id_3445', 'crystal_wall_top_view', 31, 2, 1, 2, true, false);
-    addAsset('id_6284', 'crystal_wall_top_view', 0, 4, 1, 2, true, false);
-    addAsset('id_1425', 'crystal_wall_top_view', 31, 4, 1, 2, true, false);
-    addAsset('id_9321', 'crystal_wall_top_view', 0, 6, 1, 2, true, false);
-    addAsset('id_1304', 'crystal_wall_top_view', 31, 6, 1, 2, true, false);
-    addAsset('id_7435', 'crystal_wall_top_view', 0, 8, 1, 2, true, false);
-    addAsset('id_3284', 'crystal_wall_top_view', 31, 8, 1, 2, true, false);
-    addAsset('id_6434', 'crystal_wall_top_view', 0, 10, 1, 2, true, false);
-    addAsset('id_8579', 'crystal_wall_top_view', 31, 10, 1, 2, true, false);
-    addAsset('id_6431', 'crystal_wall_top_view', 0, 12, 1, 2, true, false);
-    addAsset('id_8841', 'crystal_wall_top_view', 31, 12, 1, 2, true, false);
-    addAsset('id_6597', 'crystal_wall_top_view', 0, 14, 1, 2, true, false);
-    addAsset('id_2228', 'crystal_wall_top_view', 31, 14, 1, 2, true, false);
-    addAsset('id_5540', 'crystal_wall_top_view', 0, 16, 1, 2, true, false);
-    addAsset('id_2522', 'crystal_wall_top_view', 31, 16, 1, 2, true, false);
-    addAsset('id_7329', 'crystal_wall_top_view', 0, 18, 1, 2, true, false);
-    addAsset('id_2', 'crystal_wall_top_view', 31, 18, 1, 2, true, false);
-    addAsset('id_6550', 'crystal_wall_top_view', 0, 20, 1, 2, true, false);
-    addAsset('id_5318', 'crystal_wall_top_view', 31, 20, 1, 2, true, false);
-    addAsset('id_2622', 'crystal_wall_top_view', 0, 22, 1, 2, true, false);
-    addAsset('id_9924', 'crystal_wall_top_view', 31, 22, 1, 2, true, false);
-    addAsset('id_8739', 'crystal_wall_top_view', 0, 24, 1, 2, true, false);
-    addAsset('id_2868', 'crystal_wall_top_view', 31, 24, 1, 2, true, false);
-    addAsset('id_1028', 'crystal_wall_top_view', 0, 26, 1, 2, true, false);
-    addAsset('id_3807', 'crystal_wall_top_view', 31, 26, 1, 2, true, false);
-    addAsset('id_9825', 'crystal_wall_top_view', 0, 28, 1, 2, true, false);
-    addAsset('id_7857', 'crystal_wall_top_view', 31, 28, 1, 2, true, false);
-    addAsset('id_6757', 'crystal_wall_top_view', 0, 30, 1, 2, true, false);
-    addAsset('id_9737', 'crystal_wall_top_view', 31, 30, 1, 2, true, false);
-    addAsset('id_1343', 'crystal_down_stairs', 30, 0, 2, 2, true, false);
-    addAsset('id_8332', 'crystal_wall_top_view', 0, 2, 1, 2, true, false);
-    addAsset('id_6093', 'crystal_wall_front', 0, 0, 2, 2, true, false);
-    addAsset('id_2852', 'crystal_wall_front', 2, 0, 2, 2, true, false);
-    addAsset('id_5191', 'crystal_wall_front', 4, 0, 2, 2, true, false);
-    addAsset('id_4902', 'crystal_wall_front', 6, 0, 2, 2, true, false);
-    addAsset('id_6140', 'crystal_wall_front', 8, 0, 2, 2, true, false);
-    addAsset('id_8886', 'crystal_wall_front', 10, 0, 2, 2, true, false);
-    addAsset('id_5058', 'crystal_wall_front', 12, 0, 2, 2, true, false);
-    addAsset('id_7386', 'crystal_wall_front', 14, 0, 2, 2, true, false);
-    addAsset('id_9745', 'crystal_wall_front', 16, 0, 2, 2, true, false);
-    addAsset('id_2239', 'crystal_wall_front', 18, 0, 2, 2, true, false);
-    addAsset('id_5076', 'crystal_wall_front', 20, 0, 2, 2, true, false);
-    addAsset('id_1201', 'crystal_wall_front', 22, 0, 2, 2, true, false);
-    addAsset('id_2403', 'crystal_wall_front', 24, 0, 2, 2, true, false);
-    addAsset('id_741', 'crystal_wall_front', 26, 0, 2, 2, true, false);
-    addAsset('id_3488', 'crystal_wall_front', 28, 0, 2, 2, true, false);
-    addAsset('id_3968', 'crystal_wall_front', 30, 0, 2, 2, true, false);
-    addAsset('id_2103', 'crystal_wall_top_view', 0, 0, 1, 2, true, false);
-    addAsset('id_6307', 'crystal_wall_top_view', 31, 0, 1, 2, true, false);
-    addAsset('id_8068', 'crystal_wall_top_view', 31, 2, 1, 2, true, false);
-    addAsset('id_2977', 'crystal_wall_top_view', 0, 4, 1, 2, true, false);
-    addAsset('id_4886', 'crystal_wall_top_view', 31, 4, 1, 2, true, false);
-    addAsset('id_7360', 'crystal_wall_top_view', 0, 6, 1, 2, true, false);
-    addAsset('id_4988', 'crystal_wall_top_view', 31, 6, 1, 2, true, false);
-    addAsset('id_9400', 'crystal_wall_top_view', 0, 8, 1, 2, true, false);
-    addAsset('id_6792', 'crystal_wall_top_view', 31, 8, 1, 2, true, false);
-    addAsset('id_5444', 'crystal_wall_top_view', 0, 10, 1, 2, true, false);
-    addAsset('id_9406', 'crystal_wall_top_view', 31, 10, 1, 2, true, false);
-    addAsset('id_9424', 'crystal_wall_top_view', 0, 12, 1, 2, true, false);
-    addAsset('id_268', 'crystal_wall_top_view', 31, 12, 1, 2, true, false);
-    addAsset('id_7786', 'crystal_wall_top_view', 0, 14, 1, 2, true, false);
-    addAsset('id_9949', 'crystal_wall_top_view', 31, 14, 1, 2, true, false);
-    addAsset('id_6235', 'crystal_wall_top_view', 0, 16, 1, 2, true, false);
-    addAsset('id_9281', 'crystal_wall_top_view', 31, 16, 1, 2, true, false);
-    addAsset('id_7439', 'crystal_wall_top_view', 0, 18, 1, 2, true, false);
-    addAsset('id_8597', 'crystal_wall_top_view', 31, 18, 1, 2, true, false);
-    addAsset('id_2631', 'crystal_wall_top_view', 0, 20, 1, 2, true, false);
-    addAsset('id_2700', 'crystal_wall_top_view', 31, 20, 1, 2, true, false);
-    addAsset('id_1377', 'crystal_wall_top_view', 0, 22, 1, 2, true, false);
-    addAsset('id_6336', 'crystal_wall_top_view', 31, 22, 1, 2, true, false);
-    addAsset('id_7715', 'crystal_wall_top_view', 0, 24, 1, 2, true, false);
-    addAsset('id_2924', 'crystal_wall_top_view', 31, 24, 1, 2, true, false);
-    addAsset('id_2949', 'crystal_wall_top_view', 0, 26, 1, 2, true, false);
-    addAsset('id_6539', 'crystal_wall_top_view', 31, 26, 1, 2, true, false);
-    addAsset('id_2877', 'crystal_wall_top_view', 0, 28, 1, 2, true, false);
-    addAsset('id_3432', 'crystal_wall_top_view', 31, 28, 1, 2, true, false);
-    addAsset('id_5692', 'crystal_wall_top_view', 0, 30, 1, 2, true, false);
-    addAsset('id_3357', 'crystal_wall_top_view', 31, 30, 1, 2, true, false);
-    addAsset('id_7445', 'crystal_down_stairs', 30, 0, 2, 2, true, false);
-    addAsset('id_4167', 'crystal_wall_top_view', 0, 2, 1, 2, true, false);
-    addAsset('id_8239', 'demon', 16.3439, 23.8439, 1.3122000000000003, 1.3122000000000003, true, false, 0, {"type":"boss","hp":100,"aiChase":"true","aiShoot":"true","enemySpeed":2,"enemyProjDist":200,"enemyProjSpeed":30,"enemyFireRate":10});
-    addAsset('id_5224', 'wizard', 1, 26.5, 0.9565938, 0.9565938, true, false, 0, {"type":"player","playerSpeed":2,"playerWeapon":"piercing","playerProjDist":200,"playerProjSpeed":20,"playerFireRate":20});
-    addAsset('id_4298', 'crystal_closed_doors', 6.5, 14.5, 2, 2, true, false, 0, {"type":"portal","unlockCondition":"quest","qMinions":0,"qBosses":1,"qTreasures":2,"qRiddle":"what is the correct candle color for cleansing?","qRiddleA":"white"});
-    addAsset('id_8378', 'characters_sheet_3_3', 4.5, 18, 2, 2, true, false, 0, {"type":"treasure","treasureValue":1});
-    addAsset('id_5191', 'characters_sheet_3_3', 6.5, 21.5, 2, 2, true, false, 0, {"type":"treasure","treasureValue":1});
-    addAsset('id_3335', 'characters_sheet_3_3', 11, 20.5, 2, 2, true, false, 0, {"type":"treasure","treasureValue":1});
-    addAsset('id_4969', 'characters_sheet_3_3', 13.5, 17.5, 2, 2, true, false, 0, {"type":"treasure","treasureValue":1});
-    addAsset('id_4460', 'characters_sheet_2_3', 17.5, 17.5, 2, 2, true, false);
-    addAsset('id_9131', 'characters_sheet_3_3', 10.5, 17, 2, 2, true, false);
-    addAsset('id_7815', 'characters_sheet_1_3', 9.5, 26, 2, 2, true, false);
-    addAsset('id_870', 'characters_sheet_0_3', 18, 21, 2, 2, true, false);
-    addAsset('id_6516', 'crystal_wall_top_view', 3, 23, 0.75, 2, true, false, 0, {"type":"treasure","treasureValue":1});
-    addAsset('id_956', 'crystal_wall_top_view', 5, 28.5, 0.75, 2, true, false, 0, {"type":"treasure","treasureValue":1});
-    addAsset('id_8380', 'crystal_wall_top_view', 7, 25.5, 0.75, 2, true, false, 0, {"type":"treasure","treasureValue":1});
-    addAsset('id_4842', 'crystal_wall_top_view', 5, 21, 0.75, 2, true, false, 0, {"type":"treasure","treasureValue":1});
+    addAsset('id_8081', 'crystal_wall_front', 0, 0, 2, 2, true, false);
+    addAsset('id_117', 'crystal_wall_front', 2, 0, 2, 2, true, false);
+    addAsset('id_366', 'crystal_wall_front', 4, 0, 2, 2, true, false);
+    addAsset('id_435', 'crystal_wall_front', 6, 0, 2, 2, true, false);
+    addAsset('id_9470', 'crystal_wall_front', 8, 0, 2, 2, true, false);
+    addAsset('id_645', 'crystal_wall_front', 10, 0, 2, 2, true, false);
+    addAsset('id_6826', 'crystal_wall_front', 12, 0, 2, 2, true, false);
+    addAsset('id_9731', 'crystal_wall_front', 14, 0, 2, 2, true, false);
+    addAsset('id_7172', 'crystal_wall_front', 16, 0, 2, 2, true, false);
+    addAsset('id_624', 'crystal_wall_front', 18, 0, 2, 2, true, false);
+    addAsset('id_1984', 'crystal_wall_front', 20, 0, 2, 2, true, false);
+    addAsset('id_2161', 'crystal_wall_front', 22, 0, 2, 2, true, false);
+    addAsset('id_9818', 'crystal_wall_front', 24, 0, 2, 2, true, false);
+    addAsset('id_1314', 'crystal_wall_front', 26, 0, 2, 2, true, false);
+    addAsset('id_5779', 'crystal_wall_front', 28, 0, 2, 2, true, false);
+    addAsset('id_2563', 'crystal_wall_front', 30, 0, 2, 2, true, false);
+    addAsset('id_450', 'crystal_wall_top_view', 0, 0, 1, 2, true, false);
+    addAsset('id_1016', 'crystal_wall_top_view', 31, 0, 1, 2, true, false);
+    addAsset('id_5068', 'crystal_wall_top_view', 31, 2, 1, 2, true, false);
+    addAsset('id_4469', 'crystal_wall_top_view', 0, 4, 1, 2, true, false);
+    addAsset('id_3841', 'crystal_wall_top_view', 31, 4, 1, 2, true, false);
+    addAsset('id_48', 'crystal_wall_top_view', 0, 6, 1, 2, true, false);
+    addAsset('id_6425', 'crystal_wall_top_view', 31, 6, 1, 2, true, false);
+    addAsset('id_2407', 'crystal_wall_top_view', 0, 8, 1, 2, true, false);
+    addAsset('id_2588', 'crystal_wall_top_view', 31, 8, 1, 2, true, false);
+    addAsset('id_260', 'crystal_wall_top_view', 0, 10, 1, 2, true, false);
+    addAsset('id_5301', 'crystal_wall_top_view', 31, 10, 1, 2, true, false);
+    addAsset('id_7715', 'crystal_wall_top_view', 0, 12, 1, 2, true, false);
+    addAsset('id_5166', 'crystal_wall_top_view', 31, 12, 1, 2, true, false);
+    addAsset('id_7408', 'crystal_wall_top_view', 0, 14, 1, 2, true, false);
+    addAsset('id_5296', 'crystal_wall_top_view', 31, 14, 1, 2, true, false);
+    addAsset('id_4550', 'crystal_wall_top_view', 0, 16, 1, 2, true, false);
+    addAsset('id_6028', 'crystal_wall_top_view', 31, 16, 1, 2, true, false);
+    addAsset('id_6807', 'crystal_wall_top_view', 0, 18, 1, 2, true, false);
+    addAsset('id_7402', 'crystal_wall_top_view', 31, 18, 1, 2, true, false);
+    addAsset('id_1592', 'crystal_wall_top_view', 0, 20, 1, 2, true, false);
+    addAsset('id_2314', 'crystal_wall_top_view', 31, 20, 1, 2, true, false);
+    addAsset('id_6888', 'crystal_wall_top_view', 0, 22, 1, 2, true, false);
+    addAsset('id_6987', 'crystal_wall_top_view', 31, 22, 1, 2, true, false);
+    addAsset('id_7200', 'crystal_wall_top_view', 0, 24, 1, 2, true, false);
+    addAsset('id_3528', 'crystal_wall_top_view', 31, 24, 1, 2, true, false);
+    addAsset('id_5354', 'crystal_wall_top_view', 0, 26, 1, 2, true, false);
+    addAsset('id_4390', 'crystal_wall_top_view', 31, 26, 1, 2, true, false);
+    addAsset('id_163', 'crystal_wall_top_view', 0, 28, 1, 2, true, false);
+    addAsset('id_6921', 'crystal_wall_top_view', 31, 28, 1, 2, true, false);
+    addAsset('id_7348', 'crystal_wall_top_view', 0, 30, 1, 2, true, false);
+    addAsset('id_5147', 'crystal_wall_top_view', 31, 30, 1, 2, true, false);
+    addAsset('id_9140', 'crystal_down_stairs', 30, 0, 2, 2, true, false);
+    addAsset('id_7631', 'crystal_wall_top_view', 0, 2, 1, 2, true, false);
+    addAsset('id_8480', 'crystal_wall_front', 0, 0, 2, 2, true, false);
+    addAsset('id_5451', 'crystal_wall_front', 2, 0, 2, 2, true, false);
+    addAsset('id_5666', 'crystal_wall_front', 4, 0, 2, 2, true, false);
+    addAsset('id_9247', 'crystal_wall_front', 6, 0, 2, 2, true, false);
+    addAsset('id_1370', 'crystal_wall_front', 8, 0, 2, 2, true, false);
+    addAsset('id_1144', 'crystal_wall_front', 10, 0, 2, 2, true, false);
+    addAsset('id_9796', 'crystal_wall_front', 12, 0, 2, 2, true, false);
+    addAsset('id_7703', 'crystal_wall_front', 14, 0, 2, 2, true, false);
+    addAsset('id_55', 'crystal_wall_front', 16, 0, 2, 2, true, false);
+    addAsset('id_7995', 'crystal_wall_front', 18, 0, 2, 2, true, false);
+    addAsset('id_8559', 'crystal_wall_front', 20, 0, 2, 2, true, false);
+    addAsset('id_974', 'crystal_wall_front', 22, 0, 2, 2, true, false);
+    addAsset('id_3828', 'crystal_wall_front', 24, 0, 2, 2, true, false);
+    addAsset('id_4163', 'crystal_wall_front', 26, 0, 2, 2, true, false);
+    addAsset('id_4940', 'crystal_wall_front', 28, 0, 2, 2, true, false);
+    addAsset('id_9109', 'crystal_wall_front', 30, 0, 2, 2, true, false);
+    addAsset('id_8646', 'crystal_wall_top_view', 0, 0, 1, 2, true, false);
+    addAsset('id_2256', 'crystal_wall_top_view', 31, 0, 1, 2, true, false);
+    addAsset('id_8048', 'crystal_wall_top_view', 31, 2, 1, 2, true, false);
+    addAsset('id_1475', 'crystal_wall_top_view', 0, 4, 1, 2, true, false);
+    addAsset('id_6494', 'crystal_wall_top_view', 31, 4, 1, 2, true, false);
+    addAsset('id_1160', 'crystal_wall_top_view', 0, 6, 1, 2, true, false);
+    addAsset('id_8826', 'crystal_wall_top_view', 31, 6, 1, 2, true, false);
+    addAsset('id_9664', 'crystal_wall_top_view', 0, 8, 1, 2, true, false);
+    addAsset('id_2106', 'crystal_wall_top_view', 31, 8, 1, 2, true, false);
+    addAsset('id_9602', 'crystal_wall_top_view', 0, 10, 1, 2, true, false);
+    addAsset('id_2903', 'crystal_wall_top_view', 31, 10, 1, 2, true, false);
+    addAsset('id_7897', 'crystal_wall_top_view', 0, 12, 1, 2, true, false);
+    addAsset('id_7346', 'crystal_wall_top_view', 31, 12, 1, 2, true, false);
+    addAsset('id_7708', 'crystal_wall_top_view', 0, 14, 1, 2, true, false);
+    addAsset('id_7809', 'crystal_wall_top_view', 31, 14, 1, 2, true, false);
+    addAsset('id_6160', 'crystal_wall_top_view', 0, 16, 1, 2, true, false);
+    addAsset('id_8497', 'crystal_wall_top_view', 31, 16, 1, 2, true, false);
+    addAsset('id_3064', 'crystal_wall_top_view', 0, 18, 1, 2, true, false);
+    addAsset('id_2649', 'crystal_wall_top_view', 31, 18, 1, 2, true, false);
+    addAsset('id_5945', 'crystal_wall_top_view', 0, 20, 1, 2, true, false);
+    addAsset('id_4687', 'crystal_wall_top_view', 31, 20, 1, 2, true, false);
+    addAsset('id_7528', 'crystal_wall_top_view', 0, 22, 1, 2, true, false);
+    addAsset('id_3834', 'crystal_wall_top_view', 31, 22, 1, 2, true, false);
+    addAsset('id_686', 'crystal_wall_top_view', 0, 24, 1, 2, true, false);
+    addAsset('id_7551', 'crystal_wall_top_view', 31, 24, 1, 2, true, false);
+    addAsset('id_3897', 'crystal_wall_top_view', 0, 26, 1, 2, true, false);
+    addAsset('id_7325', 'crystal_wall_top_view', 31, 26, 1, 2, true, false);
+    addAsset('id_4117', 'crystal_wall_top_view', 0, 28, 1, 2, true, false);
+    addAsset('id_6808', 'crystal_wall_top_view', 31, 28, 1, 2, true, false);
+    addAsset('id_9395', 'crystal_wall_top_view', 0, 30, 1, 2, true, false);
+    addAsset('id_1500', 'crystal_wall_top_view', 31, 30, 1, 2, true, false);
+    addAsset('id_5129', 'crystal_down_stairs', 30, 0, 2, 2, true, false);
+    addAsset('id_4526', 'crystal_wall_top_view', 0, 2, 1, 2, true, false);
+    addAsset('id_2647', 'demon', 16.3439, 23.8439, 1.3122000000000003, 1.3122000000000003, true, false, 0, {"type":"boss","hp":100,"aiChase":"true","aiShoot":"true","enemySpeed":2,"enemyProjDist":200,"enemyProjSpeed":30,"enemyFireRate":10});
+    addAsset('id_9594', 'wizard', 1, 26.5, 0.9565938, 0.9565938, true, false, 0, {"type":"player","playerSpeed":2,"playerWeapon":"piercing","playerProjDist":200,"playerProjSpeed":20,"playerFireRate":20});
+    addAsset('id_5668', 'characters_sheet_3_3', 4.5, 18, 2, 2, true, false, 0, {"type":"treasure","treasureValue":1});
+    addAsset('id_4858', 'characters_sheet_3_3', 6.5, 21.5, 2, 2, true, false, 0, {"type":"treasure","treasureValue":1});
+    addAsset('id_1006', 'characters_sheet_3_3', 11, 20.5, 2, 2, true, false, 0, {"type":"treasure","treasureValue":1});
+    addAsset('id_9620', 'characters_sheet_3_3', 13.5, 17.5, 2, 2, true, false, 0, {"type":"treasure","treasureValue":1});
+    addAsset('id_1751', 'characters_sheet_2_3', 17.5, 17.5, 2, 2, true, false);
+    addAsset('id_4143', 'characters_sheet_3_3', 10.5, 17, 2, 2, true, false);
+    addAsset('id_2164', 'characters_sheet_1_3', 9.5, 26, 2, 2, true, false);
+    addAsset('id_1934', 'characters_sheet_0_3', 18, 21, 2, 2, true, false);
+    addAsset('id_1117', 'crystal_wall_top_view', 5, 28.5, 0.75, 2, true, false, 0, {"type":"treasure","treasureValue":1});
+    addAsset('id_3855', 'crystal_wall_top_view', 7, 25.5, 0.75, 2, true, false, 0, {"type":"treasure","treasureValue":1});
+    addAsset('id_4957', 'crystal_wall_top_view', 5, 21, 0.75, 2, true, false, 0, {"type":"treasure","treasureValue":1});
+    addAsset('id_5828', 'crystal_wall_top_view', 3, 23, 0.75, 2, true, false, 0, {"type":"treasure","treasureValue":1});
+    addAsset('id_5665', 'crystal_closed_doors', 6.5, 14.5, 2, 2, true, false, 0, {"type":"portal","unlockCondition":"quest","qMinions":0,"qBosses":1,"qTreasures":2,"qRiddle":"what is the correct candle color for cleansing?","qRiddleAns":"white"});
     // --- MAP EDITOR INJECTION END ---
 
     // DYNAMIC EVENT BINDING: Process interactProps from Map Editor instead of hardcoding
@@ -3060,12 +3131,13 @@ function initRitualMap() {
             asset.interact = () => {
                 if (asset.solid) {
                     if (props.doorRequiresKey === 'true') {
-                        const answer = prompt('Knowledge Gate: What blocks the path?');
-                        if (answer) {
-                            asset.solid = false;
-                            asset.type = 'crystal_open_doors';
-                            playSound('collect');
-                        }
+                        customPrompt('Knowledge Gate: What blocks the path?', (answer) => {
+                             if (answer) {
+                                  asset.solid = false;
+                                  asset.type = 'crystal_open_doors';
+                                  playSound('collect');
+                             }
+                        });
                     } else {
                         asset.solid = false;
                         asset.type = 'crystal_open_doors';
