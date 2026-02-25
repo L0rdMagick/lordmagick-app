@@ -16,7 +16,7 @@
         
         #sidebar { 
             width: 300px; background: var(--panel); border-right: 1px solid #000; display: flex; flex-direction: column; 
-            transition: transform 0.3s ease; position: relative; z-index: 10; overflow-y: auto;
+            transition: transform 0.3s ease; position: relative; z-index: 10; overflow: visible;
         }
         #sidebar.collapsed { transform: translateX(-100%); position: absolute; height: 100%; }
         
@@ -69,6 +69,7 @@
 
     <div id="sidebar">
         <button id="toggle-sidebar">☰</button>
+        <div id="sidebar-content" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; width: 100%;">
         
         <div class="section" id="section-map">
             <div class="section-header" onclick="this.parentElement.classList.toggle('collapsed')">
@@ -132,6 +133,7 @@
                 </div>
             </div>
         </div>
+        </div> <!-- Close sidebar-content -->
     </div>
 
     <div id="main-view">
@@ -448,7 +450,7 @@
                     sData.sx = Math.floor((Date.now() / 250) % 4) * sData.sw;
                 }
                 
-                const bgImgPath = sData && sData.path ? sData.path : '../../images/craft-work/indoor maps/stage 1/crystal_structure_sprite_sheet.png';
+                const bgImgPath = sData && sData.path ? sData.path : '../../images/craft-work/indoor%20maps/stage%201/crystal_structure_sprite_sheet.png';
                 const img = sprites[bgImgPath];
                 
                 oCtx.save();
@@ -772,7 +774,8 @@
                 { value: 'portal', label: 'Portal' },
                 { value: 'boss', label: 'Boss' },
                 { value: 'enemy', label: 'Enemy' },
-                { value: 'npc', label: 'NPC / Lore' }
+                { value: 'npc', label: 'NPC / Lore' },
+                { value: 'player', label: 'Player Settings' }
             ];
             
             typeOptions.forEach(opt => {
@@ -833,6 +836,22 @@
             else if (type === 'npc') {
                 addInput('Dialogue Line', 'dialogueText', 'text', 'Speech here...');
             }
+            else if (type === 'player') {
+                addInput('Speed Multiplier', 'playerSpeed', 'number', '1.0');
+                addSelect('Is Flying / Levitation', 'playerFlying', [
+                    { value: 'false', label: 'No' },
+                    { value: 'true', label: 'Yes' }
+                ]);
+                addSelect('Starting Weapon', 'playerWeapon', [
+                    { value: 'basic', label: 'Basic Magic Orbs' },
+                    { value: 'fireball', label: 'Fireballs' },
+                    { value: 'piercing', label: 'Piercing Laser' }
+                ]);
+                addSelect('Kill Aura (Damages nearby)', 'playerAura', [
+                    { value: 'false', label: 'Disabled' },
+                    { value: 'true', label: 'Enabled' }
+                ]);
+            }
 
             // Always allow toggling collision manually
             addSelect('Collision Solid', 'solid', [
@@ -884,26 +903,25 @@
                     if (blockStart > -1 && blockEnd > -1) {
                         const block = html.substring(blockStart + startMarker.length, blockEnd).trim();
                         
-                        // Use a native Function constructor for secure, locked-down parsing of the map string
-                        const nativeParser = new Function('addAsset', block);
-                        
                         // Execute the string identically to how the Game Engine does it natively
+                        window.addAsset = (id, type, x, y, w, h, solid=true, flipX=false, rot=0, interactProps=null) => {
+                            let newObj = {
+                                id, type,
+                                x: x * 128, y: y * 128,
+                                w: w * 128, h: h * 128,
+                                solid, flipX, rot
+                            };
+                            
+                            if (interactProps) {
+                                newObj.interactType = interactProps.type;
+                                Object.assign(newObj, interactProps);
+                            }
+                            
+                            map.assets.push(newObj);
+                        };
+                        
                         try {
-                            nativeParser((id, type, x, y, w, h, solid=true, flipX=false, rot=0, interactProps=null) => {
-                                let newObj = {
-                                    id, type,
-                                    x: x * 128, y: y * 128,
-                                    w: w * 128, h: h * 128,
-                                    solid, flipX, rot
-                                };
-                                
-                                if (interactProps) {
-                                    newObj.interactType = interactProps.type;
-                                    Object.assign(newObj, interactProps);
-                                }
-                                
-                                map.assets.push(newObj);
-                            });
+                            eval(block);
                             console.log("Successfully parsed assets purely from game state:", map.assets.length);
                         } catch(e) {
                             console.error("Map parse crash!", e);
@@ -945,19 +963,21 @@
                 let interactObj = null;
                 if (a.interactType) {
                     interactObj = { type: a.interactType };
-                    const copyProps = ['targetMap', 'targetX', 'targetY', 'unlockCondition', 'hp', 'aiBehavior', 'bossVariant', 'doorState', 'doorRequiresKey', 'dialogueText'];
+                    const copyProps = ['targetMap', 'targetX', 'targetY', 'unlockCondition', 'hp', 'aiBehavior', 'bossVariant', 'doorState', 'doorRequiresKey', 'dialogueText', 'playerSpeed', 'playerFlying', 'playerWeapon', 'playerAura'];
                     copyProps.forEach(prop => {
                         if (a[prop] !== undefined && a[prop] !== '') interactObj[prop] = a[prop];
                     });
                 }
                 let interactStr = interactObj ? JSON.stringify(interactObj) : 'null';
+                
+                let isSolid = (a.solid === 'false' || a.solid === false) ? 'false' : 'true';
 
                 if (a.rot) {
-                    jsStrs.push(`    addAsset('id_${Math.floor(Math.random()*10000)}', '${a.type}', ${gridX}, ${gridY}, ${w}, ${h}, true, ${flipStr}, ${a.rot}, ${interactStr});`);
+                    jsStrs.push(`    addAsset('id_${Math.floor(Math.random()*10000)}', '${a.type}', ${gridX}, ${gridY}, ${w}, ${h}, ${isSolid}, ${flipStr}, ${a.rot}, ${interactStr});`);
                 } else if (interactObj) {
-                    jsStrs.push(`    addAsset('id_${Math.floor(Math.random()*10000)}', '${a.type}', ${gridX}, ${gridY}, ${w}, ${h}, true, ${flipStr}, 0, ${interactStr});`);
+                    jsStrs.push(`    addAsset('id_${Math.floor(Math.random()*10000)}', '${a.type}', ${gridX}, ${gridY}, ${w}, ${h}, ${isSolid}, ${flipStr}, 0, ${interactStr});`);
                 } else {
-                    jsStrs.push(`    addAsset('id_${Math.floor(Math.random()*10000)}', '${a.type}', ${gridX}, ${gridY}, ${w}, ${h}, true, ${flipStr});`);
+                    jsStrs.push(`    addAsset('id_${Math.floor(Math.random()*10000)}', '${a.type}', ${gridX}, ${gridY}, ${w}, ${h}, ${isSolid}, ${flipStr});`);
                 }
             });
             

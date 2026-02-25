@@ -1666,8 +1666,8 @@ function spawnEnemy(x, y, type, customSpriteKey = null) {
     const stage = gameState.currentIngredientIndex;
     let spriteData;
     
-    if (customSpriteKey && SPRITES[customSpriteKey]) {
-        spriteData = SPRITES[customSpriteKey];
+    if (customSpriteKey) {
+        spriteData = SPRITES[customSpriteKey] || customSpriteKey;
     } else if (type === 'boss') {
         const currentBossInfo = gameState.selectedSpell.bosses[gameState.currentIngredientIndex];
         spriteData = SPRITES[currentBossInfo.spriteKey];
@@ -1755,7 +1755,7 @@ function toggleLevitate(e) {
 }
 
 function playerAttack() {
-    if (gameState.screen !== 'PLAY' || !gameState.selectedSpell) return;
+    if ((gameState.screen !== 'PLAY' && gameState.screen !== 'RITUAL_MAP')) return;
     if (player.isAttacking) return; // Cooldown/Animation Lock
     
     if (player.mana < 2) { playSound('empty'); return; }
@@ -1767,7 +1767,7 @@ function playerAttack() {
     player.frameX = 0;
     player.frameY = 3; // Row 3 is Attack
     
-    const speed = 12;
+    const speed = player.weapon === 'piercing' ? 20 : (player.weapon === 'fireball' ? 10 : 12);
     let vx = 0, vy = 0;
     
     // 1. Joystick Input (8-way Snap for Mobile Requirement)
@@ -1776,7 +1776,6 @@ function playerAttack() {
         let angle = Math.atan2(joystickInput.y, joystickInput.x);
         
         // Snap to nearest 45 degrees (PI/4 radians)
-        // This ensures the "45 degree radius" logic requested
         const snap = Math.PI / 4; 
         angle = Math.round(angle / snap) * snap;
         
@@ -1784,12 +1783,7 @@ function playerAttack() {
         vy = Math.sin(angle) * speed;
     } else {
         // 2. Keyboard / Facing fallback
-        // Unify logic: Always shoot in direction of player.facing
-        // This solves "standing still" issue (forcing persists) and any key ghosting for diagonals
-        
         let dir = player.facing || 'down'; 
-        
-        // Diagonal scalar (1 / sqrt(2)) to ensure consistent speed
         const diag = speed * 0.7071;
         
         switch(dir) {
@@ -1805,14 +1799,20 @@ function playerAttack() {
         }
     }
 
+    let color = '#ff0';
+    let size = 6;
+    let pierce = false;
+    let damage = 10;
+    
+    if (player.weapon === 'fireball') { color = '#fa0'; size = 15; damage = 25; }
+    if (player.weapon === 'piercing') { color = '#0ff'; size = 4; pierce = true; damage = 5; }
+
     gameState.projectiles.push({
         x: player.x + player.w/2, 
         y: player.y + player.h/2, 
         vx: vx, vy: vy, 
-        color: '#ff0', life: 60 
+        color: color, size: size, pierce: pierce, damage: damage, life: 60 
     });
-    
-    playSound('shoot');
 }
 
 function update(dt) {
@@ -2809,134 +2809,160 @@ function initRitualMap() {
     };
 
     // --- MAP EDITOR INJECTION START ---
-    addAsset('id_3775', 'crystal_wall_front', 0, 0, 2, 2, true, false);
-    addAsset('id_2447', 'crystal_wall_front', 0, 30, 2, 2, true, false);
-    addAsset('id_7732', 'crystal_wall_front', 2, 0, 2, 2, true, false);
-    addAsset('id_9672', 'crystal_wall_front', 2, 30, 2, 2, true, false);
-    addAsset('id_9527', 'crystal_wall_front', 4, 0, 2, 2, true, false);
-    addAsset('id_2228', 'crystal_wall_front', 4, 30, 2, 2, true, false);
-    addAsset('id_8720', 'crystal_wall_front', 6, 0, 2, 2, true, false);
-    addAsset('id_9096', 'crystal_wall_front', 6, 30, 2, 2, true, false);
-    addAsset('id_4017', 'crystal_wall_front', 8, 0, 2, 2, true, false);
-    addAsset('id_3579', 'crystal_wall_front', 8, 30, 2, 2, true, false);
-    addAsset('id_2391', 'crystal_wall_front', 10, 0, 2, 2, true, false);
-    addAsset('id_7109', 'crystal_wall_front', 10, 30, 2, 2, true, false);
-    addAsset('id_8116', 'crystal_wall_front', 12, 0, 2, 2, true, false);
-    addAsset('id_3650', 'crystal_wall_front', 12, 30, 2, 2, true, false);
-    addAsset('id_4105', 'crystal_wall_front', 14, 0, 2, 2, true, false);
-    addAsset('id_7454', 'crystal_wall_front', 16, 0, 2, 2, true, false);
-    addAsset('id_1591', 'crystal_wall_front', 16, 30, 2, 2, true, false);
-    addAsset('id_1959', 'crystal_wall_front', 18, 0, 2, 2, true, false);
-    addAsset('id_9821', 'crystal_wall_front', 18, 30, 2, 2, true, false);
-    addAsset('id_6962', 'crystal_wall_front', 20, 0, 2, 2, true, false);
-    addAsset('id_3648', 'crystal_wall_front', 20, 30, 2, 2, true, false);
-    addAsset('id_8749', 'crystal_wall_front', 22, 0, 2, 2, true, false);
-    addAsset('id_8345', 'crystal_wall_front', 22, 30, 2, 2, true, false);
-    addAsset('id_2162', 'crystal_wall_front', 24, 0, 2, 2, true, false);
-    addAsset('id_897', 'crystal_wall_front', 24, 30, 2, 2, true, false);
-    addAsset('id_554', 'crystal_wall_front', 26, 0, 2, 2, true, false);
-    addAsset('id_9908', 'crystal_wall_front', 26, 30, 2, 2, true, false);
-    addAsset('id_9882', 'crystal_wall_front', 28, 0, 2, 2, true, false);
-    addAsset('id_6809', 'crystal_wall_front', 28, 30, 2, 2, true, false);
-    addAsset('id_9979', 'crystal_wall_front', 30, 0, 2, 2, true, false);
-    addAsset('id_1425', 'crystal_wall_front', 30, 30, 2, 2, true, false);
-    addAsset('id_6296', 'crystal_wall_top_view', 0, 0, 1, 2, true, false);
-    addAsset('id_2444', 'crystal_wall_top_view', 31, 0, 1, 2, true, false);
-    addAsset('id_196', 'crystal_wall_top_view', 31, 2, 1, 2, true, false);
-    addAsset('id_5493', 'crystal_wall_top_view', 0, 4, 1, 2, true, false);
-    addAsset('id_6041', 'crystal_wall_top_view', 31, 4, 1, 2, true, false);
-    addAsset('id_6608', 'crystal_wall_top_view', 0, 6, 1, 2, true, false);
-    addAsset('id_4793', 'crystal_wall_top_view', 31, 6, 1, 2, true, false);
-    addAsset('id_9553', 'crystal_wall_top_view', 0, 8, 1, 2, true, false);
-    addAsset('id_5508', 'crystal_wall_top_view', 31, 8, 1, 2, true, false);
-    addAsset('id_1441', 'crystal_wall_top_view', 0, 10, 1, 2, true, false);
-    addAsset('id_4329', 'crystal_wall_top_view', 31, 10, 1, 2, true, false);
-    addAsset('id_6561', 'crystal_wall_top_view', 0, 12, 1, 2, true, false);
-    addAsset('id_1469', 'crystal_wall_top_view', 31, 12, 1, 2, true, false);
-    addAsset('id_5745', 'crystal_wall_top_view', 0, 14, 1, 2, true, false);
-    addAsset('id_1926', 'crystal_wall_top_view', 31, 14, 1, 2, true, false);
-    addAsset('id_636', 'crystal_wall_top_view', 0, 16, 1, 2, true, false);
-    addAsset('id_6888', 'crystal_wall_top_view', 31, 16, 1, 2, true, false);
-    addAsset('id_1929', 'crystal_wall_top_view', 0, 18, 1, 2, true, false);
-    addAsset('id_3466', 'crystal_wall_top_view', 31, 18, 1, 2, true, false);
-    addAsset('id_3535', 'crystal_wall_top_view', 0, 20, 1, 2, true, false);
-    addAsset('id_8430', 'crystal_wall_top_view', 31, 20, 1, 2, true, false);
-    addAsset('id_2871', 'crystal_wall_top_view', 0, 22, 1, 2, true, false);
-    addAsset('id_1636', 'crystal_wall_top_view', 31, 22, 1, 2, true, false);
-    addAsset('id_4870', 'crystal_wall_top_view', 0, 24, 1, 2, true, false);
-    addAsset('id_4757', 'crystal_wall_top_view', 31, 24, 1, 2, true, false);
-    addAsset('id_4364', 'crystal_wall_top_view', 0, 26, 1, 2, true, false);
-    addAsset('id_3477', 'crystal_wall_top_view', 31, 26, 1, 2, true, false);
-    addAsset('id_7697', 'crystal_wall_top_view', 0, 28, 1, 2, true, false);
-    addAsset('id_6224', 'crystal_wall_top_view', 31, 28, 1, 2, true, false);
-    addAsset('id_4348', 'crystal_wall_top_view', 0, 30, 1, 2, true, false);
-    addAsset('id_3842', 'crystal_wall_top_view', 31, 30, 1, 2, true, false);
-    addAsset('id_9421', 'crystal_arch_entrance', 14, 30, 2, 2, true, false);
-    addAsset('id_5430', 'crystal_closed_doors', 14, 22, 2, 2, true, false);
-    addAsset('id_6882', 'crystal_wall_top_front_angle_view', 10, 26, 1, 2, true, false);
-    addAsset('id_5611', 'crystal_wall_front', 2, 18, 2, 2, true, false);
-    addAsset('id_1724', 'crystal_wall_front', 2, 24, 2, 2, true, false);
-    addAsset('id_7645', 'crystal_wall_front', 4, 18, 2, 2, true, false);
-    addAsset('id_2211', 'crystal_wall_front', 6, 18, 2, 2, true, false);
-    addAsset('id_1129', 'crystal_wall_front', 6, 24, 2, 2, true, false);
-    addAsset('id_9863', 'crystal_wall_front', 8, 18, 2, 2, true, false);
-    addAsset('id_3083', 'crystal_wall_front', 8, 24, 2, 2, true, false);
-    addAsset('id_4582', 'crystal_wall_top_view', 2, 18, 1, 2, true, false);
-    addAsset('id_9079', 'crystal_wall_top_view', 2, 20, 1, 2, true, false);
-    addAsset('id_5443', 'crystal_wall_top_view', 2, 22, 1, 2, true, false);
-    addAsset('id_7570', 'crystal_wall_top_view', 2, 24, 1, 2, true, false);
-    addAsset('id_7443', 'crystal_closed_doors', 4, 24, 2, 2, true, false);
-    addAsset('id_1010', 'crystal_wall_front', 10, 10, 2, 2, true, false);
-    addAsset('id_3778', 'crystal_wall_front', 10, 22, 2, 2, true, false);
-    addAsset('id_1886', 'crystal_wall_front', 12, 10, 2, 2, true, false);
-    addAsset('id_8951', 'crystal_wall_front', 12, 22, 2, 2, true, false);
-    addAsset('id_7028', 'crystal_wall_front', 14, 10, 2, 2, true, false);
-    addAsset('id_6100', 'crystal_wall_front', 16, 10, 2, 2, true, false);
-    addAsset('id_711', 'crystal_wall_front', 16, 22, 2, 2, true, false);
-    addAsset('id_6540', 'crystal_wall_front', 18, 10, 2, 2, true, false);
-    addAsset('id_4989', 'crystal_wall_front', 18, 22, 2, 2, true, false);
-    addAsset('id_5821', 'crystal_wall_front', 20, 10, 2, 2, true, false);
-    addAsset('id_9148', 'crystal_wall_front', 20, 22, 2, 2, true, false);
-    addAsset('id_3913', 'crystal_wall_front', 22, 10, 2, 2, true, false);
-    addAsset('id_8771', 'crystal_wall_front', 22, 22, 2, 2, true, false);
-    addAsset('id_4402', 'crystal_wall_top_view', 9, 10, 1, 2, true, false);
-    addAsset('id_9056', 'crystal_wall_top_view', 9, 12, 1, 2, true, false);
-    addAsset('id_5443', 'crystal_wall_top_view', 9, 14, 1, 2, true, false);
-    addAsset('id_2750', 'crystal_wall_top_view', 9, 16, 1, 2, true, false);
-    addAsset('id_2093', 'crystal_wall_top_view', 9, 18, 1, 2, true, false);
-    addAsset('id_3141', 'crystal_wall_top_view', 9, 20, 1, 2, true, false);
-    addAsset('id_7753', 'crystal_wall_top_view', 9, 22, 1, 2, true, false);
-    addAsset('id_2630', 'crystal_wall_top_view', 9, 24, 1, 2, true, false);
-    addAsset('id_6257', 'crystal_wall_top_view', 23, 4, 1, 2, true, false);
-    addAsset('id_9195', 'crystal_wall_top_view', 23, 6, 1, 2, true, false);
-    addAsset('id_6724', 'crystal_wall_top_view', 23, 8, 1, 2, true, false);
-    addAsset('id_9579', 'crystal_wall_top_view', 23, 10, 1, 2, true, false);
-    addAsset('id_7879', 'crystal_wall_top_view', 23, 12, 1, 2, true, false);
-    addAsset('id_9889', 'crystal_wall_top_view', 23, 14, 1, 2, true, false);
-    addAsset('id_3415', 'crystal_wall_top_view', 23, 16, 1, 2, true, false);
-    addAsset('id_770', 'crystal_wall_top_view', 23, 18, 1, 2, true, false);
-    addAsset('id_1504', 'crystal_wall_top_view', 23, 20, 1, 2, true, false);
-    addAsset('id_6246', 'crystal_wall_top_view', 23, 22, 1, 2, true, false);
-    addAsset('id_9822', 'crystal_wall_front', 24, 4, 2, 2, true, false);
-    addAsset('id_3874', 'crystal_wall_front', 24, 10, 2, 2, true, false);
-    addAsset('id_1110', 'crystal_wall_front', 26, 4, 2, 2, true, false);
-    addAsset('id_142', 'crystal_wall_front', 28, 4, 2, 2, true, false);
-    addAsset('id_6594', 'crystal_wall_front', 28, 10, 2, 2, true, false);
-    addAsset('id_9154', 'crystal_wall_front', 30, 4, 2, 2, true, false);
-    addAsset('id_3074', 'crystal_wall_front', 30, 10, 2, 2, true, false);
-    addAsset('id_4039', 'crystal_closed_doors', 26, 10, 2, 2, true, false);
-    addAsset('id_7745', 'shard', 15, 15, 1, 1, true, false);
-    addAsset('id_632', 'crystal_down_stairs', 30, 0, 2, 2, true, false);
-    addAsset('id_8063', 'crystal_wall_top_view', 1, 2, 1, 2, true, false);
+    addAsset('id_5538', 'crystal_wall_front', 0, 0, 2, 2, true, false);
+    addAsset('id_5798', 'crystal_wall_front', 2, 0, 2, 2, true, false);
+    addAsset('id_2565', 'crystal_wall_front', 1, 27.5, 2, 2, true, false);
+    addAsset('id_4839', 'crystal_wall_front', 4, 0, 2, 2, true, false);
+    addAsset('id_4620', 'crystal_wall_front', 3, 27.5, 2, 2, true, false);
+    addAsset('id_460', 'crystal_wall_front', 6, 0, 2, 2, true, false);
+    addAsset('id_4074', 'crystal_wall_front', 5, 27.5, 2, 2, true, false);
+    addAsset('id_897', 'crystal_wall_front', 8, 0, 2, 2, true, false);
+    addAsset('id_8622', 'crystal_wall_front', 7, 27.5, 2, 2, true, false);
+    addAsset('id_9879', 'crystal_wall_front', 10, 0, 2, 2, true, false);
+    addAsset('id_6856', 'crystal_wall_front', 9, 27.5, 2, 2, true, false);
+    addAsset('id_3260', 'crystal_wall_front', 12, 0, 2, 2, true, false);
+    addAsset('id_6769', 'crystal_wall_front', 14, 0, 2, 2, true, false);
+    addAsset('id_4130', 'crystal_wall_front', 16, 0, 2, 2, true, false);
+    addAsset('id_5459', 'crystal_wall_front', 18, 0, 2, 2, true, false);
+    addAsset('id_8406', 'crystal_wall_front', 20, 0, 2, 2, true, false);
+    addAsset('id_9889', 'crystal_wall_front', 19, 27.5, 2, 2, true, false);
+    addAsset('id_2023', 'crystal_wall_front', 22, 0, 2, 2, true, false);
+    addAsset('id_3675', 'crystal_wall_front', 21, 27.5, 2, 2, true, false);
+    addAsset('id_8808', 'crystal_wall_front', 24, 0, 2, 2, true, false);
+    addAsset('id_5835', 'crystal_wall_front', 23, 27.5, 2, 2, true, false);
+    addAsset('id_5288', 'crystal_wall_front', 26, 0, 2, 2, true, false);
+    addAsset('id_1553', 'crystal_wall_front', 28, 0, 2, 2, true, false);
+    addAsset('id_7620', 'crystal_wall_front', 27, 27.5, 2, 2, true, false);
+    addAsset('id_3712', 'crystal_wall_front', 30, 0, 2, 2, true, false);
+    addAsset('id_3143', 'crystal_wall_front', 29, 27.5, 2, 2, true, false);
+    addAsset('id_7154', 'crystal_wall_top_view', 0, 0, 1, 2, true, false);
+    addAsset('id_2410', 'crystal_wall_top_view', 31, 0, 1, 2, true, false);
+    addAsset('id_8721', 'crystal_wall_top_view', 31, 2, 1, 2, true, false);
+    addAsset('id_9644', 'crystal_wall_top_view', 0, 4, 1, 2, true, false);
+    addAsset('id_8892', 'crystal_wall_top_view', 31, 4, 1, 2, true, false);
+    addAsset('id_1187', 'crystal_wall_top_view', 0, 6, 1, 2, true, false);
+    addAsset('id_3522', 'crystal_wall_top_view', 31, 6, 1, 2, true, false);
+    addAsset('id_2016', 'crystal_wall_top_view', 0, 8, 1, 2, true, false);
+    addAsset('id_9948', 'crystal_wall_top_view', 31, 8, 1, 2, true, false);
+    addAsset('id_4172', 'crystal_wall_top_view', 0, 10, 1, 2, true, false);
+    addAsset('id_3746', 'crystal_wall_top_view', 31, 10, 1, 2, true, false);
+    addAsset('id_6241', 'crystal_wall_top_view', 0, 12, 1, 2, true, false);
+    addAsset('id_5257', 'crystal_wall_top_view', 31, 12, 1, 2, true, false);
+    addAsset('id_1652', 'crystal_wall_top_view', 0, 14, 1, 2, true, false);
+    addAsset('id_1955', 'crystal_wall_top_view', 31, 14, 1, 2, true, false);
+    addAsset('id_2671', 'crystal_wall_top_view', 0, 16, 1, 2, true, false);
+    addAsset('id_1561', 'crystal_wall_top_view', 31, 16, 1, 2, true, false);
+    addAsset('id_7267', 'crystal_wall_top_view', 0, 18, 1, 2, true, false);
+    addAsset('id_7084', 'crystal_wall_top_view', 31, 18, 1, 2, true, false);
+    addAsset('id_4115', 'crystal_wall_top_view', 0, 20, 1, 2, true, false);
+    addAsset('id_5917', 'crystal_wall_top_view', 31, 20, 1, 2, true, false);
+    addAsset('id_4815', 'crystal_wall_top_view', 0, 22, 1, 2, true, false);
+    addAsset('id_147', 'crystal_wall_top_view', 31, 22, 1, 2, true, false);
+    addAsset('id_3091', 'crystal_wall_top_view', 0, 24, 1, 2, true, false);
+    addAsset('id_4224', 'crystal_wall_top_view', 31, 24, 1, 2, true, false);
+    addAsset('id_7240', 'crystal_wall_top_view', 0, 26, 1, 2, true, false);
+    addAsset('id_9634', 'crystal_wall_top_view', 31, 26, 1, 2, true, false);
+    addAsset('id_8788', 'crystal_wall_top_view', 0, 28, 1, 2, true, false);
+    addAsset('id_6032', 'crystal_wall_top_view', 31, 28, 1, 2, true, false);
+    addAsset('id_9070', 'crystal_wall_top_view', 0, 30, 1, 2, true, false);
+    addAsset('id_6580', 'crystal_wall_top_view', 31, 30, 1, 2, true, false);
+    addAsset('id_62', 'crystal_closed_doors', 14, 22, 2, 2, true, false);
+    addAsset('id_5869', 'crystal_wall_front', 2, 18, 2, 2, true, false);
+    addAsset('id_7006', 'crystal_wall_front', 2, 24, 2, 2, true, false);
+    addAsset('id_1011', 'crystal_wall_front', 4, 18, 2, 2, true, false);
+    addAsset('id_3772', 'crystal_wall_front', 6, 18, 2, 2, true, false);
+    addAsset('id_4889', 'crystal_wall_front', 6, 24, 2, 2, true, false);
+    addAsset('id_1152', 'crystal_wall_front', 8, 18, 2, 2, true, false);
+    addAsset('id_1965', 'crystal_wall_front', 8, 24, 2, 2, true, false);
+    addAsset('id_2781', 'crystal_wall_top_view', 2, 18, 1, 2, true, false);
+    addAsset('id_2648', 'crystal_wall_top_view', 2, 20, 1, 2, true, false);
+    addAsset('id_6374', 'crystal_wall_top_view', 2, 22, 1, 2, true, false);
+    addAsset('id_7005', 'crystal_wall_top_view', 2, 24, 1, 2, true, false);
+    addAsset('id_3290', 'crystal_closed_doors', 4, 24, 2, 2, true, false);
+    addAsset('id_7376', 'crystal_wall_front', 10, 10, 2, 2, true, false);
+    addAsset('id_2795', 'crystal_wall_front', 10, 22, 2, 2, true, false);
+    addAsset('id_9037', 'crystal_wall_front', 12, 10, 2, 2, true, false);
+    addAsset('id_732', 'crystal_wall_front', 12, 22, 2, 2, true, false);
+    addAsset('id_2153', 'crystal_wall_front', 14, 10, 2, 2, true, false);
+    addAsset('id_4828', 'crystal_wall_front', 16, 10, 2, 2, true, false);
+    addAsset('id_8134', 'crystal_wall_front', 16, 22, 2, 2, true, false);
+    addAsset('id_4834', 'crystal_wall_front', 18, 10, 2, 2, true, false);
+    addAsset('id_5904', 'crystal_wall_front', 18, 22, 2, 2, true, false);
+    addAsset('id_2349', 'crystal_wall_front', 20, 10, 2, 2, true, false);
+    addAsset('id_1431', 'crystal_wall_front', 20, 22, 2, 2, true, false);
+    addAsset('id_7726', 'crystal_wall_front', 22, 10, 2, 2, true, false);
+    addAsset('id_3762', 'crystal_wall_front', 22, 22, 2, 2, true, false);
+    addAsset('id_6484', 'crystal_wall_top_view', 9, 10, 1, 2, true, false);
+    addAsset('id_571', 'crystal_wall_top_view', 9, 12, 1, 2, true, false);
+    addAsset('id_8679', 'crystal_wall_top_view', 9, 14, 1, 2, true, false);
+    addAsset('id_1914', 'crystal_wall_top_view', 9, 16, 1, 2, true, false);
+    addAsset('id_8674', 'crystal_wall_top_view', 9, 18, 1, 2, true, false);
+    addAsset('id_8875', 'crystal_wall_top_view', 9, 20, 1, 2, true, false);
+    addAsset('id_2599', 'crystal_wall_top_view', 9, 22, 1, 2, true, false);
+    addAsset('id_6707', 'crystal_wall_top_view', 9, 24, 1, 2, true, false);
+    addAsset('id_6046', 'crystal_wall_top_view', 23, 4, 1, 2, true, false);
+    addAsset('id_6049', 'crystal_wall_top_view', 23, 6, 1, 2, true, false);
+    addAsset('id_2216', 'crystal_wall_top_view', 23, 8, 1, 2, true, false);
+    addAsset('id_1455', 'crystal_wall_top_view', 23, 10, 1, 2, true, false);
+    addAsset('id_3777', 'crystal_wall_top_view', 23, 12, 1, 2, true, false);
+    addAsset('id_1961', 'crystal_wall_top_view', 23, 14, 1, 2, true, false);
+    addAsset('id_2841', 'crystal_wall_top_view', 23, 16, 1, 2, true, false);
+    addAsset('id_233', 'crystal_wall_top_view', 23, 18, 1, 2, true, false);
+    addAsset('id_4798', 'crystal_wall_top_view', 23, 20, 1, 2, true, false);
+    addAsset('id_6860', 'crystal_wall_top_view', 23, 22, 1, 2, true, false);
+    addAsset('id_4930', 'crystal_wall_front', 24, 4, 2, 2, true, false);
+    addAsset('id_5876', 'crystal_wall_front', 24, 10, 2, 2, true, false);
+    addAsset('id_8739', 'crystal_wall_front', 26, 4, 2, 2, true, false);
+    addAsset('id_930', 'crystal_wall_front', 28, 4, 2, 2, true, false);
+    addAsset('id_1641', 'crystal_wall_front', 28, 10, 2, 2, true, false);
+    addAsset('id_1992', 'crystal_wall_front', 30, 4, 2, 2, true, false);
+    addAsset('id_5266', 'crystal_wall_front', 30, 10, 2, 2, true, false);
+    addAsset('id_2091', 'crystal_closed_doors', 26, 10, 2, 2, true, false);
+    addAsset('id_9491', 'crystal_down_stairs', 30, 0, 2, 2, true, false);
+    addAsset('id_8673', 'crystal_wall_top_view', 0, 2, 1, 2, true, false);
+    addAsset('id_3926', 'crystal_wall_top_front_angle_view', 25, 21.5, 1, 2, true, false);
+    addAsset('id_7035', 'crystal_wall_front', 11, 27.5, 2, 2, true, false);
+    addAsset('id_6384', 'crystal_wall_front', 25, 27.5, 2, 2, true, false);
+    addAsset('id_795', 'demon', 14.5, 17.5, 2, 2, true, false, 0, {"type":"boss","hp":100,"aiBehavior":"shooter","bossVariant":1});
+    addAsset('id_3224', 'crystal_wall_front', 13, 27, 2, 2, true, false);
+    addAsset('id_9034', 'crystal_wall_front', 17, 27, 2, 2, true, false);
+    addAsset('id_5058', 'wizard', 15.5, 30, 2, 2, true, false, 0, {"type":"player"});
+    addAsset('id_8090', 'crystal_arch_entrance', 15, 25.5, 2, 2, true, false, 0, {"type":"portal"});
     // --- MAP EDITOR INJECTION END ---
 
     // DYNAMIC EVENT BINDING: Process interactProps from Map Editor instead of hardcoding
     
+    const ENEMY_TYPES = ['slime','bat','spider','ghost','goblin','skeleton', 'cupid', 'demon', 'rot_golem', 'mirror_shadow', 'narcissus', 'moaning_ghost', 'tin_man', 'medusa', 'siren', 'davy_jones', 'black_widow', 'leprechaun', 'king_midas', 'ebenezer_scrooge', 'harpy', 'smaug', 'atlas', 'the_void', 'sloth', 'dorian_gray', 'hydra', 'golem', 'chimera', 'sisyphus', 'grim_reaper', 'invisible_man', 'step_sister', 'doppelganger', 'gargoyle', 'phantom', 'frankenstein', 'lucifer'];
+    
+    // Auto-patch assets so the user doesn't strictly have to use the properties menu for standard enemies!
+    ritualState.assets.forEach(asset => {
+        if (!asset.interactProps) {
+            if (ENEMY_TYPES.includes(asset.type)) asset.interactProps = { type: 'enemy' };
+            if (asset.type === 'crystal_arch_entrance') asset.interactProps = { type: 'portal' };
+            if (asset.type === 'crystal_closed_doors' || asset.type === 'crystal_open_doors') asset.interactProps = { type: 'door' };
+            if (asset.type === 'shard') asset.interactProps = { type: 'shard' };
+        }
+    });
+
     // 1. Player Spawn Point
     const spawnPoint = ritualState.assets.find(a => ['wizard', 'witch'].includes(a.type));
     if (spawnPoint) {
+        // Enforce the player character based on map editor choice!
+        gameState.playerClass = spawnPoint.type;
         player.x = spawnPoint.x;
         player.y = spawnPoint.y;
+        player.w = spawnPoint.w; // Automatically adapt bounds to editor scale
+        player.h = spawnPoint.h;
+        
+        // Ingest the newly defined map editor player powers!
+        if (spawnPoint.interactProps) {
+            const up = spawnPoint.interactProps;
+            if (up.playerSpeed) player.speed = 10 * parseFloat(up.playerSpeed); // base speed 10
+            if (up.playerFlying === 'true') player.isLevitating = true;
+            if (up.playerWeapon) player.weapon = up.playerWeapon;
+            if (up.playerAura === 'true') player.killAura = true;
+        }
+        
         ritualState.assets = ritualState.assets.filter(a => a !== spawnPoint);
     } else {
         // Fallback spawn
@@ -3012,7 +3038,9 @@ function initRitualMap() {
             // Spawn the enemy directly into the game loop's array
             const enemy = spawnEnemy(asset.x, asset.y, props.type, asset.type);
             if (enemy) {
-                // Override default stats with custom map stats
+                // Override default constraints and stats with custom map stats from Editor
+                enemy.w = asset.w;
+                enemy.h = asset.h;
                 if (props.hp) { enemy.hp = props.hp; enemy.maxHp = props.hp; }
                 if (props.aiBehavior) { enemy.aiBehavior = props.aiBehavior; }
             }
@@ -3177,30 +3205,65 @@ function updateRitualMap(dt) {
         p.x += p.vx; p.y += p.vy; p.life--;
         
         let hitEnemy = false;
+        const size = p.size || 10;
         for (let j = 0; j < gameState.enemies.length; j++) {
             let e = gameState.enemies[j];
-            if (rectIntersect(p.x, p.y, 10, 10, e.x, e.y, e.w, e.h)) {
-                e.hp -= 10; p.life = 0; hitEnemy = true;
+            if (rectIntersect(p.x, p.y, size, size, e.x, e.y, e.w, e.h)) {
+                e.hp -= (p.damage || 10); 
+                if (!p.pierce) { p.life = 0; hitEnemy = true; }
                 playSound('enemy_hit');
-                createParticles(e.x + e.w/2, e.y + e.h/2, 5, '#fff');
+                createParticles(e.x + e.w/2, e.y + e.h/2, 5, p.color || '#fff');
                 if (e.hp <= 0) { e.dead = true; playSound('enemy_kill'); }
-                break;
+                if (!p.pierce) break;
             }
         }
         if (p.life <= 0 || hitEnemy) gameState.projectiles.splice(i, 1);
     }
+    
+    // Process Kill Aura (Player Map Option)
+    if (player.killAura) {
+        if (Math.random() < 0.2) createParticles(player.x + player.w/2, player.y + player.h/2, 2, '#fa0');
+        gameState.enemies.forEach(e => {
+            if (distance(player.x + player.w/2, player.y + player.h/2, e.x + e.w/2, e.y + e.h/2) < 200) {
+                e.hp -= 2; 
+                createParticles(e.x + e.w/2, e.y + e.h/2, 1, '#ff0');
+                if (e.hp <= 0) { e.dead = true; playSound('enemy_kill'); }
+            }
+        });
+    }
 
     gameState.enemies.forEach(e => {
         let angle = Math.atan2(player.y - e.y, player.x - e.x); 
+        let moveX = 0, moveY = 0;
+        
         if (e.aiBehavior === 'patrol') {
             if (!e.patrolDir) e.patrolDir = 1;
-            e.x += e.patrolDir * e.speed;
+            moveX = e.patrolDir * e.speed;
             if (Math.random() < 0.02) e.patrolDir *= -1;
             angle = e.patrolDir > 0 ? 0 : Math.PI;
         } else if (e.aiBehavior === 'chaser' || !e.aiBehavior) {
             let speed = (e.type === 'boss' ? 2.5 * e.speed : 1.5 * e.speed);
-            e.x += Math.cos(angle) * speed; e.y += Math.sin(angle) * speed;
+            moveX = Math.cos(angle) * speed; 
+            moveY = Math.sin(angle) * speed;
         }
+
+        let newX = e.x + moveX;
+        let newY = e.y + moveY;
+        
+        // Bounds limit
+        newX = Math.max(0, Math.min(newX, ritualState.tilesX * ritualState.gridSize - e.w));
+        newY = Math.max(0, Math.min(newY, ritualState.tilesY * ritualState.gridSize - e.h));
+        
+        // Enemy Wall collision logic (sharing player rules)
+        let hitX = false, hitY = false;
+        ritualState.assets.forEach(a => {
+            if (a.hidden || !a.solid) return;
+            if (rectIntersect(newX, e.y, e.w, e.h, a.x, a.y + (a.h*0.3), a.w, a.h*0.7)) hitX = true;
+            if (rectIntersect(e.x, newY, e.w, e.h, a.x, a.y + (a.h*0.3), a.w, a.h*0.7)) hitY = true;
+        });
+        
+        if (!hitX) e.x = newX; else e.patrolDir = (e.patrolDir || 1) * -1;
+        if (!hitY) e.y = newY;
         
         gameState.enemies.forEach(other => {
             if (e === other) return;
@@ -3298,15 +3361,26 @@ function drawRitualMap() {
                 item.y + item.h < gameState.camera.y - 100 || item.y > gameState.camera.y + viewH + 100) return;
                 
             let sInfo = RITUAL_SPRITES[item.type];
-            let img = SPRITE_SHEETS['crystal_structure'];
-            if (sInfo && img && img.complete) {
+            let crystalImg = SPRITE_SHEETS['crystal_structure'];
+            let directImg = SPRITE_SHEETS[item.type];
+
+            if (sInfo && crystalImg && crystalImg.complete) {
                 if (item.id === 'shard') {
                     let pulse = Math.abs(Math.sin(Date.now() / 300)) * 10;
                     ctx.shadowColor = '#ff66aa'; ctx.shadowBlur = 20 + pulse;
                 }
                 
-                ctx.drawImage(img, sInfo.sx, sInfo.sy, sInfo.sw, sInfo.sh, item.x, item.y, item.w, item.h);
+                ctx.drawImage(crystalImg, sInfo.sx, sInfo.sy, sInfo.sw, sInfo.sh, item.x, item.y, item.w, item.h);
                 ctx.shadowBlur = 0;
+            } else if (directImg && directImg.complete) {
+                // Fallback for ANY map editor placed graphic that isn't a wall block!
+                ctx.save();
+                ctx.translate(item.x + item.w/2, item.y + item.h/2);
+                if (item.flipX) ctx.scale(-1, 1);
+                if (item.rotation) ctx.rotate(item.rotation * Math.PI / 180);
+                // Draw 1st frame by default for static decoration characters!
+                ctx.drawImage(directImg, 0, 0, 512, 512, -item.w/2, -item.h/2, item.w, item.h);
+                ctx.restore();
             } else if (item.type === 'shard') { // Fallback if image not loaded
                 ctx.fillStyle = '#ff66aa';
                 ctx.beginPath();
@@ -3319,12 +3393,14 @@ function drawRitualMap() {
     });
 
     gameState.projectiles.forEach(p => {
-        ctx.fillStyle = '#fff'; ctx.shadowBlur = 10; ctx.shadowColor = '#fff';
-        ctx.beginPath(); ctx.arc(p.x, p.y, 6, 0, Math.PI*2); ctx.fill(); ctx.shadowBlur = 0;
+        ctx.fillStyle = p.color || '#fff'; ctx.shadowBlur = 10; ctx.shadowColor = p.color || '#fff';
+        const size = p.size || 6;
+        ctx.beginPath(); ctx.arc(p.x, p.y, size, 0, Math.PI*2); ctx.fill(); ctx.shadowBlur = 0;
     });
     gameState.enemyProjectiles.forEach(p => {
-        ctx.fillStyle = '#f00'; ctx.shadowBlur = 10; ctx.shadowColor = '#f00';
-        ctx.beginPath(); ctx.arc(p.x, p.y, 6, 0, Math.PI*2); ctx.fill(); ctx.shadowBlur = 0;
+        ctx.fillStyle = p.color || '#f00'; ctx.shadowBlur = 10; ctx.shadowColor = p.color || '#f00';
+        const size = p.size || 6;
+        ctx.beginPath(); ctx.arc(p.x, p.y, size, 0, Math.PI*2); ctx.fill(); ctx.shadowBlur = 0;
     });
     
     // Added GUI text overlay for guidance
