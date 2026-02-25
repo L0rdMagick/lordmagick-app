@@ -842,12 +842,7 @@
                     addInput('Riddle: Option B', 'qRiddleB', 'text', '');
                     addInput('Riddle: Option C', 'qRiddleC', 'text', '');
                     addInput('Riddle: Option D', 'qRiddleD', 'text', '');
-                    addSelect('Riddle: Correct Answer', 'qRiddleAns', [
-                       { value: 'A', label: 'Option A / Typed Text' },
-                       { value: 'B', label: 'Option B' },
-                       { value: 'C', label: 'Option C' },
-                       { value: 'D', label: 'Option D' }
-                    ]);
+                    addInput('Correct Answer (Letter or Text)', 'qRiddleAns', 'text', 'A');
                 }
             } 
             else if (type === 'treasure') {
