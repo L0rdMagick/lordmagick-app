@@ -761,6 +761,21 @@
                 container.appendChild(wrapper);
             };
 
+            // Helper to add a checkbox
+            const addCheckbox = (label, key) => {
+                const wrapper = document.createElement('div');
+                wrapper.style.marginBottom = '5px';
+                wrapper.innerHTML = `<label style="display:flex; align-items:center; cursor:pointer; color:#fff"><input type="checkbox" style="margin-right:5px;">${label}</label>`;
+                const input = wrapper.querySelector('input');
+                input.checked = obj[key] === 'true' || obj[key] === true;
+                
+                input.onchange = (e) => {
+                    obj[key] = e.target.checked ? 'true' : 'false';
+                    drawMap();
+                };
+                container.appendChild(wrapper);
+            };
+
             // 1. Core Properties
             const interactTypeWrapper = document.createElement('div');
             interactTypeWrapper.style.marginBottom = '5px';
@@ -813,14 +828,11 @@
             } 
             else if (type === 'enemy' || type === 'boss') {
                 addInput('Max HP', 'hp', 'number', '100');
-                addSelect('AI Behavior', 'aiBehavior', [
-                    { value: 'wander', label: 'Wanderer' },
-                    { value: 'chaser', label: 'Chaser' },
-                    { value: 'shooter', label: 'Ranged Shooter' },
-                    { value: 'patrol', label: 'Patrol (Left/Right)' },
-                    { value: 'patrol_shooter', label: 'Patrol & Shoot' },
-                    { value: 'chaser_shooter', label: 'Follow & Shoot' }
-                ]);
+                addInput('Speed Multiplier', 'enemySpeed', 'number', '1.0');
+                addInput('Projectile Distance', 'enemyProjDist', 'number', '60');
+                addCheckbox('Can Chase Player', 'aiChase');
+                addCheckbox('Can Patrol', 'aiPatrol');
+                addCheckbox('Can Shoot', 'aiShoot');
                 if (type === 'boss') {
            addInput('Boss Type ID', 'bossVariant', 'number', '1 to 7');
                 }
@@ -853,6 +865,7 @@
                     { value: 'false', label: 'Disabled' },
                     { value: 'true', label: 'Enabled' }
                 ]);
+                addInput('Projectile Distance', 'playerProjDist', 'number', '120');
             }
 
             // Always allow toggling collision manually
@@ -965,7 +978,7 @@
                 let interactObj = null;
                 if (a.interactType) {
                     interactObj = { type: a.interactType };
-                    const copyProps = ['targetMap', 'targetX', 'targetY', 'unlockCondition', 'hp', 'aiBehavior', 'bossVariant', 'doorState', 'doorRequiresKey', 'dialogueText', 'playerSpeed', 'playerFlying', 'playerWeapon', 'playerAura'];
+                    const copyProps = ['targetMap', 'targetX', 'targetY', 'unlockCondition', 'hp', 'aiChase', 'aiPatrol', 'aiShoot', 'bossVariant', 'doorState', 'doorRequiresKey', 'dialogueText', 'playerSpeed', 'playerFlying', 'playerWeapon', 'playerAura', 'enemySpeed', 'enemyProjDist', 'playerProjDist'];
                     copyProps.forEach(prop => {
                         if (a[prop] !== undefined && a[prop] !== '') interactObj[prop] = a[prop];
                     });
