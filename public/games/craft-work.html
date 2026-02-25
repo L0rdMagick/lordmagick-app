@@ -719,6 +719,18 @@
         </div>
     </div>
 
+    <!-- RIDDLE MODAL -->
+    <div id="riddle-modal" class="hidden" style="position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:#222; border: 2px solid #555; border-radius:10px; padding:20px; z-index:2000; width: 90%; max-width: 400px; color: white; display: none; flex-direction:column; gap:10px;">
+        <h3 style="margin:0; color:#4dd0e1; text-align:center;">The Guardian asks...</h3>
+        <p id="riddle-text" style="text-align:center; margin: 10px 0;">Question here?</p>
+        <div id="riddle-options-container" style="display:flex; flex-direction:column; gap:8px;"></div>
+        <input type="text" id="riddle-text-input" style="display:none; width: 100%; border: 1px solid #555; background: #111; color: white; padding: 10px; border-radius: 5px; box-sizing:border-box;">
+        <div style="display:flex; gap: 10px; justify-content: center; margin-top: 15px;">
+             <button id="riddle-submit-btn" class="btn" style="display:none; flex: 1;">Submit</button>
+             <button onclick="document.getElementById('riddle-modal').style.display='none'" class="btn" style="background:#555; flex: 1;">Cancel</button>
+        </div>
+    </div>
+
     <!-- MESSAGE LOG -->
     <div id="message-log"></div>
 
@@ -2817,6 +2829,7 @@ function initRitualMap() {
     ritualState = {
         gridSize: 128, tilesX: 32, tilesY: 32,
         assets: [], q1_solved: false, shards: 0,
+        questMinions: 0, questBosses: 0, questTreasures: 0, riddleAnswered: false,
         active: true, lastInteractTime: 0,
         enemies: [] // Separate array for stage enemies if needed, or push to gameState.enemies
     };
@@ -2827,106 +2840,106 @@ function initRitualMap() {
     };
 
     // --- MAP EDITOR INJECTION START ---
-    addAsset('id_6957', 'crystal_wall_front', 0, 0, 2, 2, true, false);
-    addAsset('id_3521', 'crystal_wall_front', 2, 0, 2, 2, true, false);
-    addAsset('id_7557', 'crystal_wall_front', 4, 0, 2, 2, true, false);
-    addAsset('id_2646', 'crystal_wall_front', 6, 0, 2, 2, true, false);
-    addAsset('id_5955', 'crystal_wall_front', 8, 0, 2, 2, true, false);
-    addAsset('id_9790', 'crystal_wall_front', 10, 0, 2, 2, true, false);
-    addAsset('id_7795', 'crystal_wall_front', 12, 0, 2, 2, true, false);
-    addAsset('id_7255', 'crystal_wall_front', 14, 0, 2, 2, true, false);
-    addAsset('id_4337', 'crystal_wall_front', 16, 0, 2, 2, true, false);
-    addAsset('id_7856', 'crystal_wall_front', 18, 0, 2, 2, true, false);
-    addAsset('id_136', 'crystal_wall_front', 20, 0, 2, 2, true, false);
-    addAsset('id_4477', 'crystal_wall_front', 22, 0, 2, 2, true, false);
-    addAsset('id_8928', 'crystal_wall_front', 24, 0, 2, 2, true, false);
-    addAsset('id_5896', 'crystal_wall_front', 26, 0, 2, 2, true, false);
-    addAsset('id_98', 'crystal_wall_front', 28, 0, 2, 2, true, false);
-    addAsset('id_778', 'crystal_wall_front', 30, 0, 2, 2, true, false);
-    addAsset('id_9846', 'crystal_wall_top_view', 0, 0, 1, 2, true, false);
-    addAsset('id_9990', 'crystal_wall_top_view', 31, 0, 1, 2, true, false);
-    addAsset('id_8459', 'crystal_wall_top_view', 31, 2, 1, 2, true, false);
-    addAsset('id_6456', 'crystal_wall_top_view', 0, 4, 1, 2, true, false);
-    addAsset('id_9924', 'crystal_wall_top_view', 31, 4, 1, 2, true, false);
-    addAsset('id_363', 'crystal_wall_top_view', 0, 6, 1, 2, true, false);
-    addAsset('id_7420', 'crystal_wall_top_view', 31, 6, 1, 2, true, false);
-    addAsset('id_2337', 'crystal_wall_top_view', 0, 8, 1, 2, true, false);
-    addAsset('id_4669', 'crystal_wall_top_view', 31, 8, 1, 2, true, false);
-    addAsset('id_1134', 'crystal_wall_top_view', 0, 10, 1, 2, true, false);
-    addAsset('id_7882', 'crystal_wall_top_view', 31, 10, 1, 2, true, false);
-    addAsset('id_271', 'crystal_wall_top_view', 0, 12, 1, 2, true, false);
-    addAsset('id_2914', 'crystal_wall_top_view', 31, 12, 1, 2, true, false);
-    addAsset('id_8391', 'crystal_wall_top_view', 0, 14, 1, 2, true, false);
-    addAsset('id_2736', 'crystal_wall_top_view', 31, 14, 1, 2, true, false);
-    addAsset('id_4043', 'crystal_wall_top_view', 0, 16, 1, 2, true, false);
-    addAsset('id_9545', 'crystal_wall_top_view', 31, 16, 1, 2, true, false);
-    addAsset('id_4612', 'crystal_wall_top_view', 0, 18, 1, 2, true, false);
-    addAsset('id_4023', 'crystal_wall_top_view', 31, 18, 1, 2, true, false);
-    addAsset('id_4885', 'crystal_wall_top_view', 0, 20, 1, 2, true, false);
-    addAsset('id_292', 'crystal_wall_top_view', 31, 20, 1, 2, true, false);
-    addAsset('id_2359', 'crystal_wall_top_view', 0, 22, 1, 2, true, false);
-    addAsset('id_4626', 'crystal_wall_top_view', 31, 22, 1, 2, true, false);
-    addAsset('id_5896', 'crystal_wall_top_view', 0, 24, 1, 2, true, false);
-    addAsset('id_6616', 'crystal_wall_top_view', 31, 24, 1, 2, true, false);
-    addAsset('id_4354', 'crystal_wall_top_view', 0, 26, 1, 2, true, false);
-    addAsset('id_5878', 'crystal_wall_top_view', 31, 26, 1, 2, true, false);
-    addAsset('id_3329', 'crystal_wall_top_view', 0, 28, 1, 2, true, false);
-    addAsset('id_2849', 'crystal_wall_top_view', 31, 28, 1, 2, true, false);
-    addAsset('id_520', 'crystal_wall_top_view', 0, 30, 1, 2, true, false);
-    addAsset('id_718', 'crystal_wall_top_view', 31, 30, 1, 2, true, false);
-    addAsset('id_9354', 'crystal_down_stairs', 30, 0, 2, 2, true, false);
-    addAsset('id_9171', 'crystal_wall_top_view', 0, 2, 1, 2, true, false);
-    addAsset('id_6145', 'crystal_wall_front', 0, 0, 2, 2, true, false);
-    addAsset('id_6763', 'crystal_wall_front', 2, 0, 2, 2, true, false);
-    addAsset('id_8722', 'crystal_wall_front', 4, 0, 2, 2, true, false);
-    addAsset('id_1753', 'crystal_wall_front', 6, 0, 2, 2, true, false);
-    addAsset('id_9707', 'crystal_wall_front', 8, 0, 2, 2, true, false);
-    addAsset('id_4362', 'crystal_wall_front', 10, 0, 2, 2, true, false);
-    addAsset('id_8650', 'crystal_wall_front', 12, 0, 2, 2, true, false);
-    addAsset('id_8518', 'crystal_wall_front', 14, 0, 2, 2, true, false);
-    addAsset('id_9307', 'crystal_wall_front', 16, 0, 2, 2, true, false);
-    addAsset('id_3529', 'crystal_wall_front', 18, 0, 2, 2, true, false);
-    addAsset('id_3007', 'crystal_wall_front', 20, 0, 2, 2, true, false);
-    addAsset('id_5455', 'crystal_wall_front', 22, 0, 2, 2, true, false);
-    addAsset('id_3415', 'crystal_wall_front', 24, 0, 2, 2, true, false);
-    addAsset('id_1408', 'crystal_wall_front', 26, 0, 2, 2, true, false);
-    addAsset('id_4192', 'crystal_wall_front', 28, 0, 2, 2, true, false);
-    addAsset('id_4762', 'crystal_wall_front', 30, 0, 2, 2, true, false);
-    addAsset('id_5229', 'crystal_wall_top_view', 0, 0, 1, 2, true, false);
-    addAsset('id_443', 'crystal_wall_top_view', 31, 0, 1, 2, true, false);
-    addAsset('id_5910', 'crystal_wall_top_view', 31, 2, 1, 2, true, false);
-    addAsset('id_4', 'crystal_wall_top_view', 0, 4, 1, 2, true, false);
-    addAsset('id_4870', 'crystal_wall_top_view', 31, 4, 1, 2, true, false);
-    addAsset('id_2851', 'crystal_wall_top_view', 0, 6, 1, 2, true, false);
-    addAsset('id_7569', 'crystal_wall_top_view', 31, 6, 1, 2, true, false);
-    addAsset('id_8786', 'crystal_wall_top_view', 0, 8, 1, 2, true, false);
-    addAsset('id_108', 'crystal_wall_top_view', 31, 8, 1, 2, true, false);
-    addAsset('id_1540', 'crystal_wall_top_view', 0, 10, 1, 2, true, false);
-    addAsset('id_4088', 'crystal_wall_top_view', 31, 10, 1, 2, true, false);
-    addAsset('id_7244', 'crystal_wall_top_view', 0, 12, 1, 2, true, false);
-    addAsset('id_432', 'crystal_wall_top_view', 31, 12, 1, 2, true, false);
-    addAsset('id_927', 'crystal_wall_top_view', 0, 14, 1, 2, true, false);
-    addAsset('id_2035', 'crystal_wall_top_view', 31, 14, 1, 2, true, false);
-    addAsset('id_6835', 'crystal_wall_top_view', 0, 16, 1, 2, true, false);
-    addAsset('id_9730', 'crystal_wall_top_view', 31, 16, 1, 2, true, false);
-    addAsset('id_7793', 'crystal_wall_top_view', 0, 18, 1, 2, true, false);
-    addAsset('id_2379', 'crystal_wall_top_view', 31, 18, 1, 2, true, false);
-    addAsset('id_4060', 'crystal_wall_top_view', 0, 20, 1, 2, true, false);
-    addAsset('id_3074', 'crystal_wall_top_view', 31, 20, 1, 2, true, false);
-    addAsset('id_5597', 'crystal_wall_top_view', 0, 22, 1, 2, true, false);
-    addAsset('id_2208', 'crystal_wall_top_view', 31, 22, 1, 2, true, false);
-    addAsset('id_2975', 'crystal_wall_top_view', 0, 24, 1, 2, true, false);
-    addAsset('id_8193', 'crystal_wall_top_view', 31, 24, 1, 2, true, false);
-    addAsset('id_936', 'crystal_wall_top_view', 0, 26, 1, 2, true, false);
-    addAsset('id_2967', 'crystal_wall_top_view', 31, 26, 1, 2, true, false);
-    addAsset('id_387', 'crystal_wall_top_view', 0, 28, 1, 2, true, false);
-    addAsset('id_2014', 'crystal_wall_top_view', 31, 28, 1, 2, true, false);
-    addAsset('id_7134', 'crystal_wall_top_view', 0, 30, 1, 2, true, false);
-    addAsset('id_8577', 'crystal_wall_top_view', 31, 30, 1, 2, true, false);
-    addAsset('id_8557', 'crystal_down_stairs', 30, 0, 2, 2, true, false);
-    addAsset('id_1543', 'crystal_wall_top_view', 0, 2, 1, 2, true, false);
-    addAsset('id_6657', 'demon', 16, 23.5, 2, 2, true, false, 0, {"type":"boss","hp":100,"aiChase":"true","aiShoot":"true","enemySpeed":2,"enemyProjDist":200,"enemyProjSpeed":20});
-    addAsset('id_9172', 'wizard', 16, 29, 2, 2, true, false, 0, {"type":"player","playerSpeed":2,"playerWeapon":"piercing","playerProjDist":200,"playerProjSpeed":20});
+    addAsset('id_3001', 'crystal_wall_front', 0, 0, 2, 2, true, false);
+    addAsset('id_2134', 'crystal_wall_front', 2, 0, 2, 2, true, false);
+    addAsset('id_7160', 'crystal_wall_front', 4, 0, 2, 2, true, false);
+    addAsset('id_6966', 'crystal_wall_front', 6, 0, 2, 2, true, false);
+    addAsset('id_5365', 'crystal_wall_front', 8, 0, 2, 2, true, false);
+    addAsset('id_1490', 'crystal_wall_front', 10, 0, 2, 2, true, false);
+    addAsset('id_5069', 'crystal_wall_front', 12, 0, 2, 2, true, false);
+    addAsset('id_9356', 'crystal_wall_front', 14, 0, 2, 2, true, false);
+    addAsset('id_3920', 'crystal_wall_front', 16, 0, 2, 2, true, false);
+    addAsset('id_8883', 'crystal_wall_front', 18, 0, 2, 2, true, false);
+    addAsset('id_5782', 'crystal_wall_front', 20, 0, 2, 2, true, false);
+    addAsset('id_3227', 'crystal_wall_front', 22, 0, 2, 2, true, false);
+    addAsset('id_2185', 'crystal_wall_front', 24, 0, 2, 2, true, false);
+    addAsset('id_7851', 'crystal_wall_front', 26, 0, 2, 2, true, false);
+    addAsset('id_6599', 'crystal_wall_front', 28, 0, 2, 2, true, false);
+    addAsset('id_5448', 'crystal_wall_front', 30, 0, 2, 2, true, false);
+    addAsset('id_949', 'crystal_wall_top_view', 0, 0, 1, 2, true, false);
+    addAsset('id_3640', 'crystal_wall_top_view', 31, 0, 1, 2, true, false);
+    addAsset('id_2266', 'crystal_wall_top_view', 31, 2, 1, 2, true, false);
+    addAsset('id_9795', 'crystal_wall_top_view', 0, 4, 1, 2, true, false);
+    addAsset('id_6602', 'crystal_wall_top_view', 31, 4, 1, 2, true, false);
+    addAsset('id_7964', 'crystal_wall_top_view', 0, 6, 1, 2, true, false);
+    addAsset('id_7072', 'crystal_wall_top_view', 31, 6, 1, 2, true, false);
+    addAsset('id_4690', 'crystal_wall_top_view', 0, 8, 1, 2, true, false);
+    addAsset('id_895', 'crystal_wall_top_view', 31, 8, 1, 2, true, false);
+    addAsset('id_9168', 'crystal_wall_top_view', 0, 10, 1, 2, true, false);
+    addAsset('id_1941', 'crystal_wall_top_view', 31, 10, 1, 2, true, false);
+    addAsset('id_7720', 'crystal_wall_top_view', 0, 12, 1, 2, true, false);
+    addAsset('id_6399', 'crystal_wall_top_view', 31, 12, 1, 2, true, false);
+    addAsset('id_6489', 'crystal_wall_top_view', 0, 14, 1, 2, true, false);
+    addAsset('id_1808', 'crystal_wall_top_view', 31, 14, 1, 2, true, false);
+    addAsset('id_3900', 'crystal_wall_top_view', 0, 16, 1, 2, true, false);
+    addAsset('id_9741', 'crystal_wall_top_view', 31, 16, 1, 2, true, false);
+    addAsset('id_3903', 'crystal_wall_top_view', 0, 18, 1, 2, true, false);
+    addAsset('id_5138', 'crystal_wall_top_view', 31, 18, 1, 2, true, false);
+    addAsset('id_7057', 'crystal_wall_top_view', 0, 20, 1, 2, true, false);
+    addAsset('id_2082', 'crystal_wall_top_view', 31, 20, 1, 2, true, false);
+    addAsset('id_68', 'crystal_wall_top_view', 0, 22, 1, 2, true, false);
+    addAsset('id_5761', 'crystal_wall_top_view', 31, 22, 1, 2, true, false);
+    addAsset('id_5000', 'crystal_wall_top_view', 0, 24, 1, 2, true, false);
+    addAsset('id_7352', 'crystal_wall_top_view', 31, 24, 1, 2, true, false);
+    addAsset('id_827', 'crystal_wall_top_view', 0, 26, 1, 2, true, false);
+    addAsset('id_7532', 'crystal_wall_top_view', 31, 26, 1, 2, true, false);
+    addAsset('id_1128', 'crystal_wall_top_view', 0, 28, 1, 2, true, false);
+    addAsset('id_6055', 'crystal_wall_top_view', 31, 28, 1, 2, true, false);
+    addAsset('id_5385', 'crystal_wall_top_view', 0, 30, 1, 2, true, false);
+    addAsset('id_8208', 'crystal_wall_top_view', 31, 30, 1, 2, true, false);
+    addAsset('id_5196', 'crystal_down_stairs', 30, 0, 2, 2, true, false);
+    addAsset('id_5840', 'crystal_wall_top_view', 0, 2, 1, 2, true, false);
+    addAsset('id_502', 'crystal_wall_front', 0, 0, 2, 2, true, false);
+    addAsset('id_6106', 'crystal_wall_front', 2, 0, 2, 2, true, false);
+    addAsset('id_3038', 'crystal_wall_front', 4, 0, 2, 2, true, false);
+    addAsset('id_8187', 'crystal_wall_front', 6, 0, 2, 2, true, false);
+    addAsset('id_148', 'crystal_wall_front', 8, 0, 2, 2, true, false);
+    addAsset('id_5386', 'crystal_wall_front', 10, 0, 2, 2, true, false);
+    addAsset('id_3161', 'crystal_wall_front', 12, 0, 2, 2, true, false);
+    addAsset('id_9703', 'crystal_wall_front', 14, 0, 2, 2, true, false);
+    addAsset('id_5768', 'crystal_wall_front', 16, 0, 2, 2, true, false);
+    addAsset('id_8852', 'crystal_wall_front', 18, 0, 2, 2, true, false);
+    addAsset('id_3421', 'crystal_wall_front', 20, 0, 2, 2, true, false);
+    addAsset('id_9895', 'crystal_wall_front', 22, 0, 2, 2, true, false);
+    addAsset('id_599', 'crystal_wall_front', 24, 0, 2, 2, true, false);
+    addAsset('id_9041', 'crystal_wall_front', 26, 0, 2, 2, true, false);
+    addAsset('id_793', 'crystal_wall_front', 28, 0, 2, 2, true, false);
+    addAsset('id_6070', 'crystal_wall_front', 30, 0, 2, 2, true, false);
+    addAsset('id_7863', 'crystal_wall_top_view', 0, 0, 1, 2, true, false);
+    addAsset('id_6366', 'crystal_wall_top_view', 31, 0, 1, 2, true, false);
+    addAsset('id_9720', 'crystal_wall_top_view', 31, 2, 1, 2, true, false);
+    addAsset('id_1867', 'crystal_wall_top_view', 0, 4, 1, 2, true, false);
+    addAsset('id_1163', 'crystal_wall_top_view', 31, 4, 1, 2, true, false);
+    addAsset('id_1985', 'crystal_wall_top_view', 0, 6, 1, 2, true, false);
+    addAsset('id_6593', 'crystal_wall_top_view', 31, 6, 1, 2, true, false);
+    addAsset('id_8980', 'crystal_wall_top_view', 0, 8, 1, 2, true, false);
+    addAsset('id_4230', 'crystal_wall_top_view', 31, 8, 1, 2, true, false);
+    addAsset('id_7687', 'crystal_wall_top_view', 0, 10, 1, 2, true, false);
+    addAsset('id_4945', 'crystal_wall_top_view', 31, 10, 1, 2, true, false);
+    addAsset('id_5367', 'crystal_wall_top_view', 0, 12, 1, 2, true, false);
+    addAsset('id_6316', 'crystal_wall_top_view', 31, 12, 1, 2, true, false);
+    addAsset('id_7841', 'crystal_wall_top_view', 0, 14, 1, 2, true, false);
+    addAsset('id_5545', 'crystal_wall_top_view', 31, 14, 1, 2, true, false);
+    addAsset('id_6962', 'crystal_wall_top_view', 0, 16, 1, 2, true, false);
+    addAsset('id_1530', 'crystal_wall_top_view', 31, 16, 1, 2, true, false);
+    addAsset('id_9950', 'crystal_wall_top_view', 0, 18, 1, 2, true, false);
+    addAsset('id_7967', 'crystal_wall_top_view', 31, 18, 1, 2, true, false);
+    addAsset('id_9502', 'crystal_wall_top_view', 0, 20, 1, 2, true, false);
+    addAsset('id_2411', 'crystal_wall_top_view', 31, 20, 1, 2, true, false);
+    addAsset('id_1002', 'crystal_wall_top_view', 0, 22, 1, 2, true, false);
+    addAsset('id_8587', 'crystal_wall_top_view', 31, 22, 1, 2, true, false);
+    addAsset('id_3321', 'crystal_wall_top_view', 0, 24, 1, 2, true, false);
+    addAsset('id_8618', 'crystal_wall_top_view', 31, 24, 1, 2, true, false);
+    addAsset('id_5831', 'crystal_wall_top_view', 0, 26, 1, 2, true, false);
+    addAsset('id_480', 'crystal_wall_top_view', 31, 26, 1, 2, true, false);
+    addAsset('id_1539', 'crystal_wall_top_view', 0, 28, 1, 2, true, false);
+    addAsset('id_5902', 'crystal_wall_top_view', 31, 28, 1, 2, true, false);
+    addAsset('id_3236', 'crystal_wall_top_view', 0, 30, 1, 2, true, false);
+    addAsset('id_2061', 'crystal_wall_top_view', 31, 30, 1, 2, true, false);
+    addAsset('id_677', 'crystal_down_stairs', 30, 0, 2, 2, true, false);
+    addAsset('id_8473', 'crystal_wall_top_view', 0, 2, 1, 2, true, false);
+    addAsset('id_6364', 'wizard', 1.7507030999999997, 30.750703100000003, 0.9565938, 0.9565938, true, false, 0, {"type":"player","playerSpeed":2,"playerWeapon":"piercing","playerProjDist":200,"playerProjSpeed":20,"playerFireRate":20});
+    addAsset('id_3854', 'demon', 16.3439, 23.8439, 1.3122000000000003, 1.3122000000000003, true, false, 0, {"type":"boss","hp":100,"aiChase":"true","aiShoot":"true","enemySpeed":2,"enemyProjDist":200,"enemyProjSpeed":30,"enemyFireRate":10});
     // --- MAP EDITOR INJECTION END ---
 
     // DYNAMIC EVENT BINDING: Process interactProps from Map Editor instead of hardcoding
@@ -2983,6 +2996,28 @@ function initRitualMap() {
         // Portals
         if (props.type === 'portal') {
             asset.interact = () => {
+                let unlocked = true;
+                let msg = "Portal is sealed! Complete the quest conditions:\n";
+                if (props.qMinions && ritualState.questMinions < parseInt(props.qMinions)) {
+                    unlocked = false; msg += `- Defeat ${parseInt(props.qMinions) - ritualState.questMinions} more Minions.\n`;
+                }
+                if (props.qBosses && ritualState.questBosses < parseInt(props.qBosses)) {
+                    unlocked = false; msg += `- Defeat ${parseInt(props.qBosses) - ritualState.questBosses} more Bosses.\n`;
+                }
+                if (props.qTreasures && ritualState.questTreasures < parseInt(props.qTreasures)) {
+                    unlocked = false; msg += `- Find ${parseInt(props.qTreasures) - ritualState.questTreasures} more Treasures.\n`;
+                }
+                
+                if (props.unlockCondition === 'quest' && !unlocked) {
+                    alert(msg);
+                    return;
+                }
+                
+                if (props.unlockCondition === 'quest' && props.qRiddle && props.qRiddle.trim() !== '' && !ritualState.riddleAnswered) {
+                    showRiddleModal(props, asset.interact);
+                    return;
+                }
+                
                 // If there's an unlock condition like boss_defeated, check it here
                 if (props.unlockCondition === 'boss_defeated' && !currentObjective.bossDefeated) {
                     alert('The portal is sealed. Defeat the guardian first.');
@@ -3032,6 +3067,19 @@ function initRitualMap() {
             asset.interact = () => {
                 if (props.dialogueText) alert(props.dialogueText);
             };
+        }
+        
+        // Treasures
+        if (props.type === 'treasure') {
+             asset.interact = () => {
+                 ritualState.questTreasures++;
+                 asset.hidden = true;
+                 asset.solid = false;
+                 asset.interact = null; // Consume
+                 playSound('collect');
+                 createParticles(asset.x + asset.w/2, asset.y + asset.h/2, 10, '#fa0');
+                 alert(`Treasure Acquired! (${ritualState.questTreasures} collected)`);
+             };
         }
         
         // Enemies & Bosses
@@ -3091,6 +3139,74 @@ function initRitualMap() {
 
     // End binding segment
     
+}
+
+function showRiddleModal(props, successCallback) {
+    const modal = document.getElementById('riddle-modal');
+    if (!modal) {
+        alert("Riddle: " + (props.qRiddle || 'Solve the puzzle?')); 
+        return successCallback(); // Fallback if no DOM
+    }
+    
+    document.getElementById('riddle-text').innerText = props.qRiddle || 'Solve the puzzle?';
+    
+    const optsContainer = document.getElementById('riddle-options-container');
+    const txtInput = document.getElementById('riddle-text-input');
+    const subBtn = document.getElementById('riddle-submit-btn');
+    
+    optsContainer.innerHTML = '';
+    
+    let isMultipleChoice = props.qRiddleA || props.qRiddleB || props.qRiddleC || props.qRiddleD;
+    
+    if (isMultipleChoice) {
+        txtInput.style.display = 'none';
+        subBtn.style.display = 'none';
+        optsContainer.style.display = 'flex';
+        
+        const options = [];
+        if(props.qRiddleA) options.push({label: props.qRiddleA, key: 'A'});
+        if(props.qRiddleB) options.push({label: props.qRiddleB, key: 'B'});
+        if(props.qRiddleC) options.push({label: props.qRiddleC, key: 'C'});
+        if(props.qRiddleD) options.push({label: props.qRiddleD, key: 'D'});
+        
+        options.forEach(opt => {
+            let btn = document.createElement('button');
+            btn.className = 'btn';
+            btn.style.width = '100%';
+            btn.style.textAlign = 'left';
+            btn.innerText = opt.label;
+            btn.onclick = () => {
+                const ans = props.qRiddleAns ? props.qRiddleAns.toUpperCase() : 'A'; // default to A
+                if(ans === opt.key) {
+                    ritualState.riddleAnswered = true;
+                    modal.style.display = 'none';
+                    successCallback();
+                } else {
+                    alert('Incorrect answer. The Guardian remains steadfast.');
+                    modal.style.display = 'none';
+                }
+            };
+            optsContainer.appendChild(btn);
+        });
+    } else {
+        optsContainer.style.display = 'none';
+        txtInput.style.display = 'block';
+        txtInput.value = '';
+        subBtn.style.display = 'block';
+        subBtn.onclick = () => {
+             const ans = props.qRiddleAns ? props.qRiddleAns.toLowerCase().trim() : '';
+             if (txtInput.value.toLowerCase().trim() === ans) {
+                  ritualState.riddleAnswered = true;
+                  modal.style.display = 'none';
+                  successCallback();
+             } else {
+                  alert('Incorrect answer. The Guardian remains steadfast.');
+                  modal.style.display = 'none';
+             }
+        };
+    }
+    
+    modal.style.display = 'flex';
 }
 
 function updateRitualMap(dt) {
@@ -3221,7 +3337,14 @@ function updateRitualMap(dt) {
         gameState.camera.y = Math.max(0, Math.min(gameState.camera.y, ritualState.tilesY * ritualState.gridSize - VIEWPORT_H));
     }
 
-    gameState.enemies = gameState.enemies.filter(e => !e.dead);
+    gameState.enemies = gameState.enemies.filter(e => {
+        if (e.dead) {
+            if (e.type === 'boss') ritualState.questBosses++;
+            else ritualState.questMinions++;
+            return false;
+        }
+        return true;
+    });
     gameState.enemyProjectiles.forEach(ep => {
         ep.x += ep.vx; ep.y += ep.vy; ep.life--;
         if (rectIntersect(ep.x, ep.y, 10, 10, player.x, player.y, player.w, player.h)) {

@@ -736,7 +736,11 @@
                     if (obj[key] === opt.value) option.selected = true;
                     select.appendChild(option);
                 });
-                select.onchange = (e) => { obj[key] = e.target.value; drawMap(); };
+                select.onchange = (e) => { 
+                    obj[key] = e.target.value; 
+                    drawMap(); 
+                    if (key === 'unlockCondition') updatePropertiesPanel();
+                };
                 wrapper.appendChild(select);
                 container.appendChild(wrapper);
             };
@@ -791,7 +795,8 @@
                 { value: 'boss', label: 'Boss' },
                 { value: 'enemy', label: 'Enemy' },
                 { value: 'npc', label: 'NPC / Lore' },
-                { value: 'player', label: 'Player Settings' }
+                { value: 'player', label: 'Player Settings' },
+                { value: 'treasure', label: 'Treasure / Quest Item' }
             ];
             
             typeOptions.forEach(opt => {
@@ -824,14 +829,33 @@
                 addSelect('Unlock Condition', 'unlockCondition', [
                     { value: 'always', label: 'Always Open' },
                     { value: 'boss_defeated', label: 'Require Boss Defeat' },
-                    { value: 'key', label: 'Require Key' }
+                    { value: 'key', label: 'Require Key' },
+                    { value: 'quest', label: 'Require Map Quests' }
                 ]);
+                
+                if (obj.unlockCondition === 'quest') {
+                    addInput('Quest: Minions to Kill', 'qMinions', 'number', '0');
+                    addInput('Quest: Bosses to Kill', 'qBosses', 'number', '0');
+                    addInput('Quest: Treasures to Find', 'qTreasures', 'number', '0');
+                    addInput('Riddle: Question', 'qRiddle', 'text', 'Leave blank to ignore');
+                    addInput('Riddle: Option A (or Blank=Type)', 'qRiddleA', 'text', '');
+                    addInput('Riddle: Option B', 'qRiddleB', 'text', '');
+                    addInput('Riddle: Option C', 'qRiddleC', 'text', '');
+                    addInput('Riddle: Option D', 'qRiddleD', 'text', '');
+                    addSelect('Riddle: Correct Answer', 'qRiddleAns', [
+                       { value: 'A', label: 'Option A / Typed Text' },
+                       { value: 'B', label: 'Option B' },
+                       { value: 'C', label: 'Option C' },
+                       { value: 'D', label: 'Option D' }
+                    ]);
+                }
             } 
             else if (type === 'enemy' || type === 'boss') {
                 addInput('Max HP', 'hp', 'number', '100');
                 addInput('Speed Multiplier', 'enemySpeed', 'number', '1.0');
                 addInput('Projectile Distance', 'enemyProjDist', 'number', '60');
                 addInput('Projectile Velocity', 'enemyProjSpeed', 'number', '6.0');
+                addInput('Fire Rate (Wait Frames)', 'enemyFireRate', 'number', '100');
                 addCheckbox('Can Chase Player', 'aiChase');
                 addCheckbox('Can Patrol', 'aiPatrol');
                 addCheckbox('Can Shoot', 'aiShoot');
@@ -869,6 +893,7 @@
                 ]);
                 addInput('Projectile Distance', 'playerProjDist', 'number', '120');
                 addInput('Projectile Velocity', 'playerProjSpeed', 'number', '12.0');
+                addInput('Fire Rate Cooldown (ms)', 'playerFireRate', 'number', '250');
             }
 
             // Always allow toggling collision manually
@@ -982,7 +1007,7 @@
                 let interactObj = null;
                 if (a.interactType) {
                     interactObj = { type: a.interactType };
-                    const copyProps = ['targetMap', 'targetX', 'targetY', 'unlockCondition', 'hp', 'aiChase', 'aiPatrol', 'aiShoot', 'bossVariant', 'doorState', 'doorRequiresKey', 'dialogueText', 'playerSpeed', 'playerFlying', 'playerWeapon', 'playerAura', 'enemySpeed', 'enemyProjDist', 'enemyProjSpeed', 'playerProjDist', 'playerProjSpeed'];
+                    const copyProps = ['targetMap', 'targetX', 'targetY', 'unlockCondition', 'qMinions', 'qBosses', 'qTreasures', 'qRiddle', 'qRiddleA', 'qRiddleB', 'qRiddleC', 'qRiddleD', 'qRiddleAns', 'hp', 'aiChase', 'aiPatrol', 'aiShoot', 'bossVariant', 'doorState', 'doorRequiresKey', 'dialogueText', 'playerSpeed', 'playerFlying', 'playerWeapon', 'playerAura', 'enemySpeed', 'enemyProjDist', 'enemyProjSpeed', 'enemyFireRate', 'playerProjDist', 'playerProjSpeed', 'playerFireRate'];
                     copyProps.forEach(prop => {
                         if (a[prop] !== undefined && a[prop] !== '') interactObj[prop] = a[prop];
                     });
