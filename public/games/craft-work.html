@@ -1799,18 +1799,19 @@ function playerAttack() {
     }
 
     let color = '#ff0';
-    let size = 6;
+    let size = 18; // Default 6 * 3
     let pierce = false;
     let damage = 10;
     
-    if (player.weapon === 'fireball') { color = '#fa0'; size = 15; damage = 25; }
-    if (player.weapon === 'piercing') { color = '#0ff'; size = 4; pierce = true; damage = 5; }
+    if (player.weapon === 'fireball') { color = '#fa0'; size = 45; damage = 40; } // 15 * 3
+    if (player.weapon === 'piercing') { color = '#0ff'; size = 12; pierce = true; damage = 5; } // 4 * 3
 
     gameState.projectiles.push({
         x: player.x + player.w/2, 
         y: player.y + player.h/2, 
         vx: vx, vy: vy, 
-        color: color, size: size, pierce: pierce, damage: damage, life: 60 
+        color: color, size: size, pierce: pierce, damage: damage, life: 120, // Doubled life
+        weapon: player.weapon
     });
 }
 
@@ -2491,15 +2492,25 @@ function draw() {
     
     // Projectiles
     gameState.projectiles.forEach(p => {
-        ctx.fillStyle = p.color;
-        ctx.beginPath(); ctx.arc(p.x, p.y, 6, 0, Math.PI*2); ctx.fill();
-        // Removed shadowBlur for performance
+        ctx.fillStyle = p.color || '#fff';
+        const size = p.size || 6;
+        if (p.weapon === 'piercing') {
+            const angle = Math.atan2(p.vy, p.vx);
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate(angle);
+            ctx.fillRect(-size * 1.5, -4, size * 3, 8); // Laser rectangle
+            ctx.restore();
+        } else {
+            ctx.beginPath(); ctx.arc(p.x, p.y, size, 0, Math.PI*2); ctx.fill();
+        }
     });
     
     // Enemy Projectiles
     gameState.enemyProjectiles.forEach(p => {
-        ctx.fillStyle = '#f00';
-        ctx.beginPath(); ctx.arc(p.x, p.y, 6, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = p.color || '#f00';
+        const size = p.size || 18;
+        ctx.beginPath(); ctx.arc(p.x, p.y, size, 0, Math.PI*2); ctx.fill();
     });
 
     // Particles
@@ -2808,57 +2819,57 @@ function initRitualMap() {
     };
 
     // --- MAP EDITOR INJECTION START ---
-    addAsset('id_5979', 'crystal_wall_front', 0, 0, 2, 2, true, false);
-    addAsset('id_1856', 'crystal_wall_front', 2, 0, 2, 2, true, false);
-    addAsset('id_957', 'crystal_wall_front', 4, 0, 2, 2, true, false);
-    addAsset('id_6044', 'crystal_wall_front', 6, 0, 2, 2, true, false);
-    addAsset('id_8147', 'crystal_wall_front', 8, 0, 2, 2, true, false);
-    addAsset('id_6891', 'crystal_wall_front', 10, 0, 2, 2, true, false);
-    addAsset('id_1457', 'crystal_wall_front', 12, 0, 2, 2, true, false);
-    addAsset('id_9840', 'crystal_wall_front', 14, 0, 2, 2, true, false);
-    addAsset('id_4574', 'crystal_wall_front', 16, 0, 2, 2, true, false);
-    addAsset('id_8586', 'crystal_wall_front', 18, 0, 2, 2, true, false);
-    addAsset('id_4618', 'crystal_wall_front', 20, 0, 2, 2, true, false);
-    addAsset('id_3165', 'crystal_wall_front', 22, 0, 2, 2, true, false);
-    addAsset('id_5522', 'crystal_wall_front', 24, 0, 2, 2, true, false);
-    addAsset('id_7392', 'crystal_wall_front', 26, 0, 2, 2, true, false);
-    addAsset('id_9463', 'crystal_wall_front', 28, 0, 2, 2, true, false);
-    addAsset('id_3591', 'crystal_wall_front', 30, 0, 2, 2, true, false);
-    addAsset('id_9751', 'crystal_wall_top_view', 0, 0, 1, 2, true, false);
-    addAsset('id_1656', 'crystal_wall_top_view', 31, 0, 1, 2, true, false);
-    addAsset('id_1739', 'crystal_wall_top_view', 31, 2, 1, 2, true, false);
-    addAsset('id_2118', 'crystal_wall_top_view', 0, 4, 1, 2, true, false);
-    addAsset('id_8639', 'crystal_wall_top_view', 31, 4, 1, 2, true, false);
-    addAsset('id_3121', 'crystal_wall_top_view', 0, 6, 1, 2, true, false);
-    addAsset('id_7087', 'crystal_wall_top_view', 31, 6, 1, 2, true, false);
-    addAsset('id_8874', 'crystal_wall_top_view', 0, 8, 1, 2, true, false);
-    addAsset('id_14', 'crystal_wall_top_view', 31, 8, 1, 2, true, false);
-    addAsset('id_7042', 'crystal_wall_top_view', 0, 10, 1, 2, true, false);
-    addAsset('id_7365', 'crystal_wall_top_view', 31, 10, 1, 2, true, false);
-    addAsset('id_9594', 'crystal_wall_top_view', 0, 12, 1, 2, true, false);
-    addAsset('id_2097', 'crystal_wall_top_view', 31, 12, 1, 2, true, false);
-    addAsset('id_5775', 'crystal_wall_top_view', 0, 14, 1, 2, true, false);
-    addAsset('id_8093', 'crystal_wall_top_view', 31, 14, 1, 2, true, false);
-    addAsset('id_4851', 'crystal_wall_top_view', 0, 16, 1, 2, true, false);
-    addAsset('id_7938', 'crystal_wall_top_view', 31, 16, 1, 2, true, false);
-    addAsset('id_1459', 'crystal_wall_top_view', 0, 18, 1, 2, true, false);
-    addAsset('id_7927', 'crystal_wall_top_view', 31, 18, 1, 2, true, false);
-    addAsset('id_8299', 'crystal_wall_top_view', 0, 20, 1, 2, true, false);
-    addAsset('id_808', 'crystal_wall_top_view', 31, 20, 1, 2, true, false);
-    addAsset('id_2112', 'crystal_wall_top_view', 0, 22, 1, 2, true, false);
-    addAsset('id_2022', 'crystal_wall_top_view', 31, 22, 1, 2, true, false);
-    addAsset('id_2437', 'crystal_wall_top_view', 0, 24, 1, 2, true, false);
-    addAsset('id_6948', 'crystal_wall_top_view', 31, 24, 1, 2, true, false);
-    addAsset('id_560', 'crystal_wall_top_view', 0, 26, 1, 2, true, false);
-    addAsset('id_2655', 'crystal_wall_top_view', 31, 26, 1, 2, true, false);
-    addAsset('id_2223', 'crystal_wall_top_view', 0, 28, 1, 2, true, false);
-    addAsset('id_1246', 'crystal_wall_top_view', 31, 28, 1, 2, true, false);
-    addAsset('id_7031', 'crystal_wall_top_view', 0, 30, 1, 2, true, false);
-    addAsset('id_907', 'crystal_wall_top_view', 31, 30, 1, 2, true, false);
-    addAsset('id_4474', 'crystal_down_stairs', 30, 0, 2, 2, true, false);
-    addAsset('id_3675', 'crystal_wall_top_view', 0, 2, 1, 2, true, false);
-    addAsset('id_9564', 'demon', 15, 16, 2, 2, true, false, 0, {"type":"boss","hp":100,"aiBehavior":"shooter","bossVariant":1});
-    addAsset('id_8358', 'wizard', 15, 30, 2, 2, true, false, 0, {"type":"player"});
+    addAsset('id_9541', 'crystal_wall_front', 0, 0, 2, 2, true, false);
+    addAsset('id_4383', 'crystal_wall_front', 2, 0, 2, 2, true, false);
+    addAsset('id_9311', 'crystal_wall_front', 4, 0, 2, 2, true, false);
+    addAsset('id_3127', 'crystal_wall_front', 6, 0, 2, 2, true, false);
+    addAsset('id_8083', 'crystal_wall_front', 8, 0, 2, 2, true, false);
+    addAsset('id_5745', 'crystal_wall_front', 10, 0, 2, 2, true, false);
+    addAsset('id_6571', 'crystal_wall_front', 12, 0, 2, 2, true, false);
+    addAsset('id_2652', 'crystal_wall_front', 14, 0, 2, 2, true, false);
+    addAsset('id_1852', 'crystal_wall_front', 16, 0, 2, 2, true, false);
+    addAsset('id_2090', 'crystal_wall_front', 18, 0, 2, 2, true, false);
+    addAsset('id_2328', 'crystal_wall_front', 20, 0, 2, 2, true, false);
+    addAsset('id_1230', 'crystal_wall_front', 22, 0, 2, 2, true, false);
+    addAsset('id_4486', 'crystal_wall_front', 24, 0, 2, 2, true, false);
+    addAsset('id_3458', 'crystal_wall_front', 26, 0, 2, 2, true, false);
+    addAsset('id_2116', 'crystal_wall_front', 28, 0, 2, 2, true, false);
+    addAsset('id_5712', 'crystal_wall_front', 30, 0, 2, 2, true, false);
+    addAsset('id_5053', 'crystal_wall_top_view', 0, 0, 1, 2, true, false);
+    addAsset('id_9225', 'crystal_wall_top_view', 31, 0, 1, 2, true, false);
+    addAsset('id_8863', 'crystal_wall_top_view', 31, 2, 1, 2, true, false);
+    addAsset('id_3536', 'crystal_wall_top_view', 0, 4, 1, 2, true, false);
+    addAsset('id_5744', 'crystal_wall_top_view', 31, 4, 1, 2, true, false);
+    addAsset('id_8110', 'crystal_wall_top_view', 0, 6, 1, 2, true, false);
+    addAsset('id_9307', 'crystal_wall_top_view', 31, 6, 1, 2, true, false);
+    addAsset('id_1912', 'crystal_wall_top_view', 0, 8, 1, 2, true, false);
+    addAsset('id_9813', 'crystal_wall_top_view', 31, 8, 1, 2, true, false);
+    addAsset('id_7700', 'crystal_wall_top_view', 0, 10, 1, 2, true, false);
+    addAsset('id_1872', 'crystal_wall_top_view', 31, 10, 1, 2, true, false);
+    addAsset('id_8811', 'crystal_wall_top_view', 0, 12, 1, 2, true, false);
+    addAsset('id_3564', 'crystal_wall_top_view', 31, 12, 1, 2, true, false);
+    addAsset('id_8666', 'crystal_wall_top_view', 0, 14, 1, 2, true, false);
+    addAsset('id_6087', 'crystal_wall_top_view', 31, 14, 1, 2, true, false);
+    addAsset('id_2427', 'crystal_wall_top_view', 0, 16, 1, 2, true, false);
+    addAsset('id_6002', 'crystal_wall_top_view', 31, 16, 1, 2, true, false);
+    addAsset('id_3042', 'crystal_wall_top_view', 0, 18, 1, 2, true, false);
+    addAsset('id_163', 'crystal_wall_top_view', 31, 18, 1, 2, true, false);
+    addAsset('id_1003', 'crystal_wall_top_view', 0, 20, 1, 2, true, false);
+    addAsset('id_6711', 'crystal_wall_top_view', 31, 20, 1, 2, true, false);
+    addAsset('id_1942', 'crystal_wall_top_view', 0, 22, 1, 2, true, false);
+    addAsset('id_4421', 'crystal_wall_top_view', 31, 22, 1, 2, true, false);
+    addAsset('id_927', 'crystal_wall_top_view', 0, 24, 1, 2, true, false);
+    addAsset('id_1353', 'crystal_wall_top_view', 31, 24, 1, 2, true, false);
+    addAsset('id_5011', 'crystal_wall_top_view', 0, 26, 1, 2, true, false);
+    addAsset('id_2062', 'crystal_wall_top_view', 31, 26, 1, 2, true, false);
+    addAsset('id_2812', 'crystal_wall_top_view', 0, 28, 1, 2, true, false);
+    addAsset('id_8382', 'crystal_wall_top_view', 31, 28, 1, 2, true, false);
+    addAsset('id_3849', 'crystal_wall_top_view', 0, 30, 1, 2, true, false);
+    addAsset('id_9501', 'crystal_wall_top_view', 31, 30, 1, 2, true, false);
+    addAsset('id_1154', 'crystal_down_stairs', 30, 0, 2, 2, true, false);
+    addAsset('id_5328', 'crystal_wall_top_view', 0, 2, 1, 2, true, false);
+    addAsset('id_6051', 'demon', 15, 16, 2, 2, true, false, 0, {"type":"boss","hp":100,"aiBehavior":"shooter","bossVariant":1});
+    addAsset('id_1656', 'wizard', 15, 30, 2, 2, true, false, 0, {"type":"player"});
     // --- MAP EDITOR INJECTION END ---
 
     // DYNAMIC EVENT BINDING: Process interactProps from Map Editor instead of hardcoding
@@ -3340,11 +3351,21 @@ function drawRitualMap() {
     gameState.projectiles.forEach(p => {
         ctx.fillStyle = p.color || '#fff'; ctx.shadowBlur = 10; ctx.shadowColor = p.color || '#fff';
         const size = p.size || 6;
-        ctx.beginPath(); ctx.arc(p.x, p.y, size, 0, Math.PI*2); ctx.fill(); ctx.shadowBlur = 0;
+        if (p.weapon === 'piercing') {
+            const angle = Math.atan2(p.vy, p.vx);
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate(angle);
+            ctx.fillRect(-size * 1.5, -4, size * 3, 8); // Laser rectangle
+            ctx.restore();
+        } else {
+            ctx.beginPath(); ctx.arc(p.x, p.y, size, 0, Math.PI*2); ctx.fill();
+        }
+        ctx.shadowBlur = 0;
     });
     gameState.enemyProjectiles.forEach(p => {
         ctx.fillStyle = p.color || '#f00'; ctx.shadowBlur = 10; ctx.shadowColor = p.color || '#f00';
-        const size = p.size || 6;
+        const size = p.size || 18;
         ctx.beginPath(); ctx.arc(p.x, p.y, size, 0, Math.PI*2); ctx.fill(); ctx.shadowBlur = 0;
     });
     
