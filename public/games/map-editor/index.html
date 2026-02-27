@@ -536,29 +536,38 @@
                     uCtx.strokeStyle = 'lime';
                     uCtx.lineWidth = 4;
                     
+                    let at = item.edgeAnchors?.t ?? 0.5;
+                    let ab = item.edgeAnchors?.b ?? 0.5;
+                    let al = item.edgeAnchors?.l ?? 0.5;
+                    let ar = item.edgeAnchors?.r ?? 0.5;
+                    
+                    let tl_x = item.cornerOffsets?.tl?.x || 0; let tl_y = item.cornerOffsets?.tl?.y || 0;
+                    let tr_x = item.cornerOffsets?.tr?.x || 0; let tr_y = item.cornerOffsets?.tr?.y || 0;
+                    let bl_x = item.cornerOffsets?.bl?.x || 0; let bl_y = item.cornerOffsets?.bl?.y || 0;
+                    let br_x = item.cornerOffsets?.br?.x || 0; let br_y = item.cornerOffsets?.br?.y || 0;
+
+                    if (item.flipX) {
+                        let v_tl_x = -tr_x; let v_tl_y = tr_y;
+                        let v_tr_x = -tl_x; let v_tr_y = tl_y;
+                        let v_bl_x = -br_x; let v_bl_y = br_y;
+                        let v_br_x = -bl_x; let v_br_y = bl_y;
+                        let v_al = 1 - ar; let v_ar = 1 - al;
+                        let v_at = 1 - at; let v_ab = 1 - ab;
+                        tl_x = v_tl_x; tl_y = v_tl_y; tr_x = v_tr_x; tr_y = v_tr_y;
+                        bl_x = v_bl_x; bl_y = v_bl_y; br_x = v_br_x; br_y = v_br_y;
+                        at = v_at; ab = v_ab; al = v_al; ar = v_ar;
+                    }
+
                     if (item.cornerOffsets || item.edgeAnchors) {
-                        let at = item.edgeAnchors?.t ?? 0.5;
-                        let ab = item.edgeAnchors?.b ?? 0.5;
-                        let al = item.edgeAnchors?.l ?? 0.5;
-                        let ar = item.edgeAnchors?.r ?? 0.5;
-                        // Mirror the same corner-base logic as drawMap clip
-                        const utlX = item.x + (item.cornerOffsets?.tl?.x || 0);
-                        const utlY = item.y + (item.cornerOffsets?.tl?.y || 0);
-                        const utrX = item.x + item.w + (item.cornerOffsets?.tr?.x || 0);
-                        const utrY = item.y + (item.cornerOffsets?.tr?.y || 0);
-                        const ublX = item.x + (item.cornerOffsets?.bl?.x || 0);
-                        const ublY = item.y + item.h + (item.cornerOffsets?.bl?.y || 0);
-                        const ubrX = item.x + item.w + (item.cornerOffsets?.br?.x || 0);
-                        const ubrY = item.y + item.h + (item.cornerOffsets?.br?.y || 0);
                         uCtx.beginPath();
                         uCtx.moveTo(item.x + item.w * at, item.y);
-                        uCtx.lineTo(utlX, utlY);
+                        uCtx.lineTo(item.x + tl_x, item.y + tl_y);
                         uCtx.lineTo(item.x, item.y + item.h * al);
-                        uCtx.lineTo(ublX, ublY);
+                        uCtx.lineTo(item.x + bl_x, item.y + item.h + bl_y);
                         uCtx.lineTo(item.x + item.w * ab, item.y + item.h);
-                        uCtx.lineTo(ubrX, ubrY);
+                        uCtx.lineTo(item.x + item.w + br_x, item.y + item.h + br_y);
                         uCtx.lineTo(item.x + item.w, item.y + item.h * ar);
-                        uCtx.lineTo(utrX, utrY);
+                        uCtx.lineTo(item.x + item.w + tr_x, item.y + tr_y);
                         uCtx.closePath();
                         uCtx.stroke();
                     } else {
@@ -573,10 +582,10 @@
                          uCtx.strokeStyle = '#000';
                          uCtx.lineWidth = 2;
                          // Corner handles positioned at their actual corner base + their stored offset
-                         [ [item.x + (item.cornerOffsets?.tl?.x || 0),         item.y + (item.cornerOffsets?.tl?.y || 0)], 
-                           [item.x+item.w + (item.cornerOffsets?.tr?.x || 0),   item.y + (item.cornerOffsets?.tr?.y || 0)],
-                           [item.x + (item.cornerOffsets?.bl?.x || 0),         item.y+item.h + (item.cornerOffsets?.bl?.y || 0)], 
-                           [item.x+item.w + (item.cornerOffsets?.br?.x || 0),  item.y+item.h + (item.cornerOffsets?.br?.y || 0)]
+                         [ [item.x + tl_x,         item.y + tl_y], 
+                           [item.x+item.w + tr_x,   item.y + tr_y],
+                           [item.x + bl_x,         item.y+item.h + bl_y], 
+                           [item.x+item.w + br_x,  item.y+item.h + br_y]
                          ].forEach(([hx, hy]) => {
                              uCtx.fillRect(hx - hSize/2, hy - hSize/2, hSize, hSize);
                              uCtx.strokeRect(hx - hSize/2, hy - hSize/2, hSize, hSize);
@@ -585,10 +594,10 @@
                          // sliding anchors (corner pivots)
                          uCtx.fillStyle = 'orange';
                          uCtx.strokeStyle = '#000';
-                         [ [item.x + item.w * (item.edgeAnchors?.t ?? 0.5), item.y],
-                           [item.x + item.w * (item.edgeAnchors?.b ?? 0.5), item.y + item.h],
-                           [item.x, item.y + item.h * (item.edgeAnchors?.l ?? 0.5)],
-                           [item.x + item.w, item.y + item.h * (item.edgeAnchors?.r ?? 0.5)]
+                         [ [item.x + item.w * at, item.y],
+                           [item.x + item.w * ab, item.y + item.h],
+                           [item.x, item.y + item.h * al],
+                           [item.x + item.w, item.y + item.h * ar]
                          ].forEach(([hx, hy]) => {
                              uCtx.fillRect(hx - hSize/2, hy - hSize/2, hSize, hSize);
                              uCtx.strokeRect(hx - hSize/2, hy - hSize/2, hSize, hSize);
@@ -684,15 +693,45 @@
                     const obj = selectedMapObjects[0];
                     const hSize = 12; // visual hit radius
                     const dist = (x1, y1, x2, y2) => Math.hypot(x1-x2, y1-y2);
+                    
+                    let at = obj.edgeAnchors?.t ?? 0.5;
+                    let ab = obj.edgeAnchors?.b ?? 0.5;
+                    let al = obj.edgeAnchors?.l ?? 0.5;
+                    let ar = obj.edgeAnchors?.r ?? 0.5;
+                    let tl_x = obj.cornerOffsets?.tl?.x || 0; let tl_y = obj.cornerOffsets?.tl?.y || 0;
+                    let tr_x = obj.cornerOffsets?.tr?.x || 0; let tr_y = obj.cornerOffsets?.tr?.y || 0;
+                    let bl_x = obj.cornerOffsets?.bl?.x || 0; let bl_y = obj.cornerOffsets?.bl?.y || 0;
+                    let br_x = obj.cornerOffsets?.br?.x || 0; let br_y = obj.cornerOffsets?.br?.y || 0;
+
+                    let id_tl = 'resize-tl', id_tr = 'resize-tr', id_bl = 'resize-bl', id_br = 'resize-br';
+                    let id_l = 'slide-l', id_r = 'slide-r';
+
+                    if (obj.flipX) {
+                        let v_tl_x = -tr_x; let v_tl_y = tr_y;
+                        let v_tr_x = -tl_x; let v_tr_y = tl_y;
+                        let v_bl_x = -br_x; let v_bl_y = br_y;
+                        let v_br_x = -bl_x; let v_br_y = bl_y;
+                        let v_al = 1 - ar; let v_ar = 1 - al;
+                        let v_at = 1 - at; let v_ab = 1 - ab;
+                        
+                        tl_x = v_tl_x; tl_y = v_tl_y; tr_x = v_tr_x; tr_y = v_tr_y;
+                        bl_x = v_bl_x; bl_y = v_bl_y; br_x = v_br_x; br_y = v_br_y;
+                        at = v_at; ab = v_ab; al = v_al; ar = v_ar;
+
+                        id_tl = 'resize-tr'; id_tr = 'resize-tl';
+                        id_bl = 'resize-br'; id_br = 'resize-bl';
+                        id_l = 'slide-r'; id_r = 'slide-l';
+                    }
+
                     const handles = [
-                        {id: 'resize-tl', hx: obj.x + (obj.cornerOffsets?.tl?.x || 0), hy: obj.y + (obj.cornerOffsets?.tl?.y || 0)},
-                        {id: 'resize-tr', hx: obj.x+obj.w + (obj.cornerOffsets?.tr?.x || 0), hy: obj.y + (obj.cornerOffsets?.tr?.y || 0)},
-                        {id: 'resize-bl', hx: obj.x + (obj.cornerOffsets?.bl?.x || 0), hy: obj.y+obj.h + (obj.cornerOffsets?.bl?.y || 0)},
-                        {id: 'resize-br', hx: obj.x+obj.w + (obj.cornerOffsets?.br?.x || 0), hy: obj.y+obj.h + (obj.cornerOffsets?.br?.y || 0)},
-                        {id: 'slide-t', hx: obj.x + obj.w * (obj.edgeAnchors?.t ?? 0.5), hy: obj.y},
-                        {id: 'slide-b', hx: obj.x + obj.w * (obj.edgeAnchors?.b ?? 0.5), hy: obj.y+obj.h},
-                        {id: 'slide-l', hx: obj.x, hy: obj.y + obj.h * (obj.edgeAnchors?.l ?? 0.5)},
-                        {id: 'slide-r', hx: obj.x+obj.w, hy: obj.y + obj.h * (obj.edgeAnchors?.r ?? 0.5)},
+                        {id: id_tl, hx: obj.x + tl_x, hy: obj.y + tl_y},
+                        {id: id_tr, hx: obj.x+obj.w + tr_x, hy: obj.y + tr_y},
+                        {id: id_bl, hx: obj.x + bl_x, hy: obj.y+obj.h + bl_y},
+                        {id: id_br, hx: obj.x+obj.w + br_x, hy: obj.y+obj.h + br_y},
+                        {id: 'slide-t', hx: obj.x + obj.w * at, hy: obj.y},
+                        {id: 'slide-b', hx: obj.x + obj.w * ab, hy: obj.y+obj.h},
+                        {id: id_l, hx: obj.x, hy: obj.y + obj.h * al},
+                        {id: id_r, hx: obj.x+obj.w, hy: obj.y + obj.h * ar},
                         {id: 'crop-tc', hx: obj.x+obj.w/2, hy: obj.y - 12},
                         {id: 'crop-bc', hx: obj.x+obj.w/2, hy: obj.y+obj.h + 12},
                         {id: 'crop-lc', hx: obj.x - 12, hy: obj.y+obj.h/2},
@@ -794,34 +833,23 @@
                 } else {
                     if (activeHandle.startsWith('resize-')) {
                         if (!obj.cornerOffsets) obj.cornerOffsets = {};
-                        // When flipped, corners mirror: tl↔tr, bl↔br. Also negate dx.
                         const flippedX = !!obj.flipX;
-                        let rPart = handlePart;
-                        let rDx = dx;
-                        if (flippedX) {
-                            rDx = -dx;
-                            if (handlePart === 'tl') rPart = 'tr';
-                            else if (handlePart === 'tr') rPart = 'tl';
-                            else if (handlePart === 'bl') rPart = 'br';
-                            else if (handlePart === 'br') rPart = 'bl';
-                        }
-                        if (!obj.cornerOffsets[rPart]) obj.cornerOffsets[rPart] = { x: 0, y: 0 };
-                        let baseOffsetX = start.cornerOffsets?.[rPart]?.x || 0;
-                        let baseOffsetY = start.cornerOffsets?.[rPart]?.y || 0;
-                        obj.cornerOffsets[rPart] = { x: baseOffsetX + rDx, y: baseOffsetY + dy };
+                        let rDx = flippedX ? -dx : dx;
+                        
+                        if (!obj.cornerOffsets[handlePart]) obj.cornerOffsets[handlePart] = { x: 0, y: 0 };
+                        let baseOffsetX = start.cornerOffsets?.[handlePart]?.x || 0;
+                        let baseOffsetY = start.cornerOffsets?.[handlePart]?.y || 0;
+                        obj.cornerOffsets[handlePart] = { x: baseOffsetX + rDx, y: baseOffsetY + dy };
                     } else if (activeHandle.startsWith('slide-')) {
                         if (!obj.edgeAnchors) obj.edgeAnchors = {t: 0.5, b: 0.5, l: 0.5, r: 0.5};
                         const flippedX = !!obj.flipX;
                         if (handlePart === 't' || handlePart === 'b') {
-                            // Negate dx when flipped: horizontal anchor position mirrors
                             let sDx = flippedX ? -dx : dx;
                             let val = (start.edgeAnchors?.[handlePart] ?? 0.5) + sDx / start.w;
                             obj.edgeAnchors[handlePart] = Math.max(0, Math.min(1, val));
                         } else {
-                            // l↔r swap when flipped (local left edge appears on screen right)
-                            let sPart = (flippedX && handlePart === 'l') ? 'r' : (flippedX && handlePart === 'r') ? 'l' : handlePart;
-                            let val = (start.edgeAnchors?.[sPart] ?? 0.5) + dy / start.h;
-                            obj.edgeAnchors[sPart] = Math.max(0, Math.min(1, val));
+                            let val = (start.edgeAnchors?.[handlePart] ?? 0.5) + dy / start.h;
+                            obj.edgeAnchors[handlePart] = Math.max(0, Math.min(1, val));
                         }
                      } else if (activeHandle.startsWith('crop-')) {
                         const flippedX = !!obj.flipX;
@@ -1360,5 +1388,3 @@
     </script>
 </body>
 </html>
-
-
