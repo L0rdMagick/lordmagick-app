@@ -108,7 +108,7 @@
                     <span id="zoom-level" style="font-size: 12px; font-weight: bold; width: 40px; text-align: center;">100%</span>
                     <button onclick="changeZoom(0.25)" style="padding: 5px; font-size: 10px; margin-bottom: 0;">Zoom In</button>
                 </div>
-                <p style="font-size: 11px; opacity: 0.7; margin-top: 10px;">Select box/click: Drag to move group. Shift+Click to add to group. Right-Click to duplicate group. Press Delete/Bkspc to remove. Press F to flip. Press ⬅️/➡️ to rotate. Press +/- to scale 10%.</p>
+                <p style="font-size: 11px; opacity: 0.7; margin-top: 10px;">Select box/click: Drag to move group. Shift+Click to add to group. Press Ctrl+D/Cmd+D to duplicate group. Press Delete/Bkspc to remove. Press F to flip. Press ⬅️/➡️ to rotate. Press +/- to scale 10%.</p>
             </div>
         </div>
 
@@ -153,7 +153,7 @@
     <div id="save-modal">
         <div id="save-modal-content">
             <h2>Map Exported Successfully!</h2>
-            <p><strong>Instructions:</strong> Your new map code is ready below. Highlight all the code in the box below and copy it. Then, open your main game file (<code>public/games/craft-work.html</code>), locate the function named <code>function initRitualMap() {</code>, and completely replace all the <code>addAsset(...)</code> lines inside that function with your new copied code.</p>
+            <p><strong>Instructions:</strong> Your new map code is ready below. Highlight all the code in the box below and copy it. Then, open <code>public/games/js/ritual-map.js</code>, locate the function named <code>function initRitualMap() {</code>, and completely replace all the <code>addAsset(...)</code> lines between the <code>// --- MAP EDITOR INJECTION START ---</code> and <code>// --- MAP EDITOR INJECTION END ---</code> comments with your new copied code.</p>
             <textarea id="save-textarea" readonly spellcheck="false"></textarea>
             <div class="btn-row">
                 <button onclick="document.getElementById('save-textarea').select(); document.execCommand('copy'); alert('Copied to clipboard!');" style="background:var(--accent); color:black;">Copy to Clipboard</button>
@@ -220,6 +220,11 @@
         let startPan = {x:0, y:0};
         let lastPan = {x:0, y:0};
         let objDragOffset = []; // array of offsets per selected object
+        
+        let activeHandle = null;
+        let activeHandleIsStretch = false;
+        let handleStartObj = null;
+        let handleStartMouse = {x:0, y:0};
 
         // DOM
         const scrollBounds = document.getElementById('scroll-bounds-wrapper');
@@ -444,6 +449,15 @@
                 const autoSheet = AVAILABLE_ASSETS.find(a => a.id === item.type);
                 if (!sData && autoSheet) {
                     sData = { sx: autoSheet.sx, sy: autoSheet.sy, sw: autoSheet.sw, sh: autoSheet.sh, path: autoSheet.path };
+                } else if (sData) {
+                    sData = { ...sData };
+                }
+
+                if (item.cx !== undefined && sData) {
+                    sData.sx = item.cx;
+                    sData.sy = item.cy;
+                    sData.sw = item.cw;
+                    sData.sh = item.ch;
                 }
 
                 // Only apply animation logic to entities in the exact `/characters/` loose directory.
@@ -468,6 +482,41 @@
                 const drX = -(item.w / 2);
                 const drY = -(item.h / 2);
                 
+                if (item.cornerOffsets || item.edgeAnchors) {
+                    let at = item.edgeAnchors?.t ?? 0.5;
+                    let ab = item.edgeAnchors?.b ?? 0.5;
+                    let al = item.edgeAnchors?.l ?? 0.5;
+                    let ar = item.edgeAnchors?.r ?? 0.5;
+                    // Each corner point = corner base + its individual offset
+                    const tlX = drX + (item.cornerOffsets?.tl?.x || 0);
+                    const tlY = drY + (item.cornerOffsets?.tl?.y || 0);
+                    const trX = drX + item.w + (item.cornerOffsets?.tr?.x || 0);
+                    const trY = drY + (item.cornerOffsets?.tr?.y || 0);
+                    const blX = drX + (item.cornerOffsets?.bl?.x || 0);
+                    const blY = drY + item.h + (item.cornerOffsets?.bl?.y || 0);
+                    const brX = drX + item.w + (item.cornerOffsets?.br?.x || 0);
+                    const brY = drY + item.h + (item.cornerOffsets?.br?.y || 0);
+
+                    oCtx.beginPath();
+                    // Top edge: from edge-anchor-t to tl corner
+                    oCtx.moveTo(drX + item.w * at, drY);
+                    oCtx.lineTo(tlX, tlY);
+                    // Left edge: from tl corner down to edge-anchor-l
+                    oCtx.lineTo(drX, drY + item.h * al);
+                    // Left edge continues to bl corner
+                    oCtx.lineTo(blX, blY);
+                    // Bottom edge: from bl to edge-anchor-b
+                    oCtx.lineTo(drX + item.w * ab, drY + item.h);
+                    // Bottom edge to br corner
+                    oCtx.lineTo(brX, brY);
+                    // Right edge: from br corner up to edge-anchor-r
+                    oCtx.lineTo(drX + item.w, drY + item.h * ar);
+                    // Right edge to tr corner
+                    oCtx.lineTo(trX, trY);
+                    oCtx.closePath();
+                    oCtx.clip();
+                }
+                
                 try {
                     if (sData && img && img.complete && img.naturalWidth > 0) {
                         oCtx.drawImage(img, sData.sx, sData.sy, sData.sw, sData.sh, drX, drY, item.w, item.h);
@@ -486,8 +535,74 @@
                 if (currentTool === 'select' && selectedMapObjects.includes(item)) {
                     uCtx.strokeStyle = 'lime';
                     uCtx.lineWidth = 4;
-                    uCtx.strokeRect(item.x, item.y, item.w, item.h);
                     
+                    if (item.cornerOffsets || item.edgeAnchors) {
+                        let at = item.edgeAnchors?.t ?? 0.5;
+                        let ab = item.edgeAnchors?.b ?? 0.5;
+                        let al = item.edgeAnchors?.l ?? 0.5;
+                        let ar = item.edgeAnchors?.r ?? 0.5;
+                        // Mirror the same corner-base logic as drawMap clip
+                        const utlX = item.x + (item.cornerOffsets?.tl?.x || 0);
+                        const utlY = item.y + (item.cornerOffsets?.tl?.y || 0);
+                        const utrX = item.x + item.w + (item.cornerOffsets?.tr?.x || 0);
+                        const utrY = item.y + (item.cornerOffsets?.tr?.y || 0);
+                        const ublX = item.x + (item.cornerOffsets?.bl?.x || 0);
+                        const ublY = item.y + item.h + (item.cornerOffsets?.bl?.y || 0);
+                        const ubrX = item.x + item.w + (item.cornerOffsets?.br?.x || 0);
+                        const ubrY = item.y + item.h + (item.cornerOffsets?.br?.y || 0);
+                        uCtx.beginPath();
+                        uCtx.moveTo(item.x + item.w * at, item.y);
+                        uCtx.lineTo(utlX, utlY);
+                        uCtx.lineTo(item.x, item.y + item.h * al);
+                        uCtx.lineTo(ublX, ublY);
+                        uCtx.lineTo(item.x + item.w * ab, item.y + item.h);
+                        uCtx.lineTo(ubrX, ubrY);
+                        uCtx.lineTo(item.x + item.w, item.y + item.h * ar);
+                        uCtx.lineTo(utrX, utrY);
+                        uCtx.closePath();
+                        uCtx.stroke();
+                    } else {
+                        uCtx.strokeRect(item.x, item.y, item.w, item.h);
+                    }
+                    
+                    if (selectedMapObjects.length === 1) {
+                         // Draw handles
+                         const hSize = 12;
+                         // corners (resize)
+                         uCtx.fillStyle = '#fff';
+                         uCtx.strokeStyle = '#000';
+                         uCtx.lineWidth = 2;
+                         // Corner handles positioned at their actual corner base + their stored offset
+                         [ [item.x + (item.cornerOffsets?.tl?.x || 0),         item.y + (item.cornerOffsets?.tl?.y || 0)], 
+                           [item.x+item.w + (item.cornerOffsets?.tr?.x || 0),   item.y + (item.cornerOffsets?.tr?.y || 0)],
+                           [item.x + (item.cornerOffsets?.bl?.x || 0),         item.y+item.h + (item.cornerOffsets?.bl?.y || 0)], 
+                           [item.x+item.w + (item.cornerOffsets?.br?.x || 0),  item.y+item.h + (item.cornerOffsets?.br?.y || 0)]
+                         ].forEach(([hx, hy]) => {
+                             uCtx.fillRect(hx - hSize/2, hy - hSize/2, hSize, hSize);
+                             uCtx.strokeRect(hx - hSize/2, hy - hSize/2, hSize, hSize);
+                         });
+                         
+                         // sliding anchors (corner pivots)
+                         uCtx.fillStyle = 'orange';
+                         uCtx.strokeStyle = '#000';
+                         [ [item.x + item.w * (item.edgeAnchors?.t ?? 0.5), item.y],
+                           [item.x + item.w * (item.edgeAnchors?.b ?? 0.5), item.y + item.h],
+                           [item.x, item.y + item.h * (item.edgeAnchors?.l ?? 0.5)],
+                           [item.x + item.w, item.y + item.h * (item.edgeAnchors?.r ?? 0.5)]
+                         ].forEach(([hx, hy]) => {
+                             uCtx.fillRect(hx - hSize/2, hy - hSize/2, hSize, hSize);
+                             uCtx.strokeRect(hx - hSize/2, hy - hSize/2, hSize, hSize);
+                         });
+                         
+                         // edge centers (crop)
+                         uCtx.fillStyle = 'cyan';
+                         [ [item.x+item.w/2, item.y - 12], [item.x+item.w/2, item.y+item.h + 12],
+                           [item.x - 12, item.y+item.h/2], [item.x+item.w + 12, item.y+item.h/2] 
+                         ].forEach(([hx, hy]) => {
+                             uCtx.beginPath(); uCtx.arc(hx, hy, hSize/2, 0, Math.PI*2); uCtx.fill(); uCtx.stroke();
+                         });
+                    }
+
                     // Show dimensions
                     uCtx.fillStyle = 'lime';
                     uCtx.font = '16px sans-serif';
@@ -520,27 +635,12 @@
             const coords = getCoords(e);
             const map = MAP_DATA[currentMapId];
 
-            if (e.button === 1 || (e.button === 2 && currentTool !== 'select')) {
-                // Middle click pan (or Right click map dragging without interfering with select tools)
+            if (e.button === 1) {
+                // Middle click pan
                 isDraggingMap = true;
                 startPan = { x: e.clientX, y: e.clientY };
                 lastPan = { x: mainView.scrollLeft, y: mainView.scrollTop };
                 uiCanvas.style.cursor = 'grabbing';
-                return;
-            }
-
-            if (e.button === 2 && currentTool === 'select') {
-                // Right Click Duplicate Selected items
-                if (selectedMapObjects.length > 0) {
-                    const mappedNew = [];
-                    selectedMapObjects.forEach(obj => {
-                        const duplicate = { ...obj, id: 'dup_' + Date.now() + Math.random(), x: obj.x + 64, y: obj.y + 64 };
-                        map.assets.push(duplicate);
-                        mappedNew.push(duplicate);
-                    });
-                    selectedMapObjects = mappedNew; // move focus to new duplicates
-                    drawMap();
-                }
                 return;
             }
 
@@ -578,6 +678,63 @@
             }
             else if (currentTool === 'select') {
                 let clickedOnExisting = false;
+                
+                // 1) Check handles first if 1 object selected
+                if (selectedMapObjects.length === 1) {
+                    const obj = selectedMapObjects[0];
+                    const hSize = 12; // visual hit radius
+                    const dist = (x1, y1, x2, y2) => Math.hypot(x1-x2, y1-y2);
+                    const handles = [
+                        {id: 'resize-tl', hx: obj.x + (obj.cornerOffsets?.tl?.x || 0), hy: obj.y + (obj.cornerOffsets?.tl?.y || 0)},
+                        {id: 'resize-tr', hx: obj.x+obj.w + (obj.cornerOffsets?.tr?.x || 0), hy: obj.y + (obj.cornerOffsets?.tr?.y || 0)},
+                        {id: 'resize-bl', hx: obj.x + (obj.cornerOffsets?.bl?.x || 0), hy: obj.y+obj.h + (obj.cornerOffsets?.bl?.y || 0)},
+                        {id: 'resize-br', hx: obj.x+obj.w + (obj.cornerOffsets?.br?.x || 0), hy: obj.y+obj.h + (obj.cornerOffsets?.br?.y || 0)},
+                        {id: 'slide-t', hx: obj.x + obj.w * (obj.edgeAnchors?.t ?? 0.5), hy: obj.y},
+                        {id: 'slide-b', hx: obj.x + obj.w * (obj.edgeAnchors?.b ?? 0.5), hy: obj.y+obj.h},
+                        {id: 'slide-l', hx: obj.x, hy: obj.y + obj.h * (obj.edgeAnchors?.l ?? 0.5)},
+                        {id: 'slide-r', hx: obj.x+obj.w, hy: obj.y + obj.h * (obj.edgeAnchors?.r ?? 0.5)},
+                        {id: 'crop-tc', hx: obj.x+obj.w/2, hy: obj.y - 12},
+                        {id: 'crop-bc', hx: obj.x+obj.w/2, hy: obj.y+obj.h + 12},
+                        {id: 'crop-lc', hx: obj.x - 12, hy: obj.y+obj.h/2},
+                        {id: 'crop-rc', hx: obj.x+obj.w + 12, hy: obj.y+obj.h/2}
+                    ];
+                    
+                    let clickedHandle = handles.find(h => dist(h.hx, h.hy, coords.x, coords.y) < hSize);
+                    if (clickedHandle) {
+                         activeHandle = clickedHandle.id;
+                         activeHandleIsStretch = (e.button === 2);
+                         
+                         // Prepare custom crop variables explicitly if starting a crop/stretch without them
+                         if (obj.cx === undefined) {
+                             const autoSheet = AVAILABLE_ASSETS.find(a => a.id === obj.type);
+                             if (autoSheet) {
+                                  obj.cx = autoSheet.sx;
+                                  obj.cy = autoSheet.sy;
+                                  obj.cw = autoSheet.sw;
+                                  obj.ch = autoSheet.sh;
+                             } else if (RITUAL_SPRITES[obj.type]) {
+                                  obj.cx = RITUAL_SPRITES[obj.type].sx;
+                                  obj.cy = RITUAL_SPRITES[obj.type].sy;
+                                  obj.cw = RITUAL_SPRITES[obj.type].sw;
+                                  obj.ch = RITUAL_SPRITES[obj.type].sh;
+                             }
+                         }
+                         
+                         handleStartObj = JSON.parse(JSON.stringify(obj));
+                         handleStartMouse = { x: coords.x, y: coords.y };
+                         return; // Don't fall through to object selection or map panning
+                    }
+                }
+
+                if (e.button === 2) {
+                    // Right click dragging map fallthrough
+                    isDraggingMap = true;
+                    startPan = { x: e.clientX, y: e.clientY };
+                    lastPan = { x: mainView.scrollLeft, y: mainView.scrollTop };
+                    uiCanvas.style.cursor = 'grabbing';
+                    return;
+                }
+                
                 for (let i = map.assets.length - 1; i >= 0; i--) {
                     const a = map.assets[i];
                     if (coords.x > a.x && coords.x < a.x + a.w && coords.y > a.y && coords.y < a.y + a.h) {
@@ -610,6 +767,112 @@
         window.onmousemove = (e) => {
             const coords = getCoords(e);
             
+            if (activeHandle && selectedMapObjects.length === 1) {
+                const obj = selectedMapObjects[0];
+                const start = handleStartObj;
+                const dx = coords.x - handleStartMouse.x;
+                const dy = coords.y - handleStartMouse.y;
+                
+                // Texture scaling factor vs game world scale factor
+                const scaleX = start.cw / start.w;
+                const scaleY = start.ch / start.h;
+                const handlePart = activeHandle.split('-')[1];
+
+                if (activeHandleIsStretch) {
+                    if (handlePart.includes('r')) {
+                        obj.w = Math.max(16, start.w + dx);
+                    }
+                    if (handlePart.includes('l')) {
+                        if (start.w - dx >= 16) { obj.w = start.w - dx; obj.x = start.x + dx; }
+                    }
+                    if (handlePart.includes('b')) {
+                        obj.h = Math.max(16, start.h + dy);
+                    }
+                    if (handlePart.includes('t')) {
+                        if (start.h - dy >= 16) { obj.h = start.h - dy; obj.y = start.y + dy; }
+                    }
+                } else {
+                    if (activeHandle.startsWith('resize-')) {
+                        if (!obj.cornerOffsets) obj.cornerOffsets = {};
+                        // When flipped, corners mirror: tl↔tr, bl↔br. Also negate dx.
+                        const flippedX = !!obj.flipX;
+                        let rPart = handlePart;
+                        let rDx = dx;
+                        if (flippedX) {
+                            rDx = -dx;
+                            if (handlePart === 'tl') rPart = 'tr';
+                            else if (handlePart === 'tr') rPart = 'tl';
+                            else if (handlePart === 'bl') rPart = 'br';
+                            else if (handlePart === 'br') rPart = 'bl';
+                        }
+                        if (!obj.cornerOffsets[rPart]) obj.cornerOffsets[rPart] = { x: 0, y: 0 };
+                        let baseOffsetX = start.cornerOffsets?.[rPart]?.x || 0;
+                        let baseOffsetY = start.cornerOffsets?.[rPart]?.y || 0;
+                        obj.cornerOffsets[rPart] = { x: baseOffsetX + rDx, y: baseOffsetY + dy };
+                    } else if (activeHandle.startsWith('slide-')) {
+                        if (!obj.edgeAnchors) obj.edgeAnchors = {t: 0.5, b: 0.5, l: 0.5, r: 0.5};
+                        const flippedX = !!obj.flipX;
+                        if (handlePart === 't' || handlePart === 'b') {
+                            // Negate dx when flipped: horizontal anchor position mirrors
+                            let sDx = flippedX ? -dx : dx;
+                            let val = (start.edgeAnchors?.[handlePart] ?? 0.5) + sDx / start.w;
+                            obj.edgeAnchors[handlePart] = Math.max(0, Math.min(1, val));
+                        } else {
+                            // l↔r swap when flipped (local left edge appears on screen right)
+                            let sPart = (flippedX && handlePart === 'l') ? 'r' : (flippedX && handlePart === 'r') ? 'l' : handlePart;
+                            let val = (start.edgeAnchors?.[sPart] ?? 0.5) + dy / start.h;
+                            obj.edgeAnchors[sPart] = Math.max(0, Math.min(1, val));
+                        }
+                     } else if (activeHandle.startsWith('crop-')) {
+                        const flippedX = !!obj.flipX;
+
+                        if (handlePart.includes('l')) {
+                            if (start.w - dx >= 16) {
+                                obj.x = start.x + dx;
+                                obj.w = start.w - dx;
+                                if (flippedX) {
+                                    // Left circle on flipped = right side of texture (screen-left)
+                                    // Keep cx fixed, shrink cw from its right end
+                                    obj.cw = start.cw - (dx * scaleX);
+                                } else {
+                                    obj.cx = start.cx + (dx * scaleX);
+                                    obj.cw = start.cw - (dx * scaleX);
+                                }
+                            }
+                        }
+                        if (handlePart.includes('r')) {
+                            if (start.w + dx >= 16) {
+                                obj.w = start.w + dx;
+                                if (flippedX) {
+                                    // Right circle on flipped = left side of texture (screen-right)
+                                    // Advance cx to skip left-texture pixels, shrink cw accordingly
+                                    obj.cx = start.cx - (dx * scaleX);
+                                    obj.cw = start.cw + (dx * scaleX);
+                                } else {
+                                    obj.cw = start.cw + (dx * scaleX);
+                                }
+                            }
+                        }
+                        if (handlePart.includes('t')) {
+                            if (start.h - dy >= 16) {
+                                obj.y = start.y + dy;
+                                obj.h = start.h - dy;
+                                obj.cy = start.cy + (dy * scaleY);
+                                obj.ch = start.ch - (dy * scaleY);
+                            }
+                        }
+                        if (handlePart.includes('b')) {
+                            if (start.h + dy >= 16) {
+                                obj.h = start.h + dy;
+                                obj.ch = start.ch + (dy * scaleY);
+                            }
+                        }
+                    }
+                }
+                drawMap();
+                return;
+            }
+            
             if (isDraggingMap) {
                 mainView.scrollLeft = lastPan.x - (e.clientX - startPan.x);
                 mainView.scrollTop = lastPan.y - (e.clientY - startPan.y);
@@ -636,8 +899,12 @@
         };
 
         window.onmouseup = (e) => {
-            let wasCanvasInteraction = isBoxSelecting || isDraggingObj || e.target === uiCanvas;
+            let wasCanvasInteraction = isBoxSelecting || isDraggingObj || activeHandle || e.target === uiCanvas;
             
+            if (activeHandle) {
+                activeHandle = null;
+                // fallthrough to drawMap/update properties
+            }
             if (isBoxSelecting) {
                 const map = MAP_DATA[currentMapId];
                 // Select elements inside box
@@ -666,6 +933,18 @@
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') return;
             
             if (currentTool === 'select' && selectedMapObjects.length > 0) {
+                if ((e.ctrlKey || e.metaKey) && (e.key === 'd' || e.key === 'D')) {
+                    e.preventDefault();
+                    const map = MAP_DATA[currentMapId];
+                    const mappedNew = [];
+                    selectedMapObjects.forEach(obj => {
+                        const duplicate = { ...obj, id: 'dup_' + Date.now() + Math.random(), x: obj.x + 64, y: obj.y + 64 };
+                        map.assets.push(duplicate);
+                        mappedNew.push(duplicate);
+                    });
+                    selectedMapObjects = mappedNew; // move focus to new duplicates
+                    drawMap();
+                }
                 if (e.key === 'Delete' || e.key === 'Backspace') {
                     const map = MAP_DATA[currentMapId];
                     map.assets = map.assets.filter(a => !selectedMapObjects.includes(a));
@@ -931,8 +1210,8 @@
                 return;
             }
 
-            // Fallback: Dynamically calculate path exactly one directory above map-editor regardless of trailing slashes or server root!
-            const craftWorkUrl = window.location.href.split('/map-editor')[0] + '/craft-work.html?t=' + Date.now();
+            // Fallback: After refactor, map data now lives in js/ritual-map.js (not craft-work.html)
+            const craftWorkUrl = window.location.href.split('/map-editor')[0] + '/js/ritual-map.js?t=' + Date.now();
             fetch(craftWorkUrl).then(r => {
                 if (!r.ok) throw new Error("HTTP " + r.status);
                 return r.text();
@@ -1014,6 +1293,25 @@
                         if (valToCopy !== undefined && valToCopy !== '') interactObj[prop] = valToCopy;
                     });
                 }
+                
+                if (a.cx !== undefined) {
+                    if (!interactObj) interactObj = {};
+                    interactObj.cx = a.cx;
+                    interactObj.cy = a.cy;
+                    interactObj.cw = a.cw;
+                    interactObj.ch = a.ch;
+                }
+                
+                if (a.cornerOffsets) {
+                    if (!interactObj) interactObj = {};
+                    interactObj.cornerOffsets = a.cornerOffsets;
+                }
+                
+                if (a.edgeAnchors) {
+                    if (!interactObj) interactObj = {};
+                    interactObj.edgeAnchors = a.edgeAnchors;
+                }
+                
                 let interactStr = interactObj ? JSON.stringify(interactObj) : 'null';
                 
                 let isSolid = (a.solid === 'false' || a.solid === false) ? 'false' : 'true';
