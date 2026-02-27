@@ -458,6 +458,13 @@
                     sData.sy = item.cy;
                     sData.sw = item.cw;
                     sData.sh = item.ch;
+                    
+                    // Match game engine's flip inversion to prevent crop shifting
+                    if (item.flipX) {
+                        const baseSx = RITUAL_SPRITES[item.type]?.sx ?? autoSheet?.sx ?? 0;
+                        const baseSw = RITUAL_SPRITES[item.type]?.sw ?? autoSheet?.sw ?? 512;
+                        sData.sx = (baseSx + baseSw) - (item.cx - baseSx) - item.cw;
+                    }
                 }
 
                 // Only apply animation logic to entities in the exact `/characters/` loose directory.
