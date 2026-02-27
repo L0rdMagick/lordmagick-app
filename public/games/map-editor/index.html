@@ -558,7 +558,7 @@
                         let v_tr_x = -tl_x; let v_tr_y = tl_y;
                         let v_bl_x = -br_x; let v_bl_y = br_y;
                         let v_br_x = -bl_x; let v_br_y = bl_y;
-                        let v_al = 1 - ar; let v_ar = 1 - al;
+                        let v_al = ar; let v_ar = al;
                         let v_at = 1 - at; let v_ab = 1 - ab;
                         tl_x = v_tl_x; tl_y = v_tl_y; tr_x = v_tr_x; tr_y = v_tr_y;
                         bl_x = v_bl_x; bl_y = v_bl_y; br_x = v_br_x; br_y = v_br_y;
@@ -718,7 +718,7 @@
                         let v_tr_x = -tl_x; let v_tr_y = tl_y;
                         let v_bl_x = -br_x; let v_bl_y = br_y;
                         let v_br_x = -bl_x; let v_br_y = bl_y;
-                        let v_al = 1 - ar; let v_ar = 1 - al;
+                        let v_al = ar; let v_ar = al;
                         let v_at = 1 - at; let v_ab = 1 - ab;
                         
                         tl_x = v_tl_x; tl_y = v_tl_y; tr_x = v_tr_x; tr_y = v_tr_y;
@@ -852,55 +852,26 @@
                         const flippedX = !!obj.flipX;
                         
                         if (handlePart === 't' || handlePart === 'b') {
-                            // Top and Bottom anchors slide horizontally along the X axis
                             let sDx = flippedX ? -dx : dx;
                             let val = (start.edgeAnchors?.[handlePart] ?? 0.5) + sDx / start.w;
                             obj.edgeAnchors[handlePart] = Math.max(0, Math.min(1, val));
                         } else {
-                            // Left and Right anchors slide vertically along the Y axis
-                            // mousedown already mapped visual Left to logical Right, so handlePart is already correct
                             let val = (start.edgeAnchors?.[handlePart] ?? 0.5) + dy / start.h;
                             obj.edgeAnchors[handlePart] = Math.max(0, Math.min(1, val));
                         }
-                     } else if (activeHandle.startsWith('crop-')) {
-                        const flippedX = !!obj.flipX;
-
+                    } else if (activeHandle.startsWith('crop-')) {
                         if (handlePart.includes('l')) {
                             if (start.w - dx >= 16) {
-                                if (flippedX) {
-                                    // Visual Left = Logical Right. We are cropping the right side of the texture.
-                                    // Bounding box: x stays same, w shrinks/grows
-                                    obj.w = start.w - dx;
-                                    // Texture: cx stays same, cw shrinks/grows
-                                    obj.cw = start.cw - (dx * scaleX);
-                                } else {
-                                    // Visual Left = Logical Left.
-                                    // Bounding box: x shifts, w shrinks/grows
-                                    obj.x = start.x + dx;
-                                    obj.w = start.w - dx;
-                                    // Texture: cx advances, cw shrinks
-                                    obj.cx = start.cx + (dx * scaleX);
-                                    obj.cw = start.cw - (dx * scaleX);
-                                }
+                                obj.x = start.x + dx;
+                                obj.w = start.w - dx;
+                                obj.cx = start.cx + (dx * scaleX);
+                                obj.cw = start.cw - (dx * scaleX);
                             }
                         }
                         if (handlePart.includes('r')) {
                             if (start.w + dx >= 16) {
-                                if (flippedX) {
-                                    // Visual Right = Logical Left. We are cropping the left side of the texture.
-                                    // Bounding box: x shifts, w shrinks/grows
-                                    obj.x = start.x + dx;
-                                    obj.w = start.w + dx;
-                                    // Texture: cx advances backwards (negative), cw grows
-                                    obj.cx = start.cx - (dx * scaleX);
-                                    obj.cw = start.cw + (dx * scaleX);
-                                } else {
-                                    // Visual Right = Logical Right.
-                                    // Bounding box: x stays same, w grows
-                                    obj.w = start.w + dx;
-                                    // Texture: cx stays same, cw grows
-                                    obj.cw = start.cw + (dx * scaleX);
-                                }
+                                obj.w = start.w + dx;
+                                obj.cw = start.cw + (dx * scaleX);
                             }
                         }
                         if (handlePart.includes('t')) {
