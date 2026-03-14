@@ -86,12 +86,22 @@
                     <option value="ritual_stage_6">Ritual Map - Stage 6</option>
                     <option value="ritual_stage_7">Ritual Map - Stage 7 (Boss)</option>
                 </select>
+                <div style="display: flex; gap: 5px; align-items: center; margin-bottom: 5px;">
+                    <label style="font-size:11px; opacity:0.7; white-space:nowrap;">Map Size (tiles):</label>
+                    <input type="number" id="map-tiles-x" min="1" max="128" value="32" style="width:50px; padding:4px; background:#222; color:white; border:1px solid #444; border-radius:3px; font-size:12px;" title="Tiles Wide">
+                    <span style="opacity:0.5; font-size:12px;">×</span>
+                    <input type="number" id="map-tiles-y" min="1" max="128" value="32" style="width:50px; padding:4px; background:#222; color:white; border:1px solid #444; border-radius:3px; font-size:12px;" title="Tiles Tall">
+                    <button id="apply-map-size-btn" style="flex:1; padding:4px; font-size:11px; margin-bottom:0;">Apply</button>
+                </div>
                 <div style="display: flex; gap: 5px;">
                     <button id="publish-btn" style="flex: 1;">Save / Publish Map</button>
                     <button id="reset-btn" style="background:#d32f2f; width: auto; padding: 8px;" title="Reset Editor Cache & Load From Game">↺</button>
                 </div>
             </div>
         </div>
+
+        <!-- floor-list is now rendered inside the asset panel as a collapsible section -->
+        <div id="floor-list" style="display:none;"></div>
         
         <div class="section" id="section-tools">
             <div class="section-header" onclick="this.parentElement.classList.toggle('collapsed')">
@@ -102,12 +112,26 @@
                     <button id="tool-paint" class="active">Paint</button>
                     <button id="tool-erase">Erase</button>
                     <button id="tool-select">Select / Move</button>
+                    <button id="tool-zone" title="Draw a trigger zone: polygon area with popup message and music">🗺 Zone Area</button>
                 </div>
                 <div style="display: flex; gap: 5px; margin-top: 5px; align-items: center; justify-content: space-between;">
-                    <button onclick="changeZoom(-0.25)" style="padding: 5px; font-size: 10px; margin-bottom: 0;">Zoom Out</button>
+                    <button onclick="changeZoom(-0.05)" style="padding: 5px; font-size: 10px; margin-bottom: 0;">Zoom Out</button>
                     <span id="zoom-level" style="font-size: 12px; font-weight: bold; width: 40px; text-align: center;">100%</span>
-                    <button onclick="changeZoom(0.25)" style="padding: 5px; font-size: 10px; margin-bottom: 0;">Zoom In</button>
+                    <button onclick="changeZoom(0.05)" style="padding: 5px; font-size: 10px; margin-bottom: 0;">Zoom In</button>
                 </div>
+                <div style="display: flex; gap: 4px; margin-top: 6px;">
+                    <button id="btn-move-to-back" style="flex:1; padding:4px; font-size:10px; margin-bottom:0;" title="Move to Back">⏮ Back</button>
+                    <button id="btn-move-back" style="flex:1; padding:4px; font-size:10px; margin-bottom:0;" title="Move Back One">◀ Back</button>
+                    <button id="btn-move-fwd" style="flex:1; padding:4px; font-size:10px; margin-bottom:0;" title="Move Forward One">▶ Fwd</button>
+                    <button id="btn-move-to-front" style="flex:1; padding:4px; font-size:10px; margin-bottom:0;" title="Move to Front">⏭ Front</button>
+                </div>
+                <div style="display: flex; gap: 5px; margin-top: 6px; align-items: center;">
+                    <label style="font-size:11px; opacity:0.7; white-space:nowrap;">Snap Grid:</label>
+                    <input type="number" id="snap-grid-x" min="1" max="512" value="5" style="width:50px; padding:4px; background:#222; color:white; border:1px solid #444; border-radius:3px; font-size:12px;" title="Snap Width">
+                    <span style="opacity:0.5; font-size:12px;">×</span>
+                    <input type="number" id="snap-grid-y" min="1" max="512" value="5" style="width:50px; padding:4px; background:#222; color:white; border:1px solid #444; border-radius:3px; font-size:12px;" title="Snap Height">
+                </div>
+                <button id="btn-undo" style="margin-top:6px; font-size:11px; padding:5px;">↩ Undo (Ctrl+Z)</button>
                 <p style="font-size: 11px; opacity: 0.7; margin-top: 10px;">Select box/click: Drag to move group. Shift+Click to add to group. Press Ctrl+D/Cmd+D to duplicate group. Press Delete/Bkspc to remove. Press F to flip. Press ⬅️/➡️ to rotate. Press +/- to scale 10%.</p>
             </div>
         </div>
@@ -140,7 +164,8 @@
     <div id="main-view">
         <div id="scroll-bounds-wrapper">
             <div id="canvas-container">
-                <!-- Layers -->
+                <!-- Layers: floor is lowest (z-order = array order in dom) -->
+                <canvas id="floorLayer"></canvas>
                 <canvas id="bgLayer"></canvas>
                 <canvas id="gridLayer"></canvas>
                 <canvas id="objectLayer"></canvas>
@@ -163,6 +188,7 @@
     </div>
 
     <script src="assetList.js"></script>
+    <script src="floorList.js"></script>
     <script src="initialMapData.js"></script>
     <script>
         function saveToLocalStorage() {
@@ -181,6 +207,22 @@
                 } catch(e) { console.warn("Corrupt local storage map data"); }
             }
             return false;
+        }
+
+        // Undo stack
+        let undoStack = [];
+        function pushUndo() {
+            const map = MAP_DATA[currentMapId];
+            undoStack.push(JSON.stringify(map.assets));
+            if (undoStack.length > 50) undoStack.shift(); // cap history
+        }
+        function performUndo() {
+            if (undoStack.length === 0) return;
+            const map = MAP_DATA[currentMapId];
+            map.assets = JSON.parse(undoStack.pop());
+            selectedMapObjects = [];
+            drawMap();
+            updatePropertiesPanel();
         }
 
         const RITUAL_SPRITES = {
@@ -203,7 +245,9 @@
                 gridSize: 128,
                 tilesX: 32,
                 tilesY: 32,
-                assets: []
+                floor: null,   // path to floor image, or null for none
+                assets: [],
+                zones: []      // trigger zones [{id,points,message,musicUrl,musicName}]
             };
         }
 
@@ -212,15 +256,23 @@
         let currentTool = 'paint'; // paint, erase, select
         let selectedAssetObj = null; // The template from the sidebar
         let selectedMapObjects = []; // The instantiated objects on the canvas
-        let zoom = 1.0;
+        let zoom = 0.2;
+        let snapGridX = 5;
+        let snapGridY = 5;
         let isDraggingMap = false;
         let isDraggingObj = false;
         let isBoxSelecting = false;
         let selectionBox = { x:0, y:0, w:0, h:0 };
         let startPan = {x:0, y:0};
         let lastPan = {x:0, y:0};
+        // Zone tool state
+        let isDrawingZone = false;
+        let currentZonePoints = [];  // in-progress polygon points
+        let selectedZone = null;     // currently selected zone for editing
+        let availableAudioTracks = []; // populated from /api/audio-tracks
         let objDragOffset = []; // array of offsets per selected object
         
+        let renderAssets; // Hoisted so syncDynamicAssets can call it after initSidebar wires it up
         let activeHandle = null;
         let activeHandleIsStretch = false;
         let handleStartObj = null;
@@ -230,15 +282,21 @@
         const scrollBounds = document.getElementById('scroll-bounds-wrapper');
         const container = document.getElementById('canvas-container');
         const mainView = document.getElementById('main-view');
+        const floorCanvas = document.getElementById('floorLayer');
         const bgCanvas = document.getElementById('bgLayer');
         const gridCanvas = document.getElementById('gridLayer');
         const objCanvas = document.getElementById('objectLayer');
         const uiCanvas = document.getElementById('uiLayer');
         
+        const fCtx = floorCanvas.getContext('2d');
         const bCtx = bgCanvas.getContext('2d');
         const gCtx = gridCanvas.getContext('2d');
         const oCtx = objCanvas.getContext('2d');
         const uCtx = uiCanvas.getContext('2d');
+
+        // Floor image cache (separate from sprite cache to avoid key collisions)
+        const floorImages = {};
+        let renderFloors; // hoisted — wired in initSidebar
 
         // Sprite Cache
         const sprites = {};
@@ -253,146 +311,486 @@
             mapSelect.onchange = (e) => {
                 currentMapId = e.target.value;
                 selectedMapObjects = [];
-                setupCanvas(); // resizes and re-draws for the new map
-                loadExistingMapData(); // tries to load from HTML for the new map if available
+                undoStack = [];
+                // Sync map size inputs to the new map
+                const nm = MAP_DATA[e.target.value];
+                document.getElementById('map-tiles-x').value = nm.tilesX;
+                document.getElementById('map-tiles-y').value = nm.tilesY;
+                setupCanvas();
+                loadExistingMapData();
             };
 
-            ['paint', 'erase', 'select'].forEach(t => {
+            // Map size apply
+            document.getElementById('apply-map-size-btn').onclick = () => {
+                const map = MAP_DATA[currentMapId];
+                const nx = parseInt(document.getElementById('map-tiles-x').value) || map.tilesX;
+                const ny = parseInt(document.getElementById('map-tiles-y').value) || map.tilesY;
+                map.tilesX = Math.max(1, nx);
+                map.tilesY = Math.max(1, ny);
+                setupCanvas();
+                drawGrid();
+            };
+
+            // Snap grid live-update
+            document.getElementById('snap-grid-x').oninput = (e) => {
+                snapGridX = Math.max(1, parseInt(e.target.value) || 64);
+            };
+            document.getElementById('snap-grid-y').oninput = (e) => {
+                snapGridY = Math.max(1, parseInt(e.target.value) || 64);
+            };
+
+            // Layer order buttons
+            document.getElementById('btn-move-to-back').onclick = () => {
+                if (selectedMapObjects.length === 0) return;
+                const map = MAP_DATA[currentMapId];
+                selectedMapObjects.forEach(obj => {
+                    const i = map.assets.indexOf(obj);
+                    if (i > 0) { map.assets.splice(i, 1); map.assets.unshift(obj); }
+                });
+                drawMap();
+            };
+            document.getElementById('btn-move-back').onclick = () => {
+                if (selectedMapObjects.length === 0) return;
+                const map = MAP_DATA[currentMapId];
+                // Process in ascending index order to avoid scrambling
+                const sorted = [...selectedMapObjects].sort((a,b) => map.assets.indexOf(a) - map.assets.indexOf(b));
+                sorted.forEach(obj => {
+                    const i = map.assets.indexOf(obj);
+                    if (i > 0) { map.assets.splice(i, 1); map.assets.splice(i - 1, 0, obj); }
+                });
+                drawMap();
+            };
+            document.getElementById('btn-move-fwd').onclick = () => {
+                if (selectedMapObjects.length === 0) return;
+                const map = MAP_DATA[currentMapId];
+                // Process in descending index order
+                const sorted = [...selectedMapObjects].sort((a,b) => map.assets.indexOf(b) - map.assets.indexOf(a));
+                sorted.forEach(obj => {
+                    const i = map.assets.indexOf(obj);
+                    if (i < map.assets.length - 1) { map.assets.splice(i, 1); map.assets.splice(i + 1, 0, obj); }
+                });
+                drawMap();
+            };
+            document.getElementById('btn-move-to-front').onclick = () => {
+                if (selectedMapObjects.length === 0) return;
+                const map = MAP_DATA[currentMapId];
+                selectedMapObjects.forEach(obj => {
+                    const i = map.assets.indexOf(obj);
+                    if (i < map.assets.length - 1) { map.assets.splice(i, 1); map.assets.push(obj); }
+                });
+                drawMap();
+            };
+
+            // Undo button
+            document.getElementById('btn-undo').onclick = () => performUndo();
+
+            ['paint', 'erase', 'select', 'zone'].forEach(t => {
                 document.getElementById('tool-' + t).onclick = (e) => {
                     document.querySelectorAll('.section button').forEach(b => b.classList.remove('active'));
                     e.target.classList.add('active');
                     currentTool = t;
                     selectedMapObjects = [];
+                    if (t !== 'zone') { isDrawingZone = false; currentZonePoints = []; }
+                    if (t !== 'zone' && t !== 'select') selectedZone = null;
                     drawMap();
+                    updatePropertiesPanel();
                 };
             });
 
             const assetList = document.getElementById('asset-list');
             const searchInput = document.getElementById('asset-search');
 
-            const renderAssets = (filter = '') => {
+            renderAssets = (filter = '') => {
                 assetList.innerHTML = '';
-                
-                // 1. Render specific static RITUAL_SPRITES mapped explicitly correctly without stretching
-                const mainSheetPath = '../../images/craft-work/indoor maps/stage 1/crystal_structure_sprite_sheet.png';
-                const mainSheetImg = sprites[mainSheetPath] || new Image();
-                if (!sprites[mainSheetPath]) { mainSheetImg.src = mainSheetPath; sprites[mainSheetPath] = mainSheetImg; }
 
-                Object.keys(RITUAL_SPRITES).forEach(k => {
-                    const data = RITUAL_SPRITES[k];
-                    if (filter && k.toLowerCase().indexOf(filter) === -1) return;
 
+                // Helper: extract the folder path relative to craft-work/ from a webPath string
+                // e.g. '../../images/craft-work/indoor%20maps/stage%201/foo.png' -> 'indoor maps/stage 1'
+                // e.g. '../../images/craft-work/characters/foo.png' -> 'characters'
+                // e.g. '../../images/craft-work/foo.png' -> '' (root)
+                const getFolderKey = (webPath) => {
+                    try {
+                        const prefix = '../../images/craft-work/';
+                        let rel = webPath.startsWith(prefix) ? webPath.slice(prefix.length) : webPath;
+                        const parts = rel.split('/');
+                        parts.pop(); // remove file name
+                        return parts.map(p => decodeURIComponent(p)).join('/');
+                    } catch(e) { return ''; }
+                };
+
+                // Helper: create a collapsible folder section
+                const createSection = (label) => {
+                    const wrapper = document.createElement('div');
+                    wrapper.style.cssText = 'margin-bottom:6px;';
+
+                    const header = document.createElement('div');
+                    header.style.cssText = 'display:flex; align-items:center; gap:6px; cursor:pointer; padding:5px 4px; background:#1a1a1a; border-radius:4px; user-select:none; font-size:11px; font-weight:600; color:#bbb; border:1px solid #333; margin-bottom:4px;';
+                    header.innerHTML = `<span class="folder-toggle" style="font-size:9px; transition:transform 0.15s;">▼</span><span>${label}</span>`;
+
+                    const grid = document.createElement('div');
+                    grid.style.cssText = 'display:grid; grid-template-columns: repeat(2, 1fr); gap:4px; padding:2px 0;';
+
+                    let collapsed = false;
+                    header.onclick = () => {
+                        collapsed = !collapsed;
+                        grid.style.display = collapsed ? 'none' : 'grid';
+                        header.querySelector('.folder-toggle').style.transform = collapsed ? 'rotate(-90deg)' : '';
+                    };
+
+                    wrapper.appendChild(header);
+                    wrapper.appendChild(grid);
+                    return { wrapper, grid };
+                };
+
+                // Helper: build one asset tile and append to a grid element
+                const buildTile = (grid, imgPath, sx, sy, sw, sh, label, onClickFn) => {
                     const div = document.createElement('div');
                     div.className = 'asset-item';
-                    
-                    const cvs = document.createElement('canvas');
-                    cvs.width = data.sw;
-                    cvs.height = data.sh;
-                    cvs.style.width = '100%';
-                    cvs.style.display = 'block';
-                    cvs.style.imageRendering = 'pixelated';
-                    cvs.style.maxHeight = '80px';
-                    cvs.style.objectFit = 'contain';
 
-                    const renderCanvas = () => { 
-                        try {
-                            if(mainSheetImg.naturalWidth > 0) cvs.getContext('2d').drawImage(mainSheetImg, data.sx, data.sy, data.sw, data.sh, 0, 0, data.sw, data.sh); 
-                        } catch(e) {}
-                    };
-                    if(mainSheetImg.complete) renderCanvas(); else mainSheetImg.addEventListener('load', renderCanvas);
+                    const sheetImg = sprites[imgPath] || new Image();
+                    if (!sprites[imgPath]) { sheetImg.src = imgPath; sprites[imgPath] = sheetImg; }
+
+                    const cvs = document.createElement('canvas');
+                    cvs.width = sw; cvs.height = sh;
+                    cvs.style.cssText = 'width:100%; display:block; image-rendering:pixelated; max-height:80px; object-fit:contain;';
+
+                    const paint = () => { try { if(sheetImg.naturalWidth > 0) cvs.getContext('2d').drawImage(sheetImg, sx, sy, sw, sh, 0, 0, sw, sh); } catch(e) {} };
+                    if (sheetImg.complete) paint(); else sheetImg.addEventListener('load', paint);
 
                     div.appendChild(cvs);
-                    div.insertAdjacentHTML('beforeend', `<br><span style="font-size:10px; word-wrap:break-word;">${k}</span>`);
-
+                    div.insertAdjacentHTML('beforeend', `<br><span style="font-size:10px; word-wrap:break-word;">${label}</span>`);
                     div.onclick = () => {
                         document.querySelectorAll('.asset-item').forEach(el => el.classList.remove('selected'));
                         div.classList.add('selected');
-                        
-                        selectedAssetObj = {
-                            type: k,
-                            id: k,
-                            path: mainSheetPath,
-                            sx: data.sx, sy: data.sy, sw: data.sw, sh: data.sh,
-                            w: data.sw * 0.5,
-                            h: data.sh * 0.5
-                        };
-                        
+                        onClickFn();
                         document.getElementById('tool-paint').click();
                     };
-                    assetList.appendChild(div);
+                    grid.appendChild(div);
+                };
+
+                // ── Section: Floors ─────────────────────────────────────────────────────
+                // Placed AFTER helpers so createSection / buildTile are already defined.
+                (() => {
+                    const { wrapper, grid } = createSection('floors');
+                    const buildFloorTile = (label, imgPath) => {
+                        const div = document.createElement('div');
+                        div.className = 'asset-item';
+                        if (MAP_DATA[currentMapId].floor === (imgPath || null)) div.classList.add('selected');
+                        if (imgPath) {
+                            const img = floorImages[imgPath] || new Image();
+                            if (!floorImages[imgPath]) { img.src = imgPath; floorImages[imgPath] = img; }
+                            const cvs = document.createElement('canvas');
+                            cvs.width = 128; cvs.height = 128;
+                            cvs.style.cssText = 'width:100%; display:block; image-rendering:pixelated; max-height:60px;';
+                            const paint = () => { try { cvs.getContext('2d').drawImage(img, 0, 0, 128, 128); } catch(e) {} };
+                            if (img.complete && img.naturalWidth > 0) paint(); else img.addEventListener('load', paint);
+                            div.appendChild(cvs);
+                        } else {
+                            const none = document.createElement('div');
+                            none.style.cssText = 'width:100%;height:40px;display:flex;align-items:center;justify-content:center;font-size:20px;opacity:0.4;';
+                            none.textContent = '✕';
+                            div.appendChild(none);
+                        }
+                        div.insertAdjacentHTML('beforeend', `<br><span style="font-size:10px;word-wrap:break-word;">${label}</span>`);
+                        div.onclick = () => {
+                            grid.querySelectorAll('.asset-item').forEach(el => el.classList.remove('selected'));
+                            div.classList.add('selected');
+                            MAP_DATA[currentMapId].floor = imgPath || null;
+                            saveToLocalStorage();
+                            drawFloor();
+                        };
+                        grid.appendChild(div);
+                    };
+                    buildFloorTile('None', null);
+                    const floorPaths = (typeof FLOOR_ASSETS !== 'undefined') ? FLOOR_ASSETS : [];
+                    floorPaths.forEach(p => buildFloorTile(p.split('/').pop().replace(/\.(png|jpe?g)$/i,''), p));
+                    if (window._scannedFloorPaths) {
+                        window._scannedFloorPaths.forEach(p => {
+                            if (!floorPaths.includes(p)) buildFloorTile(p.split('/').pop().replace(/\.(png|jpe?g)$/i,''), p);
+                        });
+                    }
+                    if (!filter) assetList.appendChild(wrapper);
+                })();
+
+                const rootSheetItems = Object.keys(RITUAL_SPRITES).filter(k => !filter || k.toLowerCase().includes(filter));
+                if (rootSheetItems.length > 0) {
+                    const mainSheetPath = '../../images/craft-work/indoor maps/stage 1/crystal_structure_sprite_sheet.png';
+                    const mainSheetImg = sprites[mainSheetPath] || new Image();
+                    if (!sprites[mainSheetPath]) { mainSheetImg.src = mainSheetPath; sprites[mainSheetPath] = mainSheetImg; }
+
+                    const { wrapper, grid } = createSection('indoor maps / stage 1 / crystal structure sheet');
+                    rootSheetItems.forEach(k => {
+                        const data = RITUAL_SPRITES[k];
+                        buildTile(grid, mainSheetPath, data.sx, data.sy, data.sw, data.sh, k, () => {
+                            selectedAssetObj = { type: k, id: k, path: mainSheetPath, sx: data.sx, sy: data.sy, sw: data.sw, sh: data.sh, w: data.sw * 0.5, h: data.sh * 0.5 };
+                        });
+                    });
+                    assetList.appendChild(wrapper);
+                }
+
+                // ── Sections 1+: AVAILABLE_ASSETS grouped by folder ───────────────────────────
+                const RITUAL_SHEET_PATH = '../../images/craft-work/indoor%20maps/stage%201/crystal_structure_sprite_sheet.png';
+                const floorPathSet = new Set((typeof FLOOR_ASSETS !== 'undefined' ? FLOOR_ASSETS : []));
+
+                // Group assets by folder
+                const folderMap = new Map(); // folderKey -> [ assetData, ... ]
+                AVAILABLE_ASSETS.forEach(assetData => {
+                    if (assetData.path === RITUAL_SHEET_PATH) return;
+                    if (floorPathSet.has(assetData.path)) return;
+                    if (filter && assetData.id.toLowerCase().indexOf(filter) === -1) return;
+                    const key = getFolderKey(assetData.path);
+
+                    // Characters folder: only show the _0_0 frame (first cell of the 4x4 sprite sheet)
+                    // Each character image is a 2048x2048 sheet of 16 frames (4 rows × 4 cols).
+                    // Showing all 16 entries would repeat the same character 16 times.
+                    if (key === 'characters' && !assetData.id.endsWith('_0_0')) return;
+
+                    if (!folderMap.has(key)) folderMap.set(key, []);
+                    folderMap.get(key).push(assetData);
                 });
 
-                // 2. Render all generically parsed 16-grid sprite sheet blocks from folders!
-                AVAILABLE_ASSETS.forEach(assetData => {
-                    if (assetData.path.includes('crystal_structure_sprite_sheet')) return; // Skip dupes
-                    if (filter && assetData.id.toLowerCase().indexOf(filter) === -1) return;
+                // Render each folder as a collapsible section
+                // Sort: root ('') first, then alphabetical
+                const sortedFolders = [...folderMap.keys()].sort((a, b) => {
+                    if (a === '') return -1; if (b === '') return 1;
+                    return a.localeCompare(b);
+                });
 
-                    let sw = 512; let sh = 512; let sx = assetData.sx; let sy = assetData.sy;
-                    
-                    const div = document.createElement('div');
-                    div.className = 'asset-item';
-                    
-                    const sheetImg = sprites[assetData.path] || new Image();
-                    if (!sprites[assetData.path]) { sheetImg.src = assetData.path; sprites[assetData.path] = sheetImg; }
-                    
-                    const cvs = document.createElement('canvas');
-                    cvs.width = sw;
-                    cvs.height = sh;
-                    cvs.style.width = '100%';
-                    cvs.style.display = 'block';
-                    cvs.style.imageRendering = 'pixelated';
-                    cvs.style.maxHeight = '80px';
-                    cvs.style.objectFit = 'contain';
+                sortedFolders.forEach(folderKey => {
+                    const items = folderMap.get(folderKey);
+                    const label = folderKey === '' ? 'assets (root)' : folderKey;
+                    const { wrapper, grid } = createSection(label);
 
-                    const renderCanvas = () => { 
-                        try {
-                            if(sheetImg.naturalWidth > 0) cvs.getContext('2d').drawImage(sheetImg, sx, sy, sw, sh, 0, 0, sw, sh); 
-                        } catch(e) {}
-                    };
-                    if(sheetImg.complete) renderCanvas(); else sheetImg.addEventListener('load', renderCanvas);
+                    items.forEach(assetData => {
+                        const { path: imgPath, sx, sy, sw, sh, id } = assetData;
+                        // For character assets we display the whole image (sx=0, sy=0) rather than the
+                        // first 512x512 cell, so the preview shows the character at a recognisable size.
+                        const isChar = folderKey === 'characters';
+                        const dispSx = isChar ? 0 : sx;
+                        const dispSy = isChar ? 0 : sy;
+                        const dispSw = isChar ? 512 : sw; // still preview first frame
+                        const dispSh = isChar ? 512 : sh;
+                        const cleanId = isChar ? id.replace(/_0_0$/, '') : id;
+                        buildTile(grid, imgPath, dispSx, dispSy, dispSw, dispSh, cleanId, () => {
+                            selectedAssetObj = { type: id, id, path: imgPath, sx, sy, sw, sh, w: sw * 0.5, h: sh * 0.5 };
+                        });
+                    });
 
-                    div.appendChild(cvs);
-                    div.insertAdjacentHTML('beforeend', `<br><span style="font-size:10px; word-wrap:break-word;">${assetData.id}</span>`);
-
-                    div.onclick = () => {
-                        document.querySelectorAll('.asset-item').forEach(el => el.classList.remove('selected'));
-                        div.classList.add('selected');
-                        
-                        // Map editor uses 128 chunks natively. Base assets are 512 -> scaled exactly 0.5 for 2x2 grid.
-                        selectedAssetObj = {
-                            type: assetData.id,
-                            id: assetData.id,
-                            path: assetData.path,
-                            sx: sx, sy: sy, sw: sw, sh: sh,
-                            w: sw * 0.5,
-                            h: sh * 0.5
-                        };
-                        
-                        document.getElementById('tool-paint').click();
-                    };
-                    assetList.appendChild(div);
+                    assetList.appendChild(wrapper);
                 });
             };
 
             renderAssets();
             searchInput.oninput = (e) => renderAssets(e.target.value.toLowerCase());
+
+            // ── Special Floors ─────────────────────────────────────────────────────
+            const floorList = document.getElementById('floor-list');
+
+            const buildFloorItem = (label, imgPath) => {
+                const div = document.createElement('div');
+                div.className = 'asset-item';
+                div.dataset.floorPath = imgPath || '';
+
+                if (imgPath) {
+                    const img = floorImages[imgPath] || new Image();
+                    if (!floorImages[imgPath]) { img.src = imgPath; floorImages[imgPath] = img; }
+                    const cvs = document.createElement('canvas');
+                    cvs.width = 128; cvs.height = 128;
+                    cvs.style.width = '100%'; cvs.style.display = 'block';
+                    cvs.style.imageRendering = 'pixelated'; cvs.style.maxHeight = '60px';
+                    const paintThumb = () => { try { cvs.getContext('2d').drawImage(img, 0, 0, 128, 128); } catch(e) {} };
+                    if (img.complete && img.naturalWidth > 0) paintThumb(); else img.addEventListener('load', paintThumb);
+                    div.appendChild(cvs);
+                } else {
+                    // "None" tile
+                    const none = document.createElement('div');
+                    none.style.cssText = 'width:100%; height:40px; display:flex; align-items:center; justify-content:center; font-size:20px; opacity:0.4;';
+                    none.textContent = '✕';
+                    div.appendChild(none);
+                }
+
+                div.insertAdjacentHTML('beforeend', `<br><span style="font-size:10px; word-wrap:break-word;">${label}</span>`);
+
+                div.onclick = () => {
+                    document.querySelectorAll('#floor-list .asset-item').forEach(el => el.classList.remove('selected'));
+                    div.classList.add('selected');
+                    MAP_DATA[currentMapId].floor = imgPath || null;
+                    saveToLocalStorage();
+                    drawFloor();
+                };
+                return div;
+            };
+
+            renderFloors = (floorPaths = []) => {
+                floorList.innerHTML = '';
+                // Always include "None"
+                const noneItem = buildFloorItem('None', null);
+                if (!MAP_DATA[currentMapId].floor) noneItem.classList.add('selected');
+                floorList.appendChild(noneItem);
+
+                floorPaths.forEach(p => {
+                    const label = p.split('/').pop().replace(/\.png$/i, '');
+                    const item = buildFloorItem(label, p);
+                    if (MAP_DATA[currentMapId].floor === p) item.classList.add('selected');
+                    floorList.appendChild(item);
+                });
+            };
+
+            // Trigger initial floor render with no paths — populated after scan
+            renderFloors([]);
+
+            // Call syncFloors HERE — renderFloors is now guaranteed to be assigned
+            // before the async server response arrives. Calling it from loadPreloadedAssets()
+            // created a race condition because initSidebar() runs after that call.
+            syncFloors();
+        }
+
+        // Fetch /api/scan-images — adds newly appeared files, prunes removed files,
+        // and re-renders the sidebar if anything changed. Safe to call multiple times.
+        function syncDynamicAssets(afterSync) {
+            fetch('http://localhost:3000/api/scan-images')
+                .then(r => r.ok ? r.json() : Promise.reject(r.status))
+                .then(scanned => {
+                    const scannedPaths = new Set(scanned.map(e => e.path));
+                    const knownPaths   = new Set(AVAILABLE_ASSETS.map(a => a.path));
+
+                    // --- Prune: remove entries for files that no longer exist on disk ---
+                    const before = AVAILABLE_ASSETS.length;
+                    // Mutate in-place so external references stay valid
+                    for (let i = AVAILABLE_ASSETS.length - 1; i >= 0; i--) {
+                        if (!scannedPaths.has(AVAILABLE_ASSETS[i].path)) {
+                            const removedPath = AVAILABLE_ASSETS[i].path;
+                            AVAILABLE_ASSETS.splice(i, 1);
+                            // Drop the sprite cache entry so it can be GC'd
+                            delete sprites[removedPath];
+                        }
+                    }
+                    const pruned = before - AVAILABLE_ASSETS.length;
+
+                    // --- Add: collect entries for files that weren't tracked before ---
+                    const newEntries = scanned.filter(e => !knownPaths.has(e.path));
+                    newEntries.forEach(e => AVAILABLE_ASSETS.push(e));
+
+                    if (pruned === 0 && newEntries.length === 0) {
+                        // Nothing changed — skip re-render
+                        if (typeof afterSync === 'function') afterSync();
+                        return;
+                    }
+
+                    if (pruned > 0) {
+                        console.log(`[scan-images] Pruned ${pruned} entries for deleted files.`);
+                    }
+
+                    // If only removals (no additions), re-render immediately and finish
+                    if (newEntries.length === 0) {
+                        const searchInput = document.getElementById('asset-search');
+                        const filter = searchInput ? searchInput.value.toLowerCase() : '';
+                        renderAssets(filter);
+                        if (typeof afterSync === 'function') afterSync();
+                        return;
+                    }
+
+                    // Wait for all new images to fully load before re-rendering
+                    // so canvases are never blank
+                    const newPaths = [...new Set(newEntries.map(e => e.path))];
+                    let remaining = newPaths.length;
+
+                    const onAllNewLoaded = () => {
+                        console.log(`[scan-images] Merged ${newEntries.length} new entries from ${newPaths.length} new files.`);
+                        const searchInput = document.getElementById('asset-search');
+                        const filter = searchInput ? searchInput.value.toLowerCase() : '';
+                        renderAssets(filter);
+                        if (typeof afterSync === 'function') afterSync();
+                    };
+
+                    newPaths.forEach(p => {
+                        if (sprites[p] && sprites[p].complete) {
+                            if (--remaining === 0) onAllNewLoaded();
+                        } else {
+                            const img = sprites[p] || new Image();
+                            if (!sprites[p]) { img.src = p; sprites[p] = img; }
+                            img.addEventListener('load',  () => { if (--remaining === 0) onAllNewLoaded(); });
+                            img.addEventListener('error', () => { if (--remaining === 0) onAllNewLoaded(); });
+                        }
+                    });
+                })
+                .catch(err => {
+                    console.warn('[scan-images] Server not reachable, using static assetList only.', err);
+                    if (typeof afterSync === 'function') afterSync();
+                });
         }
 
         function loadPreloadedAssets() {
-            // Need to load unique paths
             const uniquePaths = [...new Set(AVAILABLE_ASSETS.map(a => a.path))];
+            let remaining = uniquePaths.length;
+            const onAllLoaded = () => {
+                console.log('All static sheets loaded.');
+                loadExistingMapData();     // Load map immediately — don't wait for asset scan
+                syncDynamicAssets();       // Scan craft-work folder in background (sidebar only)
+                // NOTE: syncFloors() is intentionally called from initSidebar() — not here —
+                // to guarantee renderFloors is already wired before the server responds.
+            };
+
+            if (uniquePaths.length === 0) {
+                loadExistingMapData();
+                syncDynamicAssets();
+                return;
+            }
+
             uniquePaths.forEach(path => {
                 const img = new Image();
                 img.src = path;
                 sprites[path] = img;
-                img.onload = () => {
+                img.onload = img.onerror = () => {
                     loadedSpritesCount++;
-                    if (loadedSpritesCount === uniquePaths.length) {
-                        console.log("All sheets loaded.");
-                        loadExistingMapData(); // Wait for images before rendering canvas
-                    }
-                }
+                    if (--remaining === 0) onAllLoaded();
+                };
             });
+        }
+
+        // Floors are now shown inside the Assets panel as a collapsible "floors" section.
+        // syncFloors() fetches any server-scanned paths and stores them so renderAssets()
+        // can include them in the inline floor section.
+        function syncFloors() {
+            // renderFloors is kept as a no-op shim so any remaining callers don't error.
+            if (typeof renderFloors !== 'function') renderFloors = () => {};
+
+            const staticPaths = (typeof FLOOR_ASSETS !== 'undefined') ? [...FLOOR_ASSETS] : [];
+            window._scannedFloorPaths = staticPaths; // seed immediately
+
+            // Re-draw assets so the floors section appears right away
+            if (typeof renderAssets === 'function') {
+                const sf = document.getElementById('asset-search');
+                renderAssets(sf ? sf.value.toLowerCase() : '');
+            }
+
+            // Try server in background to pick up any newly-added floor images
+            fetch('http://localhost:3000/api/scan-floors')
+                .then(r => r.ok ? r.json() : Promise.reject(r.status))
+                .then(serverPaths => {
+                    const merged = [...new Set([...staticPaths, ...serverPaths])];
+                    console.log('[scan-floors] Merged to', merged.length, 'floor image(s).');
+                    window._scannedFloorPaths = merged;
+                    if (typeof renderAssets === 'function') {
+                        const sf = document.getElementById('asset-search');
+                        renderAssets(sf ? sf.value.toLowerCase() : '');
+                    }
+                })
+                .catch(() => { /* Server offline — static list already used above. */ });
+        }
+
+
+        // Fetch available audio tracks from the editor server (parsed dynamically from audioTracks.ts)
+        function syncAudioTracks() {
+            fetch('http://localhost:3000/api/audio-tracks')
+                .then(r => r.ok ? r.json() : Promise.reject(r.status))
+                .then(tracks => {
+                    availableAudioTracks = tracks;
+                    console.log('[audio-tracks] Loaded', tracks.length, 'track(s).');
+                })
+                .catch(() => {
+                    console.warn('[audio-tracks] Server not reachable; zone music list will be empty.');
+                });
         }
 
         function setupCanvas() {
@@ -400,7 +798,7 @@
             const w = map.tilesX * map.gridSize;
             const h = map.tilesY * map.gridSize;
 
-            [bgCanvas, gridCanvas, objCanvas, uiCanvas].forEach(c => {
+            [floorCanvas, bgCanvas, gridCanvas, objCanvas, uiCanvas].forEach(c => {
                 c.width = w;
                 c.height = h;
             });
@@ -412,6 +810,33 @@
             scrollBounds.style.height = (h * zoom) + 'px';
 
             drawGrid();
+            drawFloor();
+        }
+
+        // Draws the selected floor image stretched to cover the entire map canvas.
+        // Called from setupCanvas() and drawMap() so it always stays in sync.
+        function drawFloor() {
+            const map = MAP_DATA[currentMapId];
+            fCtx.clearRect(0, 0, floorCanvas.width, floorCanvas.height);
+            if (!map.floor) return; // No floor selected — leave transparent
+
+            const path = map.floor;
+            const loadAndDraw = (img) => {
+                if (img.complete && img.naturalWidth > 0) {
+                    fCtx.drawImage(img, 0, 0, floorCanvas.width, floorCanvas.height);
+                }
+            };
+
+            if (floorImages[path]) {
+                loadAndDraw(floorImages[path]);
+            } else {
+                const img = new Image();
+                img.src = path;
+                floorImages[path] = img;
+                img.onload = () => {
+                    fCtx.drawImage(img, 0, 0, floorCanvas.width, floorCanvas.height);
+                };
+            }
         }
 
         function drawGrid() {
@@ -436,13 +861,13 @@
 
         function drawMap() {
             const map = MAP_DATA[currentMapId];
+            drawFloor(); // Re-draw floor every frame so it stays in sync with map switches
             oCtx.clearRect(0, 0, objCanvas.width, objCanvas.height);
             uCtx.clearRect(0, 0, uiCanvas.width, uiCanvas.height);
 
-            // Sort by Y for depth
-            const sortedAssets = [...map.assets].sort((a, b) => a.y - b.y);
-
-            sortedAssets.forEach(item => {
+            // Render in array order: index 0 = back, last index = front
+            // This is what the Back / Forward / To Back / To Front buttons control
+            map.assets.forEach(item => {
                 let sData = RITUAL_SPRITES[item.type];
                 
                 // If it is a dynamically generated sprite sheet chunk, fetch its cached definition
@@ -626,6 +1051,63 @@
                 }
             });
             
+            // ── Draw Zones ───────────────────────────────────────────────────
+            const _zmap = MAP_DATA[currentMapId];
+            (_zmap.zones || []).forEach(zone => {
+                if (!zone.points || zone.points.length < 2) return;
+                const isSel = selectedZone === zone;
+                uCtx.save();
+                uCtx.beginPath();
+                uCtx.moveTo(zone.points[0].x, zone.points[0].y);
+                zone.points.slice(1).forEach(p => uCtx.lineTo(p.x, p.y));
+                uCtx.closePath();
+                uCtx.fillStyle = isSel ? 'rgba(255,200,50,0.18)' : 'rgba(50,200,255,0.10)';
+                uCtx.fill();
+                uCtx.strokeStyle = isSel ? '#ffc832' : '#32c8ff';
+                uCtx.lineWidth = isSel ? 3 : 2;
+                uCtx.setLineDash([8,4]);
+                uCtx.stroke();
+                uCtx.setLineDash([]);
+                // Centroid label
+                const lx = zone.points.reduce((s,p)=>s+p.x,0)/zone.points.length;
+                const ly = zone.points.reduce((s,p)=>s+p.y,0)/zone.points.length;
+                uCtx.fillStyle = isSel ? '#ffc832' : '#32c8ff';
+                uCtx.font = 'bold 13px sans-serif';
+                uCtx.textAlign = 'center';
+                const zLabel = (zone.musicName ? '\u266a ' + zone.musicName : '') + (zone.message ? (zone.musicName?' | ':'') + '\uD83D\uDCAC' : '') || '\uD83D\uDCCD Zone';
+                uCtx.fillText(zLabel, lx, ly);
+                uCtx.textAlign = 'left';
+                // Dot on first vertex (close target)
+                uCtx.beginPath();
+                uCtx.arc(zone.points[0].x, zone.points[0].y, 6, 0, Math.PI*2);
+                uCtx.fillStyle = isSel ? '#ffc832' : '#32c8ff';
+                uCtx.fill();
+                uCtx.restore();
+            });
+            // In-progress zone path drawing
+            if (currentTool === 'zone' && isDrawingZone && currentZonePoints.length > 0) {
+                uCtx.save();
+                uCtx.beginPath();
+                uCtx.moveTo(currentZonePoints[0].x, currentZonePoints[0].y);
+                currentZonePoints.slice(1).forEach(p => uCtx.lineTo(p.x, p.y));
+                uCtx.strokeStyle = '#ffff00';
+                uCtx.lineWidth = 2;
+                uCtx.setLineDash([6,3]);
+                uCtx.stroke();
+                uCtx.setLineDash([]);
+                currentZonePoints.forEach((p,i) => {
+                    uCtx.beginPath();
+                    uCtx.arc(p.x, p.y, i===0?9:5, 0, Math.PI*2);
+                    uCtx.fillStyle = i===0 ? '#ff4444' : '#ffff00';
+                    uCtx.fill();
+                });
+                uCtx.fillStyle = 'rgba(255,255,255,0.7)';
+                uCtx.font = '12px sans-serif';
+                const tip = currentZonePoints.length >= 3 ? 'Click \u25CF to close zone, or double-click' : 'Click to add points...';
+                uCtx.fillText(tip, currentZonePoints[0].x + 12, currentZonePoints[0].y - 12);
+                uCtx.restore();
+            }
+
             // Draw box selection visual
             if (currentTool === 'select' && isBoxSelecting) {
                 uCtx.fillStyle = 'rgba(77, 208, 225, 0.3)';
@@ -666,9 +1148,10 @@
                 let gridW = selectedAssetObj.w;
                 let gridH = selectedAssetObj.h;
                 
-                let gx = Math.floor(coords.x / 64) * 64; // Snap paint placement coordinates to nearest half-grid block 
-                let gy = Math.floor(coords.y / 64) * 64;
+                let gx = Math.floor(coords.x / snapGridX) * snapGridX;
+                let gy = Math.floor(coords.y / snapGridY) * snapGridY;
 
+                pushUndo();
                 // Push to map
                 map.assets.push({
                     id: selectedAssetObj.id || selectedAssetObj.type + '_' + Date.now(),
@@ -686,6 +1169,7 @@
                 for (let i = map.assets.length - 1; i >= 0; i--) {
                     const a = map.assets[i];
                     if (coords.x > a.x && coords.x < a.x + a.w && coords.y > a.y && coords.y < a.y + a.h) {
+                        pushUndo();
                         map.assets.splice(i, 1);
                         drawMap();
                         break;
@@ -698,7 +1182,7 @@
                 // 1) Check handles first if 1 object selected
                 if (selectedMapObjects.length === 1) {
                     const obj = selectedMapObjects[0];
-                    const hSize = 12; // visual hit radius
+                    const hSize = 12;
                     const dist = (x1, y1, x2, y2) => Math.hypot(x1-x2, y1-y2);
                     
                     let at = obj.edgeAnchors?.t ?? 0.5;
@@ -709,105 +1193,128 @@
                     let tr_x = obj.cornerOffsets?.tr?.x || 0; let tr_y = obj.cornerOffsets?.tr?.y || 0;
                     let bl_x = obj.cornerOffsets?.bl?.x || 0; let bl_y = obj.cornerOffsets?.bl?.y || 0;
                     let br_x = obj.cornerOffsets?.br?.x || 0; let br_y = obj.cornerOffsets?.br?.y || 0;
-
-                    let id_tl = 'resize-tl', id_tr = 'resize-tr', id_bl = 'resize-bl', id_br = 'resize-br';
-                    let id_l = 'slide-l', id_r = 'slide-r';
-
+                    let id_tl='resize-tl',id_tr='resize-tr',id_bl='resize-bl',id_br='resize-br',id_l='slide-l',id_r='slide-r';
                     if (obj.flipX) {
-                        let v_tl_x = -tr_x; let v_tl_y = tr_y;
-                        let v_tr_x = -tl_x; let v_tr_y = tl_y;
-                        let v_bl_x = -br_x; let v_bl_y = br_y;
-                        let v_br_x = -bl_x; let v_br_y = bl_y;
-                        let v_al = ar; let v_ar = al;
-                        let v_at = 1 - at; let v_ab = 1 - ab;
-                        
-                        tl_x = v_tl_x; tl_y = v_tl_y; tr_x = v_tr_x; tr_y = v_tr_y;
-                        bl_x = v_bl_x; bl_y = v_bl_y; br_x = v_br_x; br_y = v_br_y;
-                        at = v_at; ab = v_ab; al = v_al; ar = v_ar;
-
-                        id_tl = 'resize-tr'; id_tr = 'resize-tl';
-                        id_bl = 'resize-br'; id_br = 'resize-bl';
-                        id_l = 'slide-r'; id_r = 'slide-l';
+                        let v_tl_x=-tr_x,v_tl_y=tr_y,v_tr_x=-tl_x,v_tr_y=tl_y,v_bl_x=-br_x,v_bl_y=br_y,v_br_x=-bl_x,v_br_y=bl_y,v_al=ar,v_ar=al,v_at=1-at,v_ab=1-ab;
+                        tl_x=v_tl_x;tl_y=v_tl_y;tr_x=v_tr_x;tr_y=v_tr_y;bl_x=v_bl_x;bl_y=v_bl_y;br_x=v_br_x;br_y=v_br_y;at=v_at;ab=v_ab;al=v_al;ar=v_ar;
+                        id_tl='resize-tr';id_tr='resize-tl';id_bl='resize-br';id_br='resize-bl';id_l='slide-r';id_r='slide-l';
                     }
-
                     const handles = [
-                        {id: id_tl, hx: obj.x + tl_x, hy: obj.y + tl_y},
-                        {id: id_tr, hx: obj.x+obj.w + tr_x, hy: obj.y + tr_y},
-                        {id: id_bl, hx: obj.x + bl_x, hy: obj.y+obj.h + bl_y},
-                        {id: id_br, hx: obj.x+obj.w + br_x, hy: obj.y+obj.h + br_y},
-                        {id: 'slide-t', hx: obj.x + obj.w * at, hy: obj.y},
-                        {id: 'slide-b', hx: obj.x + obj.w * ab, hy: obj.y+obj.h},
-                        {id: id_l, hx: obj.x, hy: obj.y + obj.h * al},
-                        {id: id_r, hx: obj.x+obj.w, hy: obj.y + obj.h * ar},
-                        {id: 'crop-tc', hx: obj.x+obj.w/2, hy: obj.y - 12},
-                        {id: 'crop-bc', hx: obj.x+obj.w/2, hy: obj.y+obj.h + 12},
-                        {id: 'crop-lc', hx: obj.x - 12, hy: obj.y+obj.h/2},
-                        {id: 'crop-rc', hx: obj.x+obj.w + 12, hy: obj.y+obj.h/2}
+                        {id:id_tl,hx:obj.x+tl_x,hy:obj.y+tl_y},{id:id_tr,hx:obj.x+obj.w+tr_x,hy:obj.y+tr_y},
+                        {id:id_bl,hx:obj.x+bl_x,hy:obj.y+obj.h+bl_y},{id:id_br,hx:obj.x+obj.w+br_x,hy:obj.y+obj.h+br_y},
+                        {id:'slide-t',hx:obj.x+obj.w*at,hy:obj.y},{id:'slide-b',hx:obj.x+obj.w*ab,hy:obj.y+obj.h},
+                        {id:id_l,hx:obj.x,hy:obj.y+obj.h*al},{id:id_r,hx:obj.x+obj.w,hy:obj.y+obj.h*ar},
+                        {id:'crop-tc',hx:obj.x+obj.w/2,hy:obj.y-12},{id:'crop-bc',hx:obj.x+obj.w/2,hy:obj.y+obj.h+12},
+                        {id:'crop-lc',hx:obj.x-12,hy:obj.y+obj.h/2},{id:'crop-rc',hx:obj.x+obj.w+12,hy:obj.y+obj.h/2}
                     ];
-                    
-                    let clickedHandle = handles.find(h => dist(h.hx, h.hy, coords.x, coords.y) < hSize);
+                    let clickedHandle = handles.find(h => dist(h.hx,h.hy,coords.x,coords.y) < hSize);
                     if (clickedHandle) {
-                         activeHandle = clickedHandle.id;
-                         activeHandleIsStretch = (e.button === 2);
-                         
-                         // Prepare custom crop variables explicitly if starting a crop/stretch without them
-                         if (obj.cx === undefined) {
-                             const autoSheet = AVAILABLE_ASSETS.find(a => a.id === obj.type);
-                             if (autoSheet) {
-                                  obj.cx = autoSheet.sx;
-                                  obj.cy = autoSheet.sy;
-                                  obj.cw = autoSheet.sw;
-                                  obj.ch = autoSheet.sh;
-                             } else if (RITUAL_SPRITES[obj.type]) {
-                                  obj.cx = RITUAL_SPRITES[obj.type].sx;
-                                  obj.cy = RITUAL_SPRITES[obj.type].sy;
-                                  obj.cw = RITUAL_SPRITES[obj.type].sw;
-                                  obj.ch = RITUAL_SPRITES[obj.type].sh;
-                             }
-                         }
-                         
-                         handleStartObj = JSON.parse(JSON.stringify(obj));
-                         handleStartMouse = { x: coords.x, y: coords.y };
-                         return; // Don't fall through to object selection or map panning
+                        activeHandle = clickedHandle.id;
+                        activeHandleIsStretch = (e.button === 2);
+                        if (obj.cx === undefined) {
+                            const autoSheet = AVAILABLE_ASSETS.find(a => a.id === obj.type);
+                            if (autoSheet) { obj.cx=autoSheet.sx;obj.cy=autoSheet.sy;obj.cw=autoSheet.sw;obj.ch=autoSheet.sh; }
+                            else if (RITUAL_SPRITES[obj.type]) { obj.cx=RITUAL_SPRITES[obj.type].sx;obj.cy=RITUAL_SPRITES[obj.type].sy;obj.cw=RITUAL_SPRITES[obj.type].sw;obj.ch=RITUAL_SPRITES[obj.type].sh; }
+                        }
+                        handleStartObj = JSON.parse(JSON.stringify(obj));
+                        handleStartMouse = { x: coords.x, y: coords.y };
+                        return;
                     }
                 }
-
                 if (e.button === 2) {
-                    // Right click dragging map fallthrough
-                    isDraggingMap = true;
-                    startPan = { x: e.clientX, y: e.clientY };
-                    lastPan = { x: mainView.scrollLeft, y: mainView.scrollTop };
-                    uiCanvas.style.cursor = 'grabbing';
-                    return;
+                    isDraggingMap = true; startPan={x:e.clientX,y:e.clientY}; lastPan={x:mainView.scrollLeft,y:mainView.scrollTop};
+                    uiCanvas.style.cursor = 'grabbing'; return;
                 }
-                
+                // Check assets FIRST — zones only selected if nothing else was clicked
                 for (let i = map.assets.length - 1; i >= 0; i--) {
                     const a = map.assets[i];
-                    if (coords.x > a.x && coords.x < a.x + a.w && coords.y > a.y && coords.y < a.y + a.h) {
+                    if (coords.x > a.x && coords.x < a.x+a.w && coords.y > a.y && coords.y < a.y+a.h) {
                         clickedOnExisting = true;
-                        
-                        // Check if hitting existing multi-select block
+                        selectedZone = null;
                         if (!selectedMapObjects.includes(a)) {
-                            if (!e.shiftKey) { selectedMapObjects = [a]; } 
-                            else { selectedMapObjects.push(a); }
+                            if (!e.shiftKey) { selectedMapObjects = [a]; } else { selectedMapObjects.push(a); }
                         }
-                        
                         isDraggingObj = true;
-                        objDragOffset = selectedMapObjects.map(obj => ({ x: coords.x - obj.x, y: coords.y - obj.y, obj: obj }));
-                        
-                        // Bring picked target to front
-                        map.assets.push(map.assets.splice(i, 1)[0]);
+                        objDragOffset = selectedMapObjects.map(obj => ({x:coords.x-obj.x,y:coords.y-obj.y,obj}));
                         break;
                     }
                 }
-                
                 if (!clickedOnExisting) {
+                    // Only try zone hit if no asset was found under the click
+                    const _selZones = MAP_DATA[currentMapId].zones || [];
+                    let hitZone = null;
+                    for (let zi = _selZones.length-1; zi >= 0; zi--) {
+                        const z = _selZones[zi];
+                        if (!z.points || z.points.length < 3) continue;
+                        uCtx.beginPath();
+                        uCtx.moveTo(z.points[0].x, z.points[0].y);
+                        z.points.slice(1).forEach(p => uCtx.lineTo(p.x, p.y));
+                        uCtx.closePath();
+                        if (uCtx.isPointInPath(coords.x, coords.y)) { hitZone = z; break; }
+                    }
+                    if (hitZone) {
+                        selectedZone = hitZone; selectedMapObjects = [];
+                        drawMap(); updatePropertiesPanel(); return;
+                    }
+                    selectedZone = null;
                     if (!e.shiftKey) selectedMapObjects = [];
                     isBoxSelecting = true;
-                    selectionBox = { startX: coords.x, startY: coords.y, x: coords.x, y: coords.y, w: 0, h: 0 };
+                    selectionBox = { startX:coords.x, startY:coords.y, x:coords.x, y:coords.y, w:0, h:0 };
                 }
                 drawMap();
             }
+            else if (currentTool === 'zone') {
+                // Zone drawing: click to add point, click near first point to close
+                if (!isDrawingZone) {
+                    // Check if clicking an existing zone to select it
+                    const _zones2 = MAP_DATA[currentMapId].zones || [];
+                    let hitZ = null;
+                    for (let zi = _zones2.length-1; zi >= 0; zi--) {
+                        const z = _zones2[zi];
+                        if (!z.points || z.points.length < 3) continue;
+                        uCtx.beginPath();
+                        uCtx.moveTo(z.points[0].x, z.points[0].y);
+                        z.points.slice(1).forEach(p => uCtx.lineTo(p.x, p.y));
+                        uCtx.closePath();
+                        if (uCtx.isPointInPath(coords.x, coords.y)) { hitZ = z; break; }
+                    }
+                    if (hitZ) {
+                        selectedZone = hitZ; drawMap(); updatePropertiesPanel(); return;
+                    }
+                    // Start a new zone
+                    isDrawingZone = true;
+                    currentZonePoints = [{ x: coords.x, y: coords.y }];
+                } else {
+                    // In-progress: check if clicking near first point to close
+                    const fp = currentZonePoints[0];
+                    const d = Math.hypot(coords.x - fp.x, coords.y - fp.y);
+                    if (currentZonePoints.length >= 3 && d < 20) {
+                        // Close and save the zone
+                        const zmap = MAP_DATA[currentMapId];
+                        if (!zmap.zones) zmap.zones = [];
+                        const newZone = { id: 'zone_' + Date.now(), points: [...currentZonePoints], message: '', musicUrl: '', musicName: '' };
+                        zmap.zones.push(newZone);
+                        selectedZone = newZone;
+                        isDrawingZone = false; currentZonePoints = [];
+                        saveToLocalStorage(); updatePropertiesPanel();
+                    } else {
+                        currentZonePoints.push({ x: coords.x, y: coords.y });
+                    }
+                }
+                drawMap();
+            }
+        };
+
+        // Double-click to close an in-progress zone
+        uiCanvas.ondblclick = (e) => {
+            if (currentTool !== 'zone' || !isDrawingZone || currentZonePoints.length < 3) return;
+            const zmap = MAP_DATA[currentMapId];
+            if (!zmap.zones) zmap.zones = [];
+            const newZone = { id: 'zone_' + Date.now(), points: [...currentZonePoints], message: '', musicUrl: '', musicName: '' };
+            zmap.zones.push(newZone);
+            selectedZone = newZone;
+            isDrawingZone = false; currentZonePoints = [];
+            saveToLocalStorage(); drawMap(); updatePropertiesPanel();
         };
 
         window.onmousemove = (e) => {
@@ -910,8 +1417,8 @@
             if (isDraggingObj && selectedMapObjects.length > 0) {
                 objDragOffset.forEach(dragMap => {
                     const obj = dragMap.obj;
-                    let snapX = Math.round((coords.x - dragMap.x) / 64) * 64;
-                    let snapY = Math.round((coords.y - dragMap.y) / 64) * 64;
+                    let snapX = Math.round((coords.x - dragMap.x) / snapGridX) * snapGridX;
+                    let snapY = Math.round((coords.y - dragMap.y) / snapGridY) * snapGridY;
                     obj.x = snapX;
                     obj.y = snapY;
                 });
@@ -952,12 +1459,20 @@
 
         window.onkeydown = (e) => {
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') return;
+
+            // Undo
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')) {
+                e.preventDefault();
+                performUndo();
+                return;
+            }
             
             if (currentTool === 'select' && selectedMapObjects.length > 0) {
                 if ((e.ctrlKey || e.metaKey) && (e.key === 'd' || e.key === 'D')) {
                     e.preventDefault();
                     const map = MAP_DATA[currentMapId];
                     const mappedNew = [];
+                    pushUndo();
                     selectedMapObjects.forEach(obj => {
                         const duplicate = { ...obj, id: 'dup_' + Date.now() + Math.random(), x: obj.x + 64, y: obj.y + 64 };
                         map.assets.push(duplicate);
@@ -968,6 +1483,7 @@
                 }
                 if (e.key === 'Delete' || e.key === 'Backspace') {
                     const map = MAP_DATA[currentMapId];
+                    pushUndo();
                     map.assets = map.assets.filter(a => !selectedMapObjects.includes(a));
                     selectedMapObjects = [];
                     drawMap();
@@ -1014,15 +1530,164 @@
             const typeLabel = document.getElementById('prop-type');
             const container = document.getElementById('props-container');
 
+            // ── Zone selected ────────────────────────────────────────────────
+            if (selectedZone) {
+                panel.style.display = 'flex';
+                typeLabel.innerText = `Zone: ${selectedZone.id}`;
+                container.innerHTML = '';
+
+                // Entry message textarea
+                const msgW = document.createElement('div');
+                msgW.style.marginBottom = '6px';
+                msgW.innerHTML = '<div style="margin-bottom:3px;">Entry Message (shown to player on enter)</div>';
+                const msgTA = document.createElement('textarea');
+                msgTA.value = selectedZone.message || '';
+                msgTA.placeholder = 'Message shown when player enters this area...';
+                msgTA.style.cssText = 'width:100%;height:80px;background:#222;color:#fff;border:1px solid #555;padding:5px;box-sizing:border-box;font-size:12px;resize:vertical;';
+                msgTA.oninput = (e) => { selectedZone.message = e.target.value; saveToLocalStorage(); };
+                msgW.appendChild(msgTA);
+                container.appendChild(msgW);
+
+                const msgPropW = document.createElement('div');
+                msgPropW.style.marginBottom = '6px';
+                msgPropW.style.display = 'flex';
+                msgPropW.style.flexDirection = 'column';
+                msgPropW.style.gap = '4px';
+
+                const onceLabel = document.createElement('label');
+                onceLabel.style.display = 'flex'; onceLabel.style.justifyContent = 'space-between';
+                onceLabel.innerText = 'Show message:';
+                const onceSel = document.createElement('select');
+                onceSel.innerHTML = `<option value="true">Just once</option><option value="false">Every time entered</option>`;
+                onceSel.value = selectedZone.messageOnce === false ? 'false' : 'true';
+                onceSel.onchange = (e) => { selectedZone.messageOnce = e.target.value === 'true'; saveToLocalStorage(); };
+                onceSel.style.background = '#222'; onceSel.style.color = '#fff'; onceSel.style.border = '1px solid #555';
+                onceLabel.appendChild(onceSel);
+                msgPropW.appendChild(onceLabel);
+
+                const durLabel = document.createElement('label');
+                durLabel.style.display = 'flex'; durLabel.style.justifyContent = 'space-between';
+                durLabel.innerText = 'Duration (seconds, 0=wait for click):';
+                const durInp = document.createElement('input');
+                durInp.type = 'number'; durInp.min = '0'; durInp.step = '0.5';
+                durInp.value = selectedZone.messageDuration || 0;
+                durInp.style.width = '60px'; durInp.style.background = '#222'; durInp.style.color = '#fff'; durInp.style.border = '1px solid #555';
+                durInp.oninput = (e) => { selectedZone.messageDuration = parseFloat(e.target.value) || 0; saveToLocalStorage(); };
+                durLabel.appendChild(durInp);
+                msgPropW.appendChild(durLabel);
+
+                container.appendChild(msgPropW);
+
+                // Zone music dropdown
+                const musicW = document.createElement('div');
+                musicW.style.marginBottom = '6px';
+                musicW.innerHTML = '<div style="margin-bottom:3px;">Zone Music (plays when player enters)</div>';
+
+                const buildMusicDropdown = () => {
+                    // Remove any previous select+hint
+                    const existing = musicW.querySelector('select');
+                    if (existing) existing.remove();
+                    const existingHint = musicW.querySelector('.music-hint');
+                    if (existingHint) existingHint.remove();
+
+                    const musicSel = document.createElement('select');
+                    musicSel.style.width = '100%';
+                    const noneOpt = document.createElement('option');
+                    noneOpt.value = ''; noneOpt.innerText = '\u2014 None \u2014';
+                    if (!selectedZone.musicUrl) noneOpt.selected = true;
+                    musicSel.appendChild(noneOpt);
+
+                    if (availableAudioTracks.length > 0) {
+                        const cats = {};
+                        availableAudioTracks.forEach(t => {
+                            if (!cats[t.category]) cats[t.category] = [];
+                            cats[t.category].push(t);
+                        });
+                        Object.keys(cats).sort().forEach(cat => {
+                            const og = document.createElement('optgroup');
+                            og.label = cat;
+                            cats[cat].forEach(t => {
+                                const o = document.createElement('option');
+                                o.value = t.url; o.innerText = t.name;
+                                if (selectedZone.musicUrl === t.url) o.selected = true;
+                                og.appendChild(o);
+                            });
+                            musicSel.appendChild(og);
+                        });
+                    } else {
+                        const hint = document.createElement('option');
+                        hint.disabled = true;
+                        hint.innerText = '(start editor_server.js then click Refresh)';
+                        musicSel.appendChild(hint);
+                    }
+
+                    musicSel.onchange = (e) => {
+                        selectedZone.musicUrl = e.target.value;
+                        const found = availableAudioTracks.find(t => t.url === e.target.value);
+                        selectedZone.musicName = found ? found.name : '';
+                        saveToLocalStorage(); drawMap();
+                    };
+                    musicW.appendChild(musicSel);
+                };
+
+                buildMusicDropdown();
+
+                // Refresh button — reloads tracks and rebuilds dropdown
+                const refreshBtn = document.createElement('button');
+                refreshBtn.innerText = '\u21BA Refresh Music List';
+                refreshBtn.title = 'Reload available music tracks from editor_server.js';
+                refreshBtn.style.cssText = 'background:#1a2a3a;font-size:10px;padding:3px 6px;margin-top:3px;margin-bottom:0;width:auto;';
+                refreshBtn.onclick = () => {
+                    refreshBtn.innerText = 'Loading...';
+                    refreshBtn.disabled = true;
+                    fetch('http://localhost:3000/api/audio-tracks')
+                        .then(r => r.ok ? r.json() : Promise.reject(r.status))
+                        .then(tracks => {
+                            availableAudioTracks = tracks;
+                            buildMusicDropdown();
+                            refreshBtn.innerText = `\u21BA Refresh Music List (${tracks.length} loaded)`;
+                            refreshBtn.disabled = false;
+                        })
+                        .catch(() => {
+                            refreshBtn.innerText = '\u26A0 Server not running';
+                            refreshBtn.disabled = false;
+                        });
+                };
+                musicW.appendChild(refreshBtn);
+
+                // Auto-fetch if list is currently empty
+                if (availableAudioTracks.length === 0) {
+                    fetch('http://localhost:3000/api/audio-tracks')
+                        .then(r => r.ok ? r.json() : Promise.reject(r.status))
+                        .then(tracks => { availableAudioTracks = tracks; buildMusicDropdown(); })
+                        .catch(() => {});
+                }
+
+                container.appendChild(musicW);
+
+                // Delete zone button
+                const delBtn = document.createElement('button');
+                delBtn.innerText = '\uD83D\uDDD1 Delete This Zone';
+                delBtn.style.cssText = 'background:#8b0000;margin-top:8px;';
+                delBtn.onclick = () => {
+                    const zmap = MAP_DATA[currentMapId];
+                    zmap.zones = (zmap.zones||[]).filter(z => z !== selectedZone);
+                    selectedZone = null;
+                    saveToLocalStorage(); drawMap(); updatePropertiesPanel();
+                };
+                container.appendChild(delBtn);
+                return; // Don't show object props
+            }
+
             if (selectedMapObjects.length !== 1) {
                 panel.style.display = 'none';
                 return;
             }
 
             const obj = selectedMapObjects[0];
-            panel.style.display = 'block';
+            panel.style.display = 'flex';
             typeLabel.innerText = `Type: ${obj.type} | ID: ${obj.id}`;
-            container.innerHTML = ''; // Clear previous
+            container.innerHTML = '';
 
             // Helper to add a select dropdown
             const addSelect = (label, key, options) => {
@@ -1062,6 +1727,26 @@
                 input.onchange = (e) => {
                     if (type === 'number') obj[key] = parseFloat(e.target.value) || 0;
                     else obj[key] = e.target.value;
+                    drawMap();
+                };
+                wrapper.appendChild(input);
+                container.appendChild(wrapper);
+            };
+
+            // Helper to add a textarea
+            const addTextarea = (label, key, placeholder='') => {
+                const wrapper = document.createElement('div');
+                wrapper.style.marginBottom = '5px';
+                wrapper.innerHTML = `<div>${label}</div>`;
+                const input = document.createElement('textarea');
+                input.value = obj[key] !== undefined ? obj[key] : '';
+                input.placeholder = placeholder;
+                input.style.width = '100%'; input.style.boxSizing = 'border-box';
+                input.style.height = '80px'; input.style.resize = 'vertical';
+                input.style.background = '#333'; input.style.color = '#fff'; input.style.border = '1px solid #555';
+                
+                input.oninput = (e) => {
+                    obj[key] = e.target.value;
                     drawMap();
                 };
                 wrapper.appendChild(input);
@@ -1110,7 +1795,20 @@
             });
             
             interactTypeSelect.onchange = (e) => { 
-                obj.interactType = e.target.value; 
+                const newType = e.target.value;
+
+                // Enforce single player: clear any existing player designation
+                if (newType === 'player') {
+                    const map = MAP_DATA[currentMapId];
+                    map.assets.forEach(a => {
+                        if (a !== obj && a.interactType === 'player') {
+                            a.interactType = '';
+                            console.log(`[editor] Cleared previous player designation from: ${a.id}`);
+                        }
+                    });
+                }
+
+                obj.interactType = newType;
                 drawMap(); 
                 updatePropertiesPanel(); // Force immediate redraw of sub-options
             };
@@ -1128,30 +1826,231 @@
                 addInput('Target Map ID', 'targetMap', 'text', 'e.g. ritual_stage_2');
                 addInput('Spawn X (Grid)', 'targetX', 'number', 'Spawn X pos');
                 addInput('Spawn Y (Grid)', 'targetY', 'number', 'Spawn Y pos');
-                addSelect('Unlock Condition', 'unlockCondition', [
-                    { value: 'always', label: 'Always Open' },
-                    { value: 'boss_defeated', label: 'Require Boss Defeat' },
-                    { value: 'key', label: 'Require Key' },
-                    { value: 'quest', label: 'Require Map Quests' }
+
+                // Activation mode: touch vs press
+                addSelect('Activation Mode', 'activationMode', [
+                    { value: 'press', label: 'Press / Tap to enter (Space, Enter, or Z key)' },
+                    { value: 'touch', label: 'Auto-enter on contact (walk into it)' }
                 ]);
-                
-                if (obj.unlockCondition === 'quest') {
-                    addInput('Quest: Minions to Kill', 'qMinions', 'number', '0');
-                    addInput('Quest: Bosses to Kill', 'qBosses', 'number', '0');
-                    addInput('Quest: Treasures to Find', 'qTreasures', 'number', '0');
-                    addInput('Riddle: Question', 'qRiddle', 'text', 'Leave blank to ignore');
-                    addInput('Riddle: Option A (or Blank=Type)', 'qRiddleA', 'text', '');
-                    addInput('Riddle: Option B', 'qRiddleB', 'text', '');
-                    addInput('Riddle: Option C', 'qRiddleC', 'text', '');
-                    addInput('Riddle: Option D', 'qRiddleD', 'text', '');
-                    addInput('Correct Answer (Letter or Text)', 'qRiddleAns', 'text', 'A');
-                }
-            } 
-            else if (type === 'treasure') {
-                addInput('Reward Value', 'treasureValue', 'number', '1');
+
+                // ── Portal Multi-Condition Builder ─────────────────────────────────
+                container.insertAdjacentHTML('beforeend',
+                    '<div style="margin:8px 0 4px;font-size:11px;color:#adf;text-transform:uppercase;letter-spacing:1px;">Portal Unlock Conditions</div>' +
+                    '<div style="font-size:10px;color:#888;margin-bottom:6px;">All conditions must be met before the portal opens. Each condition is linked to a specific enemy (must be killed) or item (must be collected). Assign an associated image to visually represent the condition in-game.</div>'
+                );
+                if (!obj.portalConditions) obj.portalConditions = [];
+
+                const condListEl = document.createElement('div');
+                condListEl.id = 'portal-cond-list';
+
+                const renderCondList = () => {
+                    condListEl.innerHTML = '';
+                    obj.portalConditions.forEach((cond, ci) => {
+                        const row = document.createElement('div');
+                        row.style.cssText = 'background:#1a1a2e;border:1px solid #444;border-radius:4px;padding:7px;margin-bottom:6px;font-size:11px;';
+
+                        // Condition type
+                        const typeRow = document.createElement('div');
+                        typeRow.style.marginBottom = '4px';
+                        typeRow.innerHTML = '<span style="color:#aaa">Type: </span>';
+                        const tSel = document.createElement('select');
+                        tSel.style.cssText = 'width:auto;margin:0;padding:2px 4px;font-size:11px;';
+                        [['enemy_killed','Enemy Killed'],['item_collected','Item Collected']].forEach(([v,l]) => {
+                            const o = document.createElement('option');
+                            o.value=v; o.innerText=l;
+                            if(cond.condType===v) o.selected=true;
+                            tSel.appendChild(o);
+                        });
+                        tSel.onchange = e => { cond.condType = e.target.value; saveToLocalStorage(); };
+                        typeRow.appendChild(tSel);
+                        row.appendChild(typeRow);
+
+                        // Asset ID (links to an enemy or treasure on the map)
+                        const idRow = document.createElement('div');
+                        idRow.style.marginBottom = '4px';
+                        idRow.innerHTML = '<div style="color:#aaa;margin-bottom:2px;">Asset ID on map (enemy or treasure):</div>';
+                        const idSel = document.createElement('select');
+                        idSel.style.width = '100%';
+                        const blankId = document.createElement('option'); blankId.value=''; blankId.innerText='— pick from map —';
+                        if(!cond.assetId) blankId.selected=true;
+                        idSel.appendChild(blankId);
+                        const mapAssets = MAP_DATA[currentMapId].assets || [];
+                        mapAssets.filter(a => a.interactType==='enemy'||a.interactType==='boss'||a.interactType==='treasure').forEach(a => {
+                            const o = document.createElement('option');
+                            o.value=a.id; o.innerText=`${a.id} [${a.interactType}] (${a.type})`;
+                            if(cond.assetId===a.id) o.selected=true;
+                            idSel.appendChild(o);
+                        });
+                        idSel.onchange = e => { cond.assetId = e.target.value; saveToLocalStorage(); };
+                        idRow.appendChild(idSel);
+                        row.appendChild(idRow);
+
+                        // Associated image (visual token for this condition)
+                        const imgRow = document.createElement('div');
+                        imgRow.style.marginBottom = '4px';
+                        imgRow.innerHTML = '<div style="color:#aaa;margin-bottom:2px;">Associated image/object (shown as reward token):</div>';
+                        const imgSel = document.createElement('select');
+                        imgSel.style.width = '100%';
+                        const blankImg = document.createElement('option'); blankImg.value=''; blankImg.innerText='— none —';
+                        if(!cond.imageId) blankImg.selected=true;
+                        imgSel.appendChild(blankImg);
+                        // Populate from all known asset types
+                        Object.keys(RITUAL_SPRITES).forEach(k => {
+                            const o=document.createElement('option'); o.value=k; o.innerText=k;
+                            if(cond.imageId===k) o.selected=true;
+                            imgSel.appendChild(o);
+                        });
+                        if (typeof AVAILABLE_ASSETS!=='undefined') {
+                            // Only show unique type ids (first occurrence)
+                            const seen = new Set(Object.keys(RITUAL_SPRITES));
+                            AVAILABLE_ASSETS.forEach(a => {
+                                if(seen.has(a.id)) return; seen.add(a.id);
+                                const o=document.createElement('option'); o.value=a.id; o.innerText=a.id;
+                                if(cond.imageId===a.id) o.selected=true;
+                                imgSel.appendChild(o);
+                            });
+                        }
+                        imgSel.onchange = e => { cond.imageId = e.target.value; saveToLocalStorage(); };
+                        imgRow.appendChild(imgSel);
+                        row.appendChild(imgRow);
+
+                        // Remove button
+                        const rmBtn = document.createElement('button');
+                        rmBtn.innerText = '\u2715 Remove Condition';
+                        rmBtn.style.cssText = 'background:#5a1010;font-size:10px;padding:3px 6px;width:auto;margin:0;';
+                        rmBtn.onclick = () => { obj.portalConditions.splice(ci,1); saveToLocalStorage(); renderCondList(); };
+                        row.appendChild(rmBtn);
+
+                        condListEl.appendChild(row);
+                    });
+
+                    // Add Condition button
+                    const addBtn = document.createElement('button');
+                    addBtn.innerText = '\u002B Add Condition';
+                    addBtn.style.cssText = 'background:#1a3a1a;border-color:#4a8;margin-top:4px;font-size:11px;padding:5px;';
+                    addBtn.onclick = () => {
+                        obj.portalConditions.push({ condType: 'enemy_killed', assetId: '', imageId: '' });
+                        saveToLocalStorage(); renderCondList();
+                    };
+                    condListEl.appendChild(addBtn);
+                };
+                renderCondList();
+                container.appendChild(condListEl);
             }
-            else if (type === 'enemy' || type === 'boss') {
+            else if (type === 'treasure') {
+                // ── Treasure / Parchment Properties ────────────────────────────────
+                addInput('Reward Value', 'treasureValue', 'number', '1');
+                addTextarea('Pickup Message (shown on collect, leave blank for default)', 'treasurePickupMsg', 'e.g. You found the ancient parchment!');
+
+                // How the player collects the treasure
+                addSelect('Collection Mode', 'treasureCollectMode', [
+                    { value: 'press', label: 'Press / Tap to pick up (Space, Enter, or Z key)' },
+                    { value: 'touch', label: 'Auto-collect on contact (walk over it)' }
+                ]);
+
+                addCheckbox('Immediately Available (no guardian)', 'treasureImmediate');
+
+                if (obj.treasureImmediate !== 'true' && obj.treasureImmediate !== true) {
+                    container.insertAdjacentHTML('beforeend',
+                        '<div style="padding:6px 8px;background:#1a1a2e;border-left:3px solid #f0a030;margin:6px 0;font-size:11px;color:#fda;">Define a Guardian: an enemy on this map that must be eliminated before the treasure becomes collectible. Enter the Asset ID of that enemy below.</div>'
+                    );
+                    addInput('Guardian Enemy Asset ID', 'treasureGuardianId', 'text', 'ID of the enemy asset guarding this treasure');
+
+                    // Guardian picker dropdown (enemies on the map)
+                    const guardW = document.createElement('div');
+                    guardW.style.marginBottom = '5px';
+                    guardW.innerHTML = '<div style="color:#aaa;margin-bottom:2px;">Or pick from map enemies:</div>';
+                    const guardSel = document.createElement('select');
+                    guardSel.style.width = '100%';
+                    const gBlank = document.createElement('option'); gBlank.value=''; gBlank.innerText='— pick enemy —';
+                    if(!obj.treasureGuardianId) gBlank.selected=true;
+                    guardSel.appendChild(gBlank);
+                    (MAP_DATA[currentMapId].assets||[]).filter(a=>a.interactType==='enemy'||a.interactType==='boss').forEach(a => {
+                        const o=document.createElement('option'); o.value=a.id;
+                        o.innerText=`${a.id} (${a.type})`;
+                        if(obj.treasureGuardianId===a.id) o.selected=true;
+                        guardSel.appendChild(o);
+                    });
+                    guardSel.onchange = e => { obj.treasureGuardianId = e.target.value; saveToLocalStorage(); };
+                    guardW.appendChild(guardSel);
+                    container.appendChild(guardW);
+
+                    addSelect('Visible before defeat?', 'treasureVisibleBeforeDefeat', [
+                        { value: 'true', label: 'Yes, remains visible (but uncollectible)' },
+                        { value: 'false', label: 'No, remains hidden until defeated' }
+                    ]);
+
+                    addInput('Defeat Message (shown when guardian is killed)', 'treasureDefeatMsg', 'text', 'e.g. The guardian falls! The parchment is now within your reach...');
+                }
+
+                // --- Treasure: Unlock Mode / Condition ---
+                const tUnlockModeWrapper = document.createElement('div');
+                tUnlockModeWrapper.style.marginBottom = '5px';
+                tUnlockModeWrapper.innerHTML = '<div>Unlock Condition</div>';
+                const tUnlockModeSelect = document.createElement('select');
+                [
+                    { value: 'none',     label: 'None' },
+                    { value: 'question', label: 'Answer a typed question' },
+                    { value: 'multiple_choice', label: 'Answer a multiple choice question' }
+                ].forEach(opt => {
+                    const o = document.createElement('option');
+                    o.value = opt.value;
+                    o.innerText = opt.label;
+                    if (obj.treasureUnlockMode === opt.value) o.selected = true;
+                    tUnlockModeSelect.appendChild(o);
+                });
+                tUnlockModeSelect.onchange = (e) => { obj.treasureUnlockMode = e.target.value; updatePropertiesPanel(); };
+                tUnlockModeWrapper.appendChild(tUnlockModeSelect);
+                container.appendChild(tUnlockModeWrapper);
+
+                const tMode = obj.treasureUnlockMode;
+
+                if (tMode === 'question') {
+                    addInput('Question to Answer', 'treasureQuestion', 'text', 'Who goes there?');
+                    addInput('Correct Answer', 'treasureAnswer', 'text', 'Friend');
+                    addTextarea('Success Message (Correct Answer)', 'treasureQuestionCorrectMsg', 'Correct. Proceed to claim your prize.');
+                    addTextarea('Failure Message (Incorrect Answer)', 'treasureQuestionIncorrectMsg', 'Incorect. Try again.');
+                }
+                else if (tMode === 'multiple_choice') {
+                    addInput('Question to Answer', 'treasureQuestion', 'text', 'What is the color of the sky?');
+                    addInput('Choice A', 'treasureChoiceA', 'text', 'Blue');
+                    addInput('Choice B', 'treasureChoiceB', 'text', 'Red');
+                    addInput('Choice C', 'treasureChoiceC', 'text', 'Green');
+                    addInput('Choice D', 'treasureChoiceD', 'text', 'Yellow');
+                    addSelect('Correct Choice', 'treasureAnswer', [
+                        { value: 'A', label: 'Choice A' },
+                        { value: 'B', label: 'Choice B' },
+                        { value: 'C', label: 'Choice C' },
+                        { value: 'D', label: 'Choice D' }
+                    ]);
+                    addTextarea('Success Message (Correct Answer)', 'treasureQuestionCorrectMsg', 'Correct. Proceed to claim your prize.');
+                    addTextarea('Failure Message (Incorrect Answer)', 'treasureQuestionIncorrectMsg', 'Incorect. Try again.');
+                }
+            }
+            
+            // Build dynamically generated projectile options
+            const projectileOptions = [
+                { value: 'basic', label: 'Basic Magic Orbs' },
+                { value: 'fireball', label: 'Fireballs' },
+                { value: 'piercing', label: 'Piercing Laser' }
+            ];
+            if (typeof AVAILABLE_ASSETS !== 'undefined') {
+                AVAILABLE_ASSETS.forEach(a => {
+                    if (a.path.includes('/projectiles/')) {
+                        const cleanName = a.id;
+                        projectileOptions.push({ value: a.id, label: 'Sprite: ' + cleanName });
+                    }
+                });
+            }
+
+            if (type === 'enemy' || type === 'boss') {
                 addInput('Max HP', 'hp', 'number', '100');
+                addSelect('Projectile Weapon / Sprite', 'enemyWeapon', [
+                    { value: '', label: 'Default' },
+                    ...projectileOptions
+                ]);
+                addInput('Projectile Size', 'enemyProjSize', 'number', '18');
+                addInput('Projectile Damage', 'enemyProjDamage', 'number', '15');
                 addInput('Speed Multiplier', 'enemySpeed', 'number', '1.0');
                 addInput('Projectile Distance', 'enemyProjDist', 'number', '60');
                 addInput('Projectile Velocity', 'enemyProjSpeed', 'number', '6.0');
@@ -1164,17 +2063,130 @@
                 }
             }
             else if (type === 'door') {
-                addSelect('Initial State', 'doorState', [
-                    { value: 'closed', label: 'Closed' },
-                    { value: 'open', label: 'Open' }
+                // --- Door: Initial State ---
+                // Note: the image already placed on the map IS the door's visual.
+                // 'Open' means it starts passable (using its current image).
+                // 'Closed' means it starts solid and you must pick what it looks like when opened.
+                const doorStateWrapper = document.createElement('div');
+                doorStateWrapper.style.marginBottom = '5px';
+                doorStateWrapper.innerHTML = '<div>Initial State</div>';
+                const doorStateSelect = document.createElement('select');
+                ['closed','open'].forEach(v => {
+                    const o = document.createElement('option');
+                    o.value = v;
+                    o.innerText = v === 'closed' ? 'Closed (starts solid)' : 'Open (starts passable, uses current image)';
+                    if (obj.doorState === v) o.selected = true;
+                    doorStateSelect.appendChild(o);
+                });
+                doorStateSelect.onchange = (e) => { obj.doorState = e.target.value; drawMap(); updatePropertiesPanel(); };
+                doorStateWrapper.appendChild(doorStateSelect);
+                container.appendChild(doorStateWrapper);
+
+                // --- Door: Open-state image (only relevant when starting Closed) ---
+                if (!obj.doorState || obj.doorState === 'closed') {
+                    const openImgWrapper = document.createElement('div');
+                    openImgWrapper.style.marginBottom = '5px';
+                    openImgWrapper.innerHTML = '<div style="color:#adf">When Opened — Image to Switch To</div>';
+                    const openImgSelect = document.createElement('select');
+                    openImgSelect.style.width = '100%';
+                    const blankOpt = document.createElement('option');
+                    blankOpt.value = '';
+                    blankOpt.innerText = '(Same — hide / become passable only)';
+                    if (!obj.doorOpenImage) blankOpt.selected = true;
+                    openImgSelect.appendChild(blankOpt);
+                    // Populate from known RITUAL_SPRITES types
+                    Object.keys(RITUAL_SPRITES).forEach(k => {
+                        const o = document.createElement('option');
+                        o.value = k;
+                        o.innerText = k;
+                        if (obj.doorOpenImage === k) o.selected = true;
+                        openImgSelect.appendChild(o);
+                    });
+                    // Also from AVAILABLE_ASSETS
+                    if (typeof AVAILABLE_ASSETS !== 'undefined') {
+                        AVAILABLE_ASSETS.forEach(a => {
+                            const o = document.createElement('option');
+                            o.value = a.id;
+                            o.innerText = a.id;
+                            if (obj.doorOpenImage === a.id) o.selected = true;
+                            openImgSelect.appendChild(o);
+                        });
+                    }
+                    openImgSelect.onchange = (e) => { obj.doorOpenImage = e.target.value; drawMap(); };
+                    openImgWrapper.appendChild(openImgSelect);
+                    container.appendChild(openImgWrapper);
+                }
+
+                // Door activation mode
+                addSelect('Activation Mode', 'activationMode', [
+                    { value: 'press', label: 'Press / Tap to open (Space, Enter, or Z key)' },
+                    { value: 'touch', label: 'Auto-open on contact (walk into it)' }
                 ]);
-                addSelect('Requires Key', 'doorRequiresKey', [
-                    { value: 'false', label: 'No' },
-                    { value: 'true', label: 'Yes' }
-                ]);
+
+                container.insertAdjacentHTML('beforeend', '<div style="margin:6px 0 4px; font-size:11px; color:#888; text-transform:uppercase; letter-spacing:1px;">Unlock Condition</div>');
+
+                // --- Door: Unlock Mode ---
+                const unlockModeWrapper = document.createElement('div');
+                unlockModeWrapper.style.marginBottom = '5px';
+                unlockModeWrapper.innerHTML = '<div>Unlock Mode</div>';
+                const unlockModeSelect = document.createElement('select');
+                [
+                    { value: 'none',     label: 'No Lock — Opens Freely' },
+                    { value: 'question', label: 'Question & Answer (riddle/password)' },
+                    { value: 'item',     label: 'Acquire Object (collect a specific item)' }
+                ].forEach(opt => {
+                    const o = document.createElement('option');
+                    o.value = opt.value;
+                    o.innerText = opt.label;
+                    if (obj.doorUnlockMode === opt.value) o.selected = true;
+                    unlockModeSelect.appendChild(o);
+                });
+                unlockModeSelect.onchange = (e) => { obj.doorUnlockMode = e.target.value; drawMap(); updatePropertiesPanel(); };
+                unlockModeWrapper.appendChild(unlockModeSelect);
+                container.appendChild(unlockModeWrapper);
+
+                const uMode = obj.doorUnlockMode;
+
+                if (uMode === 'question') {
+                    // Question / Answer sub-section
+                    container.insertAdjacentHTML('beforeend', '<div style="padding:6px 8px; background:#1a1a2e; border-left:3px solid #5a8dee; margin:4px 0; font-size:11px; color:#adf;">The player will be prompted with your question. If they answer correctly (exact match, case-insensitive) the door opens.</div>');
+                    addInput('Question shown to player', 'doorQuestion', 'text', 'e.g. What is the password?');
+                    addInput('Correct Answer', 'doorAnswer', 'text', 'e.g. shadow');
+                    addTextarea('Success Message (optional)', 'doorQuestionCorrectMsg', 'e.g. The mechanism clicks and the door opens.');
+                    addTextarea('Failure Message (optional)', 'doorQuestionIncorrectMsg', 'e.g. That is not the right answer. The door remains sealed.');
+                }
+                else if (uMode === 'item') {
+                    // Key item sub-section
+                    container.insertAdjacentHTML('beforeend', '<div style="padding:6px 8px; background:#1a1a2e; border-left:3px solid #f0a030; margin:4px 0; font-size:11px; color:#fda;">The door will open automatically when the player has collected the designated key item. Choose the treasure on the map that the player must pick up first.</div>');
+                    
+                    const itemW = document.createElement('div');
+                    itemW.style.marginBottom = '5px';
+                    itemW.innerHTML = '<div style="color:#aaa;margin-bottom:2px;">Required Asset / Treasure:</div>';
+                    const itemSel = document.createElement('select');
+                    itemSel.style.width = '100%';
+                    const itemBlank = document.createElement('option'); itemBlank.value=''; itemBlank.innerText='— pick placed treasure —';
+                    if(!obj.doorKeyItem) itemBlank.selected=true;
+                    itemSel.appendChild(itemBlank);
+                    (MAP_DATA[currentMapId].assets||[]).filter(a=>a.interactType==='treasure').forEach(a => {
+                        const o=document.createElement('option'); 
+                        o.value = a.id;
+                        o.innerText = `${a.id} (${a.type})`;
+                        if(obj.doorKeyItem === a.id) o.selected=true;
+                        itemSel.appendChild(o);
+                    });
+                    itemSel.onchange = e => { obj.doorKeyItem = e.target.value; saveToLocalStorage(); updatePropertiesPanel(); };
+                    itemW.appendChild(itemSel);
+                    container.appendChild(itemW);
+
+                    container.insertAdjacentHTML('beforeend', '<div style="padding:4px 8px; background:#1a1a2e; font-size:10px; color:#f8b;">ℹ️ Place the key item on the map as a <b>Treasure / Quest Item</b> to have it show up in this list.</div>');
+                }
             }
             else if (type === 'npc') {
                 addInput('Dialogue Line', 'dialogueText', 'text', 'Speech here...');
+                addSelect('Activation Mode', 'activationMode', [
+                    { value: 'press', label: 'Press / Tap to read (Space, Enter, or Z key)' },
+                    { value: 'touch', label: 'Auto-read on contact (walk into it)' }
+                ]);
             }
             else if (type === 'player') {
                 addInput('Speed Multiplier', 'playerSpeed', 'number', '1.0');
@@ -1182,11 +2194,8 @@
                     { value: 'false', label: 'No' },
                     { value: 'true', label: 'Yes' }
                 ]);
-                addSelect('Starting Weapon', 'playerWeapon', [
-                    { value: 'basic', label: 'Basic Magic Orbs' },
-                    { value: 'fireball', label: 'Fireballs' },
-                    { value: 'piercing', label: 'Piercing Laser' }
-                ]);
+                addSelect('Starting Weapon', 'playerWeapon', projectileOptions);
+                addInput('Projectile Size', 'playerProjSize', 'number', '18');
                 addSelect('Kill Aura (Damages nearby)', 'playerAura', [
                     { value: 'false', label: 'Disabled' },
                     { value: 'true', label: 'Enabled' }
@@ -1194,6 +2203,17 @@
                 addInput('Projectile Distance', 'playerProjDist', 'number', '120');
                 addInput('Projectile Velocity', 'playerProjSpeed', 'number', '12.0');
                 addInput('Fire Rate Cooldown (ms)', 'playerFireRate', 'number', '250');
+                addInput('Projectile Damage', 'playerProjDamage', 'number', '10');
+                
+                // Respawn settings
+                addSelect('On Death: Respawn Location', 'playerRespawnLoc', [
+                    { value: 'start', label: 'Start of Map' },
+                    { value: 'death', label: 'Place of Death' }
+                ]);
+                addSelect('On Death: Progress Reset', 'playerRespawnProgress', [
+                    { value: 'save', label: 'Save Progress (Keep items/enemy states)' },
+                    { value: 'restart', label: 'Restart Map from Scratch' }
+                ]);
             }
 
             // Always allow toggling collision manually
@@ -1201,14 +2221,21 @@
                 { value: 'true', label: 'Solid (Wall)' },
                 { value: 'false', label: 'Pass-through' }
             ]);
-            // Re-map string boolean to actual boolean for solid on change for this specific dropdown
             const solidDrops = container.querySelectorAll('select');
-            const solidSelect = solidDrops[solidDrops.length - 1]; // It's always the last one added
+            const solidSelect = solidDrops[solidDrops.length - 1];
             solidSelect.onchange = (e) => { obj.solid = e.target.value === 'true'; };
+
+            addSelect('Render Layer (Pass-through)', 'renderLayer', [
+                { value: '',       label: 'Auto (depth-sort by position)' },
+                { value: 'behind', label: 'Always Behind Characters (walk over it)' },
+                { value: 'front',  label: 'Always In Front of Characters (walk behind it)' }
+            ]);
+            
+            addInput('Destructible HP (0 = Invincible)', 'destructibleHp', 'number', '0');
         }
 
         function changeZoom(delta) {
-            zoom = Math.max(0.25, Math.min(2.0, zoom + delta));
+            zoom = Math.round(Math.max(0.05, Math.min(1.0, zoom + delta)) / 0.05) * 0.05;
             container.style.transform = `scale(${zoom})`;
             
             // Sync Bounding padding limits explicitly
@@ -1217,6 +2244,25 @@
             scrollBounds.style.height = (map.tilesY * map.gridSize * zoom) + 'px';
             
             document.getElementById('zoom-level').innerText = Math.round(zoom * 100) + '%';
+
+            // Zoom-to-selection: center viewport on selected object(s) when zooming in
+            if (delta > 0) {
+                let cx, cy;
+                if (selectedMapObjects.length > 0) {
+                    // Average center of all selected objects
+                    let sumX = 0, sumY = 0;
+                    selectedMapObjects.forEach(o => { sumX += o.x + o.w / 2; sumY += o.y + o.h / 2; });
+                    cx = sumX / selectedMapObjects.length;
+                    cy = sumY / selectedMapObjects.length;
+                } else {
+                    // Center of the visible viewport in canvas space
+                    cx = (mainView.scrollLeft + mainView.clientWidth / 2) / zoom;
+                    cy = (mainView.scrollTop + mainView.clientHeight / 2) / zoom;
+                }
+                // Scroll so this point stays centered after zoom
+                mainView.scrollLeft = cx * zoom - mainView.clientWidth / 2;
+                mainView.scrollTop  = cy * zoom - mainView.clientHeight / 2;
+            }
         }
 
         function loadExistingMapData() {
@@ -1246,7 +2292,13 @@
                     if (blockStart > -1 && blockEnd > -1) {
                         const block = html.substring(blockStart + startMarker.length, blockEnd).trim();
                         
+                        map.zones = []; // Reset before evaluation to prevent duplicates
+                        
                         // Execute the string identically to how the Game Engine does it natively
+                        // setFloor() is called first in every saved block — must be defined before eval()
+                        window.setFloor = (editorPath) => {
+                            map.floor = editorPath || null;
+                        };
                         window.addAsset = (id, type, x, y, w, h, solid=true, flipX=false, rot=0, interactProps=null) => {
                             let newObj = {
                                 id, type,
@@ -1254,14 +2306,16 @@
                                 w: w * 128, h: h * 128,
                                 solid, flipX, rot
                             };
-                            
                             if (interactProps) {
-                                newObj.interactType = interactProps.type; // Preserve gameplay behavior 
+                                if (interactProps.type) newObj.interactType = interactProps.type;
                                 Object.assign(newObj, interactProps);
-                                newObj.type = type; // Restore original visual sprite type destroyed by Object.assign!
+                                newObj.type = type;
                             }
-                            
                             map.assets.push(newObj);
+                        };
+                        window.addZone = (id, points, opts) => {
+                            if (!map.zones) map.zones = [];
+                            map.zones.push({ id, points, message: opts?.message||'', musicUrl: opts?.musicUrl||'', musicName: opts?.musicName||'' });
                         };
                         
                         try {
@@ -1282,16 +2336,28 @@
             if (confirm("Reset current map to match the game's actual data? This will clear any unsaved editor changes.")) {
                 localStorage.removeItem(`map_editor_${currentMapId}`);
                 MAP_DATA[currentMapId].assets = [];
-                loadExistingMapData();
+                MAP_DATA[currentMapId].zones = [];
+                loadExistingMapData();  // Load from game file immediately
+                syncDynamicAssets();    // Refresh asset sidebar in background
+                syncFloors();           // Refresh floor panel (picks up newly added images)
             }
         };
 
         // Publishing flat-file payload modal instead of backend node.js server requirement
         document.getElementById('publish-btn').onclick = async () => {
+            if (!confirm('Save and publish the current map? This will overwrite the live game data.')) return;
             const map = MAP_DATA[currentMapId];
             
             // Build the string representation for initRitualMap
             let jsStrs = [];
+
+            // Export floor selection as the very first line so setFloor() runs before addAsset()
+            if (map.floor) {
+                jsStrs.push(`    setFloor('${map.floor}');`);
+            } else {
+                jsStrs.push(`    setFloor(null);`);
+            }
+
             map.assets.forEach(a => {
                 let gridX = a.x / 128;
                 let gridY = a.y / 128;
@@ -1307,13 +2373,17 @@
                 let interactObj = null;
                 if (a.interactType) {
                     interactObj = { type: a.interactType };
-                    const copyProps = ['targetMap', 'targetX', 'targetY', 'unlockCondition', 'qMinions', 'qBosses', 'qTreasures', 'qRiddle', 'qRiddleA', 'qRiddleB', 'qRiddleC', 'qRiddleD', 'qRiddleAns', 'treasureValue', 'hp', 'aiChase', 'aiPatrol', 'aiShoot', 'bossVariant', 'doorState', 'doorRequiresKey', 'dialogueText', 'playerSpeed', 'playerFlying', 'playerWeapon', 'playerAura', 'enemySpeed', 'enemyProjDist', 'enemyProjSpeed', 'enemyFireRate', 'playerProjDist', 'playerProjSpeed', 'playerFireRate'];
-                    copyProps.forEach(prop => {
-                         let valToCopy = a[prop];
-                         // Hack for empty text riddle configs: avoid dropping explicit empty strings for multiple-choice text configs if they matter, but here we enforce simply undefined check.
-                        if (valToCopy !== undefined && valToCopy !== '') interactObj[prop] = valToCopy;
-                    });
                 }
+                const copyProps = ['targetMap', 'targetX', 'targetY', 'activationMode', 'unlockCondition', 'qMinions', 'qBosses', 'qTreasures', 'qRiddle', 'qRiddleA', 'qRiddleB', 'qRiddleC', 'qRiddleD', 'qRiddleAns', 'treasureValue', 'treasureCollectMode', 'treasurePickupMsg', 'treasureImmediate', 'treasureGuardianId', 'treasureDefeatMsg', 'treasureVisibleBeforeDefeat', 'treasureUnlockMode', 'treasureQuestion', 'treasureChoiceA', 'treasureChoiceB', 'treasureChoiceC', 'treasureChoiceD', 'treasureAnswer', 'treasureQuestionCorrectMsg', 'treasureQuestionIncorrectMsg', 'portalConditions', 'hp', 'aiChase', 'aiPatrol', 'aiShoot', 'bossVariant', 'doorState', 'doorOpenImage', 'doorUnlockMode', 'doorQuestion', 'doorAnswer', 'doorQuestionCorrectMsg', 'doorQuestionIncorrectMsg', 'doorKeyItem', 'dialogueText', 'playerSpeed', 'playerFlying', 'playerWeapon', 'playerProps', 'playerProjSize', 'enemyWeapon', 'enemyProjSize', 'playerAura', 'enemySpeed', 'enemyProjDist', 'enemyProjSpeed', 'enemyFireRate', 'playerProjDist', 'playerProjSpeed', 'playerFireRate', 'destructibleHp', 'playerProjDamage', 'enemyProjDamage', 'renderLayer', 'playerRespawnLoc', 'playerRespawnProgress'];
+                
+                copyProps.forEach(prop => {
+                     let valToCopy = a[prop];
+                     // Hack for empty text riddle configs: avoid dropping explicit empty strings for multiple-choice text configs if they matter, but here we enforce simply undefined check.
+                    if (valToCopy !== undefined && valToCopy !== '') {
+                        if (!interactObj) interactObj = {};
+                        interactObj[prop] = valToCopy;
+                    }
+                });
                 
                 if (a.cx !== undefined) {
                     if (!interactObj) interactObj = {};
@@ -1333,19 +2403,39 @@
                     interactObj.edgeAnchors = a.edgeAnchors;
                 }
                 
+                // For player-designated assets, embed the image path so the live game
+                // can load the correct character sprite sheet.
+                if (a.interactType === 'player' && a.path) {
+                    if (!interactObj) interactObj = {};
+                    interactObj._assetPath = a.path;
+                }
+
                 let interactStr = interactObj ? JSON.stringify(interactObj) : 'null';
                 
                 let isSolid = (a.solid === 'false' || a.solid === false) ? 'false' : 'true';
 
                 if (a.rot) {
-                    jsStrs.push(`    addAsset('id_${Math.floor(Math.random()*10000)}', '${a.type}', ${gridX}, ${gridY}, ${w}, ${h}, ${isSolid}, ${flipStr}, ${a.rot}, ${interactStr});`);
+                    jsStrs.push(`    addAsset('${a.id}', '${a.type}', ${gridX}, ${gridY}, ${w}, ${h}, ${isSolid}, ${flipStr}, ${a.rot}, ${interactStr});`);
                 } else if (interactObj) {
-                    jsStrs.push(`    addAsset('id_${Math.floor(Math.random()*10000)}', '${a.type}', ${gridX}, ${gridY}, ${w}, ${h}, ${isSolid}, ${flipStr}, 0, ${interactStr});`);
+                    jsStrs.push(`    addAsset('${a.id}', '${a.type}', ${gridX}, ${gridY}, ${w}, ${h}, ${isSolid}, ${flipStr}, 0, ${interactStr});`);
                 } else {
-                    jsStrs.push(`    addAsset('id_${Math.floor(Math.random()*10000)}', '${a.type}', ${gridX}, ${gridY}, ${w}, ${h}, ${isSolid}, ${flipStr});`);
+                    jsStrs.push(`    addAsset('${a.id}', '${a.type}', ${gridX}, ${gridY}, ${w}, ${h}, ${isSolid}, ${flipStr});`);
                 }
             });
-            
+
+            // Export zones
+            (map.zones || []).forEach(z => {
+                if (!z.points || z.points.length < 3) return;
+                const optsObj = { 
+                    message: z.message || '', 
+                    musicUrl: z.musicUrl || '', 
+                    musicName: z.musicName || '',
+                    messageOnce: z.messageOnce !== false,
+                    messageDuration: z.messageDuration || 0
+                };
+                jsStrs.push(`    addZone(${JSON.stringify(z.id)}, ${JSON.stringify(z.points)}, ${JSON.stringify(optsObj)});`);
+            });
+
             const textToCopy = jsStrs.join('\n');
             const modal = document.getElementById('save-modal');
             const textarea = document.getElementById('save-textarea');
@@ -1359,7 +2449,8 @@
                 });
 
                 if (res.ok) {
-                    alert('Map saved and injected into craft-work.html!');
+                    saveToLocalStorage(); // Keep localStorage in sync with what was just published
+                    alert('Map saved and injected into ritual-map.js!');
                 } else {
                     throw new Error('Server error');
                 }
@@ -1374,6 +2465,7 @@
         loadPreloadedAssets();
         setupCanvas();
         initSidebar();
+        syncAudioTracks(); // Load music tracks from audioTracks.ts (best-effort, needs editor server)
 
         // Animation Loop
         setInterval(() => drawMap(), 250);

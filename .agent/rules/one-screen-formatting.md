@@ -1,5 +1,5 @@
 ---
-trigger: always_on
+trigger: manual
 ---
 
 Whenever possible, all app content must fit entirely within the initial visible
